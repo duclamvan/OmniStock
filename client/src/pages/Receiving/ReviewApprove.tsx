@@ -99,7 +99,7 @@ export default function ReviewApprove() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t } = useTranslation(['imports']);
   
   // Form state
   const [approvalNotes, setApprovalNotes] = useState("");
@@ -114,7 +114,7 @@ export default function ReviewApprove() {
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
       const response = await fetch(`/api/imports/receipts/by-shipment/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch receipt data');
+      if (!response.ok) throw new Error(t('failedToFetchReceipt'));
       return response.json();
     }
   });
@@ -241,7 +241,7 @@ export default function ReviewApprove() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Package className="h-12 w-12 text-muted-foreground animate-pulse mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading shipment details...</p>
+            <p className="text-muted-foreground">{t('loadingShipmentDetails')}...</p>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function ReviewApprove() {
       <div className="container mx-auto py-8">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t('error', { ns: 'common' })}</AlertTitle>
           <AlertDescription>
             {t('failedToLoadShipmentDetails')}
           </AlertDescription>
@@ -285,7 +285,7 @@ export default function ReviewApprove() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{t('reviewApprove')}</h1>
             <p className="text-muted-foreground">
-              Review the received shipment and approve or reject
+              {t('reviewApproveDesc')}
             </p>
           </div>
         </div>
@@ -309,38 +309,38 @@ export default function ReviewApprove() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Shipment Name</p>
-                  <p className="font-medium">{shipment?.name || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('shipmentName')}</p>
+                  <p className="font-medium">{shipment?.name || t('na', { ns: 'common' })}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Tracking Number</p>
-                  <p className="font-medium font-mono">{shipment?.trackingNumber || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('trackingNumber')}</p>
+                  <p className="font-medium font-mono">{shipment?.trackingNumber || t('na', { ns: 'common' })}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Carrier</p>
-                  <p className="font-medium">{shipment?.carrier || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('carrier')}</p>
+                  <p className="font-medium">{shipment?.carrier || t('na', { ns: 'common' })}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Parcel Count</p>
-                  <p className="font-medium">{shipment?.parcelCount || 1} parcels</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('parcelCount')}</p>
+                  <p className="font-medium">{shipment?.parcelCount || 1} {t('parcels')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Delivered Date</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('deliveredDate')}</p>
                   <p className="font-medium">
                     {shipment?.deliveredAt 
                       ? format(new Date(shipment.deliveredAt), 'MMM dd, yyyy HH:mm')
-                      : 'N/A'}
+                      : t('na', { ns: 'common' })}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Received By</p>
-                  <p className="font-medium">{receipt?.receivedBy || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('receivedBy')}</p>
+                  <p className="font-medium">{receipt?.receivedBy || t('na', { ns: 'common' })}</p>
                 </div>
               </div>
 
               {receipt?.notes && (
                 <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-1">Receiving Notes:</p>
+                  <p className="text-sm font-medium mb-1">{t('receivingNotes')}:</p>
                   <p className="text-sm text-muted-foreground">{receipt.notes}</p>
                 </div>
               )}
@@ -356,7 +356,7 @@ export default function ReviewApprove() {
                   {t('receivedItems')}
                 </span>
                 <Badge variant="outline">
-                  {statistics.totalItems} items
+                  {statistics.totalItems} {t('items')}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -367,11 +367,11 @@ export default function ReviewApprove() {
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       <TableHead className="w-[50px]"></TableHead>
-                      <TableHead className="min-w-[250px]">Item Details</TableHead>
-                      <TableHead className="text-center w-[100px]">Expected</TableHead>
-                      <TableHead className="text-center w-[120px]">Received</TableHead>
-                      <TableHead className="w-[150px]">Status</TableHead>
-                      <TableHead className="w-[120px]">Location</TableHead>
+                      <TableHead className="min-w-[250px]">{t('itemDetails')}</TableHead>
+                      <TableHead className="text-center w-[100px]">{t('expected')}</TableHead>
+                      <TableHead className="text-center w-[120px]">{t('received')}</TableHead>
+                      <TableHead className="w-[150px]">{t('status', { ns: 'common' })}</TableHead>
+                      <TableHead className="w-[120px]">{t('location', { ns: 'common' })}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -382,7 +382,7 @@ export default function ReviewApprove() {
                           ? item.purchaseItem.name
                           : item.itemType === 'consolidation' && item.consolidationItem
                           ? item.consolidationItem.name
-                          : item.itemName || 'Unknown Item';
+                          : item.itemName || t('unknownItem');
                         
                         const itemSku = item.itemType === 'purchase' && item.purchaseItem
                           ? item.purchaseItem.sku
@@ -464,12 +464,12 @@ export default function ReviewApprove() {
                                   <div className="space-y-0.5">
                                     {damagedQty > 0 && (
                                       <div className="text-xs text-red-600 font-medium">
-                                        -{damagedQty} damaged
+                                        -{damagedQty} {t('damaged')}
                                       </div>
                                     )}
                                     {missingQty > 0 && (
                                       <div className="text-xs text-gray-600 font-medium">
-                                        -{missingQty} missing
+                                        -{missingQty} {t('missing')}
                                       </div>
                                     )}
                                   </div>
@@ -518,7 +518,7 @@ export default function ReviewApprove() {
                         <TableCell colSpan={7} className="text-center py-8">
                           <div className="flex flex-col items-center gap-2">
                             <Package className="h-8 w-8 text-muted-foreground" />
-                            <p className="text-muted-foreground">No items found for this shipment</p>
+                            <p className="text-muted-foreground">{t('noItemsFound')}</p>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -536,7 +536,7 @@ export default function ReviewApprove() {
                       ? item.purchaseItem.name
                       : item.itemType === 'consolidation' && item.consolidationItem
                       ? item.consolidationItem.name
-                      : item.itemName || 'Unknown Item';
+                      : item.itemName || t('unknownItem');
                     
                     const itemSku = item.itemType === 'purchase' && item.purchaseItem
                       ? item.purchaseItem.sku
@@ -603,11 +603,11 @@ export default function ReviewApprove() {
                           {/* Quantities Grid */}
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             <div className="text-center p-3 bg-muted/30 rounded-lg">
-                              <p className="text-xs text-muted-foreground mb-1">Expected</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t('expected')}</p>
                               <p className="font-bold text-lg">{expectedQty}</p>
                             </div>
                             <div className="text-center p-3 bg-muted/30 rounded-lg">
-                              <p className="text-xs text-muted-foreground mb-1">Received</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t('received')}</p>
                               <p className={
                                 receivedQty < expectedQty 
                                   ? "font-bold text-lg text-amber-600" 
@@ -626,14 +626,14 @@ export default function ReviewApprove() {
                               {damagedQty > 0 && (
                                 <div className="flex-1 text-center p-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
                                   <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                                    -{damagedQty} damaged
+                                    -{damagedQty} {t('damaged')}
                                   </p>
                                 </div>
                               )}
                               {missingQty > 0 && (
                                 <div className="flex-1 text-center p-2 bg-gray-50 dark:bg-gray-950/20 rounded-lg border border-gray-200 dark:border-gray-800">
                                   <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                                    -{missingQty} missing
+                                    -{missingQty} {t('missing')}
                                   </p>
                                 </div>
                               )}
@@ -646,7 +646,7 @@ export default function ReviewApprove() {
                               <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Location</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t('location', { ns: 'common' })}</p>
                                   <p className="font-mono text-sm font-medium">{item.warehouseLocation}</p>
                                   {item.additionalLocation && (
                                     <p className="text-xs text-muted-foreground mt-1">
@@ -671,7 +671,7 @@ export default function ReviewApprove() {
                 ) : (
                   <div className="flex flex-col items-center gap-2 py-8">
                     <Package className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-muted-foreground text-sm">No items found for this shipment</p>
+                    <p className="text-muted-foreground text-sm">{t('noItemsFound')}</p>
                   </div>
                 )}
               </div>
@@ -686,14 +686,14 @@ export default function ReviewApprove() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clipboard className="h-5 w-5" />
-                Summary
+                {t('summary', { ns: 'common' })}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Completion Progress */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>Completion Rate</span>
+                  <span>{t('completionRate')}</span>
                   <span className="font-medium">{completionRate}%</span>
                 </div>
                 <Progress value={completionRate} className="h-2" />
@@ -704,11 +704,11 @@ export default function ReviewApprove() {
               {/* Statistics */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Expected</span>
+                  <span className="text-sm text-muted-foreground">{t('totalExpected')}</span>
                   <span className="font-medium">{statistics.totalExpected}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Received</span>
+                  <span className="text-sm text-muted-foreground">{t('totalReceived')}</span>
                   <span className="font-medium">{statistics.totalReceived}</span>
                 </div>
                 
@@ -717,7 +717,7 @@ export default function ReviewApprove() {
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">Complete</span>
+                    <span className="text-sm">{t('complete')}</span>
                   </span>
                   <Badge variant="default">{statistics.completeItems}</Badge>
                 </div>
@@ -726,7 +726,7 @@ export default function ReviewApprove() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">Partial</span>
+                      <span className="text-sm">{t('partial')}</span>
                     </span>
                     <Badge variant="warning">{statistics.partialItems}</Badge>
                   </div>
@@ -736,7 +736,7 @@ export default function ReviewApprove() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <AlertOctagon className="h-4 w-4 text-red-600" />
-                      <span className="text-sm">Damaged</span>
+                      <span className="text-sm">{t('damaged')}</span>
                     </span>
                     <Badge variant="destructive">{statistics.damagedItems}</Badge>
                   </div>
@@ -746,7 +746,7 @@ export default function ReviewApprove() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <XOctagon className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">Missing</span>
+                      <span className="text-sm">{t('missing')}</span>
                     </span>
                     <Badge variant="secondary">{statistics.missingItems}</Badge>
                   </div>
@@ -760,12 +760,12 @@ export default function ReviewApprove() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Approval Notes
+                {t('approvalNotes')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
-                placeholder="Add any notes about this shipment (optional)..."
+                placeholder={t('approvalNotesPlaceholder')}
                 value={approvalNotes}
                 onChange={(e) => setApprovalNotes(e.target.value)}
                 className="min-h-[100px]"
@@ -778,15 +778,15 @@ export default function ReviewApprove() {
           {hasDiscrepancies && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Discrepancies Found</AlertTitle>
+              <AlertTitle>{t('discrepanciesFound')}</AlertTitle>
               <AlertDescription>
-                This shipment has {statistics.damagedItems > 0 && `${statistics.damagedItems} damaged`}
+                {t('shipmentHasDiscrepancies')} {statistics.damagedItems > 0 && `${statistics.damagedItems} ${t('damaged')}`}
                 {statistics.damagedItems > 0 && statistics.missingItems > 0 && ', '}
-                {statistics.missingItems > 0 && `${statistics.missingItems} missing`}
+                {statistics.missingItems > 0 && `${statistics.missingItems} ${t('missing')}`}
                 {(statistics.damagedItems > 0 || statistics.missingItems > 0) && statistics.partialItems > 0 && ', and '}
                 {statistics.partialItems > 0 && !statistics.damagedItems && !statistics.missingItems && ''}
-                {statistics.partialItems > 0 && `${statistics.partialItems} partial`} items.
-                Please review carefully before approval.
+                {statistics.partialItems > 0 && `${statistics.partialItems} ${t('partial')}`} {t('items')}.
+                {t('reviewCarefullyBeforeApproval')}
               </AlertDescription>
             </Alert>
           )}
@@ -805,12 +805,12 @@ export default function ReviewApprove() {
                   {approveMutation.isPending ? (
                     <>
                       <Package className="mr-2 h-5 w-5 animate-pulse" />
-                      Approving...
+                      {t('approving')}...
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="mr-2 h-5 w-5" />
-                      Approve Shipment
+                      {t('approveShipment')}
                     </>
                   )}
                 </Button>
@@ -825,12 +825,12 @@ export default function ReviewApprove() {
                   {rejectMutation.isPending ? (
                     <>
                       <Package className="mr-2 h-5 w-5 animate-pulse" />
-                      Rejecting...
+                      {t('rejecting')}...
                     </>
                   ) : (
                     <>
                       <XCircle className="mr-2 h-5 w-5" />
-                      Reject Shipment
+                      {t('rejectShipment')}
                     </>
                   )}
                 </Button>
@@ -841,7 +841,7 @@ export default function ReviewApprove() {
                   disabled={approveMutation.isPending || rejectMutation.isPending}
                   data-testid="button-cancel"
                 >
-                  Cancel
+                  {t('cancel', { ns: 'common' })}
                 </Button>
               </div>
             </CardContent>
@@ -853,31 +853,31 @@ export default function ReviewApprove() {
       <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Approve Shipment?</AlertDialogTitle>
+            <AlertDialogTitle>{t('approveShipmentQuestion')}</AlertDialogTitle>
             <AlertDialogDescription>
               {hasDiscrepancies ? (
                 <div className="space-y-2">
-                  <p>This shipment has discrepancies:</p>
+                  <p>{t('shipmentHasDiscrepancies')}:</p>
                   <ul className="list-disc list-inside space-y-1">
                     {statistics.damagedItems > 0 && (
-                      <li>{statistics.damagedItems} damaged items</li>
+                      <li>{statistics.damagedItems} {t('damagedItems')}</li>
                     )}
                     {statistics.missingItems > 0 && (
-                      <li>{statistics.missingItems} missing items</li>
+                      <li>{statistics.missingItems} {t('missingItems')}</li>
                     )}
                     {statistics.partialItems > 0 && (
-                      <li>{statistics.partialItems} partially received items</li>
+                      <li>{statistics.partialItems} {t('partiallyReceivedItems')}</li>
                     )}
                   </ul>
-                  <p className="mt-2">Are you sure you want to approve this shipment?</p>
+                  <p className="mt-2">{t('confirmApproveShipmentQuestion')}</p>
                 </div>
               ) : (
-                "This will mark the shipment as completed. Are you sure you want to approve?"
+                t('approveShipmentConfirmation')
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel', { ns: 'common' })}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowApproveDialog(false);
@@ -885,7 +885,7 @@ export default function ReviewApprove() {
               }}
               className="bg-green-600 hover:bg-green-700"
             >
-              {approveMutation.isPending ? "Approving..." : "Confirm Approval"}
+              {approveMutation.isPending ? `${t('approving')}...` : t('confirmApproval')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -895,17 +895,17 @@ export default function ReviewApprove() {
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reject Shipment?</AlertDialogTitle>
+            <AlertDialogTitle>{t('rejectShipmentQuestion')}</AlertDialogTitle>
             <AlertDialogDescription>
               <div className="space-y-4">
-                <p>This will return the shipment to receiving status for re-processing.</p>
+                <p>{t('rejectShipmentDescription')}</p>
                 <div>
                   <Label htmlFor="rejection-reason" className="mb-2">
-                    Rejection Reason (Required)
+                    {t('rejectionReasonRequired')}
                   </Label>
                   <Textarea
                     id="rejection-reason"
-                    placeholder="Please provide a reason for rejection..."
+                    placeholder={t('rejectionReasonPlaceholder')}
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                     className="min-h-[80px]"
@@ -916,13 +916,13 @@ export default function ReviewApprove() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel', { ns: 'common' })}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (!rejectionReason.trim()) {
                   toast({
-                    title: "Reason Required",
-                    description: "Please provide a reason for rejection.",
+                    title: t('reasonRequired'),
+                    description: t('reasonRequiredDesc'),
                     variant: "destructive",
                   });
                   return;
@@ -932,7 +932,7 @@ export default function ReviewApprove() {
               }}
               className="bg-red-600 hover:bg-red-700"
             >
-              {rejectMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
+              {rejectMutation.isPending ? `${t('rejecting')}...` : t('confirmRejection')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

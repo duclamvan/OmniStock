@@ -61,7 +61,7 @@ export default function StoreItems() {
   const [match, params] = useRoute("/receiving/storage/:id");
   const { id } = params!;
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t } = useTranslation(['imports']);
   
   // State
   const [items, setItems] = useState<StorageItem[]>([]);
@@ -124,7 +124,7 @@ export default function StoreItems() {
     const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
     if (!locationPattern.test(trimmedValue)) {
       await soundEffects.playErrorBeep();
-      setScanFeedback({ type: 'error', message: 'Invalid location format' });
+      setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
         title: t('invalidLocation'),
@@ -139,7 +139,7 @@ export default function StoreItems() {
     // Check if location already scanned for this item
     if (currentItem?.newLocations.some(loc => loc.locationCode === trimmedValue)) {
       await soundEffects.playDuplicateBeep();
-      setScanFeedback({ type: 'duplicate', message: `Location already added: ${trimmedValue}` });
+      setScanFeedback({ type: 'duplicate', message: `${t('locationAlreadyAdded')}: ${trimmedValue}` });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       setLocationScan("");
       return;
@@ -166,7 +166,7 @@ export default function StoreItems() {
     
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
-    setScanFeedback({ type: 'success', message: `Location scanned: ${trimmedValue}` });
+    setScanFeedback({ type: 'success', message: `${t('locationScanned')}: ${trimmedValue}` });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
     
     setLocationScan("");
@@ -210,7 +210,7 @@ export default function StoreItems() {
     
     toast({
       title: t('primaryLocationSet'),
-      description: `${item.newLocations[locationIndex].locationCode} ${t('isPrimaryLocation')}`,
+      description: `${item.newLocations[locationIndex].locationCode} ${t('setAsPrimaryLocation')}`,
       duration: 2000
     });
   };
@@ -315,7 +315,7 @@ export default function StoreItems() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/receiving/details/${id}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('back', { ns: 'common' })}
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{t('storeItems')}</h1>
@@ -366,7 +366,7 @@ export default function StoreItems() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Items to Store
+                {t('itemsToStore')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -391,15 +391,15 @@ export default function StoreItems() {
                       <div className="flex-1">
                         <div className="font-medium text-sm">{item.productName}</div>
                         {item.sku && (
-                          <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>
+                          <div className="text-xs text-muted-foreground">{t('sku')}: {item.sku}</div>
                         )}
                         <div className="flex gap-2 mt-1">
                           <Badge variant="outline" className="text-xs">
-                            Qty: {item.receivedQuantity}
+                            {t('qty')}: {item.receivedQuantity}
                           </Badge>
                           {item.newLocations.length > 0 && (
                             <Badge variant="secondary" className="text-xs">
-                              {item.newLocations.length} location{item.newLocations.length > 1 ? 's' : ''}
+                              {item.newLocations.length} {item.newLocations.length > 1 ? t('locations') : t('location')}
                             </Badge>
                           )}
                         </div>
@@ -434,7 +434,7 @@ export default function StoreItems() {
                       {currentItem.productName}
                     </span>
                     <Badge variant="outline">
-                      {remainingQuantity} / {currentItem.receivedQuantity} remaining
+                      {remainingQuantity} / {currentItem.receivedQuantity} {t('remaining')}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -442,19 +442,19 @@ export default function StoreItems() {
                   {/* Existing Locations */}
                   {currentItem.existingLocations.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Current Locations</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('currentLocations')}</Label>
                       <div className="space-y-2">
                         {currentItem.existingLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <MapPin className="h-4 w-4 text-gray-500" />
                             <span className="font-mono text-sm">{loc.locationCode}</span>
                             <Badge variant="outline" className="text-xs">
-                              Qty: {loc.quantity}
+                              {t('qty')}: {loc.quantity}
                             </Badge>
                             {loc.isPrimary && (
                               <Badge variant="default" className="text-xs">
                                 <Star className="h-3 w-3 mr-1" />
-                                Primary
+                                {t('primary')}
                               </Badge>
                             )}
                             <Badge variant="secondary" className="text-xs ml-auto">
@@ -469,7 +469,7 @@ export default function StoreItems() {
                   {/* Scan Location */}
                   <div className="space-y-2">
                     <Label htmlFor="location-scan">
-                      {scanMode === 'location' ? 'Scan Location Barcode' : 'Enter Quantity'}
+                      {scanMode === 'location' ? t('scanLocationBarcode') : t('enterQuantity')}
                     </Label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
@@ -485,7 +485,7 @@ export default function StoreItems() {
                               handleLocationScan(locationScan);
                             }
                           }}
-                          placeholder="Scan or enter location code (e.g., WH1-A01-R02-L03)"
+                          placeholder={t('scanLocationPlaceholder')}
                           className="pl-10"
                           autoFocus={scanMode === 'location'}
                         />
@@ -495,18 +495,18 @@ export default function StoreItems() {
                         onClick={() => handleLocationScan(locationScan)}
                         disabled={!locationScan}
                       >
-                        Add
+                        {t('add', { ns: 'common' })}
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Format: WH1-A01-R02-L03 (Warehouse-Aisle-Rack-Level)
+                      {t('locationFormatHint')}
                     </p>
                   </div>
                   
                   {/* New Locations */}
                   {currentItem.newLocations.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Assigned Locations</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('assignedLocations')}</Label>
                       <div className="space-y-2">
                         {currentItem.newLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-3 border rounded-lg">
@@ -566,7 +566,7 @@ export default function StoreItems() {
                             currentItem.newLocations[lastIndex].quantity + remainingQuantity);
                         }}
                       >
-                        Assign All to Last Location
+                        {t('assignAllToLastLocation')}
                       </Button>
                     </div>
                   )}
@@ -579,13 +579,13 @@ export default function StoreItems() {
                   <div className="flex gap-3">
                     <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium text-blue-900 dark:text-blue-100">Storage Tips:</p>
+                      <p className="font-medium text-blue-900 dark:text-blue-100">{t('storageTips')}:</p>
                       <ul className="text-blue-800 dark:text-blue-200 space-y-1">
-                        <li>• Scan location barcode first, then enter quantity</li>
-                        <li>• Use DS- prefix for display shelves</li>
-                        <li>• Use PL- prefix for pallet locations</li>
-                        <li>• The first location is automatically set as primary</li>
-                        <li>• System auto-advances when item is fully assigned</li>
+                        <li>• {t('tip1ScanLocationFirst')}</li>
+                        <li>• {t('tip2UseDS')}</li>
+                        <li>• {t('tip3UsePL')}</li>
+                        <li>• {t('tip4FirstLocationPrimary')}</li>
+                        <li>• {t('tip5AutoAdvance')}</li>
                       </ul>
                     </div>
                   </div>
@@ -597,7 +597,7 @@ export default function StoreItems() {
               <CardContent>
                 <div className="text-center space-y-2">
                   <Warehouse className="h-12 w-12 text-gray-400 mx-auto" />
-                  <p className="text-muted-foreground">No items to store</p>
+                  <p className="text-muted-foreground">{t('noItemsToStore')}</p>
                 </div>
               </CardContent>
             </Card>

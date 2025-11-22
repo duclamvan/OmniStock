@@ -83,7 +83,7 @@ export default function Categories() {
       const response = await apiRequest('DELETE', `/api/categories/${id}`);
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to delete category');
+        throw new Error(error.message || t('categoryDeleteFailed'));
       }
       return response;
     },

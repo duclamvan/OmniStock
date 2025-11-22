@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +47,7 @@ interface LocationStats {
 }
 
 export default function WarehouseMap() {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("");
   const [totalAisles, setTotalAisles] = useState(6);
@@ -110,8 +112,8 @@ export default function WarehouseMap() {
         return newSet;
       });
       toast({
-        title: "Error",
-        description: `Failed to save aisle ${variables.aisleId} configuration.`,
+        title: t('common:error'),
+        description: t('warehouse:failedToSaveAisleConfig', { aisleId: variables.aisleId }),
         variant: "destructive",
       });
     },
@@ -223,11 +225,11 @@ export default function WarehouseMap() {
   const getZoneLabel = (aisleCode: string): string | null => {
     const prefix = aisleCode.charAt(0);
     const zoneLabels: Record<string, string> = {
-      'B': 'Zone B - Pallets',
-      'C': 'Zone C - Office',
-      'D': 'Zone D - Returns',
-      'E': 'Zone E - Staging',
-      'F': 'Zone F - Special',
+      'B': t('warehouse:zoneBPallets'),
+      'C': t('warehouse:zoneCOffice'),
+      'D': t('warehouse:zoneDReturns'),
+      'E': t('warehouse:zoneEStaging'),
+      'F': t('warehouse:zoneFSpecial'),
     };
     return zoneLabels[prefix] || null;
   };
@@ -364,8 +366,8 @@ export default function WarehouseMap() {
             <Warehouse className="h-5 w-5 md:h-6 md:w-6 text-amber-700 dark:text-amber-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg md:text-2xl font-bold text-amber-900 dark:text-amber-100 truncate">Warehouse Space Map</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Visual overview of storage capacity and occupancy</p>
+            <h1 className="text-lg md:text-2xl font-bold text-amber-900 dark:text-amber-100 truncate">{t('warehouse:warehouseSpaceMap')}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">{t('warehouse:warehouseMapSubtitle')}</p>
           </div>
         </div>
       </div>
@@ -375,7 +377,7 @@ export default function WarehouseMap() {
         <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
           <CardTitle className="text-sm md:text-base flex items-center gap-2">
             <Warehouse className="h-4 w-4 text-amber-600" />
-            Warehouse Selection
+            {t('warehouse:warehouseSelection')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 md:p-6 pt-0">
@@ -383,14 +385,14 @@ export default function WarehouseMap() {
             <Skeleton className="h-10 w-full" />
           ) : (
             <div className="max-w-md">
-              <Label htmlFor="warehouse-select" className="text-xs mb-2 block">Select Warehouse</Label>
+              <Label htmlFor="warehouse-select" className="text-xs mb-2 block">{t('warehouse:selectWarehouseLabel')}</Label>
               <Select 
                 value={selectedWarehouseId} 
                 onValueChange={setSelectedWarehouseId}
                 data-testid="select-warehouse"
               >
                 <SelectTrigger id="warehouse-select" className="h-10">
-                  <SelectValue placeholder="Select a warehouse" />
+                  <SelectValue placeholder={t('warehouse:selectWarehousePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {warehouses?.map((warehouse) => (
@@ -411,7 +413,7 @@ export default function WarehouseMap() {
           <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
             <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-amber-600" />
-              Aisle Configuration
+              {t('warehouse:aisleConfiguration')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 md:p-6 pt-0">
@@ -433,17 +435,17 @@ export default function WarehouseMap() {
                     <div key={aisleId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-2 md:p-3 bg-slate-50 dark:bg-slate-900/50">
                       <div className="flex items-center justify-between mb-2 md:mb-3">
                         <h4 className="text-xs md:text-sm font-semibold text-amber-700 dark:text-amber-400">
-                          Aisle {aisleId}
+                          {t('warehouse:aisleLabel', { aisleId })}
                         </h4>
                         {isSaving && (
                           <Badge variant="outline" className="text-xs">
-                            Saving...
+                            {t('warehouse:saving')}
                           </Badge>
                         )}
                       </div>
                       <div className="grid grid-cols-3 gap-2 md:gap-3">
                         <div>
-                          <Label htmlFor={`${aisleId}-racks`} className="text-xs">Racks</Label>
+                          <Label htmlFor={`${aisleId}-racks`} className="text-xs">{t('warehouse:racks')}</Label>
                           <Select 
                             value={config.maxRacks.toString()} 
                             onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxRacks', parseInt(v))}
@@ -461,7 +463,7 @@ export default function WarehouseMap() {
                         </div>
 
                         <div>
-                          <Label htmlFor={`${aisleId}-levels`} className="text-xs">Levels</Label>
+                          <Label htmlFor={`${aisleId}-levels`} className="text-xs">{t('warehouse:levels')}</Label>
                           <Select 
                             value={config.maxLevels.toString()} 
                             onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxLevels', parseInt(v))}
@@ -479,7 +481,7 @@ export default function WarehouseMap() {
                         </div>
 
                         <div>
-                          <Label htmlFor={`${aisleId}-bins`} className="text-xs">Bins</Label>
+                          <Label htmlFor={`${aisleId}-bins`} className="text-xs">{t('warehouse:bins')}</Label>
                           <Select 
                             value={config.maxBins.toString()} 
                             onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxBins', parseInt(v))}
@@ -512,7 +514,7 @@ export default function WarehouseMap() {
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Total Locations</p>
+                  <p className="text-xs text-muted-foreground">{t('warehouse:totalLocations')}</p>
                   {isLoading ? (
                     <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1" />
                   ) : (
@@ -530,7 +532,7 @@ export default function WarehouseMap() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Free Locations</p>
+                  <p className="text-xs text-muted-foreground">{t('warehouse:freeLocations')}</p>
                   {isLoading ? (
                     <Skeleton className="h-8 w-16 mt-1" />
                   ) : (
@@ -548,7 +550,7 @@ export default function WarehouseMap() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Occupied</p>
+                  <p className="text-xs text-muted-foreground">{t('warehouse:occupied')}</p>
                   {isLoading ? (
                     <Skeleton className="h-8 w-16 mt-1" />
                   ) : (
@@ -566,7 +568,7 @@ export default function WarehouseMap() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Items</p>
+                  <p className="text-xs text-muted-foreground">{t('warehouse:totalItems')}</p>
                   {isLoading ? (
                     <Skeleton className="h-8 w-16 mt-1" />
                   ) : (

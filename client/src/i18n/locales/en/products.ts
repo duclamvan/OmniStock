@@ -110,6 +110,8 @@ const products = {
   vietnameseNamePlaceholder: 'Enter Vietnamese product name',
   productNameRequired: 'Product name is required',
   skuRequired: 'SKU is required',
+  minimumQuantityRequired: 'Minimum quantity is required',
+  atLeastOnePriceRequired: 'At least one price must be specified',
   descriptionPlaceholder: 'Enter product description',
   selectCategory: 'Select Category',
   selectWarehouse: 'Select Warehouse',
@@ -153,6 +155,8 @@ const products = {
   
   // ProductForm - Variants
   addVariant: 'Add Variant',
+  addProductVariant: 'Add Product Variant',
+  addNewProductVariation: 'Add a new product variation with details',
   addVariantSeries: 'Add Variant Series',
   bulkScanBarcodes: 'Bulk Scan Barcodes',
   variantName: 'Variant Name',

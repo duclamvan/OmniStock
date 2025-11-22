@@ -1545,7 +1545,7 @@ export default function AllInventory() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                <AlertDialogTitle>{t('inventory:deleteProduct')}</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Are you sure you want to delete "{product.name}"?
                                 </AlertDialogDescription>
@@ -1553,7 +1553,7 @@ export default function AllInventory() {
                                   <div className="text-amber-600 font-medium">
                                     ℹ️ Product will be marked as inactive and hidden from inventory.
                                   </div>
-                                  <div>This preserves order history while removing the product from active use.</div>
+                                  <div>{t('inventory:preservesOrderHistory')}</div>
                                 </div>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -1644,7 +1644,7 @@ export default function AllInventory() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Products</AlertDialogTitle>
+            <AlertDialogTitle>{t('inventory:deleteProducts')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete {selectedProducts.length} product(s)?
             </AlertDialogDescription>
@@ -1664,7 +1664,7 @@ export default function AllInventory() {
               <div className="text-amber-600 font-medium">
                 ℹ️ Products will be marked as inactive and hidden from inventory.
               </div>
-              <div>This preserves order history while removing products from active use.</div>
+              <div>{t('inventory:preservesOrderHistoryPlural')}</div>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>

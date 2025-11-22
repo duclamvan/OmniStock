@@ -717,8 +717,8 @@ export default function CreateBundle() {
         imageUrl = uploadData.imageUrl;
       } catch (error) {
         toast({
-          title: 'Image Upload Error',
-          description: 'Failed to upload image. Bundle will be created without image.',
+          title: t('inventory:imageUploadError'),
+          description: t('inventory:failedToUploadImage'),
           variant: 'destructive',
         });
       }
@@ -923,9 +923,9 @@ export default function CreateBundle() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Bundle</h1>
+            <h1 className="text-3xl font-bold">{t('inventory:createNewBundle')}</h1>
             <p className="text-muted-foreground">
-              Combine multiple products into a single bundle offering
+              {t('inventory:combineProductsIntoBundleOffering')}
             </p>
           </div>
         </div>
@@ -934,7 +934,7 @@ export default function CreateBundle() {
             variant="outline"
             onClick={() => setLocation('/inventory/bundles')}
           >
-            Cancel
+            {t('inventory:cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -943,12 +943,12 @@ export default function CreateBundle() {
             {createBundleMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
+                {t('inventory:savingBundle')}
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Create Bundle
+                {t('inventory:createBundle')}
               </>
             )}
           </Button>
@@ -965,8 +965,8 @@ export default function CreateBundle() {
                 <Package className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Bundle Details</h3>
-                <p className="text-xs text-slate-500">Name, description, SKU, and image</p>
+                <h3 className="font-semibold text-slate-900">{t('inventory:bundleDetails')}</h3>
+                <p className="text-xs text-slate-500">{t('inventory:bundleDetailsDescription')}</p>
               </div>
               {errors.name && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>

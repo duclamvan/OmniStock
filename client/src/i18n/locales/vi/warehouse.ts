@@ -530,6 +530,29 @@ const warehouse = {
   category: 'Danh mục',
   quantity: 'Số lượng',
   cost: 'Giá',
+
+  // Warehouse Map
+  warehouseSpaceMap: 'Sơ đồ không gian kho',
+  warehouseMapSubtitle: 'Tổng quan trực quan về sức chứa và mức sử dụng',
+  warehouseSelection: 'Chọn kho',
+  selectWarehouseLabel: 'Chọn kho',
+  selectWarehousePlaceholder: 'Chọn một kho',
+  aisleConfiguration: 'Cấu hình lối đi',
+  aisleLabel: 'Lối đi {{aisleId}}',
+  saving: 'Đang lưu...',
+  racks: 'Giá đỡ',
+  levels: 'Tầng',
+  bins: 'Ngăn',
+  totalLocations: 'Tổng vị trí',
+  freeLocations: 'Vị trí trống',
+  occupied: 'Đã sử dụng',
+  totalItems: 'Tổng mặt hàng',
+  failedToSaveAisleConfig: 'Không thể lưu cấu hình lối đi {{aisleId}}.',
+  zoneBPallets: 'Khu vực B - Pallet',
+  zoneCOffice: 'Khu vực C - Văn phòng',
+  zoneDReturns: 'Khu vực D - Hàng trả',
+  zoneEStaging: 'Khu vực E - Khu tập kết',
+  zoneFSpecial: 'Khu vực F - Đặc biệt',
 } as const;
 
 export default warehouse;

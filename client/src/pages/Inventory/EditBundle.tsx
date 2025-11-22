@@ -46,6 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -97,6 +103,7 @@ interface VariantSelectorProps {
 }
 
 function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState<'individual' | 'range' | 'custom'>('individual');
@@ -161,9 +168,9 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
       <PopoverTrigger asChild>
         <Button variant="outline" className="justify-between w-full">
           {selectedIds.length === 0 ? (
-            <span className="text-gray-500 dark:text-gray-400">Select variants...</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('inventory:selectVariantsPlaceholder')}</span>
           ) : (
-            <span>{selectedIds.length} variant{selectedIds.length !== 1 ? 's' : ''} selected</span>
+            <span>{t('inventory:variantsSelected', { count: selectedIds.length })}</span>
           )}
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
@@ -171,31 +178,31 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
       <PopoverContent className="w-[400px] p-0" align="start">
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium">Select Variants</h4>
+            <h4 className="font-medium">{t('inventory:selectVariants')}</h4>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={handleSelectAll}>
-                Select All
+                {t('inventory:selectAll')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleClearAll}>
-                Clear
+                {t('inventory:clear')}
               </Button>
             </div>
           </div>
 
           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            Choose one selection method:
+            {t('inventory:chooseSelectionMethod')}
           </div>
           <Tabs value={selectionMode} onValueChange={(v) => setSelectionMode(v as any)}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="individual">Individual</TabsTrigger>
-              <TabsTrigger value="range">Range</TabsTrigger>
-              <TabsTrigger value="custom">Custom</TabsTrigger>
+              <TabsTrigger value="individual">{t('inventory:individual')}</TabsTrigger>
+              <TabsTrigger value="range">{t('inventory:range')}</TabsTrigger>
+              <TabsTrigger value="custom">{t('inventory:custom')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="individual" className="mt-4">
               <div className="space-y-2">
                 <Input
-                  placeholder="Search variants..."
+                  placeholder={t('inventory:searchVariantsPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="mb-2"
@@ -224,41 +231,41 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
             <TabsContent value="range" className="mt-4 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>From Number</Label>
+                  <Label>{t('inventory:fromNumber')}</Label>
                   <Input
                     type="number"
                     value={rangeFrom}
                     onChange={(e) => setRangeFrom(e.target.value)}
-                    placeholder="e.g., 1"
+                    placeholder={t('inventory:egOne')}
                   />
                 </div>
                 <div>
-                  <Label>To Number</Label>
+                  <Label>{t('inventory:toNumber')}</Label>
                   <Input
                     type="number"
                     value={rangeTo}
                     onChange={(e) => setRangeTo(e.target.value)}
-                    placeholder="e.g., 50"
+                    placeholder={t('inventory:egFifty')}
                   />
                 </div>
               </div>
               <Button onClick={handleRangeSelection} className="w-full">
-                Select Range
+                {t('inventory:selectRange')}
               </Button>
             </TabsContent>
 
             <TabsContent value="custom" className="mt-4 space-y-3">
               <div>
-                <Label>Enter Numbers (comma-separated)</Label>
+                <Label>{t('inventory:enterNumbersCommaSeparated')}</Label>
                 <Textarea
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder="e.g., 1, 5, 10, 15-20, 25"
+                  placeholder={t('inventory:egCustomNumbers')}
                   rows={3}
                 />
               </div>
               <Button onClick={handleCustomInput} className="w-full">
-                Apply Custom Selection
+                {t('inventory:applyCustomSelection')}
               </Button>
             </TabsContent>
           </Tabs>
@@ -418,8 +425,8 @@ export default function EditBundle() {
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: 'Bundle updated successfully',
+        title: t('inventory:success'),
+        description: t('inventory:bundleUpdated'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       queryClient.invalidateQueries({ queryKey: [`/api/bundles/${id}`] });
@@ -427,8 +434,8 @@ export default function EditBundle() {
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update bundle',
+        title: t('inventory:error'),
+        description: error.message || t('inventory:failedToUpdateBundle'),
         variant: 'destructive',
       });
     },
@@ -490,30 +497,30 @@ export default function EditBundle() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Bundle name is required';
+      newErrors.name = t('inventory:bundleNameRequired');
     }
 
     if (formData.items.length === 0) {
-      newErrors.items = 'At least one product is required';
+      newErrors.items = t('inventory:atLeastOneProductRequired');
     }
 
     // Validate each item
     formData.items.forEach((item, index) => {
       if (!item.productId) {
-        newErrors[`item_${item.id}`] = 'Product selection is required';
+        newErrors[`item_${item.id}`] = t('inventory:productSelectionRequired');
       }
       if (!item.quantity || item.quantity <= 0) {
-        newErrors[`quantity_${item.id}`] = 'Quantity must be greater than 0';
+        newErrors[`quantity_${item.id}`] = t('inventory:quantityMustBeGreaterThanZero');
       }
     });
 
     // Validate pricing based on mode
     if (formData.pricingMode === 'manual') {
       if (!formData.priceCzk || parseFloat(formData.priceCzk) <= 0) {
-        newErrors.priceCzk = 'Price CZK is required when using manual pricing';
+        newErrors.priceCzk = t('inventory:priceCzkRequired');
       }
       if (!formData.priceEur || parseFloat(formData.priceEur) <= 0) {
-        newErrors.priceEur = 'Price EUR is required when using manual pricing';
+        newErrors.priceEur = t('inventory:priceEurRequired');
       }
     }
 
@@ -524,8 +531,8 @@ export default function EditBundle() {
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fix the errors before submitting',
+        title: t('inventory:validationError'),
+        description: t('inventory:pleaseFixErrors'),
         variant: 'destructive',
       });
       return;
@@ -576,8 +583,8 @@ export default function EditBundle() {
         imageUrl = uploadData.imageUrl;
       } catch (error) {
         toast({
-          title: 'Image Upload Error',
-          description: 'Failed to upload image. Bundle will be saved without image.',
+          title: t('inventory:imageUploadError'),
+          description: t('inventory:failedToUploadImage'),
           variant: 'destructive',
         });
       }
@@ -827,7 +834,7 @@ export default function EditBundle() {
                     <div className="relative w-48 h-48 rounded-lg border bg-slate-50 overflow-hidden group flex items-center justify-center">
                       <img
                         src={imagePreview || existingImageUrl || ''}
-                        alt="Bundle preview"
+                        alt={t('inventory:bundlePreview')}
                         className="w-full h-full object-contain"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

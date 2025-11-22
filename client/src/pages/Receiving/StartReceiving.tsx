@@ -161,7 +161,7 @@ export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t } = useTranslation(['imports']);
   const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
@@ -186,10 +186,10 @@ export default function StartReceiving() {
   const [receivedBy, setReceivedBy] = useState(() => {
     if (user) {
       // Extract first name from full name (split by space and take first part)
-      const firstName = user.name?.split(' ')[0] || user.email?.split('@')[0] || "Employee #1";
+      const firstName = user.name?.split(' ')[0] || user.email?.split('@')[0] || t('employeeDefault');
       return firstName;
     }
-    return "Employee #1";
+    return t('employeeDefault');
   });
   const [carrier, setCarrier] = useState("");
   const [parcelCount, setParcelCount] = useState(1);

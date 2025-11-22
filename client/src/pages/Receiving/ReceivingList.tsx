@@ -392,7 +392,7 @@ function StickyHeaderScanHeader({
   isScanning: boolean;
   barcodeScanner: ReturnType<typeof useBarcodeScanner>;
 }) {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const { session, updateSession, undo } = useReceivingSession();
   const { toast } = useToast();
   const scanInputRef = useRef<HTMLInputElement>(null);
@@ -427,8 +427,8 @@ function StickyHeaderScanHeader({
         updateSession({ isCameraActive: false });
         
         toast({
-          title: "Camera Error",
-          description: error instanceof Error ? error.message : "Could not access camera",
+          title: t('cameraError'),
+          description: error instanceof Error ? error.message : t('couldNotAccessCamera'),
           variant: "destructive"
         });
       }
@@ -450,7 +450,7 @@ function StickyHeaderScanHeader({
                     variant={session.isCameraActive ? "default" : "outline"}
                     className="h-12 w-12 p-0 shrink-0"
                     onClick={handleToggleCamera}
-                    aria-label={session.isCameraActive ? "Disable camera" : "Enable camera"}
+                    aria-label={session.isCameraActive ? t('disableCamera') : t('enableCamera')}
                     data-testid="button-toggle-camera"
                   >
                     {session.isCameraActive ? (
@@ -501,7 +501,7 @@ function StickyHeaderScanHeader({
                     className="h-12 w-12 p-0 shrink-0"
                     onClick={undo}
                     disabled={session.undoStack.length === 0}
-                    aria-label="Undo last action"
+                    aria-label={t('undoLastAction')}
                     data-testid="button-undo"
                   >
                     <Undo2 className="h-5 w-5" />
@@ -531,14 +531,14 @@ function StickyHeaderScanHeader({
 
             {/* Quick Filter Toggle */}
             <ToggleGroup type="single" value={filter} onValueChange={(val) => val && setFilter(val)} className="gap-1">
-              <ToggleGroupItem value="all" aria-label="Show all" className="h-8 px-3 text-xs">
-                All
+              <ToggleGroupItem value="all" aria-label={t('showAll')} className="h-8 px-3 text-xs">
+                {t('allItemsFilter')}
               </ToggleGroupItem>
-              <ToggleGroupItem value="pending" aria-label="Show pending" className="h-8 px-3 text-xs">
-                Pending
+              <ToggleGroupItem value="pending" aria-label={t('showPending')} className="h-8 px-3 text-xs">
+                {t('pendingFilter')}
               </ToggleGroupItem>
-              <ToggleGroupItem value="issues" aria-label="Show issues" className="h-8 px-3 text-xs">
-                Issues
+              <ToggleGroupItem value="issues" aria-label={t('showIssues')} className="h-8 px-3 text-xs">
+                {t('issuesFilter')}
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -547,7 +547,7 @@ function StickyHeaderScanHeader({
           {isScanning && (
             <div className="mt-3 flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing scan...</span>
+              <span>{t('processingScan')}</span>
             </div>
           )}
         </CardContent>
@@ -561,7 +561,7 @@ function StickyHeaderScanHeader({
 // ============================================================================
 
 function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -725,7 +725,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                   size="sm"
                   className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive"
                   onClick={() => removeItem(item.id)}
-                  aria-label="Remove item"
+                  aria-label={t('removeItem')}
                   data-testid={`button-remove-${item.id}`}
                 >
                   <X className="h-5 w-5" />
@@ -742,7 +742,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                     className="h-12 w-12 p-0"
                     onClick={() => updateItemQuantity(item.id, -1)}
                     disabled={item.quantity <= 0}
-                    aria-label="Decrease quantity"
+                    aria-label={t('decreaseQuantity')}
                     data-testid={`button-decrease-${item.id}`}
                   >
                     <Minus className="h-5 w-5" />
@@ -760,7 +760,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                     size="lg"
                     className="h-12 w-12 p-0"
                     onClick={() => updateItemQuantity(item.id, 1)}
-                    aria-label="Increase quantity"
+                    aria-label={t('increaseQuantity')}
                     data-testid={`button-increase-${item.id}`}
                   >
                     <Plus className="h-5 w-5" />
@@ -822,8 +822,8 @@ function ActionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       // Mark as complete via API
     });
     toast({
-      title: "Batch Update",
-      description: "All items marked as complete",
+      title: t('batchUpdate'),
+      description: t('allItemsMarkedAsComplete'),
     });
     onClose();
   };
@@ -1071,7 +1071,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function ReceivingShipmentCard({ shipment }: { shipment: any }) {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1172,7 +1172,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function StorageShipmentCard({ shipment }: { shipment: any }) {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1257,7 +1257,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function CompletedShipmentCard({ shipment }: { shipment: any }) {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -1278,14 +1278,14 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
       toast({
-        title: "Status Updated",
-        description: "Receipt sent back to Receive status",
+        title: t('statusUpdated'),
+        description: t('receiptSentBackToReceiveStatus'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update receipt status",
+        title: t('common:error'),
+        description: t('failedToUpdateReceiptStatus'),
         variant: "destructive",
       });
     },
@@ -1530,7 +1530,7 @@ function EmptyState({ icon: Icon, title, description, action }: {
 // ============================================================================
 
 export default function ReceivingList() {
-  const { t } = useTranslation(['receiving', 'common']);
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("to-receive");
@@ -1606,7 +1606,7 @@ export default function ReceivingList() {
       await soundEffects.playErrorBeep();
       toast({
         title: t('common:error'),
-        description: "Failed to process barcode",
+        description: t('failedToProcessBarcode'),
         variant: "destructive",
       });
     } finally {
@@ -1730,8 +1730,8 @@ export default function ReceivingList() {
                   ) : toReceiveShipments.length === 0 ? (
                     <EmptyState
                       icon={Package}
-                      title="No shipments ready to receive"
-                      description="All incoming shipments have been received. New shipments will appear here when they arrive."
+                      title={t('noShipmentsReadyToReceive')}
+                      description={t('allIncomingShipmentsReceived')}
                     />
                   ) : (
                     toReceiveShipments.map((shipment: any) => (
@@ -1753,8 +1753,8 @@ export default function ReceivingList() {
                   ) : receivingShipments.length === 0 ? (
                     <EmptyState
                       icon={Clock}
-                      title="No active receiving sessions"
-                      description="Start receiving a shipment to see it here. Active sessions allow you to pause and resume receiving later."
+                      title={t('noActiveReceivingSessions')}
+                      description={t('startReceivingToSeeHere')}
                       action={
                         toReceiveShipments.length > 0 ? (
                           <Button
@@ -1789,8 +1789,8 @@ export default function ReceivingList() {
                   ) : storageShipments.length === 0 ? (
                     <EmptyState
                       icon={Warehouse}
-                      title="No shipments in storage"
-                      description="Shipments pending approval or putaway will appear here."
+                      title={t('noShipmentsInStorage')}
+                      description={t('shipmentsPendingApprovalOrPutaway')}
                     />
                   ) : (
                     storageShipments.map((shipment: any) => (
@@ -1812,8 +1812,8 @@ export default function ReceivingList() {
                   ) : completedShipments.length === 0 ? (
                     <EmptyState
                       icon={CheckCircle}
-                      title="No completed shipments"
-                      description="Successfully received and stored shipments will appear here."
+                      title={t('noCompletedShipments')}
+                      description={t('successfullyReceivedAndStoredShipments')}
                     />
                   ) : (
                     completedShipments.map((shipment: any) => (
@@ -1835,8 +1835,8 @@ export default function ReceivingList() {
                   ) : archivedShipments.length === 0 ? (
                     <EmptyState
                       icon={Archive}
-                      title="No archived shipments"
-                      description="Archived shipments are stored here for record keeping."
+                      title={t('noArchivedShipments')}
+                      description={t('archivedShipmentsStoredHere')}
                     />
                   ) : (
                     archivedShipments.map((shipment: any) => (
@@ -1871,7 +1871,7 @@ export default function ReceivingList() {
               <p className="text-sm text-muted-foreground mb-3">Search for matching product:</p>
               <Input
                 type="text"
-                placeholder="Search products..."
+                placeholder={t('searchProducts')}
                 className="h-12"
                 data-testid="input-product-search"
               />

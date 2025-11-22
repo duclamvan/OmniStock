@@ -530,6 +530,29 @@ const warehouse = {
   category: 'Category',
   quantity: 'Quantity',
   cost: 'Cost',
+
+  // Warehouse Map
+  warehouseSpaceMap: 'Warehouse Space Map',
+  warehouseMapSubtitle: 'Visual overview of storage capacity and occupancy',
+  warehouseSelection: 'Warehouse Selection',
+  selectWarehouseLabel: 'Select Warehouse',
+  selectWarehousePlaceholder: 'Select a warehouse',
+  aisleConfiguration: 'Aisle Configuration',
+  aisleLabel: 'Aisle {{aisleId}}',
+  saving: 'Saving...',
+  racks: 'Racks',
+  levels: 'Levels',
+  bins: 'Bins',
+  totalLocations: 'Total Locations',
+  freeLocations: 'Free Locations',
+  occupied: 'Occupied',
+  totalItems: 'Total Items',
+  failedToSaveAisleConfig: 'Failed to save aisle {{aisleId}} configuration.',
+  zoneBPallets: 'Zone B - Pallets',
+  zoneCOffice: 'Zone C - Office',
+  zoneDReturns: 'Zone D - Returns',
+  zoneEStaging: 'Zone E - Staging',
+  zoneFSpecial: 'Zone F - Special',
 } as const;
 
 export default warehouse;

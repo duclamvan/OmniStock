@@ -75,7 +75,7 @@ export default function ReceiptDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t } = useTranslation(['imports']);
   const { inventorySettings } = useSettings();
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   
@@ -170,8 +170,8 @@ export default function ReceiptDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update item",
+        title: t('error', { ns: 'common' }),
+        description: error.message || t('failedToUpdateItem'),
         variant: "destructive"
       });
     }
@@ -185,7 +185,7 @@ export default function ReceiptDetails() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to complete verification');
+      if (!response.ok) throw new Error(t('failedToCompleteVerification'));
       return response.json();
     },
     onSuccess: () => {
@@ -198,8 +198,8 @@ export default function ReceiptDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to complete verification",
+        title: t('error', { ns: 'common' }),
+        description: error.message || t('failedToCompleteVerification'),
         variant: "destructive"
       });
     }
@@ -215,7 +215,7 @@ export default function ReceiptDetails() {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to approve receipt');
+        throw new Error(error.message || t('failedToApproveReceipt'));
       }
       return response.json();
     },
@@ -233,8 +233,8 @@ export default function ReceiptDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to approve receipt",
+        title: t('error', { ns: 'common' }),
+        description: error.message || t('failedToApproveReceipt'),
         variant: "destructive"
       });
     }
@@ -383,8 +383,8 @@ export default function ReceiptDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to undo approval",
+        title: t('error', { ns: 'common' }),
+        description: error.message || t('failedToUndoApproval'),
         variant: "destructive"
       });
     }
@@ -392,7 +392,7 @@ export default function ReceiptDetails() {
 
   const handleUndoApproval = () => {
     undoApprovalMutation.mutate({
-      reason: "Manual undo by user"
+      reason: t('manualUndoByUser')
     });
   };
 
@@ -430,8 +430,8 @@ export default function ReceiptDetails() {
     });
 
     toast({
-      title: "Bulk Undo Started",
-      description: `Removing verification from ${verifiedItems.length} items...`
+      title: t('bulkUndoStarted'),
+      description: `${t('removingVerification')} ${verifiedItems.length} ${t('items')}...`
     });
   };
 
@@ -453,8 +453,8 @@ export default function ReceiptDetails() {
     });
 
     toast({
-      title: "Download Started",
-      description: `Downloading ${receipt.photos.length} photos...`
+      title: t('downloadStarted'),
+      description: `${t('downloading')} ${receipt.photos.length} ${t('photos')}...`
     });
   };
 
@@ -547,7 +547,7 @@ export default function ReceiptDetails() {
         <Link href="/receiving">
           <Button variant="ghost" size="sm" className="mb-2 h-8">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-            Back to Receiving
+            {t('backToReceiving')}
           </Button>
         </Link>
         
@@ -555,10 +555,10 @@ export default function ReceiptDetails() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl md:text-2xl font-bold">
-              {receipt.isArchivedView ? `Archived Shipment #${receipt.id}` : `Receipt #${receipt.id}`}
+              {receipt.isArchivedView ? `${t('archivedShipment')} #${receipt.id}` : `${t('receipt')} #${receipt.id}`}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {receipt.isArchivedView ? 'View archived shipment details' : 'Verify and process received items'}
+              {receipt.isArchivedView ? t('viewArchivedShipmentDetails') : t('verifyProcessReceivedItems')}
             </p>
           </div>
           <Badge className={`${getStatusColor(receipt.status)} px-2.5 py-0.5 text-sm`}>
@@ -570,28 +570,28 @@ export default function ReceiptDetails() {
         <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border rounded-lg p-3">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
             <div>
-              <p className="text-muted-foreground mb-0.5">Received By</p>
+              <p className="text-muted-foreground mb-0.5">{t('receivedBy')}</p>
               <p className="font-medium flex items-center gap-1">
                 <User className="h-3 w-3" />
                 {receipt.receivedBy}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Received At</p>
+              <p className="text-muted-foreground mb-0.5">{t('receivedAt')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 {format(new Date(receipt.receivedAt), 'MMM dd, yyyy HH:mm')}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Parcels</p>
+              <p className="text-muted-foreground mb-0.5">{t('parcels')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Package className="h-3 w-3" />
-                {receipt.parcelCount} parcels
+                {receipt.parcelCount} {t('parcels')}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Carrier</p>
+              <p className="text-muted-foreground mb-0.5">{t('carrier')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Truck className="h-3 w-3" />
                 {receipt.carrier}
@@ -599,7 +599,7 @@ export default function ReceiptDetails() {
             </div>
             {receipt.verifiedBy && (
               <div>
-                <p className="text-muted-foreground mb-0.5">Verified By</p>
+                <p className="text-muted-foreground mb-0.5">{t('verifiedBy')}</p>
                 <p className="font-medium flex items-center gap-1">
                   <CheckCircle className="h-3 w-3 text-green-600" />
                   {receipt.verifiedBy}
@@ -608,7 +608,7 @@ export default function ReceiptDetails() {
             )}
             {receipt.approvedBy && (
               <div>
-                <p className="text-muted-foreground mb-0.5">Approved By</p>
+                <p className="text-muted-foreground mb-0.5">{t('approvedBy')}</p>
                 <p className="font-medium flex items-center gap-1">
                   <CheckCircle className="h-3 w-3 text-green-600" />
                   {receipt.approvedBy}
@@ -638,7 +638,7 @@ export default function ReceiptDetails() {
 
           {receipt.notes && (
             <div className="mt-2 pt-2 border-t">
-              <p className="text-[10px] text-muted-foreground mb-0.5">Notes</p>
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t('notes')}</p>
               <p className="text-xs">{receipt.notes}</p>
             </div>
           )}

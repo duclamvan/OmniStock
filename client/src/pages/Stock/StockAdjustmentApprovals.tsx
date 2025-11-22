@@ -129,7 +129,7 @@ export default function StockAdjustmentApprovals() {
   });
 
   const handleApprove = (request: StockAdjustmentRequest) => {
-    if (window.confirm(`Approve this stock adjustment?\n\nThis will ${request.adjustmentType} ${request.requestedQuantity} units.`)) {
+    if (window.confirm(t('approveStockAdjustmentConfirm', { type: request.adjustmentType, quantity: request.requestedQuantity }))) {
       approveMutation.mutate(request.id);
     }
   };
@@ -472,7 +472,7 @@ export default function StockAdjustmentApprovals() {
                         {/* Top Row - Request ID, Status */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Request ID</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('requestIdLabel')}</p>
                             <p className="font-mono text-sm text-gray-900 dark:text-white truncate">
                               {request.id.slice(0, 8)}
                             </p>
@@ -485,7 +485,7 @@ export default function StockAdjustmentApprovals() {
                         {/* Product Name & Type Badge */}
                         <div className="space-y-2">
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Product</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('productLabel')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white">
                               {getProductName(request.productId)}
                             </p>
@@ -501,7 +501,7 @@ export default function StockAdjustmentApprovals() {
                         {/* Grid Details */}
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Quantity Change</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('quantityChangeLabel')}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <span className="text-gray-600 dark:text-gray-400">{request.currentQuantity}</span>
                               <span className="text-gray-400">→</span>
@@ -514,7 +514,7 @@ export default function StockAdjustmentApprovals() {
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Requested By</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('requestedByLabel')}</p>
                             <p className="font-medium text-gray-900 dark:text-white mt-1">
                               {request.requestedBy}
                             </p>
@@ -523,7 +523,7 @@ export default function StockAdjustmentApprovals() {
 
                         {/* Request Date */}
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Request Date</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('requestDateLabel')}</p>
                           <p className="text-sm text-gray-900 dark:text-white mt-1">
                             {format(new Date(request.createdAt), 'MMM d, yyyy')} at {format(new Date(request.createdAt), 'h:mm a')}
                           </p>
@@ -531,7 +531,7 @@ export default function StockAdjustmentApprovals() {
 
                         {/* Reason */}
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Reason</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('reasonLabel')}</p>
                           <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                             {request.reason}
                           </p>
@@ -540,7 +540,7 @@ export default function StockAdjustmentApprovals() {
                         {/* Rejection Reason if applicable */}
                         {request.status === 'rejected' && request.rejectionReason && (
                           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-                            <p className="text-xs text-red-700 dark:text-red-400 font-medium">Rejection Reason</p>
+                            <p className="text-xs text-red-700 dark:text-red-400 font-medium">{t('rejectionReasonLabel')}</p>
                             <p className="text-sm text-red-600 dark:text-red-300 mt-1">
                               {request.rejectionReason}
                             </p>

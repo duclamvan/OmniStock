@@ -1112,17 +1112,90 @@ const imports = {
   couldNotAccessCamera: 'Không thể truy cập camera',
   cameraOn: 'Camera Bật',
   cameraOff: 'Camera Tắt',
+  disableCamera: 'Tắt camera',
+  enableCamera: 'Bật camera',
   scanOrTypeBarcode: 'Quét hoặc nhập mã vạch',
   scan: 'Quét',
   undoLastScan: 'Hoàn tác lần quét cuối',
+  undoLastAction: 'Hoàn tác thao tác cuối',
   processingScan: 'Đang xử lý quét...',
   
   // ReceivingList - Filters & UI
   allItemsFilter: 'Tất cả',
   pendingFilter: 'Chờ xử lý',
   issuesFilter: 'Có vấn đề',
+  showAll: 'Hiện tất cả',
+  showPending: 'Hiện chờ xử lý',
+  showIssues: 'Hiện có vấn đề',
   activeReceipts: 'Phiếu nhận đang hoạt động',
   receipt: 'Phiếu nhận',
+  searchProducts: 'Tìm sản phẩm...',
+  
+  // ReceivingList - Actions
+  removeItem: 'Xóa sản phẩm',
+  decreaseQuantity: 'Giảm số lượng',
+  increaseQuantity: 'Tăng số lượng',
+  batchUpdate: 'Cập nhật hàng loạt',
+  allItemsMarkedAsComplete: 'Tất cả sản phẩm đã đánh dấu hoàn thành',
+  statusUpdated: 'Đã cập nhật trạng thái',
+  receiptSentBackToReceiveStatus: 'Phiếu nhận đã chuyển về trạng thái Nhận hàng',
+  failedToUpdateReceiptStatus: 'Không thể cập nhật trạng thái phiếu nhận',
+  failedToProcessBarcode: 'Không thể xử lý mã vạch',
+  
+  // ReceivingList - Empty States
+  noShipmentsReadyToReceive: 'Không có lô hàng sẵn sàng nhận',
+  allIncomingShipmentsReceived: 'Tất cả lô hàng đến đã được nhận. Lô hàng mới sẽ xuất hiện ở đây khi đến.',
+  noActiveReceivingSessions: 'Không có phiên nhận hàng đang hoạt động',
+  startReceivingToSeeHere: 'Bắt đầu nhận lô hàng để xem ở đây. Phiên hoạt động cho phép bạn tạm dừng và tiếp tục nhận sau.',
+  noShipmentsInStorage: 'Không có lô hàng trong kho',
+  shipmentsPendingApprovalOrPutaway: 'Lô hàng chờ duyệt hoặc lưu kho sẽ xuất hiện ở đây.',
+  noCompletedShipments: 'Không có lô hàng hoàn tất',
+  successfullyReceivedAndStoredShipments: 'Lô hàng đã nhận và lưu kho thành công sẽ xuất hiện ở đây.',
+  noArchivedShipments: 'Không có lô hàng lưu trữ',
+  archivedShipmentsStoredHere: 'Lô hàng lưu trữ được lưu ở đây để lưu giữ hồ sơ.',
+  
+  // StartReceiving - Page & Labels
+  employeeDefault: 'Nhân viên #1',
+  yourName: 'Tên của bạn',
+  carrierPlaceholder: 'DHL, UPS, FedEx...',
+  anyInitialObservations: 'Nhận xét ban đầu...',
+  scanItemBarcodeHere: 'Quét mã vạch sản phẩm ở đây...',
+  addNotesAboutThisItem: 'Thêm ghi chú về sản phẩm này...',
+  addAnyAdditionalNotesAboutReceivingProcess: 'Thêm ghi chú bổ sung về quy trình nhận hàng...',
+  allItemsCompletedSwitchToShowAll: 'Tất cả sản phẩm đã hoàn tất. Chuyển sang "Hiện tất cả" để xem.',
+  clickAddPhotosToUpload: 'Nhấp "Thêm ảnh" để tải ảnh lên của lô hàng',
+  pallets: 'Pallet',
+  parcels: 'Kiện hàng',
+  
+  // StartReceiving - Toast Messages
+  preScannedDataLoaded: 'Đã tải dữ liệu quét trước',
+  trackingNumbersAlreadyScanned: 'Mã vận đơn đã được quét',
+  pleaseTryAgain: 'Vui lòng thử lại',
+  invalidTrackingNumber: 'Mã vận đơn không hợp lệ',
+  alreadyScanned: 'Đã quét',
+  thisSkuNotInCurrentShipment: 'SKU này không có trong lô hàng hiện tại',
+  updateFailed: 'Cập nhật thất bại',
+  failedToSaveStatusUpdate: 'Không thể lưu cập nhật trạng thái. Vui lòng thử lại.',
+  failedToSaveNotes: 'Không thể lưu ghi chú. Vui lòng thử lại.',
+  successfullyUpdatedReceivingProcess: 'Đã cập nhật quy trình nhận hàng thành công',
+  failedToUpdateReceipt: 'Không thể cập nhật phiếu nhận',
+  successfullyStartedReceivingProcess: 'Đã bắt đầu quy trình nhận hàng thành công',
+  failedToCreateReceipt: 'Không thể tạo phiếu nhận',
+  shipmentSuccessfullyReceived: 'Lô hàng đã được nhận thành công và sẵn sàng để lưu kho',
+  failedToCompleteReceiving: 'Không thể hoàn tất nhận hàng',
+  receiptAlreadyCompleted: 'Phiếu nhận này đã hoàn tất và đang chờ duyệt.',
+  cannotComplete: 'Không thể hoàn tất',
+  incompleteItems: 'Sản phẩm chưa hoàn tất',
+  greatJobShipmentFullyReceived: 'Tuyệt vời! Lô hàng đã nhận đầy đủ.',
+  saveFailed: 'Lưu thất bại',
+  photosUploadedButFailedToSave: 'Ảnh đã tải lên nhưng không lưu được. Sẽ lưu ở lần cập nhật tiếp theo.',
+  photosUploaded: 'Đã tải ảnh lên',
+  failedToProcessPhotos: 'Không thể xử lý ảnh. Vui lòng thử lại.',
+  photoRemoved: 'Đã xóa ảnh',
+  photoDeleted: 'Đã xóa ảnh',
+  autoReceiveComplete: 'Hoàn tất tự động nhận',
+  cleared: 'Đã xóa',
+  allTrackingNumbersCleared: 'Tất cả mã vận đơn đã được xóa',
   
   // ReviewApprove - Page & Headers
   reviewApprove: 'Xem xét & Duyệt',
@@ -1130,15 +1203,24 @@ const imports = {
   hasDiscrepancies: 'Có sai lệch',
   noIssues: 'Không có vấn đề',
   shipmentInformation: 'Thông tin lô hàng',
-  shipmentName: 'Tên lô hàng',
   parcelCount: 'Số kiện',
   deliveredDate: 'Ngày giao hàng',
   receivingNotes: 'Ghi chú nhận hàng:',
   receivedItems: 'Sản phẩm đã nhận',
-  itemDetails: 'Chi tiết sản phẩm',
   expected: 'Dự kiến',
   damaged: 'hỏng',
   missing: 'thiếu',
+  
+  // ReviewApprove - Dialog Content
+  addNotesAboutShipmentOptional: 'Thêm ghi chú về lô hàng này (không bắt buộc)...',
+  thisWillMarkShipmentAsCompleted: 'Thao tác này sẽ đánh dấu lô hàng là hoàn tất. Bạn có chắc muốn duyệt?',
+  approving: 'Đang duyệt...',
+  confirmApproval: 'Xác nhận duyệt',
+  provideReasonForRejection: 'Vui lòng cung cấp lý do từ chối...',
+  reasonRequired: 'Yêu cầu lý do',
+  provideReasonForRejectionDescription: 'Vui lòng cung cấp lý do từ chối.',
+  rejecting: 'Đang từ chối...',
+  confirmRejection: 'Xác nhận từ chối',
   
   // ReviewApprove - Toast Messages
   shipmentApproved: 'Đã duyệt lô hàng',
@@ -1156,6 +1238,19 @@ const imports = {
   verifyAndProcessReceivedItems: 'Xác minh và xử lý sản phẩm đã nhận',
   verifiedBy: 'Người xác minh',
   approvedBy: 'Người duyệt',
+  clickApproveAndAddToInventory: 'Nhấp nút "Duyệt & Thêm vào kho" bên dưới',
+  scanOrEnterBarcode: 'Quét hoặc nhập mã vạch',
+  specialStorageRequirements: 'Yêu cầu lưu trữ đặc biệt...',
+  additionalNotesAboutThisItem: 'Ghi chú thêm về sản phẩm này...',
+  describeAnyDamageOrIssues: 'Mô tả hư hỏng hoặc vấn đề phát hiện...',
+  preview: 'Xem trước',
+  
+  // ReceiptDetails - Error Messages
+  failedToUpdateItem: 'Không thể cập nhật sản phẩm',
+  failedToCompleteVerification: 'Không thể hoàn tất xác minh',
+  failedToApproveReceipt: 'Không thể duyệt phiếu nhận',
+  failedToUndoApproval: 'Không thể hoàn tác duyệt',
+  manualUndoByUser: 'Hoàn tác thủ công bởi người dùng',
   
   // ReceiptDetails - Toast Messages
   itemUpdated: 'Đã cập nhật sản phẩm',
@@ -1196,6 +1291,18 @@ const imports = {
   currentLocations: 'Vị trí hiện tại',
   assignedLocations: 'Vị trí đã phân bổ',
   assignAllToLastLocation: 'Phân bổ tất cả cho vị trí cuối',
+  setAsPrimaryLocation: 'Đặt làm vị trí chính',
+  quickScanBarcodeInput: 'Ô nhập quét nhanh mã vạch',
+  scanOrEnterLocationCodeExample: 'Quét hoặc nhập mã vị trí (VD: WH1-A01-R02-L03)',
+  
+  // ItemsToStore & StoreItems - Allocation Methods
+  auto: 'TỰ ĐỘNG',
+  weightLabel: 'TRỌNG LƯỢNG',
+  valueLabel: 'GIÁ TRỊ',
+  unitsLabel: 'ĐƠN VỊ',
+  hybrid: 'KẾT HỢP',
+  eurLabel: 'EUR (€)',
+  czkLabel: 'CZK (Kč)',
   
   // ItemsToStore & StoreItems - Toast Messages
   invalidLocation: 'Vị trí không hợp lệ',
@@ -1207,6 +1314,13 @@ const imports = {
   haveBeenStored: 'đã được lưu trong kho',
   storageFailed: 'Lưu kho thất bại',
   failedToStoreItems: 'Không thể lưu kho sản phẩm. Vui lòng thử lại.',
+  cannotSaveLocationNoReceipt: 'Không thể lưu vị trí: Chưa chọn phiếu nhận',
+  failedToSaveLocation: 'Không thể lưu vị trí',
+  noItemsToStore: 'Không có sản phẩm để lưu kho',
+  noReceiptSelected: 'Chưa chọn phiếu nhận',
+  failedToSaveStorage: 'Không thể lưu kho',
+  noMoreItemsToScan: 'Không còn sản phẩm để quét',
+  na: 'Không xác định',
   
   // LandingCostDetails - Page & Headers
   landedCostPerItem: 'Chi phí nhập hàng từng sản phẩm',
@@ -1236,35 +1350,17 @@ const imports = {
   unsavedChanges: 'thay đổi chưa lưu',
   notInInventory: 'Không có trong kho',
   
-  // InternationalTransit - Toast Messages
-  success: 'Thành công',
-  movedBackToWarehouse: 'Đã chuyển sản phẩm về kho',
-  failedToMoveBack: 'Không thể chuyển về kho',
-  quickShipCompleted: 'Gửi nhanh hoàn tất - đã tạo lô hàng và chuyển sang nhận hàng',
-  shipmentCreated: 'Đã tạo lô hàng thành công',
-  failedToCreateShipment: 'Không thể tạo lô hàng',
-  shipmentNameRegenerated: 'Đã tạo lại tên lô hàng',
-  failedToRegenerateName: 'Không thể tạo lại tên lô hàng',
-  shipmentMovedBackToPending: 'Đã chuyển lô hàng về chờ xử lý',
-  trackingUpdated: 'Đã cập nhật thông tin vận chuyển',
-  failedToUpdateTracking: 'Không thể cập nhật vận chuyển',
-  shipmentUpdated: 'Đã cập nhật lô hàng thành công',
-  failedToUpdateShipment: 'Không thể cập nhật lô hàng',
-  aiPredictionFailed: 'Dự đoán AI thất bại',
-  copied: 'Đã sao chép',
-  trackingNumberCopied: 'Đã sao chép mã vận đơn vào clipboard',
-  failedToCopy: 'Không thể sao chép vào clipboard',
+  // InternationalTransit - Additional Labels (Non-duplicate)
+  trackingNumbers: 'Mã vận đơn',
+  twoCarriers: '2 nhà vận chuyển',
+  localCourier: 'Chuyển phát nội địa',
+  shipment: 'Lô hàng',
   
-  // Common Loading States
-  loadingShipmentDetails: 'Đang tải chi tiết lô hàng...',
-  failedToLoadShipmentDetails: 'Không thể tải chi tiết lô hàng',
-  loadingOrderDetails: 'Đang tải chi tiết đơn hàng...',
-  
-  // InternationalTransit - Additional UI
-  regenerateNameBasedOnContents: 'Tạo lại tên dựa trên nội dung',
-  generateNameFromItems: 'Tạo tên từ sản phẩm',
-  filterByType: 'Lọc theo loại',
-  sortBy: 'Sắp xếp',
+  // InternationalTransit - Location Defaults
+  czechRepublicPrague: 'Cộng hòa Séc, Praha',
+  usaCalifornia: 'Mỹ, California',
+  usaNewYork: 'Mỹ, New York',
+  ukLondon: 'Anh, London',
   
   // CreatePurchase, SupplierProcessing, AtWarehouse - Placeholders (to be expanded)
   

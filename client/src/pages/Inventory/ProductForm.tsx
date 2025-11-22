@@ -2749,8 +2749,8 @@ export default function ProductForm() {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Add Product Variant</DialogTitle>
-                          <DialogDescription>Add a new product variation with details</DialogDescription>
+                          <DialogTitle>{t('products:addProductVariant')}</DialogTitle>
+                          <DialogDescription>{t('products:addNewProductVariation')}</DialogDescription>
                         </DialogHeader>
                         
                         <div className="space-y-4">

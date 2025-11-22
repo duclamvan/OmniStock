@@ -371,7 +371,7 @@ function getAIReasoning(item: StorageItem, aiSuggestions: Map<string | number, {
 export default function ItemsToStore() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t } = useTranslation(['imports']);
 
   // State
   const [items, setItems] = useState<StorageItem[]>([]);

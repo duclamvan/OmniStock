@@ -484,7 +484,7 @@ export default function InternationalTransit() {
                         method.includes('sea') ? 'Sea' : 
                         method.includes('railway') ? 'Rail' : 'Standard';
       
-      return `${methodType} - ${itemNames}${moreItems} (${itemCount} items)`;
+      return `${methodType} - ${itemNames}${moreItems} (${itemCount} ${t('items')})`;
     };
     
     // Parse end tracking numbers from textarea (one per line)
@@ -496,7 +496,7 @@ export default function InternationalTransit() {
     
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
-      carrier: formData.get('carrier') as string || 'Standard Carrier',
+      carrier: formData.get('carrier') as string || t('standardCarrier'),
       trackingNumber: formData.get('trackingNumber') as string,
       endCarrier: formData.get('endCarrier') as string || null,
       endTrackingNumbers: endTrackingNumbers.length > 0 ? endTrackingNumbers : null,
@@ -623,26 +623,26 @@ export default function InternationalTransit() {
   };
 
   const getTimeRemaining = (shipment: Shipment) => {
-    if (shipment.status === 'delivered') return 'Delivered';
+    if (shipment.status === 'delivered') return t('delivered');
     
     const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
-    if (!estimatedDelivery) return 'Calculating...';
+    if (!estimatedDelivery) return t('calculating');
     
     const deliveryDate = new Date(estimatedDelivery);
     const currentDate = new Date();
     const daysRemaining = differenceInDays(deliveryDate, currentDate);
     
-    if (daysRemaining < 0) return 'Delayed';
-    if (daysRemaining === 0) return 'Today';
-    if (daysRemaining === 1) return '1 day';
-    if (daysRemaining < 7) return `${daysRemaining} days`;
+    if (daysRemaining < 0) return t('delayed');
+    if (daysRemaining === 0) return t('today');
+    if (daysRemaining === 1) return t('oneDay');
+    if (daysRemaining < 7) return `${daysRemaining} ${t('days')}`;
     if (daysRemaining < 30) {
       const weeks = Math.floor(daysRemaining / 7);
-      return weeks === 1 ? '1 week' : `${weeks} weeks`;
+      return weeks === 1 ? t('oneWeek') : `${weeks} ${t('weeks')}`;
     }
     
     const months = Math.floor(daysRemaining / 30);
-    return months === 1 ? '1 month' : `${months} months`;
+    return months === 1 ? t('oneMonth') : `${months} ${t('months')}`;
   };
 
   const getETAColor = (shipment: Shipment) => {
@@ -811,10 +811,10 @@ export default function InternationalTransit() {
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {selectedShipment 
-                  ? t('editShipment') 
+                  ? t('editShipmentTitle') 
                   : selectedPendingShipment 
-                    ? t('addTrackingInfo') 
-                    : t('createNewShipment')}
+                    ? t('addTrackingInfoTitle') 
+                    : t('createNewShipmentTitle')}
               </DialogTitle>
               <DialogDescription>
                 {selectedShipment
@@ -1127,10 +1127,10 @@ export default function InternationalTransit() {
                             ))
                           ) : (
                             <>
-                              <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
-                              <SelectItem value="USA, California">USA, California</SelectItem>
-                              <SelectItem value="USA, New York">USA, New York</SelectItem>
-                              <SelectItem value="UK, London">UK, London</SelectItem>
+                              <SelectItem value="Czech Republic, Prague">{t('czechRepublicPrague')}</SelectItem>
+                              <SelectItem value="USA, California">{t('usaCalifornia')}</SelectItem>
+                              <SelectItem value="USA, New York">{t('usaNewYork')}</SelectItem>
+                              <SelectItem value="UK, London">{t('ukLondon')}</SelectItem>
                             </>
                           )}
                         </SelectContent>
@@ -1215,9 +1215,10 @@ export default function InternationalTransit() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Search className="h-4 w-4" />
           <span>
-            Found {filteredShipments.length} shipment{filteredShipments.length !== 1 ? 's' : ''} and 
-            {' '}{filteredPendingShipments.length} pending consolidation{filteredPendingShipments.length !== 1 ? 's' : ''}
-            {' '}matching "{searchQuery}"
+            {filteredShipments.length === 1 
+              ? t('foundShipmentsMatching', { count: filteredShipments.length, pending: filteredPendingShipments.length, query: searchQuery })
+              : t('foundShipmentsMatchingPlural', { count: filteredShipments.length, pending: filteredPendingShipments.length, query: searchQuery })
+            }
           </span>
           <Button
             variant="ghost"
@@ -1225,7 +1226,7 @@ export default function InternationalTransit() {
             onClick={() => setSearchQuery('')}
             className="h-6 px-2"
           >
-            Clear
+            {t('clear')}
           </Button>
         </div>
       )}
@@ -1351,7 +1352,7 @@ export default function InternationalTransit() {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{pending.name}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {pending.location} • {pending.warehouse} • {pending.itemCount} items
+                          {pending.location} • {pending.warehouse} • {pending.itemCount} {t('items')}
                         </p>
                       </div>
                     </div>
@@ -1487,9 +1488,9 @@ export default function InternationalTransit() {
         <CardHeader>
           <div className="flex flex-col gap-4">
             <div>
-              <CardTitle>Shipment Tracking</CardTitle>
+              <CardTitle>{t('shipmentTracking')}</CardTitle>
               <CardDescription>
-                Monitor all international shipments with AI-powered delivery predictions
+                {t('monitorAllInternationalShipments')}
               </CardDescription>
             </div>
             
@@ -1500,61 +1501,61 @@ export default function InternationalTransit() {
                   <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Select value={filterType} onValueChange={setFilterType}>
                     <SelectTrigger className="w-full text-xs sm:text-sm">
-                      <SelectValue placeholder="Filter by type" />
+                      <SelectValue placeholder={t('filterByTypeLabel')} />
                     </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-muted-foreground" />
-                        All Shipments
+                        {t('allShipmentsFilter')}
                       </div>
                     </SelectItem>
                     <SelectItem value="air_ddp_general">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('air_ddp_general', 'h-4 w-4')}
-                        Air DDP (general)
+                        {t('airDDPGeneral')}
                       </div>
                     </SelectItem>
                     <SelectItem value="air_ddp_sensitive">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('air_ddp_sensitive', 'h-4 w-4')}
-                        Air DDP (sensitive)
+                        {t('airDDPSensitive')}
                       </div>
                     </SelectItem>
                     <SelectItem value="express_general">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('express_general', 'h-4 w-4')}
-                        Express (general)
+                        {t('expressGeneralLabel')}
                       </div>
                     </SelectItem>
                     <SelectItem value="express_sensitive">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('express_sensitive', 'h-4 w-4')}
-                        Express (sensitive)
+                        {t('expressSensitiveLabel')}
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_general">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('railway_general', 'h-4 w-4')}
-                        Railway (general)
+                        {t('railwayGeneralLabel')}
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_sensitive">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('railway_sensitive', 'h-4 w-4')}
-                        Railway (sensitive)
+                        {t('railwaySensitiveLabel')}
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_general">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('sea_general', 'h-4 w-4')}
-                        Sea (general)
+                        {t('seaGeneralLabel')}
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_sensitive">
                       <div className="flex items-center gap-2">
                         {getShipmentTypeIcon('sea_sensitive', 'h-4 w-4')}
-                        Sea (sensitive)
+                        {t('seaSensitiveLabel')}
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -1564,13 +1565,13 @@ export default function InternationalTransit() {
                 <div className="flex items-center gap-2 flex-1 min-w-[120px]">
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger className="w-full text-xs sm:text-sm">
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={t('status')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in transit">In Transit</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="all">{t('allStatus')}</SelectItem>
+                      <SelectItem value="pending">{t('pending')}</SelectItem>
+                      <SelectItem value="in transit">{t('inTransit')}</SelectItem>
+                      <SelectItem value="delivered">{t('delivered')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1579,12 +1580,12 @@ export default function InternationalTransit() {
                   <ArrowUpDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
                     <SelectTrigger className="w-full text-xs sm:text-sm">
-                      <SelectValue placeholder="Sort" />
+                      <SelectValue placeholder={t('sortBy')} />
                     </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="delivery">Delivery Date</SelectItem>
-                    <SelectItem value="type">Shipment Type</SelectItem>
-                    <SelectItem value="status">Status</SelectItem>
+                    <SelectItem value="delivery">{t('deliveryDate')}</SelectItem>
+                    <SelectItem value="type">{t('shipmentType')}</SelectItem>
+                    <SelectItem value="status">{t('status')}</SelectItem>
                   </SelectContent>
                 </Select>
                 </div>
@@ -1609,7 +1610,7 @@ export default function InternationalTransit() {
               ) : (
                 <Button onClick={() => setIsCreateShipmentOpen(true)} data-testid="button-create-first-shipment">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Shipment
+                  {t('createShipment')}
                 </Button>
               )}
             </div>
@@ -1638,7 +1639,7 @@ export default function InternationalTransit() {
                             {/* Title + Type Badge */}
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <h3 className="font-bold text-base sm:text-lg truncate" data-testid={`shipment-tracking-${shipment.id}`}>
-                                {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                                {shipment.shipmentName || shipment.trackingNumber || `${t('shipment')} #${shipment.id}`}
                               </h3>
                               {shipment.shipmentType && (() => {
                                 const typeInfo = formatShipmentType(shipment.shipmentType);
@@ -1702,9 +1703,9 @@ export default function InternationalTransit() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in transit">In Transit</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="pending">{t('pending')}</SelectItem>
+                              <SelectItem value="in transit">{t('inTransit')}</SelectItem>
+                              <SelectItem value="delivered">{t('delivered')}</SelectItem>
                             </SelectContent>
                           </Select>
                           
@@ -1727,7 +1728,7 @@ export default function InternationalTransit() {
                                 setIsEditShipmentOpen(true);
                               }}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit Shipment
+                                {t('editShipment')}
                               </DropdownMenuItem>
                               {shipment.status === "pending" && (
                                 <DropdownMenuItem onClick={() => {
@@ -1880,9 +1881,9 @@ export default function InternationalTransit() {
                           >
                             <div className="flex items-center gap-2">
                               <Package className="h-3.5 w-3.5 text-cyan-600" />
-                              <span className="text-xs font-medium">Tracking Numbers</span>
+                              <span className="text-xs font-medium">{t('trackingNumbers')}</span>
                               {shipment.endTrackingNumber && (
-                                <Badge variant="outline" className="text-[10px] h-4 px-1">2 carriers</Badge>
+                                <Badge variant="outline" className="text-[10px] h-4 px-1">{t('twoCarriers')}</Badge>
                               )}
                             </div>
                             {expandedTracking[shipment.id] ? (
@@ -1938,8 +1939,8 @@ export default function InternationalTransit() {
                                 <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">End Carrier</p>
-                                      <p className="text-xs font-medium mt-0.5">{shipment.endCarrier || 'Local Courier'}</p>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('endCarrier')}</p>
+                                      <p className="text-xs font-medium mt-0.5">{shipment.endCarrier || t('localCourier')}</p>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                       <Button
@@ -1962,7 +1963,7 @@ export default function InternationalTransit() {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (shipment.endTrackingNumber) {
-                                            window.open(getCarrierTrackingUrl(shipment.endCarrier || 'Local Courier', shipment.endTrackingNumber), '_blank');
+                                            window.open(getCarrierTrackingUrl(shipment.endCarrier || t('localCourier'), shipment.endTrackingNumber), '_blank');
                                           }
                                         }}
                                       >
@@ -2410,7 +2411,7 @@ export default function InternationalTransit() {
                             
                             return (
                               <TableRow key={index} className="text-sm">
-                                <TableCell className="font-medium">{item.name || `Item ${index + 1}`}</TableCell>
+                                <TableCell className="font-medium">{item.name || t('itemNumber', { number: index + 1 })}</TableCell>
                                 <TableCell className="text-center font-mono text-xs">{qty}</TableCell>
                                 <TableCell className="text-right font-mono text-xs">
                                   {currency} {unitCost.toFixed(2)}
@@ -2431,7 +2432,7 @@ export default function InternationalTransit() {
                             );
                           })}
                           <TableRow className="bg-slate-50 dark:bg-slate-900/30 font-semibold">
-                            <TableCell colSpan={2}>Totals</TableCell>
+                            <TableCell colSpan={2}>{t('totals')}</TableCell>
                             <TableCell className="text-right font-mono text-sm">
                               {currency} {viewShipmentDetails.items.reduce((sum: number, item: any) => 
                                 sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
@@ -2470,36 +2471,36 @@ export default function InternationalTransit() {
                     </div>
                     <div className="text-xs text-muted-foreground px-1 space-y-1.5">
                       <p>
-                        💡 Shipping cost allocated across <strong className="text-foreground">{totalItems} units</strong> using{' '}
+                        💡 {t('shippingCostAllocatedAcross')} <strong className="text-foreground">{totalItems} {t('unitsLabel')}</strong> {t('using')}{' '}
                         <strong className="text-foreground">
                           {effectiveMethod}
-                        </strong>{allocationMethod === 'AUTO' && ' (auto-selected)'}. Landing costs converted to EUR and CZK.
+                        </strong>{allocationMethod === 'AUTO' && ` ${t('autoSelected')}`}. {t('landingCostsConverted')}
                       </p>
                       
                       {/* Method-specific explanation with auto-selection context */}
                       {effectiveMethod === 'CHARGEABLE_WEIGHT' && (
                         <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-blue-600 dark:text-blue-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}⚖️ Using chargeable weight (max of actual or volumetric weight) for proportional cost allocation.
+                          {allocationMethod === 'AUTO' && '🤖 '}⚖️ {t('usingChargeableWeight')}
                         </p>
                       )}
                       {effectiveMethod === 'WEIGHT' && (
                         <p className="text-blue-600 dark:text-blue-400">
-                          ⚖️ Heavier items receive proportionally more shipping cost based on actual weight.
+                          ⚖️ {t('heavierItemsProportional')}
                         </p>
                       )}
                       {effectiveMethod === 'VALUE' && (
                         <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-green-600 dark:text-green-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}💰 Higher value items receive proportionally more shipping cost based on their cost.
+                          {allocationMethod === 'AUTO' && '🤖 '}💰 {t('higherValueItemsProportional')}
                         </p>
                       )}
                       {effectiveMethod === 'HYBRID' && (
                         <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-purple-600 dark:text-purple-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}⚡ Balanced allocation: 60% by chargeable weight + 40% by value for fair distribution.
+                          {allocationMethod === 'AUTO' && '🤖 '}⚡ {t('balancedAllocation')}
                         </p>
                       )}
                       {effectiveMethod === 'UNITS' && (
                         <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-gray-600 dark:text-gray-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}📦 Equal distribution per unit regardless of weight or value.
+                          {allocationMethod === 'AUTO' && '🤖 '}📦 {t('equalDistributionPerUnit')}
                         </p>
                       )}
                     </div>
@@ -2512,7 +2513,7 @@ export default function InternationalTransit() {
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
                         <Package className="h-4 w-4 text-primary" />
-                        Tracking
+                        {t('trackingAction')}
                       </h3>
                       <div className="space-y-2 p-3 border rounded-lg text-xs">
                         {viewShipmentDetails.trackingNumber && (
@@ -2523,7 +2524,7 @@ export default function InternationalTransit() {
                         )}
                         {viewShipmentDetails.endTrackingNumber && (
                           <div className="pt-2 border-t">
-                            <p className="text-muted-foreground">{viewShipmentDetails.endCarrier || 'Local'}</p>
+                            <p className="text-muted-foreground">{viewShipmentDetails.endCarrier || t('local')}</p>
                             <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.endTrackingNumber}</p>
                           </div>
                         )}
@@ -2534,11 +2535,11 @@ export default function InternationalTransit() {
                   <div className="space-y-2">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <Clock className="h-4 w-4 text-primary" />
-                      Timeline
+                      {t('timelineLabel')}
                     </h3>
                     <div className="space-y-1.5 p-3 border rounded-lg text-xs">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Created</span>
+                        <span className="text-muted-foreground">{t('createdLabel')}</span>
                         <span className="font-medium">{format(new Date(viewShipmentDetails.createdAt), 'MMM dd, HH:mm')}</span>
                       </div>
                       {viewShipmentDetails.estimatedDelivery && (
@@ -2549,7 +2550,7 @@ export default function InternationalTransit() {
                       )}
                       {viewShipmentDetails.deliveredAt && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Delivered</span>
+                          <span className="text-muted-foreground">{t('delivered')}</span>
                           <span className="font-medium text-green-600">{format(new Date(viewShipmentDetails.deliveredAt), 'MMM dd, HH:mm')}</span>
                         </div>
                       )}
@@ -2562,7 +2563,7 @@ export default function InternationalTransit() {
                   <div className="space-y-2">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary" />
-                      Notes
+                      {t('notesLabel')}
                     </h3>
                     <div className="border rounded-lg p-3 bg-muted/30">
                       <p className="text-sm text-muted-foreground">{viewShipmentDetails.notes}</p>

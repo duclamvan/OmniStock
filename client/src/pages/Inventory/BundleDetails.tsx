@@ -374,7 +374,7 @@ export default function BundleDetails() {
                                     </span>
                                     <div>
                                       <p className="font-medium">
-                                        {item.variant?.name || `Variant ${vIndex + 1}`}
+                                        {item.variant?.name || t('inventory:variantNumber', { number: vIndex + 1 })}
                                       </p>
                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                         {item.variant?.barcode && (
@@ -443,7 +443,7 @@ export default function BundleDetails() {
                       <Link key={order.id} href={`/orders/${order.id}`}>
                         <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer">
                           <div>
-                            <p className="font-medium text-sm">{order.customerId || 'Unknown Customer'}</p>
+                            <p className="font-medium text-sm">{order.customerId || t('inventory:unknownCustomer')}</p>
                             <p className="text-xs text-muted-foreground">
                               {order.createdAt && format(new Date(order.createdAt), 'MMM dd, yyyy')}
                             </p>
@@ -456,7 +456,7 @@ export default function BundleDetails() {
                     ))}
                     {bundleOrders.length > 5 && (
                       <p className="text-xs text-center text-muted-foreground pt-2">
-                        +{bundleOrders.length - 5} more orders
+                        {t('inventory:moreOrders', { count: bundleOrders.length - 5 })}
                       </p>
                     )}
                   </div>
