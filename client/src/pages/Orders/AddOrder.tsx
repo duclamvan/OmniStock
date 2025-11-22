@@ -2536,9 +2536,9 @@ export default function AddOrder() {
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4" />
-                    Shipping Address
+                    {t('shippingAddress')}
                   </CardTitle>
-                  <CardDescription>Select or add a shipping address for this order</CardDescription>
+                  <CardDescription>{t('selectOrAddShippingAddress')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-3 space-y-3">
                   {isLoadingShippingAddresses ? (
@@ -3587,7 +3587,7 @@ export default function AddOrder() {
                                 <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
                                   <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">Shipping Notes</p>
+                                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">{t('shippingNotes')}</p>
                                     <p className="text-sm text-amber-900 dark:text-amber-200">{item.notes}</p>
                                   </div>
                                 </div>
@@ -3807,10 +3807,10 @@ export default function AddOrder() {
                     <SelectValue placeholder={t('orders:selectPayment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="PayPal">PayPal</SelectItem>
-                    <SelectItem value="COD">COD</SelectItem>
-                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">{t('orders:bankTransfer')}</SelectItem>
+                    <SelectItem value="PayPal">{t('orders:paypal')}</SelectItem>
+                    <SelectItem value="COD">{t('orders:cod')}</SelectItem>
+                    <SelectItem value="Cash">{t('orders:cash')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -4115,7 +4115,7 @@ export default function AddOrder() {
                       </div>
 
                       <div className="sm:col-span-2 relative">
-                        <Label htmlFor="nameAndAddress">Jméno a Adresa</Label>
+                        <Label htmlFor="nameAndAddress">{t('orders:nameAndAddress')}</Label>
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
@@ -4188,7 +4188,7 @@ export default function AddOrder() {
                       </div>
 
                       <div className="sm:col-span-2 relative">
-                        <Label htmlFor="nameAndAddress">Name and Address</Label>
+                        <Label htmlFor="nameAndAddress">{t('orders:nameAndAddress')}</Label>
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
@@ -4655,7 +4655,7 @@ export default function AddOrder() {
                           </Button>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500">Click to edit or Round Up</p>
+                      <p className="text-xs text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
                     </div>
 
                     {/* Dev-Only Form Errors Display */}
@@ -4874,7 +4874,7 @@ export default function AddOrder() {
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">Click to edit or Round Up</p>
+                <p className="text-xs text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
               </div>
 
               <div className="pt-3 space-y-2">
@@ -4920,7 +4920,7 @@ export default function AddOrder() {
         <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Select Product Variants</DialogTitle>
+              <DialogTitle>{t('orders:selectProductVariants')}</DialogTitle>
               <DialogDescription>
                 Choose variants and quantities for: <span className="font-semibold">{selectedProductForVariant?.name}</span>
               </DialogDescription>
@@ -4929,7 +4929,7 @@ export default function AddOrder() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Variant Name</TableHead>
+                    <TableHead>{t('orders:variantName')}</TableHead>
                     <TableHead>Barcode</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
                     <TableHead className="text-right w-[120px]">Quantity</TableHead>
@@ -5014,14 +5014,14 @@ export default function AddOrder() {
         }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">Shipping Notes</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">{t('orders:shippingNotes')}</DialogTitle>
               <DialogDescription className="text-sm">
                 Add shipping notes or special instructions for this item
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="note-text" className="text-sm">Shipping Notes</Label>
+                <Label htmlFor="note-text" className="text-sm">{t('orders:shippingNotes')}</Label>
                 <Textarea
                   id="note-text"
                   value={editingNoteText}

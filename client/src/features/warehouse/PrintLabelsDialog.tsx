@@ -77,6 +77,12 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
 
     const selectedLocs = locations.filter(loc => selectedLocations.has(loc.id));
     
+    // Pre-translate labels
+    const pickableText = t('pickable');
+    const noPickText = t('noPick');
+    const putawayText = t('putaway');
+    const noPutawayText = t('noPutaway');
+    
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -120,7 +126,7 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
             <div class="barcode">${loc.address}</div>
             <div class="address">${loc.address}</div>
             <div class="details">
-              ${loc.type} | ${loc.pickable ? "Pickable" : "No Pick"} | ${loc.putawayAllowed ? "Putaway" : "No Putaway"}
+              ${loc.type} | ${loc.pickable ? pickableText : noPickText} | ${loc.putawayAllowed ? putawayText : noPutawayText}
             </div>
           </div>
         `).join("")}
@@ -161,7 +167,7 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
         <div className="space-y-4 mt-4">
           {/* Type Selection */}
           <div>
-            <h3 className="text-sm font-medium mb-2">Select Location Types</h3>
+            <h3 className="text-sm font-medium mb-2">{t('selectLocationTypes')}</h3>
             <div className="flex flex-wrap gap-2">
               {Object.keys(locationsByType).map(type => (
                 <Badge

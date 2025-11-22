@@ -153,10 +153,10 @@ export default function InventoryReports() {
       ];
 
       exportToPDF(
+        t('reports.lowStockAlerts'),
         exportData,
         columns,
-        `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        t('reports.lowStockAlerts')
+        `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`
       );
 
       toast({
@@ -174,21 +174,20 @@ export default function InventoryReports() {
 
   const sendReorderAlertsMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/reports/reorder-alerts/notify', {
-        method: 'POST',
-      });
+      const response = await apiRequest('POST', '/api/reports/reorder-alerts/notify');
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reports/reorder-alerts'] });
       toast({
-        title: "Email Feature",
-        description: data.message || "Email notifications feature coming soon",
+        title: t('reports.emailFeature'),
+        description: data.message || t('reports.emailNotificationFeatureComingSoon'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to send email notifications",
+        title: t('common:error'),
+        description: error.message || t('reports.failedToSendEmailNotifications'),
         variant: "destructive",
       });
     },

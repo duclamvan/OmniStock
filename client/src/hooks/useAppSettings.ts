@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
-import i18n from '@/i18n';
+import { i18n } from '@/i18n';
 
 export interface UpdateSettingParams {
   key: string;

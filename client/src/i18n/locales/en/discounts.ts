@@ -185,6 +185,7 @@ const discounts = {
   exportValidUntil: 'Valid Until',
   exportStatus: 'Status',
   unlimited: 'Unlimited',
+  buyXGetYFormat: 'B{{buy}}G{{get}}',
   
   // Empty states
   noDiscounts: 'No discounts found',
@@ -201,6 +202,9 @@ const discounts = {
   
   // Required field marker
   required: '*',
+  
+  // Column visibility
+  toggleColumns: 'Toggle Columns',
 } as const;
 
 export default discounts;

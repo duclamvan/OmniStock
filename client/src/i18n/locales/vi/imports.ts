@@ -34,6 +34,7 @@ const imports = {
   createImport: 'Tạo đơn nhập',
   editImport: 'Chỉnh sửa đơn nhập',
   deleteImport: 'Xóa đơn nhập',
+  deleteOrder: 'Xóa đơn hàng',
   receiveImport: 'Nhận hàng',
   markAsReceived: 'Đánh dấu đã nhận',
   saveAsDraft: 'Lưu nháp',
@@ -41,13 +42,18 @@ const imports = {
   importFromCSV: 'Nhập từ CSV',
   trackItems: 'Theo dõi sản phẩm',
   trackShipments: 'Theo dõi vận chuyển',
+  bulkEdit: 'Chỉnh sửa hàng loạt',
+  archive: 'Lưu trữ',
 
   // Views
   kanbanView: 'Xem Kanban',
   warehouseView: 'Xem kho hàng',
   consolidatedView: 'Xem tổng hợp',
+  timelineView: 'Xem dòng thời gian',
+  timelineViewDesc: 'Dòng thời gian trực quan của đơn nhập hàng',
 
   // Order Fields
+  order: 'Đơn hàng',
   orderNumber: 'Số đơn',
   orderNo: 'Số đơn',
   supplier: 'Nhà cung cấp',
@@ -55,8 +61,10 @@ const imports = {
   warehouse: 'Kho hàng',
   warehouseName: 'Tên kho',
   region: 'Khu vực',
+  priority: 'Ưu tiên',
   trackingNumber: 'Mã vận đơn',
   trackingNo: 'Mã vận đơn',
+  trackingLabel: 'Mã vận đơn:',
   estimatedArrival: 'Dự kiến đến',
   estimatedDelivery: 'Ngày giao dự kiến',
   actualArrival: 'Ngày đến thực tế',
@@ -199,9 +207,12 @@ const imports = {
 
   // Empty States
   noImportOrders: 'Chưa có đơn nhập hàng',
+  noImportOrdersFound: 'Không tìm thấy đơn nhập hàng',
+  tryAdjustingFiltersOrCreateOrder: 'Thử điều chỉnh bộ lọc hoặc tạo đơn hàng mới',
   createFirstImport: 'Tạo đơn nhập hàng đầu tiên',
   noItemsYet: 'Chưa có sản phẩm nào',
   addFirstItem: 'Thêm sản phẩm đầu tiên vào đơn nhập hàng',
+  ordersSelected: 'đã chọn',
 
   // Buttons & Actions
   backToImports: 'Quay lại danh sách',
@@ -360,6 +371,14 @@ const imports = {
   inStock: 'Còn hàng',
   lowStock: 'Sắp hết',
   outOfStock: 'Hết hàng',
+  skuLabel: 'SKU:',
+  inventoryDistribution: 'Phân bố tồn kho',
+  distributionChartByCategory: 'Biểu đồ phân bố theo danh mục',
+  costAnalysis: 'Phân tích chi phí',
+  monthlyCostBreakdown: 'Chi tiết chi phí theo tháng',
+  inventoryTrend: 'Xu hướng tồn kho',
+  stockLevelsOverTime: 'Mức tồn kho theo thời gian',
+  inventoryMovementTrends: 'Xu hướng luân chuyển hàng',
   
   // Shipment Tracking
   shipmentTracking: 'Theo dõi vận chuyển',
@@ -1699,6 +1718,39 @@ const imports = {
   scanItemBarcodePlaceholder: 'Quét mã vạch sản phẩm tại đây...',
   addNotesAboutItemPlaceholder: 'Thêm ghi chú về sản phẩm này...',
   addAdditionalNotesAboutReceivingPlaceholder: 'Thêm ghi chú bổ sung về quy trình nhận hàng này...',
+  
+  // AllocationPreview - Component Strings
+  allocationMethodLabel: 'Phương thức phân bổ:',
+  autoSelection: 'Chọn tự động:',
+  avgUnit: 'TB/Đơn vị',
+  purchPrice: 'Giá mua',
+  chgKg: 'KL tính',
+  freightLabel: 'Vận chuyển:',
+  dutyLabel: 'Thuế:',
+  customsFeeLabel: 'Phí hải quan:',
+  insuranceLabel: 'Bảo hiểm:',
+  packagingLabel: 'Đóng gói:',
+  otherLabel: 'Khác:',
+  perUnitCost: 'Chi phí/đơn vị:',
+  methodUsed: 'Phương thức sử dụng:',
+  warningsLabel: 'Cảnh báo:',
+  
+  // AllocationPreview - CSV Headers
+  csvSku: 'SKU',
+  csvName: 'Tên',
+  csvUnits: 'Đơn vị',
+  csvActualWeight: 'Trọng lượng thực (kg)',
+  csvVolumetricWeight: 'Trọng lượng quy đổi (kg)',
+  csvChargeableWeight: 'Trọng lượng tính phí (kg)',
+  csvFreightAllocated: 'Vận chuyển phân bổ',
+  csvDuty: 'Thuế',
+  csvCustomsFee: 'Phí hải quan',
+  csvInsurance: 'Bảo hiểm',
+  csvPackaging: 'Đóng gói',
+  csvOtherFees: 'Phí khác',
+  csvTotalAllocated: 'Tổng phân bổ',
+  csvLandingCostUnit: 'Chi phí nhập/Đơn vị',
+  csvWarnings: 'Cảnh báo',
   
 } as const;
 

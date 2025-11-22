@@ -343,7 +343,7 @@ export function Warehouse3DView({
           
           {/* Legend */}
           <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg">
-            <div className="text-xs font-medium mb-2">Location Types</div>
+            <div className="text-xs font-medium mb-2">{t('warehouse:locationTypes')}</div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-emerald-500/20 border border-emerald-500 rounded" />

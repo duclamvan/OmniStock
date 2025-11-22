@@ -101,7 +101,9 @@ const products = {
   stockSection: 'Stock & Inventory',
   pricingSection: 'Pricing',
   supplierSection: 'Supplier Information',
+  supplierSectionDesc: 'Supplier details and contact',
   variantsSection: 'Product Variants',
+  variantsSectionDesc: 'Manage product variations and barcodes',
   packingSection: 'Packing Instructions',
   filesSection: 'Product Files',
   
@@ -121,6 +123,9 @@ const products = {
   selectASupplier: 'Select a supplier',
   searchSuppliersPlaceholder: 'Search suppliers...',
   noSupplierFound: 'No supplier found.',
+  noSupplierSelected: 'No supplier selected',
+  contactPerson: 'Contact Person',
+  supplierLink: 'Supplier Link',
   addNewSupplier: 'Add New Supplier',
   scanOrEnter: 'Scan or enter',
   
@@ -401,6 +406,18 @@ const products = {
   methodLabel: 'Method: {{method}}',
   sourceLabel: 'Source: {{source}}',
   average: 'Average',
+  
+  // Internal Errors (not user-facing, but extracted for consistency)
+  errors: {
+    imageUploadFailed: 'Failed to upload image',
+  },
+  
+  // Default Fallback Values (for SKU generation and filenames)
+  defaults: {
+    productFallback: 'product',
+    categoryFallback: 'GEN',
+    productPartFallback: 'PROD',
+  },
   
 } as const;
 

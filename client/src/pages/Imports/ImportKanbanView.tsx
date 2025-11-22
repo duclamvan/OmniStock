@@ -1331,11 +1331,11 @@ export default function ImportKanbanView() {
                                                   `}
                                                 >
                                                   {isOrderGroup ? (
-                                                    <><Hash className="h-3 w-3 mr-1" />Order</>
+                                                    <><Hash className="h-3 w-3 mr-1" />{t('order')}</>
                                                   ) : hasShipment ? (
-                                                    <><Package className="h-3 w-3 mr-1" /><Plane className="h-3 w-3 mr-1" />Shipment</>
+                                                    <><Package className="h-3 w-3 mr-1" /><Plane className="h-3 w-3 mr-1" />{t('shipment')}</>
                                                   ) : (
-                                                    <><Package className="h-3 w-3 mr-1" />Consolidation</>
+                                                    <><Package className="h-3 w-3 mr-1" />{t('consolidation')}</>
                                                   )}
                                                 </Badge>
                                                 
@@ -1494,14 +1494,14 @@ export default function ImportKanbanView() {
                         }}
                       />
                     </TableHead>
-                    <SortableHeader column="order">Order</SortableHeader>
-                    <SortableHeader column="supplier">Supplier</SortableHeader>
-                    <SortableHeader column="status">Status</SortableHeader>
-                    <SortableHeader column="priority">Priority</SortableHeader>
-                    <SortableHeader column="items" align="right">Items</SortableHeader>
-                    <SortableHeader column="value" align="right">Value</SortableHeader>
-                    <SortableHeader column="progress">Progress</SortableHeader>
-                    <SortableHeader column="eta">ETA</SortableHeader>
+                    <SortableHeader column="order">{t('order')}</SortableHeader>
+                    <SortableHeader column="supplier">{t('supplier')}</SortableHeader>
+                    <SortableHeader column="status">{t('status')}</SortableHeader>
+                    <SortableHeader column="priority">{t('priority')}</SortableHeader>
+                    <SortableHeader column="items" align="right">{t('items')}</SortableHeader>
+                    <SortableHeader column="value" align="right">{t('value')}</SortableHeader>
+                    <SortableHeader column="progress">{t('progress')}</SortableHeader>
+                    <SortableHeader column="eta">{t('eta')}</SortableHeader>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1602,19 +1602,19 @@ export default function ImportKanbanView() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                View Details
+                                {t('viewDetails')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}/edit`)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit Order
+                                {t('editOrder')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}/receive`)}>
                                 <Package className="h-4 w-4 mr-2" />
-                                Receive Items
+                                {t('receiveItems')}
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-red-600">
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Order
+                                {t('deleteOrder')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1626,7 +1626,7 @@ export default function ImportKanbanView() {
                           <TableCell colSpan={11} className="bg-muted/30 p-0">
                             <div className="px-8 py-4">
                               <div className="mb-2 text-sm font-medium text-muted-foreground">
-                                Order Items ({order.items.length})
+                                {t('orderItems')} ({order.items.length})
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {order.items.map((item) => (
@@ -1637,7 +1637,7 @@ export default function ImportKanbanView() {
                                     <div className="flex-1">
                                       <p className="text-sm font-medium">{item.name}</p>
                                       {item.sku && (
-                                        <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                                        <p className="text-xs text-muted-foreground">{t('skuLabel')} {item.sku}</p>
                                       )}
                                     </div>
                                     <Badge variant="secondary" className="ml-2">
@@ -1650,7 +1650,7 @@ export default function ImportKanbanView() {
                                 <div className="mt-3 pt-3 border-t flex items-center gap-4 text-sm">
                                   <div className="flex items-center gap-2">
                                     <Truck className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-muted-foreground">Tracking:</span>
+                                    <span className="text-muted-foreground">{t('trackingLabel')}</span>
                                     <span className="font-medium">{order.trackingNumber}</span>
                                   </div>
                                   {order.shippingMethod && (
@@ -1672,28 +1672,28 @@ export default function ImportKanbanView() {
               {sortedOrders.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mb-3" />
-                  <p className="text-lg font-medium">No import orders found</p>
-                  <p className="text-sm text-muted-foreground">Try adjusting your filters or create a new order</p>
+                  <p className="text-lg font-medium">{t('noImportOrdersFound')}</p>
+                  <p className="text-sm text-muted-foreground">{t('tryAdjustingFiltersOrCreateOrder')}</p>
                 </div>
               )}
             </div>
             {selectedOrders.length > 0 && (
               <div className="flex items-center justify-between p-4 border-t bg-muted/50">
                 <span className="text-sm font-medium">
-                  {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
+                  {selectedOrders.length} {t('ordersSelected')}
                 </span>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
-                    Export
+                    {t('export')}
                   </Button>
                   <Button variant="outline" size="sm">
                     <Edit className="h-4 w-4 mr-2" />
-                    Bulk Edit
+                    {t('bulkEdit')}
                   </Button>
                   <Button variant="outline" size="sm">
                     <Archive className="h-4 w-4 mr-2" />
-                    Archive
+                    {t('archive')}
                   </Button>
                 </div>
               </div>
@@ -1704,8 +1704,8 @@ export default function ImportKanbanView() {
         /* Timeline View */
         <Card className="mx-4 md:mx-0">
           <CardHeader>
-            <CardTitle>Timeline View</CardTitle>
-            <CardDescription>Visual timeline of import orders</CardDescription>
+            <CardTitle>{t('timelineView')}</CardTitle>
+            <CardDescription>{t('timelineViewDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1743,7 +1743,7 @@ export default function ImportKanbanView() {
                         </div>
                         <Link href={`/imports/orders/${order.id}`}>
                           <Button variant="outline" size="sm">
-                            View Details
+                            {t('viewDetails')}
                             <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         </Link>

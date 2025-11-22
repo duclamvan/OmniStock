@@ -893,7 +893,7 @@ export default function ProductForm() {
             });
             
             if (!uploadResponse.ok) {
-              throw new Error('Failed to upload image');
+              throw new Error(t('products:errors.imageUploadFailed'));
             }
             
             const uploadResult = await uploadResponse.json();
@@ -949,7 +949,7 @@ export default function ProductForm() {
         });
         
         if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+          throw new Error(t('products:errors.imageUploadFailed'));
         }
         
         const uploadResult = await uploadResponse.json();
@@ -1001,7 +1001,7 @@ export default function ProductForm() {
             });
             
             if (!uploadResponse.ok) {
-              throw new Error('Failed to upload image');
+              throw new Error(t('products:errors.imageUploadFailed'));
             }
             
             const uploadResult = await uploadResponse.json();
@@ -1237,7 +1237,7 @@ export default function ProductForm() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${product?.sku || 'product'}-${IMAGE_PURPOSE_CONFIG[img.purpose].label.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+      link.download = `${product?.sku || t('products:defaults.productFallback')}-${IMAGE_PURPOSE_CONFIG[img.purpose].label.toLowerCase().replace(/\s+/g, '-')}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1282,8 +1282,8 @@ export default function ProductForm() {
     const quantity = form.watch('quantity') || 0;
     
     // 1. Category Part (3 chars)
-    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || 'GEN';
-    const categoryPart = cleanText(categoryName).slice(0, 3) || 'GEN';
+    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || t('products:defaults.categoryFallback');
+    const categoryPart = cleanText(categoryName).slice(0, 3) || t('products:defaults.categoryFallback');
     
     // 2. Supplier Part (2 chars) - optional
     const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
@@ -1307,7 +1307,7 @@ export default function ProductForm() {
     
     // Ensure product part is not empty
     if (!productPart) {
-      productPart = 'PROD';
+      productPart = t('products:defaults.productPartFallback');
     }
     
     // 4. Price Tier Indicator (optional) - based on CZK price
@@ -1372,7 +1372,7 @@ export default function ProductForm() {
           });
           
           if (!uploadResponse.ok) {
-            throw new Error('Failed to upload image');
+            throw new Error(t('products:errors.imageUploadFailed'));
           }
           
           const uploadResult = await uploadResponse.json();
@@ -1573,7 +1573,7 @@ export default function ProductForm() {
       });
       
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error(t('products:errors.imageUploadFailed'));
       }
       
       const uploadResult = await uploadResponse.json();
@@ -2493,8 +2493,8 @@ export default function ProductForm() {
                     <Building className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Supplier Information</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Supplier details and contact</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:supplierSection')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:supplierSectionDesc')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -2502,7 +2502,7 @@ export default function ProductForm() {
                 <div className="space-y-4 pt-2">
                   {/* Supplier Selector */}
                   <div>
-                    <Label htmlFor="supplierId" className="text-sm font-medium">Select Supplier</Label>
+                    <Label htmlFor="supplierId" className="text-sm font-medium">{t('products:selectSupplier')}</Label>
                     <Popover open={supplierPopoverOpen} onOpenChange={setSupplierPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -2569,7 +2569,7 @@ export default function ProductForm() {
                       return (
                         <div className="text-center py-8 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
                           <Building className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500 dark:text-slate-400">No supplier selected</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{t('products:noSupplierSelected')}</p>
                         </div>
                       );
                     }
@@ -2591,7 +2591,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <Users className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Contact Person</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:contactPerson')}</p>
                                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-contact-person">
                                     {selectedSupplier.contactPerson}
                                   </p>
@@ -2671,7 +2671,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Supplier Link</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierLink')}</p>
                                   <a 
                                     href={selectedSupplier.supplierLink}
                                     target="_blank"
@@ -2733,8 +2733,8 @@ export default function ProductForm() {
                     <Tag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Variants</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage product variations and barcodes</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:variantsSection')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:variantsSectionDesc')}</p>
                   </div>
                   <Badge variant="secondary">{variants.length}</Badge>
                 </div>

@@ -231,6 +231,15 @@ export default function ConsolidatedWarehouseView() {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'in_stock': return t('imports:inStock');
+      case 'low_stock': return t('imports:lowStock');
+      case 'out_of_stock': return t('imports:outOfStock');
+      default: return status.replace('_', ' ');
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
       {/* Header */}
@@ -535,10 +544,10 @@ export default function ConsolidatedWarehouseView() {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium text-sm">{item.productName}</p>
-                            <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                            <p className="text-xs text-muted-foreground">{t('imports:skuLabel')} {item.sku}</p>
                           </div>
                           <Badge className={getStatusColor(item.status)}>
-                            {item.status.replace('_', ' ')}
+                            {getStatusLabel(item.status)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -593,7 +602,7 @@ export default function ConsolidatedWarehouseView() {
                         <TableCell>{formatDate(item.lastReceived)}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(item.status)}>
-                            {item.status.replace('_', ' ')}
+                            {getStatusLabel(item.status)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -615,14 +624,14 @@ export default function ConsolidatedWarehouseView() {
             {/* Inventory Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Inventory Distribution</CardTitle>
+                <CardTitle className="text-base">{t('imports:inventoryDistribution')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
                   <div className="text-center">
                     <PieChart className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">
-                      Distribution chart by category
+                      {t('imports:distributionChartByCategory')}
                     </p>
                   </div>
                 </div>
@@ -632,14 +641,14 @@ export default function ConsolidatedWarehouseView() {
             {/* Cost Analysis */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Cost Analysis</CardTitle>
+                <CardTitle className="text-base">{t('imports:costAnalysis')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
                   <div className="text-center">
                     <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">
-                      Monthly cost breakdown
+                      {t('imports:monthlyCostBreakdown')}
                     </p>
                   </div>
                 </div>
@@ -650,9 +659,9 @@ export default function ConsolidatedWarehouseView() {
           {/* Trend Analysis */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Inventory Trend</CardTitle>
+              <CardTitle className="text-base">{t('imports:inventoryTrend')}</CardTitle>
               <CardDescription className="text-xs">
-                Stock levels over time
+                {t('imports:stockLevelsOverTime')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -660,7 +669,7 @@ export default function ConsolidatedWarehouseView() {
                 <div className="text-center">
                   <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Inventory movement trends
+                    {t('imports:inventoryMovementTrends')}
                   </p>
                 </div>
               </div>

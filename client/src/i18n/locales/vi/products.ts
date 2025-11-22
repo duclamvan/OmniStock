@@ -222,7 +222,9 @@ const products = {
   stockSection: 'Tồn kho',
   pricingSection: 'Giá cả',
   supplierSection: 'Thông tin nhà cung cấp',
+  supplierSectionDesc: 'Chi tiết và liên hệ nhà cung cấp',
   variantsSection: 'Biến thể sản phẩm',
+  variantsSectionDesc: 'Quản lý biến thể và mã vạch sản phẩm',
   packingSection: 'Hướng dẫn đóng gói',
   filesSection: 'Tệp đính kèm',
   
@@ -239,6 +241,9 @@ const products = {
   warehouseLocation: 'Vị trí trong kho',
   warehouseLocationPlaceholder: 'vd: A1-5',
   selectSupplier: 'Chọn nhà cung cấp',
+  noSupplierSelected: 'Chưa chọn nhà cung cấp',
+  contactPerson: 'Người liên hệ',
+  supplierLink: 'Liên kết nhà cung cấp',
   
   // ProductForm - Stock Fields
   currentQuantity: 'Số lượng hiện tại',
@@ -495,6 +500,30 @@ const products = {
   warehouseLocations: {
     title: 'Vị trí kho',
     infoMessage: 'Vị trí kho có thể được thêm sau khi tạo sản phẩm.',
+  },
+  
+  // CostHistoryChart Component
+  noCostHistoryData: 'Không có dữ liệu lịch sử giá',
+  trendIncreasing: '+{{percent}}% xu hướng',
+  trendDecreasing: '-{{percent}}% xu hướng',
+  stable: 'Ổn định',
+  avgPrice: 'TB: {{currency}}{{price}}',
+  min: 'Thấp nhất',
+  max: 'Cao nhất',
+  methodLabel: 'Phương thức: {{method}}',
+  sourceLabel: 'Nguồn: {{source}}',
+  average: 'Trung bình',
+  
+  // Internal Errors (not user-facing, but extracted for consistency)
+  errors: {
+    imageUploadFailed: 'Không thể tải lên hình ảnh',
+  },
+  
+  // Default Fallback Values (for SKU generation and filenames)
+  defaults: {
+    productFallback: 'san-pham',
+    categoryFallback: 'CHUNG',
+    productPartFallback: 'SP',
   },
   
 } as const;

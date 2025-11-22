@@ -272,6 +272,12 @@ const warehouse = {
   assignToPicker: 'Gán cho nhân viên lấy hàng',
   pickerAssigned: 'Đã gán nhân viên lấy hàng',
   
+  // Location Labels
+  locationTypes: 'Loại vị trí',
+  pickable: 'Có thể lấy',
+  noPick: 'Không lấy',
+  noPutaway: 'Không cất',
+  
   // Cartons
   cartons: 'Thùng hàng',
   carton: 'Thùng',
@@ -773,6 +779,9 @@ const warehouse = {
   lowUtilization: 'Sử dụng thấp (<50%)',
   mediumUtilization: 'Sử dụng trung bình (50-80%)',
   highUtilization: 'Sử dụng cao (>80%)',
+  
+  // Print Labels Dialog
+  selectLocationTypes: 'Chọn loại vị trí',
 } as const;
 
 export default warehouse;

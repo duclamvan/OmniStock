@@ -79,6 +79,7 @@ const orders = {
   price: 'Price',
   image: 'Image',
   variant: 'Variant',
+  variantName: 'Variant Name',
   bundle: 'Bundle',
   scanBarcodeOrSku: 'Scan barcode or SKU...',
   readyToScan: 'Ready to scan...',
@@ -289,6 +290,7 @@ const orders = {
   saveNote: 'Save Note',
   shippingNotes: 'Shipping Notes',
   quickNoteTemplates: 'Quick Note Templates',
+  templates: 'Templates',
   
   // Pricing & Calculations
   subtotal: 'Subtotal',
@@ -303,8 +305,10 @@ const orders = {
   shipping: 'Shipping',
   adjustment: 'Adjustment',
   grandTotal: 'Grand Total',
+  itemTotal: 'Item Total',
   actualShippingCost: 'Actual Shipping Cost',
   profitMargin: 'Profit Margin',
+  clickToEditOrRoundUp: 'Click to edit or Round Up',
   
   // Tax Invoice
   taxInvoice: 'Tax Invoice',
@@ -356,6 +360,7 @@ const orders = {
   // Shipping Address
   shippingAddressSelection: 'Shipping Address Selection',
   selectShippingAddress: 'Select Shipping Address',
+  selectOrAddShippingAddress: 'Select or add a shipping address for this order',
   searchAddress: 'Search Address',
   searchAddressPlaceholder: 'Type to search addresses...',
   street: 'Street',
@@ -436,6 +441,7 @@ const orders = {
   
   // Variant/Bundle Selection
   selectVariantOrBundle: 'Select Variant/Bundle',
+  selectProductVariants: 'Select Product Variants',
   availableVariants: 'Available Variants',
   availableBundles: 'Available Bundles',
   variantQuantity: 'Quantity',
@@ -477,6 +483,13 @@ const orders = {
   loadingOrders: 'Loading orders...',
   filtersAndSearch: 'Filters & Search',
   record: 'Record',
+  walkInCustomer: 'Walk-in Customer',
+  unknownCustomer: 'Unknown Customer',
+  itemsColon: 'Items:',
+  showLess: 'Show less',
+  moreItems: '+{{count}} more item(s)',
+  previousOrder: 'Previous Order',
+  nextOrder: 'Next Order',
   
   // Filters
   filterByStatus: 'Filter by Status',
@@ -1176,6 +1189,63 @@ const orders = {
   pickingAccuracy: 'Picking Accuracy',
   avgItemsPerOrder: 'Avg. Items/Order',
   avgPickTime: 'Avg. Pick Time',
+  
+  // Section Headers
+  orderItemsHeader: 'Order Items',
+  orderSummaryHeader: 'Order Summary',
+  
+  // Delete Dialog
+  deleteOrdersTitle: 'Delete Orders',
+  deleteOrdersConfirm: 'Are you sure you want to delete {{count}} order(s)? This action cannot be undone.',
+  
+  // Additional Keys
+  each: 'each',
+  selected: 'selected',
+  selectedCount: '{{count}} selected',
+  
+  // EditOrder.tsx - Quick Note Templates
+  handleWithCareFragile: 'Handle with care - fragile item',
+  keepUprightTransport: 'Keep upright during transport',
+  packAntiStatic: 'Pack with anti-static materials',
+  doubleBoxRequired: 'Double box required',
+  separateFromOthers: 'Separate from other items',
+  doNotStack: 'Do not stack',
+  tempSensitiveKeepCool: 'Temperature sensitive - keep cool',
+  requiresSignatureDelivery: 'Requires signature on delivery',
+  packExtraBubbleWrap: 'Pack with extra bubble wrap',
+  
+  // EditOrder.tsx - Validation Messages
+  pleaseSelectCustomer: 'Please select a customer',
+  pleaseAddProduct: 'Please add at least one product to the order',
+  allProductsMustHaveQuantity: 'All products must have a quantity greater than 0',
+  
+  // EditOrder.tsx - Category Names
+  bundles: 'Bundles',
+  services: 'Services',
+  uncategorized: 'Uncategorized',
+  
+  // EditOrder.tsx - UI Labels
+  parseFill: 'Parse & Fill',
+  scanModeOn: 'Scan Mode: ON',
+  scanModeOff: 'Scan Mode: OFF',
+  itemAdded: 'item added',
+  itemsAdded: 'items added',
+  noItemsYet: 'No items yet',
+  noItemsAddedYet: 'No items added to order yet',
+  searchSelectProductsAbove: 'Search and select products above to add them',
+  paymentDetails: 'Payment Details',
+  configurePricingNotes: 'Configure pricing and notes',
+  quickSelect: 'Quick select:',
+  shippingCostLabel: 'Shipping Cost',
+  actualShippingCostLabel: 'Actual Shipping Cost',
+  grandTotalLabel: 'Grand Total',
+  taxInvoiceInformation: 'Tax Invoice Information',
+  rounding: 'Rounding',
+  total: 'Total',
+  products: 'Products',
+  requiredFieldsMissing: 'Required fields missing:',
+  orderSummary: 'Order Summary',
+  margin: 'Margin',
   
 } as const;
 

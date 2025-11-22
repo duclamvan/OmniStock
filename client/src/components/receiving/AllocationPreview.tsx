@@ -271,21 +271,21 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     if (!preview?.items) return;
 
     const headers = [
-      'SKU',
-      'Name',
-      'Units',
-      'Actual Weight (kg)',
-      'Volumetric Weight (kg)',
-      'Chargeable Weight (kg)',
-      'Freight Allocated',
-      'Duty',
-      'Customs Fee',
-      'Insurance',
-      'Packaging',
-      'Other Fees',
-      'Total Allocated',
-      'Landing Cost/Unit',
-      'Warnings'
+      t('csvSku'),
+      t('csvName'),
+      t('csvUnits'),
+      t('csvActualWeight'),
+      t('csvVolumetricWeight'),
+      t('csvChargeableWeight'),
+      t('csvFreightAllocated'),
+      t('csvDuty'),
+      t('csvCustomsFee'),
+      t('csvInsurance'),
+      t('csvPackaging'),
+      t('csvOtherFees'),
+      t('csvTotalAllocated'),
+      t('csvLandingCostUnit'),
+      t('csvWarnings')
     ];
 
     const rows = preview.items.map(item => [
@@ -308,7 +308,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
 
     // Add totals row
     rows.push([
-      'TOTAL',
+      t('total'),
       '',
       preview.totalUnits,
       preview.totalActualWeight,
@@ -396,7 +396,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               <Cpu className="h-4 w-4 text-cyan-600" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">Allocation Method:</span>
+                  <span className="text-sm font-semibold">{t('allocationMethodLabel')}</span>
                   {isManualOverride ? (
                     <>
                       {currentMethod && (
@@ -410,11 +410,11 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                   ) : currentMethod ? (
                     <Badge variant="outline" className="text-xs text-green-600">
                       <currentMethod.icon className="h-3 w-3 mr-1" />
-                      Auto ({currentMethod.name})
+                      {t('auto')} ({currentMethod.name})
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-xs text-green-600">
-                      Auto
+                      {t('auto')}
                     </Badge>
                   )}
                 </div>
@@ -492,7 +492,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
 
               {!isManualOverride && preview?.methodReasoning && (
                 <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                  <strong>Auto-selection:</strong> {preview.methodReasoning}
+                  <strong>{t('autoSelection')}</strong> {preview.methodReasoning}
                 </div>
               )}
             </div>
@@ -515,21 +515,21 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Units</p>
+                  <p className="text-xs text-muted-foreground">{t('units')}</p>
                   <p className="text-sm font-semibold">{preview.totalUnits}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Weight className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Weight</p>
+                  <p className="text-xs text-muted-foreground">{t('weight')}</p>
                   <p className="text-sm font-semibold">{formatWeight(preview.totalChargeableWeight)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Cost</p>
+                  <p className="text-xs text-muted-foreground">{t('totalCost')}</p>
                   <p className="text-sm font-semibold">
                     {formatCurrency(preview.totalCosts.total, preview.baseCurrency)}
                   </p>
@@ -538,7 +538,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               <div className="flex items-center gap-2">
                 <Calculator className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Avg/Unit</p>
+                  <p className="text-xs text-muted-foreground">{t('avgUnit')}</p>
                   <p className="text-sm font-semibold">
                     {formatCurrency(preview.totalCosts.total / preview.totalUnits, preview.baseCurrency)}
                   </p>
@@ -547,7 +547,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               {hasWarnings && (
                 <Badge variant="destructive" className="text-xs">
                   <AlertTriangle className="h-3 w-3 mr-1" />
-                  Warnings
+                  {t('warnings')}
                 </Badge>
               )}
             </div>
@@ -559,7 +559,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               data-testid="button-export-csv"
             >
               <Download className="h-3 w-3 mr-1" />
-              Export
+              {t('export')}
             </Button>
           </div>
         </CardContent>
@@ -572,7 +572,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
                 <HelpCircle className="h-3 w-3" />
-                Debug Info (Raw Data Values)
+                {t('debugInfo')}
               </CardTitle>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -584,9 +584,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
           <CollapsibleContent>
             <CardContent className="p-3 pt-0">
               <div className="text-xs space-y-2 font-mono bg-muted p-2 rounded overflow-x-auto">
-                <div><strong>Base Currency:</strong> {preview.baseCurrency}</div>
-                <div><strong>Total Items:</strong> {preview.totalItems}</div>
-                <div><strong>Sample Item Data (First Item):</strong></div>
+                <div><strong>{t('baseCurrency')}</strong> {preview.baseCurrency}</div>
+                <div><strong>{t('totalItems')}</strong> {preview.totalItems}</div>
+                <div><strong>{t('sampleItemData')}</strong></div>
                 {preview.items[0] && (
                   <pre className="text-[10px] overflow-x-auto bg-background p-2 rounded">
                     {JSON.stringify({
@@ -614,7 +614,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
           <CardHeader className="p-3 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">
-                Cost Allocation Details ({preview.totalItems} items)
+                {t('costAllocationDetails')} ({preview.totalItems} {t('items')})
               </CardTitle>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -629,14 +629,14 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 <Table>
                   <TableHeader>
                     <TableRow className="text-xs bg-muted/30">
-                      <TableHead className="min-w-[180px] p-2">Product</TableHead>
-                      <TableHead className="text-right w-[60px] p-2">Units</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">Purch. Price</TableHead>
-                      <TableHead className="text-right w-[70px] p-2">Chg kg</TableHead>
-                      <TableHead className="text-right w-[90px] p-2">Freight</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">Duty</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">Other</TableHead>
-                      <TableHead className="text-right w-[100px] p-2">Total Cost</TableHead>
+                      <TableHead className="min-w-[180px] p-2">{t('product')}</TableHead>
+                      <TableHead className="text-right w-[60px] p-2">{t('units')}</TableHead>
+                      <TableHead className="text-right w-[80px] p-2">{t('purchPrice')}</TableHead>
+                      <TableHead className="text-right w-[70px] p-2">{t('chgKg')}</TableHead>
+                      <TableHead className="text-right w-[90px] p-2">{t('freight')}</TableHead>
+                      <TableHead className="text-right w-[80px] p-2">{t('duty')}</TableHead>
+                      <TableHead className="text-right w-[80px] p-2">{t('other')}</TableHead>
+                      <TableHead className="text-right w-[100px] p-2">{t('totalCost')}</TableHead>
                       <TableHead className="w-[40px] p-2"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -712,7 +712,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         <TableCell colSpan={9} className="bg-muted/30">
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium">Cost Breakdown</h4>
+                              <h4 className="font-medium">{t('costBreakdown')}</h4>
                               {currentMethod && (
                                 <Badge variant="outline" className="text-xs">
                                   <currentMethod.icon className="h-3 w-3 mr-1" />
@@ -722,37 +722,37 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                               <div>
-                                <span className="text-muted-foreground">Freight:</span>
+                                <span className="text-muted-foreground">{t('freightLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.freightAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Duty:</span>
+                                <span className="text-muted-foreground">{t('dutyLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Customs Fee:</span>
+                                <span className="text-muted-foreground">{t('customsFeeLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.brokerageAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Insurance:</span>
+                                <span className="text-muted-foreground">{t('insuranceLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.insuranceAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Packaging:</span>
+                                <span className="text-muted-foreground">{t('packagingLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.packagingAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Other:</span>
+                                <span className="text-muted-foreground">{t('otherLabel')}</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.otherAllocated, preview.baseCurrency)}
                                 </span>
@@ -760,20 +760,20 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             </div>
                             <div className="mt-3 pt-3 border-t">
                               <div className="flex justify-between">
-                                <span className="font-medium">Total Allocated:</span>
+                                <span className="font-medium">{t('totalAllocated')}</span>
                                 <span className="font-bold">
                                   {formatCurrency(item.totalAllocated, preview.baseCurrency)}
                                 </span>
                               </div>
                               <div className="flex justify-between text-sm text-muted-foreground">
-                                <span>Per Unit Cost:</span>
+                                <span>{t('perUnitCost')}</span>
                                 <span>
                                   {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
                                 </span>
                               </div>
                               {currentMethod && (
                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>Method Used:</span>
+                                  <span>{t('methodUsed')}</span>
                                   <span className="flex items-center gap-1">
                                     <currentMethod.icon className="h-3 w-3" />
                                     {currentMethod.description}
@@ -783,7 +783,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             </div>
                             {item.warnings.length > 0 && (
                               <div className="mt-3 pt-3 border-t">
-                                <h5 className="text-sm font-medium text-yellow-600 mb-1">Warnings:</h5>
+                                <h5 className="text-sm font-medium text-yellow-600 mb-1">{t('warningsLabel')}</h5>
                                 <ul className="list-disc list-inside text-sm text-yellow-600">
                                   {item.warnings.map((warning, idx) => (
                                     <li key={idx}>{warning}</li>
@@ -799,7 +799,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               </TableBody>
               <TableFooter>
                 <TableRow className="font-bold text-xs bg-muted/50">
-                  <TableCell className="p-2">TOTAL</TableCell>
+                  <TableCell className="p-2">{t('total')}</TableCell>
                   <TableCell className="text-right p-2">{preview.totalUnits || 0}</TableCell>
                   <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400">
                     {formatCurrency(

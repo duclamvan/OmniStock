@@ -272,6 +272,12 @@ const warehouse = {
   assignToPicker: 'Assign to Picker',
   pickerAssigned: 'Picker Assigned',
   
+  // Location Labels
+  locationTypes: 'Location Types',
+  pickable: 'Pickable',
+  noPick: 'No Pick',
+  noPutaway: 'No Putaway',
+  
   // Cartons
   cartons: 'Cartons',
   carton: 'Carton',
@@ -887,6 +893,9 @@ const warehouse = {
   lowUtilization: 'Low Utilization (<50%)',
   mediumUtilization: 'Medium Utilization (50-80%)',
   highUtilization: 'High Utilization (>80%)',
+  
+  // Print Labels Dialog
+  selectLocationTypes: 'Select Location Types',
 } as const;
 
 export default warehouse;

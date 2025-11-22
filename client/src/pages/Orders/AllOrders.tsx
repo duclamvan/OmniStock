@@ -692,7 +692,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const columns: DataTableColumn<any>[] = [
     {
       key: "order",
-      header: "Order",
+      header: t('orders:order'),
       sortable: true,
       sortKey: "orderId",
       cell: (order) => (
@@ -703,7 +703,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "customer",
-      header: "Customer",
+      header: t('orders:customer'),
       sortable: false,
       cell: (order) => {
         const customerName = order.customer?.name || 'N/A';
@@ -736,7 +736,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "biller",
-      header: "Biller",
+      header: t('orders:biller'),
       sortable: false,
       cell: (order) => (
         <div className="text-sm text-slate-700 dark:text-slate-300">
@@ -746,7 +746,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('orders:status'),
       sortable: true,
       sortKey: "orderStatus",
       cell: (order) => (
@@ -771,7 +771,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "trackingStatus",
-      header: "Tracking",
+      header: t('orders:tracking'),
       sortable: false,
       cell: (order) => {
         if (order.orderStatus !== 'shipped') {
@@ -782,7 +782,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "payment",
-      header: "Payment",
+      header: t('orders:payment'),
       sortable: true,
       sortKey: "paymentStatus",
       cell: (order) => (
@@ -801,7 +801,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "date",
-      header: "Date",
+      header: t('orders:date'),
       sortable: true,
       sortKey: "createdAt",
       cell: (order) => (
@@ -812,7 +812,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "total",
-      header: "Total",
+      header: t('orders:total'),
       sortable: true,
       sortKey: "grandTotal",
       cell: (order) => (
@@ -824,7 +824,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "profit",
-      header: "Profit",
+      header: t('orders:profit'),
       sortable: false,
       cell: (order) => {
         const profit = calculateOrderProfit(order);
@@ -841,7 +841,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       key: "trackingNumber",
-      header: "Tracking #",
+      header: t('orders:trackingNumberShort'),
       sortable: true,
       sortKey: "trackingNumber",
       cell: (order) => (
@@ -869,16 +869,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const bulkActions = [
     {
       type: "select" as const,
-      label: "Order Status",
-      placeholder: "Change status...",
+      label: t('orders:orderStatus'),
+      placeholder: t('orders:changeStatus'),
       options: [
-        { label: "Pending", value: "pending" },
-        { label: "Awaiting Stock", value: "awaiting_stock" },
-        { label: "To Fulfill", value: "to_fulfill" },
-        { label: "Ready to Ship", value: "ready_to_ship" },
-        { label: "Shipped", value: "shipped" },
-        { label: "Delivered", value: "delivered" },
-        { label: "Cancelled", value: "cancelled" },
+        { label: t('orders:pending'), value: "pending" },
+        { label: t('orders:awaitingStock'), value: "awaiting_stock" },
+        { label: t('orders:toFulfill'), value: "to_fulfill" },
+        { label: t('orders:readyToShip'), value: "ready_to_ship" },
+        { label: t('orders:shipped'), value: "shipped" },
+        { label: t('orders:delivered'), value: "delivered" },
+        { label: t('orders:cancelled'), value: "cancelled" },
       ],
       action: (orders: any[], value: string) => {
         bulkUpdateStatusMutation.mutate({
@@ -889,12 +889,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       type: "select" as const,
-      label: "Payment Status",
-      placeholder: "Change payment...",
+      label: t('orders:paymentStatus'),
+      placeholder: t('orders:changePayment'),
       options: [
-        { label: "Pending", value: "pending" },
-        { label: "Paid", value: "paid" },
-        { label: "Pay Later", value: "pay_later" },
+        { label: t('orders:pending'), value: "pending" },
+        { label: t('orders:paid'), value: "paid" },
+        { label: t('orders:payLater'), value: "pay_later" },
       ],
       action: (orders: any[], value: string) => {
         bulkUpdatePaymentMutation.mutate({
@@ -905,7 +905,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('orders:delete'),
       variant: "destructive" as const,
       action: (orders: any[]) => {
         setOrdersToDelete(orders);
@@ -935,18 +935,18 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       // Prepare export data
       const exportData = filteredOrders.map((order: any) => ({
-        'Order ID': order.orderId || 'N/A',
-        'Customer': order.customer?.name || 'N/A',
-        'Items': order.items?.length || 0,
-        'Total': formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
-        'Status': order.orderStatus || 'N/A',
-        'Date': formatDate(order.orderDate),
-        'Shipping Method': order.shippingMethod || 'N/A',
-        'Payment Method': order.paymentMethod || 'N/A',
+        [t('orders:orderId')]: order.orderId || 'N/A',
+        [t('orders:customer')]: order.customer?.name || 'N/A',
+        [t('orders:items')]: order.items?.length || 0,
+        [t('orders:total')]: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
+        [t('orders:status')]: order.orderStatus || 'N/A',
+        [t('orders:date')]: formatDate(order.orderDate),
+        [t('orders:shippingMethod')]: order.shippingMethod || 'N/A',
+        [t('orders:paymentMethod')]: order.paymentMethod || 'N/A',
       }));
 
       // Call export function
-      exportToXLSX(exportData, 'orders', 'Orders');
+      exportToXLSX(exportData, 'orders', t('orders:ordersReport'));
 
       toast({
         title: t('common:success'),
@@ -1300,7 +1300,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     data-testid="button-collapseAll"
                   >
                     <ChevronUp className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Collapsed</span>
+                    <span className="hidden sm:inline">{t('orders:collapsed')}</span>
                   </Button>
                   <Button
                     variant={expandAll ? 'default' : 'ghost'}
@@ -1310,7 +1310,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     data-testid="button-expandAll"
                   >
                     <ChevronDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Expanded</span>
+                    <span className="hidden sm:inline">{t('orders:expanded')}</span>
                   </Button>
                 </div>
                 {viewMode === 'normal' && (
@@ -1321,7 +1321,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel>Show Columns</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('orders:showColumns')}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {columns.map((column) => (
                         <DropdownMenuItem
@@ -1391,7 +1391,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {order.customer?.name || 'Walk-in Customer'}
+                        {order.customer?.name || t('orders:walkInCustomer')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {formatDate(order.createdAt)}
@@ -1402,17 +1402,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   {/* Order Details Grid */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:items')}</p>
                       {isLoading ? (
                         <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                       ) : (
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {order.items?.length || 0} item(s)
+                          {t('orders:itemsWithCount', { count: order.items?.length || 0 })}
                         </p>
                       )}
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Total Amount</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:totalAmount')}</p>
                       {isLoading ? (
                         <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                       ) : (
@@ -1426,7 +1426,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   {/* Order Items Summary (if available) */}
                   {order.items && order.items.length > 0 && (
                     <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Items:</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('orders:itemsColon')}</p>
                       <div className="space-y-1">
                         {(expandedItemsOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, idx: number) => (
                           <p key={idx} className="text-xs text-gray-700 dark:text-gray-300 truncate">
@@ -1443,8 +1443,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             data-testid={`button-toggle-items-${order.id}`}
                           >
                             {expandedItemsOrders.has(order.id) 
-                              ? "Show less" 
-                              : `+${order.items.length - 5} more item(s)`}
+                              ? t('orders:showLess')
+                              : t('orders:moreItems', { count: order.items.length - 5 })}
                           </button>
                         )}
                       </div>
@@ -1480,12 +1480,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               onClick={(e) => e.stopPropagation()}
                               className="group text-base font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1"
                             >
-                              {order.customer?.name || 'Unknown Customer'}
+                              {order.customer?.name || t('orders:unknownCustomer')}
                               <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
                           ) : (
                             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                              {order.customer?.name || 'Unknown Customer'}
+                              {order.customer?.name || t('orders:unknownCustomer')}
                             </h3>
                           )}
                           <Button
@@ -1515,7 +1515,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">Manually marked as VIP customer</p>
+                                  <p className="text-xs">{t('orders:vipCustomerManual')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -1533,7 +1533,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                       </Badge>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-2" side="top">
-                                      <p className="text-xs">Lifetime spending ≥ {formatCurrency(100000, order.currency || 'EUR')}</p>
+                                      <p className="text-xs">{t('orders:lifetimeSpendingAmount', { amount: formatCurrency(100000, order.currency || 'EUR') })}</p>
                                     </PopoverContent>
                                   </Popover>
                                 );
@@ -1547,7 +1547,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                       </Badge>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-2" side="top">
-                                      <p className="text-xs">Lifetime spending ≥ {formatCurrency(50000, order.currency || 'EUR')}</p>
+                                      <p className="text-xs">{t('orders:lifetimeSpendingAmount', { amount: formatCurrency(50000, order.currency || 'EUR') })}</p>
                                     </PopoverContent>
                                   </Popover>
                                 );
@@ -1561,7 +1561,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                       </Badge>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-2" side="top">
-                                      <p className="text-xs">Lifetime spending ≥ {formatCurrency(25000, order.currency || 'EUR')}</p>
+                                      <p className="text-xs">{t('orders:lifetimeSpendingAmount', { amount: formatCurrency(25000, order.currency || 'EUR') })}</p>
                                     </PopoverContent>
                                   </Popover>
                                 );
@@ -1579,7 +1579,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">Top 10 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
+                                  <p className="text-xs">{order.customer?.country ? t('orders:top10CustomerInCountry', { country: order.customer.country }) : t('orders:top10CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -1592,7 +1592,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">Top 50 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
+                                  <p className="text-xs">{order.customer?.country ? t('orders:top50CustomerInCountry', { country: order.customer.country }) : t('orders:top50CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -1605,7 +1605,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">Top 100 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
+                                  <p className="text-xs">{order.customer?.country ? t('orders:top100CustomerInCountry', { country: order.customer.country }) : t('orders:top100CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -1620,7 +1620,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">Payment scheduled for later</p>
+                                  <p className="text-xs">{t('orders:paymentScheduledLater')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -1644,11 +1644,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   <PopoverTrigger asChild>
                                     <Badge className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200 border-green-300 dark:border-green-700 text-xs cursor-pointer">
                                       <Sparkles className="h-3 w-3 mr-1" />
-                                      New Customer
+                                      {t('orders:newCustomer')}
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">First order placed within the last 30 days</p>
+                                    <p className="text-xs">{t('orders:firstOrderWithin30Days')}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1665,7 +1665,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">Has placed only 1 order so far</p>
+                                    <p className="text-xs">{t('orders:hasPlacedOnly1Order')}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1682,7 +1682,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">Has placed 10+ orders ({totalOrders} orders total)</p>
+                                    <p className="text-xs">{t('orders:hasPlaced10PlusOrders', { totalOrders })}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1694,11 +1694,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   <PopoverTrigger asChild>
                                     <Badge className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700 text-xs cursor-pointer">
                                       <RefreshCw className="h-3 w-3 mr-1" />
-                                      Loyal Customer
+                                      {t('orders:loyalCustomer')}
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">Has placed {totalOrders} orders - coming back for more!</p>
+                                    <p className="text-xs">{t('orders:hasPlacedXOrders', { totalOrders })}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1715,7 +1715,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">No orders in {daysSinceLastOrder} days - may need re-engagement</p>
+                                    <p className="text-xs">{t('orders:noOrdersInXDays', { daysSinceLastOrder })}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1732,7 +1732,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                     </Badge>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-2" side="top">
-                                    <p className="text-xs">Average order value: {formatCurrency(avgOrderValue, order.currency || 'EUR')}</p>
+                                    <p className="text-xs">{t('orders:avgOrderValueBadge', { value: formatCurrency(avgOrderValue, order.currency || 'EUR') })}</p>
                                   </PopoverContent>
                                 </Popover>
                               );
@@ -1748,7 +1748,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {/* Order Items */}
                     {order.items && order.items.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Order Items</h4>
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">{t('orders:orderItemsHeader')}</h4>
                         <div className="space-y-2">
                           {order.items.map((item: any, index: number) => (
                             <div
@@ -1760,7 +1760,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   <span className="text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
                                 </p>
                                 {item.sku && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">SKU: {item.sku}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('orders:sku')} {item.sku}</p>
                                 )}
                               </div>
                               <div className="text-right ml-4">
@@ -1768,7 +1768,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                   {formatCurrency(item.total || 0, order.currency || 'EUR')}
                                 </p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {formatCurrency(item.price || 0, order.currency || 'EUR')} each
+                                  {formatCurrency(item.price || 0, order.currency || 'EUR')} {t('orders:each')}
                                 </p>
                               </div>
                             </div>
@@ -1779,17 +1779,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
                     {/* Order Summary */}
                     <div className="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-950/30 dark:to-slate-800/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Order Summary</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">{t('orders:orderSummaryHeader')}</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                          <span className="text-slate-600 dark:text-slate-400">{t('orders:subtotal')}</span>
                           <span className="font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
                           </span>
                         </div>
                         {order.discountValue > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600 dark:text-slate-400">Discount</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('orders:discount')}</span>
                             <span className="font-medium text-green-600 dark:text-green-400">
                               -{formatCurrency(
                                 order.discountType === 'rate' 
@@ -1802,14 +1802,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         )}
                         {order.shippingCost > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('orders:shipping')}</span>
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
                             </span>
                           </div>
                         )}
                         <div className="flex justify-between text-base font-bold border-t border-slate-300 dark:border-slate-600 pt-2 mt-2">
-                          <span className="text-slate-900 dark:text-slate-100">Total</span>
+                          <span className="text-slate-900 dark:text-slate-100">{t('orders:total')}</span>
                           <span className="text-blue-600 dark:text-blue-400">
                             {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                           </span>
@@ -1828,7 +1828,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 <div className="px-4 sm:px-0 pb-6">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary" className="text-xs h-6 px-2">
-                      {selectedRows.size} selected
+                      {t('orders:selectedCount', { count: selectedRows.size })}
                     </Badge>
                     {actions.map((action, index) => {
                       if (action.type === "select") {
@@ -1985,15 +1985,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Orders</AlertDialogTitle>
+            <AlertDialogTitle>{t('orders:deleteOrdersTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {ordersToDelete.length} order(s)? This action cannot be undone.
+              {t('orders:deleteOrdersConfirm', { count: ordersToDelete.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t('orders:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2017,7 +2017,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                  <p>Previous Order</p>
+                  <p>{t('orders:previousOrder')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -2036,7 +2036,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                  <p>Next Order</p>
+                  <p>{t('orders:nextOrder')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

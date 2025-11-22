@@ -79,6 +79,7 @@ const orders = {
   price: 'Giá',
   image: 'Hình ảnh',
   variant: 'Biến thể',
+  variantName: 'Tên biến thể',
   bundle: 'Combo',
   scanBarcodeOrSku: 'Quét mã vạch hoặc SKU...',
   readyToScan: 'Sẵn sàng quét...',
@@ -274,6 +275,7 @@ const orders = {
   saveNote: 'Lưu ghi chú',
   shippingNotes: 'Ghi chú vận chuyển',
   quickNoteTemplates: 'Mẫu ghi chú nhanh',
+  templates: 'Mẫu',
   
   // Pricing & Calculations
   subtotal: 'Tạm tính',
@@ -288,8 +290,10 @@ const orders = {
   shipping: 'Vận chuyển',
   adjustment: 'Điều chỉnh',
   grandTotal: 'Tổng cộng',
+  itemTotal: 'Tổng sản phẩm',
   actualShippingCost: 'Phí vận chuyển thực tế',
   profitMargin: 'Biên lợi nhuận',
+  clickToEditOrRoundUp: 'Nhấp để chỉnh sửa hoặc làm tròn',
   
   // Tax Invoice
   taxInvoice: 'Hóa đơn thuế',
@@ -341,6 +345,7 @@ const orders = {
   // Shipping Address
   shippingAddressSelection: 'Chọn địa chỉ giao hàng',
   selectShippingAddress: 'Chọn địa chỉ giao hàng',
+  selectOrAddShippingAddress: 'Chọn hoặc thêm địa chỉ giao hàng cho đơn hàng này',
   searchAddress: 'Tìm địa chỉ',
   searchAddressPlaceholder: 'Nhập để tìm địa chỉ...',
   street: 'Đường',
@@ -421,6 +426,7 @@ const orders = {
   
   // Variant/Bundle Selection
   selectVariantOrBundle: 'Chọn biến thể/Combo',
+  selectProductVariants: 'Chọn biến thể sản phẩm',
   availableVariants: 'Biến thể có sẵn',
   availableBundles: 'Combo có sẵn',
   variantQuantity: 'Số lượng',
@@ -462,6 +468,13 @@ const orders = {
   loadingOrders: 'Đang tải đơn hàng...',
   filtersAndSearch: 'Bộ lọc & Tìm kiếm',
   record: 'Kỷ lục',
+  walkInCustomer: 'Khách vãng lai',
+  unknownCustomer: 'Khách hàng không xác định',
+  itemsColon: 'Sản phẩm:',
+  showLess: 'Thu gọn',
+  moreItems: '+{{count}} sản phẩm khác',
+  previousOrder: 'Đơn hàng trước',
+  nextOrder: 'Đơn hàng tiếp theo',
   
   // Filters
   filterByStatus: 'Lọc theo trạng thái',
@@ -1097,6 +1110,63 @@ const orders = {
   pickingAccuracy: 'Độ chính xác lấy hàng',
   avgItemsPerOrder: 'TB sản phẩm/Đơn',
   avgPickTime: 'TB thời gian lấy',
+  
+  // Section Headers
+  orderItemsHeader: 'Sản phẩm trong đơn',
+  orderSummaryHeader: 'Tóm tắt đơn hàng',
+  
+  // Delete Dialog
+  deleteOrdersTitle: 'Xóa đơn hàng',
+  deleteOrdersConfirm: 'Bạn có chắc chắn muốn xóa {{count}} đơn hàng? Hành động này không thể hoàn tác.',
+  
+  // Additional Keys
+  each: 'mỗi',
+  selected: 'đã chọn',
+  selectedCount: '{{count}} đã chọn',
+  
+  // EditOrder.tsx - Quick Note Templates
+  handleWithCareFragile: 'Cầm nhẹ - hàng dễ vỡ',
+  keepUprightTransport: 'Giữ thẳng đứng khi vận chuyển',
+  packAntiStatic: 'Đóng gói với vật liệu chống tĩnh điện',
+  doubleBoxRequired: 'Yêu cầu đóng gói 2 lớp',
+  separateFromOthers: 'Tách riêng với các sản phẩm khác',
+  doNotStack: 'Không xếp chồng',
+  tempSensitiveKeepCool: 'Nhạy cảm nhiệt độ - giữ mát',
+  requiresSignatureDelivery: 'Yêu cầu ký nhận khi giao hàng',
+  packExtraBubbleWrap: 'Đóng gói thêm màng xốp',
+  
+  // EditOrder.tsx - Validation Messages
+  pleaseSelectCustomer: 'Vui lòng chọn khách hàng',
+  pleaseAddProduct: 'Vui lòng thêm ít nhất một sản phẩm vào đơn hàng',
+  allProductsMustHaveQuantity: 'Tất cả sản phẩm phải có số lượng lớn hơn 0',
+  
+  // EditOrder.tsx - Category Names
+  bundles: 'Combo',
+  services: 'Dịch vụ',
+  uncategorized: 'Chưa phân loại',
+  
+  // EditOrder.tsx - UI Labels
+  parseFill: 'Phân tích & Điền',
+  scanModeOn: 'Chế độ quét: BẬT',
+  scanModeOff: 'Chế độ quét: TẮT',
+  itemAdded: 'sản phẩm đã thêm',
+  itemsAdded: 'sản phẩm đã thêm',
+  noItemsYet: 'Chưa có sản phẩm',
+  noItemsAddedYet: 'Chưa có sản phẩm nào được thêm vào đơn hàng',
+  searchSelectProductsAbove: 'Tìm kiếm và chọn sản phẩm ở trên để thêm vào',
+  paymentDetails: 'Chi tiết thanh toán',
+  configurePricingNotes: 'Cấu hình giá và ghi chú',
+  quickSelect: 'Chọn nhanh:',
+  shippingCostLabel: 'Phí vận chuyển',
+  actualShippingCostLabel: 'Phí vận chuyển thực tế',
+  grandTotalLabel: 'Tổng cộng',
+  taxInvoiceInformation: 'Thông tin hóa đơn thuế',
+  rounding: 'Làm tròn',
+  total: 'Tổng',
+  products: 'Sản phẩm',
+  requiredFieldsMissing: 'Thiếu trường bắt buộc:',
+  orderSummary: 'Tóm tắt đơn hàng',
+  margin: 'Biên lợi nhuận',
   
 } as const;
 

@@ -449,6 +449,11 @@ const reports = {
   financialReportExportedPdf: 'Financial report exported to PDF',
   failedToExportFinancialReport: 'Failed to export financial report',
   failedToExportFinancialReportPdf: 'Failed to export financial report to PDF',
+  
+  // Email notifications
+  emailFeature: 'Email Feature',
+  emailNotificationFeatureComingSoon: 'Email notifications feature coming soon',
+  failedToSendEmailNotifications: 'Failed to send email notifications',
 } as const;
 
 export default reports;

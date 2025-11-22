@@ -185,6 +185,7 @@ const discounts = {
   exportValidUntil: 'Đến',
   exportStatus: 'Trạng thái',
   unlimited: 'Không giới hạn',
+  buyXGetYFormat: 'M{{buy}}T{{get}}',
   
   // Empty states
   noDiscounts: 'Không tìm thấy giảm giá',
@@ -201,6 +202,9 @@ const discounts = {
   
   // Required field marker
   required: '*',
+  
+  // Column visibility
+  toggleColumns: 'Hiển thị cột',
 } as const;
 
 export default discounts;

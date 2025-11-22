@@ -449,6 +449,11 @@ const reports = {
   financialReportExportedPdf: 'Đã xuất báo cáo tài chính sang PDF',
   failedToExportFinancialReport: 'Không thể xuất báo cáo tài chính',
   failedToExportFinancialReportPdf: 'Không thể xuất báo cáo tài chính sang PDF',
+  
+  // Email notifications
+  emailFeature: 'Tính năng Email',
+  emailNotificationFeatureComingSoon: 'Tính năng thông báo email sắp ra mắt',
+  failedToSendEmailNotifications: 'Không thể gửi thông báo email',
 } as const;
 
 export default reports;

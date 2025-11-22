@@ -351,7 +351,7 @@ export default function AllDiscounts() {
           : sale.type || '-',
         [t('discounts:exportValue')]: sale.type === 'percentage' ? `${sale.percentage}%`
           : sale.type === 'fixed' ? `$${sale.value}`
-          : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+          : sale.type === 'buy_x_get_y' ? t('discounts:buyXGetYFormat', { buy: sale.buyQuantity, get: sale.getQuantity })
           : '-',
         [t('discounts:exportMinPurchase')]: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
         [t('discounts:exportMaxUses')]: sale.maxUses || t('discounts:unlimited'),
@@ -390,7 +390,7 @@ export default function AllDiscounts() {
           : sale.type || '-',
         value: sale.type === 'percentage' ? `${sale.percentage}%`
           : sale.type === 'fixed' ? `$${sale.value}`
-          : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+          : sale.type === 'buy_x_get_y' ? t('discounts:buyXGetYFormat', { buy: sale.buyQuantity, get: sale.getQuantity })
           : '-',
         minPurchase: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
         maxUses: sale.maxUses || t('discounts:unlimited'),
@@ -637,7 +637,7 @@ export default function AllDiscounts() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('discounts:toggleColumns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {allColumns.filter(col => col.key !== 'actions').map((col) => (
                   <DropdownMenuItem

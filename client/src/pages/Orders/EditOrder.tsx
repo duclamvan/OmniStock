@@ -112,18 +112,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-// Quick note templates for autofill
-const QUICK_NOTE_TEMPLATES = [
-  "Handle with care - fragile item",
-  "Keep upright during transport",
-  "Pack with anti-static materials",
-  "Double box required",
-  "Separate from other items",
-  "Do not stack",
-  "Temperature sensitive - keep cool",
-  "Requires signature on delivery",
-];
-
 // Helper function to normalize carrier names for backward compatibility
 const normalizeCarrier = (value: string): string => {
   const map: Record<string, string> = {
@@ -366,6 +354,18 @@ export default function EditOrder() {
   const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+
+  // Quick note templates for autofill
+  const QUICK_NOTE_TEMPLATES = [
+    t('orders:handleWithCareFragile'),
+    t('orders:keepUprightTransport'),
+    t('orders:packAntiStatic'),
+    t('orders:doubleBoxRequired'),
+    t('orders:separateFromOthers'),
+    t('orders:doNotStack'),
+    t('orders:tempSensitiveKeepCool'),
+    t('orders:requiresSignatureDelivery'),
+  ];
 
   // Packing optimization hook
   const { 
@@ -1894,18 +1894,18 @@ export default function EditOrder() {
 
     // Check if customer is selected
     if (!selectedCustomer) {
-      validationErrors.push("Please select a customer");
+      validationErrors.push(t('pleaseSelectCustomer'));
     }
 
     // Check if at least one product is added
     if (orderItems.length === 0) {
-      validationErrors.push("Please add at least one product to the order");
+      validationErrors.push(t('pleaseAddProduct'));
     }
 
     // Check if any product has zero or negative quantity
     const invalidQuantities = orderItems.filter(item => item.quantity <= 0);
     if (invalidQuantities.length > 0) {
-      validationErrors.push("All products must have a quantity greater than 0");
+      validationErrors.push(t('allProductsMustHaveQuantity'));
     }
 
     // If there are validation errors, show them and prevent submission
@@ -2004,7 +2004,7 @@ export default function EditOrder() {
             description: bundle.description,
             priceCzk: bundle.priceCzk,
             priceEur: bundle.priceEur,
-            categoryName: 'Bundles',
+            categoryName: t('bundles'),
             itemType: 'bundle',
             bundleId: bundle.id,
             availableStock: bundle.availableStock ?? 0,
@@ -2023,7 +2023,7 @@ export default function EditOrder() {
           sku: 'SERVICE',
           description: service.description,
           totalCost: service.totalCost,
-          categoryName: 'Services',
+          categoryName: t('services'),
           itemType: 'service',
           isService: true,
         });
@@ -2043,7 +2043,7 @@ export default function EditOrder() {
               description: parentProduct.description,
               priceCzk: parentProduct.priceCzk,
               priceEur: parentProduct.priceEur,
-              categoryName: parentProduct.categoryName || 'Uncategorized',
+              categoryName: parentProduct.categoryName || t('uncategorized'),
               stockQuantity: variant.quantity,
               itemType: 'variant',
               variantId: variant.id,
@@ -2071,7 +2071,7 @@ export default function EditOrder() {
     // Group items by category
     const groupedByCategory: Record<string, any[]> = {};
     items.forEach((item: any) => {
-      const categoryName = item.categoryName || 'Uncategorized';
+      const categoryName = item.categoryName || t('uncategorized');
       if (!groupedByCategory[categoryName]) {
         groupedByCategory[categoryName] = [];
       }
@@ -2101,8 +2101,9 @@ export default function EditOrder() {
 
     // Sort categories alphabetically, but bundles last
     const sortedCategories = Object.keys(groupedByCategory).sort((a, b) => {
-      if (a === 'Bundles') return 1;
-      if (b === 'Bundles') return -1;
+      const bundlesText = t('bundles');
+      if (a === bundlesText) return 1;
+      if (b === bundlesText) return -1;
       return a.localeCompare(b);
     });
 
@@ -3030,7 +3031,7 @@ export default function EditOrder() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customerPhone">Phone</Label>
+                    <Label htmlFor="customerPhone">{t('phone')}</Label>
                     <Input
                       id="customerPhone"
                       value={newCustomer.phone}
@@ -3039,7 +3040,7 @@ export default function EditOrder() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company">Company</Label>
+                    <Label htmlFor="company">{t('company')}</Label>
                     <Input
                       id="company"
                       value={newCustomer.company}
@@ -3051,9 +3052,9 @@ export default function EditOrder() {
 
                 {/* Smart Paste */}
                 <div className="space-y-2">
-                  <Label htmlFor="rawNewCustomerAddress">Smart Paste</Label>
+                  <Label htmlFor="rawNewCustomerAddress">{t('smartPaste')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Paste any address info and we'll split it automatically
+                    {t('pasteAddressAutoSplit')}
                   </p>
                   <Textarea
                     id="rawNewCustomerAddress"
@@ -3071,17 +3072,17 @@ export default function EditOrder() {
                     {parseNewCustomerAddressMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Parsing...
+                        {t('parsing')}...
                       </>
                     ) : (
-                      'Parse & Fill'
+                      t('parseFill')
                     )}
                   </Button>
                 </div>
 
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
-                  <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
+                  <Label htmlFor="addressAutocomplete">{t('addressSearchOptional')}</Label>
                   <div className="relative">
                     <Input
                       id="addressAutocomplete"
@@ -3146,20 +3147,20 @@ export default function EditOrder() {
                           </>
                         ) : (
                           <div className="p-4 text-center text-slate-500 dark:text-slate-400">
-                            <div className="text-sm">No addresses found</div>
+                            <div className="text-sm">{t('noAddressesFound')}</div>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Search for an official address to auto-fill the fields below
+                    {t('searchOfficialAddressHelp')}
                   </p>
                 </div>
 
                 {/* Address Information */}
                 <div className="space-y-2">
-                  <Label>Shipping Address</Label>
+                  <Label>{t('shippingAddress')}</Label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
                       <Input
@@ -3220,7 +3221,7 @@ export default function EditOrder() {
                     }
                   }}
                 >
-                  Add Customer to Order
+                  {t('addCustomerToOrder')}
                 </Button>
               </div>
             )}
@@ -3234,12 +3235,12 @@ export default function EditOrder() {
               <Package className="h-4 w-4 text-blue-600" />
               Products
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">{t('searchAddProductsToOrder')}</CardDescription>
           </CardHeader>
           <CardContent className="sticky top-0 z-40 p-3 space-y-3 bg-white dark:bg-slate-950 border-b shadow-sm backdrop-blur-sm">
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="product">Search Products</Label>
+                <Label htmlFor="product">{t('searchProducts')}</Label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -3257,7 +3258,7 @@ export default function EditOrder() {
                     }}
                   >
                     <Package className="h-3 w-3 mr-1" />
-                    {barcodeScanMode ? "Scan Mode: ON" : "Scan Mode: OFF"}
+                    {barcodeScanMode ? t('scanModeOn') : t('scanModeOff')}
                   </Button>
                 </div>
               </div>
@@ -3425,7 +3426,7 @@ export default function EditOrder() {
                   Order Items
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">
-                  {orderItems.length > 0 ? `${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} added` : 'No items yet'}
+                  {orderItems.length > 0 ? `${orderItems.length} ${orderItems.length !== 1 ? t('itemsAdded') : t('itemAdded')}` : t('noItemsYet')}
                 </CardDescription>
               </div>
               {/* Column Toggles */}
@@ -3934,7 +3935,7 @@ export default function EditOrder() {
                                   size="sm"
                                   className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400"
                                 >
-                                  Templates
+                                  {t('templates')}
                                   <ChevronDown className="h-3 w-3 ml-1" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -3963,7 +3964,7 @@ export default function EditOrder() {
                         
                         {/* Total Display */}
                         <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Item Total:</span>
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('itemTotal')}:</span>
                           <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                             {formatCurrency(item.total, form.watch('currency'))}
                           </span>
@@ -3977,8 +3978,8 @@ export default function EditOrder() {
             ) : (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                 <ShoppingCart className="mx-auto h-12 w-12 mb-4 text-slate-400 dark:text-slate-600" />
-                <p className="font-medium text-slate-700 dark:text-slate-300">No items added to order yet</p>
-                <p className="text-sm mt-1">Search and select products above to add them</p>
+                <p className="font-medium text-slate-700 dark:text-slate-300">{t('noItemsAddedYet')}</p>
+                <p className="text-sm mt-1">{t('searchSelectProductsAbove')}</p>
               </div>
             )}
           </CardContent>
@@ -4016,9 +4017,9 @@ export default function EditOrder() {
           <CardHeader className="p-3 border-b">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <CreditCard className="h-4 w-4 text-blue-600" />
-              Payment Details
+              {t('paymentDetails')}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">{t('configurePricingNotes')}</CardDescription>
           </CardHeader>
           <CardContent className="p-3 space-y-3">
             {/* Shipping & Payment Methods */}
@@ -4045,10 +4046,10 @@ export default function EditOrder() {
                     <SelectValue placeholder={t('selectPayment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="PayPal">PayPal</SelectItem>
-                    <SelectItem value="COD">COD</SelectItem>
-                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">{t('bankTransfer')}</SelectItem>
+                    <SelectItem value="PayPal">{t('paypal')}</SelectItem>
+                    <SelectItem value="COD">{t('cod')}</SelectItem>
+                    <SelectItem value="Cash">{t('cash')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -4079,7 +4080,7 @@ export default function EditOrder() {
               {showDiscount && (
                 <div className="space-y-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30">
                   <div>
-                    <Label className="text-sm font-medium">Discount</Label>
+                    <Label className="text-sm font-medium">{t('discount')}</Label>
                     <div className="flex gap-2 mt-1">
                       <Select 
                         value={form.watch('discountType')} 
@@ -4110,7 +4111,7 @@ export default function EditOrder() {
 
                     {/* Quick discount buttons */}
                     <div className="mt-2">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('quickSelect')}:</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('quickSelect')}</div>
                       <div className="flex flex-wrap gap-1">
                         {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                           <Button
@@ -4159,7 +4160,7 @@ export default function EditOrder() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingCost" className="text-sm">Shipping Cost</Label>
+                <Label htmlFor="shippingCost" className="text-sm">{t('shippingCostLabel')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -4176,7 +4177,7 @@ export default function EditOrder() {
                 />
                 {/* Quick shipping cost buttons */}
                 <div className="mt-2">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick select:</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('quickSelect')}</div>
                   <div className="flex flex-wrap gap-1">
                     {form.watch('currency') === 'CZK' && [0, 100, 150, 250].map(amount => (
                       <Button
@@ -4207,7 +4208,7 @@ export default function EditOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
+                <Label htmlFor="actualShippingCost" className="text-sm">{t('actualShippingCostLabel')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -4297,7 +4298,7 @@ export default function EditOrder() {
                 <div className="flex-1">
                   <Label htmlFor="grandTotal" className="text-sm font-semibold flex items-center gap-2 text-blue-900 dark:text-blue-100">
                     <Calculator className="w-4 h-4" />
-                    Grand Total
+                    {t('grandTotalLabel')}
                   </Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input
@@ -4381,7 +4382,7 @@ export default function EditOrder() {
                 <div className="mt-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30 space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">Tax Invoice Information</h3>
+                    <h3 className="font-semibold text-blue-900">{t('taxInvoiceInformation')}</h3>
                   </div>
 
                   {form.watch('currency') === 'CZK' && (
@@ -4479,7 +4480,7 @@ export default function EditOrder() {
                       </div>
 
                       <div className="relative">
-                        <Label htmlFor="country">Country</Label>
+                        <Label htmlFor="country">{t('country')}</Label>
                         <div className="relative">
                           <Input
                             {...form.register('country')}
@@ -4863,7 +4864,7 @@ export default function EditOrder() {
                         )}
                         
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                          <span className="text-slate-600 dark:text-slate-400">{t('shipping')}</span>
                           <span className="font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}
                           </span>
@@ -4871,7 +4872,7 @@ export default function EditOrder() {
                         
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600 dark:text-slate-400">
-                            Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
+                            {t('discount')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
                           </span>
                           <span className="font-medium text-green-600 dark:text-green-500">
                             -{formatCurrency(
@@ -4885,7 +4886,7 @@ export default function EditOrder() {
                         
                         {roundingAdjustment > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600 dark:text-slate-400">Zaokrouhlení</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('rounding')}</span>
                             <span className="font-medium text-blue-600 dark:text-blue-500">
                               +{formatCurrency(roundingAdjustment, form.watch('currency'))}
                             </span>
@@ -4896,7 +4897,7 @@ export default function EditOrder() {
                       {/* Grand Total */}
                       <div className="pt-3 border-t">
                         <div className="flex justify-between items-center">
-                          <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Total</span>
+                          <span className="text-base font-semibold text-slate-900 dark:text-slate-100">{t('total')}</span>
                           <span className="text-xl font-bold text-blue-600 dark:text-blue-500">
                             {formatCurrency(calculateGrandTotal(), form.watch('currency'))}
                           </span>
@@ -4906,8 +4907,8 @@ export default function EditOrder() {
                       {/* Validation Warning */}
                       {(() => {
                         const missingFields: string[] = [];
-                        if (!selectedCustomer) missingFields.push("Customer");
-                        if (orderItems.length === 0) missingFields.push("Products");
+                        if (!selectedCustomer) missingFields.push(t('customer'));
+                        if (orderItems.length === 0) missingFields.push(t('products'));
                         
                         if (missingFields.length > 0) {
                           return (
@@ -4915,7 +4916,7 @@ export default function EditOrder() {
                               <div className="flex items-start gap-2">
                                 <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                 <div className="text-sm text-amber-800 dark:text-amber-200">
-                                  <p className="font-medium">Required fields missing:</p>
+                                  <p className="font-medium">{t('requiredFieldsMissing')}</p>
                                   <p className="text-amber-700 dark:text-amber-300">{missingFields.join(", ")}</p>
                                 </div>
                               </div>
@@ -4959,7 +4960,7 @@ export default function EditOrder() {
             <CardHeader className="p-3 border-b bg-slate-50 dark:bg-slate-900">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
-                Order Summary
+                {t('orderSummary')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -4979,7 +4980,7 @@ export default function EditOrder() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium flex items-center gap-1.5">
                         <TrendingUp className="h-4 w-4 text-green-600" />
-                        Margin
+                        {t('margin')}
                       </span>
                       <MarginPill
                         sellingPrice={totalSellingPrice}
@@ -5224,14 +5225,14 @@ export default function EditOrder() {
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">{t('quickNoteTemplates')}:</p>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    "Handle with care - fragile item",
-                    "Keep upright during transport",
-                    "Double box required",
-                    "Pack with extra bubble wrap",
-                    "Separate from other items",
-                    "Do not stack",
-                    "Temperature sensitive - keep cool",
-                    "Pack with anti-static materials"
+                    t('handleWithCareFragile'),
+                    t('keepUprightTransport'),
+                    t('doubleBoxRequired'),
+                    t('packExtraBubbleWrap'),
+                    t('separateFromOthers'),
+                    t('doNotStack'),
+                    t('tempSensitiveKeepCool'),
+                    t('packAntiStatic')
                   ].map((template) => (
                     <button
                       key={template}

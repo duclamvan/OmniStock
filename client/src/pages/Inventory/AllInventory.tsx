@@ -1462,8 +1462,8 @@ export default function AllInventory() {
                             </p>
                           </Link>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            SKU: {product.sku}
-                            {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+                            {t('inventory:sku')}: {product.sku}
+                            {!product.isActive && <span className="text-amber-600 font-medium ml-2">({t('inventory:inactive')})</span>}
                           </p>
                         </div>
                       </div>
@@ -1475,23 +1475,23 @@ export default function AllInventory() {
                     {/* Middle Row - Key Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Category</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('inventory:category')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {(categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Quantity</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} units</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('inventory:quantity')}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} {t('common:units')}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Location</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('inventory:location')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {warehouse?.name || 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Units Sold</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('inventory:unitsSold')}</p>
                         <div className="flex items-center gap-1.5">
                           <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
                           <p className="font-semibold text-emerald-700">{unitsSold.toLocaleString()}</p>
@@ -1502,7 +1502,7 @@ export default function AllInventory() {
                     {/* Pricing Section */}
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sell Price</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('inventory:sellPrice')}</p>
                         <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                           {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
                         </p>
@@ -1511,7 +1511,7 @@ export default function AllInventory() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Import Cost</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('inventory:importCostLabel')}</p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
                         </p>
@@ -1528,13 +1528,13 @@ export default function AllInventory() {
                           <Link href={`/inventory/products/${product.id}`} className="flex-1">
                             <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-view-details">
                               <Package className="h-4 w-4 mr-2" />
-                              View Details
+                              {t('inventory:viewDetails')}
                             </Button>
                           </Link>
                           <Link href={`/inventory/${product.id}/edit`} className="flex-1">
                             <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-edit">
                               <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('inventory:edit')}
                             </Button>
                           </Link>
                           <AlertDialog>
@@ -1547,22 +1547,22 @@ export default function AllInventory() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>{t('inventory:deleteProduct')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{product.name}"?
+                                  {t('inventory:deleteConfirmation', { name: product.name })}
                                 </AlertDialogDescription>
                                 <div className="space-y-2 text-sm text-muted-foreground mt-4">
                                   <div className="text-amber-600 font-medium">
-                                    ℹ️ Product will be marked as inactive and hidden from inventory.
+                                    {t('inventory:productWillBeInactive')}
                                   </div>
                                   <div>{t('inventory:preservesOrderHistory')}</div>
                                 </div>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
                                 <AlertDialogAction 
                                   onClick={() => deleteProductMutation.mutate(product.id)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
-                                  Delete
+                                  {t('inventory:delete')}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -1575,7 +1575,7 @@ export default function AllInventory() {
                           onClick={() => restoreProductMutation.mutate(product.id)}
                           data-testid="button-restore"
                         >
-                          Restore
+                          {t('inventory:restore')}
                         </Button>
                       )}
                     </div>
@@ -1606,7 +1606,7 @@ export default function AllInventory() {
                         <>
                           <div className="h-6 w-px bg-gray-300" />
                           <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-800">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Selected</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{t('inventory:selected')}</span>
                             <Badge variant="secondary" className="text-xs h-5 px-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                               {selectedRows.size}
                             </Badge>
@@ -1646,31 +1646,31 @@ export default function AllInventory() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('inventory:deleteProducts')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedProducts.length} product(s)?
+              {t('inventory:deleteConfirmationMultiple', { count: selectedProducts.length })}
             </AlertDialogDescription>
             <div className="space-y-3 text-sm text-muted-foreground mt-4">
               {selectedProducts.some(p => orderCounts[p.id] > 0) && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="font-medium text-amber-800 mb-2">⚠️ Products with order history:</div>
+                  <div className="font-medium text-amber-800 mb-2">{t('inventory:productsWithOrderHistory')}</div>
                   <div className="space-y-1">
                     {selectedProducts.filter(p => orderCounts[p.id] > 0).map(product => (
                       <div key={product.id} className="text-amber-700 text-xs">
-                        • {product.name}: {orderCounts[product.id]} order(s)
+                        • {product.name}: {orderCounts[product.id]} {t('inventory:ordersCount')}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
               <div className="text-amber-600 font-medium">
-                ℹ️ Products will be marked as inactive and hidden from inventory.
+                {t('inventory:productsWillBeInactiveInfo')}
               </div>
               <div>{t('inventory:preservesOrderHistoryPlural')}</div>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-              Proceed with Deletion
+              {t('inventory:proceedWithDeletion')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1680,72 +1680,72 @@ export default function AllInventory() {
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Import Inventory from Excel</DialogTitle>
+            <DialogTitle>{t('inventory:importInventoryFromExcel')}</DialogTitle>
             <DialogDescription>
-              Upload an Excel file to create or update products in bulk
+              {t('inventory:uploadExcelBulkUpdate')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">Important Notes:</h4>
+              <h4 className="font-semibold text-sm mb-2">{t('inventory:importantNotes')}</h4>
               <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Products with existing SKU will be <strong>updated</strong></li>
-                <li>• Products with new SKU will be <strong>created</strong></li>
-                <li>• Name and SKU are required for each row</li>
-                <li>• Categories and Warehouses must match existing names (case-insensitive)</li>
+                <li dangerouslySetInnerHTML={{ __html: `• ${t('inventory:productsWithExistingSKUUpdated')}` }} />
+                <li dangerouslySetInnerHTML={{ __html: `• ${t('inventory:productsWithNewSKUCreated')}` }} />
+                <li>• {t('inventory:nameAndSKURequired')}</li>
+                <li>• {t('inventory:categoriesWarehousesMustMatch')}</li>
               </ul>
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <h4 className="font-semibold text-sm mb-3">Required Excel Format:</h4>
+              <h4 className="font-semibold text-sm mb-3">{t('inventory:requiredExcelFormat')}</h4>
               
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium mb-1">Required Columns:</p>
+                  <p className="text-sm font-medium mb-1">{t('inventory:requiredColumns')}</p>
                   <div className="flex flex-wrap gap-2">
-                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Name</code>
-                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">SKU</code>
+                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">{t('inventory:name')}</code>
+                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">{t('inventory:sku')}</code>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium mb-1">Optional Columns:</p>
+                  <p className="text-sm font-medium mb-1">{t('inventory:optionalColumns')}</p>
                   <div className="flex flex-wrap gap-2">
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Barcode</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Category</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Quantity</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Low Stock Alert</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Price EUR</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Price CZK</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost USD</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost EUR</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost CZK</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Warehouse</code>
-                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Description</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:barcode')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:category')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:quantity')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:lowStockAlert')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:priceEur')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:priceCzk')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:importCostUsd')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:importCostEur')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:importCostCzk')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('inventory:warehouse')}</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">{t('common:description')}</code>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">Example Row:</h4>
+              <h4 className="font-semibold text-sm mb-2">{t('inventory:exampleRow')}</h4>
               <div className="overflow-x-auto">
                 <table className="text-xs w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">SKU</th>
-                      <th className="text-left p-2">Category</th>
-                      <th className="text-left p-2">Quantity</th>
-                      <th className="text-left p-2">Price EUR</th>
+                      <th className="text-left p-2">{t('inventory:name')}</th>
+                      <th className="text-left p-2">{t('inventory:sku')}</th>
+                      <th className="text-left p-2">{t('inventory:category')}</th>
+                      <th className="text-left p-2">{t('inventory:quantity')}</th>
+                      <th className="text-left p-2">{t('inventory:priceEur')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b">
-                      <td className="p-2">Gel Polish Red</td>
-                      <td className="p-2">GP-RED-001</td>
-                      <td className="p-2">Gel Polish</td>
+                      <td className="p-2">{t('inventory:exampleProductName')}</td>
+                      <td className="p-2">{t('inventory:exampleSKU')}</td>
+                      <td className="p-2">{t('inventory:exampleCategory')}</td>
                       <td className="p-2">50</td>
                       <td className="p-2">8.50</td>
                     </tr>
@@ -1762,17 +1762,17 @@ export default function AllInventory() {
                 data-testid="button-select-import-file"
               >
                 <FileUp className="mr-2 h-4 w-4" />
-                Select Excel File (.xlsx, .xls)
+                {t('inventory:selectExcelFile')}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                Tip: Export your current inventory first to get the correct format
+                {t('inventory:tipExportFormat')}
               </p>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Cancel
+              {t('inventory:cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { computePlanChecksum } from '@shared/schema';
-import i18n from '@/i18n';
+import { i18n } from '@/i18n';
 
 interface PackingItem {
   productId: string;
