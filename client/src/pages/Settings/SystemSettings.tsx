@@ -266,9 +266,9 @@ export default function SystemSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <SettingsIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                  System Preferences
+                  {t('settings:systemPreferences')}
                 </CardTitle>
-                <CardDescription className="text-sm">Application-wide system settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:systemPreferencesDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -276,11 +276,11 @@ export default function SystemSettings() {
                   name="app_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Application Name</FormLabel>
+                      <FormLabel>{t('settings:applicationName')}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value ?? ''} placeholder="Davie Supply" data-testid="input-app_name" />
+                        <Input {...field} value={field.value ?? ''} placeholder={t('settings:applicationNamePlaceholder')} data-testid="input-app_name" />
                       </FormControl>
-                      <FormDescription>Name displayed throughout the application</FormDescription>
+                      <FormDescription>{t('settings:applicationNameDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -292,11 +292,11 @@ export default function SystemSettings() {
                     name="timezone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Timezone</FormLabel>
+                        <FormLabel>{t('settings:timezone')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-timezone">
-                              <SelectValue placeholder="Select timezone" />
+                              <SelectValue placeholder={t('settings:selectTimezone')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -307,7 +307,7 @@ export default function SystemSettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default timezone for the system</FormDescription>
+                        <FormDescription>{t('settings:timezoneDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -318,11 +318,11 @@ export default function SystemSettings() {
                     name="date_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date Format</FormLabel>
+                        <FormLabel>{t('settings:dateFormat')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-date_format">
-                              <SelectValue placeholder="Select date format" />
+                              <SelectValue placeholder={t('settings:selectDateFormat')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -331,7 +331,7 @@ export default function SystemSettings() {
                             <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default date format for display</FormDescription>
+                        <FormDescription>{t('settings:dateFormatDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -344,18 +344,18 @@ export default function SystemSettings() {
                     name="session_timeout_minutes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Session Timeout (minutes)</FormLabel>
+                        <FormLabel>{t('settings:sessionTimeoutMinutes')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             type="number"
                             min="5"
-                            placeholder="60"
+                            placeholder={t('settings:sessionTimeoutMinutesPlaceholder')}
                             data-testid="input-session_timeout_minutes"
                           />
                         </FormControl>
-                        <FormDescription>Auto logout after inactivity</FormDescription>
+                        <FormDescription>{t('settings:sessionTimeoutMinutesDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -366,18 +366,18 @@ export default function SystemSettings() {
                     name="auto_save_interval_seconds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Auto-save Interval (seconds)</FormLabel>
+                        <FormLabel>{t('settings:autoSaveIntervalSeconds')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             type="number"
                             min="10"
-                            placeholder="30"
+                            placeholder={t('settings:autoSaveIntervalSecondsPlaceholder')}
                             data-testid="input-auto_save_interval_seconds"
                           />
                         </FormControl>
-                        <FormDescription>How often to auto-save drafts</FormDescription>
+                        <FormDescription>{t('settings:autoSaveIntervalSecondsDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -437,9 +437,9 @@ export default function SystemSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Database className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Data Management
+                  {t('settings:dataManagementTitle')}
                 </CardTitle>
-                <CardDescription className="text-sm">Backup, retention, and archival settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dataManagementDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField

@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { formatCzechDate } from "@/lib/dateUtils";
 
 export default function AddExpense() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['financial', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
 

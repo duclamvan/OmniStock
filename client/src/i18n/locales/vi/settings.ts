@@ -768,8 +768,6 @@ const settings = {
   localizationHelp: 'Tất cả ngày và giờ hệ thống sẽ được hiển thị theo cài đặt này',
   switchLanguage: 'Chuyển ngôn ngữ',
   languageDescription: 'Ngôn ngữ chính cho giao diện hệ thống',
-  timezoneDescription: 'Múi giờ địa phương của bạn (ảnh hưởng đến hiển thị ngày/giờ)',
-  dateFormatDescription: 'Cách hiển thị ngày trong hệ thống',
   timeFormatDescription: 'Cách hiển thị giờ trong hệ thống',
   
   // Regional Settings
@@ -876,6 +874,57 @@ const settings = {
   carrierUPS: 'UPS',
   carrierFedEx: 'FedEx',
   carrierOther: 'Khác',
+  carrierGLS: 'GLS',
+  carrierPPL: 'PPL',
+  carrierDHL: 'DHL',
+
+  // ShippingSettings specific
+  quickSelectCzkPlaceholder: '0,100,150,250',
+  quickSelectEurPlaceholder: '0,5,10,13,15,20',
+  availableCarriersPlaceholder: 'GLS DE,PPL CZ,DHL DE',
+  maxPackageWeightKgPlaceholder: '30',
+  maxPackageDimensionsCmPlaceholder: '120x80x80',
+  trackingUpdateFrequencyHoursPlaceholder: '6',
+  shippingMethod: 'Phương thức vận chuyển',
+  shippingMethodDescription: 'Phương thức vận chuyển mặc định',
+  selectShippingMethod: 'Chọn phương thức vận chuyển',
+  defaultCarrierLabel: 'Đơn vị vận chuyển mặc định',
+  defaultCarrierDescription: 'Đơn vị vận chuyển mặc định cho lô hàng',
+  defaultShippingCostPlaceholder: '0',
+  volumetricWeightDivisorPlaceholder: '5000',
+  shippingCostCurrencyDescription: 'Đơn vị tiền tệ cho chi phí vận chuyển',
+  labelFormatDescription: 'Định dạng cho nhãn vận chuyển',
+  selectLabelFormat: 'Chọn định dạng nhãn',
+
+  // FinancialSettings specific
+  defaultMarkupPercentagePlaceholder: '30',
+  minimumMarginPercentagePlaceholder: '10',
+  defaultVatRatePlaceholder: '21',
+  defaultTaxRateCzkPlaceholder: '21',
+  defaultTaxRateEurPlaceholder: '19',
+  invoiceNumberPrefixPlaceholder: 'INV-',
+  invoiceNumberFormatPlaceholder: 'INV-0001 hoặc 2024-0001',
+  nextInvoiceNumberPlaceholder: '1',
+  paymentTermsDaysPlaceholder: '14',
+  latePaymentFeePercentagePlaceholder: '0',
+  baseCurrency: 'Đơn vị tiền tệ cơ sở',
+  baseCurrencyDescription: 'Đơn vị tiền tệ chính cho hoạt động tài chính',
+  selectBaseCurrency: 'Chọn đơn vị tiền tệ cơ sở',
+
+  // SystemSettings specific
+  sessionTimeoutMinutesPlaceholder: '60',
+  autoSaveIntervalSecondsPlaceholder: '30',
+  dataRetentionPeriodDaysPlaceholder: '365',
+  archiveAfterDaysPlaceholder: '90',
+
+  // Common placeholders
+  selectMonth: 'Chọn tháng',
+  selectMethod: 'Chọn phương thức',
+
+  // Messaging apps
+  messagingAppViber: 'Viber',
+  messagingAppWhatsApp: 'WhatsApp',
+  messagingAppZalo: 'Zalo',
 } as const;
 
 export default settings;

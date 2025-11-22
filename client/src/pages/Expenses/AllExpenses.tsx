@@ -65,7 +65,7 @@ import {
 } from "@/components/ui/select";
 
 export default function AllExpenses() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['financial', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");

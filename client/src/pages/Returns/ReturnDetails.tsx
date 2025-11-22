@@ -65,7 +65,7 @@ export default function ReturnDetails() {
             {t('inventory:returns')}
           </Button>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:returnDetails')}</h1>
-          <p className="text-gray-600">Return ID: {returnData.returnId}</p>
+          <p className="text-gray-600">{t('inventory:returnIdLabel')}: {returnData.returnId}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -281,7 +281,7 @@ export default function ReturnDetails() {
               <tfoot>
                 <tr>
                   <td colSpan={4} className="text-right py-3 px-4 font-medium">
-                    Total
+                    {t('inventory:total')}
                   </td>
                   <td className="text-right py-3 px-4 font-bold text-lg">
                     €{totalValue.toFixed(2)}
@@ -296,7 +296,7 @@ export default function ReturnDetails() {
       {/* Timeline */}
       <Card>
         <CardHeader>
-          <CardTitle>Return Timeline</CardTitle>
+          <CardTitle>{t('inventory:returnTimeline')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -305,7 +305,7 @@ export default function ReturnDetails() {
                 <Check className="h-5 w-5 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="font-medium">Return Created</p>
+                <p className="font-medium">{t('inventory:returnCreated')}</p>
                 <p className="text-sm text-gray-600">
                   {format(new Date(returnData.createdAt), 'dd MMM yyyy, HH:mm')}
                 </p>
@@ -318,8 +318,8 @@ export default function ReturnDetails() {
                   <RefreshCw className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="font-medium">Processing</p>
-                  <p className="text-sm text-gray-600">Return is being processed</p>
+                  <p className="font-medium">{t('inventory:processing')}</p>
+                  <p className="text-sm text-gray-600">{t('inventory:returnProcessing')}</p>
                 </div>
               </div>
             )}
@@ -330,9 +330,9 @@ export default function ReturnDetails() {
                   <Check className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="font-medium">Completed</p>
+                  <p className="font-medium">{t('inventory:completed')}</p>
                   <p className="text-sm text-gray-600">
-                    Return has been completed
+                    {t('inventory:returnCompleted')}
                   </p>
                 </div>
               </div>

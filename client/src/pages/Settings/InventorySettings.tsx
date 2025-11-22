@@ -314,18 +314,18 @@ export default function InventorySettings() {
                     name="low_stock_threshold"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Low Stock Threshold</FormLabel>
+                        <FormLabel>{t('settings:lowStockThreshold')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder="10" 
+                            placeholder={t('settings:lowStockThresholdPlaceholder')} 
                             data-testid="input-low_stock_threshold" 
                           />
                         </FormControl>
-                        <FormDescription>Alert when stock falls below this number</FormDescription>
+                        <FormDescription>{t('settings:lowStockThresholdDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -336,20 +336,20 @@ export default function InventorySettings() {
                     name="default_product_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Product Type</FormLabel>
+                        <FormLabel>{t('settings:defaultProductType')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_product_type">
-                              <SelectValue placeholder="Select product type" />
+                              <SelectValue placeholder={t('settings:selectProductType')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="regular">Regular</SelectItem>
-                            <SelectItem value="bundle">Bundle</SelectItem>
-                            <SelectItem value="service">Service</SelectItem>
+                            <SelectItem value="regular">{t('settings:productTypeRegular')}</SelectItem>
+                            <SelectItem value="bundle">{t('settings:productTypeBundle')}</SelectItem>
+                            <SelectItem value="service">{t('settings:productTypeService')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default type for new products</FormDescription>
+                        <FormDescription>{t('settings:defaultProductTypeDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -360,20 +360,20 @@ export default function InventorySettings() {
                     name="default_packaging_requirement"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Packaging Requirement</FormLabel>
+                        <FormLabel>{t('settings:defaultPackagingType')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_packaging_requirement">
-                              <SelectValue placeholder="Select packaging type" />
+                              <SelectValue placeholder={t('settings:selectPackagingType')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="carton">Carton</SelectItem>
-                            <SelectItem value="outer_carton">Outer Carton</SelectItem>
-                            <SelectItem value="nylon_wrap">Nylon Wrap</SelectItem>
+                            <SelectItem value="carton">{t('settings:packagingTypeCarton')}</SelectItem>
+                            <SelectItem value="outer_carton">{t('settings:packagingTypeOuterCarton')}</SelectItem>
+                            <SelectItem value="nylon_wrap">{t('settings:packagingTypeNylonWrap')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default packaging for products</FormDescription>
+                        <FormDescription>{t('settings:defaultPackagingTypeDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -384,16 +384,16 @@ export default function InventorySettings() {
                     name="sku_prefix"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SKU Prefix</FormLabel>
+                        <FormLabel>{t('settings:skuPrefix')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
-                            placeholder="e.g., PRD-" 
+                            placeholder={t('settings:skuPrefixPlaceholder')} 
                             data-testid="input-sku_prefix" 
                           />
                         </FormControl>
-                        <FormDescription>Prefix for auto-generated SKUs</FormDescription>
+                        <FormDescription>{t('settings:skuPrefixDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -477,9 +477,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Stock Management
+                  {t('settings:stockManagement')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure stock control and replenishment settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:stockManagementDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -488,18 +488,18 @@ export default function InventorySettings() {
                     name="auto_reorder_point"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Auto-reorder Point</FormLabel>
+                        <FormLabel>{t('settings:autoReorderPoint')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder="5" 
+                            placeholder={t('settings:autoReorderPointPlaceholder')} 
                             data-testid="input-auto_reorder_point" 
                           />
                         </FormControl>
-                        <FormDescription>Trigger reorder when stock reaches this level</FormDescription>
+                        <FormDescription>{t('settings:autoReorderPointDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -510,18 +510,18 @@ export default function InventorySettings() {
                     name="safety_stock_level"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Safety Stock Level</FormLabel>
+                        <FormLabel>{t('settings:safetyStockLevel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder="10" 
+                            placeholder={t('settings:safetyStockLevelPlaceholder')} 
                             data-testid="input-safety_stock_level" 
                           />
                         </FormControl>
-                        <FormDescription>Minimum buffer stock to maintain</FormDescription>
+                        <FormDescription>{t('settings:safetyStockLevelDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -532,18 +532,18 @@ export default function InventorySettings() {
                     name="stock_count_frequency_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Stock Count Frequency (days)</FormLabel>
+                        <FormLabel>{t('settings:stockCountFrequency')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="1"
-                            placeholder="30" 
+                            placeholder={t('settings:stockCountFrequencyPlaceholder')} 
                             data-testid="input-stock_count_frequency_days" 
                           />
                         </FormControl>
-                        <FormDescription>How often to conduct stock counts</FormDescription>
+                        <FormDescription>{t('settings:stockCountFrequencyDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

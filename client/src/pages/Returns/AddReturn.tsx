@@ -51,30 +51,30 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-const returnSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
-  orderId: z.string().optional(),
-  returnDate: z.string().min(1, "Return date is required"),
-  returnType: z.enum(['exchange', 'refund', 'store_credit']),
-  status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
-  trackingNumber: z.string().optional(),
-  shippingCarrier: z.string().optional(),
-  notes: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.string().min(1, "Product is required"),
-    productName: z.string().min(1, "Product name is required"),
-    sku: z.string().optional(),
-    quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-    price: z.coerce.number().min(0, "Price must be positive"),
-  })).min(1, "At least one item is required"),
-});
-
-type ReturnFormData = z.infer<typeof returnSchema>;
-
 export default function AddReturn() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
+  
+  const returnSchema = z.object({
+    customerId: z.string().min(1, t('common:required')),
+    orderId: z.string().optional(),
+    returnDate: z.string().min(1, t('common:required')),
+    returnType: z.enum(['exchange', 'refund', 'store_credit']),
+    status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
+    trackingNumber: z.string().optional(),
+    shippingCarrier: z.string().optional(),
+    notes: z.string().optional(),
+    items: z.array(z.object({
+      productId: z.string().min(1, t('common:required')),
+      productName: z.string().min(1, t('common:required')),
+      sku: z.string().optional(),
+      quantity: z.coerce.number().min(1, t('inventory:quantityMustBeGreaterThanZero')),
+      price: z.coerce.number().min(0, t('common:mustBeNonNegative')),
+    })).min(1, t('inventory:atLeastOneProductRequired')),
+  });
+
+  type ReturnFormData = z.infer<typeof returnSchema>;
   const { inventorySettings } = useSettings();
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [returnId, setReturnId] = useState("");

@@ -274,7 +274,7 @@ export default function StartReceiving() {
 
   // Determine if this is a pallet shipment
   const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
-  const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
+  const unitLabel = isPalletShipment ? t('pallets') : t('parcels');
 
   // OPTIMIZED: Initialize data with prevention of unnecessary re-renders
   useEffect(() => {
@@ -909,7 +909,7 @@ export default function StartReceiving() {
       console.error('Photos update failed:', error);
       toast({
         title: t('updateFailed'),
-        description: "Please try again",
+        description: t('pleaseTryAgain'),
         variant: "destructive"
       });
     },
@@ -929,7 +929,7 @@ export default function StartReceiving() {
       const shipmentTrackingNumbers = shipment?.endTrackingNumbers || [];
       if (shipmentTrackingNumbers.length > 0 && !shipmentTrackingNumbers.includes(value)) {
         await soundEffects.playErrorBeep();
-        setScanFeedback({ type: 'error', message: `Invalid tracking number: ${value}` });
+        setScanFeedback({ type: 'error', message: t('invalidTrackingNumberDesc', { value }) });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
         toast({
           title: t('invalidTrackingNumber'),
@@ -964,7 +964,7 @@ export default function StartReceiving() {
       
       // Play success sound and show visual feedback
       await soundEffects.playSuccessBeep();
-      setScanFeedback({ type: 'success', message: `Scanned: ${value}` });
+      setScanFeedback({ type: 'success', message: `${t('scanned')}: ${value}` });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       
       // Check if all parcels are scanned
@@ -987,9 +987,9 @@ export default function StartReceiving() {
         }
       });
       
-      const { dismiss } = toast({
-        title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
-        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`,
+      const { dismiss} = toast({
+        title: isPalletShipment ? t('palletScanned') : t('parcelScanned'),
+        description: t('scannedXofY', { scanned: newCount, total: parcelCount }) + ` ${unitLabel.toLowerCase()} - ${value}`,
       });
       
       // Auto-dismiss after 3 seconds
@@ -1001,17 +1001,17 @@ export default function StartReceiving() {
       const item = receivingItems.find(item => item.sku === value);
       if (item) {
         await soundEffects.playSuccessBeep();
-        setScanFeedback({ type: 'success', message: `Scanned: ${item.name}` });
+        setScanFeedback({ type: 'success', message: `${t('scanned')}: ${item.name}` });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         updateItemQuantity(item.id, 1);
         toast({
           title: t('itemScanned'),
-          description: `${item.name} - Quantity updated`,
+          description: `${item.name} - ${t('quantityUpdated')}`,
           duration: 2000
         });
       } else {
         await soundEffects.playErrorBeep();
-        setScanFeedback({ type: 'error', message: 'Item not found' });
+        setScanFeedback({ type: 'error', message: t('itemNotFound') });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
           title: t('itemNotFound'),
@@ -1787,8 +1787,8 @@ export default function StartReceiving() {
       setPreviewUrls(prev => prev.filter(url => !immediatePreviewUrls.includes(url)));
       
       toast({
-        title: "Upload Failed",
-        description: "Failed to process photos. Please try again.",
+        title: t('uploadFailed'),
+        description: t('failedToProcessPhotos'),
         variant: "destructive",
         duration: 4000
       });
@@ -1846,8 +1846,8 @@ export default function StartReceiving() {
             setUploadedPhotos(pendingPhotoUpdatesRef.current);
             
             toast({
-              title: "Save Failed",
-              description: "Failed to save photo changes. The photos have been restored.",
+              title: t('saveFailed'),
+              description: t('failedToSavePhotoChanges'),
               variant: "destructive"
             });
             setSaveStatus('idle');
@@ -1863,8 +1863,8 @@ export default function StartReceiving() {
     
     // Instant feedback for each removal
     toast({
-      title: "Photo Removed",
-      description: "Photo deleted",
+      title: t('photoRemoved'),
+      description: t('photoDeleted'),
       className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
       duration: 1500
     });
@@ -1973,7 +1973,7 @@ export default function StartReceiving() {
       {/* Progress Bar - Redesigned */}
       <div className="mb-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">Overall Progress</span>
+          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('overallProgress')}</span>
           <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             {Math.round(progress)}%
           </span>
@@ -1991,11 +1991,11 @@ export default function StartReceiving() {
           </div>
           <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="font-bold text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
-            <div className="text-xs text-muted-foreground">Items</div>
+            <div className="text-xs text-muted-foreground">{t('items')}</div>
           </div>
           <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="font-bold text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
-            <div className="text-xs text-muted-foreground">Verified</div>
+            <div className="text-xs text-muted-foreground">{t('verified')}</div>
           </div>
         </div>
       </div>
@@ -2012,7 +2012,7 @@ export default function StartReceiving() {
           }`}
         >
           <Package className="h-5 w-5 mr-2" />
-          <span>Parcel Check</span>
+          <span>{t('parcelCheck')}</span>
         </Button>
         <Button
           variant={currentStep === 2 ? "default" : "outline"}
@@ -2024,7 +2024,7 @@ export default function StartReceiving() {
           }`}
         >
           <CheckSquare className="h-5 w-5 mr-2" />
-          <span>Item Checklist</span>
+          <span>{t('itemChecklist')}</span>
         </Button>
       </div>
 
@@ -2049,12 +2049,12 @@ export default function StartReceiving() {
                 ) : (
                   isPalletShipment ? <Layers className="h-6 w-6" /> : <Package className="h-6 w-6" />
                 )}
-                <span className="font-semibold">{unitLabel} Verification</span>
+                <span className="font-semibold">{unitLabel} {t('verification')}</span>
                 {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <Badge className="ml-auto bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
+                  <Badge className="ml-auto bg-green-600 text-white shadow-sm px-3 py-1">{t('complete')}</Badge>
                 )}
                 {scannedParcels > 0 && scannedParcels < parcelCount && (
-                  <Badge className="ml-auto bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
+                  <Badge className="ml-auto bg-amber-600 text-white shadow-sm px-3 py-1">{t('inProgress')}</Badge>
                 )}
               </CardTitle>
             </CardHeader>
@@ -2108,29 +2108,29 @@ export default function StartReceiving() {
                   {/* Basic Info & Parcel Count - Combined Section */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Received By *</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('receivedBy')} *</Label>
                       <Input
                         value={receivedBy}
                         onChange={(e) => handleReceivedByChange(e.target.value)}
                         onBlur={handleReceivedByBlur}
-                        placeholder="Your name"
+                        placeholder={t('yourName')}
                         required
                         className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Carrier *</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('carrier')} *</Label>
                       <Input
                         value={carrier}
                         onChange={(e) => handleCarrierChange(e.target.value)}
                         onBlur={handleCarrierBlur}
-                        placeholder="DHL, UPS, FedEx..."
+                        placeholder={t('carrierPlaceholder')}
                         required
                         className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <Label className="text-sm font-medium mb-2 block">Received {unitLabel}</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('received')} {unitLabel}</Label>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
@@ -2179,15 +2179,15 @@ export default function StartReceiving() {
                   onClick={() => {
                     handleScannedParcelsChange(parcelCount, true);
                     toast({
-                      title: "Auto-Receive Complete",
-                      description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
+                      title: t('autoReceiveComplete'),
+                      description: t('allUnitsAutoReceived', { count: parcelCount, units: unitLabel.toLowerCase() })
                     });
                   }}
                   disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
                   className={`w-full h-11 font-medium shadow-sm ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                 >
                   <CheckCircle2 className="h-5 w-5 mr-2" />
-                  Receive All ({parcelCount})
+                  {t('receiveAll')} ({parcelCount})
                 </Button>
               </div>
 
@@ -2202,7 +2202,7 @@ export default function StartReceiving() {
                 {scannedParcels === parcelCount && parcelCount > 0 && (
                   <div className="flex items-center gap-2 mb-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
                     <CheckCircle2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">All {unitLabel.toLowerCase()} verified!</span>
+                    <span className="text-sm font-medium">{t('allUnitsVerified', { units: unitLabel.toLowerCase() })}</span>
                   </div>
                 )}
                 
@@ -2210,7 +2210,7 @@ export default function StartReceiving() {
                 {scannedTrackingNumbers.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Scanned Tracking Numbers:</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('scannedTrackingNumbers')}:</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -2226,14 +2226,14 @@ export default function StartReceiving() {
                             updateTrackingMutation.mutate({ action: 'remove', trackingNumber: tn });
                           });
                           toast({
-                            title: "Cleared",
-                            description: "All tracking numbers have been cleared"
+                            title: t('cleared'),
+                            description: t('allTrackingNumbersCleared')
                           });
                         }}
                         className="text-xs"
                       >
                         <X className="h-3 w-3 mr-1" />
-                        Clear All
+                        {t('clearAll')}
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -2253,7 +2253,7 @@ export default function StartReceiving() {
 
               {/* Scan Parcels - Redesigned */}
               <div className="col-span-full">
-                <Label className="text-base font-semibold mb-3 block text-gray-900 dark:text-gray-100">Scan {unitLabel}</Label>
+                <Label className="text-base font-semibold mb-3 block text-gray-900 dark:text-gray-100">{t('scan')} {unitLabel}</Label>
                 <div className="w-full">
                   <ScanInputPulse isScanning={scanMode}>
                     <div className={`relative w-full rounded-xl border transition-all duration-300 overflow-hidden shadow-sm ${
@@ -2283,7 +2283,7 @@ export default function StartReceiving() {
                                 }, 100);
                               }
                             }}
-                            placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number...`}
+                            placeholder={t('scanOrTypeTracking', { unit: isPalletShipment ? t('pallet').toLowerCase() : t('parcel').toLowerCase() })}
                             className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-5 pr-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-mono"
                             autoComplete="off"
                             spellCheck={false}
@@ -2323,7 +2323,7 @@ export default function StartReceiving() {
                     <div className="mt-3 text-center">
                       <span className="inline-flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
                         <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse"></div>
-                        Scanner Active - Point camera at barcode or type manually
+                        {t('scannerActive')}
                       </span>
                     </div>
                   )}
@@ -2332,12 +2332,12 @@ export default function StartReceiving() {
 
                   {/* Quick Notes - Redesigned */}
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Initial Notes</Label>
+                    <Label className="text-sm font-medium mb-2 block">{t('initialNotes')}</Label>
                     <Textarea
                       value={notes}
                       onChange={(e) => handleNotesChange(e.target.value)}
                       onBlur={handleNotesBlur}
-                      placeholder="Any initial observations..."
+                      placeholder={t('initialNotesPlaceholder')}
                       rows={3}
                       className="resize-none border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                     />
@@ -2352,12 +2352,12 @@ export default function StartReceiving() {
                   >
                     {scannedParcels > 0 ? (
                       <>
-                        Continue to Item Checklist
+                        {t('continueToItemChecklist')}
                         <ArrowRight className="h-5 w-5 ml-2" />
                       </>
                     ) : (
                       <>
-                        Continue to Item Checklist
+                        {t('continueToItemChecklist')}
                         <CheckSquare className="h-5 w-5 ml-2" />
                       </>
                     )}
@@ -2391,12 +2391,12 @@ export default function StartReceiving() {
                   ) : (
                     <CheckSquare className="h-6 w-6" />
                   )}
-                  <span className="font-semibold">Item Verification ({completedItems}/{totalItems})</span>
+                  <span className="font-semibold">{t('itemVerification')} ({completedItems}/{totalItems})</span>
                   {completedItems === totalItems && totalItems > 0 && (
-                    <Badge className="bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
+                    <Badge className="bg-green-600 text-white shadow-sm px-3 py-1">{t('complete')}</Badge>
                   )}
                   {completedItems > 0 && completedItems < totalItems && (
-                    <Badge className="bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
+                    <Badge className="bg-amber-600 text-white shadow-sm px-3 py-1">{t('inProgress')}</Badge>
                   )}
                 </CardTitle>
                 <div className="flex gap-2 flex-wrap">
@@ -2406,7 +2406,7 @@ export default function StartReceiving() {
                     onClick={() => setShowAllItems(!showAllItems)}
                     className="h-10 shadow-sm"
                   >
-                    {showAllItems ? 'Show Active' : 'Show All'}
+                    {showAllItems ? t('showActive') : t('showAll')}
                   </Button>
                   <Button
                     variant="outline"
@@ -2420,7 +2420,7 @@ export default function StartReceiving() {
                     className={`h-10 shadow-sm ${scanMode ? 'bg-blue-100 border-blue-400 text-blue-700' : ''}`}
                   >
                     <ScanLine className="h-5 w-5 mr-2" />
-                    Scan Items
+                    {t('scanItems')}
                   </Button>
                 </div>
               </div>
@@ -2432,7 +2432,7 @@ export default function StartReceiving() {
                     <div className="text-lg font-bold text-green-600">
                       {receivingItems.filter(i => i.status === 'complete').length}
                     </div>
-                    <div className="text-xs text-green-700 dark:text-green-400 font-medium">Complete</div>
+                    <div className="text-xs text-green-700 dark:text-green-400 font-medium">{t('complete')}</div>
                   </div>
                   <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 flex-shrink-0">
                     <div className="text-lg font-bold text-amber-600">

@@ -266,26 +266,26 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
             {item.sku && (
               <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
             )}
-            <Badge variant="outline" className="mt-1">Qty: {qty}</Badge>
+            <Badge variant="outline" className="mt-1">{t('qty')} {qty}</Badge>
           </div>
         </div>
 
         {/* Pricing Grid */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Unit Cost</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('unitCost')}</p>
             <p className="font-mono font-medium">{formatCurrency(unitCost, currency)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Shipping</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('shipping')}</p>
             <p className="font-mono font-medium text-blue-600">{formatCurrency(shippingCost, currency)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Landing Cost</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('landingCost')}</p>
             <p className="font-mono font-semibold">{formatCurrency(landingCost, currency)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Landing ({displayCurrency})</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('landing')} ({displayCurrency})</p>
             <p className="font-mono font-semibold text-amber-700 dark:text-amber-400">
               {displayCurrency === 'EUR' ? `€${landingCostConverted.toFixed(2)}` : `${landingCostConverted.toFixed(0)} Kč`}
             </p>
@@ -295,7 +295,7 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
         {/* Retail Price Input */}
         <div className="mt-3 pt-3 border-t">
           <Label htmlFor={`retail-price-mobile-${index}`} className="text-xs text-muted-foreground mb-2 block">
-            Set Retail Price
+            {t('setRetailPrice')}
           </Label>
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -308,7 +308,7 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
               data-testid={`input-retail-price-mobile-${index}`}
             />
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Retail ({displayCurrency})</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('retail')} ({displayCurrency})</p>
               <p className="font-mono font-semibold text-amber-700 dark:text-amber-400 mt-1">
                 {displayCurrency === 'EUR' ? `€${retailPriceConverted.toFixed(2)}` : `${retailPriceConverted.toFixed(0)} Kč`}
               </p>
@@ -940,8 +940,8 @@ export default function ItemsToStore() {
     }
 
     toast({
-      title: "✓ Locations Applied",
-      description: `${sessionsLocations.length} location${sessionsLocations.length > 1 ? 's' : ''} added successfully`,
+      title: t('locationsApplied'),
+      description: t('locationsAddedSuccessfully', { count: sessionsLocations.length }),
       duration: 2000,
     });
 
@@ -1068,8 +1068,8 @@ export default function ItemsToStore() {
     
     if (!receiptId) {
       toast({
-        title: "Error",
-        description: "Cannot save location: No receipt selected",
+        title: t('error', { ns: 'common' }),
+        description: t('cannotSaveLocationNoReceipt'),
         variant: "destructive",
       });
       return;
@@ -1090,8 +1090,8 @@ export default function ItemsToStore() {
     } catch (error) {
       console.error("Failed to save location:", error);
       toast({
-        title: "Error",
-        description: "Failed to save location",
+        title: t('error', { ns: 'common' }),
+        description: t('failedToSaveLocation'),
         variant: "destructive",
       });
     }
@@ -1251,7 +1251,7 @@ export default function ItemsToStore() {
         {/* Progress Bar */}
         <div className="px-4 pb-2">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>{completedItems} of {totalItems} items</span>
+            <span>{completedItems} {t('of')} {totalItems} {t('items')}</span>
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -1262,7 +1262,7 @@ export default function ItemsToStore() {
       {receiptsWithItems.length > 1 && (
         <div className="bg-white border-b">
           <div className="px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Select Shipment to Work On</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t('selectShipmentToWorkOn')}</p>
             <div className="overflow-x-auto -mx-4 px-4">
               <div className="flex gap-3">
                 {receiptsWithItems.map((receiptData: ReceiptWithItems) => {
@@ -1291,7 +1291,7 @@ export default function ItemsToStore() {
                         {completionPercent === 100 && (
                           <Badge className="bg-green-500 text-white text-[10px] h-5 ml-2">
                             <Check className="h-3 w-3 mr-0.5" />
-                            Done
+                            {t('done')}
                           </Badge>
                         )}
                       </div>
@@ -1300,7 +1300,7 @@ export default function ItemsToStore() {
                       <div className="flex items-center gap-2 mb-2">
                         {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-3 w-3')}
                         <span className="text-xs text-muted-foreground">
-                          {receiptData.shipment?.carrier || 'Unknown Carrier'}
+                          {receiptData.shipment?.carrier || t('unknownCarrier')}
                         </span>
                       </div>
 
@@ -1436,10 +1436,10 @@ export default function ItemsToStore() {
                       )}
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-xs text-muted-foreground" data-testid={`location-${item.receiptItemId}`}>
-                          Location: {getSuggestedLocation(item) || 'TBA'}
+                          {t('location')} {getSuggestedLocation(item) || t('tba')}
                         </span>
                         <Badge variant="outline" className="text-xs" data-testid={`qty-${item.receiptItemId}`}>
-                          Qty: {item.receivedQuantity}
+                          {t('qty')} {item.receivedQuantity}
                         </Badge>
                         {/* Landing Cost Badge */}
                         {item.landingCostUnitBase && (
@@ -1451,12 +1451,12 @@ export default function ItemsToStore() {
                                   className={`text-xs ${!item.hasCompleteLandingCost ? 'bg-yellow-100 text-yellow-800' : ''}`}
                                   data-testid={`landing-cost-${item.receiptItemId}`}
                                 >
-                                  Landing: €{parseFloat(item.landingCostUnitBase).toFixed(2)}
+                                  {t('landing')} €{parseFloat(item.landingCostUnitBase).toFixed(2)}
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <div className="text-sm">
-                                  <p className="font-semibold mb-1">Landing Cost Breakdown</p>
+                                  <p className="font-semibold mb-1">{t('landingCostBreakdown')}</p>
                                   {item.hasCompleteLandingCost ? (
                                     <>
                                       <p>Unit Cost: €{parseFloat(item.landingCostUnitBase).toFixed(2)}</p>
@@ -1472,7 +1472,7 @@ export default function ItemsToStore() {
                         )}
                         {!item.landingCostUnitBase && item.purchaseItemId && (
                           <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                            Landing cost pending
+                            {t('landingCostPending')}
                           </Badge>
                         )}
                       </div>
@@ -1490,8 +1490,8 @@ export default function ItemsToStore() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-amber-600" />
                         <span className="text-xs text-muted-foreground">
-                          {item.newLocations.length > 0 && `${item.newLocations.length} new location(s)`}
-                          {item.existingLocations.length > 0 && ` • ${item.existingLocations.length} existing`}
+                          {item.newLocations.length > 0 && t('newLocationsCount', { count: item.newLocations.length })}
+                          {item.existingLocations.length > 0 && ` • ${item.existingLocations.length} ${t('existing')}`}
                         </span>
                       </div>
                     </div>
@@ -1518,7 +1518,7 @@ export default function ItemsToStore() {
                           {item.existingLocations.some(loc => loc.isPrimary) && (
                             <Badge className="ml-2 bg-yellow-500 text-white">
                               <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                              Primary
+                              {t('primary')}
                             </Badge>
                           )}
                         </div>
@@ -1801,7 +1801,7 @@ export default function ItemsToStore() {
                                     soundEffects.playSuccessBeep();
                                   }}
                                   className="h-7 px-2 text-xs"
-                                  title="Set as primary location"
+                                  title={t('setAsPrimaryLocation')}
                                 >
                                   <Star className="h-3 w-3" />
                                 </Button>
@@ -2122,12 +2122,12 @@ export default function ItemsToStore() {
               <div className="flex items-center gap-3">
                 <ScanLine className="h-6 w-6 text-green-400 animate-pulse" />
                 <div>
-                  <p className="text-lg font-bold">Quick Scan Active</p>
+                  <p className="text-lg font-bold">{t('quickScanActive')}</p>
                   <p className="text-xs text-gray-300">
-                    {currentItem?.productName || 'No item selected'}
+                    {currentItem?.productName || t('noItemSelected')}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Press ESC to exit • Scan barcode to continue
+                    {t('pressEscToExit')}
                   </p>
                 </div>
               </div>
@@ -2201,8 +2201,8 @@ export default function ItemsToStore() {
                     } else {
                       setIsScanning(false);
                       toast({
-                        title: "✓ All items processed",
-                        description: "No more items to scan",
+                        title: t('allItemsProcessed'),
+                        description: t('noMoreItemsToScan'),
                       });
                       return prevIndex;
                     }
@@ -2261,31 +2261,31 @@ export default function ItemsToStore() {
                 {/* Shipping Information Section */}
                 <div className="grid grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg text-xs mb-4">
                   <div>
-                    <p className="text-muted-foreground">Carrier</p>
+                    <p className="text-muted-foreground">{t('carrier')}</p>
                     <p className="font-semibold text-sm">{receiptData.shipment?.carrier || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Tracking</p>
+                    <p className="text-muted-foreground">{t('tracking')}</p>
                     <p className="font-semibold text-sm font-mono">{receiptData.shipment?.trackingNumber || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Total Items</p>
-                    <p className="font-semibold text-sm">{totalItems} units</p>
+                    <p className="text-muted-foreground">{t('totalItems')}</p>
+                    <p className="font-semibold text-sm">{totalItems} {t('units')}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Weight</p>
+                    <p className="text-muted-foreground">{t('weight')}</p>
                     <p className="font-semibold text-sm">{receiptData.shipment?.totalWeight || '—'} kg</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Total Shipping</p>
+                    <p className="text-muted-foreground">{t('totalShipping')}</p>
                     <p className="font-semibold text-sm">{formatCurrency(totalShipping, currency)}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Per Unit</p>
+                    <p className="text-muted-foreground">{t('perUnit')}</p>
                     <p className="font-semibold text-sm text-blue-600">{formatCurrency(shippingPerUnit, currency)}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-muted-foreground">Route</p>
+                    <p className="text-muted-foreground">{t('route')}</p>
                     <p className="font-semibold text-sm truncate">{receiptData.shipment?.origin} → {receiptData.shipment?.destination}</p>
                   </div>
                 </div>
@@ -2296,8 +2296,8 @@ export default function ItemsToStore() {
                     <div className="flex items-center gap-2">
                       <Calculator className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <div>
-                        <p className="text-xs font-medium text-amber-900 dark:text-amber-100">Cost Allocation Method</p>
-                        <p className="text-[10px] text-amber-700 dark:text-amber-300">How shipping costs are distributed</p>
+                        <p className="text-xs font-medium text-amber-900 dark:text-amber-100">{t('costAllocationMethod')}</p>
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300">{t('howShippingCostsDistributed')}</p>
                       </div>
                     </div>
                     <Select 
@@ -2311,31 +2311,31 @@ export default function ItemsToStore() {
                         <SelectItem value="AUTO">
                           <div className="flex items-center gap-2">
                             <Zap className="h-3 w-3 text-amber-500" />
-                            <span>Auto-Select</span>
+                            <span>{t('autoSelect')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="WEIGHT">
                           <div className="flex items-center gap-2">
                             <Package className="h-3 w-3" />
-                            <span>By Weight</span>
+                            <span>{t('byWeight')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="VALUE">
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-3 w-3" />
-                            <span>By Value</span>
+                            <span>{t('byValue')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="UNITS">
                           <div className="flex items-center gap-2">
                             <Hash className="h-3 w-3" />
-                            <span>By Units</span>
+                            <span>{t('byUnits')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="HYBRID">
                           <div className="flex items-center gap-2">
                             <Layers className="h-3 w-3" />
-                            <span>Hybrid</span>
+                            <span>{t('hybrid')}</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
