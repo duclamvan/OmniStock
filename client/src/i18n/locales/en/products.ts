@@ -6,9 +6,14 @@ const products = {
   
   // Actions
   addProduct: 'Add Product',
+  addNewProduct: 'Add New Product',
+  addNewProductDescription: 'Create a new product with details, pricing, and inventory information',
   editProduct: 'Edit Product',
+  editProductDescription: 'Update product details, pricing, and inventory information',
   viewProduct: 'View Product',
   deleteProduct: 'Delete Product',
+  addMode: 'Add Mode',
+  editMode: 'Edit Mode',
   
   // Product Fields
   productName: 'Product Name',

@@ -6,9 +6,14 @@ const products = {
   
   // Actions
   addProduct: 'Thêm sản phẩm',
+  addNewProduct: 'Thêm sản phẩm mới',
+  addNewProductDescription: 'Tạo sản phẩm mới với chi tiết, giá cả và thông tin tồn kho',
   editProduct: 'Chỉnh sửa sản phẩm',
+  editProductDescription: 'Cập nhật chi tiết sản phẩm, giá cả và thông tin tồn kho',
   viewProduct: 'Xem sản phẩm',
   deleteProduct: 'Xóa sản phẩm',
+  addMode: 'Chế độ thêm',
+  editMode: 'Chế độ chỉnh sửa',
   
   // Product Fields
   productName: 'Tên sản phẩm',
