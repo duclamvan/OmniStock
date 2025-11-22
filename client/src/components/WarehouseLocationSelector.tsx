@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -53,6 +54,8 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   className = "",
   disabled = false,
 }: WarehouseLocationSelectorProps) {
+  const { t } = useTranslation(['warehouse', 'common']);
+  
   // Fetch warehouses from database
   const { data: warehousesData = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
@@ -271,7 +274,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   // Generate warehouse options from fetched data
   const warehouseOptions = useMemo(() => {
     if (!warehousesData || warehousesData.length === 0) {
-      return [{ value: 'WH1', label: 'Warehouse 1' }];
+      return [{ value: 'WH1', label: t('warehouse:warehouseNumber', { number: 1 }) }];
     }
     
     // Sort by createdAt ascending (oldest first)
@@ -284,9 +287,9 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
     // Number them sequentially
     return sortedWarehouses.map((warehouse, index) => ({
       value: warehouse.id,  // Use actual database ID (e.g., "WH-xx-yy")
-      label: `Warehouse ${index + 1}`  // Display as "Warehouse 1", "Warehouse 2", etc.
+      label: t('warehouse:warehouseNumber', { number: index + 1 })  // Display as "Warehouse 1", "Warehouse 2", etc.
     }));
-  }, [warehousesData]);
+  }, [warehousesData, t]);
 
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);
@@ -302,7 +305,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       {/* Location Type Selector */}
       {showTypeSelector && onLocationTypeChange && (
         <div className="space-y-1">
-          <Label htmlFor="location-type" className="text-xs">Location Type</Label>
+          <Label htmlFor="location-type" className="text-xs">{t('warehouse:locationType')}</Label>
           <Select
             value={locationType}
             onValueChange={(value) => onLocationTypeChange(value as LocationType)}
@@ -313,13 +316,13 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               data-testid="select-location-type"
               className="w-full h-8"
             >
-              <SelectValue placeholder="Select location type" />
+              <SelectValue placeholder={t('warehouse:selectLocationType')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="display" data-testid="option-display">Display Area</SelectItem>
-              <SelectItem value="warehouse" data-testid="option-warehouse">Warehouse</SelectItem>
-              <SelectItem value="pallet" data-testid="option-pallet">Pallet Storage</SelectItem>
-              <SelectItem value="other" data-testid="option-other">Other Location</SelectItem>
+              <SelectItem value="display" data-testid="option-display">{t('warehouse:displayArea')}</SelectItem>
+              <SelectItem value="warehouse" data-testid="option-warehouse">{t('warehouse:warehouse')}</SelectItem>
+              <SelectItem value="pallet" data-testid="option-pallet">{t('warehouse:palletStorage')}</SelectItem>
+              <SelectItem value="other" data-testid="option-other">{t('warehouse:otherLocation')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -327,7 +330,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
       {/* Area Type Selector (Shelves/Pallets) */}
       <div className="space-y-1">
-        <Label htmlFor="area-type" className="text-xs">Storage Type</Label>
+        <Label htmlFor="area-type" className="text-xs">{t('warehouse:storageType')}</Label>
         <Select
           value={areaType}
           onValueChange={handleAreaTypeChange}
@@ -338,19 +341,19 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
             data-testid="select-area-type"
             className="w-full h-8"
           >
-            <SelectValue placeholder="Select storage type" />
+            <SelectValue placeholder={t('warehouse:selectStorageType')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="shelves" data-testid="option-shelves">
               <div className="flex items-center gap-1.5">
                 <Package className="h-3.5 w-3.5" />
-                <span>Shelves</span>
+                <span>{t('warehouse:shelves')}</span>
               </div>
             </SelectItem>
             <SelectItem value="pallets" data-testid="option-pallets">
               <div className="flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5" />
-                <span>Pallets</span>
+                <span>{t('warehouse:pallets')}</span>
               </div>
             </SelectItem>
           </SelectContent>
@@ -363,7 +366,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <LocationTypeIcon className="h-3.5 w-3.5 text-slate-600" />
-              <Label className="text-sm font-medium">Location Code</Label>
+              <Label className="text-sm font-medium">{t('warehouse:locationCode')}</Label>
             </div>
             <Button
               type="button"
@@ -374,13 +377,13 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               data-testid="button-toggle-manual"
               className="h-7 text-xs"
             >
-              {manualEntry ? "Builder" : "Manual"}
+              {manualEntry ? t('warehouse:builder') : t('warehouse:manual')}
             </Button>
           </div>
 
           {manualEntry ? (
             <div className="space-y-1.5">
-              <Label htmlFor="manual-code" className="text-xs">Enter Location Code</Label>
+              <Label htmlFor="manual-code" className="text-xs">{t('warehouse:enterLocationCode')}</Label>
               <Input
                 id="manual-code"
                 type="text"
@@ -396,13 +399,13 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                   isValid ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="text-green-600">Valid format</span>
+                      <span className="text-green-600">{t('warehouse:validFormat')}</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="h-4 w-4 text-red-600" />
                       <span className="text-red-600">
-                        Invalid format. Use: {areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
+                        {t('warehouse:invalidFormat')} {areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
                       </span>
                     </>
                   )
@@ -415,7 +418,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                 <div className={`grid gap-2 ${level === 'L00' || level === 'L99' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>
                   {/* Warehouse Selector */}
                   <div>
-                    <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
+                    <Label htmlFor="warehouse" className="text-xs">{t('warehouse:warehouse')}</Label>
                     <Select
                       value={warehouse}
                       onValueChange={handleWarehouseChange}
@@ -444,7 +447,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Aisle Selector */}
                   <div>
-                    <Label htmlFor="aisle" className="text-xs">Aisle</Label>
+                    <Label htmlFor="aisle" className="text-xs">{t('warehouse:aisle')}</Label>
                     <Select
                       value={aisle}
                       onValueChange={handleAisleChange}
@@ -473,7 +476,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Row Selector */}
                   <div>
-                    <Label htmlFor="rack" className="text-xs">Row</Label>
+                    <Label htmlFor="rack" className="text-xs">{t('warehouse:row')}</Label>
                     <Select
                       value={rack}
                       onValueChange={handleRackChange}
@@ -502,7 +505,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Level Selector */}
                   <div>
-                    <Label htmlFor="level" className="text-xs">Level</Label>
+                    <Label htmlFor="level" className="text-xs">{t('warehouse:level')}</Label>
                     <Select
                       value={level}
                       onValueChange={handleLevelChange}
@@ -532,7 +535,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                   {/* Bin Selector - Only show for regular shelving levels (not ground pallet L00 or top storage L99) */}
                   {level !== 'L00' && level !== 'L99' && (
                     <div>
-                      <Label htmlFor="bin" className="text-xs">Bin</Label>
+                      <Label htmlFor="bin" className="text-xs">{t('warehouse:bin')}</Label>
                       <Select
                         value={bin}
                         onValueChange={handleBinChange}
@@ -564,7 +567,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {/* Warehouse Selector */}
                   <div>
-                    <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
+                    <Label htmlFor="warehouse" className="text-xs">{t('warehouse:warehouse')}</Label>
                     <Select
                       value={warehouse}
                       onValueChange={handleWarehouseChange}
@@ -593,7 +596,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Aisle Selector for Pallets (B01-B99) */}
                   <div>
-                    <Label htmlFor="pallet-aisle" className="text-xs">Aisle</Label>
+                    <Label htmlFor="pallet-aisle" className="text-xs">{t('warehouse:aisle')}</Label>
                     <Select
                       value={palletAisle}
                       onValueChange={handlePalletAisleChange}
@@ -622,7 +625,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Row Selector */}
                   <div>
-                    <Label htmlFor="pallet-rack" className="text-xs">Row</Label>
+                    <Label htmlFor="pallet-rack" className="text-xs">{t('warehouse:row')}</Label>
                     <Select
                       value={palletRack}
                       onValueChange={handlePalletRackChange}
@@ -651,7 +654,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Level Selector */}
                   <div>
-                    <Label htmlFor="pallet-level" className="text-xs">Level</Label>
+                    <Label htmlFor="pallet-level" className="text-xs">{t('warehouse:level')}</Label>
                     <Select
                       value={palletLevel}
                       onValueChange={handlePalletLevelChange}
@@ -680,7 +683,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
                   {/* Pallet Selector (PAL1-PAL99) */}
                   <div>
-                    <Label htmlFor="pallet" className="text-xs">Pallet</Label>
+                    <Label htmlFor="pallet" className="text-xs">{t('warehouse:pallet')}</Label>
                     <Select
                       value={pallet}
                       onValueChange={handlePalletChange}

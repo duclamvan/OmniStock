@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ export default function MoveInventoryDialog({
   locations,
   onSuccess,
 }: MoveInventoryDialogProps) {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [moveToLocation, setMoveToLocation] = useState<string>("");
@@ -80,8 +82,8 @@ export default function MoveInventoryDialog({
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Inventory moved successfully",
+        title: t('common:success'),
+        description: t('warehouse:inventoryMovedSuccessfully'),
       });
       onOpenChange(false);
       setMoveToLocation("");
@@ -90,8 +92,8 @@ export default function MoveInventoryDialog({
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to move inventory",
+        title: t('common:error'),
+        description: error.message || t('warehouse:failedToMoveInventory'),
         variant: "destructive",
       });
     },
@@ -100,8 +102,8 @@ export default function MoveInventoryDialog({
   const handleMoveInventory = () => {
     if (!fromLocation || !moveToLocation || moveQuantity <= 0) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: t('common:error'),
+        description: t('common:fillAllRequiredFields'),
         variant: "destructive",
       });
       return;
@@ -109,8 +111,8 @@ export default function MoveInventoryDialog({
 
     if (moveQuantity > fromLocation.quantity) {
       toast({
-        title: "Error",
-        description: "Cannot move more than available quantity",
+        title: t('common:error'),
+        description: t('warehouse:cannotMoveMoreThanAvailable'),
         variant: "destructive",
       });
       return;
@@ -134,7 +136,7 @@ export default function MoveInventoryDialog({
         <>
           <div className="space-y-2">
             <Label className="text-xs text-gray-600 dark:text-gray-400">
-              Moving From
+              {t('warehouse:movingFrom')}
             </Label>
             <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
               <div>
@@ -142,7 +144,7 @@ export default function MoveInventoryDialog({
                   {fromLocation.locationCode}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  Available: {fromLocation.quantity} units
+                  {t('warehouse:available')}: {fromLocation.quantity} {t('warehouse:units')}
                 </p>
               </div>
               <Badge variant="secondary">{fromLocation.quantity}</Badge>
@@ -155,7 +157,7 @@ export default function MoveInventoryDialog({
 
           <div className="space-y-2">
             <Label htmlFor="move-to-location" className="text-xs">
-              Move To Location *
+              {t('warehouse:moveToLocation')}
             </Label>
             <Select
               value={moveToLocation}
@@ -163,12 +165,12 @@ export default function MoveInventoryDialog({
               disabled={moveInventoryMutation.isPending}
             >
               <SelectTrigger id="move-to-location" data-testid="select-move-to-location">
-                <SelectValue placeholder="Select destination location" />
+                <SelectValue placeholder={t('warehouse:selectDestinationLocation')} />
               </SelectTrigger>
               <SelectContent>
                 {availableLocations.length === 0 ? (
                   <div className="p-3 text-center text-sm text-gray-500">
-                    No other locations available
+                    {t('warehouse:noOtherLocationsAvailable')}
                   </div>
                 ) : (
                   availableLocations.map((loc) => (
@@ -176,7 +178,7 @@ export default function MoveInventoryDialog({
                       <div className="flex items-center justify-between w-full gap-2">
                         <span className="font-mono">{loc.locationCode}</span>
                         <span className="text-xs text-gray-500">
-                          ({loc.quantity} units)
+                          ({loc.quantity} {t('warehouse:units')})
                         </span>
                       </div>
                     </SelectItem>
@@ -188,7 +190,7 @@ export default function MoveInventoryDialog({
 
           <div className="space-y-2">
             <Label htmlFor="move-quantity" className="text-xs">
-              Quantity to Move *
+              {t('warehouse:quantityToMove')}
             </Label>
             <Input
               id="move-quantity"
@@ -203,7 +205,7 @@ export default function MoveInventoryDialog({
             {moveQuantity > fromLocation.quantity && (
               <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                 <AlertCircle className="h-3 w-3" />
-                <span>Cannot exceed available quantity</span>
+                <span>{t('warehouse:cannotExceedAvailableQuantity')}</span>
               </div>
             )}
           </div>
@@ -211,10 +213,10 @@ export default function MoveInventoryDialog({
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1">
             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
               <Package className="h-3 w-3" />
-              <span>Product: {productName}</span>
+              <span>{t('warehouse:product')}: {productName}</span>
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
-              After move: {fromLocation.quantity - moveQuantity} units remaining
+              {t('warehouse:afterMove')}: {fromLocation.quantity - moveQuantity} {t('warehouse:unitsRemaining')}
             </div>
           </div>
         </>
@@ -230,7 +232,7 @@ export default function MoveInventoryDialog({
         disabled={moveInventoryMutation.isPending}
         data-testid="button-cancel-move"
       >
-        Cancel
+        {t('common:cancel')}
       </Button>
       <Button
         onClick={handleMoveInventory}
@@ -242,7 +244,7 @@ export default function MoveInventoryDialog({
         }
         data-testid="button-confirm-move"
       >
-        {moveInventoryMutation.isPending ? "Moving..." : "Move Inventory"}
+        {moveInventoryMutation.isPending ? t('warehouse:moving') : t('warehouse:moveInventory')}
       </Button>
     </>
   );
@@ -252,9 +254,9 @@ export default function MoveInventoryDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Move Inventory</DrawerTitle>
+            <DrawerTitle>{t('warehouse:moveInventory')}</DrawerTitle>
             <DrawerDescription>
-              Transfer inventory between warehouse locations
+              {t('warehouse:transferInventoryBetweenLocations')}
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4">{content}</div>
@@ -268,9 +270,9 @@ export default function MoveInventoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Move Inventory</DialogTitle>
+          <DialogTitle>{t('warehouse:moveInventory')}</DialogTitle>
           <DialogDescription>
-            Transfer inventory between warehouse locations
+            {t('warehouse:transferInventoryBetweenLocations')}
           </DialogDescription>
         </DialogHeader>
         {content}

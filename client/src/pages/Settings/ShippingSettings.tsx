@@ -575,7 +575,7 @@ export default function ShippingSettings() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_shipping_method">
-                              <SelectValue placeholder="Select shipping method" />
+                              <SelectValue placeholder={t('common:selectShippingMethod')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -598,7 +598,7 @@ export default function ShippingSettings() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_carrier">
-                              <SelectValue placeholder="Select default carrier" />
+                              <SelectValue placeholder={t('common:selectDefaultCarrier')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -694,7 +694,7 @@ export default function ShippingSettings() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-shipping_cost_currency">
-                              <SelectValue placeholder="Select currency" />
+                              <SelectValue placeholder={t('common:selectCurrency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -808,7 +808,7 @@ export default function ShippingSettings() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_label_size">
-                              <SelectValue placeholder="Select label size" />
+                              <SelectValue placeholder={t('common:selectLabelSize')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -832,7 +832,7 @@ export default function ShippingSettings() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-label_format">
-                              <SelectValue placeholder="Select label format" />
+                              <SelectValue placeholder={t('common:selectLabelFormat')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>

@@ -326,7 +326,7 @@ export default function FinancialSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-price_rounding">
-                              <SelectValue placeholder="Select rounding" />
+                              <SelectValue placeholder={t('common:selectRounding')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -586,7 +586,7 @@ export default function FinancialSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-base_currency">
-                              <SelectValue placeholder="Select base currency" />
+                              <SelectValue placeholder={t('common:selectBaseCurrency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -610,7 +610,7 @@ export default function FinancialSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-exchange_rate_api_source">
-                              <SelectValue placeholder="Select source" />
+                              <SelectValue placeholder={t('common:selectSource')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -635,7 +635,7 @@ export default function FinancialSettings() {
                       <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger data-testid="select-exchange_rate_update_frequency">
-                            <SelectValue placeholder="Select frequency" />
+                            <SelectValue placeholder={t('common:selectFrequency')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -844,7 +844,7 @@ export default function FinancialSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-fiscal_year_start">
-                              <SelectValue placeholder="Select month" />
+                              <SelectValue placeholder={t('common:selectMonth')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -868,7 +868,7 @@ export default function FinancialSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-cost_calculation_method">
-                              <SelectValue placeholder="Select method" />
+                              <SelectValue placeholder={t('common:selectMethod')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>

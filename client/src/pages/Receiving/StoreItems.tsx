@@ -61,7 +61,7 @@ export default function StoreItems() {
   const [match, params] = useRoute("/receiving/storage/:id");
   const { id } = params!;
   const { toast } = useToast();
-  const { t } = useTranslation(['imports']);
+  const { t } = useTranslation(['imports', 'warehouse', 'common']);
   
   // State
   const [items, setItems] = useState<StorageItem[]>([]);
@@ -124,11 +124,11 @@ export default function StoreItems() {
     const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
     if (!locationPattern.test(trimmedValue)) {
       await soundEffects.playErrorBeep();
-      setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
+      setScanFeedback({ type: 'error', message: t('warehouse:invalidLocationFormat') });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
-        title: t('invalidLocation'),
-        description: t('locationFormatInvalid'),
+        title: t('common:error'),
+        description: t('warehouse:invalidLocationFormat'),
         variant: "destructive",
         duration: 3000
       });
@@ -139,7 +139,7 @@ export default function StoreItems() {
     // Check if location already scanned for this item
     if (currentItem?.newLocations.some(loc => loc.locationCode === trimmedValue)) {
       await soundEffects.playDuplicateBeep();
-      setScanFeedback({ type: 'duplicate', message: `${t('locationAlreadyAdded')}: ${trimmedValue}` });
+      setScanFeedback({ type: 'duplicate', message: `${t('warehouse:locationAlreadyAdded')}: ${trimmedValue}` });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       setLocationScan("");
       return;
@@ -166,7 +166,7 @@ export default function StoreItems() {
     
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
-    setScanFeedback({ type: 'success', message: `${t('locationScanned')}: ${trimmedValue}` });
+    setScanFeedback({ type: 'success', message: `${t('warehouse:locationScanned')}: ${trimmedValue}` });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
     
     setLocationScan("");
@@ -209,8 +209,8 @@ export default function StoreItems() {
     setItems(updatedItems);
     
     toast({
-      title: t('primaryLocationSet'),
-      description: `${item.newLocations[locationIndex].locationCode} ${t('setAsPrimaryLocation')}`,
+      title: t('warehouse:primaryLocationSet'),
+      description: `${item.newLocations[locationIndex].locationCode} ${t('warehouse:setAsPrimaryLocation')}`,
       duration: 2000
     });
   };
@@ -259,8 +259,8 @@ export default function StoreItems() {
     },
     onSuccess: () => {
       toast({
-        title: t('itemsStoredSuccessfully'),
-        description: `${completedItems} ${t('items')} ${t('haveBeenStored')}`,
+        title: t('warehouse:itemsStoredSuccessfully'),
+        description: `${completedItems} ${t('warehouse:items')} ${t('warehouse:haveBeenStored')}`,
         duration: 3000
       });
       
@@ -269,8 +269,8 @@ export default function StoreItems() {
     },
     onError: (error: any) => {
       toast({
-        title: t('storageFailed'),
-        description: error.message || t('failedToStoreItems'),
+        title: t('warehouse:storageFailed'),
+        description: error.message || t('warehouse:failedToStoreItems'),
         variant: "destructive",
         duration: 3000
       });
@@ -318,9 +318,9 @@ export default function StoreItems() {
             {t('back', { ns: 'common' })}
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{t('storeItems')}</h1>
+            <h1 className="text-2xl font-bold">{t('warehouse:storeItems')}</h1>
             <p className="text-sm text-muted-foreground">
-              {t('assignWarehouseLocations')}
+              {t('warehouse:assignWarehouseLocations')}
             </p>
           </div>
         </div>
@@ -338,7 +338,7 @@ export default function StoreItems() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {t('saveComplete')}
+            {t('warehouse:saveComplete')}
           </Button>
         </div>
       </div>
@@ -347,14 +347,14 @@ export default function StoreItems() {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">{t('storageProgress')}</span>
-            <span className="text-sm text-muted-foreground">{Math.round(progress)}% {t('complete', { ns: 'common' })}</span>
+            <span className="text-sm font-medium">{t('warehouse:storageProgress')}</span>
+            <span className="text-sm text-muted-foreground">{Math.round(progress)}% {t('warehouse:complete')}</span>
           </div>
           <Progress value={progress} className="h-3 mb-2" />
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <span>{completedItems}/{totalItems} {t('itemsStored')}</span>
+            <span>{completedItems}/{totalItems} {t('warehouse:itemsStored')}</span>
             <span>•</span>
-            <span>{items.reduce((sum, item) => sum + item.newLocations.length, 0)} {t('locationsAssigned')}</span>
+            <span>{items.reduce((sum, item) => sum + item.newLocations.length, 0)} {t('warehouse:locationsAssigned')}</span>
           </div>
         </CardContent>
       </Card>
@@ -366,7 +366,7 @@ export default function StoreItems() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                {t('itemsToStore')}
+                {t('warehouse:itemsToStore')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -391,15 +391,15 @@ export default function StoreItems() {
                       <div className="flex-1">
                         <div className="font-medium text-sm">{item.productName}</div>
                         {item.sku && (
-                          <div className="text-xs text-muted-foreground">{t('sku')}: {item.sku}</div>
+                          <div className="text-xs text-muted-foreground">{t('warehouse:sku')}: {item.sku}</div>
                         )}
                         <div className="flex gap-2 mt-1">
                           <Badge variant="outline" className="text-xs">
-                            {t('qty')}: {item.receivedQuantity}
+                            {t('warehouse:qty')}: {item.receivedQuantity}
                           </Badge>
                           {item.newLocations.length > 0 && (
                             <Badge variant="secondary" className="text-xs">
-                              {item.newLocations.length} {item.newLocations.length > 1 ? t('locations') : t('location')}
+                              {item.newLocations.length} {item.newLocations.length > 1 ? t('warehouse:locations') : t('warehouse:location')}
                             </Badge>
                           )}
                         </div>
@@ -434,7 +434,7 @@ export default function StoreItems() {
                       {currentItem.productName}
                     </span>
                     <Badge variant="outline">
-                      {remainingQuantity} / {currentItem.receivedQuantity} {t('remaining')}
+                      {remainingQuantity} / {currentItem.receivedQuantity} {t('warehouse:remaining')}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -442,19 +442,19 @@ export default function StoreItems() {
                   {/* Existing Locations */}
                   {currentItem.existingLocations.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">{t('currentLocations')}</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('warehouse:currentLocations')}</Label>
                       <div className="space-y-2">
                         {currentItem.existingLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <MapPin className="h-4 w-4 text-gray-500" />
                             <span className="font-mono text-sm">{loc.locationCode}</span>
                             <Badge variant="outline" className="text-xs">
-                              {t('qty')}: {loc.quantity}
+                              {t('warehouse:qty')}: {loc.quantity}
                             </Badge>
                             {loc.isPrimary && (
                               <Badge variant="default" className="text-xs">
                                 <Star className="h-3 w-3 mr-1" />
-                                {t('primary')}
+                                {t('warehouse:primary')}
                               </Badge>
                             )}
                             <Badge variant="secondary" className="text-xs ml-auto">
@@ -469,7 +469,7 @@ export default function StoreItems() {
                   {/* Scan Location */}
                   <div className="space-y-2">
                     <Label htmlFor="location-scan">
-                      {scanMode === 'location' ? t('scanLocationBarcode') : t('enterQuantity')}
+                      {scanMode === 'location' ? t('warehouse:scanLocationBarcode') : t('warehouse:enterQuantity')}
                     </Label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
@@ -485,7 +485,7 @@ export default function StoreItems() {
                               handleLocationScan(locationScan);
                             }
                           }}
-                          placeholder={t('scanLocationPlaceholder')}
+                          placeholder={t('warehouse:scanLocationPlaceholder')}
                           className="pl-10"
                           autoFocus={scanMode === 'location'}
                         />
@@ -499,14 +499,14 @@ export default function StoreItems() {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t('locationFormatHint')}
+                      {t('warehouse:locationFormatHint')}
                     </p>
                   </div>
                   
                   {/* New Locations */}
                   {currentItem.newLocations.length > 0 && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">{t('assignedLocations')}</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('warehouse:assignedLocations')}</Label>
                       <div className="space-y-2">
                         {currentItem.newLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-3 border rounded-lg">

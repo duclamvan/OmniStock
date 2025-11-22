@@ -474,7 +474,7 @@ export default function SystemSettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-backup_frequency">
-                              <SelectValue placeholder="Select frequency" />
+                              <SelectValue placeholder={t('common:selectFrequency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>

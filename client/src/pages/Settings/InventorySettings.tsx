@@ -664,7 +664,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_warehouse">
-                              <SelectValue placeholder="Select default warehouse" />
+                              <SelectValue placeholder={t('common:selectDefaultWarehouse')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -691,7 +691,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-location_format">
-                              <SelectValue placeholder="Select location format" />
+                              <SelectValue placeholder={t('common:selectLocationFormat')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -867,7 +867,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-condition_tracking">
-                              <SelectValue placeholder="Select condition" />
+                              <SelectValue placeholder={t('common:selectCondition')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -976,7 +976,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_length_unit">
-                              <SelectValue placeholder="Select length unit" />
+                              <SelectValue placeholder={t('common:selectLengthUnit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1001,7 +1001,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_weight_unit">
-                              <SelectValue placeholder="Select weight unit" />
+                              <SelectValue placeholder={t('common:selectWeightUnit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1026,7 +1026,7 @@ export default function InventorySettings() {
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_volume_unit">
-                              <SelectValue placeholder="Select volume unit" />
+                              <SelectValue placeholder={t('common:selectVolumeUnit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
