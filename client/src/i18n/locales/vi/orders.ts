@@ -255,6 +255,7 @@ const orders = {
   method: 'Phương thức',
   tracking: 'Theo dõi',
   noTrackingNumber: 'Chưa có mã vận đơn',
+  noShippingAddress: 'Chưa chọn địa chỉ giao hàng cho đơn hàng này',
   shippedAt: 'Giao vận lúc',
   cartons: 'Thùng',
   box: 'thùng',
@@ -531,6 +532,19 @@ const orders = {
   noTicketsYet: 'Chưa có ticket hỗ trợ cho đơn hàng này',
   createNewTicket: 'Tạo Ticket mới',
   viewTicket: 'Xem Ticket',
+  
+  // Pick & Pack UI
+  clickToUnverifyAllItems: 'Nhấp để bỏ xác nhận tất cả',
+  clickToMarkAllItemsAsVerified: 'Nhấp để đánh dấu tất cả là đã xác nhận',
+  hideBarcodeScanner: 'Ẩn máy quét mã vạch',
+  showBarcodeScanner: 'Hiện máy quét mã vạch',
+  hideBundleItems: 'Ẩn sản phẩm trong combo',
+  showBundleItems: 'Hiện sản phẩm trong combo',
+  packingInstructions: 'Hướng dẫn đóng gói',
+  recalculateCartonsBasedOnCurrentItems: 'Tính toán lại thùng dựa trên sản phẩm hiện tại',
+  updateTrackingNumberFromLabelBarcode: 'Cập nhật mã vận đơn từ mã vạch nhãn',
+  resetOrder: 'Đặt lại đơn hàng',
+  viewOrderDetails: 'Xem chi tiết đơn hàng',
   
   // Support Tickets
   ticketStatus: 'Trạng thái',
@@ -1167,6 +1181,328 @@ const orders = {
   requiredFieldsMissing: 'Thiếu trường bắt buộc:',
   orderSummary: 'Tóm tắt đơn hàng',
   margin: 'Biên lợi nhuận',
+  
+  // OrderDetails.tsx - Additional Status/Priority Labels
+  unknown: 'Không rõ',
+  paymentPending: 'Chờ thanh toán',
+  highPriority: 'Ưu tiên cao',
+  mediumPriority: 'Ưu tiên trung bình',
+  lowPriority: 'Ưu tiên thấp',
+  
+  // OrderDetails.tsx - Customer Types
+  vip: 'VIP',
+  wholesale: 'Bán sỉ',
+  business: 'Doanh nghiệp',
+  retail: 'Bán lẻ',
+  
+  // OrderDetails.tsx - Pick/Pack Activity
+  pickingStarted: 'Bắt đầu lấy hàng',
+  picked: 'Đã lấy',
+  pickedItem: 'Đã lấy: {{product}}',
+  pickingCompleted: 'Hoàn thành lấy hàng',
+  packingStarted: 'Bắt đầu đóng gói',
+  packed: 'Đã đóng gói',
+  packedItem: 'Đã đóng gói: {{product}}',
+  packingCompleted: 'Hoàn thành đóng gói',
+  
+  // OrderDetails.tsx - Timeline/Progress
+  trackingInformation: 'Thông tin vận đơn',
+  trackingUpdatesNotImplemented: 'Cập nhật vận đơn qua API (chưa triển khai)',
+  trackingHash: 'Vận đơn #{{number}}',
+  orderShippedTimeline: 'Đơn hàng đã gửi',
+  readyToShipTimeline: 'Sẵn sàng gửi hàng',
+  packingCompletedTimeline: 'Hoàn thành đóng gói',
+  packingStartedTimeline: 'Bắt đầu đóng gói',
+  pickingCompletedTimeline: 'Hoàn thành lấy hàng',
+  pickingStartedTimeline: 'Bắt đầu lấy hàng',
+  paymentReceived: 'Đã nhận thanh toán',
+  orderCreatedTimeline: 'Đơn hàng đã tạo',
+  duration: 'Thời lượng',
+  awaitingShipment: 'Đang chờ gửi hàng',
+  
+  // OrderDetails.tsx - Actions & Dialogs
+  edit: 'Sửa',
+  export: 'Xuất',
+  cancel: 'Hủy',
+  returnThisItem: 'Trả lại sản phẩm này',
+  makeCustomPrice: 'Tạo giá tùy chỉnh',
+  save: 'Lưu',
+  
+  // OrderDetails.tsx - Picking Mode
+  pickingProgress: 'Tiến trình lấy hàng',
+  itemsPicked: '{{picked}} / {{total}} sản phẩm đã lấy',
+  allItemsPickedReady: 'Đã lấy tất cả sản phẩm! Sẵn sàng gửi hàng.',
+  markAllPicked: 'Đánh dấu tất cả đã lấy',
+  clearAll: 'Xóa tất cả',
+  returnUnpickedItems: 'Trả lại sản phẩm chưa lấy',
+  
+  // OrderDetails.tsx - Return Dialog
+  returnQty: 'SL trả lại:',
+  of: 'của',
+  returnSummary: 'Tóm tắt trả hàng',
+  returning: 'Đang trả lại',
+  itemsWithTotal: 'sản phẩm với tổng số',
+  units: 'đơn vị',
+  totalReturnValue: 'Tổng giá trị trả lại:',
+  pleaseProvideReturnReason: 'Vui lòng cung cấp lý do trả hàng',
+  
+  // OrderDetails.tsx - Custom Price Dialog
+  currentPrice: 'Giá hiện tại:',
+  enterCustomPrice: 'Nhập giá tùy chỉnh',
+  validToOptional: 'Có hiệu lực đến (Tùy chọn)',
+  originalPrice: 'Giá gốc:',
+  customPriceLabel: 'Giá tùy chỉnh:',
+  priceComparison: 'So sánh giá',
+  difference: 'Chênh lệch:',
+  less: 'ít hơn',
+  more: 'nhiều hơn',
+  setForCustomer: 'Đặt giá tùy chỉnh cho {{product}} cho {{customer}}',
+  
+  // OrderDetails.tsx - Invoice Labels
+  off: 'giảm',
+  qtyColon: 'SL:',
+  skuColon: 'SKU:',
+  priceColon: 'Giá:',
+  noteColon: 'Ghi chú:',
+  
+  // OrderDetails.tsx - Dialog Field Labels
+  orderIdLabel: 'Mã đơn hàng',
+  customerLabel: 'Khách hàng',
+  orderDateLabel: 'Ngày đặt hàng',
+  totalAmountLabel: 'Tổng tiền',
+  
+  // OrderDetails.tsx - Tickets
+  noTicketsForOrder: 'Không có ticket nào cho đơn hàng này',
+  viewAllTickets: 'Xem tất cả {{count}} tickets',
+  
+  // OrderDetails.tsx - Attachments
+  attachments: 'Tệp đính kèm',
+  viewAttachment: 'Xem tệp đính kèm',
+  
+  // OrderDetails.tsx - Misc Labels
+  orderLink: 'Liên kết đơn hàng',
+  message: 'Tin nhắn',
+  loc: 'Vị trí:',
+  shippingLabelCarrier: 'Nhãn vận chuyển - {{carrier}}',
+  carrierUnknown: 'Không rõ',
+  pplDobirka: 'PPL - Dobírka',
+  dhlNachnahme: 'DHL - Nachnahme',
+  
+  // PickPack.tsx - Main Workflow
+  pickPackWorkflow: 'Quy trình lấy hàng & đóng gói',
+  manageOrderFulfillment: 'Quản lý xử lý đơn hàng từ lấy hàng đến giao vận',
+  
+  // PickPack.tsx - Tab Labels
+  all: 'Tất cả',
+  overview: 'Tổng quan',
+  pend: 'Chờ',
+  ready: 'Sẵn sàng',
+  
+  // PickPack.tsx - Quick Actions Section
+  quickActions: 'Thao tác nhanh',
+  startNextPriorityOrder: 'Bắt đầu đơn ưu tiên tiếp theo',
+  batchPickingMode: 'Chế độ lấy hàng hàng loạt',
+  disableBatchMode: 'Tắt chế độ hàng loạt',
+  optimizePickRoute: 'Tối ưu lộ trình lấy hàng',
+  viewPerformanceStats: 'Xem thống kê hiệu suất',
+  hideStats: 'Ẩn thống kê',
+  
+  // PickPack.tsx - Performance Statistics Dialog
+  performanceStatistics: 'Thống kê hiệu suất',
+  ordersCompletedToday: 'Đơn hàng hoàn thành hôm nay',
+  pickingAccuracy: 'Độ chính xác lấy hàng',
+  avgItemsPerOrder: 'TB sản phẩm/Đơn',
+  avgPickTime: 'Thời gian lấy TB',
+  dailyTarget: 'Mục tiêu hàng ngày',
+  efficiencyScore: 'Điểm hiệu suất',
+  excellent: 'Xuất sắc',
+  ordersTarget: '{{completed}} / {{target}} đơn',
+  
+  // PickPack.tsx - Today's Activity
+  todaysActivity: 'Hoạt động hôm nay',
+  noActivityTodayYet: 'Chưa có hoạt động hôm nay',
+  activitiesWillAppear: 'Hoạt động sẽ hiển thị khi xử lý đơn hàng',
+  
+  // PickPack.tsx - Batch Picking
+  batchPickingModeActive: 'Chế độ lấy hàng loạt đang bật',
+  ordersSelected: '{{count}} đơn được chọn',
+  selectAll: 'Chọn tất cả',
+  clearSelection: 'Bỏ chọn',
+  startBatchPick: 'Bắt đầu lấy hàng loạt ({{count}})',
+  ordersReadyToPick: 'Đơn hàng sẵn sàng lấy ({{count}})',
+  totalItemsAcrossOrders: '{{items}} sản phẩm trên {{orders}} đơn',
+  totalItemsToPick: '{{items}} sản phẩm cần lấy',
+  estimatedTime: '~{{hours}}h {{minutes}}p dự kiến',
+  
+  // PickPack.tsx - Order Actions
+  startPicking: 'Bắt đầu lấy hàng',
+  startPacking: 'Bắt đầu đóng gói',
+  resumePicking: 'Tiếp tục lấy hàng',
+  complete: 'Hoàn thành',
+  confirmShipment: 'Xác nhận giao vận',
+  resetOrder: 'Đặt lại đơn hàng',
+  putOrderOnHold: 'Tạm giữ đơn hàng',
+  cancelOrder: 'Hủy đơn hàng',
+  ship: 'Giao vận',
+  shipAll: 'Giao vận tất cả',
+  markAsShipped: 'Đánh dấu đã giao vận',
+  markAllAsShipped: 'Đánh dấu tất cả đã giao vận',
+  shipOrders: 'Giao vận {{count}}',
+  
+  // PickPack.tsx - Order States/Messages
+  noOrdersCurrentlyBeingPicked: 'Không có đơn hàng đang được lấy',
+  noOrdersReadyForPacking: 'Không có đơn hàng sẵn sàng đóng gói',
+  noOrdersReadyToShip: 'Không có đơn hàng sẵn sàng giao vận',
+  noPendingOrdersToPick: 'Không có đơn hàng chờ lấy',
+  noLabelGeneratedYet: 'Chưa tạo nhãn',
+  thisTrackingAlreadyUsed: 'Mã vận đơn này đã được sử dụng bởi thùng khác',
+  
+  // PickPack.tsx - Carton & Packing
+  cartons: 'Thùng',
+  cartonWithCount: 'Thùng ({{count}})',
+  cartonOf: 'Thùng {{current}} / {{total}}',
+  dhlNachnahmeWithCOD: 'DHL Nachnahme (COD)',
+  duplicate: 'Nhân bản',
+  recalculateCartonsTooltip: 'Tính lại thùng dựa trên sản phẩm hiện tại',
+  
+  // PickPack.tsx - Navigation & Controls
+  focusBarcode: 'Focus Barcode',
+  nextItem: 'Sản phẩm tiếp',
+  previous: 'Trước',
+  bundleItems: 'Sản phẩm combo',
+  expandAll: 'Mở rộng tất cả',
+  collapseAll: 'Thu gọn tất cả',
+  printLabel: 'In nhãn',
+  print: 'In',
+  scan: 'Quét',
+  done: 'Xong',
+  resume: 'Tiếp tục',
+  pause: 'Tạm dừng',
+  esc: 'Esc',
+  
+  // PickPack.tsx - Time & Progress
+  time: 'Thời gian',
+  progress: 'Tiến độ',
+  score: 'Điểm',
+  elapsed: 'Đã trôi qua',
+  elapsedTime: 'Thời gian đã trôi',
+  pickingTime: 'Thời gian lấy hàng',
+  packingTime: 'Thời gian đóng gói',
+  
+  // PickPack.tsx - Details & Information
+  details: 'Chi tiết',
+  viewFullDetails: 'Xem chi tiết đầy đủ',
+  viewOrderDetails: 'Xem chi tiết đơn hàng',
+  warehouseLocation: 'Vị trí kho',
+  packingInstructions: 'HƯỚNG DẪN ĐÓNG GÓI',
+  shippingNotes: 'GHI CHÚ VẬN CHUYỂN',
+  specialHandling: 'XỬ LÝ ĐẶC BIỆT',
+  shippingDetails: 'Chi tiết vận chuyển',
+  
+  // PickPack.tsx - GLS/DHL Forms
+  paket: 'Paket',
+  paketAndPaymentDetails: 'Paket & Chi tiết thanh toán',
+  paketgrosse: 'Paketgröße*',
+  absender: 'Absender (Người gửi)',
+  empfanger: 'Empfänger (Người nhận)',
+  dobirka: 'Dobírka (COD)',
+  country: 'Quốc gia:',
+  paketSize: 'Kích thước paket:',
+  firstName: 'Tên:',
+  lastName: 'Họ:',
+  fullAddress: 'Địa chỉ đầy đủ:',
+  eMail: 'E-mail:',
+  land: 'Land*',
+  firma: 'Firma',
+  telefon: 'Telefon',
+  name: 'Name*',
+  iban: 'IBAN*',
+  bic: 'BIC*',
+  kontoinhaber: 'Kontoinhaber*',
+  betragInEUR: 'Betrag in EUR*',
+  verwendungszweck: 'Verwendungszweck*',
+  vorUndNachname: 'Vor- und Nachname*',
+  adresszusatz: 'Adresszusatz',
+  plz: 'PLZ*',
+  wohnort: 'Wohnort*',
+  strasse: 'Straße*',
+  hausnummer: 'Hausnummer*',
+  eMailDesEmpfangers: 'E-Mail des Empfängers*',
+  eMailDesAbsenders: 'E-Mail des Absenders*',
+  
+  // PickPack.tsx - Shipping Label Actions
+  updateTrackingFromBarcode: 'Cập nhật mã vận đơn từ barcode nhãn',
+  creatingShippingLabel: 'Đang tạo nhãn vận chuyển từ PPL API',
+  pplLabelCreatedSuccess: 'Nhãn vận chuyển PPL đã được tạo thành công',
+  labelRemovedSuccessfully: 'Nhãn đã được xóa thành công.',
+  shippingLabelTitle: 'Nhãn vận chuyển - {{orderId}}',
+  cartonDataPreservedCanRegenerate: 'Dữ liệu thùng đã được bảo toàn. Bạn có thể tạo lại nhãn nếu cần.',
+  
+  // PickPack.tsx - Dialogs
+  confirmShipmentDialog: 'Bạn có chắc muốn đánh dấu đơn hàng này là đã giao vận?',
+  resetOrderDialog: 'Thao tác này sẽ xóa tất cả số lượng đã lấy. Bạn có chắc chắn?',
+  putOnHoldDialog: 'Bạn có chắc muốn tạm giữ đơn hàng này?',
+  cancelOrderDialog: 'Bạn có chắc muốn hủy đơn hàng này?',
+  deleteAllLabelsConfirm: 'Xóa tất cả {{count}} nhãn vận chuyển?\\n\\nThao tác này sẽ hủy tất cả lô hàng với PPL. Dữ liệu thùng (trọng lượng, kích thước) sẽ được giữ lại.\\n\\nSau khi xóa, bạn có thể tạo lại nhãn bằng nút "Tạo tất cả nhãn".',
+  deleteLabelConfirm: 'Xóa nhãn #{{number}}?\\n\\nThao tác này sẽ hủy lô hàng với PPL. Dữ liệu thùng sẽ được giữ lại.',
+  deleteThisLabelConfirm: 'Xóa nhãn này?\\n\\nThao tác này sẽ hủy lô hàng với PPL. Dữ liệu thùng sẽ được giữ lại.',
+  deleteLabelConfirmShort: 'Xóa nhãn #{{number}}?\\n\\nThao tác này sẽ hủy lô hàng với PPL.',
+  
+  // PickPack.tsx - Image & Visual Elements
+  packingInstructionsImage: 'Hướng dẫn đóng gói',
+  clickToExpand: 'Nhấp để mở rộng ảnh',
+  clickToMinimize: 'Nhấp để thu nhỏ',
+  hideBarcode: 'Ẩn máy quét barcode',
+  showBarcode: 'Hiện máy quét barcode',
+  hideBundleItems: 'Ẩn sản phẩm combo',
+  showBundleItems: 'Hiện sản phẩm combo',
+  clickToMarkVerified: 'Nhấp để đánh dấu tất cả đã xác minh',
+  clickToUnverifyAll: 'Nhấp để bỏ xác minh tất cả',
+  
+  // PickPack.tsx - Status & Totals
+  customer: 'Khách hàng:',
+  date: 'Ngày:',
+  note: 'Ghi chú:',
+  subtotal: 'Tạm tính:',
+  totalCartons: 'Tổng số thùng:',
+  totalLabels: 'Tổng số nhãn:',
+  totalWeight: 'Tổng trọng lượng:',
+  pickingItem: 'Đang lấy sản phẩm',
+  forMaterial: 'Cho: {{name}}',
+  cartonNumber: 'Thùng #{{number}}',
+  glsShippingLabelsCount: 'Nhãn vận chuyển GLS ({{count}})',
+  pickedBy: 'Được lấy bởi {{name}}',
+  packedBy: 'Được đóng gói bởi {{name}}',
+  trackingLabel: 'Theo dõi: {{number}}',
+  skuLabel: 'SKU: {{sku}}',
+  forCartonNumber: 'Cho thùng #{{number}}',
+  shippingLabelNumber: 'Nhãn vận chuyển #{{number}}',
+  all: 'TẤT CẢ',
+  orderPrefix: 'Đơn hàng {{orderId}}',
+  orderSentForRepacking: 'Đơn hàng đã được gửi để đóng gói lại',
+  
+  // PickPack.tsx - Notes & Instructions Headers
+  shippingNotes: 'GHI CHÚ VẬN CHUYỂN',
+  specialHandling: 'XỬ LÝ ĐẶC BIỆT',
+  packingInstructionsHeader: 'HƯỚNG DẪN ĐÓNG GÓI',
+  
+  // PickPack.tsx - Shipping Labels
+  dhlShippingLabel: 'Nhãn vận chuyển DHL',
+  shippingDetails: 'Chi tiết vận chuyển',
+  noLabelGeneratedYet: 'Chưa tạo nhãn',
+  
+  // PickPack.tsx - Error Messages
+  failedToCreateCarton: 'Không thể tạo thùng',
+  failedToUpdateTracking: 'Không thể cập nhật mã vận đơn',
+  failedToCancelPPLLabels: 'Không thể hủy nhãn PPL',
+  failedToDeletePPLLabels: 'Không thể xóa nhãn PPL',
+  failedToGenerateLabels: 'Không thể tạo nhãn',
+  failedToDeleteLabels: 'Không thể xóa nhãn',
+  failedToPrintLabel: 'Không thể in nhãn',
+  
+  // OrderDetails.tsx - Page Elements
+  orderDetails: 'Chi tiết đơn hàng',
+  noTicketsForThisOrder: 'Không có ticket cho đơn hàng này',
   
 } as const;
 

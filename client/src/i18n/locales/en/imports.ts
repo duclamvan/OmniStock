@@ -78,6 +78,8 @@ const imports = {
   product: 'Product',
   items: 'Items',
   item: 'Item',
+  hide: 'Hide',
+  show: 'Show',
   productName: 'Product Name',
   productSelection: 'Product Selection',
   addProducts: 'Add Products',

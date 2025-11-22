@@ -2671,7 +2671,7 @@ export default function PickPack() {
       }
       toast({
         title: t('errorCreatingCarton'),
-        description: error instanceof Error ? error.message : "Failed to create carton",
+        description: error instanceof Error ? error.message : t('failedToCreateCarton'),
         variant: "destructive"
       });
     },
@@ -2813,7 +2813,7 @@ export default function PickPack() {
       console.error(`❌ Failed to save tracking number:`, error);
       toast({
         title: t('failedToSave'),
-        description: error.message || "Failed to update tracking number",
+        description: error.message || t('failedToUpdateTracking'),
         variant: "destructive"
       });
     }
@@ -2879,7 +2879,7 @@ export default function PickPack() {
       });
       
       // Build a detailed error message
-      let errorMessage = error.message || "Failed to create PPL labels";
+      let errorMessage = error.message || t('failedToCancelPPLLabels');
       
       if (error.hint) {
         errorMessage += `\n\n💡 ${error.hint}`;
@@ -2924,7 +2924,7 @@ export default function PickPack() {
       console.error('Error cancelling PPL labels:', error);
       toast({
         title: t('error'),
-        description: error.message || "Failed to cancel PPL labels",
+        description: error.message || t('failedToCancelPPLLabels'),
         variant: "destructive"
       });
     }
@@ -2946,7 +2946,7 @@ export default function PickPack() {
       console.error('Error deleting PPL labels:', error);
       toast({
         title: t('error'),
-        description: error.message || "Failed to delete PPL labels",
+        description: error.message || t('failedToDeletePPLLabels'),
         variant: "destructive"
       });
     }
@@ -2975,7 +2975,7 @@ export default function PickPack() {
         fullResponse: error.fullResponse
       });
       
-      let errorMessage = error.message || "Failed to retrieve PPL label";
+      let errorMessage = error.message || t('failedToGenerateLabels');
       
       if (error.hint) {
         errorMessage += `\n\n💡 ${error.hint}`;
@@ -4959,8 +4959,8 @@ export default function PickPack() {
       return (
         <div className="text-center py-6">
           <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No activity today yet</p>
-          <p className="text-xs text-gray-400 mt-1">Activities will appear as orders are processed</p>
+          <p className="text-sm text-gray-500">{t('noActivityTodayYet')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('activitiesWillAppear')}</p>
         </div>
       );
     }
@@ -6462,7 +6462,7 @@ export default function PickPack() {
                             return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
                           }
                           return (verifiedItems[item.id] || 0) >= item.quantity;
-                        }) ? "Click to unverify all items" : "Click to mark all items as verified"}
+                        }) ? t('clickToUnverifyAllItems') : t('clickToMarkAllItemsAsVerified')}
                       >
                         {activePackingOrder.items.every(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
@@ -6497,7 +6497,7 @@ export default function PickPack() {
                             setTimeout(() => barcodeInputRef.current?.focus(), 100);
                           }
                         }}
-                        title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
+                        title={showBarcodeScanner ? t('hideBarcodeScanner') : t('showBarcodeScanner')}
                       >
                         <ScanLine className="h-5 w-5" />
                       </Button>
@@ -6694,7 +6694,7 @@ export default function PickPack() {
                                           }}
                                         >
                                           {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                            <><Check className="h-3 w-3 mr-1" />Done</>
+                                            <><Check className="h-3 w-3 mr-1" />{t('done')}</>
                                           ) : (
                                             <><ScanLine className="h-3 w-3 mr-1" />{verifiedItems[item.id] || 0}/{item.quantity}</>
                                           )}
@@ -6808,7 +6808,7 @@ export default function PickPack() {
                                         }
                                         setExpandedBundles(newExpanded);
                                       }}
-                                      title={isExpanded ? "Hide bundle items" : "Show bundle items"}
+                                      title={isExpanded ? t('hideBundleItems') : t('showBundleItems')}
                                     >
                                       {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                     </Button>
@@ -6854,7 +6854,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                      <><Check className="h-4 w-4 mr-1" />Complete</>
+                                      <><Check className="h-4 w-4 mr-1" />{t('complete')}</>
                                     ) : (
                                       <><ScanLine className="h-4 w-4 mr-1" />{verifiedItems[item.id] || 0}/{item.quantity}</>
                                     )}
@@ -6949,7 +6949,7 @@ export default function PickPack() {
                                     <div className="flex items-start gap-2">
                                       <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-amber-700 dark:text-amber-200 mb-1">SHIPPING NOTES</div>
+                                        <div className="text-xs font-bold text-amber-700 dark:text-amber-200 mb-1">{t('orders:shippingNotes')}</div>
                                         <div className="text-sm text-black font-medium leading-normal whitespace-pre-wrap">{item.notes}</div>
                                       </div>
                                     </div>
@@ -6961,7 +6961,7 @@ export default function PickPack() {
                                     <div className="flex items-start gap-2">
                                       <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-red-700 dark:text-red-200 mb-1">SPECIAL HANDLING</div>
+                                        <div className="text-xs font-bold text-red-700 dark:text-red-200 mb-1">{t('orders:specialHandling')}</div>
                                         <div className="text-sm text-black font-medium leading-normal">{item.shipmentNotes}</div>
                                         {item.packingMaterial && (
                                           <div className="flex items-center gap-1.5 mt-1">
@@ -6988,12 +6988,12 @@ export default function PickPack() {
                                     <div className="flex items-start gap-2">
                                       <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-blue-700 dark:text-blue-200 dark:text-blue-100 mb-1">PACKING INSTRUCTIONS</div>
+                                        <div className="text-xs font-bold text-blue-700 dark:text-blue-200 dark:text-blue-100 mb-1">{t('orders:packingInstructionsHeader')}</div>
                                         {item.packingInstructionsImage && (
                                           <div className="mb-2">
                                             <img 
                                               src={item.packingInstructionsImage} 
-                                              alt="Packing instructions"
+                                              alt={t('packingInstructions')}
                                               className="w-full max-w-xs rounded border border-blue-200 dark:border-blue-700"
                                             />
                                           </div>
@@ -7109,7 +7109,7 @@ export default function PickPack() {
                         recalculateCartons.current?.();
                       }}
                       disabled={isRecalculating}
-                      title="Recalculate cartons based on current items"
+                      title={t('recalculateCartonsBasedOnCurrentItems')}
                     >
                       {isRecalculating ? (
                         <>
@@ -7885,7 +7885,7 @@ export default function PickPack() {
                           <Separator className="bg-yellow-300 h-0.5 dark:bg-yellow-600" />
                           <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded">
                             <Truck className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                            <span className="text-sm font-bold text-yellow-900">DHL Shipping Label</span>
+                            <span className="text-sm font-bold text-yellow-900">{t('orders:dhlShippingLabel')}</span>
                           </div>
                           <div 
                             className={`border-2 rounded-lg p-3 transition-all ${
@@ -8510,7 +8510,7 @@ export default function PickPack() {
                       className="w-full flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded hover:bg-yellow-200 transition-colors"
                     >
                       <MapPin className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                      <span className="text-sm font-bold text-yellow-900">Shipping Details</span>
+                      <span className="text-sm font-bold text-yellow-900">{t('orders:shippingDetails')}</span>
                       {shippingDetailsExpanded.dhlNachnahme ? (
                         <ChevronUp className="h-4 w-4 text-yellow-700 dark:text-yellow-200 ml-auto" />
                       ) : (
@@ -8694,7 +8694,7 @@ export default function PickPack() {
                         <Separator className="bg-yellow-300 h-0.5 dark:bg-yellow-600" />
                         <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded">
                           <Truck className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                          <span className="text-sm font-bold text-yellow-900">DHL Shipping Label</span>
+                          <span className="text-sm font-bold text-yellow-900">{t('orders:dhlShippingLabel')}</span>
                         </div>
                         {(() => {
                           const dhlCarton = cartons[0];
@@ -8971,7 +8971,7 @@ export default function PickPack() {
                       className="w-full flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded hover:bg-sky-200 transition-colors"
                     >
                       <MapPin className="h-4 w-4 text-sky-700" />
-                      <span className="text-sm font-bold text-sky-900">Shipping Details</span>
+                      <span className="text-sm font-bold text-sky-900">{t('orders:shippingDetails')}</span>
                       {shippingDetailsExpanded.gls ? (
                         <ChevronUp className="h-4 w-4 text-sky-700 ml-auto" />
                       ) : (
@@ -9778,14 +9778,14 @@ export default function PickPack() {
                                               }
                                             }}
                                             className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:text-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title="Update tracking number from label barcode"
+                                            title={t('updateTrackingNumberFromLabelBarcode')}
                                           >
                                             <Edit className="h-3 w-3" />
                                           </button>
                                         )}
                                       </div>
                                     ) : (
-                                      <p className="text-xs text-gray-400 italic">No label generated yet</p>
+                                      <p className="text-xs text-gray-400 italic">{t('orders:noLabelGeneratedYet')}</p>
                                     )}
                                   </div>
                                   
@@ -11127,7 +11127,7 @@ export default function PickPack() {
                     size="icon"
                     className="h-7 w-7 bg-red-50 dark:bg-red-900/300/80 hover:bg-red-600/90 touch-manipulation"
                     onClick={() => setShowResetOrderDialog(true)}
-                    title="Reset Order"
+                    title={t('resetOrder')}
                   >
                     <RotateCcw className="h-3.5 w-3.5 text-white" />
                   </Button>
@@ -11170,7 +11170,7 @@ export default function PickPack() {
                 </div>
                 
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-blue-100 dark:text-blue-50">Progress</span>
+                  <span className="text-blue-100 dark:text-blue-50">{t('progress')}</span>
                   <span className="font-bold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
@@ -11274,7 +11274,7 @@ export default function PickPack() {
                 </div>
                 
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-blue-100 dark:text-blue-50">Progress</span>
+                  <span className="text-blue-100 dark:text-blue-50">{t('progress')}</span>
                   <span className="font-semibold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
@@ -11296,15 +11296,15 @@ export default function PickPack() {
                 <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">
                   {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+K
                 </kbd>
-                <span>Focus Barcode</span>
+                <span>{t('focusBarcode')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+N</kbd>
-                <span>Next Item</span>
+                <span>{t('nextItem')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+P</kbd>
-                <span>Previous</span>
+                <span>{t('previous')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Esc</kbd>
@@ -11368,12 +11368,12 @@ export default function PickPack() {
                     {expandedOverviewItems.size === activePickingOrder.items.length ? (
                       <>
                         <ChevronsUp className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Collapse All</span>
+                        <span className="hidden sm:inline">{t('collapseAll')}</span>
                       </>
                     ) : (
                       <>
                         <ChevronsDown className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Expand All</span>
+                        <span className="hidden sm:inline">{t('expandAll')}</span>
                       </>
                     )}
                   </Button>
@@ -11565,7 +11565,7 @@ export default function PickPack() {
                       data-testid="button-overview-scan"
                     >
                       <ScanLine className="h-5 w-5 sm:mr-2" />
-                      <span className="hidden sm:inline">Scan</span>
+                      <span className="hidden sm:inline">{t('scan')}</span>
                     </Button>
                   </div>
                 )}
@@ -11974,15 +11974,15 @@ export default function PickPack() {
                     <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
                       <div className="grid grid-cols-3 gap-2 lg:gap-4">
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">Time</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{t('time')}</p>
                           <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
                         </div>
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">Items</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{t('items')}</p>
                           <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">{activePickingOrder.totalItems}</p>
                         </div>
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">Score</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{t('score')}</p>
                           <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 dark:text-purple-400">100%</p>
                         </div>
                       </div>
@@ -12319,19 +12319,19 @@ export default function PickPack() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center" data-testid="stat-pending">
                 <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</div>
-                <div className="text-xs text-orange-700 dark:text-orange-200">Pending</div>
+                <div className="text-xs text-orange-700 dark:text-orange-200">{t('pending')}</div>
               </div>
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center" data-testid="stat-picking">
                 <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.picking}</div>
-                <div className="text-xs text-blue-700 dark:text-blue-200 dark:text-blue-100">Picking</div>
+                <div className="text-xs text-blue-700 dark:text-blue-200 dark:text-blue-100">{t('picking')}</div>
               </div>
               <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center" data-testid="stat-packing">
                 <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.packing}</div>
-                <div className="text-xs text-purple-700 dark:text-purple-200">Packing</div>
+                <div className="text-xs text-purple-700 dark:text-purple-200">{t('packing')}</div>
               </div>
               <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center" data-testid="stat-ready">
                 <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">{stats.ready}</div>
-                <div className="text-xs text-green-700 dark:text-green-200">Ready</div>
+                <div className="text-xs text-green-700 dark:text-green-200">{t('ready')}</div>
               </div>
             </div>
           </div>
@@ -12351,8 +12351,8 @@ export default function PickPack() {
               <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
-                  <span className="sm:hidden">All</span>
-                  <span className="hidden sm:inline">Overview</span>
+                  <span className="sm:hidden">{t('all')}</span>
+                  <span className="hidden sm:inline">{t('overview')}</span>
                 </span>
                 <span className="text-sm sm:text-base font-bold">
                   {stats.pending + stats.picking + stats.packing + stats.ready}
@@ -12367,8 +12367,8 @@ export default function PickPack() {
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
-                  <span className="sm:hidden">Pend</span>
-                  <span className="hidden sm:inline">Pending</span>
+                  <span className="sm:hidden">{t('pend')}</span>
+                  <span className="hidden sm:inline">{t('pending')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
                   {stats.pending}
@@ -12384,7 +12384,7 @@ export default function PickPack() {
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pick</span>
-                  <span className="hidden sm:inline">Picking</span>
+                  <span className="hidden sm:inline">{t('picking')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
                   {stats.picking}
@@ -12400,7 +12400,7 @@ export default function PickPack() {
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pack</span>
-                  <span className="hidden sm:inline">Packing</span>
+                  <span className="hidden sm:inline">{t('packing')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
                   {stats.packing}
@@ -12414,7 +12414,7 @@ export default function PickPack() {
             >
               <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-xs sm:text-sm font-medium leading-tight">Ready</span>
+                <span className="text-xs sm:text-sm font-medium leading-tight">{t('ready')}</span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
                   {stats.ready}
                 </span>
@@ -12432,7 +12432,7 @@ export default function PickPack() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        <h2 className="text-lg sm:text-xl font-bold">Performance Statistics</h2>
+                        <h2 className="text-lg sm:text-xl font-bold">{t('performanceStatistics')}</h2>
                       </div>
                       <Button 
                         size="sm" 
@@ -12457,19 +12457,19 @@ export default function PickPack() {
                         <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">
                           {Math.floor(Math.random() * 90 + 10)}%
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Picking Accuracy</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('pickingAccuracy')}</p>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
                           {Math.floor(Math.random() * 20 + 5)}
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Items/Order</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('avgItemsPerOrder')}</p>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">
                           {Math.floor(Math.random() * 10 + 5)}m
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Pick Time</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('avgPickTime')}</p>
                       </div>
                     </div>
                     
@@ -12477,14 +12477,14 @@ export default function PickPack() {
                     
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Daily Target</span>
-                        <span className="text-sm text-gray-600">15 / 20 orders</span>
+                        <span className="text-sm font-medium">{t('dailyTarget')}</span>
+                        <span className="text-sm text-gray-600">{t('ordersTarget', { completed: 15, target: 20 })}</span>
                       </div>
                       <Progress value={75} className="h-2" />
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Efficiency Score</span>
-                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">Excellent</Badge>
+                        <span className="text-sm font-medium">{t('efficiencyScore')}</span>
+                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">{t('excellent')}</Badge>
                       </div>
                     </div>
                   </div>
@@ -12496,7 +12496,7 @@ export default function PickPack() {
               {/* Quick Actions */}
               <Card>
                 <CardHeader className="pb-3 sm:pb-6">
-                  <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">{t('quickActions')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3">
                   {isLoading ? (
@@ -12526,7 +12526,7 @@ export default function PickPack() {
                               data-testid="button-start-next-priority-order"
                             >
                               <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                              Start Next Priority Order {hasOrders && `(${ordersToPickCount})`}
+                              {t('startNextPriorityOrder')} {hasOrders && `(${ordersToPickCount})`}
                             </Button>
                           );
                         })()
@@ -12538,7 +12538,7 @@ export default function PickPack() {
                         onClick={toggleBatchPickingMode}
                       >
                         <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                        {batchPickingMode ? "Disable Batch Mode" : "Batch Picking Mode"}
+                        {batchPickingMode ? t('disableBatchMode') : t('batchPickingMode')}
                       </Button>
                       <Button 
                         className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
@@ -12547,7 +12547,7 @@ export default function PickPack() {
                         onClick={optimizePickRoute}
                       >
                         <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                        Optimize Pick Route
+                        {t('optimizePickRoute')}
                       </Button>
                       <Button 
                         className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
@@ -12556,7 +12556,7 @@ export default function PickPack() {
                         onClick={togglePerformanceStats}
                       >
                         <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                        {showPerformanceStats ? "Hide Stats" : "View Performance Stats"}
+                        {showPerformanceStats ? t('hideStats') : t('viewPerformanceStats')}
                       </Button>
                     </>
                   )}
@@ -12567,7 +12567,7 @@ export default function PickPack() {
               <Card>
                 <CardHeader className="pb-3 sm:pb-6">
                   <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                    <span>Today's Activity</span>
+                    <span>{t('todaysActivity')}</span>
                     <Badge variant="outline" className="text-xs">
                       {formatDate(new Date())}
                     </Badge>
@@ -12761,7 +12761,7 @@ export default function PickPack() {
                                   e.stopPropagation();
                                   setPreviewOrder(order);
                                 }}
-                                title="View Order Details"
+                                title={t('viewOrderDetails')}
                               >
                                 <Eye className="h-5 w-5" />
                               </Button>
@@ -12819,7 +12819,7 @@ export default function PickPack() {
                   {!isLoading && getOrdersByStatus('pending').length === 0 && (
                     <div className="text-center py-12 fade-in">
                       <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No pending orders to pick</p>
+                      <p className="text-gray-500">{t('noPendingOrdersToPick')}</p>
                     </div>
                   )}
                   {isLoading && (
@@ -12852,7 +12852,7 @@ export default function PickPack() {
                 ) : getOrdersByStatus('picking').length === 0 ? (
                   <div className="text-center py-6 sm:py-8 fade-in">
                     <Package className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                    <p className="text-xs sm:text-sm text-gray-500">No orders currently being picked</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{t('noOrdersCurrentlyBeingPicked')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 stagger-animation">
@@ -12918,7 +12918,7 @@ export default function PickPack() {
                                 size="icon"
                                 className="h-10 w-10 sm:h-12 sm:w-12"
                                 onClick={() => setPreviewOrder(order)}
-                                title="View Order Details"
+                                title={t('viewOrderDetails')}
                               >
                                 <Eye className="h-5 w-5" />
                               </Button>
@@ -13006,7 +13006,7 @@ export default function PickPack() {
                 ) : getOrdersByStatus('packing').length === 0 ? (
                   <div className="text-center py-6 sm:py-8 fade-in">
                     <Box className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                    <p className="text-xs sm:text-sm text-gray-500">No orders ready for packing</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{t('noOrdersReadyForPacking')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 stagger-animation">
@@ -13074,7 +13074,7 @@ export default function PickPack() {
                                 size="icon"
                                 className="h-10 w-10 sm:h-12 sm:w-12"
                                 onClick={() => setPreviewOrder(order)}
-                                title="View Order Details"
+                                title={t('viewOrderDetails')}
                               >
                                 <Eye className="h-5 w-5" />
                               </Button>
@@ -13160,8 +13160,8 @@ export default function PickPack() {
                       onClick={() => setShowShipAllConfirm(true)}
                     >
                       <Check className="h-5 w-5 mr-2" />
-                      <span className="hidden sm:inline">Mark all as shipped</span>
-                      <span className="sm:hidden">Ship All</span>
+                      <span className="hidden sm:inline">{t('markAllAsShipped')}</span>
+                      <span className="sm:hidden">{t('shipAll')}</span>
                     </Button>
                   )}
                 </div>
@@ -13176,7 +13176,7 @@ export default function PickPack() {
                 ) : getOrdersByStatus('ready').length === 0 ? (
                   <div className="text-center py-6 sm:py-8 fade-in">
                     <Truck className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                    <p className="text-xs sm:text-sm text-gray-500">No orders ready to ship</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{t('noOrdersReadyToShip')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4 sm:space-y-6">
@@ -13649,11 +13649,11 @@ export default function PickPack() {
                     <span className="font-bold text-gray-900 dark:text-gray-100">{previewOrder?.orderId}</span>
                   </div>
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-500 dark:text-gray-400">Customer:</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{previewOrder?.customerName}</span>
                   </div>
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                       {previewOrder?.createdAt 
                         ? new Date(previewOrder.createdAt).toLocaleString('en-US', {
@@ -13793,7 +13793,7 @@ export default function PickPack() {
               {previewOrder?.notes && (
                 <div className="pt-3 border-t">
                   <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                    <span className="font-medium not-italic">Note:</span> {previewOrder.notes}
+                    <span className="font-medium not-italic">{t('note')}</span> {previewOrder.notes}
                   </p>
                 </div>
               )}
@@ -13820,7 +13820,7 @@ export default function PickPack() {
               >
                 <FileText className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
                 <span className="hidden sm:inline">View Full Details</span>
-                <span className="sm:hidden">Details</span>
+                <span className="sm:hidden">{t('details')}</span>
               </Button>
             </Link>
             
@@ -13837,7 +13837,7 @@ export default function PickPack() {
               >
                 <Printer className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
                 <span className="hidden sm:inline">Print Label</span>
-                <span className="sm:hidden">Print</span>
+                <span className="sm:hidden">{t('print')}</span>
               </Button>
             )}
             
@@ -13854,7 +13854,7 @@ export default function PickPack() {
                 }}
               >
                 <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">Start Picking</span>
+                <span className="hidden sm:inline">{t('startPicking')}</span>
                 <span className="sm:hidden">Pick</span>
               </Button>
             )}
@@ -13876,8 +13876,8 @@ export default function PickPack() {
                 }}
               >
                 <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">Resume Picking</span>
-                <span className="sm:hidden">Resume</span>
+                <span className="hidden sm:inline">{t('resumePicking')}</span>
+                <span className="sm:hidden">{t('resume')}</span>
               </Button>
             )}
             
@@ -13893,7 +13893,7 @@ export default function PickPack() {
                 }}
               >
                 <Box className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">Start Packing</span>
+                <span className="hidden sm:inline">{t('startPacking')}</span>
                 <span className="sm:hidden">Pack</span>
               </Button>
             )}
@@ -13910,7 +13910,7 @@ export default function PickPack() {
                 }}
               >
                 <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">Mark as Shipped</span>
+                <span className="hidden sm:inline">{t('markAsShipped')}</span>
                 <span className="sm:hidden">Ship</span>
               </Button>
             )}
@@ -13930,7 +13930,7 @@ export default function PickPack() {
       <Dialog open={showShipAllConfirm} onOpenChange={setShowShipAllConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Shipment</DialogTitle>
+            <DialogTitle>{t('confirmShipment')}</DialogTitle>
             <DialogDescription>
               Are you sure you want to mark all {getOrdersByStatus('ready').length} orders as shipped?
             </DialogDescription>
@@ -13957,7 +13957,7 @@ export default function PickPack() {
       <Dialog open={showResetOrderDialog} onOpenChange={setShowResetOrderDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset Order</DialogTitle>
+            <DialogTitle>{t('resetOrder')}</DialogTitle>
             <DialogDescription>
               Are you sure you want to reset this order? All picked quantities will be cleared and you'll start from the beginning.
             </DialogDescription>
@@ -14068,7 +14068,7 @@ export default function PickPack() {
       <Dialog open={!!orderToHold} onOpenChange={() => setOrderToHold(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Put Order On Hold</DialogTitle>
+            <DialogTitle>{t('putOrderOnHold')}</DialogTitle>
             <DialogDescription>
               Are you sure you want to put order {orderToHold?.orderId} on hold? The order will be paused and can be resumed later.
             </DialogDescription>
@@ -14095,7 +14095,7 @@ export default function PickPack() {
       <Dialog open={!!orderToCancel} onOpenChange={() => setOrderToCancel(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Order</DialogTitle>
+            <DialogTitle>{t('cancelOrder')}</DialogTitle>
             <DialogDescription>
               Are you sure you want to cancel order {orderToCancel?.orderId}? This action will mark the order as cancelled.
             </DialogDescription>

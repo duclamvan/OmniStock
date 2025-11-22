@@ -89,6 +89,8 @@ const imports = {
   product: 'Sản phẩm',
   items: 'Sản phẩm',
   item: 'Sản phẩm',
+  hide: 'Ẩn',
+  show: 'Hiện',
   productName: 'Tên sản phẩm',
   productSelection: 'Chọn sản phẩm',
   addProducts: 'Thêm sản phẩm',

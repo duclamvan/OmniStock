@@ -263,6 +263,7 @@ const orders = {
   method: 'Method',
   tracking: 'Tracking',
   noTrackingNumber: 'No tracking number',
+  noShippingAddress: 'No shipping address selected for this order',
   shippedAt: 'Shipped At',
   cartons: 'Cartons',
   box: 'box',
@@ -543,6 +544,19 @@ const orders = {
   logQuantity: 'Quantity',
   logLocation: 'Location',
   noLogsYet: 'No pick/pack activity logs yet',
+  
+  // Pick & Pack UI
+  clickToUnverifyAllItems: 'Click to unverify all items',
+  clickToMarkAllItemsAsVerified: 'Click to mark all items as verified',
+  hideBarcodeScanner: 'Hide barcode scanner',
+  showBarcodeScanner: 'Show barcode scanner',
+  hideBundleItems: 'Hide bundle items',
+  showBundleItems: 'Show bundle items',
+  packingInstructions: 'Packing instructions',
+  recalculateCartonsBasedOnCurrentItems: 'Recalculate cartons based on current items',
+  updateTrackingNumberFromLabelBarcode: 'Update tracking number from label barcode',
+  resetOrder: 'Reset Order',
+  viewOrderDetails: 'View Order Details',
   
   // Support Tickets
   ticketStatus: 'Status',
@@ -1246,6 +1260,328 @@ const orders = {
   requiredFieldsMissing: 'Required fields missing:',
   orderSummary: 'Order Summary',
   margin: 'Margin',
+  
+  // OrderDetails.tsx - Additional Status/Priority Labels
+  unknown: 'Unknown',
+  paymentPending: 'Payment Pending',
+  highPriority: 'High Priority',
+  mediumPriority: 'Medium Priority',
+  lowPriority: 'Low Priority',
+  
+  // OrderDetails.tsx - Customer Types
+  vip: 'VIP',
+  wholesale: 'Wholesale',
+  business: 'Business',
+  retail: 'Retail',
+  
+  // OrderDetails.tsx - Pick/Pack Activity
+  pickingStarted: 'Picking Started',
+  picked: 'Picked',
+  pickedItem: 'Picked: {{product}}',
+  pickingCompleted: 'Picking Completed',
+  packingStarted: 'Packing Started',
+  packed: 'Packed',
+  packedItem: 'Packed: {{product}}',
+  packingCompleted: 'Packing Completed',
+  
+  // OrderDetails.tsx - Timeline/Progress
+  trackingInformation: 'Tracking Information',
+  trackingUpdatesNotImplemented: 'Tracking updates via API (not yet implemented)',
+  trackingHash: 'Tracking #{{number}}',
+  orderShippedTimeline: 'Order Shipped',
+  readyToShipTimeline: 'Ready to Ship',
+  packingCompletedTimeline: 'Packing Completed',
+  packingStartedTimeline: 'Packing Started',
+  pickingCompletedTimeline: 'Picking Completed',
+  pickingStartedTimeline: 'Picking Started',
+  paymentReceived: 'Payment Received',
+  orderCreatedTimeline: 'Order Created',
+  duration: 'Duration',
+  awaitingShipment: 'Awaiting shipment',
+  
+  // OrderDetails.tsx - Actions & Dialogs
+  edit: 'Edit',
+  export: 'Export',
+  cancel: 'Cancel',
+  returnThisItem: 'Return this item',
+  makeCustomPrice: 'Make custom price',
+  save: 'Save',
+  
+  // OrderDetails.tsx - Picking Mode
+  pickingProgress: 'Picking Progress',
+  itemsPicked: '{{picked}} of {{total}} items picked',
+  allItemsPickedReady: 'All items picked! Ready to ship.',
+  markAllPicked: 'Mark All Picked',
+  clearAll: 'Clear All',
+  returnUnpickedItems: 'Return Unpicked Items',
+  
+  // OrderDetails.tsx - Return Dialog
+  returnQty: 'Return Qty:',
+  of: 'of',
+  returnSummary: 'Return Summary',
+  returning: 'Returning',
+  itemsWithTotal: 'item(s) with a total of',
+  units: 'unit(s)',
+  totalReturnValue: 'Total Return Value:',
+  pleaseProvideReturnReason: 'Please provide a reason for the return',
+  
+  // OrderDetails.tsx - Custom Price Dialog
+  currentPrice: 'Current Price:',
+  enterCustomPrice: 'Enter custom price',
+  validToOptional: 'Valid To (Optional)',
+  originalPrice: 'Original Price:',
+  customPriceLabel: 'Custom Price:',
+  priceComparison: 'Price Comparison',
+  difference: 'Difference:',
+  less: 'less',
+  more: 'more',
+  setForCustomer: 'Set a custom price for {{product}} for {{customer}}',
+  
+  // OrderDetails.tsx - Invoice Labels
+  off: 'off',
+  qtyColon: 'Qty:',
+  skuColon: 'SKU:',
+  priceColon: 'Price:',
+  noteColon: 'Note:',
+  
+  // OrderDetails.tsx - Dialog Field Labels
+  orderIdLabel: 'Order ID',
+  customerLabel: 'Customer',
+  orderDateLabel: 'Order Date',
+  totalAmountLabel: 'Total Amount',
+  
+  // OrderDetails.tsx - Tickets
+  noTicketsForOrder: 'No tickets for this order',
+  viewAllTickets: 'View all {{count}} tickets',
+  
+  // OrderDetails.tsx - Attachments
+  attachments: 'Attachments',
+  viewAttachment: 'View Attachment',
+  
+  // OrderDetails.tsx - Misc Labels
+  orderLink: 'Order link',
+  message: 'Message',
+  loc: 'Loc:',
+  shippingLabelCarrier: 'Shipping Label - {{carrier}}',
+  carrierUnknown: 'Unknown',
+  pplDobirka: 'PPL - Dobírka',
+  dhlNachnahme: 'DHL - Nachnahme',
+  
+  // PickPack.tsx - Main Workflow
+  pickPackWorkflow: 'Pick & Pack Workflow',
+  manageOrderFulfillment: 'Manage order fulfillment from picking to shipping',
+  
+  // PickPack.tsx - Tab Labels
+  all: 'All',
+  overview: 'Overview',
+  pend: 'Pend',
+  ready: 'Ready',
+  
+  // PickPack.tsx - Quick Actions Section
+  quickActions: 'Quick Actions',
+  startNextPriorityOrder: 'Start Next Priority Order',
+  batchPickingMode: 'Batch Picking Mode',
+  disableBatchMode: 'Disable Batch Mode',
+  optimizePickRoute: 'Optimize Pick Route',
+  viewPerformanceStats: 'View Performance Stats',
+  hideStats: 'Hide Stats',
+  
+  // PickPack.tsx - Performance Statistics Dialog
+  performanceStatistics: 'Performance Statistics',
+  ordersCompletedToday: 'Orders Completed Today',
+  pickingAccuracy: 'Picking Accuracy',
+  avgItemsPerOrder: 'Avg. Items/Order',
+  avgPickTime: 'Avg. Pick Time',
+  dailyTarget: 'Daily Target',
+  efficiencyScore: 'Efficiency Score',
+  excellent: 'Excellent',
+  ordersTarget: '{{completed}} / {{target}} orders',
+  
+  // PickPack.tsx - Today's Activity
+  todaysActivity: 'Today\'s Activity',
+  noActivityTodayYet: 'No activity today yet',
+  activitiesWillAppear: 'Activities will appear as orders are processed',
+  
+  // PickPack.tsx - Batch Picking
+  batchPickingModeActive: 'Batch Picking Mode Active',
+  ordersSelected: '{{count}} orders selected',
+  selectAll: 'Select All',
+  clearSelection: 'Clear Selection',
+  startBatchPick: 'Start Batch Pick ({{count}})',
+  ordersReadyToPick: 'Orders Ready to Pick ({{count}})',
+  totalItemsAcrossOrders: '{{items}} total items across {{orders}} orders',
+  totalItemsToPick: '{{items}} total items to pick',
+  estimatedTime: '~{{hours}}h {{minutes}}m est.',
+  
+  // PickPack.tsx - Order Actions
+  startPicking: 'Start Picking',
+  startPacking: 'Start Packing',
+  resumePicking: 'Resume Picking',
+  complete: 'Complete',
+  confirmShipment: 'Confirm Shipment',
+  resetOrder: 'Reset Order',
+  putOrderOnHold: 'Put Order On Hold',
+  cancelOrder: 'Cancel Order',
+  ship: 'Ship',
+  shipAll: 'Ship All',
+  markAsShipped: 'Mark as Shipped',
+  markAllAsShipped: 'Mark all as shipped',
+  shipOrders: 'Ship {{count}}',
+  
+  // PickPack.tsx - Order States/Messages
+  noOrdersCurrentlyBeingPicked: 'No orders currently being picked',
+  noOrdersReadyForPacking: 'No orders ready for packing',
+  noOrdersReadyToShip: 'No orders ready to ship',
+  noPendingOrdersToPick: 'No pending orders to pick',
+  noLabelGeneratedYet: 'No label generated yet',
+  thisTrackingAlreadyUsed: 'This tracking number is already used by another carton',
+  
+  // PickPack.tsx - Carton & Packing
+  cartons: 'Cartons',
+  cartonWithCount: 'Cartons ({{count}})',
+  cartonOf: 'Carton {{current}} of {{total}}',
+  dhlNachnahmeWithCOD: 'DHL Nachnahme (with COD)',
+  duplicate: 'Duplicate',
+  recalculateCartonsTooltip: 'Recalculate cartons based on current items',
+  
+  // PickPack.tsx - Navigation & Controls
+  focusBarcode: 'Focus Barcode',
+  nextItem: 'Next Item',
+  previous: 'Previous',
+  bundleItems: 'Bundle Items',
+  expandAll: 'Expand All',
+  collapseAll: 'Collapse All',
+  printLabel: 'Print Label',
+  print: 'Print',
+  scan: 'Scan',
+  done: 'Done',
+  resume: 'Resume',
+  pause: 'Pause',
+  esc: 'Esc',
+  
+  // PickPack.tsx - Time & Progress
+  time: 'Time',
+  progress: 'Progress',
+  score: 'Score',
+  elapsed: 'Elapsed',
+  elapsedTime: 'Elapsed Time',
+  pickingTime: 'Picking Time',
+  packingTime: 'Packing Time',
+  
+  // PickPack.tsx - Details & Information
+  details: 'Details',
+  viewFullDetails: 'View Full Details',
+  viewOrderDetails: 'View Order Details',
+  warehouseLocation: 'Warehouse Location',
+  packingInstructions: 'PACKING INSTRUCTIONS',
+  shippingNotes: 'SHIPPING NOTES',
+  specialHandling: 'SPECIAL HANDLING',
+  shippingDetails: 'Shipping Details',
+  
+  // PickPack.tsx - GLS/DHL Forms
+  paket: 'Paket',
+  paketAndPaymentDetails: 'Paket & Zahlungsdetails',
+  paketgrosse: 'Paketgröße*',
+  absender: 'Absender (Sender)',
+  empfanger: 'Empfänger (Recipient)',
+  dobirka: 'Dobírka (COD)',
+  country: 'Country:',
+  paketSize: 'Paket size:',
+  firstName: 'First Name:',
+  lastName: 'Last Name:',
+  fullAddress: 'Full Address:',
+  eMail: 'E-mail:',
+  land: 'Land*',
+  firma: 'Firma',
+  telefon: 'Telefon',
+  name: 'Name*',
+  iban: 'IBAN*',
+  bic: 'BIC*',
+  kontoinhaber: 'Kontoinhaber*',
+  betragInEUR: 'Betrag in EUR*',
+  verwendungszweck: 'Verwendungszweck*',
+  vorUndNachname: 'Vor- und Nachname*',
+  adresszusatz: 'Adresszusatz',
+  plz: 'PLZ*',
+  wohnort: 'Wohnort*',
+  strasse: 'Straße*',
+  hausnummer: 'Hausnummer*',
+  eMailDesEmpfangers: 'E-Mail des Empfängers*',
+  eMailDesAbsenders: 'E-Mail des Absenders*',
+  
+  // PickPack.tsx - Shipping Label Actions
+  updateTrackingFromBarcode: 'Update tracking number from label barcode',
+  creatingShippingLabel: 'Creating shipping label from PPL API',
+  pplLabelCreatedSuccess: 'PPL shipping label created successfully',
+  labelRemovedSuccessfully: 'Label removed successfully.',
+  shippingLabelTitle: 'Shipping Label - {{orderId}}',
+  cartonDataPreservedCanRegenerate: 'Carton data preserved. You can regenerate the label if needed.',
+  
+  // PickPack.tsx - Dialogs
+  confirmShipmentDialog: 'Are you sure you want to mark this order as shipped?',
+  resetOrderDialog: 'This will clear all picked quantities. Are you sure?',
+  putOnHoldDialog: 'Are you sure you want to put this order on hold?',
+  cancelOrderDialog: 'Are you sure you want to cancel this order?',
+  deleteAllLabelsConfirm: 'Delete all {{count}} shipping labels?\\n\\nThis will cancel all shipments with PPL. Your carton data (weight, dimensions) will be preserved.\\n\\nAfter deletion, you can regenerate labels using the "Generate All Labels" button.',
+  deleteLabelConfirm: 'Delete label #{{number}}?\\n\\nThis will cancel the shipment with PPL. Your carton data will be preserved.',
+  deleteThisLabelConfirm: 'Delete this label?\\n\\nThis will cancel the shipment with PPL. Your carton data will be preserved.',
+  deleteLabelConfirmShort: 'Delete label #{{number}}?\\n\\nThis will cancel the shipment with PPL.',
+  
+  // PickPack.tsx - Image & Visual Elements
+  packingInstructionsImage: 'Packing instructions',
+  clickToExpand: 'Click to expand image',
+  clickToMinimize: 'Click to minimize',
+  hideBarcode: 'Hide barcode scanner',
+  showBarcode: 'Show barcode scanner',
+  hideBundleItems: 'Hide bundle items',
+  showBundleItems: 'Show bundle items',
+  clickToMarkVerified: 'Click to mark all items as verified',
+  clickToUnverifyAll: 'Click to unverify all items',
+  
+  // PickPack.tsx - Status & Totals
+  customer: 'Customer:',
+  date: 'Date:',
+  note: 'Note:',
+  subtotal: 'Subtotal:',
+  totalCartons: 'Total Cartons:',
+  totalLabels: 'Total Labels:',
+  totalWeight: 'Total Weight:',
+  pickingItem: 'Picking Item',
+  forMaterial: 'For: {{name}}',
+  cartonNumber: 'Carton #{{number}}',
+  glsShippingLabelsCount: 'GLS Shipping Labels ({{count}})',
+  pickedBy: 'Picked by {{name}}',
+  packedBy: 'Packed by {{name}}',
+  trackingLabel: 'Tracking: {{number}}',
+  skuLabel: 'SKU: {{sku}}',
+  forCartonNumber: 'For Carton #{{number}}',
+  shippingLabelNumber: 'Shipping Label #{{number}}',
+  all: 'ALL',
+  orderPrefix: 'Order {{orderId}}',
+  orderSentForRepacking: 'Order has been sent for repacking',
+  
+  // PickPack.tsx - Notes & Instructions Headers
+  shippingNotes: 'SHIPPING NOTES',
+  specialHandling: 'SPECIAL HANDLING',
+  packingInstructionsHeader: 'PACKING INSTRUCTIONS',
+  
+  // PickPack.tsx - Shipping Labels
+  dhlShippingLabel: 'DHL Shipping Label',
+  shippingDetails: 'Shipping Details',
+  noLabelGeneratedYet: 'No label generated yet',
+  
+  // PickPack.tsx - Error Messages
+  failedToCreateCarton: 'Failed to create carton',
+  failedToUpdateTracking: 'Failed to update tracking number',
+  failedToCancelPPLLabels: 'Failed to cancel PPL labels',
+  failedToDeletePPLLabels: 'Failed to delete PPL labels',
+  failedToGenerateLabels: 'Failed to generate labels',
+  failedToDeleteLabels: 'Failed to delete labels',
+  failedToPrintLabel: 'Failed to print label',
+  
+  // OrderDetails.tsx - Page Elements
+  orderDetails: 'Order Details',
+  noTicketsForThisOrder: 'No tickets for this order',
   
 } as const;
 

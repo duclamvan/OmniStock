@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -72,6 +72,14 @@ export default function LandingCostList() {
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments']
   });
+
+  // Initialize expandedShipments with all shipment IDs by default
+  useEffect(() => {
+    if (shipments.length > 0 && expandedShipments.length === 0) {
+      const allShipmentIds = shipments.map(s => ensureNumber(s.id));
+      setExpandedShipments(allShipmentIds);
+    }
+  }, [shipments]);
 
   // Fetch landing cost summary for each shipment using useQueries (hook-safe)
   const landingCostQueries = useQueries({

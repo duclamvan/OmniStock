@@ -448,9 +448,9 @@ export default function OrderDetails() {
                   </div>
                   <div class="item-details">
                     <div class="item-name">${item.productName}</div>
-                    <div class="item-sku">SKU: ${item.sku}</div>
+                    <div class="item-sku">${t('orders:skuColon')} ${item.sku}</div>
                     <div class="item-qty">
-                      Qty: <span class="item-qty-value">${item.quantity}</span>
+                      ${t('orders:qtyColon')} <span class="item-qty-value">${item.quantity}</span>
                       <span style="color: #64748b; margin: 0 8px;">×</span>
                       ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
                     </div>
@@ -463,13 +463,13 @@ export default function OrderDetails() {
             </div>
             <div class="pricing-section">
               <div class="price-row">
-                <span class="price-label">Subtotal</span>
+                <span class="price-label">${t('orders:subtotal')}</span>
                 <span class="price-value">${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
               </div>
               ${order.discountValue > 0 ? `
                 <div class="price-row">
                   <span class="price-label" style="color: #15803d;">
-                    Discount ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
+                    ${t('orders:discount')} ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
                   </span>
                   <span class="price-value" style="color: #15803d;">
                     -${formatCurrency(
@@ -483,20 +483,20 @@ export default function OrderDetails() {
               ` : ''}
               ${order.taxAmount > 0 ? `
                 <div class="price-row">
-                  <span class="price-label">Tax (${order.taxRate}%)</span>
+                  <span class="price-label">${t('orders:tax')} (${order.taxRate}%)</span>
                   <span class="price-value">${formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               ${order.shippingCost > 0 ? `
                 <div class="price-row">
-                  <span class="price-label">Shipping (${order.shippingMethod})</span>
+                  <span class="price-label">${t('orders:shipping')} (${order.shippingMethod})</span>
                   <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               ${order.adjustment != null && Number(order.adjustment) !== 0 ? `
                 <div class="price-row">
                   <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
-                    Adjustment
+                    ${t('orders:adjustment')}
                   </span>
                   <span class="price-value" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
                     ${order.adjustment > 0 ? '+' : ''}${formatCurrency(order.adjustment || 0, order.currency || 'EUR')}
@@ -505,7 +505,7 @@ export default function OrderDetails() {
               ` : ''}
               <div class="price-separator"></div>
               <div class="total-row">
-                <span class="total-label">Grand Total</span>
+                <span class="total-label">${t('orders:grandTotal')}</span>
                 <span class="total-value">${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
               </div>
             </div>
@@ -614,14 +614,14 @@ export default function OrderDetails() {
     '';
 
   const statusText = 
-    order.orderStatus === 'delivered' ? 'Delivered' :
-    order.orderStatus === 'shipped' ? 'Shipped' :
-    order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
-    order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-    order.orderStatus === 'awaiting_stock' ? 'Awaiting Stock' :
-    order.orderStatus === 'pending' ? 'Pending' :
-    order.orderStatus === 'cancelled' ? 'Cancelled' :
-    order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Unknown';
+    order.orderStatus === 'delivered' ? t('orders:delivered') :
+    order.orderStatus === 'shipped' ? t('orders:shipped') :
+    order.orderStatus === 'ready_to_ship' ? t('orders:readyToShip') :
+    order.orderStatus === 'to_fulfill' ? t('orders:toFulfill') :
+    order.orderStatus === 'awaiting_stock' ? t('orders:awaitingStock') :
+    order.orderStatus === 'pending' ? t('orders:pending') :
+    order.orderStatus === 'cancelled' ? t('orders:cancelled') :
+    order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || t('orders:unknown');
 
   const paymentStatusVariant = 
     order.paymentStatus === 'paid' ? 'default' : // Will use custom green class
@@ -636,9 +636,9 @@ export default function OrderDetails() {
     '';
 
   const paymentStatusText = 
-    order.paymentStatus === 'paid' ? 'Paid' :
-    order.paymentStatus === 'pending' ? 'Payment Pending' :
-    order.paymentStatus === 'pay_later' ? 'Pay Later' :
+    order.paymentStatus === 'paid' ? t('orders:paid') :
+    order.paymentStatus === 'pending' ? t('orders:paymentPending') :
+    order.paymentStatus === 'pay_later' ? t('orders:payLater') :
     order.paymentStatus;
 
   const priorityVariant = 
@@ -652,9 +652,9 @@ export default function OrderDetails() {
     '';
 
   const priorityText = 
-    order.priority === 'high' ? 'High Priority' :
-    order.priority === 'medium' ? 'Medium Priority' :
-    'Low Priority';
+    order.priority === 'high' ? t('orders:highPriority') :
+    order.priority === 'medium' ? t('orders:mediumPriority') :
+    t('orders:lowPriority');
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0">
@@ -665,10 +665,10 @@ export default function OrderDetails() {
           <div className="mb-3 sm:mb-4">
             <nav className="flex items-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               <Link href="/orders">
-                <span className="hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer font-medium">Orders</span>
+                <span className="hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer font-medium">{t('orders:orders')}</span>
               </Link>
               <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 mx-1 sm:mx-2 text-slate-400 dark:text-slate-600" />
-              <span className="text-slate-900 dark:text-slate-100 font-semibold">Order Details</span>
+              <span className="text-slate-900 dark:text-slate-100 font-semibold">{t('orders:orderDetails')}</span>
             </nav>
           </div>
 
@@ -680,7 +680,7 @@ export default function OrderDetails() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => copyToClipboard(order.orderId, "Order ID")}
+                    onClick={() => copyToClipboard(order.orderId, t('orders:orderIdLabel'))}
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
@@ -706,10 +706,10 @@ export default function OrderDetails() {
                         }
                         className="text-xs"
                       >
-                        {order.customer.type === 'vip' ? 'VIP' : 
-                         order.customer.type === 'wholesale' ? 'Wholesale' : 
-                         order.customer.type === 'business' ? 'Business' : 
-                         'Retail'}
+                        {order.customer.type === 'vip' ? t('orders:vip') : 
+                         order.customer.type === 'wholesale' ? t('orders:wholesale') : 
+                         order.customer.type === 'business' ? t('orders:business') : 
+                         t('orders:retail')}
                       </Badge>
                     )}
                     {order.customer.customerRank && (
@@ -719,7 +719,7 @@ export default function OrderDetails() {
                     )}
                     {order.paymentStatus === 'pay_later' && (
                       <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                        Pay Later
+                        {t('orders:payLater')}
                       </Badge>
                     )}
                   </div>
@@ -765,7 +765,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
-                        Pending
+                        {t('orders:pending')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('awaiting_stock')}
@@ -775,7 +775,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
-                        Awaiting Stock
+                        {t('orders:awaitingStock')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
@@ -785,7 +785,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <Package className="mr-2 h-4 w-4" />
-                        To Fulfill
+                        {t('orders:toFulfill')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('ready_to_ship')}
@@ -795,7 +795,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <Package className="mr-2 h-4 w-4" />
-                        Ready to Ship
+                        {t('orders:readyToShip')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('shipped')}
@@ -805,7 +805,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <Truck className="mr-2 h-4 w-4" />
-                        Shipped
+                        {t('orders:shipped')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('delivered')}
@@ -815,7 +815,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Delivered
+                        {t('orders:delivered')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
@@ -826,7 +826,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <XCircle className="mr-2 h-4 w-4" />
-                        Cancelled
+                        {t('orders:cancelled')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -859,7 +859,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <Clock className="mr-2 h-4 w-4" />
-                        Payment Pending
+                        {t('orders:paymentPending')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('paid')}
@@ -869,7 +869,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Paid
+                        {t('orders:paid')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('pay_later')}
@@ -879,7 +879,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
-                        Pay Later
+                        {t('orders:payLater')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -909,7 +909,7 @@ export default function OrderDetails() {
                         className={order.priority === 'low' ? 'bg-accent' : ''}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
-                        Low Priority
+                        {t('orders:lowPriority')}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePriorityMutation.mutate('medium')}
@@ -919,7 +919,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <TrendingUp className="mr-2 h-4 w-4" />
-                        Medium Priority
+                        {t('orders:mediumPriority')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
@@ -930,7 +930,7 @@ export default function OrderDetails() {
                         )}
                       >
                         <BarChart3 className="mr-2 h-4 w-4" />
-                        High Priority
+                        {t('orders:highPriority')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -973,7 +973,7 @@ export default function OrderDetails() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExport}>
                     <Download className="mr-2 h-4 w-4" />
-                    Export
+                    {t('orders:export')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
@@ -990,13 +990,13 @@ export default function OrderDetails() {
                     }}
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Create Return
+                    {t('orders:createReturn')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)} className="min-h-[44px] sm:min-h-[36px] flex-1 sm:flex-initial">
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                {t('orders:edit')}
               </Button>
             </div>
           </div>
@@ -1118,17 +1118,17 @@ export default function OrderDetails() {
                                 {item.productName}
                               </p>
                             )}
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">SKU: {item.sku}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
                             {item.serviceId && item.notes && (
                               <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1 mb-1.5">
-                                <p className="text-xs text-purple-900 dark:text-purple-300 font-medium">Note: {item.notes}</p>
+                                <p className="text-xs text-purple-900 dark:text-purple-300 font-medium">{t('orders:noteColon')} {item.notes}</p>
                               </div>
                             )}
                             
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Quantity - More Visible */}
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-slate-500 dark:text-slate-400">Qty:</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{t('orders:qtyColon')}</span>
                                 <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                                   {item.quantity}
                                 </span>
@@ -1152,7 +1152,7 @@ export default function OrderDetails() {
                                   </p>
                                   {/* Discount amount */}
                                   <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
-                                    -{formatCurrency(item.discount || 0, order.currency || 'EUR')} off
+                                    -{formatCurrency(item.discount || 0, order.currency || 'EUR')} {t('orders:off')}
                                   </p>
                                   {/* Final price after discount */}
                                   <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
@@ -1186,7 +1186,7 @@ export default function OrderDetails() {
                                     }}
                                   >
                                     <RotateCcw className="mr-2 h-4 w-4" />
-                                    Return this item
+                                    {t('orders:returnThisItem')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => {
@@ -1196,7 +1196,7 @@ export default function OrderDetails() {
                                     }}
                                   >
                                     <Banknote className="mr-2 h-4 w-4" />
-                                    Make custom price
+                                    {t('orders:makeCustomPrice')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1213,9 +1213,9 @@ export default function OrderDetails() {
               {showPickingMode && (
                 <div className="mx-6 mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-300">Picking Progress</p>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-300">{t('orders:pickingProgress')}</p>
                     <span className="text-sm text-blue-700 dark:text-blue-400">
-                      {pickedItems.size} of {order.items?.length || 0} items picked
+                      {t('orders:itemsPicked', { picked: pickedItems.size, total: order.items?.length || 0 })}
                     </span>
                   </div>
                   <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
@@ -1229,7 +1229,7 @@ export default function OrderDetails() {
                   {pickedItems.size === order.items?.length && order.items?.length > 0 && (
                     <p className="text-sm text-green-600 dark:text-green-500 font-medium mt-2 flex items-center">
                       <CheckCircle2 className="mr-1 h-4 w-4" />
-                      All items picked! Ready to ship.
+                      {t('orders:allItemsPickedReady')}
                     </p>
                   )}
                   
@@ -1248,7 +1248,7 @@ export default function OrderDetails() {
                       className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Mark All Picked
+                      {t('orders:markAllPicked')}
                     </Button>
                     <Button
                       size="sm"
@@ -1257,7 +1257,7 @@ export default function OrderDetails() {
                       className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                     >
                       <XCircle className="mr-2 h-4 w-4" />
-                      Clear All
+                      {t('orders:clearAll')}
                     </Button>
                     {pickedItems.size > 0 && (
                       <Button
@@ -1290,7 +1290,7 @@ export default function OrderDetails() {
                         className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                       >
                         <RotateCcw className="mr-2 h-4 w-4" />
-                        Return Unpicked Items
+                        {t('orders:returnUnpickedItems')}
                       </Button>
                     )}
                   </div>
@@ -1301,14 +1301,14 @@ export default function OrderDetails() {
               <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t-2 border-slate-200 dark:border-gray-700">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium">Subtotal</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">{t('orders:subtotal')}</span>
                     <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
                   </div>
                   
                   {order.discountValue > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-green-700 dark:text-green-500 font-medium">
-                        Discount {order.discountType === 'rate' && `(${order.discountValue}%)`}
+                        {t('orders:discount')} {order.discountType === 'rate' && `(${order.discountValue}%)`}
                       </span>
                       <span className="font-semibold text-green-700 dark:text-green-500">
                         -{formatCurrency(
@@ -1323,7 +1323,7 @@ export default function OrderDetails() {
                   
                   {order.taxAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">Tax ({order.taxRate}%)</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">{t('orders:tax')} ({order.taxRate}%)</span>
                       <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
                     </div>
                   )}
@@ -1332,7 +1332,7 @@ export default function OrderDetails() {
                     <>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-700 dark:text-slate-300 font-medium">
-                          Shipping ({(() => {
+                          {t('orders:shipping')} ({(() => {
                             // Show country-specific COD labels
                             if (order.paymentMethod === 'COD') {
                               const country = order.shippingAddress?.country?.toLowerCase();
@@ -1457,9 +1457,9 @@ export default function OrderDetails() {
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-900/20" data-testid="section-no-shipping-address">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="h-4 w-4 text-slate-400" />
-                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">Shipping Address</h3>
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('orders:shippingAddress')}</h3>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-500">No shipping address selected for this order</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-500">{t('orders:noShippingAddress')}</p>
                 </div>
               )}
 
@@ -1470,7 +1470,7 @@ export default function OrderDetails() {
                   <div className="space-y-2" data-testid="section-order-notes">
                     <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Order Notes
+                      {t('orders:orderNotes')}
                     </h4>
                     <p className="text-sm text-black dark:text-slate-100 whitespace-pre-wrap bg-white dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-700">
                       {order.notes}
@@ -1483,12 +1483,12 @@ export default function OrderDetails() {
               <div className="bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-700 rounded-lg p-4" data-testid="section-shipping-method">
                 <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
                   <Truck className="h-4 w-4" />
-                  Shipping Method & Tracking
+                  {t('orders:shippingMethodTracking')}
                 </h4>
                 <div className="space-y-3 text-sm">
                   {order.shippingMethod && (
                     <div data-testid="text-shipping-method">
-                      <span className="text-slate-500 dark:text-slate-400">Method:</span>
+                      <span className="text-slate-500 dark:text-slate-400">{t('orders:method')}</span>
                       <div className="mt-1">
                         <Badge variant="secondary" className="text-xs">
                           {order.shippingMethod}
@@ -1499,7 +1499,7 @@ export default function OrderDetails() {
                   
                   {order.trackingNumber ? (
                     <div data-testid="text-tracking-number">
-                      <span className="text-slate-500 dark:text-slate-400">Tracking Number:</span>
+                      <span className="text-slate-500 dark:text-slate-400">{t('orders:trackingNumber')}</span>
                       <div className="flex items-center gap-2 mt-1">
                         <code className="text-sm bg-white dark:bg-slate-800 px-3 py-1.5 rounded font-mono border border-slate-200 dark:border-slate-700">
                           {order.trackingNumber}
@@ -1517,14 +1517,14 @@ export default function OrderDetails() {
                     </div>
                   ) : (
                     <div data-testid="text-no-tracking">
-                      <span className="text-slate-500 dark:text-slate-400">Tracking Number:</span>
-                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">No tracking number</p>
+                      <span className="text-slate-500 dark:text-slate-400">{t('orders:trackingNumber')}</span>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">{t('orders:noTrackingNumber')}</p>
                     </div>
                   )}
                   
                   {order.shippedAt && (
                     <div data-testid="text-shipped-at">
-                      <span className="text-slate-500 dark:text-slate-400">Shipped At:</span>
+                      <span className="text-slate-500 dark:text-slate-400">{t('orders:shippedAt')}</span>
                       <p className="font-medium text-slate-900 dark:text-slate-100 mt-1">
                         {new Date(order.shippedAt).toLocaleString()}
                       </p>
@@ -1537,7 +1537,7 @@ export default function OrderDetails() {
                       <div className="flex items-center gap-2 mb-3">
                         <Package className="h-4 w-4 text-slate-500" />
                         <span className="text-slate-500 dark:text-slate-400 font-medium">
-                          Cartons: {orderCartons.length} {orderCartons.length === 1 ? 'box' : 'boxes'}
+                          {t('orders:cartons')}: {orderCartons.length} {orderCartons.length === 1 ? t('orders:box') : t('orders:boxes')}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -1549,16 +1549,16 @@ export default function OrderDetails() {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium text-slate-900 dark:text-slate-100">
-                                Carton #{carton.cartonNumber}
+                                {t('orders:cartonNumber', { number: carton.cartonNumber })}
                               </span>
                               <Badge variant="outline" className="text-xs">
-                                {carton.cartonType === 'company' ? 'Company Box' : 'Non-Company'}
+                                {carton.cartonType === 'company' ? t('orders:companyBox') : t('orders:nonCompany')}
                               </Badge>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               {carton.weight && (
                                 <div>
-                                  <span className="text-slate-500 dark:text-slate-400">Total Weight:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('orders:totalWeight')}</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {parseFloat(carton.weight).toFixed(2)} kg
                                   </p>
@@ -1566,7 +1566,7 @@ export default function OrderDetails() {
                               )}
                               {carton.payloadWeightKg && (
                                 <div>
-                                  <span className="text-slate-500 dark:text-slate-400">Items Weight:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('orders:itemsWeight')}</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {parseFloat(carton.payloadWeightKg).toFixed(2)} kg
                                   </p>
@@ -1574,7 +1574,7 @@ export default function OrderDetails() {
                               )}
                               {(carton.innerLengthCm || carton.innerWidthCm || carton.innerHeightCm) && (
                                 <div className="col-span-2">
-                                  <span className="text-slate-500 dark:text-slate-400">Dimensions (L×W×H):</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('orders:dimensions')}</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {carton.innerLengthCm ? parseFloat(carton.innerLengthCm).toFixed(1) : '?'} × {carton.innerWidthCm ? parseFloat(carton.innerWidthCm).toFixed(1) : '?'} × {carton.innerHeightCm ? parseFloat(carton.innerHeightCm).toFixed(1) : '?'} cm
                                   </p>
@@ -1582,7 +1582,7 @@ export default function OrderDetails() {
                               )}
                               {carton.trackingNumber && (
                                 <div className="col-span-2">
-                                  <span className="text-slate-500 dark:text-slate-400">Tracking:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('orders:tracking')}</span>
                                   <div className="flex items-center gap-2 mt-0.5">
                                     <code className="text-xs bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded font-mono">
                                       {carton.trackingNumber}
@@ -1606,7 +1606,7 @@ export default function OrderDetails() {
                       {orderCartons.some((c: any) => c.weight) && (
                         <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-slate-700 dark:text-slate-300">Total Shipment Weight:</span>
+                            <span className="font-medium text-slate-700 dark:text-slate-300">{t('orders:totalShipmentWeight')}</span>
                             <span className="font-bold text-slate-900 dark:text-slate-100">
                               {orderCartons.reduce((total: number, c: any) => total + (c.weight ? parseFloat(c.weight) : 0), 0).toFixed(2)} kg
                             </span>
@@ -1623,7 +1623,7 @@ export default function OrderDetails() {
                 <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="text-billing-address">
                   <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
                     <CreditCard className="h-3.5 w-3.5" />
-                    Billing Address
+                    {t('orders:billingAddress')}
                   </h4>
                   <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                     {order.customer.billingStreet && (
@@ -1814,7 +1814,7 @@ export default function OrderDetails() {
                           <Printer className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100 truncate">
-                              Shipping Label - {label.carrier?.toUpperCase() || 'Unknown'}
+                              {t('orders:shippingLabelCarrier', { carrier: label.carrier?.toUpperCase() || t('orders:carrierUnknown') })}
                             </p>
                             {label.trackingNumbers && label.trackingNumbers.length > 0 && (
                               <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5 flex items-center gap-1">
@@ -1878,18 +1878,18 @@ export default function OrderDetails() {
                       )} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">
-                          {log.activityType === 'pick_start' && 'Picking Started'}
-                          {log.activityType === 'item_picked' && `Picked: ${log.productName || 'Item'}`}
-                          {log.activityType === 'pick_complete' && 'Picking Completed'}
-                          {log.activityType === 'pack_start' && 'Packing Started'}
-                          {log.activityType === 'item_packed' && `Packed: ${log.productName || 'Item'}`}
-                          {log.activityType === 'pack_complete' && 'Packing Completed'}
+                          {log.activityType === 'pick_start' && t('orders:pickingStarted')}
+                          {log.activityType === 'item_picked' && t('orders:pickedItem', { product: log.productName || 'Item' })}
+                          {log.activityType === 'pick_complete' && t('orders:pickingCompleted')}
+                          {log.activityType === 'pack_start' && t('orders:packingStarted')}
+                          {log.activityType === 'item_packed' && t('orders:packedItem', { product: log.productName || 'Item' })}
+                          {log.activityType === 'pack_complete' && t('orders:packingCompleted')}
                         </p>
                         <div className="text-xs text-slate-500 mt-0.5">
                           {new Date(log.timestamp).toLocaleString()}
                           {log.userName && ` • ${log.userName}`}
-                          {log.quantity && ` • Qty: ${log.quantity}`}
-                          {log.location && ` • Loc: ${log.location}`}
+                          {log.quantity && ` • ${t('orders:qtyColon')} ${log.quantity}`}
+                          {log.location && ` • ${t('orders:loc')} ${log.location}`}
                         </div>
                         {log.notes && (
                           <p className="text-xs text-slate-600 mt-1">{log.notes}</p>
@@ -1970,7 +1970,7 @@ export default function OrderDetails() {
                         rel="noopener noreferrer" 
                         className="text-blue-600 hover:underline"
                       >
-                        Message
+                        {t('orders:message')}
                       </a>
                     </div>
                   )}
@@ -2014,7 +2014,7 @@ export default function OrderDetails() {
             <CardContent>
               {tickets.length === 0 ? (
                 <div className="text-center py-6 text-sm text-slate-500">
-                  <p>No tickets for this order</p>
+                  <p>{t('orders:noTicketsForThisOrder')}</p>
                   <Link href={`/tickets/add?orderId=${id}`}>
                     <Button variant="link" size="sm" className="mt-2">
                       Create Ticket
@@ -2082,12 +2082,12 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-sky-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Tracking Information</p>
+                      <p className="font-medium text-sm">{t('orders:trackingInformation')}</p>
                       <p className="text-sm text-slate-500 italic">
-                        Tracking updates via API (not yet implemented)
+                        {t('orders:trackingUpdatesNotImplemented')}
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Tracking #{order.trackingNumber}
+                        {t('orders:trackingHash', { number: order.trackingNumber })}
                       </p>
                     </div>
                   </div>
@@ -2097,7 +2097,7 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Order Shipped</p>
+                      <p className="font-medium text-sm">{t('orders:orderShippedTimeline')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.shippedAt).toLocaleString()}
                       </p>
@@ -2110,9 +2110,9 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Ready to Ship</p>
+                      <p className="font-medium text-sm">{t('orders:readyToShipTimeline')}</p>
                       <p className="text-sm text-slate-500">
-                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
+                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : t('orders:awaitingShipment')}
                       </p>
                     </div>
                   </div>
@@ -2123,12 +2123,12 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Packing Completed</p>
+                      <p className="font-medium text-sm">{t('orders:packingCompletedTimeline')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.packEndTime).toLocaleString()}
                         {order.packStartTime && order.packEndTime && (
                           <span className="text-indigo-600 font-medium ml-2">
-                            (Duration: {(() => {
+                            ({t('orders:duration')}: {(() => {
                               const duration = Math.floor((new Date(order.packEndTime).getTime() - new Date(order.packStartTime).getTime()) / 1000);
                               const minutes = Math.floor(duration / 60);
                               const seconds = duration % 60;
@@ -2146,7 +2146,7 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Packing Started</p>
+                      <p className="font-medium text-sm">{t('orders:packingStartedTimeline')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.packStartTime).toLocaleString()}
                         {order.packedBy && ` by ${order.packedBy}`}
@@ -2160,12 +2160,12 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Completed</p>
+                      <p className="font-medium text-sm">{t('orders:pickingCompletedTimeline')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.pickEndTime).toLocaleString()}
                         {order.pickStartTime && order.pickEndTime && (
                           <span className="text-purple-600 font-medium ml-2">
-                            (Duration: {(() => {
+                            ({t('orders:duration')}: {(() => {
                               const duration = Math.floor((new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000);
                               const minutes = Math.floor(duration / 60);
                               const seconds = duration % 60;
@@ -2183,7 +2183,7 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Started</p>
+                      <p className="font-medium text-sm">{t('orders:pickingStartedTimeline')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.pickStartTime).toLocaleString()}
                         {order.pickedBy && ` by ${order.pickedBy}`}
@@ -2196,7 +2196,7 @@ export default function OrderDetails() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Payment Received</p>
+                      <p className="font-medium text-sm">{t('orders:paymentReceived')}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.updatedAt).toLocaleString()}
                       </p>
@@ -2207,7 +2207,7 @@ export default function OrderDetails() {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
                   <div className="flex-1">
-                    <p className="font-medium text-sm">Order Created</p>
+                    <p className="font-medium text-sm">{t('orders:orderCreatedTimeline')}</p>
                     <p className="text-sm text-slate-500">
                       {new Date(order.createdAt).toLocaleString()}
                     </p>
@@ -2223,7 +2223,7 @@ export default function OrderDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4" />
-                  Attachments
+                  {t('orders:attachments')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -2234,7 +2234,7 @@ export default function OrderDetails() {
                   className="text-blue-600 hover:underline text-sm flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  View Attachment
+                  {t('orders:viewAttachment')}
                 </a>
               </CardContent>
             </Card>
@@ -2256,21 +2256,21 @@ export default function OrderDetails() {
             {/* Order Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
               <div>
-                <Label className="text-sm text-slate-600">Order ID</Label>
+                <Label className="text-sm text-slate-600">{t('orders:orderIdLabel')}</Label>
                 <p className="font-medium">{order?.orderId}</p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">Customer</Label>
+                <Label className="text-sm text-slate-600">{t('orders:customerLabel')}</Label>
                 <p className="font-medium">{order?.customer?.name}</p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">Order Date</Label>
+                <Label className="text-sm text-slate-600">{t('orders:orderDateLabel')}</Label>
                 <p className="font-medium">
                   {order?.createdAt && formatDate(order.createdAt)}
                 </p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">Total Amount</Label>
+                <Label className="text-sm text-slate-600">{t('orders:totalAmountLabel')}</Label>
                 <p className="font-medium">
                   {formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}
                 </p>
@@ -2328,14 +2328,14 @@ export default function OrderDetails() {
                       <div className="flex justify-between">
                         <div>
                           <p className="font-medium">{item.productName}</p>
-                          <p className="text-sm text-slate-500">SKU: {item.sku}</p>
+                          <p className="text-sm text-slate-500">{t('orders:skuColon')} {item.sku}</p>
                           <p className="text-sm text-slate-500">
-                            Price: {formatCurrency(item.price || 0, order?.currency || 'EUR')} × {item.quantity}
+                            {t('orders:priceColon')} {formatCurrency(item.price || 0, order?.currency || 'EUR')} × {item.quantity}
                           </p>
                         </div>
                         {selectedItems.has(item.id) && (
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 sm:mt-0">
-                            <Label className="text-sm">Return Qty:</Label>
+                            <Label className="text-sm">{t('orders:returnQty')}</Label>
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
@@ -2354,7 +2354,7 @@ export default function OrderDetails() {
                                 }}
                                 className="w-20"
                               />
-                              <span className="text-sm text-slate-500">of {item.quantity}</span>
+                              <span className="text-sm text-slate-500">{t('orders:of')} {item.quantity}</span>
                             </div>
                           </div>
                         )}
@@ -2380,13 +2380,13 @@ export default function OrderDetails() {
             {/* Return Summary */}
             {selectedItems.size > 0 && (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="font-medium text-amber-900 mb-2">Return Summary</p>
+                <p className="font-medium text-amber-900 mb-2">{t('orders:returnSummary')}</p>
                 <p className="text-sm text-amber-700">
-                  Returning {selectedItems.size} item(s) with a total of{' '}
-                  {Object.values(returnQuantities).reduce((sum, qty) => sum + qty, 0)} unit(s)
+                  {t('orders:returning')} {selectedItems.size} {t('orders:itemsWithTotal')}{' '}
+                  {Object.values(returnQuantities).reduce((sum, qty) => sum + qty, 0)} {t('orders:units')}
                 </p>
                 <p className="text-sm text-amber-700 mt-1">
-                  Total Return Value:{' '}
+                  {t('orders:totalReturnValue')}{' '}
                   {formatCurrency(
                     order?.items
                       ?.filter((item: any) => selectedItems.has(item.id))
@@ -2401,7 +2401,7 @@ export default function OrderDetails() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReturnDialog(false)}>
-              Cancel
+              {t('orders:cancel')}
             </Button>
             <Button 
               onClick={() => {
@@ -2464,7 +2464,7 @@ export default function OrderDetails() {
           <DialogHeader>
             <DialogTitle>{t('orders:createCustomPrice')}</DialogTitle>
             <DialogDescription>
-              Set a custom price for {selectedPriceItem?.productName} for {order?.customer?.name}
+              {t('orders:setForCustomer', { product: selectedPriceItem?.productName, customer: order?.customer?.name })}
             </DialogDescription>
           </DialogHeader>
           
@@ -2472,15 +2472,15 @@ export default function OrderDetails() {
             {/* Product Info */}
             <div className="p-4 bg-slate-50 rounded-lg">
               <p className="font-medium">{selectedPriceItem?.productName}</p>
-              <p className="text-sm text-slate-600">SKU: {selectedPriceItem?.sku}</p>
+              <p className="text-sm text-slate-600">{t('orders:skuColon')} {selectedPriceItem?.sku}</p>
               <p className="text-sm text-slate-600">
-                Current Price: {formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}
+                {t('orders:currentPrice')} {formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}
               </p>
             </div>
 
             {/* Custom Price Input */}
             <div className="space-y-2">
-              <Label htmlFor="customPrice">Custom Price ({order?.currency || 'EUR'})</Label>
+              <Label htmlFor="customPrice">{t('orders:customPrice')} ({order?.currency || 'EUR'})</Label>
               <Input
                 id="customPrice"
                 type="number"
@@ -2494,7 +2494,7 @@ export default function OrderDetails() {
 
             {/* Valid From Date */}
             <div className="space-y-2">
-              <Label htmlFor="validFrom">Valid From</Label>
+              <Label htmlFor="validFrom">{t('orders:validFrom')}</Label>
               <Input
                 id="validFrom"
                 type="date"
@@ -2506,7 +2506,7 @@ export default function OrderDetails() {
 
             {/* Valid To Date */}
             <div className="space-y-2">
-              <Label htmlFor="validTo">Valid To (Optional)</Label>
+              <Label htmlFor="validTo">{t('orders:validToOptional')}</Label>
               <Input
                 id="validTo"
                 type="date"
@@ -2519,23 +2519,23 @@ export default function OrderDetails() {
             {/* Price Comparison */}
             {customPrice && (
               <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">Price Comparison</p>
+                <p className="text-sm font-medium text-blue-900">{t('orders:priceComparison')}</p>
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span>Original Price:</span>
+                    <span>{t('orders:originalPrice')}</span>
                     <span>{formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}</span>
                   </div>
                   <div className="flex justify-between text-sm font-medium">
-                    <span>Custom Price:</span>
+                    <span>{t('orders:customPriceLabel')}</span>
                     <span className="text-blue-600">
                       {formatCurrency(parseFloat(customPrice) || 0, order?.currency || 'EUR')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Savings:</span>
+                    <span>{t('orders:difference')}</span>
                     <span className={parseFloat(customPrice) < (selectedPriceItem?.price || 0) ? "text-green-600" : "text-red-600"}>
                       {formatCurrency(Math.abs((selectedPriceItem?.price || 0) - parseFloat(customPrice)), order?.currency || 'EUR')}
-                      {parseFloat(customPrice) < (selectedPriceItem?.price || 0) ? " less" : " more"}
+                      {parseFloat(customPrice) < (selectedPriceItem?.price || 0) ? ` ${t('orders:less')}` : ` ${t('orders:more')}`}
                     </span>
                   </div>
                 </div>
@@ -2551,7 +2551,7 @@ export default function OrderDetails() {
               setPriceValidFrom("");
               setPriceValidTo("");
             }}>
-              Cancel
+              {t('orders:cancel')}
             </Button>
             <Button 
               onClick={async () => {
