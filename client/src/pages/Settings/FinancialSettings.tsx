@@ -237,23 +237,23 @@ export default function FinancialSettings() {
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="pricing" className="flex items-center gap-1 sm:gap-2">
               <Percent className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Pricing</span>
+              <span className="hidden sm:inline">{t('settings:pricing')}</span>
             </TabsTrigger>
             <TabsTrigger value="tax" className="flex items-center gap-1 sm:gap-2">
               <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Tax & VAT</span>
+              <span className="hidden sm:inline">{t('settings:taxVAT')}</span>
             </TabsTrigger>
             <TabsTrigger value="currency" className="flex items-center gap-1 sm:gap-2">
               <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Currency</span>
+              <span className="hidden sm:inline">{t('settings:currency')}</span>
             </TabsTrigger>
             <TabsTrigger value="invoicing" className="flex items-center gap-1 sm:gap-2">
               <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Invoicing</span>
+              <span className="hidden sm:inline">{t('settings:invoicing')}</span>
             </TabsTrigger>
             <TabsTrigger value="accounting" className="flex items-center gap-1 sm:gap-2">
               <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Accounting</span>
+              <span className="hidden sm:inline">{t('settings:accounting')}</span>
             </TabsTrigger>
           </TabsList>
 

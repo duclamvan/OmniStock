@@ -240,23 +240,23 @@ export default function SystemSettings() {
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2">
               <SettingsIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">System</span>
+              <span className="hidden sm:inline">{t('settings:system')}</span>
             </TabsTrigger>
             <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2">
               <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Data</span>
+              <span className="hidden sm:inline">{t('settings:data')}</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2">
               <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Security</span>
+              <span className="hidden sm:inline">{t('settings:security')}</span>
             </TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-1 sm:gap-2">
               <Plug className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Integrations</span>
+              <span className="hidden sm:inline">{t('settings:integrations')}</span>
             </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-1 sm:gap-2">
               <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">AI & Automation</span>
+              <span className="hidden sm:inline">{t('settings:aiAutomation')}</span>
             </TabsTrigger>
           </TabsList>
 

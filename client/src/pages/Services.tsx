@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ interface Service {
 }
 
 export default function Services() {
+  const { t } = useTranslation(['system']);
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -87,14 +89,14 @@ export default function Services() {
       setIsDialogOpen(false);
       resetForm();
       toast({
-        title: "Success",
-        description: "Service created successfully",
+        title: t('system:success'),
+        description: t('system:serviceCreatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create service",
+        title: t('system:error'),
+        description: t('system:failedToCreateService'),
         variant: "destructive",
       });
     },
@@ -110,14 +112,14 @@ export default function Services() {
       setEditingService(null);
       resetForm();
       toast({
-        title: "Success",
-        description: "Service updated successfully",
+        title: t('system:success'),
+        description: t('system:serviceUpdatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update service",
+        title: t('system:error'),
+        description: t('system:failedToUpdateService'),
         variant: "destructive",
       });
     },
@@ -131,14 +133,14 @@ export default function Services() {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       setDeleteServiceId(null);
       toast({
-        title: "Success",
-        description: "Service deleted successfully",
+        title: t('system:success'),
+        description: t('system:serviceDeletedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete service",
+        title: t('system:error'),
+        description: t('system:failedToDeleteService'),
         variant: "destructive",
       });
     },
@@ -177,14 +179,14 @@ export default function Services() {
       setIsTypeDialogOpen(false);
       resetTypeForm();
       toast({
-        title: "Success",
-        description: "Service type created successfully",
+        title: t('system:success'),
+        description: t('system:serviceTypeCreatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create service type",
+        title: t('system:error'),
+        description: t('system:failedToCreateServiceType'),
         variant: "destructive",
       });
     },
@@ -200,14 +202,14 @@ export default function Services() {
       setEditingType(null);
       resetTypeForm();
       toast({
-        title: "Success",
-        description: "Service type updated successfully",
+        title: t('system:success'),
+        description: t('system:serviceTypeUpdatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update service type",
+        title: t('system:error'),
+        description: t('system:failedToUpdateServiceType'),
         variant: "destructive",
       });
     },
@@ -221,14 +223,14 @@ export default function Services() {
       queryClient.invalidateQueries({ queryKey: ['/api/service-types'] });
       setDeleteTypeId(null);
       toast({
-        title: "Success",
-        description: "Service type deleted successfully",
+        title: t('system:success'),
+        description: t('system:serviceTypeDeletedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete service type",
+        title: t('system:error'),
+        description: t('system:failedToDeleteServiceType'),
         variant: "destructive",
       });
     },
@@ -295,40 +297,40 @@ export default function Services() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage services like repairs and maintenance</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('system:services')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('system:manageServicesRepairsMaintenance')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleAddNew} data-testid="button-add-service">
               <Plus className="h-4 w-4 mr-2" />
-              Add Service
+              {t('system:addService')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
+              <DialogTitle>{editingService ? t('system:editService') : t('system:addNewService')}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="name">Service Name *</Label>
+                <Label htmlFor="name">{t('system:serviceName')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Repair handrill"
+                  placeholder={t('system:serviceNamePlaceholder')}
                   required
                   data-testid="input-service-name"
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('system:serviceDescription')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Service details..."
+                  placeholder={t('system:serviceDetailsPlaceholder')}
                   rows={3}
                   data-testid="input-service-description"
                 />
@@ -336,7 +338,7 @@ export default function Services() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="priceCzk">Price CZK</Label>
+                  <Label htmlFor="priceCzk">{t('system:priceCZK')}</Label>
                   <Input
                     id="priceCzk"
                     type="number"
@@ -348,7 +350,7 @@ export default function Services() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="priceEur">Price EUR</Label>
+                  <Label htmlFor="priceEur">{t('system:priceEUR')}</Label>
                   <Input
                     id="priceEur"
                     type="number"
@@ -363,7 +365,7 @@ export default function Services() {
 
               <div className="flex gap-3 pt-4">
                 <Button type="submit" className="flex-1" data-testid="button-save-service">
-                  {editingService ? "Update Service" : "Create Service"}
+                  {editingService ? t('system:updateService') : t('system:createService')}
                 </Button>
                 <Button
                   type="button"
@@ -374,7 +376,7 @@ export default function Services() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t('system:cancel')}
                 </Button>
               </div>
             </form>
@@ -391,7 +393,7 @@ export default function Services() {
                 <Button variant="ghost" className="p-0 hover:bg-transparent">
                   <div className="flex items-center gap-2">
                     <Tag className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    <CardTitle className="text-lg">Service Types</CardTitle>
+                    <CardTitle className="text-lg">{t('system:serviceTypes')}</CardTitle>
                     {isServiceTypesOpen ? (
                       <ChevronUp className="h-4 w-4 text-gray-500" />
                     ) : (
@@ -404,40 +406,40 @@ export default function Services() {
                 <DialogTrigger asChild>
                   <Button size="sm" onClick={handleAddNewType} data-testid="button-add-service-type">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Type
+                    {t('system:addType')}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle>{editingType ? "Edit Service Type" : "Add New Service Type"}</DialogTitle>
+                    <DialogTitle>{editingType ? t('system:editServiceType') : t('system:addNewServiceType')}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleTypeSubmit} className="space-y-4">
                     <div>
-                      <Label htmlFor="type-name">Type Name *</Label>
+                      <Label htmlFor="type-name">{t('system:typeName')} *</Label>
                       <Input
                         id="type-name"
                         value={typeFormData.name}
                         onChange={(e) => setTypeFormData({ ...typeFormData, name: e.target.value })}
-                        placeholder="e.g., Repair, Maintenance, Installation"
+                        placeholder={t('system:typeNamePlaceholder')}
                         required
                         data-testid="input-type-name"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="type-description">Description</Label>
+                      <Label htmlFor="type-description">{t('system:typeDescription')}</Label>
                       <Textarea
                         id="type-description"
                         value={typeFormData.description}
                         onChange={(e) => setTypeFormData({ ...typeFormData, description: e.target.value })}
-                        placeholder="Type description..."
+                        placeholder={t('system:typeDescriptionPlaceholder')}
                         rows={2}
                         data-testid="input-type-description"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="type-color">Color</Label>
+                      <Label htmlFor="type-color">{t('system:color')}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="type-color"
@@ -459,7 +461,7 @@ export default function Services() {
 
                     <div className="flex gap-3 pt-4">
                       <Button type="submit" className="flex-1" data-testid="button-save-type">
-                        {editingType ? "Update Type" : "Create Type"}
+                        {editingType ? t('system:updateType') : t('system:createType')}
                       </Button>
                       <Button
                         type="button"
@@ -470,7 +472,7 @@ export default function Services() {
                           resetTypeForm();
                         }}
                       >
-                        Cancel
+                        {t('system:cancel')}
                       </Button>
                     </div>
                   </form>
@@ -481,11 +483,11 @@ export default function Services() {
           <CollapsibleContent>
             <CardContent>
               {typesLoading ? (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading service types...</div>
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">{t('system:loadingServiceTypes')}</div>
               ) : serviceTypes.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Tag className="h-8 w-8 mx-auto mb-2 text-gray-400 dark:text-gray-600" />
-                  <p>No service types yet. Click "Add Type" to create one.</p>
+                  <p>{t('system:noServiceTypesYet')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -541,7 +543,7 @@ export default function Services() {
       {/* Services List */}
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="text-gray-500 dark:text-gray-400">Loading services...</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('system:loadingServices')}</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -550,7 +552,7 @@ export default function Services() {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Wrench className="h-12 w-12 text-gray-400 mb-4" />
                 <p className="text-gray-500 text-center">
-                  No services yet. Click "Add Service" to create one.
+                  {t('system:noServicesYet')}
                 </p>
               </CardContent>
             </Card>
@@ -614,18 +616,18 @@ export default function Services() {
       <AlertDialog open={!!deleteServiceId} onOpenChange={() => setDeleteServiceId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogTitle>{t('system:deleteService')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this service? This action cannot be undone.
+              {t('system:deleteServiceConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('system:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => deleteServiceId && deleteServiceMutation.mutate(deleteServiceId)}
             >
-              Delete
+              {t('system:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -634,18 +636,18 @@ export default function Services() {
       <AlertDialog open={!!deleteTypeId} onOpenChange={() => setDeleteTypeId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Service Type</AlertDialogTitle>
+            <AlertDialogTitle>{t('system:deleteServiceType')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this service type? This action cannot be undone.
+              {t('system:deleteServiceTypeConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('system:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => deleteTypeId && deleteTypeMutation.mutate(deleteTypeId)}
             >
-              Delete
+              {t('system:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

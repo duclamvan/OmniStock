@@ -191,8 +191,8 @@ export default function AddReturn() {
         
         // Show success message
         toast({
-          title: "Return Pre-filled",
-          description: `Pre-filled return data for order ${data.orderNumber}`,
+          title: t('inventory:returnPrefilled'),
+          description: t('inventory:returnPrefilledDesc', { orderNumber: data.orderNumber }),
         });
       } catch (error) {
         console.error('Error parsing return form data:', error);
@@ -223,8 +223,8 @@ export default function AddReturn() {
       });
 
       toast({
-        title: "Items Loaded",
-        description: `${order.items.length} items added from order`,
+        title: t('inventory:itemsLoaded'),
+        description: t('inventory:itemsLoadedDesc', { count: order.items.length }),
       });
     }
   };
@@ -234,15 +234,15 @@ export default function AddReturn() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
       toast({
-        title: "Success",
-        description: "Return created successfully",
+        title: t('common:success'),
+        description: t('inventory:returnCreatedSuccess'),
       });
       navigate("/returns");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create return",
+        title: t('common:error'),
+        description: error.message || t('inventory:failedToCreateReturn'),
         variant: "destructive",
       });
     },
@@ -331,8 +331,8 @@ export default function AddReturn() {
     // Check if products are still loading
     if (productsQuery.isLoading) {
       toast({
-        title: "Please wait, loading products...",
-        description: "Products are still being loaded",
+        title: t('inventory:pleaseWaitLoadingProducts'),
+        description: t('inventory:productsStillLoading'),
       });
       return;
     }
@@ -357,8 +357,8 @@ export default function AddReturn() {
         form.setValue(`items.${existingItemIndex}.quantity`, currentQuantity + 1);
         
         toast({
-          title: "Product added",
-          description: `${product.name} - Quantity: ${currentQuantity + 1}`,
+          title: t('inventory:productAdded'),
+          description: `${product.name} - ${t('inventory:quantity')}: ${currentQuantity + 1}`,
         });
       } else {
         // Try to get price from selected order items first
@@ -380,7 +380,7 @@ export default function AddReturn() {
         });
         
         toast({
-          title: "Product added",
+          title: t('inventory:productAdded'),
           description: product.name,
         });
       }
@@ -396,8 +396,8 @@ export default function AddReturn() {
       
       // Product not found
       toast({
-        title: "Product not found",
-        description: `Product not found with barcode: ${cleanBarcode}`,
+        title: t('inventory:productNotFound'),
+        description: t('inventory:productNotFoundDesc', { barcode: cleanBarcode }),
         variant: "destructive",
       });
       
@@ -448,15 +448,15 @@ export default function AddReturn() {
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Returns
+          {t('inventory:backToReturns')}
         </Button>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:addReturn')}</h1>
-            <p className="text-muted-foreground dark:text-gray-400 mt-1">Process customer returns and refunds</p>
+            <p className="text-muted-foreground dark:text-gray-400 mt-1">{t('inventory:processCustomerReturns')}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Return ID</p>
+            <p className="text-sm text-muted-foreground">{t('inventory:returnIdLabel')}</p>
             <p className="text-2xl font-bold text-primary">{returnId}</p>
           </div>
         </div>
@@ -471,12 +471,12 @@ export default function AddReturn() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                   <User className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                  Customer & Order Details
+                  {t('inventory:customerOrderDetails')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="customer" className="text-base font-semibold">Customer *</Label>
+                  <Label htmlFor="customer" className="text-base font-semibold">{t('inventory:customer')} *</Label>
                   <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -488,14 +488,14 @@ export default function AddReturn() {
                       >
                         {watchCustomerId
                           ? selectedCustomer?.name
-                          : "Select customer..."}
+                          : t('inventory:selectCustomer')}
                         <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search customer..." data-testid="input-customer-search" />
-                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandInput placeholder={t('inventory:searchCustomer')} data-testid="input-customer-search" />
+                        <CommandEmpty>{t('inventory:noCustomerFound')}</CommandEmpty>
                         <CommandGroup className="max-h-64 overflow-auto">
                           {customers.map((customer: any) => (
                             <CommandItem
@@ -528,8 +528,8 @@ export default function AddReturn() {
                 </div>
 
                 <div>
-                  <Label htmlFor="order" className="text-base font-semibold">Order Number</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Select the original order for this return</p>
+                  <Label htmlFor="order" className="text-base font-semibold">{t('inventory:orderNumberLabel')}</Label>
+                  <p className="text-sm text-muted-foreground mb-2">{t('inventory:selectOriginalOrder')}</p>
                   <Popover open={orderSearchOpen} onOpenChange={setOrderSearchOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -543,15 +543,15 @@ export default function AddReturn() {
                         {watchOrderId && selectedOrder
                           ? `#${selectedOrder.id.slice(0, 8).toUpperCase()} - ${format(new Date(selectedOrder.createdAt), 'dd/MM/yyyy')}`
                           : customerOrders.length === 0 
-                            ? "No orders available"
-                            : "Select order..."}
+                            ? t('inventory:noOrdersAvailable')
+                            : t('inventory:selectOrder')}
                         <ShoppingCart className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search order..." data-testid="input-order-search" />
-                        <CommandEmpty>No order found.</CommandEmpty>
+                        <CommandInput placeholder={t('inventory:searchOrder')} data-testid="input-order-search" />
+                        <CommandEmpty>{t('inventory:noOrderFound')}</CommandEmpty>
                         <CommandGroup className="max-h-64 overflow-auto">
                           {customerOrders.map((order: any) => (
                             <CommandItem
@@ -591,13 +591,13 @@ export default function AddReturn() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-purple-500" />
-                  Return Information
+                  {t('inventory:returnInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="returnDate" className="text-base font-semibold">Return Date *</Label>
+                    <Label htmlFor="returnDate" className="text-base font-semibold">{t('inventory:returnDate')} *</Label>
                     <Input 
                       id="returnDate"
                       type="date"
@@ -611,55 +611,55 @@ export default function AddReturn() {
                   </div>
 
                   <div>
-                    <Label htmlFor="returnType" className="text-base font-semibold">Return Type *</Label>
+                    <Label htmlFor="returnType" className="text-base font-semibold">{t('inventory:returnTypeLabel')} *</Label>
                     <Select
                       value={form.watch("returnType")}
                       onValueChange={(value) => form.setValue("returnType", value as any)}
                     >
                       <SelectTrigger className="h-11" data-testid="select-returnType">
-                        <SelectValue placeholder="Select return type" />
+                        <SelectValue placeholder={t('inventory:returnType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="exchange">Exchange</SelectItem>
-                        <SelectItem value="refund">Refund</SelectItem>
-                        <SelectItem value="store_credit">Store Credit</SelectItem>
+                        <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
+                        <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
+                        <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="status" className="text-base font-semibold">Status *</Label>
+                  <Label htmlFor="status" className="text-base font-semibold">{t('inventory:statusLabel')} *</Label>
                   <Select
                     value={form.watch("status")}
                     onValueChange={(value) => form.setValue("status", value as any)}
                   >
                     <SelectTrigger className="h-11" data-testid="select-status">
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('inventory:status')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="awaiting">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
-                          Awaiting
+                          {t('inventory:awaitingStatus')}
                         </div>
                       </SelectItem>
                       <SelectItem value="processing">
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />
-                          Processing
+                          {t('inventory:processingStatus')}
                         </div>
                       </SelectItem>
                       <SelectItem value="completed">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4" />
-                          Completed
+                          {t('inventory:completedStatus')}
                         </div>
                       </SelectItem>
                       <SelectItem value="cancelled">
                         <div className="flex items-center gap-2">
                           <X className="h-4 w-4" />
-                          Cancelled
+                          {t('inventory:cancelledStatus')}
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -667,11 +667,11 @@ export default function AddReturn() {
                 </div>
 
                 <div>
-                  <Label htmlFor="notes" className="text-base font-semibold">Return Reason / Notes</Label>
+                  <Label htmlFor="notes" className="text-base font-semibold">{t('inventory:returnReason')} / {t('inventory:notes')}</Label>
                   <Textarea 
                     id="notes"
                     {...form.register("notes")}
-                    placeholder="Describe the reason for return..."
+                    placeholder={t('inventory:notesPlaceholder')}
                     className="min-h-[100px]"
                     data-testid="textarea-notes"
                   />
@@ -684,38 +684,38 @@ export default function AddReturn() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TruckIcon className="h-5 w-5 text-orange-500" />
-                  Shipping Information
+                  {t('inventory:shippingInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="trackingNumber" className="text-base font-semibold">Tracking Number</Label>
+                    <Label htmlFor="trackingNumber" className="text-base font-semibold">{t('inventory:trackingNumber')}</Label>
                     <Input 
                       id="trackingNumber"
                       {...form.register("trackingNumber")}
-                      placeholder="Enter tracking number"
+                      placeholder={t('inventory:trackingNumber')}
                       className="h-11"
                       data-testid="input-trackingNumber"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="shippingCarrier" className="text-base font-semibold">Shipping Carrier</Label>
+                    <Label htmlFor="shippingCarrier" className="text-base font-semibold">{t('inventory:shippingCarrier')}</Label>
                     <Select
                       value={form.watch("shippingCarrier")}
                       onValueChange={(value) => form.setValue("shippingCarrier", value)}
                     >
                       <SelectTrigger className="h-11" data-testid="select-shippingCarrier">
-                        <SelectValue placeholder="Select carrier" />
+                        <SelectValue placeholder={t('inventory:pleaseSelect')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="dhl">DHL</SelectItem>
-                        <SelectItem value="fedex">FedEx</SelectItem>
-                        <SelectItem value="ups">UPS</SelectItem>
-                        <SelectItem value="usps">USPS</SelectItem>
-                        <SelectItem value="vnpost">VN Post</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="dhl">{t('inventory:dhl')}</SelectItem>
+                        <SelectItem value="fedex">{t('inventory:fedex')}</SelectItem>
+                        <SelectItem value="ups">{t('inventory:ups')}</SelectItem>
+                        <SelectItem value="usps">{t('inventory:usps')}</SelectItem>
+                        <SelectItem value="vnpost">{t('inventory:vnPost')}</SelectItem>
+                        <SelectItem value="other">{t('inventory:other')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -729,7 +729,7 @@ export default function AddReturn() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-green-500" />
-                    Return Items
+                    {t('inventory:itemsReturned')}
                   </CardTitle>
                   <Button
                     type="button"
@@ -739,7 +739,7 @@ export default function AddReturn() {
                     data-testid="button-addItem"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Item
+                    {t('inventory:addItems')}
                   </Button>
                 </div>
               </CardHeader>
@@ -759,7 +759,7 @@ export default function AddReturn() {
                           handleBarcodeScan(barcodeInput);
                         }
                       }}
-                      placeholder="Scan barcode or enter SKU..."
+                      placeholder={t('inventory:scanBarcodeOrSku')}
                       className="pl-10"
                       disabled={productsQuery.isLoading}
                       data-testid="input-barcode-scan"
@@ -771,7 +771,7 @@ export default function AddReturn() {
                 {fields.length === 0 ? (
                   <div className="text-center py-12 bg-muted/50 rounded-lg">
                     <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">No items added yet</p>
+                    <p className="text-muted-foreground mb-4">{t('inventory:noItemsAddedYet')}</p>
                     <Button
                       type="button"
                       variant="outline"
@@ -780,7 +780,7 @@ export default function AddReturn() {
                       data-testid="button-addFirstItem"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Add First Item
+                      {t('inventory:addFirstItem')}
                     </Button>
                   </div>
                 ) : (
@@ -791,7 +791,7 @@ export default function AddReturn() {
                           <div className="flex-1 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
-                                <Label className="text-sm font-medium">Product *</Label>
+                                <Label className="text-sm font-medium">{t('inventory:product')} *</Label>
                                 <Popover open={productSearchOpen === index} onOpenChange={(open) => setProductSearchOpen(open ? index : null)}>
                                   <PopoverTrigger asChild>
                                     <Button
@@ -801,14 +801,14 @@ export default function AddReturn() {
                                       className="w-full justify-between h-10"
                                       data-testid={`button-product-${index}`}
                                     >
-                                      {form.watch(`items.${index}.productName`) || "Select product..."}
+                                      {form.watch(`items.${index}.productName`) || t('inventory:selectProduct')}
                                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-full p-0" align="start">
                                     <Command>
-                                      <CommandInput placeholder="Search product..." data-testid={`input-product-search-${index}`} />
-                                      <CommandEmpty>No product found.</CommandEmpty>
+                                      <CommandInput placeholder={t('inventory:searchProduct')} data-testid={`input-product-search-${index}`} />
+                                      <CommandEmpty>{t('inventory:noProductFound')}</CommandEmpty>
                                       <CommandGroup className="max-h-64 overflow-auto">
                                         {products.map((product: any) => (
                                           <CommandItem
@@ -836,12 +836,12 @@ export default function AddReturn() {
                               </div>
 
                               <div>
-                                <Label className="text-sm font-medium">Quantity *</Label>
+                                <Label className="text-sm font-medium">{t('inventory:quantityLabel')} *</Label>
                                 <Input 
                                   type="number"
                                   min="1"
                                   {...form.register(`items.${index}.quantity`)}
-                                  placeholder="1"
+                                  placeholder={t('inventory:quantityPlaceholder')}
                                   className="h-10"
                                   data-testid={`input-quantity-${index}`}
                                 />
@@ -850,10 +850,10 @@ export default function AddReturn() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
-                                <Label className="text-sm font-medium">SKU</Label>
+                                <Label className="text-sm font-medium">{t('inventory:skuLabel')}</Label>
                                 <Input
                                   {...form.register(`items.${index}.sku`)}
-                                  placeholder="Product SKU"
+                                  placeholder={t('inventory:skuPlaceholder')}
                                   className="h-10"
                                   readOnly
                                   data-testid={`input-sku-${index}`}
@@ -861,13 +861,13 @@ export default function AddReturn() {
                               </div>
 
                               <div>
-                                <Label className="text-sm font-medium">Price (€) *</Label>
+                                <Label className="text-sm font-medium">{t('inventory:priceLabel')} (€) *</Label>
                                 <Input 
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   {...form.register(`items.${index}.price`)}
-                                  placeholder="0.00"
+                                  placeholder={t('inventory:pricePlaceholder')}
                                   className="h-10"
                                   data-testid={`input-price-${index}`}
                                 />
@@ -890,7 +890,7 @@ export default function AddReturn() {
                         {/* Item Subtotal */}
                         <div className="flex justify-end pt-2 border-t">
                           <div className="text-sm">
-                            <span className="text-muted-foreground">Subtotal: </span>
+                            <span className="text-muted-foreground">{t('inventory:subtotal')}: </span>
                             <span className="font-semibold">
                               €{((form.watch(`items.${index}.quantity`) || 0) * (form.watch(`items.${index}.price`) || 0)).toFixed(2)}
                             </span>
@@ -915,7 +915,7 @@ export default function AddReturn() {
                 onClick={() => navigate("/returns")}
                 data-testid="button-cancel"
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="submit"
@@ -924,7 +924,7 @@ export default function AddReturn() {
                 data-testid="button-submit"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {createReturnMutation.isPending ? "Creating..." : "Create Return"}
+                {createReturnMutation.isPending ? t('common:creating') : t('inventory:createReturn')}
               </Button>
             </div>
           </div>
@@ -936,34 +936,34 @@ export default function AddReturn() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-teal-500" />
-                  Return Summary
+                  {t('inventory:returnSummary')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Customer</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:customer')}</span>
                     <span className="text-sm font-medium">
                       {selectedCustomer?.name || '-'}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Order Number</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:orderNumber')}</span>
                     <span className="text-sm font-medium">
                       {selectedOrder ? `#${selectedOrder.id.slice(0, 8).toUpperCase()}` : '-'}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Return Type</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:returnType')}</span>
                     <Badge variant="outline" className="capitalize">
                       {form.watch("returnType").replace('_', ' ')}
                     </Badge>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:status')}</span>
                     <Badge className={cn("border", getStatusColor(form.watch("status")))}>
                       <span className="flex items-center gap-1">
                         {getStatusIcon(form.watch("status"))}
@@ -975,12 +975,12 @@ export default function AddReturn() {
                   <Separator />
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Items Count</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:itemsCount', { count: fields.length })}</span>
                     <span className="text-sm font-medium">{fields.length}</span>
                   </div>
 
                   <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-base font-semibold">Return Total</span>
+                    <span className="text-base font-semibold">{t('inventory:totalRefund')}</span>
                     <span className="text-xl font-bold text-teal-600">
                       <Euro className="h-5 w-5 inline mr-1" />
                       {returnTotal.toFixed(2)}
@@ -994,25 +994,25 @@ export default function AddReturn() {
             {selectedOrder && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Original Order Details</CardTitle>
+                  <CardTitle className="text-base">{t('inventory:originalOrderDetails')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Order Date</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:orderDate')}</span>
                     <span className="text-sm font-medium">
                       {format(new Date(selectedOrder.createdAt), 'dd/MM/yyyy')}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Original Total</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:originalTotal')}</span>
                     <span className="text-sm font-semibold">
                       €{selectedOrder.totalPrice?.toFixed(2) || '0.00'}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Items</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:items')}</span>
                     <span className="text-sm font-medium">
                       {selectedOrder.items?.length || 0}
                     </span>
@@ -1020,7 +1020,7 @@ export default function AddReturn() {
 
                   {selectedOrder.paymentStatus && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Payment</span>
+                      <span className="text-sm text-muted-foreground">{t('inventory:payment')}</span>
                       <Badge variant="outline" className="capitalize text-xs">
                         {selectedOrder.paymentStatus.replace('_', ' ')}
                       </Badge>
@@ -1034,7 +1034,7 @@ export default function AddReturn() {
             {watchCustomerId && customerOrders.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Customer Order History</CardTitle>
+                  <CardTitle className="text-base">{t('inventory:customerOrderHistory')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="max-h-64 overflow-y-auto space-y-2">
@@ -1067,7 +1067,7 @@ export default function AddReturn() {
                   </div>
                   {customerOrders.length > 5 && (
                     <p className="text-xs text-muted-foreground text-center pt-2">
-                      Showing 5 of {customerOrders.length} orders
+                      {t('inventory:showingOrdersOf', { visible: 5, total: customerOrders.length })}
                     </p>
                   )}
                 </CardContent>

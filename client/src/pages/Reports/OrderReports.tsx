@@ -61,11 +61,11 @@ export default function OrderReports() {
     const payLater = filteredOrders.filter((o: any) => o.paymentStatus === 'pay_later').length;
 
     return preparePieChartData([
-      { name: 'Paid', value: paid },
-      { name: 'Unpaid', value: unpaid },
-      { name: 'Pay Later', value: payLater },
+      { name: t('financial.paid'), value: paid },
+      { name: t('financial.unpaid'), value: unpaid },
+      { name: t('common.payLater'), value: payLater },
     ]);
-  }, [filteredOrders]);
+  }, [filteredOrders, t]);
 
   const monthlyOrderTrends = useMemo(() => {
     const now = new Date();
@@ -105,25 +105,25 @@ export default function OrderReports() {
   const handleExportExcel = () => {
     try {
       const exportData = filteredOrders.map((o: any) => ({
-        'Order ID': o.orderId,
-        'Customer': o.customer?.name || '-',
-        'Date': format(new Date(o.createdAt), 'yyyy-MM-dd'),
-        'Status': o.status,
-        'Payment Status': o.paymentStatus || 'unpaid',
-        'Total': parseFloat(o.totalPrice || '0'),
-        'Currency': o.currency,
+        [t('reports.orderId')]: o.orderId,
+        [t('reports.customer')]: o.customer?.name || '-',
+        [t('reports.date')]: format(new Date(o.createdAt), 'yyyy-MM-dd'),
+        [t('reports.status')]: o.status,
+        [t('reports.paymentStatus')]: o.paymentStatus || 'unpaid',
+        [t('reports.total')]: parseFloat(o.totalPrice || '0'),
+        [t('financial.currency')]: o.currency,
       }));
 
-      exportToXLSX(exportData, `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Order Report');
+      exportToXLSX(exportData, `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.orderReport'));
       
       toast({
-        title: "Export Successful",
-        description: "Order report exported to XLSX",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.orderReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export order report",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportOrderReport'),
         variant: "destructive",
       });
     }
@@ -139,27 +139,27 @@ export default function OrderReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'month', header: 'Month' },
-        { key: 'orders', header: 'Total' },
-        { key: 'fulfilled', header: 'Fulfilled' },
-        { key: 'pending', header: 'Pending' },
+        { key: 'month', header: t('reports.month') },
+        { key: 'orders', header: t('reports.total') },
+        { key: 'fulfilled', header: t('reports.fulfilled') },
+        { key: 'pending', header: t('reports.pending') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        'Order Trends'
+        t('reports.orderTrends')
       );
 
       toast({
-        title: "Export Successful",
-        description: "Order report exported to PDF",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.orderReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export order report to PDF",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportOrderReportPdf'),
         variant: "destructive",
       });
     }
@@ -232,9 +232,9 @@ export default function OrderReports() {
         title={t('reports.orderTrends')}
         data={monthlyOrderTrends}
         lines={[
-          { dataKey: 'orders', name: 'Total Orders', color: '#3b82f6' },
-          { dataKey: 'fulfilled', name: 'Fulfilled', color: '#10b981' },
-          { dataKey: 'pending', name: 'Pending', color: '#f59e0b' },
+          { dataKey: 'orders', name: t('reports.totalOrders'), color: '#3b82f6' },
+          { dataKey: 'fulfilled', name: t('reports.fulfilled'), color: '#10b981' },
+          { dataKey: 'pending', name: t('reports.pending'), color: '#f59e0b' },
         ]}
         testId="chart-order-trends"
       />

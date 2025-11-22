@@ -438,7 +438,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                             size="icon"
                             onClick={handleManualGenerate}
                             disabled={isGeneratingSubject}
-                            title="Generate subject with AI"
+                            title={t('generateSubjectWithAI')}
                             data-testid="button-generate-subject"
                             className="h-10 w-10 shrink-0"
                           >

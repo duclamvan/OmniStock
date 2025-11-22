@@ -138,12 +138,12 @@ export default function ExpenseReports() {
   const handleExportExcel = () => {
     try {
       const exportData = filteredExpenses.map((exp: any) => ({
-        'Date': format(new Date(exp.createdAt || exp.date), 'yyyy-MM-dd'),
-        'Description': exp.description || '-',
-        'Category': exp.category || t('financial:uncategorized'),
-        'Amount': parseFloat(exp.amount || '0'),
-        'Currency': exp.currency,
-        'Amount (CZK)': convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency).toFixed(2),
+        [t('common:date')]: format(new Date(exp.createdAt || exp.date), 'yyyy-MM-dd'),
+        [t('common:description')]: exp.description || '-',
+        [t('financial:category')]: exp.category || t('financial:uncategorized'),
+        [t('common:amount')]: parseFloat(exp.amount || '0'),
+        [t('common:currency')]: exp.currency,
+        [t('reports:amountCZK')]: convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency).toFixed(2),
       }));
 
       exportToXLSX(exportData, `Expense_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:expenseReport'));

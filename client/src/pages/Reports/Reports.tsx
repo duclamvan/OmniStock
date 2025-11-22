@@ -259,36 +259,36 @@ export default function Reports() {
     try {
       const exportData = [
         {
-          'Metric': 'Total Revenue (CZK)',
-          'Value': formatCurrency(financialMetrics.totalRevenueCZK, 'CZK'),
+          [t('reports.metric')]: t('reports.totalRevenueCZK'),
+          [t('reports.value')]: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK'),
         },
         {
-          'Metric': 'Total Revenue (EUR)',
-          'Value': formatCurrency(financialMetrics.totalRevenueEUR, 'EUR'),
+          [t('reports.metric')]: t('reports.totalRevenueEUR'),
+          [t('reports.value')]: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR'),
         },
         {
-          'Metric': 'Total Cost (CZK)',
-          'Value': formatCurrency(financialMetrics.totalCostCZK, 'CZK'),
+          [t('reports.metric')]: `${t('reports.totalCost')} (CZK)`,
+          [t('reports.value')]: formatCurrency(financialMetrics.totalCostCZK, 'CZK'),
         },
         {
-          'Metric': 'Profit (CZK Equivalent)',
-          'Value': formatCurrency(financialMetrics.profitCZK, 'CZK'),
+          [t('reports.metric')]: `${t('reports.profit')} (CZK)`,
+          [t('reports.value')]: formatCurrency(financialMetrics.profitCZK, 'CZK'),
         },
         {
-          'Metric': 'Profit Margin',
-          'Value': `${financialMetrics.profitMargin.toFixed(2)}%`,
+          [t('reports.metric')]: t('reports.profitMargin'),
+          [t('reports.value')]: `${financialMetrics.profitMargin.toFixed(2)}%`,
         },
         {
-          'Metric': 'Total Orders',
-          'Value': financialMetrics.totalOrders,
+          [t('reports.metric')]: t('reports.totalOrders'),
+          [t('reports.value')]: financialMetrics.totalOrders,
         },
         {
-          'Metric': 'Total Units Sold',
-          'Value': productPerformance.totalUnitsSold,
+          [t('reports.metric')]: t('reports.unitsSold'),
+          [t('reports.value')]: productPerformance.totalUnitsSold,
         },
         {
-          'Metric': 'Active Customers',
-          'Value': customerAnalytics.activeCustomers,
+          [t('reports.metric')]: t('reports.activeCustomers'),
+          [t('reports.value')]: customerAnalytics.activeCustomers,
         },
       ];
 
@@ -311,19 +311,19 @@ export default function Reports() {
   const handleExportPDF = () => {
     try {
       const exportData = [
-        { metric: 'Total Revenue (CZK)', value: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK') },
-        { metric: 'Total Revenue (EUR)', value: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR') },
-        { metric: 'Total Cost (CZK)', value: formatCurrency(financialMetrics.totalCostCZK, 'CZK') },
-        { metric: 'Profit (CZK Equivalent)', value: formatCurrency(financialMetrics.profitCZK, 'CZK') },
-        { metric: 'Profit Margin', value: `${financialMetrics.profitMargin.toFixed(2)}%` },
-        { metric: 'Total Orders', value: financialMetrics.totalOrders.toString() },
-        { metric: 'Total Units Sold', value: productPerformance.totalUnitsSold.toString() },
-        { metric: 'Active Customers', value: customerAnalytics.activeCustomers.toString() },
+        { metric: t('reports.totalRevenueCZK'), value: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK') },
+        { metric: t('reports.totalRevenueEUR'), value: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR') },
+        { metric: `${t('reports.totalCost')} (CZK)`, value: formatCurrency(financialMetrics.totalCostCZK, 'CZK') },
+        { metric: `${t('reports.profit')} (CZK)`, value: formatCurrency(financialMetrics.profitCZK, 'CZK') },
+        { metric: t('reports.profitMargin'), value: `${financialMetrics.profitMargin.toFixed(2)}%` },
+        { metric: t('reports.totalOrders'), value: financialMetrics.totalOrders.toString() },
+        { metric: t('reports.unitsSold'), value: productPerformance.totalUnitsSold.toString() },
+        { metric: t('reports.activeCustomers'), value: customerAnalytics.activeCustomers.toString() },
       ];
 
       const columns: PDFColumn[] = [
-        { key: 'metric', header: 'Metric' },
-        { key: 'value', header: 'Value' },
+        { key: 'metric', header: t('reports.metric') },
+        { key: 'value', header: t('reports.value') },
       ];
 
       exportToPDF(t('reports.businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);

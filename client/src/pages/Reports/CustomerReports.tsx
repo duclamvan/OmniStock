@@ -95,12 +95,12 @@ export default function CustomerReports() {
   const handleExportExcel = () => {
     try {
       const exportData = customerMetrics.map(c => ({
-        'Customer': c.customerName,
-        'Total Orders': c.orderCount,
-        'Total Spent': c.totalSpent.toFixed(2),
-        'Avg Order Value': c.avgOrderValue.toFixed(2),
-        'First Order': c.firstOrderDate ? format(c.firstOrderDate, 'yyyy-MM-dd') : '-',
-        'Last Order': c.lastOrderDate ? format(c.lastOrderDate, 'yyyy-MM-dd') : '-',
+        [t('customers:customer')]: c.customerName,
+        [t('reports:totalOrders')]: c.orderCount,
+        [t('reports:totalSpent')]: c.totalSpent.toFixed(2),
+        [t('reports:avgOrderValue')]: c.avgOrderValue.toFixed(2),
+        [t('reports:firstOrder')]: c.firstOrderDate ? format(c.firstOrderDate, 'yyyy-MM-dd') : '-',
+        [t('reports:lastOrder')]: c.lastOrderDate ? format(c.lastOrderDate, 'yyyy-MM-dd') : '-',
       }));
 
       exportToXLSX(exportData, `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:customerReport'));

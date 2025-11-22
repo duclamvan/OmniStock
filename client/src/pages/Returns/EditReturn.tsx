@@ -138,15 +138,15 @@ export default function EditReturn() {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
       queryClient.invalidateQueries({ queryKey: [`/api/returns/${id}`] });
       toast({
-        title: "Success",
-        description: "Return updated successfully",
+        title: t('common:success'),
+        description: t('inventory:returnUpdatedSuccess'),
       });
       navigate("/returns");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update return",
+        title: t('common:error'),
+        description: error.message || t('inventory:failedToUpdateReturn'),
         variant: "destructive",
       });
     },
@@ -157,15 +157,15 @@ export default function EditReturn() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
       toast({
-        title: "Success",
-        description: "Return deleted successfully",
+        title: t('common:success'),
+        description: t('inventory:returnDeletedSuccess'),
       });
       navigate("/returns");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete return",
+        title: t('common:error'),
+        description: error.message || t('inventory:failedToDeleteReturn'),
         variant: "destructive",
       });
     },
@@ -215,7 +215,7 @@ export default function EditReturn() {
     return (
       <div className="p-6 max-w-4xl mx-auto bg-white dark:bg-slate-900">
         <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400">Return not found</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('inventory:returnNotFound')}</p>
         </div>
       </div>
     );
@@ -231,12 +231,12 @@ export default function EditReturn() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Returns
+          {t('inventory:backToReturns')}
         </Button>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:editReturn')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">Update return information</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('inventory:updateReturnInformation')}</p>
           </div>
           <Button
             variant="destructive"
@@ -244,7 +244,7 @@ export default function EditReturn() {
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t('common:delete')}
           </Button>
         </div>
       </div>
@@ -255,11 +255,11 @@ export default function EditReturn() {
             {/* Return ID and Customer */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Return ID</Label>
+                <Label>{t('inventory:returnIdLabel')}</Label>
                 <Input value={returnData.returnId || ""} disabled className="bg-gray-50" />
               </div>
               <div>
-                <Label>Customer Name</Label>
+                <Label>{t('inventory:customerName')}</Label>
                 <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -270,14 +270,14 @@ export default function EditReturn() {
                     >
                       {form.watch("customerId")
                         ? customers.find((customer: any) => customer.id === form.watch("customerId"))?.name
-                        : "Select customer"}
+                        : t('inventory:selectCustomer')}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
                     <Command>
-                      <CommandInput placeholder="Search customer..." />
-                      <CommandEmpty>No customer found.</CommandEmpty>
+                      <CommandInput placeholder={t('inventory:searchCustomer')} />
+                      <CommandEmpty>{t('inventory:noCustomerFound')}</CommandEmpty>
                       <CommandGroup className="max-h-64 overflow-auto">
                         {customers.map((customer: any) => (
                           <CommandItem
@@ -310,7 +310,7 @@ export default function EditReturn() {
             {/* Order Number and Return Date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Order Number</Label>
+                <Label>{t('inventory:orderNumberLabel')}</Label>
                 <Popover open={orderSearchOpen} onOpenChange={setOrderSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -322,13 +322,13 @@ export default function EditReturn() {
                     >
                       {form.watch("orderId")
                         ? orders.find((order: any) => order.id === form.watch("orderId"))?.id.slice(0, 8).toUpperCase()
-                        : "Select order"}
+                        : t('inventory:selectOrder')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
                     <Command>
-                      <CommandInput placeholder="Search order..." />
-                      <CommandEmpty>No order found.</CommandEmpty>
+                      <CommandInput placeholder={t('inventory:searchOrder')} />
+                      <CommandEmpty>{t('inventory:noOrderFound')}</CommandEmpty>
                       <CommandGroup className="max-h-64 overflow-auto">
                         {customerOrders.map((order: any) => (
                           <CommandItem
@@ -354,7 +354,7 @@ export default function EditReturn() {
                 </Popover>
               </div>
               <div>
-                <Label>Return Date</Label>
+                <Label>{t('inventory:returnDate')}</Label>
                 <Input 
                   type="date"
                   {...form.register("returnDate")}
@@ -368,7 +368,7 @@ export default function EditReturn() {
             {/* Return Type and Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Return Type</Label>
+                <Label>{t('inventory:returnTypeLabel')}</Label>
                 <Select
                   value={form.watch("returnType")}
                   onValueChange={(value) => form.setValue("returnType", value as any)}
@@ -377,14 +377,14 @@ export default function EditReturn() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="exchange">Exchange</SelectItem>
-                    <SelectItem value="refund">Refund</SelectItem>
-                    <SelectItem value="store_credit">Store Credit</SelectItem>
+                    <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
+                    <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
+                    <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('inventory:statusLabel')}</Label>
                 <Select
                   value={form.watch("status")}
                   onValueChange={(value) => form.setValue("status", value as any)}
@@ -393,10 +393,10 @@ export default function EditReturn() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="awaiting">Awaiting</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="awaiting">{t('inventory:awaitingStatus')}</SelectItem>
+                    <SelectItem value="processing">{t('inventory:processingStatus')}</SelectItem>
+                    <SelectItem value="completed">{t('inventory:completedStatus')}</SelectItem>
+                    <SelectItem value="cancelled">{t('inventory:cancelledStatus')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -404,10 +404,10 @@ export default function EditReturn() {
 
             {/* Notes */}
             <div>
-              <Label>Note</Label>
+              <Label>{t('inventory:notes')}</Label>
               <Textarea 
                 {...form.register("notes")}
-                placeholder="Type here..."
+                placeholder={t('inventory:typeHere')}
                 className="h-24"
               />
             </div>
@@ -415,29 +415,29 @@ export default function EditReturn() {
             {/* Tracking Number and Shipping Carrier */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Tracking Number</Label>
+                <Label>{t('inventory:trackingNumber')}</Label>
                 <Input 
                   value={returnData.trackingNumber || ""}
-                  placeholder="Type here"
+                  placeholder={t('inventory:typeHereNote')}
                   disabled
                 />
               </div>
               <div>
-                <Label>Shipping Carrier</Label>
+                <Label>{t('inventory:shippingCarrier')}</Label>
                 <Select
                   value={form.watch("shippingCarrier")}
                   onValueChange={(value) => form.setValue("shippingCarrier", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
+                    <SelectValue placeholder={t('inventory:pleaseSelect')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dhl">DHL</SelectItem>
-                    <SelectItem value="fedex">FedEx</SelectItem>
-                    <SelectItem value="ups">UPS</SelectItem>
-                    <SelectItem value="usps">USPS</SelectItem>
-                    <SelectItem value="vnpost">VN Post</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="dhl">{t('inventory:dhl')}</SelectItem>
+                    <SelectItem value="fedex">{t('inventory:fedex')}</SelectItem>
+                    <SelectItem value="ups">{t('inventory:ups')}</SelectItem>
+                    <SelectItem value="usps">{t('inventory:usps')}</SelectItem>
+                    <SelectItem value="vnpost">{t('inventory:vnPost')}</SelectItem>
+                    <SelectItem value="other">{t('inventory:other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -446,7 +446,7 @@ export default function EditReturn() {
             {/* Items Returned */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label className="text-base font-semibold">Items Returned</Label>
+                <Label className="text-base font-semibold">{t('inventory:itemsReturned')}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -454,7 +454,7 @@ export default function EditReturn() {
                   onClick={handleAddItem}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Items
+                  {t('inventory:addItems')}
                 </Button>
               </div>
 
@@ -463,7 +463,7 @@ export default function EditReturn() {
                   <div className="flex justify-between items-start">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                       <div>
-                        <Label>Item Name</Label>
+                        <Label>{t('inventory:itemName')}</Label>
                         <Popover open={productSearchOpen === index} onOpenChange={(open) => setProductSearchOpen(open ? index : null)}>
                           <PopoverTrigger asChild>
                             <Button
@@ -472,13 +472,13 @@ export default function EditReturn() {
                               aria-expanded={productSearchOpen === index}
                               className="w-full justify-between"
                             >
-                              {form.watch(`items.${index}.productName`) || "Select product"}
+                              {form.watch(`items.${index}.productName`) || t('inventory:selectProduct')}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Search product..." />
-                              <CommandEmpty>No product found.</CommandEmpty>
+                              <CommandInput placeholder={t('inventory:searchProduct')} />
+                              <CommandEmpty>{t('inventory:noProductFound')}</CommandEmpty>
                               <CommandGroup className="max-h-64 overflow-auto">
                                 {products.map((product: any) => (
                                   <CommandItem
@@ -501,11 +501,11 @@ export default function EditReturn() {
                         </Popover>
                       </div>
                       <div>
-                        <Label>Quantity</Label>
+                        <Label>{t('inventory:quantityLabel')}</Label>
                         <Input 
                           type="number"
                           {...form.register(`items.${index}.quantity`)}
-                          placeholder="1"
+                          placeholder={t('inventory:quantityPlaceholder')}
                         />
                       </div>
                     </div>
@@ -521,10 +521,10 @@ export default function EditReturn() {
                   </div>
                   
                   <div>
-                    <Label>SKU</Label>
+                    <Label>{t('inventory:skuLabel')}</Label>
                     <Input
                       {...form.register(`items.${index}.sku`)}
-                      placeholder="SKU"
+                      placeholder={t('inventory:skuPlaceholder')}
                     />
                   </div>
                 </div>
@@ -542,7 +542,7 @@ export default function EditReturn() {
                 variant="outline"
                 onClick={() => navigate("/returns")}
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="submit"
@@ -550,7 +550,7 @@ export default function EditReturn() {
                 className="bg-teal-600 hover:bg-teal-700"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {t('common:saveChanges')}
               </Button>
             </div>
           </CardContent>
@@ -561,15 +561,15 @@ export default function EditReturn() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('inventory:areYouSure')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this return. This action cannot be undone.
+              {t('inventory:deleteThisReturn')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => deleteReturnMutation.mutate()}>
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

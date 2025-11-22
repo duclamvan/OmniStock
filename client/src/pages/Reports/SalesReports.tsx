@@ -85,7 +85,7 @@ export default function SalesReports() {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product && product.categoryId) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
-        const categoryName = category?.name || 'Uncategorized';
+        const categoryName = category?.name || t('common:uncategorized');
         const revenue = parseFloat(item.totalPrice || '0');
         categorySales[categoryName] = (categorySales[categoryName] || 0) + revenue;
       }
@@ -93,7 +93,7 @@ export default function SalesReports() {
 
     const data = Object.entries(categorySales).map(([name, value]) => ({ name, value }));
     return preparePieChartData(data);
-  }, [filteredOrderItems, products, categories]);
+  }, [filteredOrderItems, products, categories, t]);
 
   const salesTrends = useMemo(() => {
     return monthlyData.map(m => ({

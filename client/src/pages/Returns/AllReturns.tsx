@@ -82,8 +82,8 @@ export default function AllReturns() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load returns. Please try again.",
+        title: t('common:error'),
+        description: t('inventory:failedToLoadReturns'),
         variant: "destructive",
       });
     }
@@ -96,18 +96,18 @@ export default function AllReturns() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedReturns.length} return(s) successfully`,
+        title: t('common:success'),
+        description: t('inventory:deletedReturnsSuccessfully', { count: selectedReturns.length }),
       });
       setSelectedReturns([]);
     },
     onError: (error: any) => {
       console.error("Return delete error:", error);
-      const errorMessage = error.message || "Failed to delete returns";
+      const errorMessage = error.message || t('inventory:failedToDeleteReturns');
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete return - it's being used in existing records" 
+          ? t('inventory:cannotDeleteReturnInUse')
           : errorMessage,
         variant: "destructive",
       });
@@ -134,7 +134,7 @@ export default function AllReturns() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "returnId",
-      header: "Return ID",
+      header: t('inventory:returnId'),
       sortable: true,
       cell: (returnItem) => (
         <Link href={`/returns/${returnItem.id}`}>
@@ -146,7 +146,7 @@ export default function AllReturns() {
     },
     {
       key: "customer",
-      header: "Customer Name",
+      header: t('inventory:customerName'),
       sortable: true,
       cell: (returnItem) => (
         <div className="flex flex-col">
@@ -169,7 +169,7 @@ export default function AllReturns() {
     },
     {
       key: "orderNumber",
-      header: "Order Number",
+      header: t('inventory:orderNumber'),
       sortable: true,
       cell: (returnItem) => (
         <span className="font-mono text-sm text-slate-700 dark:text-slate-300">
@@ -179,7 +179,7 @@ export default function AllReturns() {
     },
     {
       key: "reason",
-      header: "Reason",
+      header: t('inventory:reason'),
       sortable: false,
       cell: (returnItem) => (
         <div className="max-w-[175px]">
@@ -191,19 +191,19 @@ export default function AllReturns() {
     },
     {
       key: "returnDate",
-      header: "Return Date",
+      header: t('inventory:returnDate'),
       sortable: true,
       cell: (returnItem) => format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
     },
     {
       key: "returnType",
-      header: "Return Type",
+      header: t('inventory:returnType'),
       sortable: true,
       cell: (returnItem) => {
         const typeMap: Record<string, { label: string; color: string }> = {
-          'exchange': { label: 'Exchange', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-          'refund': { label: 'Refund', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-          'store_credit': { label: 'Store Credit', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
+          'exchange': { label: t('inventory:exchange'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+          'refund': { label: t('inventory:refund'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+          'store_credit': { label: t('inventory:storeCredit'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
         };
         const type = typeMap[returnItem.returnType] || { label: returnItem.returnType, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
         return <Badge className={type.color}>{type.label}</Badge>;
@@ -211,13 +211,13 @@ export default function AllReturns() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('inventory:status'),
       cell: (returnItem) => {
         const statusMap: Record<string, { label: string; color: string }> = {
-          'awaiting': { label: 'Awaiting', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
-          'processing': { label: 'Processing', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-          'completed': { label: 'Completed', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-          'cancelled': { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+          'awaiting': { label: t('inventory:awaiting'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
+          'processing': { label: t('inventory:processing'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+          'completed': { label: t('inventory:completed'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+          'cancelled': { label: t('inventory:cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
         };
         const status = statusMap[returnItem.status] || { label: returnItem.status, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
         return <Badge className={status.color}>{status.label}</Badge>;
@@ -225,7 +225,7 @@ export default function AllReturns() {
     },
     {
       key: "total",
-      header: "Total",
+      header: t('inventory:total'),
       sortable: true,
       cell: (returnItem) => (
         <span className="font-semibold text-slate-900 dark:text-slate-100">
@@ -241,7 +241,7 @@ export default function AllReturns() {
         <div className="flex gap-2 justify-end">
           <Link href={`/returns/${returnItem.id}/edit`}>
             <Button variant="ghost" size="sm">
-              Edit
+              {t('common:edit')}
             </Button>
           </Link>
           <Link href={`/returns/${returnItem.id}`}>
@@ -262,7 +262,7 @@ export default function AllReturns() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete Selected",
+      label: t('inventory:deleteSelected'),
       action: (selectedItems: any[]) => {
         setSelectedReturns(selectedItems);
         setShowDeleteDialog(true);
@@ -280,42 +280,42 @@ export default function AllReturns() {
     try {
       const exportData = filteredReturns.map((returnItem: any) => {
         const statusMap: Record<string, string> = {
-          'awaiting': 'Awaiting',
-          'processing': 'Processing',
-          'completed': 'Completed',
-          'cancelled': 'Cancelled',
+          'awaiting': t('inventory:awaiting'),
+          'processing': t('inventory:processing'),
+          'completed': t('inventory:completed'),
+          'cancelled': t('inventory:cancelled'),
         };
 
         const returnTypeMap: Record<string, string> = {
-          'exchange': 'Exchange',
-          'refund': 'Refund',
-          'store_credit': 'Store Credit',
+          'exchange': t('inventory:exchange'),
+          'refund': t('inventory:refund'),
+          'store_credit': t('inventory:storeCredit'),
         };
 
         return {
-          'Return ID': returnItem.returnId || returnItem.id,
-          'Customer': returnItem.customer?.name || '-',
-          'Order ID': returnItem.orderId || '-',
-          'Items Count': returnItem.items?.length || 0,
-          'Total Refund': returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
-          'Status': statusMap[returnItem.status] || returnItem.status,
-          'Return Type': returnTypeMap[returnItem.returnType] || returnItem.returnType,
-          'Date': format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
-          'Reason': returnItem.notes || '-',
+          [t('inventory:returnId')]: returnItem.returnId || returnItem.id,
+          [t('inventory:customer')]: returnItem.customer?.name || '-',
+          [t('inventory:orderId')]: returnItem.orderId || '-',
+          [t('inventory:itemsCount')]: returnItem.items?.length || 0,
+          [t('inventory:totalRefund')]: returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
+          [t('inventory:status')]: statusMap[returnItem.status] || returnItem.status,
+          [t('inventory:returnType')]: returnTypeMap[returnItem.returnType] || returnItem.returnType,
+          [t('inventory:date')]: format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
+          [t('inventory:reason')]: returnItem.notes || '-',
         };
       });
 
       exportToXLSX(exportData, 'returns', 'Returns');
       
       toast({
-        title: "Success",
-        description: `Exported ${exportData.length} returns to XLSX`,
+        title: t('common:success'),
+        description: t('inventory:exportedReturnsToXLSX', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Error",
-        description: "Failed to export returns to XLSX",
+        title: t('common:error'),
+        description: t('inventory:failedToExportReturnsToXLSX'),
         variant: "destructive",
       });
     }
@@ -324,16 +324,16 @@ export default function AllReturns() {
   const handleExportPDF = () => {
     try {
       const statusMap: Record<string, string> = {
-        'awaiting': 'Awaiting',
-        'processing': 'Processing',
-        'completed': 'Completed',
-        'cancelled': 'Cancelled',
+        'awaiting': t('inventory:awaiting'),
+        'processing': t('inventory:processing'),
+        'completed': t('inventory:completed'),
+        'cancelled': t('inventory:cancelled'),
       };
 
       const returnTypeMap: Record<string, string> = {
-        'exchange': 'Exchange',
-        'refund': 'Refund',
-        'store_credit': 'Store Credit',
+        'exchange': t('inventory:exchange'),
+        'refund': t('inventory:refund'),
+        'store_credit': t('inventory:storeCredit'),
       };
 
       const exportData = filteredReturns.map((returnItem: any) => ({
@@ -349,28 +349,28 @@ export default function AllReturns() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'returnId', header: 'Return ID' },
-        { key: 'customer', header: 'Customer' },
-        { key: 'orderId', header: 'Order ID' },
-        { key: 'itemsCount', header: 'Items Count' },
-        { key: 'total', header: 'Total Refund' },
-        { key: 'status', header: 'Status' },
-        { key: 'returnType', header: 'Return Type' },
-        { key: 'date', header: 'Date' },
-        { key: 'reason', header: 'Reason' },
+        { key: 'returnId', header: t('inventory:returnId') },
+        { key: 'customer', header: t('inventory:customer') },
+        { key: 'orderId', header: t('inventory:orderId') },
+        { key: 'itemsCount', header: t('inventory:itemsCount') },
+        { key: 'total', header: t('inventory:totalRefund') },
+        { key: 'status', header: t('inventory:status') },
+        { key: 'returnType', header: t('inventory:returnType') },
+        { key: 'date', header: t('inventory:date') },
+        { key: 'reason', header: t('inventory:reason') },
       ];
 
       exportToPDF('Returns Report', exportData, columns, 'returns');
       
       toast({
-        title: "Success",
-        description: `Exported ${exportData.length} returns to PDF`,
+        title: t('common:success'),
+        description: t('inventory:exportedReturnsToPDF', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Error",
-        description: "Failed to export returns to PDF",
+        title: t('common:error'),
+        description: t('inventory:failedToExportReturnsToPDF'),
         variant: "destructive",
       });
     }
@@ -440,7 +440,7 @@ export default function AllReturns() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Returns
+                  {t('inventory:totalReturns')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -450,7 +450,7 @@ export default function AllReturns() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{totalReturns.toLocaleString()} returns</p>
+                      <p className="font-mono">{t('inventory:returnsCount', { count: totalReturns })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -468,7 +468,7 @@ export default function AllReturns() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Pending
+                  {t('inventory:pending')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -478,7 +478,7 @@ export default function AllReturns() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{pendingReturns.toLocaleString()} awaiting returns</p>
+                      <p className="font-mono">{t('inventory:awaitingReturnsCount', { count: pendingReturns })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -496,7 +496,7 @@ export default function AllReturns() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Processing
+                  {t('inventory:processing')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -506,7 +506,7 @@ export default function AllReturns() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{processingReturns.toLocaleString()} in processing</p>
+                      <p className="font-mono">{t('inventory:inProcessingCount', { count: processingReturns })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -524,7 +524,7 @@ export default function AllReturns() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Completed
+                  {t('inventory:completed')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -534,7 +534,7 @@ export default function AllReturns() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{completedReturns.toLocaleString()} completed</p>
+                      <p className="font-mono">{t('inventory:completedCount', { count: completedReturns })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -552,7 +552,7 @@ export default function AllReturns() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('inventory:filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -560,7 +560,7 @@ export default function AllReturns() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search returns by ID, customer, order, or notes..."
+                placeholder={t('inventory:searchReturnsByIdCustomer')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-10 pl-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500"
@@ -575,7 +575,7 @@ export default function AllReturns() {
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">All Returns ({filteredReturns?.length || 0})</CardTitle>
+            <CardTitle className="text-lg">{t('inventory:allReturns')} ({filteredReturns?.length || 0})</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -583,7 +583,7 @@ export default function AllReturns() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('inventory:toggleColumns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns
                   .filter(col => col.key !== 'actions')
@@ -608,17 +608,17 @@ export default function AllReturns() {
           <div className="sm:hidden space-y-3 p-3">
             {filteredReturns?.map((returnItem: any) => {
               const statusMap: Record<string, { label: string; color: string }> = {
-                'awaiting': { label: 'Awaiting', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
-                'processing': { label: 'Processing', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-                'completed': { label: 'Completed', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-                'cancelled': { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+                'awaiting': { label: t('inventory:awaiting'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
+                'processing': { label: t('inventory:processing'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+                'completed': { label: t('inventory:completed'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                'cancelled': { label: t('inventory:cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
               };
               const status = statusMap[returnItem.status] || { label: returnItem.status, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
 
               const returnTypeMap: Record<string, { label: string; color: string }> = {
-                'exchange': { label: 'Exchange', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-                'refund': { label: 'Refund', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-                'store_credit': { label: 'Store Credit', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
+                'exchange': { label: t('inventory:exchange'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+                'refund': { label: t('inventory:refund'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                'store_credit': { label: t('inventory:storeCredit'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
               };
               const returnType = returnTypeMap[returnItem.returnType] || { label: returnItem.returnType, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
 
@@ -646,7 +646,7 @@ export default function AllReturns() {
                     <div className="space-y-1">
                       {returnItem.customer ? (
                         <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Customer</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:customer')}</p>
                           <Link href={`/returns/${returnItem.id}`}>
                             <p className="font-medium text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer">
                               {returnItem.customer.name}
@@ -657,20 +657,20 @@ export default function AllReturns() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-400">No customer</p>
+                        <p className="text-sm text-slate-400">{t('inventory:noCustomerInformation')}</p>
                       )}
                     </div>
 
                     {/* Grid - Order Reference & Return Type */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Order Reference</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:orderNumber')}</p>
                         <p className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
                           {returnItem.orderId || '-'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Return Type</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:returnType')}</p>
                         <Badge className={returnType.color}>{returnType.label}</Badge>
                       </div>
                     </div>
@@ -678,7 +678,7 @@ export default function AllReturns() {
                     {/* Return Reason */}
                     {returnItem.notes && (
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Reason</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:reason')}</p>
                         <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
                           {returnItem.notes}
                         </p>
@@ -688,13 +688,13 @@ export default function AllReturns() {
                     {/* Grid - Items & Total */}
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-200 dark:border-slate-700">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Items Returned</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:itemsReturned')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100">
-                          {returnItem.items?.length || 0} item(s)
+                          {t('inventory:itemsCount', { count: returnItem.items?.length || 0 })}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Total Refund</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:totalRefund')}</p>
                         <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
                           {returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-'}
                         </p>
@@ -706,13 +706,13 @@ export default function AllReturns() {
                       <Link href={`/returns/${returnItem.id}`} className="flex-1">
                         <Button variant="outline" size="sm" className="w-full" data-testid={`button-view-return-${returnItem.id}`}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View
+                          {t('common:view')}
                         </Button>
                       </Link>
                       <Link href={`/returns/${returnItem.id}/edit`} className="flex-1">
                         <Button variant="default" size="sm" className="w-full" data-testid={`button-process-return-${returnItem.id}`}>
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Process
+                          {t('inventory:processing')}
                         </Button>
                       </Link>
                     </div>
@@ -771,14 +771,14 @@ export default function AllReturns() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('inventory:areYouSure')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedReturns.length} return(s). This action cannot be undone.
+              {t('inventory:deleteThisReturn')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>{t('common:delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

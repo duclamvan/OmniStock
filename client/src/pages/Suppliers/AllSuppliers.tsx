@@ -196,7 +196,7 @@ export default function AllSuppliers() {
         'Total Purchases': `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
         'Last Purchase Date': supplier.lastPurchaseDate 
           ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
-          : 'Never',
+          : t('inventory:never'),
         Address: supplier.address || '',
         Website: supplier.website || '',
       }));
@@ -247,7 +247,7 @@ export default function AllSuppliers() {
         totalPurchases: `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
         lastPurchaseDate: supplier.lastPurchaseDate 
           ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
-          : 'Never',
+          : t('inventory:never'),
       }));
 
       exportToPDF('Suppliers Report', exportData, columns, 'suppliers');
@@ -325,17 +325,17 @@ export default function AllSuppliers() {
 
   const getStatusBadge = (supplier: Supplier) => {
     if (!supplier.lastPurchaseDate) {
-      return <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">New</Badge>;
+      return <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{t('inventory:new')}</Badge>;
     }
     const lastPurchase = new Date(supplier.lastPurchaseDate);
     const daysSince = (Date.now() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24);
     
     if (daysSince <= 30) {
-      return <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">Active</Badge>;
+      return <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">{t('inventory:active')}</Badge>;
     } else if (daysSince <= 90) {
-      return <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">Regular</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">{t('inventory:regular')}</Badge>;
     } else {
-      return <Badge variant="outline" className="text-slate-500 dark:text-slate-400">Inactive</Badge>;
+      return <Badge variant="outline" className="text-slate-500 dark:text-slate-400">{t('inventory:inactive')}</Badge>;
     }
   };
 
@@ -397,7 +397,7 @@ export default function AllSuppliers() {
       cell: (supplier) => {
         const dateStr = formatDate(supplier.lastPurchaseDate);
         if (dateStr === '-') {
-          return <span className="text-slate-400">Never</span>;
+          return <span className="text-slate-400">{t('inventory:never')}</span>;
         }
         
         const lastPurchase = new Date(supplier.lastPurchaseDate!);
@@ -407,9 +407,9 @@ export default function AllSuppliers() {
           <div className="min-w-[100px]">
             <span className="font-medium text-slate-900 dark:text-slate-100 block">{dateStr}</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {daysSince === 0 ? 'Today' : 
-               daysSince === 1 ? 'Yesterday' :
-               `${daysSince}d ago`}
+              {daysSince === 0 ? t('inventory:today') : 
+               daysSince === 1 ? t('inventory:yesterday') :
+               t('inventory:daysAgo', { days: daysSince })}
             </span>
           </div>
         );
@@ -475,7 +475,7 @@ export default function AllSuppliers() {
                   className="flex items-center"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Visit Website
+                  {t('inventory:visitWebsite')}
                 </a>
               </DropdownMenuItem>
             )}

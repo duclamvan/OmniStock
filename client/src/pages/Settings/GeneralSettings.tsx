@@ -84,14 +84,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const WEEKDAYS = [
-  { id: 'monday', label: 'Monday' },
-  { id: 'tuesday', label: 'Tuesday' },
-  { id: 'wednesday', label: 'Wednesday' },
-  { id: 'thursday', label: 'Thursday' },
-  { id: 'friday', label: 'Friday' },
-  { id: 'saturday', label: 'Saturday' },
-  { id: 'sunday', label: 'Sunday' },
+const getWeekdays = (t: any) => [
+  { id: 'monday', label: t('settings:monday') },
+  { id: 'tuesday', label: t('settings:tuesday') },
+  { id: 'wednesday', label: t('settings:wednesday') },
+  { id: 'thursday', label: t('settings:thursday') },
+  { id: 'friday', label: t('settings:friday') },
+  { id: 'saturday', label: t('settings:saturday') },
+  { id: 'sunday', label: t('settings:sunday') },
 ];
 
 const TIMEZONES = [
@@ -121,6 +121,7 @@ export default function GeneralSettings() {
   const { toast } = useToast();
   const { generalSettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
+  const WEEKDAYS = getWeekdays(t);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -482,9 +483,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  Brand & Identity
+                  {t('settings:brandIdentity')}
                 </CardTitle>
-                <CardDescription>Company logos, stamps, and social media links</CardDescription>
+                <CardDescription>{t('settings:brandIdentityDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -493,11 +494,11 @@ export default function GeneralSettings() {
                     name="company_logo_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Logo URL</FormLabel>
+                        <FormLabel>{t('settings:companyLogoUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://example.com/logo.png" data-testid="input-company_logo_url" />
+                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_logo_url" />
                         </FormControl>
-                        <FormDescription>URL to your company logo</FormDescription>
+                        <FormDescription>{t('settings:companyLogoUrlDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -508,11 +509,11 @@ export default function GeneralSettings() {
                     name="company_invoice_stamp"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Invoice Stamp URL</FormLabel>
+                        <FormLabel>{t('settings:invoiceStamp')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://example.com/stamp.png" data-testid="input-company_invoice_stamp" />
+                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_invoice_stamp" />
                         </FormControl>
-                        <FormDescription>Company seal or stamp for invoices</FormDescription>
+                        <FormDescription>{t('settings:invoiceStampDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -525,11 +526,12 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <Facebook className="h-4 w-4" />
-                          Facebook URL
+                          {t('settings:facebookUrl')}
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://facebook.com/yourpage" data-testid="input-company_facebook_url" />
+                          <Input {...field} placeholder={t('settings:facebookUrlPlaceholder')} data-testid="input-company_facebook_url" />
                         </FormControl>
+                        <FormDescription>{t('settings:facebookUrlDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -542,12 +544,12 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <MessageCircle className="h-4 w-4" />
-                          WhatsApp Number
+                          {t('settings:whatsappNumber')}
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+420123456789" data-testid="input-company_whatsapp_number" />
+                          <Input {...field} placeholder={t('settings:whatsappNumberPlaceholder')} data-testid="input-company_whatsapp_number" />
                         </FormControl>
-                        <FormDescription>Include country code</FormDescription>
+                        <FormDescription>{t('settings:whatsappNumberDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -558,11 +560,11 @@ export default function GeneralSettings() {
                     name="company_zalo_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Zalo Number</FormLabel>
+                        <FormLabel>{t('settings:zaloNumber')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+84123456789" data-testid="input-company_zalo_number" />
+                          <Input {...field} placeholder={t('settings:zaloNumberPlaceholder')} data-testid="input-company_zalo_number" />
                         </FormControl>
-                        <FormDescription>For Vietnamese customers</FormDescription>
+                        <FormDescription>{t('settings:zaloNumberDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -573,10 +575,11 @@ export default function GeneralSettings() {
                     name="company_linkedin_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>LinkedIn URL</FormLabel>
+                        <FormLabel>{t('settings:linkedinUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://linkedin.com/company/yourcompany" data-testid="input-company_linkedin_url" />
+                          <Input {...field} placeholder={t('settings:linkedinUrlPlaceholder')} data-testid="input-company_linkedin_url" />
                         </FormControl>
+                        <FormDescription>{t('settings:linkedinUrlDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -587,10 +590,11 @@ export default function GeneralSettings() {
                     name="company_instagram_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Instagram URL</FormLabel>
+                        <FormLabel>{t('settings:instagramUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://instagram.com/yourcompany" data-testid="input-company_instagram_url" />
+                          <Input {...field} placeholder={t('settings:instagramUrlPlaceholder')} data-testid="input-company_instagram_url" />
                         </FormControl>
+                        <FormDescription>{t('settings:instagramUrlDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -606,9 +610,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Globe className="h-5 w-5" />
-                  Language & Formats
+                  {t('settings:localization')}
                 </CardTitle>
-                <CardDescription>Date, time, and number formatting preferences</CardDescription>
+                <CardDescription>{t('settings:localizationDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -617,19 +621,19 @@ export default function GeneralSettings() {
                     name="default_language"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Language</FormLabel>
+                        <FormLabel>{t('settings:defaultLanguage')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_language">
-                              <SelectValue placeholder="Select language" />
+                              <SelectValue placeholder={t('settings:selectLanguage')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="en">English</SelectItem>
-                            <SelectItem value="vi">Tiếng Việt</SelectItem>
+                            <SelectItem value="en">{t('settings:english')}</SelectItem>
+                            <SelectItem value="vi">{t('settings:vietnamese')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>System default language</FormDescription>
+                        <FormDescription>{t('settings:languageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -640,11 +644,11 @@ export default function GeneralSettings() {
                     name="default_date_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date Format</FormLabel>
+                        <FormLabel>{t('settings:defaultDateFormat')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_date_format">
-                              <SelectValue placeholder="Select date format" />
+                              <SelectValue placeholder={t('settings:selectDateFormat')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -653,6 +657,7 @@ export default function GeneralSettings() {
                             <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormDescription>{t('settings:dateFormatDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -663,18 +668,19 @@ export default function GeneralSettings() {
                     name="default_time_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Time Format</FormLabel>
+                        <FormLabel>{t('settings:defaultTimeFormat')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_time_format">
-                              <SelectValue placeholder="Select time format" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="12-hour">12-hour (AM/PM)</SelectItem>
-                            <SelectItem value="24-hour">24-hour</SelectItem>
+                            <SelectItem value="12-hour">{t('settings:timeFormat12Hour')}</SelectItem>
+                            <SelectItem value="24-hour">{t('settings:timeFormat24Hour')}</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormDescription>{t('settings:timeFormatDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -685,11 +691,11 @@ export default function GeneralSettings() {
                     name="default_timezone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Timezone</FormLabel>
+                        <FormLabel>{t('settings:defaultTimezone')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_timezone">
-                              <SelectValue placeholder="Select timezone" />
+                              <SelectValue placeholder={t('settings:selectTimezone')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -700,6 +706,7 @@ export default function GeneralSettings() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormDescription>{t('settings:timezoneDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -710,19 +717,18 @@ export default function GeneralSettings() {
                     name="number_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Number Format</FormLabel>
+                        <FormLabel>{t('settings:numberFormat')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-number_format">
-                              <SelectValue placeholder="Select format" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1,000.00">1,000.00 (comma separator)</SelectItem>
-                            <SelectItem value="1.000,00">1.000,00 (dot separator)</SelectItem>
+                            <SelectItem value="1,000.00">1,000.00</SelectItem>
+                            <SelectItem value="1.000,00">1.000,00</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>How numbers are displayed</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -735,9 +741,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Currency Settings
+                  {t('settings:currency')}
                 </CardTitle>
-                <CardDescription>Default currency and display preferences</CardDescription>
+                <CardDescription>{t('settings:currencyManagementDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -746,11 +752,11 @@ export default function GeneralSettings() {
                     name="default_currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Currency</FormLabel>
+                        <FormLabel>{t('settings:defaultCurrency')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_currency">
-                              <SelectValue placeholder="Select currency" />
+                              <SelectValue placeholder={t('settings:selectCurrency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -761,7 +767,6 @@ export default function GeneralSettings() {
                             <SelectItem value="CNY">CNY (Chinese Yuan)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Primary currency for transactions</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -772,20 +777,19 @@ export default function GeneralSettings() {
                     name="currency_display"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Currency Display</FormLabel>
+                        <FormLabel>{t('settings:currencyDisplay')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-currency_display">
-                              <SelectValue placeholder="Select display" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="symbol">Symbol ($, €, Kč)</SelectItem>
-                            <SelectItem value="code">Code (USD, EUR, CZK)</SelectItem>
-                            <SelectItem value="both">Both ($ USD)</SelectItem>
+                            <SelectItem value="symbol">{t('settings:currencyDisplaySymbol')}</SelectItem>
+                            <SelectItem value="code">{t('settings:currencyDisplayCode')}</SelectItem>
+                            <SelectItem value="both">{t('settings:currencyDisplayBoth')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>How currency is shown</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -801,9 +805,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Business Hours
+                  {t('settings:regionalSettings')}
                 </CardTitle>
-                <CardDescription>Operating hours and working days</CardDescription>
+                <CardDescription>{t('settings:regionalSettingsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -812,11 +816,10 @@ export default function GeneralSettings() {
                     name="business_hours_start"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Time</FormLabel>
+                        <FormLabel>{t('settings:businessHoursStart')}</FormLabel>
                         <FormControl>
                           <Input {...field} type="time" data-testid="input-business_hours_start" />
                         </FormControl>
-                        <FormDescription>When operations begin</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -827,11 +830,10 @@ export default function GeneralSettings() {
                     name="business_hours_end"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Time</FormLabel>
+                        <FormLabel>{t('settings:businessHoursEnd')}</FormLabel>
                         <FormControl>
                           <Input {...field} type="time" data-testid="input-business_hours_end" />
                         </FormControl>
-                        <FormDescription>When operations end</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -844,8 +846,8 @@ export default function GeneralSettings() {
                   render={() => (
                     <FormItem>
                       <div className="mb-4">
-                        <FormLabel className="text-base">Working Days</FormLabel>
-                        <FormDescription>Select the days your business operates</FormDescription>
+                        <FormLabel className="text-base">{t('settings:workingDays')}</FormLabel>
+                        <FormDescription>{t('settings:workingDaysHelp')}</FormDescription>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                         {WEEKDAYS.map((day) => (
@@ -894,9 +896,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Operational Settings
+                  {t('settings:operations')}
                 </CardTitle>
-                <CardDescription>Warehouse and order processing configuration</CardDescription>
+                <CardDescription>{t('settings:regionalSettingsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -905,11 +907,11 @@ export default function GeneralSettings() {
                     name="default_order_location"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Order Location</FormLabel>
+                        <FormLabel>{t('settings:defaultOrderLocation')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Warehouse A" data-testid="input-default_order_location" />
+                          <Input {...field} placeholder={t('settings:defaultOrderLocationPlaceholder')} data-testid="input-default_order_location" />
                         </FormControl>
-                        <FormDescription>Default warehouse for new orders</FormDescription>
+                        <FormDescription>{t('settings:defaultOrderLocationDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -920,20 +922,19 @@ export default function GeneralSettings() {
                     name="default_priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Priority</FormLabel>
+                        <FormLabel>{t('settings:defaultPriority')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_priority">
-                              <SelectValue placeholder="Select priority" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="low">{t('settings:priorityLow')}</SelectItem>
+                            <SelectItem value="medium">{t('settings:priorityMedium')}</SelectItem>
+                            <SelectItem value="high">{t('settings:priorityHigh')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default order priority</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -944,11 +945,10 @@ export default function GeneralSettings() {
                     name="pickup_cutoff_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Pickup Cutoff Time</FormLabel>
+                        <FormLabel>{t('settings:pickupCutoffTime')}</FormLabel>
                         <FormControl>
                           <Input {...field} type="time" data-testid="input-pickup_cutoff_time" />
                         </FormControl>
-                        <FormDescription>Last time for same-day pickup</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -959,7 +959,7 @@ export default function GeneralSettings() {
                     name="max_order_processing_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Max Processing Days</FormLabel>
+                        <FormLabel>{t('settings:maxOrderProcessingDays')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -969,7 +969,6 @@ export default function GeneralSettings() {
                             data-testid="input-max_order_processing_days" 
                           />
                         </FormControl>
-                        <FormDescription>Maximum days to process orders (1-30 days)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -980,11 +979,11 @@ export default function GeneralSettings() {
                     name="warehouse_emergency_contact"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Emergency Contact Number</FormLabel>
+                        <FormLabel>{t('settings:warehouseEmergencyContact')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+420 XXX XXX XXX" data-testid="input-warehouse_emergency_contact" />
+                          <Input {...field} placeholder={t('settings:warehouseEmergencyContactPlaceholder')} data-testid="input-warehouse_emergency_contact" />
                         </FormControl>
-                        <FormDescription>24/7 warehouse emergency line</FormDescription>
+                        <FormDescription>{t('settings:warehouseEmergencyContactDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -995,11 +994,11 @@ export default function GeneralSettings() {
                     name="warehouse_contact_email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Warehouse Contact Email</FormLabel>
+                        <FormLabel>{t('settings:warehouseContactEmail')}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder="warehouse@daviesupply.com" data-testid="input-warehouse_contact_email" />
+                          <Input {...field} type="email" placeholder={t('settings:warehouseContactEmailPlaceholder')} data-testid="input-warehouse_contact_email" />
                         </FormControl>
-                        <FormDescription>General warehouse inquiries</FormDescription>
+                        <FormDescription>{t('settings:warehouseContactEmailDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1015,9 +1014,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Notification Preferences
+                  {t('settings:notificationPreferences')}
                 </CardTitle>
-                <CardDescription>Email and SMS notification settings</CardDescription>
+                <CardDescription>{t('settings:notificationPreferencesDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1034,9 +1033,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Email Notifications</FormLabel>
+                          <FormLabel>{t('settings:emailNotificationsLabel')}</FormLabel>
                           <FormDescription>
-                            Receive notifications via email
+                            {t('settings:emailNotificationsDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1056,9 +1055,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>SMS Notifications</FormLabel>
+                          <FormLabel>{t('settings:smsNotificationsLabel')}</FormLabel>
                           <FormDescription>
-                            Receive notifications via SMS
+                            {t('settings:smsNotificationsDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1078,9 +1077,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Low Stock Alerts</FormLabel>
+                          <FormLabel>{t('settings:lowStockAlertsLabel')}</FormLabel>
                           <FormDescription>
-                            Get notified when inventory is low
+                            {t('settings:lowStockAlertsDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1100,9 +1099,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Order Status Changes</FormLabel>
+                          <FormLabel>{t('settings:orderStatusChangesLabel')}</FormLabel>
                           <FormDescription>
-                            Get notified when order status changes
+                            {t('settings:orderStatusChangesDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1122,9 +1121,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Daily Summary Report</FormLabel>
+                          <FormLabel>{t('settings:dailySummaryLabel')}</FormLabel>
                           <FormDescription>
-                            Receive daily business summary
+                            {t('settings:dailySummaryDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1144,9 +1143,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Weekly Report</FormLabel>
+                          <FormLabel>{t('settings:weeklyReportLabel')}</FormLabel>
                           <FormDescription>
-                            Receive weekly business report
+                            {t('settings:weeklyReportDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1160,9 +1159,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Customer Portal
+                  {t('settings:customerPortalTitle')}
                 </CardTitle>
-                <CardDescription>Self-service customer portal and policies</CardDescription>
+                <CardDescription>{t('settings:customerPortalDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -1178,9 +1177,9 @@ export default function GeneralSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Customer Portal</FormLabel>
+                        <FormLabel>{t('settings:enableCustomerPortalLabel')}</FormLabel>
                         <FormDescription>
-                          Allow customers to track orders and manage their account
+                          {t('settings:enableCustomerPortalDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1192,17 +1191,17 @@ export default function GeneralSettings() {
                   name="return_policy_text"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Return Policy</FormLabel>
+                      <FormLabel>{t('settings:returnPolicyLabel')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Enter your return policy here..."
+                          placeholder={t('settings:returnPolicyPlaceholder')}
                           rows={6}
                           data-testid="textarea-return_policy_text"
                         />
                       </FormControl>
                       <FormDescription>
-                        This text will be displayed to customers
+                        {t('settings:returnPolicyDescription')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -1218,9 +1217,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  AI Features
+                  {t('settings:aiFeaturesTitle')}
                 </CardTitle>
-                <CardDescription>Artificial intelligence and automation features</CardDescription>
+                <CardDescription>{t('settings:aiFeaturesDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1237,9 +1236,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>AI Address Parsing</FormLabel>
+                          <FormLabel>{t('settings:aiAddressParsingLabel')}</FormLabel>
                           <FormDescription>
-                            Automatically parse and validate customer addresses
+                            {t('settings:aiAddressParsingDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1259,9 +1258,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>AI Carton Packing</FormLabel>
+                          <FormLabel>{t('settings:aiCartonPackingLabel')}</FormLabel>
                           <FormDescription>
-                            Optimize package selection with AI
+                            {t('settings:aiCartonPackingDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1275,9 +1274,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Compliance & Security
+                  {t('settings:complianceSecurityTitle')}
                 </CardTitle>
-                <CardDescription>Audit logs and data retention policies</CardDescription>
+                <CardDescription>{t('settings:complianceSecurityDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -1285,7 +1284,7 @@ export default function GeneralSettings() {
                   name="audit_log_retention_days"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Audit Log Retention (Days)</FormLabel>
+                      <FormLabel>{t('settings:auditLogRetentionLabel')}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
@@ -1296,7 +1295,7 @@ export default function GeneralSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        How long to keep audit logs (7-365 days, recommended: 90 days)
+                        {t('settings:auditLogRetentionDescription')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

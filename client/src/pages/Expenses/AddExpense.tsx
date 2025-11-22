@@ -50,6 +50,25 @@ export default function AddExpense() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  const categories = [
+    t('financial.officeSupplies'),
+    t('financial.travel'),
+    t('financial.marketing'),
+    t('financial.salaries'),
+    t('financial.rent'),
+    t('financial.utilities'),
+    t('financial.supplies'),
+    t('financial.software'),
+    t('financial.equipment'),
+    t('financial.insurance'),
+    t('financial.legal'),
+    t('financial.consulting'),
+    t('financial.inventory'),
+    t('financial.shipping'),
+    t('financial.operations'),
+    t('financial.general'),
+  ];
+
   const expenseSchema = z.object({
     vendorName: z.string().min(1, t('vendorNameRequired')),
     category: z.string().min(1, t('categoryIsRequired')),
@@ -94,7 +113,7 @@ export default function AddExpense() {
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       vendorName: '',
-      category: 'Office Supplies',
+      category: categories[0],
       amount: undefined,
       currency: 'CZK',
       date: new Date(),

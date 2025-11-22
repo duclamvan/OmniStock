@@ -24,6 +24,7 @@ const common = {
   next: 'Next',
   previous: 'Previous',
   submit: 'Submit',
+  creating: 'Creating...',
   search: 'Search',
   searchPlaceholder: 'Search {{item}}...',
   filter: 'Filter',

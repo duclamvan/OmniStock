@@ -124,14 +124,14 @@ export default function EditSupplier() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
       toast({
-        title: "File deleted",
-        description: "The file has been removed successfully.",
+        title: t('inventory:fileDeleted'),
+        description: t('inventory:fileRemovedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete the file.",
+        title: t('common:error'),
+        description: t('inventory:failedToDeleteFile'),
         variant: "destructive",
       });
     },
@@ -161,8 +161,8 @@ export default function EditSupplier() {
 
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
       toast({
-        title: "Upload successful",
-        description: `${result.successful.length} file(s) uploaded successfully.`,
+        title: t('inventory:uploadSuccessful'),
+        description: t('inventory:filesUploadedSuccessfully', { count: result.successful.length }),
       });
     }
   };
@@ -238,7 +238,7 @@ export default function EditSupplier() {
   }
 
   if (!supplier) {
-    return <div>Supplier not found</div>;
+    return <div>{t('inventory:supplierNotFound')}</div>;
   }
 
   return (
@@ -269,7 +269,7 @@ export default function EditSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <Building2 className="h-5 w-5 text-blue-600" />
-                  Basic Information
+                  {t('inventory:supplierInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -278,11 +278,11 @@ export default function EditSupplier() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Supplier Name *</FormLabel>
+                    <FormLabel>{t('inventory:supplierName')} *</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
-                        placeholder="e.g., Venalisa Nail Art, Emma Beauty Supplies" 
+                        placeholder={t('inventory:supplierNamePlaceholder')}
                         className="text-base"
                         data-testid="input-name"
                       />
@@ -300,13 +300,13 @@ export default function EditSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <User className="h-4 w-4 text-slate-500" />
-                        Contact Person
+                        {t('inventory:contactPerson')}
                       </FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
                           value={field.value || ""} 
-                          placeholder="Emma Wang" 
+                          placeholder={t('inventory:contactPersonPlaceholder')}
                           data-testid="input-contactPerson"
                         />
                       </FormControl>
@@ -322,7 +322,7 @@ export default function EditSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-slate-500" />
-                        Country
+                        {t('inventory:supplierCountry')}
                       </FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -342,7 +342,7 @@ export default function EditSupplier() {
                                   {field.value}
                                 </span>
                               ) : (
-                                "Select country..."
+                                t('inventory:selectCountry')
                               )}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -350,8 +350,8 @@ export default function EditSupplier() {
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                           <Command>
-                            <CommandInput placeholder="Search country..." />
-                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandInput placeholder={t('inventory:searchCountry')} />
+                            <CommandEmpty>{t('inventory:noCountryFound')}</CommandEmpty>
                             <CommandGroup className="max-h-[300px] overflow-auto">
                               {countries.map((country) => (
                                 <CommandItem
@@ -389,7 +389,7 @@ export default function EditSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <Mail className="h-5 w-5 text-green-600" />
-                  Contact Details
+                  {t('inventory:contactInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -401,14 +401,14 @@ export default function EditSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-slate-500" />
-                        Email Address
+                        {t('inventory:supplierEmail')}
                       </FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
                           value={field.value || ""} 
                           type="email" 
-                          placeholder="supplier@example.com" 
+                          placeholder={t('inventory:emailPlaceholder')}
                           data-testid="input-email"
                         />
                       </FormControl>
@@ -424,13 +424,13 @@ export default function EditSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-slate-500" />
-                        Phone Number
+                        {t('inventory:phoneNumber')}
                       </FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
                           value={field.value || ""} 
-                          placeholder="+86 123 456 7890" 
+                          placeholder={t('inventory:phonePlaceholder')}
                           data-testid="input-phone"
                         />
                       </FormControl>
@@ -447,17 +447,17 @@ export default function EditSupplier() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-slate-500" />
-                      Supplier Link / Website
+                      {t('inventory:supplierLinkWebsite')}
                     </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         value={field.value || ""} 
-                        placeholder="https://venalisa.en.alibaba.com" 
+                        placeholder={t('inventory:websitePlaceholder')}
                         data-testid="input-website"
                       />
                     </FormControl>
-                    <FormDescription>Link to supplier's website or online store</FormDescription>
+                    <FormDescription>{t('inventory:linkToSupplierWebsite')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -470,7 +470,7 @@ export default function EditSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <MapPin className="h-5 w-5 text-purple-600" />
-                  Address Information
+                  {t('inventory:addressInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -479,12 +479,12 @@ export default function EditSupplier() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Street Address</FormLabel>
+                    <FormLabel>{t('inventory:streetAddress')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="123 Main Street, Building A"
+                        placeholder={t('inventory:addressPlaceholder')}
                         data-testid="input-address"
                       />
                     </FormControl>
@@ -499,12 +499,12 @@ export default function EditSupplier() {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>{t('inventory:city')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
-                          placeholder="Shanghai"
+                          placeholder={t('inventory:cityPlaceholder')}
                           data-testid="input-city"
                         />
                       </FormControl>
@@ -518,12 +518,12 @@ export default function EditSupplier() {
                   name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Postal Code</FormLabel>
+                      <FormLabel>{t('inventory:postalCode')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
-                          placeholder="200000"
+                          placeholder={t('inventory:postalCodePlaceholder')}
                           data-testid="input-zipCode"
                         />
                       </FormControl>
@@ -540,7 +540,7 @@ export default function EditSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <FileText className="h-5 w-5 text-orange-600" />
-                  Additional Information
+                  {t('inventory:additionalInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -549,16 +549,16 @@ export default function EditSupplier() {
                 name="taxId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax ID / Business Registration</FormLabel>
+                    <FormLabel>{t('inventory:taxIdBusinessReg')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="Enter tax ID or business registration number"
+                        placeholder={t('inventory:taxIdPlaceholder')}
                         data-testid="input-taxId"
                       />
                     </FormControl>
-                    <FormDescription>Business registration or tax identification number</FormDescription>
+                    <FormDescription>{t('inventory:taxIdDescription')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -569,18 +569,18 @@ export default function EditSupplier() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t('inventory:notes')}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         value={field.value || ""}
-                        placeholder="Add any additional notes about the supplier (e.g., payment terms, minimum order quantity, shipping details)"
+                        placeholder={t('inventory:notesPlaceholder')}
                         rows={4}
                         className="resize-none"
                         data-testid="textarea-notes"
                       />
                     </FormControl>
-                    <FormDescription>Internal notes about the supplier</FormDescription>
+                    <FormDescription>{t('inventory:internalNotesAboutSupplier')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -625,7 +625,7 @@ export default function EditSupplier() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Files & Documents ({supplierFiles.length})
+              {t('inventory:filesDocuments')} ({supplierFiles.length})
             </CardTitle>
             <ObjectUploader
               maxNumberOfFiles={10}
@@ -635,13 +635,13 @@ export default function EditSupplier() {
               buttonClassName="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
-              Upload Files
+              {t('inventory:uploadFiles')}
             </ObjectUploader>
           </div>
         </CardHeader>
         <CardContent>
           {supplierFiles.length === 0 ? (
-            <p className="text-slate-500">No files uploaded yet.</p>
+            <p className="text-slate-500">{t('inventory:noFilesUploaded')}</p>
           ) : (
             <div className="space-y-2">
               {supplierFiles.map((file) => (
@@ -654,7 +654,7 @@ export default function EditSupplier() {
                     <div>
                       <p className="font-medium">{file.fileName}</p>
                       <p className="text-sm text-slate-500">
-                        {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
+                        {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : t('inventory:unknownSize')} • 
                         {file.createdAt ? formatDate(file.createdAt) : ''}
                       </p>
                     </div>

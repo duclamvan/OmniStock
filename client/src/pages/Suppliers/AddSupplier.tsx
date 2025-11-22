@@ -185,7 +185,7 @@ export default function AddSupplier() {
                     <FormControl>
                       <Input 
                         {...field} 
-                        placeholder="e.g., Venalisa Nail Art, Emma Beauty Supplies" 
+                        placeholder={t('inventory:supplierNamePlaceholder')}
                         className="text-base"
                         data-testid="input-name"
                       />
@@ -209,7 +209,7 @@ export default function AddSupplier() {
                         <Input 
                           {...field} 
                           value={field.value || ""} 
-                          placeholder="Emma Wang" 
+                          placeholder={t('inventory:contactPersonPlaceholder')}
                           data-testid="input-contactPerson"
                         />
                       </FormControl>
@@ -245,7 +245,7 @@ export default function AddSupplier() {
                                   {field.value}
                                 </span>
                               ) : (
-                                "Select country..."
+                                t('inventory:selectCountry')
                               )}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -253,8 +253,8 @@ export default function AddSupplier() {
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                           <Command>
-                            <CommandInput placeholder="Search country..." />
-                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandInput placeholder={t('inventory:searchCountry')} />
+                            <CommandEmpty>{t('inventory:noCountryFound')}</CommandEmpty>
                             <CommandGroup className="max-h-[300px] overflow-auto">
                               {countries.map((country) => (
                                 <CommandItem
@@ -311,7 +311,7 @@ export default function AddSupplier() {
                           {...field} 
                           value={field.value || ""} 
                           type="email" 
-                          placeholder="supplier@example.com" 
+                          placeholder={t('inventory:emailPlaceholder')}
                           data-testid="input-email"
                         />
                       </FormControl>
@@ -327,13 +327,13 @@ export default function AddSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-slate-500" />
-                        Phone Number
+                        {t('inventory:phoneNumber')}
                       </FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
                           value={field.value || ""} 
-                          placeholder="+86 123 456 7890" 
+                          placeholder={t('inventory:phonePlaceholder')}
                           data-testid="input-phone"
                         />
                       </FormControl>
@@ -350,17 +350,17 @@ export default function AddSupplier() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-slate-500" />
-                      Supplier Link / Website
+                      {t('inventory:supplierLinkWebsite')}
                     </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         value={field.value || ""} 
-                        placeholder="https://venalisa.en.alibaba.com" 
+                        placeholder={t('inventory:websitePlaceholder')}
                         data-testid="input-website"
                       />
                     </FormControl>
-                    <FormDescription>Link to supplier's website or online store</FormDescription>
+                    <FormDescription>{t('inventory:linkToSupplierWebsite')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -382,12 +382,12 @@ export default function AddSupplier() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Street Address</FormLabel>
+                    <FormLabel>{t('inventory:streetAddress')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="123 Main Street, Building A"
+                        placeholder={t('inventory:addressPlaceholder')}
                         data-testid="input-address"
                       />
                     </FormControl>
@@ -402,12 +402,12 @@ export default function AddSupplier() {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>{t('inventory:city')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
-                          placeholder="Shanghai"
+                          placeholder={t('inventory:cityPlaceholder')}
                           data-testid="input-city"
                         />
                       </FormControl>
@@ -421,12 +421,12 @@ export default function AddSupplier() {
                   name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Postal Code</FormLabel>
+                      <FormLabel>{t('inventory:postalCode')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
-                          placeholder="200000"
+                          placeholder={t('inventory:postalCodePlaceholder')}
                           data-testid="input-zipCode"
                         />
                       </FormControl>
@@ -452,16 +452,16 @@ export default function AddSupplier() {
                 name="taxId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax ID / Business Registration</FormLabel>
+                    <FormLabel>{t('inventory:taxIdBusinessReg')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="Enter tax ID or business registration number"
+                        placeholder={t('inventory:taxIdPlaceholder')}
                         data-testid="input-taxId"
                       />
                     </FormControl>
-                    <FormDescription>Business registration or tax identification number</FormDescription>
+                    <FormDescription>{t('inventory:taxIdDescription')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -472,18 +472,18 @@ export default function AddSupplier() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t('inventory:notes')}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         value={field.value || ""}
-                        placeholder="Add any additional notes about the supplier (e.g., payment terms, minimum order quantity, shipping details)"
+                        placeholder={t('inventory:notesPlaceholder')}
                         rows={4}
                         className="resize-none"
                         data-testid="textarea-notes"
                       />
                     </FormControl>
-                    <FormDescription>Internal notes about the supplier</FormDescription>
+                    <FormDescription>{t('inventory:internalNotesAboutSupplier')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

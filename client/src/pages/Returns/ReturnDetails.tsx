@@ -91,7 +91,7 @@ export default function ReturnDetails() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Status</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:status')}</p>
                 <Badge className={`mt-2 ${statusColors[returnData.status] || 'bg-gray-100 text-gray-800'}`}>
                   {returnData.status?.charAt(0).toUpperCase() + returnData.status?.slice(1)}
                 </Badge>
@@ -105,7 +105,7 @@ export default function ReturnDetails() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Return Type</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:returnType')}</p>
                 <Badge className={`mt-2 ${typeColors[returnData.returnType] || 'bg-gray-100 text-gray-800'}`}>
                   {returnData.returnType?.replace('_', ' ').split(' ').map((word: string) => 
                     word.charAt(0).toUpperCase() + word.slice(1)
@@ -121,7 +121,7 @@ export default function ReturnDetails() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Items</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:totalItems')}</p>
                 <p className="text-2xl font-bold">{totalItems}</p>
               </div>
               <Package className="h-8 w-8 text-gray-400" />
@@ -133,7 +133,7 @@ export default function ReturnDetails() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Value</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:totalValue')}</p>
                 <p className="text-2xl font-bold">€{totalValue.toFixed(2)}</p>
               </div>
               <Hash className="h-8 w-8 text-gray-400" />
@@ -146,19 +146,19 @@ export default function ReturnDetails() {
         {/* Return Information */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Return Information</CardTitle>
+            <CardTitle>{t('inventory:returnInformationCard')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-600">Return Date</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:returnDate')}</p>
                 <p className="flex items-center mt-1">
                   <Calendar className="h-4 w-4 mr-2 text-gray-400" />
                   {format(new Date(returnData.returnDate), 'dd MMM yyyy')}
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Created</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:created')}</p>
                 <p className="mt-1">
                   {format(new Date(returnData.createdAt), 'dd MMM yyyy')}
                 </p>
@@ -167,7 +167,7 @@ export default function ReturnDetails() {
 
             {returnData.orderId && (
               <div>
-                <p className="text-sm font-medium text-gray-600">Order Number</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:orderNumber')}</p>
                 <Link href={`/orders/${returnData.orderId}`}>
                   <p className="flex items-center mt-1 text-blue-600 hover:text-blue-800 cursor-pointer">
                     <ShoppingCart className="h-4 w-4 mr-2" />
@@ -179,7 +179,7 @@ export default function ReturnDetails() {
 
             {returnData.shippingCarrier && (
               <div>
-                <p className="text-sm font-medium text-gray-600">Shipping Carrier</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:shippingCarrier')}</p>
                 <p className="flex items-center mt-1">
                   <Truck className="h-4 w-4 mr-2 text-gray-400" />
                   {returnData.shippingCarrier.toUpperCase()}
@@ -189,7 +189,7 @@ export default function ReturnDetails() {
 
             {returnData.notes && (
               <div>
-                <p className="text-sm font-medium text-gray-600">Notes</p>
+                <p className="text-sm font-medium text-gray-600">{t('inventory:notes')}</p>
                 <p className="flex items-start mt-1">
                   <MessageSquare className="h-4 w-4 mr-2 text-gray-400 mt-0.5" />
                   <span className="text-gray-700">{returnData.notes}</span>
@@ -202,13 +202,13 @@ export default function ReturnDetails() {
         {/* Customer Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Customer Information</CardTitle>
+            <CardTitle>{t('inventory:customerInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {returnData.customer ? (
               <>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Name</p>
+                  <p className="text-sm font-medium text-gray-600">{t('inventory:name')}</p>
                   <Link href={`/customers/${returnData.customerId}`}>
                     <p className="flex items-center mt-1 text-blue-600 hover:text-blue-800 cursor-pointer">
                       <User className="h-4 w-4 mr-2" />
@@ -218,19 +218,19 @@ export default function ReturnDetails() {
                 </div>
                 {returnData.customer.email && (
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Email</p>
+                    <p className="text-sm font-medium text-gray-600">{t('inventory:email')}</p>
                     <p className="mt-1">{returnData.customer.email}</p>
                   </div>
                 )}
                 {returnData.customer.phone && (
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Phone</p>
+                    <p className="text-sm font-medium text-gray-600">{t('inventory:phone')}</p>
                     <p className="mt-1">{returnData.customer.phone}</p>
                   </div>
                 )}
               </>
             ) : (
-              <p className="text-gray-500">No customer information</p>
+              <p className="text-gray-500">{t('inventory:noCustomerInformation')}</p>
             )}
           </CardContent>
         </Card>
@@ -239,18 +239,18 @@ export default function ReturnDetails() {
       {/* Items Returned */}
       <Card>
         <CardHeader>
-          <CardTitle>Items Returned</CardTitle>
+          <CardTitle>{t('inventory:itemsReturnedTable')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4">Product</th>
-                  <th className="text-left py-3 px-4">SKU</th>
-                  <th className="text-right py-3 px-4">Quantity</th>
-                  <th className="text-right py-3 px-4">Price</th>
-                  <th className="text-right py-3 px-4">Total</th>
+                  <th className="text-left py-3 px-4">{t('inventory:product')}</th>
+                  <th className="text-left py-3 px-4">{t('inventory:skuLabel')}</th>
+                  <th className="text-right py-3 px-4">{t('inventory:quantityLabel')}</th>
+                  <th className="text-right py-3 px-4">{t('inventory:priceLabel')}</th>
+                  <th className="text-right py-3 px-4">{t('inventory:total')}</th>
                 </tr>
               </thead>
               <tbody>

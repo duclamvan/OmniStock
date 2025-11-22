@@ -195,6 +195,12 @@ const reports = {
   totalCost: 'Total Cost',
   totalExpenses: 'Total Expenses',
   totalCustomers: 'Total Customers',
+  productCosts: 'Product Costs',
+  revenueCZK: 'Revenue CZK',
+  revenueEUR: 'Revenue EUR',
+  revenueUSD: 'Revenue USD',
+  firstOrder: 'First Order',
+  amountCZK: 'Amount (CZK)',
   
   // Product Related
   product: 'Product',
@@ -405,6 +411,42 @@ const reports = {
   revenueEUROrders: 'Revenue EUR Orders',
   totalProfitCZK: 'Total Profit CZK',
   totalRevenueCZK: 'Total Revenue CZK',
+
+  // Additional table headers and labels
+  metric: 'Metric',
+  value: 'Value',
+  orderValue: 'Order Value',
+  fulfilled: 'Fulfilled',
+  paymentStatus: 'Payment Status',
+  month: 'Month',
+  stock: 'Stock',
+  lowStockAlert: 'Low Stock Alert',
+  inStock: 'In Stock',
+  neverSold: 'Never sold',
+  days: 'days',
+  deadStockItems: 'Dead Stock Items',
+  
+  // Export messages for specific reports
+  orderReportExportedXlsx: 'Order report exported to XLSX',
+  orderReportExportedPdf: 'Order report exported to PDF',
+  failedToExportOrderReport: 'Failed to export order report',
+  failedToExportOrderReportPdf: 'Failed to export order report to PDF',
+  inventoryReportExportedXlsx: 'Inventory report exported to XLSX',
+  inventoryReportExportedPdf: 'Inventory report exported to PDF',
+  failedToExportInventoryReport: 'Failed to export inventory report',
+  failedToExportInventoryReportPdf: 'Failed to export inventory report to PDF',
+  customerReportExportedXlsx: 'Customer report exported to XLSX',
+  customerReportExportedPdf: 'Customer report exported to PDF',
+  failedToExportCustomerReport: 'Failed to export customer report',
+  failedToExportCustomerReportPdf: 'Failed to export customer report to PDF',
+  expenseReportExportedXlsx: 'Expense report exported to XLSX',
+  expenseReportExportedPdf: 'Expense report exported to PDF',
+  failedToExportExpenseReport: 'Failed to export expense report',
+  failedToExportExpenseReportPdf: 'Failed to export expense report to PDF',
+  financialReportExportedXlsx: 'Financial report exported to XLSX',
+  financialReportExportedPdf: 'Financial report exported to PDF',
+  failedToExportFinancialReport: 'Failed to export financial report',
+  failedToExportFinancialReportPdf: 'Failed to export financial report to PDF',
 } as const;
 
 export default reports;

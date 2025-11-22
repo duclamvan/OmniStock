@@ -252,27 +252,27 @@ export default function OrderSettings() {
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="defaults" className="flex items-center gap-1 sm:gap-2">
               <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Defaults</span>
+              <span className="hidden sm:inline">{t('settings:orderDefaults')}</span>
             </TabsTrigger>
             <TabsTrigger value="locations" className="flex items-center gap-1 sm:gap-2">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Locations</span>
+              <span className="hidden sm:inline">{t('settings:locations')}</span>
             </TabsTrigger>
             <TabsTrigger value="fulfillment" className="flex items-center gap-1 sm:gap-2">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Fulfillment</span>
+              <span className="hidden sm:inline">{t('settings:fulfillment')}</span>
             </TabsTrigger>
             <TabsTrigger value="validation" className="flex items-center gap-1 sm:gap-2">
               <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Validation</span>
+              <span className="hidden sm:inline">{t('settings:validation')}</span>
             </TabsTrigger>
             <TabsTrigger value="automation" className="flex items-center gap-1 sm:gap-2">
               <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Automation</span>
+              <span className="hidden sm:inline">{t('settings:automation')}</span>
             </TabsTrigger>
             <TabsTrigger value="cod" className="flex items-center gap-1 sm:gap-2">
               <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">COD</span>
+              <span className="hidden sm:inline">{t('settings:cod')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -282,9 +282,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Order Defaults
+                  {t('settings:orderDefaultsTitle')}
                 </CardTitle>
-                <CardDescription className="text-sm">Default values for new orders</CardDescription>
+                <CardDescription className="text-sm">{t('settings:orderDefaultsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -293,21 +293,21 @@ export default function OrderSettings() {
                     name="default_payment_method"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Payment Method</FormLabel>
+                        <FormLabel>{t('settings:defaultPaymentMethod')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_method">
-                              <SelectValue placeholder="Select payment method" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Card">Card</SelectItem>
-                            <SelectItem value="Transfer">Transfer</SelectItem>
-                            <SelectItem value="COD">COD</SelectItem>
-                            <SelectItem value="Pay Later">Pay Later</SelectItem>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="PayPal">PayPal</SelectItem>
+                            <SelectItem value="Cash">{t('settings:paymentMethodCash')}</SelectItem>
+                            <SelectItem value="Card">{t('settings:paymentMethodCard')}</SelectItem>
+                            <SelectItem value="Transfer">{t('settings:paymentMethodTransfer')}</SelectItem>
+                            <SelectItem value="COD">{t('settings:paymentMethodCOD')}</SelectItem>
+                            <SelectItem value="Pay Later">{t('settings:paymentMethodPayLater')}</SelectItem>
+                            <SelectItem value="Bank Transfer">{t('settings:paymentMethodBankTransfer')}</SelectItem>
+                            <SelectItem value="PayPal">{t('settings:paymentMethodPayPal')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -320,19 +320,19 @@ export default function OrderSettings() {
                     name="default_order_status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Order Status</FormLabel>
+                        <FormLabel>{t('settings:defaultOrderStatus')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_order_status">
-                              <SelectValue placeholder="Select order status" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
+                            <SelectItem value="processing">{t('settings:statusProcessing')}</SelectItem>
+                            <SelectItem value="shipped">{t('settings:statusShipped')}</SelectItem>
+                            <SelectItem value="delivered">{t('settings:statusDelivered')}</SelectItem>
+                            <SelectItem value="cancelled">{t('settings:statusCancelled')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -345,18 +345,18 @@ export default function OrderSettings() {
                     name="default_payment_status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Payment Status</FormLabel>
+                        <FormLabel>{t('settings:defaultPaymentStatus')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_status">
-                              <SelectValue placeholder="Select payment status" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="paid">Paid</SelectItem>
-                            <SelectItem value="pay_later">Pay Later</SelectItem>
-                            <SelectItem value="refunded">Refunded</SelectItem>
+                            <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
+                            <SelectItem value="paid">{t('settings:statusPaid')}</SelectItem>
+                            <SelectItem value="pay_later">{t('settings:statusPayLater')}</SelectItem>
+                            <SelectItem value="refunded">{t('settings:statusRefunded')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -369,11 +369,11 @@ export default function OrderSettings() {
                     name="default_carrier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Carrier</FormLabel>
+                        <FormLabel>{t('settings:defaultCarrier')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_carrier">
-                              <SelectValue placeholder="Select carrier" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -386,7 +386,7 @@ export default function OrderSettings() {
                             <SelectItem value="DPD">DPD</SelectItem>
                             <SelectItem value="UPS">UPS</SelectItem>
                             <SelectItem value="FedEx">FedEx</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
+                            <SelectItem value="Other">{t('settings:carrierOther')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -399,19 +399,19 @@ export default function OrderSettings() {
                     name="default_communication_channel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Communication Channel</FormLabel>
+                        <FormLabel>{t('settings:defaultCommunicationChannel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_communication_channel">
-                              <SelectValue placeholder="Select channel" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="Viber">Viber</SelectItem>
                             <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                             <SelectItem value="Zalo">Zalo</SelectItem>
-                            <SelectItem value="E-mail">E-mail</SelectItem>
-                            <SelectItem value="Phone">Phone</SelectItem>
+                            <SelectItem value="E-mail">{t('settings:email')}</SelectItem>
+                            <SelectItem value="Phone">{t('settings:phone')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -424,16 +424,16 @@ export default function OrderSettings() {
                     name="default_discount_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Discount Type</FormLabel>
+                        <FormLabel>{t('settings:defaultDiscountType')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_discount_type">
-                              <SelectValue placeholder="Select discount type" />
+                              <SelectValue placeholder={t('settings:selectOption')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="flat">Flat Amount</SelectItem>
-                            <SelectItem value="rate">Percentage Rate</SelectItem>
+                            <SelectItem value="flat">{t('settings:discountTypeFlatAmount')}</SelectItem>
+                            <SelectItem value="rate">{t('settings:discountTypePercentage')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -451,9 +451,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Warehouse & Location Defaults
+                  {t('settings:warehouseLocationDefaults')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure warehouse assignment and location routing</CardDescription>
+                <CardDescription className="text-sm">{t('settings:warehouseLocationDefaultsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -550,9 +550,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Regional Carrier Selection
+                  {t('settings:regionalCarrierSelection')}
                 </CardTitle>
-                <CardDescription className="text-sm">Set default carriers for different regions</CardDescription>
+                <CardDescription className="text-sm">{t('settings:regionalCarrierSelectionDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

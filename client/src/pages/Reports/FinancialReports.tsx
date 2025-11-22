@@ -161,24 +161,24 @@ export default function FinancialReports() {
     }, 0);
 
     const data = [
-      { name: 'Product Costs', value: productCosts },
-      { name: 'Expenses', value: expenseCosts },
+      { name: t('reports:productCosts'), value: productCosts },
+      { name: t('reports:expenses'), value: expenseCosts },
     ].filter(d => d.value > 0);
     return preparePieChartData(data);
-  }, [filteredOrders, orderItems, products, filteredExpenses]);
+  }, [filteredOrders, orderItems, products, filteredExpenses, t]);
 
   // Export handlers
   const handleExportExcel = () => {
     try {
       const exportData = monthlyData.map(m => ({
-        'Month': m.monthName,
-        'Revenue CZK': m.revenueCZK.toFixed(2),
-        'Revenue EUR': m.revenueEUR.toFixed(2),
-        'Revenue USD': m.revenueUSD.toFixed(2),
-        'Total Cost': (m.costCZK + (m.costEUR * 25) + (m.costUSD * 23)).toFixed(2),
-        'Profit': m.profit.toFixed(2),
-        'Margin %': m.profitMargin.toFixed(2),
-        'Orders': m.orderCount,
+        [t('common:month')]: m.monthName,
+        [t('reports:revenueCZK')]: m.revenueCZK.toFixed(2),
+        [t('reports:revenueEUR')]: m.revenueEUR.toFixed(2),
+        [t('reports:revenueUSD')]: m.revenueUSD.toFixed(2),
+        [t('reports:totalCost')]: (m.costCZK + (m.costEUR * 25) + (m.costUSD * 23)).toFixed(2),
+        [t('reports:totalProfit')]: m.profit.toFixed(2),
+        [t('reports:profitMargin')]: m.profitMargin.toFixed(2),
+        [t('common:orders')]: m.orderCount,
       }));
 
       exportToXLSX(exportData, `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:financialReport'));

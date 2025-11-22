@@ -369,6 +369,7 @@ const system = {
   complaint: 'Khiếu nại',
   pickDate: 'Chọn ngày',
   quickOptions: 'Tùy chọn nhanh',
+  generateSubjectWithAI: 'Tạo tiêu đề bằng AI',
   tomorrow: 'Ngày mai',
   in2Days: 'Trong 2 ngày',
   in3Days: 'Trong 3 ngày',
@@ -394,6 +395,64 @@ const system = {
   
   // Edit Ticket specific
   ticketNotFound: 'Không tìm thấy phiếu',
+  writeDescriptionFirst: 'Vui lòng viết vài câu trong phần mô tả trước để tạo tiêu đề',
+  couldNotGenerateSubject: 'Không thể tạo tiêu đề. Vui lòng thử lại hoặc nhập thủ công.',
+  
+  // Services
+  services: 'Dịch vụ',
+  service: 'Dịch vụ',
+  manageServicesRepairsMaintenance: 'Quản lý các dịch vụ như sửa chữa và bảo trì',
+  addService: 'Thêm dịch vụ',
+  editService: 'Sửa dịch vụ',
+  addNewService: 'Thêm dịch vụ mới',
+  serviceName: 'Tên dịch vụ',
+  serviceNamePlaceholder: 'Ví dụ: Sửa chữa tay vịn',
+  serviceDescription: 'Mô tả',
+  serviceDetailsPlaceholder: 'Chi tiết dịch vụ...',
+  priceCZK: 'Giá CZK',
+  priceEUR: 'Giá EUR',
+  updateService: 'Cập nhật dịch vụ',
+  createService: 'Tạo dịch vụ',
+  cancel: 'Hủy',
+  
+  // Service Types
+  serviceTypes: 'Loại dịch vụ',
+  addType: 'Thêm loại',
+  editServiceType: 'Sửa loại dịch vụ',
+  addNewServiceType: 'Thêm loại dịch vụ mới',
+  typeName: 'Tên loại',
+  typeNamePlaceholder: 'Ví dụ: Sửa chữa, Bảo trì, Lắp đặt',
+  typeDescription: 'Mô tả',
+  typeDescriptionPlaceholder: 'Mô tả loại...',
+  color: 'Màu sắc',
+  updateType: 'Cập nhật loại',
+  createType: 'Tạo loại',
+  
+  // Loading & Empty States
+  loadingServiceTypes: 'Đang tải loại dịch vụ...',
+  loadingServices: 'Đang tải dịch vụ...',
+  noServiceTypesYet: 'Chưa có loại dịch vụ. Nhấn "Thêm loại" để tạo mới.',
+  noServicesYet: 'Chưa có dịch vụ. Nhấn "Thêm dịch vụ" để tạo mới.',
+  
+  // Delete Dialogs
+  deleteService: 'Xóa dịch vụ',
+  deleteServiceConfirmation: 'Bạn có chắc chắn muốn xóa dịch vụ này? Hành động này không thể hoàn tác.',
+  deleteServiceType: 'Xóa loại dịch vụ',
+  deleteServiceTypeConfirmation: 'Bạn có chắc chắn muốn xóa loại dịch vụ này? Hành động này không thể hoàn tác.',
+  
+  // Toast Messages
+  serviceCreatedSuccessfully: 'Đã tạo dịch vụ thành công',
+  failedToCreateService: 'Không thể tạo dịch vụ',
+  serviceUpdatedSuccessfully: 'Đã cập nhật dịch vụ thành công',
+  failedToUpdateService: 'Không thể cập nhật dịch vụ',
+  serviceDeletedSuccessfully: 'Đã xóa dịch vụ thành công',
+  failedToDeleteService: 'Không thể xóa dịch vụ',
+  serviceTypeCreatedSuccessfully: 'Đã tạo loại dịch vụ thành công',
+  failedToCreateServiceType: 'Không thể tạo loại dịch vụ',
+  serviceTypeUpdatedSuccessfully: 'Đã cập nhật loại dịch vụ thành công',
+  failedToUpdateServiceType: 'Không thể cập nhật loại dịch vụ',
+  serviceTypeDeletedSuccessfully: 'Đã xóa loại dịch vụ thành công',
+  failedToDeleteServiceType: 'Không thể xóa loại dịch vụ',
   
   // 404 Not Found Page
   notFound: {

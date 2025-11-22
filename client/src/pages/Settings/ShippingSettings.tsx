@@ -265,13 +265,13 @@ export default function ShippingSettings() {
             </TabsTrigger>
             <TabsTrigger value="general" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">General</span>
-              <span className="sm:hidden">Gen</span>
+              <span className="hidden sm:inline">{t('settings:general')}</span>
+              <span className="sm:hidden">{t('settings:general').substring(0, 3)}</span>
             </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Rules</span>
-              <span className="sm:hidden">Rules</span>
+              <span className="hidden sm:inline">{t('settings:rules')}</span>
+              <span className="sm:hidden">{t('settings:rules')}</span>
             </TabsTrigger>
           </TabsList>
 

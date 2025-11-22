@@ -67,14 +67,14 @@ export default function SupplierDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
       toast({
-        title: "File deleted",
-        description: "The file has been removed successfully.",
+        title: t('inventory:fileDeleted'),
+        description: t('inventory:fileRemovedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete the file.",
+        title: t('common:error'),
+        description: t('inventory:failedToDeleteFile'),
         variant: "destructive",
       });
     },
@@ -104,8 +104,8 @@ export default function SupplierDetails() {
 
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
       toast({
-        title: "Upload successful",
-        description: `${result.successful.length} file(s) uploaded successfully.`,
+        title: t('inventory:uploadSuccessful'),
+        description: t('inventory:filesUploadedSuccessfully', { count: result.successful.length }),
       });
     }
   };
@@ -239,7 +239,7 @@ export default function SupplierDetails() {
                   <div className="flex items-center gap-2">
                     <LinkIcon className="h-4 w-4 text-slate-400" />
                     <div className="flex-1">
-                      <p className="text-sm text-slate-600 mb-1">Supplier Catalog</p>
+                      <p className="text-sm text-slate-600 mb-1">{t('inventory:supplierCatalog')}</p>
                       <a
                         href={supplier.supplierLink}
                         target="_blank"
@@ -267,7 +267,7 @@ export default function SupplierDetails() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search products by name or SKU..."
+                      placeholder={t('inventory:searchProductsByNameSku')}
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       className="pl-9"
@@ -278,9 +278,9 @@ export default function SupplierDetails() {
             </CardHeader>
             <CardContent>
               {supplierProducts.length === 0 ? (
-                <p className="text-slate-500">No products from this supplier yet.</p>
+                <p className="text-slate-500">{t('inventory:noProductsFromSupplier')}</p>
               ) : filteredProducts.length === 0 ? (
-                <p className="text-slate-500">No products match your search.</p>
+                <p className="text-slate-500">{t('inventory:noProductsMatchSearch')}</p>
               ) : (
                 <div className="space-y-1">
                   {filteredProducts.map((product) => (
@@ -318,7 +318,7 @@ export default function SupplierDetails() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search purchases by product name or SKU..."
+                      placeholder={t('inventory:searchPurchasesByProductSku')}
                       value={purchaseSearch}
                       onChange={(e) => setPurchaseSearch(e.target.value)}
                       className="pl-9"
@@ -329,9 +329,9 @@ export default function SupplierDetails() {
             </CardHeader>
             <CardContent>
               {supplierPurchases.length === 0 ? (
-                <p className="text-slate-500">No purchase history yet.</p>
+                <p className="text-slate-500">{t('inventory:noPurchaseHistory')}</p>
               ) : filteredPurchases.length === 0 ? (
-                <p className="text-slate-500">No purchases match your search.</p>
+                <p className="text-slate-500">{t('inventory:noPurchasesMatchSearch')}</p>
               ) : (
                 <div className="space-y-2">
                   {filteredPurchases.slice(0, 10).map((purchase) => (
@@ -367,7 +367,7 @@ export default function SupplierDetails() {
                   ))}
                   {filteredPurchases.length > 10 && (
                     <p className="text-sm text-slate-500 text-center pt-2">
-                      Showing latest 10 of {filteredPurchases.length} filtered purchases
+                      {t('inventory:showingLatestOf', { count: filteredPurchases.length })}
                     </p>
                   )}
                 </div>
@@ -381,7 +381,7 @@ export default function SupplierDetails() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Files & Documents ({supplierFiles.length})
+                  {t('inventory:filesDocuments')} ({supplierFiles.length})
                 </CardTitle>
                 <ObjectUploader
                   maxNumberOfFiles={10}
@@ -391,13 +391,13 @@ export default function SupplierDetails() {
                   buttonClassName="flex items-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
-                  Upload Files
+                  {t('inventory:uploadFiles')}
                 </ObjectUploader>
               </div>
             </CardHeader>
             <CardContent>
               {supplierFiles.length === 0 ? (
-                <p className="text-slate-500">No files uploaded yet.</p>
+                <p className="text-slate-500">{t('inventory:noFilesUploaded')}</p>
               ) : (
                 <div className="space-y-2">
                   {supplierFiles.map((file) => (
@@ -410,7 +410,7 @@ export default function SupplierDetails() {
                         <div>
                           <p className="font-medium">{file.fileName}</p>
                           <p className="text-sm text-slate-500">
-                            {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
+                            {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : t('inventory:unknownSize')} • 
                             {file.createdAt ? formatDate(file.createdAt) : ''}
                           </p>
                         </div>
@@ -453,7 +453,7 @@ export default function SupplierDetails() {
                   <DollarSign className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Total Purchased</p>
+                  <p className="text-sm text-slate-600">{t('inventory:totalPurchased')}</p>
                   <p className="text-xl font-bold">
                     ${supplier.totalPurchased ? parseFloat(supplier.totalPurchased).toLocaleString() : "0"}
                   </p>
@@ -465,13 +465,13 @@ export default function SupplierDetails() {
                   <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Last Purchase</p>
+                  <p className="text-sm text-slate-600">{t('inventory:lastPurchase')}</p>
                   <p className="font-medium">
                     {supplierPurchases.length > 0 && supplierPurchases[0].createdAt
                       ? formatDate(supplierPurchases[0].createdAt)
                       : supplier.lastPurchaseDate 
                         ? formatDate(supplier.lastPurchaseDate)
-                        : "No purchases yet"
+                        : t('inventory:noPurchasesYet')
                     }
                   </p>
                 </div>
@@ -482,7 +482,7 @@ export default function SupplierDetails() {
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Active Products</p>
+                  <p className="text-sm text-slate-600">{t('inventory:activeProducts')}</p>
                   <p className="text-xl font-bold">{supplierProducts.length}</p>
                 </div>
               </div>
@@ -492,7 +492,7 @@ export default function SupplierDetails() {
                   <TrendingUp className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Total Purchases</p>
+                  <p className="text-sm text-slate-600">{t('inventory:totalPurchases')}</p>
                   <p className="text-xl font-bold">{supplierPurchases.length}</p>
                 </div>
               </div>
@@ -505,7 +505,7 @@ export default function SupplierDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Notes
+                  {t('inventory:notes')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -517,16 +517,16 @@ export default function SupplierDetails() {
           {/* Metadata */}
           <Card>
             <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
+              <CardTitle>{t('inventory:additionalInformation')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div>
-                  <p className="text-slate-600">Supplier ID</p>
+                  <p className="text-slate-600">{t('inventory:supplierId')}</p>
                   <p className="font-mono text-xs">{supplier.id}</p>
                 </div>
                 <div>
-                  <p className="text-slate-600">Created</p>
+                  <p className="text-slate-600">{t('inventory:created')}</p>
                   <p>{supplier.createdAt ? formatDate(supplier.createdAt) : ''}</p>
                 </div>
               </div>

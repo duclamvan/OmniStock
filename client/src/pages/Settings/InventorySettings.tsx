@@ -273,27 +273,27 @@ export default function InventorySettings() {
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Products</span>
+              <span className="hidden sm:inline">{t('settings:products')}</span>
             </TabsTrigger>
             <TabsTrigger value="stock" className="flex items-center gap-1 sm:gap-2">
               <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Stock</span>
+              <span className="hidden sm:inline">{t('settings:stock')}</span>
             </TabsTrigger>
             <TabsTrigger value="warehouse" className="flex items-center gap-1 sm:gap-2">
               <Warehouse className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Warehouse</span>
+              <span className="hidden sm:inline">{t('settings:warehouse')}</span>
             </TabsTrigger>
             <TabsTrigger value="quality" className="flex items-center gap-1 sm:gap-2">
               <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Quality</span>
+              <span className="hidden sm:inline">{t('settings:quality')}</span>
             </TabsTrigger>
             <TabsTrigger value="units" className="flex items-center gap-1 sm:gap-2">
               <Ruler className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Units</span>
+              <span className="hidden sm:inline">{t('settings:units')}</span>
             </TabsTrigger>
             <TabsTrigger value="catalog" className="flex items-center gap-1 sm:gap-2">
               <Image className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Catalog</span>
+              <span className="hidden sm:inline">{t('settings:catalog')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -303,9 +303,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Product Defaults
+                  {t('settings:productDefaults')}
                 </CardTitle>
-                <CardDescription className="text-sm">Default settings for product management and creation</CardDescription>
+                <CardDescription className="text-sm">{t('settings:productDefaultsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

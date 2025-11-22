@@ -360,8 +360,6 @@ const system = {
   updateTicketDetails: 'Update ticket details',
   createNewSupportTicket: 'Create a new support ticket',
   customerInformation: 'Customer Information',
-  ticketDescription: 'Ticket Description',
-  ticketDetails: 'Ticket Details',
   startTypingCustomerName: 'Start typing customer name...',
   briefSubjectLine: 'Brief subject line (optional)',
   describeIssue: 'Describe the issue or request...',
@@ -371,6 +369,7 @@ const system = {
   complaint: 'Complaint',
   pickDate: 'Pick a date',
   quickOptions: 'Quick Options',
+  generateSubjectWithAI: 'Generate subject with AI',
   tomorrow: 'Tomorrow',
   in2Days: 'In 2 days',
   in3Days: 'In 3 days',
@@ -388,7 +387,6 @@ const system = {
   couldNotAutoGenerate: 'Could not auto-generate subject. Please enter manually.',
   customerNotFound: 'Selected customer not found in system',
   selected: 'Selected',
-  warning: 'Warning',
   saveTicket: 'Save Ticket',
   ticketCreatedSuccessfully: 'Ticket created successfully',
   ticketUpdatedSuccessfully: 'Ticket updated successfully',
@@ -397,6 +395,64 @@ const system = {
   
   // Edit Ticket specific
   ticketNotFound: 'Ticket not found',
+  writeDescriptionFirst: 'Please write a few sentences in the description first to generate a subject',
+  couldNotGenerateSubject: 'Could not generate subject. Please try again or enter manually.',
+  
+  // Services
+  services: 'Services',
+  service: 'Service',
+  manageServicesRepairsMaintenance: 'Manage services like repairs and maintenance',
+  addService: 'Add Service',
+  editService: 'Edit Service',
+  addNewService: 'Add New Service',
+  serviceName: 'Service Name',
+  serviceNamePlaceholder: 'e.g., Repair handrill',
+  serviceDescription: 'Description',
+  serviceDetailsPlaceholder: 'Service details...',
+  priceCZK: 'Price CZK',
+  priceEUR: 'Price EUR',
+  updateService: 'Update Service',
+  createService: 'Create Service',
+  cancel: 'Cancel',
+  
+  // Service Types
+  serviceTypes: 'Service Types',
+  addType: 'Add Type',
+  editServiceType: 'Edit Service Type',
+  addNewServiceType: 'Add New Service Type',
+  typeName: 'Type Name',
+  typeNamePlaceholder: 'e.g., Repair, Maintenance, Installation',
+  typeDescription: 'Description',
+  typeDescriptionPlaceholder: 'Type description...',
+  color: 'Color',
+  updateType: 'Update Type',
+  createType: 'Create Type',
+  
+  // Loading & Empty States
+  loadingServiceTypes: 'Loading service types...',
+  loadingServices: 'Loading services...',
+  noServiceTypesYet: 'No service types yet. Click "Add Type" to create one.',
+  noServicesYet: 'No services yet. Click "Add Service" to create one.',
+  
+  // Delete Dialogs
+  deleteService: 'Delete Service',
+  deleteServiceConfirmation: 'Are you sure you want to delete this service? This action cannot be undone.',
+  deleteServiceType: 'Delete Service Type',
+  deleteServiceTypeConfirmation: 'Are you sure you want to delete this service type? This action cannot be undone.',
+  
+  // Toast Messages
+  serviceCreatedSuccessfully: 'Service created successfully',
+  failedToCreateService: 'Failed to create service',
+  serviceUpdatedSuccessfully: 'Service updated successfully',
+  failedToUpdateService: 'Failed to update service',
+  serviceDeletedSuccessfully: 'Service deleted successfully',
+  failedToDeleteService: 'Failed to delete service',
+  serviceTypeCreatedSuccessfully: 'Service type created successfully',
+  failedToCreateServiceType: 'Failed to create service type',
+  serviceTypeUpdatedSuccessfully: 'Service type updated successfully',
+  failedToUpdateServiceType: 'Failed to update service type',
+  serviceTypeDeletedSuccessfully: 'Service type deleted successfully',
+  failedToDeleteServiceType: 'Failed to delete service type',
   
   // 404 Not Found Page
   notFound: {

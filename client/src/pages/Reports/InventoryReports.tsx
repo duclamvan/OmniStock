@@ -72,7 +72,7 @@ export default function InventoryReports() {
     (products as any[]).forEach((product: any) => {
       if (product.categoryId) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
-        const categoryName = category?.name || 'Uncategorized';
+        const categoryName = category?.name || t('common:uncategorized');
         const value = (product.quantity || 0) * parseFloat(product.priceCzk || '0');
         categoryStock[categoryName] = (categoryStock[categoryName] || 0) + value;
       }
@@ -80,7 +80,7 @@ export default function InventoryReports() {
 
     const data = Object.entries(categoryStock).map(([name, value]) => ({ name, value }));
     return preparePieChartData(data);
-  }, [products, categories]);
+  }, [products, categories, t]);
 
   const stockLevelData = useMemo(() => {
     const inStock = (products as any[]).filter((p: any) => (p.quantity || 0) > (p.lowStockAlert || 5)).length;
@@ -88,11 +88,11 @@ export default function InventoryReports() {
     const outOfStock = inventoryMetrics.outOfStockCount;
 
     return preparePieChartData([
-      { name: 'In Stock', value: inStock },
-      { name: 'Low Stock', value: lowStock },
-      { name: 'Out of Stock', value: outOfStock },
+      { name: t('reports.inStock'), value: inStock },
+      { name: t('reports.lowStock'), value: lowStock },
+      { name: t('reports.outOfStock'), value: outOfStock },
     ]);
-  }, [products, inventoryMetrics]);
+  }, [products, inventoryMetrics, t]);
 
   const topValueProducts = useMemo(() => {
     return (products as any[])
@@ -112,25 +112,25 @@ export default function InventoryReports() {
   const handleExportExcel = () => {
     try {
       const exportData = (products as any[]).map((p: any) => ({
-        'Product': p.name,
-        'SKU': p.sku || '',
-        'Stock': p.quantity || 0,
-        'Low Stock Alert': p.lowStockAlert || 0,
-        'Price': parseFloat(p.priceCzk || '0'),
-        'Total Value': (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
-        'Status': (p.quantity || 0) === 0 ? 'Out of Stock' : (p.quantity || 0) <= (p.lowStockAlert || 5) ? 'Low Stock' : 'In Stock',
+        [t('reports.product')]: p.name,
+        [t('reports.sku')]: p.sku || '',
+        [t('reports.stock')]: p.quantity || 0,
+        [t('reports.lowStockAlert')]: p.lowStockAlert || 0,
+        [t('reports.price')]: parseFloat(p.priceCzk || '0'),
+        [t('reports.totalValue')]: (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
+        [t('reports.status')]: (p.quantity || 0) === 0 ? t('reports.outOfStock') : (p.quantity || 0) <= (p.lowStockAlert || 5) ? t('reports.lowStock') : t('reports.inStock'),
       }));
 
-      exportToXLSX(exportData, `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Inventory Report');
+      exportToXLSX(exportData, `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.inventoryReport'));
       
       toast({
-        title: "Export Successful",
-        description: "Inventory report exported to XLSX",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.inventoryReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export inventory report",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportInventoryReport'),
         variant: "destructive",
       });
     }
@@ -146,27 +146,27 @@ export default function InventoryReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'product', header: 'Product' },
-        { key: 'sku', header: 'SKU' },
-        { key: 'quantity', header: 'Stock' },
-        { key: 'alert', header: 'Alert Level' },
+        { key: 'product', header: t('reports.product') },
+        { key: 'sku', header: t('reports.sku') },
+        { key: 'quantity', header: t('reports.stock') },
+        { key: 'alert', header: t('reports.lowStockAlert') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        'Low Stock Alert'
+        t('reports.lowStockAlerts')
       );
 
       toast({
-        title: "Export Successful",
-        description: "Inventory report exported to PDF",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.inventoryReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export inventory report to PDF",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportInventoryReportPdf'),
         variant: "destructive",
       });
     }

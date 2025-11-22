@@ -195,6 +195,12 @@ const reports = {
   totalCost: 'Tổng chi phí',
   totalExpenses: 'Tổng chi phí',
   totalCustomers: 'Tổng khách hàng',
+  productCosts: 'Chi phí sản phẩm',
+  revenueCZK: 'Doanh thu CZK',
+  revenueEUR: 'Doanh thu EUR',
+  revenueUSD: 'Doanh thu USD',
+  firstOrder: 'Đơn hàng đầu tiên',
+  amountCZK: 'Số tiền (CZK)',
   
   // Product Related
   product: 'Sản phẩm',
@@ -405,6 +411,42 @@ const reports = {
   revenueEUROrders: 'Doanh thu đơn hàng EUR',
   totalProfitCZK: 'Tổng lợi nhuận CZK',
   totalRevenueCZK: 'Tổng doanh thu CZK',
+
+  // Additional table headers and labels
+  metric: 'Chỉ số',
+  value: 'Giá trị',
+  orderValue: 'Giá trị đơn hàng',
+  fulfilled: 'Đã xử lý',
+  paymentStatus: 'Trạng thái thanh toán',
+  month: 'Tháng',
+  stock: 'Tồn kho',
+  lowStockAlert: 'Cảnh báo hàng sắp hết',
+  inStock: 'Còn hàng',
+  neverSold: 'Chưa bán',
+  days: 'ngày',
+  deadStockItems: 'Hàng tồn ế',
+  
+  // Export messages for specific reports
+  orderReportExportedXlsx: 'Đã xuất báo cáo đơn hàng sang XLSX',
+  orderReportExportedPdf: 'Đã xuất báo cáo đơn hàng sang PDF',
+  failedToExportOrderReport: 'Không thể xuất báo cáo đơn hàng',
+  failedToExportOrderReportPdf: 'Không thể xuất báo cáo đơn hàng sang PDF',
+  inventoryReportExportedXlsx: 'Đã xuất báo cáo tồn kho sang XLSX',
+  inventoryReportExportedPdf: 'Đã xuất báo cáo tồn kho sang PDF',
+  failedToExportInventoryReport: 'Không thể xuất báo cáo tồn kho',
+  failedToExportInventoryReportPdf: 'Không thể xuất báo cáo tồn kho sang PDF',
+  customerReportExportedXlsx: 'Đã xuất báo cáo khách hàng sang XLSX',
+  customerReportExportedPdf: 'Đã xuất báo cáo khách hàng sang PDF',
+  failedToExportCustomerReport: 'Không thể xuất báo cáo khách hàng',
+  failedToExportCustomerReportPdf: 'Không thể xuất báo cáo khách hàng sang PDF',
+  expenseReportExportedXlsx: 'Đã xuất báo cáo chi phí sang XLSX',
+  expenseReportExportedPdf: 'Đã xuất báo cáo chi phí sang PDF',
+  failedToExportExpenseReport: 'Không thể xuất báo cáo chi phí',
+  failedToExportExpenseReportPdf: 'Không thể xuất báo cáo chi phí sang PDF',
+  financialReportExportedXlsx: 'Đã xuất báo cáo tài chính sang XLSX',
+  financialReportExportedPdf: 'Đã xuất báo cáo tài chính sang PDF',
+  failedToExportFinancialReport: 'Không thể xuất báo cáo tài chính',
+  failedToExportFinancialReportPdf: 'Không thể xuất báo cáo tài chính sang PDF',
 } as const;
 
 export default reports;

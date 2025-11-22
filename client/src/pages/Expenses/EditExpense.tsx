@@ -55,29 +55,29 @@ const getExpenseSchema = (t: any) => z.object({
 
 type ExpenseFormData = z.infer<ReturnType<typeof getExpenseSchema>>;
 
-const categories = [
-  'Office Supplies',
-  'Travel',
-  'Marketing',
-  'Software',
-  'Equipment',
-  'Utilities',
-  'Rent',
-  'Salaries',
-  'Insurance',
-  'Legal',
-  'Consulting',
-  'Shipping',
-  'Inventory',
-  'Other'
-];
-
 export default function EditExpense() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
   const { t } = useTranslation(['financial', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const categories = [
+    t('officeSupplies'),
+    t('travel'),
+    t('marketing'),
+    t('software'),
+    t('equipment'),
+    t('utilities'),
+    t('rent'),
+    t('salaries'),
+    t('insurance'),
+    t('legal'),
+    t('consulting'),
+    t('shipping'),
+    t('inventory'),
+    t('other')
+  ];
 
   const { data: expense, isLoading } = useQuery<any>({
     queryKey: [`/api/expenses/${id}`],
@@ -88,7 +88,7 @@ export default function EditExpense() {
     resolver: zodResolver(getExpenseSchema(t)),
     defaultValues: {
       name: '',
-      category: 'Office Supplies',
+      category: categories[0],
       amount: '',
       currency: 'CZK',
       date: new Date(),
@@ -106,7 +106,7 @@ export default function EditExpense() {
     if (expense) {
       form.reset({
         name: expense.name || '',
-        category: expense.category || 'Office Supplies',
+        category: expense.category || categories[0],
         amount: expense.amount?.toString() || '',
         currency: expense.currency as any || 'CZK',
         date: expense.date ? new Date(expense.date) : new Date(),
@@ -116,7 +116,7 @@ export default function EditExpense() {
         status: expense.status || 'pending',
       });
     }
-  }, [expense, form]);
+  }, [expense, form, categories]);
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: any) => {

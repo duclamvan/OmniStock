@@ -537,7 +537,7 @@ export default function CustomReport() {
                               {order.customer?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-mobile-base">{order.customer?.name || 'Unknown'}</span>
+                          <span className="font-medium text-mobile-base">{order.customer?.name || t('common:unknown')}</span>
                         </div>
                         <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'} className="text-xs">
                           {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
