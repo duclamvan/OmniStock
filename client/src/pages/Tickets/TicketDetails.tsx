@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select";
 
 export default function TicketDetails() {
+  const { t } = useTranslation('system');
   const [, params] = useRoute("/tickets/:id");
   const [, navigate] = useLocation();
   const ticketId = params?.id;
@@ -63,14 +65,14 @@ export default function TicketDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
-        title: "Success",
-        description: "Ticket status updated",
+        title: t('success'),
+        description: t('ticketStatusUpdated'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update ticket status",
+        title: t('error'),
+        description: t('failedToUpdateTicketStatus'),
         variant: "destructive",
       });
     },
@@ -84,14 +86,14 @@ export default function TicketDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId, 'comments'] });
       setCommentText("");
       toast({
-        title: "Success",
-        description: "Comment added",
+        title: t('success'),
+        description: t('commentAdded'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to add comment",
+        title: t('error'),
+        description: t('failedToAddComment'),
         variant: "destructive",
       });
     },
@@ -114,10 +116,10 @@ export default function TicketDetails() {
     };
 
     const labels: Record<string, string> = {
-      open: "Open",
-      in_progress: "In Progress",
-      resolved: "Resolved",
-      closed: "Closed"
+      open: t('open'),
+      in_progress: t('inProgress'),
+      resolved: t('resolved'),
+      closed: t('closed')
     };
 
     return (
@@ -136,10 +138,10 @@ export default function TicketDetails() {
     };
 
     const labels: Record<string, string> = {
-      low: "Low",
-      medium: "Medium",
-      high: "High",
-      urgent: "Urgent"
+      low: t('low'),
+      medium: t('medium'),
+      high: t('high'),
+      urgent: t('urgent')
     };
 
     return (
@@ -199,7 +201,7 @@ export default function TicketDetails() {
         </div>
         <Button onClick={() => navigate(`/tickets/edit/${ticket.id}`)} data-testid="button-edit">
           <Edit className="mr-2 h-4 w-4" />
-          Edit
+          {t('edit')}
         </Button>
       </div>
 
@@ -217,7 +219,7 @@ export default function TicketDetails() {
                       <User className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Customer</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">{t('customer')}</p>
                       <Link href={`/customers/${ticket.customer.id}`}>
                         <span className="text-xl font-bold text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-customer">
                           {ticket.customer.name}
@@ -231,7 +233,7 @@ export default function TicketDetails() {
               {/* Description - Large and prominent */}
               {ticket.description && (
                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-                  <h3 className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Description</h3>
+                  <h3 className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">{t('description')}</h3>
                   <p className="text-lg leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap" data-testid="text-description">
                     {ticket.description}
                   </p>
@@ -242,7 +244,7 @@ export default function TicketDetails() {
               {ticket.order && (
                 <div className="flex items-center gap-2 text-sm bg-slate-50 dark:bg-slate-800/30 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                   <Package className="h-4 w-4 text-slate-500" />
-                  <span className="text-slate-600 dark:text-slate-400">Related Order:</span>
+                  <span className="text-slate-600 dark:text-slate-400">{t('relatedOrder')}:</span>
                   <Link href={`/orders/${ticket.order.id}`}>
                     <span className="text-blue-600 dark:text-blue-400 hover:underline font-medium" data-testid="link-order">
                       {ticket.order.orderId}
@@ -254,26 +256,26 @@ export default function TicketDetails() {
               {/* Metadata - Small and subtle */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Ticket ID</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('ticketId')}</p>
                   <p className="text-sm font-medium font-mono text-slate-700 dark:text-slate-300" data-testid="text-ticket-id">
                     {ticket.ticketId}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Category</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('category')}</p>
                   <p className="text-sm font-medium capitalize text-slate-700 dark:text-slate-300" data-testid="text-category">
                     {ticket.category?.replace(/_/g, ' ')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Created</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('created')}</p>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid="text-created">
                     {formatDate(ticket.createdAt)}
                   </p>
                 </div>
                 {ticket.dueDate && (
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Due Date</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('dueDate')}</p>
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid="text-due-date">
                       {formatDate(ticket.dueDate)}
                     </p>
@@ -281,7 +283,7 @@ export default function TicketDetails() {
                 )}
                 {ticket.resolvedAt && (
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Resolved</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('resolved')}</p>
                     <p className="text-sm font-medium text-green-600 dark:text-green-400" data-testid="text-resolved">
                       {formatDate(ticket.resolvedAt)}
                     </p>
@@ -296,14 +298,14 @@ export default function TicketDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Comments ({comments.length})
+                {t('comments')} ({comments.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Comment List */}
               <div className="space-y-4">
                 {comments.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">No comments yet</p>
+                  <p className="text-center text-slate-500 py-8">{t('noCommentsYet')}</p>
                 ) : (
                   comments.map((comment: any) => (
                     <div
@@ -323,7 +325,7 @@ export default function TicketDetails() {
                           </span>
                           {comment.isInternal && (
                             <Badge variant="outline" className="text-xs">
-                              Internal
+                              {t('internal')}
                             </Badge>
                           )}
                         </div>
@@ -342,7 +344,7 @@ export default function TicketDetails() {
               {/* Add Comment */}
               <div className="pt-4 border-t space-y-3">
                 <Textarea
-                  placeholder="Add a comment..."
+                  placeholder={t('addComment')}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   className="min-h-[100px]"
@@ -357,7 +359,7 @@ export default function TicketDetails() {
                       className="rounded"
                       data-testid="checkbox-internal"
                     />
-                    Internal note (not visible to customer)
+                    {t('internalNote')}
                   </label>
                   <Button
                     onClick={handleAddComment}
@@ -367,12 +369,12 @@ export default function TicketDetails() {
                     {addCommentMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
+                        {t('adding')}
                       </>
                     ) : (
                       <>
                         <Send className="mr-2 h-4 w-4" />
-                        Add Comment
+                        {t('addCommentButton')}
                       </>
                     )}
                   </Button>
@@ -387,11 +389,11 @@ export default function TicketDetails() {
           <div className="sticky top-20 space-y-4">
             <Card className="border-2 border-blue-200 dark:border-blue-700">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white">
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle>{t('quickActions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Update Status</label>
+                  <label className="text-sm font-medium mb-2 block">{t('updateStatus')}</label>
                   <Select
                     value={ticket.status}
                     onValueChange={(value) => updateStatusMutation.mutate(value)}
@@ -401,10 +403,10 @@ export default function TicketDetails() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
+                      <SelectItem value="open">{t('open')}</SelectItem>
+                      <SelectItem value="in_progress">{t('inProgress')}</SelectItem>
+                      <SelectItem value="resolved">{t('resolved')}</SelectItem>
+                      <SelectItem value="closed">{t('closed')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -416,7 +418,7 @@ export default function TicketDetails() {
                   data-testid="button-edit-full"
                 >
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit Full Details
+                  {t('editFullDetails')}
                 </Button>
               </CardContent>
             </Card>

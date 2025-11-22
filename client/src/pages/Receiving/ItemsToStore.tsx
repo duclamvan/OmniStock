@@ -756,8 +756,8 @@ export default function ItemsToStore() {
           // All items processed
           setIsScanning(false);
           toast({
-            title: "✓ Scanning Complete",
-            description: "All items have been assigned locations",
+            title: t('scanningComplete'),
+            description: t('allItemsAssignedLocations'),
             duration: 3000,
           });
           return prevIndex;
@@ -831,8 +831,8 @@ export default function ItemsToStore() {
 
     if (!trimmedValue) {
       toast({
-        title: "No Location Entered",
-        description: "Please enter or scan a location code",
+        title: t('noLocationEntered'),
+        description: t('pleaseEnterLocation'),
         variant: "destructive",
         duration: 2000
       });
@@ -845,8 +845,8 @@ export default function ItemsToStore() {
       setScanFeedback({ type: 'error', message: 'Invalid location format' });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
-        title: "Invalid Location",
-        description: "Location must be in a valid format (e.g., WH1-A01-R02-L03, WH1-A-A06-R04-L04-B2, or WH1-B-B03-P05)",
+        title: t('invalidLocation'),
+        description: t('locationFormatInvalid'),
         variant: "destructive",
         duration: 2000
       });
@@ -1144,16 +1144,16 @@ export default function ItemsToStore() {
       localStorage.removeItem('itemsToStore_activeTab');
       
       toast({
-        title: "Success",
-        description: "Items have been stored and shipment moved to completed",
+        title: t('success', { ns: 'common' }),
+        description: t('itemsStoredSuccess'),
       });
       navigate('/receiving');
     },
     onError: (error) => {
       console.error("Failed to save storage:", error);
       toast({
-        title: "Error",
-        description: "Failed to save storage assignments",
+        title: t('error', { ns: 'common' }),
+        description: t('failedToSaveStorage'),
         variant: "destructive",
       });
     }
@@ -1180,8 +1180,8 @@ export default function ItemsToStore() {
         const timer = setTimeout(() => {
           console.log('Auto-saving: All items completed for receipt', selectedReceipt);
           toast({
-            title: "Auto-saving",
-            description: "All items completed. Saving storage locations...",
+            title: t('autoSaving'),
+            description: t('savingStorageLocations'),
             duration: 3000,
           });
           saveStorageMutation.mutate();
@@ -1210,13 +1210,13 @@ export default function ItemsToStore() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Boxes className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-center mb-6">No items pending storage</p>
+            <p className="text-lg font-medium text-center mb-6">{t('noItemsPendingStorage')}</p>
             <Button
               variant="outline"
               onClick={() => window.history.back()}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Receiving
+              {t('backToReceiving')}
             </Button>
           </CardContent>
         </Card>
@@ -1232,7 +1232,7 @@ export default function ItemsToStore() {
           <button onClick={() => window.history.back()} className="p-2 -ml-2">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-semibold">Items to Store</h1>
+          <h1 className="text-lg font-semibold">{t('itemsToStore')}</h1>
           <button 
             onClick={handleSave}
             disabled={items.filter(item => item.newLocations.length > 0).length === 0 || saveStorageMutation.isPending || saveStorageMutation.isSuccess}

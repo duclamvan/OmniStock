@@ -85,6 +85,7 @@ const warehouse = {
   editWarehouse: 'Edit Warehouse',
   editWarehouseDesc: 'Update warehouse details and manage attachments',
   warehouseNotFound: 'Warehouse not found',
+  warehouseNotFoundDesc: "The warehouse you're looking for doesn't exist.",
   warehouseUpdatedSuccess: 'Warehouse updated successfully',
   warehouseUpdateError: 'Failed to update warehouse',
   warehouseDeletedSuccess: 'Warehouse deleted successfully',
@@ -135,6 +136,37 @@ const warehouse = {
   uploadFiles: 'Upload Files',
   noFiles: 'No files yet',
   uploadFirstFile: 'Upload your first file',
+  
+  // Warehouse Details - Additional Keys
+  warehouseId: 'Warehouse ID',
+  code: 'Code',
+  units: 'units',
+  description: 'Description',
+  contactLocation: 'Contact & Location',
+  address: 'Address',
+  phone: 'Phone',
+  email: 'Email',
+  manager: 'Manager',
+  warehouseInventory: 'Warehouse Inventory',
+  items: 'items',
+  searchProductsPlaceholder: 'Search products by name, SKU, barcode, or location...',
+  qty: 'Qty',
+  move: 'Move',
+  noProductsFound: 'No products found',
+  noProductsInWarehouse: 'No products in this warehouse',
+  documentsFiles: 'Documents & Files',
+  upload: 'Upload',
+  noFilesYet: 'No files uploaded yet',
+  monthlyCost: 'Monthly Cost',
+  notes: 'Notes',
+  noFinancialContracts: 'No financial contracts',
+  moveProductToWarehouse: 'Move Product to Another Warehouse',
+  selectDestinationWarehouse: 'Select the destination warehouse for',
+  moving: 'Moving...',
+  deleteFile: 'Delete File',
+  deleteFileConfirm: 'Are you sure you want to delete',
+  thisActionCannotBeUndone: 'This action cannot be undone.',
+  
   type: {
     fulfillment: 'Fulfillment',
     storage: 'Storage',
@@ -312,6 +344,31 @@ const warehouse = {
   inTransit: 'In Transit',
   damaged: 'Damaged',
   expired: 'Expired',
+  
+  // Warehouse Map & Layout
+  warehouseMap: 'Warehouse Map',
+  generateLayout: 'Generate Layout',
+  regenerateLayout: 'Regenerate Layout',
+  layoutGenerated: 'Layout generated',
+  layoutGeneratedSuccess: 'Warehouse layout has been generated successfully',
+  noLayoutGenerated: 'No Layout Generated',
+  noLayoutGeneratedDesc: 'Generate a warehouse layout to start mapping your inventory bins',
+  
+  // Bins & Storage
+  totalBins: 'Total Bins',
+  emptyBins: 'Empty Bins',
+  occupiedBins: 'Occupied Bins',
+  searchBins: 'Search bins...',
+  binDetails: 'Bin Details',
+  empty: 'Empty',
+  partial: 'Partial',
+  full: 'Full',
+  
+  // Zones
+  storageZone: 'Storage Zone',
+  shelves: 'Shelves',
+  pallets: 'Pallets',
+  bulk: 'Bulk',
 } as const;
 
 export default warehouse;

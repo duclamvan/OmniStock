@@ -76,6 +76,7 @@ export default function ServiceDetails() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: service, isLoading, error } = useQuery<Service>({
@@ -90,15 +91,15 @@ export default function ServiceDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       toast({
-        title: "Success",
-        description: "Service deleted successfully",
+        title: t('common:success'),
+        description: t('financial:serviceDeletedSuccessfully'),
       });
       navigate('/services');
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete service",
+        title: t('common:error'),
+        description: t('financial:failedToDeleteService'),
         variant: "destructive",
       });
     },
@@ -112,14 +113,14 @@ export default function ServiceDetails() {
       queryClient.invalidateQueries({ queryKey: [`/api/services/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       toast({
-        title: "Success",
-        description: "Service status updated successfully",
+        title: t('common:success'),
+        description: t('financial:serviceStatusUpdatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update service status",
+        title: t('common:error'),
+        description: t('financial:failedToUpdateServiceStatus'),
         variant: "destructive",
       });
     },
@@ -140,13 +141,13 @@ export default function ServiceDetails() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900" data-testid="badge-status-pending">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900" data-testid="badge-status-pending">{t('financial:pending')}</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900" data-testid="badge-status-in-progress">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900" data-testid="badge-status-in-progress">{t('financial:inProgress')}</Badge>;
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900" data-testid="badge-status-completed">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900" data-testid="badge-status-completed">{t('common:completed')}</Badge>;
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900" data-testid="badge-status-cancelled">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900" data-testid="badge-status-cancelled">{t('common:cancelled')}</Badge>;
       default:
         return <Badge variant="outline" data-testid={`badge-status-${status}`}>{status}</Badge>;
     }
@@ -185,10 +186,10 @@ export default function ServiceDetails() {
               data-testid="button-back"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('common:back')}
             </Button>
             <Separator orientation="vertical" className="h-6" />
-            <h2 className="font-semibold text-sm">Service Bill</h2>
+            <h2 className="font-semibold text-sm">{t('financial:serviceBill')}</h2>
           </div>
           
           <div className="flex items-center gap-2">
@@ -199,7 +200,7 @@ export default function ServiceDetails() {
               data-testid="button-print"
             >
               <Printer className="h-4 w-4 mr-2" />
-              Print
+              {t('financial:print')}
             </Button>
             <Button
               variant="outline"
@@ -208,7 +209,7 @@ export default function ServiceDetails() {
               data-testid="button-edit"
             >
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('common:edit')}
             </Button>
             <Button
               variant="destructive"
@@ -217,7 +218,7 @@ export default function ServiceDetails() {
               data-testid="button-delete"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('common:delete')}
             </Button>
           </div>
         </div>
@@ -233,22 +234,22 @@ export default function ServiceDetails() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Wrench className="h-6 w-6 text-slate-700 dark:text-slate-300" />
-                  <h1 className="text-3xl font-bold text-slate-900 dark:text-white">SERVICE BILL</h1>
+                  <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('financial:serviceBill_title')}</h1>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 font-medium">Davie Supply</p>
-                <p className="text-sm text-slate-500 dark:text-slate-500">Professional Service & Repair</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500">{t('financial:professionalServiceRepair')}</p>
               </div>
               
               {/* Bill Number & Status */}
               <div className="text-right">
                 <div className="mb-3">
-                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-1">Bill ID</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-1">{t('financial:billId')}</p>
                   <p className="text-lg font-mono font-semibold text-slate-900 dark:text-white" data-testid="text-service-id">
                     #{id?.substring(0, 8).toUpperCase()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">Status</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">{t('common:status')}</p>
                   <div className="flex flex-col gap-2 items-end">
                     {/* Visual Status Badge */}
                     <div className="print:block">
@@ -266,16 +267,16 @@ export default function ServiceDetails() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending" data-testid="option-status-pending">
-                            Pending
+                            {t('financial:pending')}
                           </SelectItem>
                           <SelectItem value="in_progress" data-testid="option-status-in-progress">
-                            In Progress
+                            {t('financial:inProgress')}
                           </SelectItem>
                           <SelectItem value="completed" data-testid="option-status-completed">
-                            Completed
+                            {t('common:completed')}
                           </SelectItem>
                           <SelectItem value="cancelled" data-testid="option-status-cancelled">
-                            Cancelled
+                            {t('common:cancelled')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -289,42 +290,42 @@ export default function ServiceDetails() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Bill To */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">Bill To</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">{t('financial:billTo')}</h3>
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded border border-slate-200 dark:border-slate-700">
                   <p className="font-semibold text-lg text-slate-900 dark:text-white mb-1" data-testid="text-customer-name">
-                    {service.customer?.name || 'Walk-in Customer'}
+                    {service.customer?.name || t('financial:walkInCustomer')}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Customer ID: {service.customerId?.substring(0, 8).toUpperCase() || 'N/A'}
+                    {t('financial:customerId')}: {service.customerId?.substring(0, 8).toUpperCase() || 'N/A'}
                   </p>
                 </div>
               </div>
 
               {/* Service Information */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">Service Information</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">{t('financial:serviceInformation')}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">Service Date:</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:serviceDate')}:</span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid="text-service-date">
                       {formatCzechDate(service.serviceDate)}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">Bill Created:</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:billCreated')}:</span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid="text-created-at">
                       {formatCzechDate(service.createdAt)}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">Currency:</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{t('common:currency')}:</span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid="text-currency">
                       {service.currency || 'EUR'}
                     </span>
                   </div>
                   {service.orderId && service.order && (
                     <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Linked Order:</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:linkedOrder')}:</span>
                       <span className="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer" data-testid="text-linked-order" onClick={() => navigate(`/orders/${service.orderId}`)}>
                         {service.order.orderId}
                       </span>
@@ -337,7 +338,7 @@ export default function ServiceDetails() {
 
           {/* Service Description */}
           <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">Service Description</h3>
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">{t('financial:serviceDescription')}</h3>
             <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2" data-testid="text-service-name">
               {service.name}
             </p>
@@ -350,7 +351,7 @@ export default function ServiceDetails() {
 
           {/* Itemized Parts & Services */}
           <div className="px-8 py-6">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-4">Parts & Materials Used</h3>
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-4">{t('financial:partsAndMaterialsUsed')}</h3>
             
             {/* Items Table */}
             <div className="overflow-x-auto mb-6">
@@ -358,19 +359,19 @@ export default function ServiceDetails() {
                 <thead>
                   <tr className="border-b-2 border-slate-900 dark:border-slate-700">
                     <th className="text-left py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide" data-testid="header-product-name">
-                      Item Description
+                      {t('financial:itemDescription')}
                     </th>
                     <th className="text-left py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide" data-testid="header-sku">
-                      SKU
+                      {t('financial:sku')}
                     </th>
                     <th className="text-center py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide" data-testid="header-quantity">
-                      Qty
+                      {t('financial:qty')}
                     </th>
                     <th className="text-right py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide" data-testid="header-unit-price">
-                      Unit Price
+                      {t('financial:unitPrice')}
                     </th>
                     <th className="text-right py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide" data-testid="header-total-price">
-                      Amount
+                      {t('financial:amount')}
                     </th>
                   </tr>
                 </thead>
@@ -402,7 +403,7 @@ export default function ServiceDetails() {
                   ) : (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-sm text-slate-500 dark:text-slate-500">
-                        No parts used
+                        {t('financial:noPartsUsed')}
                       </td>
                     </tr>
                   )}
@@ -414,14 +415,14 @@ export default function ServiceDetails() {
             <div className="flex justify-end">
               <div className="w-full max-w-sm space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Parts Cost:</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:partsCost')}:</span>
                   <span className="text-base font-semibold text-slate-900 dark:text-white" data-testid="text-parts-cost">
                     {formatCurrency(service.partsCost)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Service Cost:</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:serviceCost')}:</span>
                   <span className="text-base font-semibold text-slate-900 dark:text-white" data-testid="text-service-cost">
                     {formatCurrency(service.serviceCost)}
                   </span>
@@ -430,7 +431,7 @@ export default function ServiceDetails() {
                 <Separator className="my-2" />
                 
                 <div className="flex justify-between items-center py-3 border-2 border-slate-900 dark:border-slate-300 rounded px-4">
-                  <span className="text-base font-bold uppercase text-slate-900 dark:text-white">Total Amount:</span>
+                  <span className="text-base font-bold uppercase text-slate-900 dark:text-white">{t('financial:totalAmount')}:</span>
                   <span className="text-2xl font-bold text-slate-900 dark:text-white" data-testid="text-total-cost">
                     {formatCurrency(service.totalCost)}
                   </span>
@@ -442,7 +443,7 @@ export default function ServiceDetails() {
           {/* Notes Section */}
           {service.notes && (
             <div className="px-8 py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">Additional Notes</h3>
+              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">{t('financial:additionalNotes')}</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap" data-testid="text-notes">
                 {service.notes}
               </p>
@@ -452,10 +453,10 @@ export default function ServiceDetails() {
           {/* Footer */}
           <div className="px-8 py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
             <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-500">
-              <p>Thank you for your business!</p>
+              <p>{t('financial:thankYouForBusiness')}</p>
               <p data-testid="text-updated-at">
                 {service.updatedAt && service.updatedAt !== service.createdAt 
-                  ? `Last updated: ${formatCzechDate(service.updatedAt)}` 
+                  ? `${t('financial:lastUpdated')}: ${formatCzechDate(service.updatedAt)}` 
                   : ''}
               </p>
             </div>
@@ -467,20 +468,20 @@ export default function ServiceDetails() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle data-testid="text-delete-dialog-title">Delete Service</AlertDialogTitle>
+            <AlertDialogTitle data-testid="text-delete-dialog-title">{t('financial:deleteService')}</AlertDialogTitle>
             <AlertDialogDescription data-testid="text-delete-dialog-description">
-              Are you sure you want to delete this service? This action cannot be undone and will also delete all associated service items.
+              {t('financial:deleteServiceConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-red-600 hover:bg-red-700"
               data-testid="button-confirm-delete"
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? t('financial:deleting') : t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

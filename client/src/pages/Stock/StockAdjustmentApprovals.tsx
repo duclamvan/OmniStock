@@ -72,8 +72,8 @@ export default function StockAdjustmentApprovals() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load stock adjustment requests. Please try again.",
+        title: t('common:error'),
+        description: t('failedToLoadAdjustmentRequests'),
         variant: "destructive",
       });
     }
@@ -89,14 +89,14 @@ export default function StockAdjustmentApprovals() {
       queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Stock adjustment approved and applied",
+        title: t('common:success'),
+        description: t('stockAdjustmentApproved'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to approve request",
+        title: t('common:error'),
+        description: error.message || t('failedToApproveRequest'),
         variant: "destructive",
       });
     },
@@ -112,8 +112,8 @@ export default function StockAdjustmentApprovals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
       toast({
-        title: "Success",
-        description: "Stock adjustment request rejected",
+        title: t('common:success'),
+        description: t('stockAdjustmentRejected'),
       });
       setRejectionDialogOpen(false);
       setSelectedRequest(null);
@@ -121,8 +121,8 @@ export default function StockAdjustmentApprovals() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to reject request",
+        title: t('common:error'),
+        description: error.message || t('failedToRejectRequest'),
         variant: "destructive",
       });
     },
@@ -144,8 +144,8 @@ export default function StockAdjustmentApprovals() {
     
     if (!rejectionReason.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide a reason for rejection",
+        title: t('common:error'),
+        description: t('provideRejectionReason'),
         variant: "destructive",
       });
       return;
@@ -207,9 +207,9 @@ export default function StockAdjustmentApprovals() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'pending': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
-      case 'approved': return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
-      case 'rejected': return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+      case 'pending': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3 mr-1" />{t('pendingApproval')}</Badge>;
+      case 'approved': return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3 mr-1" />{t('approved')}</Badge>;
+      case 'rejected': return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" />{t('rejected')}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -217,7 +217,7 @@ export default function StockAdjustmentApprovals() {
   const columns: DataTableColumn<StockAdjustmentRequest>[] = [
     {
       key: "createdAt",
-      header: "Requested",
+      header: t('requested'),
       sortable: true,
       cell: (request) => (
         <div className="text-sm">
@@ -232,7 +232,7 @@ export default function StockAdjustmentApprovals() {
     },
     {
       key: "product",
-      header: "Product",
+      header: t('common:product'),
       sortable: true,
       cell: (request) => (
         <div className="text-sm text-gray-900 dark:text-white font-medium">
@@ -242,7 +242,7 @@ export default function StockAdjustmentApprovals() {
     },
     {
       key: "adjustmentType",
-      header: "Type",
+      header: t('type'),
       sortable: true,
       cell: (request) => (
         <Badge className={getAdjustmentTypeColor(request.adjustmentType)}>
@@ -253,7 +253,7 @@ export default function StockAdjustmentApprovals() {
     },
     {
       key: "quantities",
-      header: "Quantity Change",
+      header: t('quantityChange'),
       cell: (request) => {
         const getNewQuantity = () => {
           if (request.adjustmentType === 'set') return request.requestedQuantity;
@@ -283,7 +283,7 @@ export default function StockAdjustmentApprovals() {
     },
     {
       key: "reason",
-      header: "Reason",
+      header: t('reason'),
       cell: (request) => (
         <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
           {request.reason}
@@ -292,13 +292,13 @@ export default function StockAdjustmentApprovals() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('common:status'),
       sortable: true,
       cell: (request) => getStatusBadgeVariant(request.status),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: t('common:actions'),
       cell: (request) => (
         <div className="flex gap-2">
           {request.status === 'pending' && (
@@ -312,7 +312,7 @@ export default function StockAdjustmentApprovals() {
                 data-testid={`button-approve-${request.id}`}
               >
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Approve
+                {t('approve')}
               </Button>
               <Button
                 size="sm"
@@ -323,13 +323,13 @@ export default function StockAdjustmentApprovals() {
                 data-testid={`button-reject-${request.id}`}
               >
                 <XCircle className="h-3 w-3 mr-1" />
-                Reject
+                {t('reject')}
               </Button>
             </>
           )}
           {request.status === 'rejected' && request.rejectionReason && (
             <div className="text-xs text-gray-500 italic">
-              Reason: {request.rejectionReason}
+              {t('reason')}: {request.rejectionReason}
             </div>
           )}
         </div>
@@ -343,10 +343,10 @@ export default function StockAdjustmentApprovals() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Stock Adjustment Approvals
+            {t('stockAdjustmentApprovals')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Review and approve inventory adjustment requests from warehouse staff
+            {t('reviewAndApproveRequests')}
           </p>
         </div>
       </div>
@@ -356,7 +356,7 @@ export default function StockAdjustmentApprovals() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Total Requests
+              {t('totalRequests')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -366,7 +366,7 @@ export default function StockAdjustmentApprovals() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
-              Pending
+              {t('pendingApproval')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -376,7 +376,7 @@ export default function StockAdjustmentApprovals() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">
-              Approved
+              {t('approved')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -386,7 +386,7 @@ export default function StockAdjustmentApprovals() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">
-              Rejected
+              {t('rejected')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -404,7 +404,7 @@ export default function StockAdjustmentApprovals() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="text"
-                  placeholder="Search by product, reason, or request ID..."
+                  placeholder={t('searchByProductReasonId')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -418,10 +418,10 @@ export default function StockAdjustmentApprovals() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="all">{t('allStatus')}</SelectItem>
+                  <SelectItem value="pending">{t('pendingApproval')}</SelectItem>
+                  <SelectItem value="approved">{t('approved')}</SelectItem>
+                  <SelectItem value="rejected">{t('rejected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -435,15 +435,15 @@ export default function StockAdjustmentApprovals() {
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-600 dark:text-gray-400 mt-4">Loading requests...</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-4">{t('loadingRequests')}</p>
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">No adjustment requests found</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('noAdjustmentRequests')}</p>
               {searchQuery && (
                 <p className="text-sm text-gray-500 mt-2">
-                  Try adjusting your search or filter criteria
+                  {t('tryAdjustingSearch')}
                 </p>
               )}
             </div>
@@ -559,7 +559,7 @@ export default function StockAdjustmentApprovals() {
                               data-testid={`button-approve-mobile-${request.id}`}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
+                              {t('approve')}
                             </Button>
                             <Button
                               className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700"
@@ -570,7 +570,7 @@ export default function StockAdjustmentApprovals() {
                               data-testid={`button-reject-mobile-${request.id}`}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
-                              Reject
+                              {t('reject')}
                             </Button>
                           </div>
                         )}
@@ -597,19 +597,19 @@ export default function StockAdjustmentApprovals() {
       <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Reject Stock Adjustment</DialogTitle>
+            <DialogTitle>{t('rejectStockAdjustment')}</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this request
+              {t('provideRejectReason')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rejection-reason">Rejection Reason *</Label>
+              <Label htmlFor="rejection-reason">{t('rejectionReason')} *</Label>
               <Textarea
                 id="rejection-reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Explain why this request is being rejected..."
+                placeholder={t('explainRejection')}
                 className="h-24"
                 data-testid="input-rejection-reason"
               />
@@ -625,7 +625,7 @@ export default function StockAdjustmentApprovals() {
               }}
               data-testid="button-cancel-rejection"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               onClick={submitRejection}
@@ -633,7 +633,7 @@ export default function StockAdjustmentApprovals() {
               variant="destructive"
               data-testid="button-confirm-rejection"
             >
-              {rejectMutation.isPending ? "Rejecting..." : "Reject Request"}
+              {rejectMutation.isPending ? t('rejecting') : t('rejectRequest')}
             </Button>
           </DialogFooter>
         </DialogContent>

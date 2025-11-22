@@ -3,6 +3,7 @@ import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 
+// Note: Validation messages use direct strings since schema is defined outside component
 const formSchema = insertPreOrderSchema.extend({
   expectedDate: z.date().optional(),
   items: z.array(
@@ -72,6 +74,8 @@ interface ItemRow {
 }
 
 export default function EditPreOrder() {
+  const { t } = useTranslation('orders');
+  const { t: tCommon } = useTranslation('common');
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
@@ -174,15 +178,15 @@ export default function EditPreOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders', id] });
       toast({
-        title: "Success",
-        description: "Pre-order updated successfully",
+        title: tCommon('success'),
+        description: t('preOrderUpdatedSuccess'),
       });
       navigate('/orders/pre-orders');
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update pre-order",
+        title: tCommon('error'),
+        description: error.message || t('preOrderUpdateFailed'),
         variant: "destructive",
       });
     },
@@ -250,7 +254,7 @@ export default function EditPreOrder() {
       <div className="flex items-center justify-center min-h-[400px]" data-testid="loading-state">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-600" />
-          <p className="text-slate-600">Loading pre-order...</p>
+          <p className="text-slate-600">{t('loadingPreOrder')}</p>
         </div>
       </div>
     );
@@ -260,9 +264,9 @@ export default function EditPreOrder() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
-          <p className="text-slate-600">Pre-order not found</p>
+          <p className="text-slate-600">{t('preOrderNotFound')}</p>
           <Button onClick={() => window.history.back()} data-testid="button-back-not-found">
-            Go Back
+            {t('goBack')}
           </Button>
         </div>
       </div>
@@ -283,10 +287,10 @@ export default function EditPreOrder() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight" data-testid="heading-edit-pre-order">
-            Edit Pre-Order
+            {t('editPreOrder')}
           </h1>
           <p className="text-slate-600 mt-1 text-sm md:text-base">
-            Update pre-order details
+            {t('updatePreOrderDetails')}
           </p>
         </div>
       </div>
@@ -297,13 +301,13 @@ export default function EditPreOrder() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
               <User className="h-5 w-5" />
-              Basic Information
+              {t('basicInformation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Customer Selector */}
             <div>
-              <Label htmlFor="customerId">Customer *</Label>
+              <Label htmlFor="customerId">{t('customer')} *</Label>
               <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -313,18 +317,18 @@ export default function EditPreOrder() {
                     className="w-full justify-between"
                     data-testid="button-select-customer"
                   >
-                    {selectedCustomer ? selectedCustomer.name : "Select customer..."}
+                    {selectedCustomer ? selectedCustomer.name : t('selectCustomer')}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Search customers..." 
+                      placeholder={t('searchCustomers')}
                       data-testid="input-search-customer"
                     />
                     <CommandList>
-                      <CommandEmpty>No customer found.</CommandEmpty>
+                      <CommandEmpty>{t('noCustomerFound')}</CommandEmpty>
                       <CommandGroup>
                         {customers?.map((customer: any) => (
                           <CommandItem
@@ -354,7 +358,7 @@ export default function EditPreOrder() {
 
             {/* Expected Date */}
             <div>
-              <Label htmlFor="expectedDate">Expected Arrival Date</Label>
+              <Label htmlFor="expectedDate">{t('expectedArrivalDate')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -369,7 +373,7 @@ export default function EditPreOrder() {
                     {form.watch("expectedDate") ? (
                       format(form.watch("expectedDate")!, "PPP")
                     ) : (
-                      <span>Pick a date</span>
+                      <span>{t('pickADate')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -387,10 +391,10 @@ export default function EditPreOrder() {
 
             {/* Notes */}
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Add any notes or special instructions..."
+                placeholder={t('addNotesPlaceholder')}
                 rows={3}
                 {...form.register("notes")}
                 data-testid="textarea-notes"
@@ -404,7 +408,7 @@ export default function EditPreOrder() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
               <Package className="h-5 w-5" />
-              Pre-Order Items
+              {t('preOrderItems')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -416,7 +420,7 @@ export default function EditPreOrder() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Item {index + 1}
+                    {t('item')} {index + 1}
                   </span>
                   {items.length > 1 && (
                     <Button
@@ -435,14 +439,14 @@ export default function EditPreOrder() {
                 {/* Product Selector (Optional) */}
                 <div>
                   <Label htmlFor={`product-${item.id}`} className="text-xs">
-                    Select Existing Product (Optional)
+                    {t('selectExistingProduct')}
                   </Label>
                   <Select
                     value={item.productId || ""}
                     onValueChange={(value) => handleProductSelect(item.id, value)}
                   >
                     <SelectTrigger data-testid={`select-product-${index}`}>
-                      <SelectValue placeholder="Select a product or enter manually below" />
+                      <SelectValue placeholder={t('selectProductManually')} />
                     </SelectTrigger>
                     <SelectContent>
                       {products?.map((product: any) => (
@@ -462,11 +466,11 @@ export default function EditPreOrder() {
                   {/* Item Name */}
                   <div>
                     <Label htmlFor={`itemName-${item.id}`}>
-                      Item Name *
+                      {t('itemName')} *
                     </Label>
                     <Input
                       id={`itemName-${item.id}`}
-                      placeholder="e.g., Blue Widget"
+                      placeholder={t('exampleBlueWidget')}
                       value={item.itemName}
                       onChange={(e) => updateItem(item.id, 'itemName', e.target.value)}
                       data-testid={`input-item-name-${index}`}
@@ -476,7 +480,7 @@ export default function EditPreOrder() {
                   {/* Quantity */}
                   <div>
                     <Label htmlFor={`quantity-${item.id}`}>
-                      Quantity *
+                      {t('quantity')} *
                     </Label>
                     <Input
                       id={`quantity-${item.id}`}
@@ -493,11 +497,11 @@ export default function EditPreOrder() {
                 {/* Item Description */}
                 <div>
                   <Label htmlFor={`itemDescription-${item.id}`}>
-                    Item Description
+                    {t('itemDescription')}
                   </Label>
                   <Input
                     id={`itemDescription-${item.id}`}
-                    placeholder="Optional description or specifications"
+                    placeholder={t('optionalDescription')}
                     value={item.itemDescription || ""}
                     onChange={(e) => updateItem(item.id, 'itemDescription', e.target.value)}
                     data-testid={`input-item-description-${index}`}
@@ -514,7 +518,7 @@ export default function EditPreOrder() {
               data-testid="button-add-item"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Item
+              {t('addItem')}
             </Button>
           </CardContent>
         </Card>
@@ -527,7 +531,7 @@ export default function EditPreOrder() {
             onClick={() => navigate('/orders/pre-orders')}
             data-testid="button-cancel"
           >
-            Cancel
+            {tCommon('cancel')}
           </Button>
           <Button
             type="submit"
@@ -535,7 +539,7 @@ export default function EditPreOrder() {
             data-testid="button-submit"
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Updating..." : "Update Pre-Order"}
+            {isSubmitting ? t('updating') : t('updatePreOrder')}
           </Button>
         </div>
       </form>

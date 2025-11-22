@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
@@ -44,53 +45,37 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCzechDate } from "@/lib/dateUtils";
 
-const expenseSchema = z.object({
-  vendorName: z.string().min(1, "Vendor name is required"),
-  category: z.string().min(1, "Category is required"),
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
-  currency: z.enum(['USD', 'EUR', 'CZK', 'VND', 'CNY']),
-  date: z.date({
-    required_error: "Date is required",
-  }),
-  description: z.string().optional(),
-  invoiceNumber: z.string().optional(),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'credit_card', 'paypal', 'other']),
-  status: z.enum(['pending', 'paid', 'overdue']),
-  notes: z.string().optional(),
-  // Recurring fields
-  isRecurring: z.boolean().default(false),
-  recurringType: z.enum(['weekly', 'monthly', 'yearly']).optional(),
-  recurringInterval: z.coerce.number().int().min(1).optional(),
-  recurringDayOfWeek: z.coerce.number().int().min(0).max(6).optional(), // 0=Sunday, 6=Saturday
-  recurringDayOfMonth: z.coerce.number().int().min(1).max(31).optional(),
-  recurringMonth: z.coerce.number().int().min(1).max(12).optional(),
-  recurringDay: z.coerce.number().int().min(1).max(31).optional(),
-  recurringStartDate: z.date().optional(),
-  recurringEndDate: z.date().optional(),
-});
-
-type ExpenseFormData = z.infer<typeof expenseSchema>;
-
-const categories = [
-  'Office Supplies',
-  'Travel',
-  'Marketing',
-  'Software',
-  'Equipment',
-  'Utilities',
-  'Rent',
-  'Salaries',
-  'Insurance',
-  'Legal',
-  'Consulting',
-  'Shipping',
-  'Inventory',
-  'Other'
-];
-
 export default function AddExpense() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  const expenseSchema = z.object({
+    vendorName: z.string().min(1, t('vendorNameRequired')),
+    category: z.string().min(1, t('categoryIsRequired')),
+    amount: z.coerce.number().positive(t('amountMustBeGreaterThanZero')),
+    currency: z.enum(['USD', 'EUR', 'CZK', 'VND', 'CNY']),
+    date: z.date({
+      required_error: t('dateIsRequired'),
+    }),
+    description: z.string().optional(),
+    invoiceNumber: z.string().optional(),
+    paymentMethod: z.enum(['cash', 'bank_transfer', 'credit_card', 'paypal', 'other']),
+    status: z.enum(['pending', 'paid', 'overdue']),
+    notes: z.string().optional(),
+    // Recurring fields
+    isRecurring: z.boolean().default(false),
+    recurringType: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+    recurringInterval: z.coerce.number().int().min(1).optional(),
+    recurringDayOfWeek: z.coerce.number().int().min(0).max(6).optional(), // 0=Sunday, 6=Saturday
+    recurringDayOfMonth: z.coerce.number().int().min(1).max(31).optional(),
+    recurringMonth: z.coerce.number().int().min(1).max(12).optional(),
+    recurringDay: z.coerce.number().int().min(1).max(31).optional(),
+    recurringStartDate: z.date().optional(),
+    recurringEndDate: z.date().optional(),
+  });
+
+  type ExpenseFormData = z.infer<typeof expenseSchema>;
 
   // Generate expense ID
   const generateExpenseId = () => {
@@ -132,15 +117,15 @@ export default function AddExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       toast({
-        title: "Success",
-        description: "Expense created successfully",
+        title: t('success'),
+        description: t('expenseCreatedSuccessfully'),
       });
       navigate('/expenses');
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create expense",
+        title: t('error'),
+        description: error.message || t('failedToSaveExpense'),
         variant: "destructive",
       });
     },
@@ -182,11 +167,11 @@ export default function AddExpense() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{t('paid')}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{t('pending')}</Badge>;
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Overdue</Badge>;
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{t('overdue')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -221,8 +206,8 @@ export default function AddExpense() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Add Expense</h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Create a new business expense record</p>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('addExpense')}</h1>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('businessExpenseRecord')}</p>
                 </div>
               </div>
             </div>
@@ -240,12 +225,12 @@ export default function AddExpense() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="text-3xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">
-                        EXPENSE BILL
+                        {t('expenseBill').toUpperCase()}
                       </h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Business Expense Record</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('businessExpenseRecord')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">Bill ID</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{t('billId')}</p>
                       <p className="font-mono font-bold text-lg text-primary mt-1">{expenseId}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                         {formatCzechDate(new Date())}
@@ -260,16 +245,16 @@ export default function AddExpense() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2 mb-4">
                         <Building2 className="h-3 w-3" />
-                        Bill From (Vendor)
+                        {t('billFrom')}
                       </h3>
                       <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                         <div>
                           <Label htmlFor="vendorName" className="text-sm font-medium mb-2">
-                            Vendor Name *
+                            {t('vendorName')} *
                           </Label>
                           <Input
                             id="vendorName"
-                            placeholder="e.g., Office Depot, Amazon"
+                            placeholder={t('officeDepot') + ', ' + t('amazon')}
                             {...form.register("vendorName")}
                             data-testid="input-vendor-name"
                             className={cn(
@@ -290,12 +275,12 @@ export default function AddExpense() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2 mb-4">
                         <Receipt className="h-3 w-3" />
-                        Expense Information
+                        {t('expenseInformation')}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor="date" className="text-sm font-medium mb-2">
-                            Expense Date *
+                            {t('expenseDate')} *
                           </Label>
                           <Popover>
                             <PopoverTrigger asChild>
@@ -309,7 +294,7 @@ export default function AddExpense() {
                                 data-testid="button-date"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {form.watch("date") ? formatCzechDate(form.watch("date")) : "Select date"}
+                                {form.watch("date") ? formatCzechDate(form.watch("date")) : t('selectDate')}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -325,7 +310,7 @@ export default function AddExpense() {
 
                         <div>
                           <Label htmlFor="category" className="text-sm font-medium mb-2">
-                            Category *
+                            {t('category')} *
                           </Label>
                           <Select
                             value={form.watch("category")}
@@ -346,7 +331,7 @@ export default function AddExpense() {
 
                         <div>
                           <Label htmlFor="status" className="text-sm font-medium mb-2">
-                            Status *
+                            {t('status')} *
                           </Label>
                           <Select
                             value={form.watch("status")}
@@ -356,9 +341,9 @@ export default function AddExpense() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="paid">Paid</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="overdue">Overdue</SelectItem>
+                              <SelectItem value="paid">{t('paid')}</SelectItem>
+                              <SelectItem value="pending">{t('pending')}</SelectItem>
+                              <SelectItem value="overdue">{t('overdue')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -369,13 +354,13 @@ export default function AddExpense() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2 mb-4">
                         <DollarSign className="h-3 w-3" />
-                        Expense Details
+                        {t('expenseDetailsSection')}
                       </h3>
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="md:col-span-2">
                             <Label htmlFor="amount" className="text-sm font-medium mb-2">
-                              Amount *
+                              {t('amount')} *
                             </Label>
                             <Input
                               id="amount"
@@ -398,7 +383,7 @@ export default function AddExpense() {
 
                           <div>
                             <Label htmlFor="currency" className="text-sm font-medium mb-2">
-                              Currency *
+                              {t('currency')} *
                             </Label>
                             <Select
                               value={form.watch("currency")}
@@ -420,7 +405,7 @@ export default function AddExpense() {
 
                         <div>
                           <Label htmlFor="paymentMethod" className="text-sm font-medium mb-2">
-                            Payment Method *
+                            {t('paymentMethod')} *
                           </Label>
                           <Select
                             value={form.watch("paymentMethod")}
@@ -430,22 +415,22 @@ export default function AddExpense() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                              <SelectItem value="credit_card">Credit Card</SelectItem>
-                              <SelectItem value="paypal">PayPal</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="cash">{t('cash')}</SelectItem>
+                              <SelectItem value="bank_transfer">{t('bankTransfer')}</SelectItem>
+                              <SelectItem value="credit_card">{t('creditCard')}</SelectItem>
+                              <SelectItem value="paypal">{t('paypal')}</SelectItem>
+                              <SelectItem value="other">{t('other')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div>
                           <Label htmlFor="description" className="text-sm font-medium mb-2">
-                            Description
+                            {t('description')}
                           </Label>
                           <Textarea
                             id="description"
-                            placeholder="What was this expense for?"
+                            placeholder={t('whatWasThisExpenseFor')}
                             rows={2}
                             {...form.register("description")}
                             data-testid="input-description"
@@ -455,11 +440,11 @@ export default function AddExpense() {
 
                         <div>
                           <Label htmlFor="notes" className="text-sm font-medium mb-2">
-                            Additional Notes
+                            {t('additionalNotesOrComments')}
                           </Label>
                           <Textarea
                             id="notes"
-                            placeholder="Any additional notes or comments..."
+                            placeholder={t('additionalNotesOrComments')}
                             rows={2}
                             {...form.register("notes")}
                             data-testid="input-notes"
@@ -487,11 +472,11 @@ export default function AddExpense() {
                         <div className="flex items-center gap-2">
                           <Repeat className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            Recurring Expense
+                            {t('recurringExpense')}
                           </h3>
                           {form.watch('isRecurring') && (
                             <Badge variant="secondary" className="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                              Active
+                              {t('active')}
                             </Badge>
                           )}
                         </div>
@@ -507,7 +492,7 @@ export default function AddExpense() {
                           {/* Recurring Type */}
                           <div>
                             <Label htmlFor="recurringType" className="text-sm font-medium mb-2">
-                              Repeat Every *
+                              {t('repeatEvery')} *
                             </Label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <Input
@@ -527,9 +512,9 @@ export default function AddExpense() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="weekly">Week(s)</SelectItem>
-                                  <SelectItem value="monthly">Month(s)</SelectItem>
-                                  <SelectItem value="yearly">Year(s)</SelectItem>
+                                  <SelectItem value="weekly">{t('weeks')}</SelectItem>
+                                  <SelectItem value="monthly">{t('months')}</SelectItem>
+                                  <SelectItem value="yearly">{t('years')}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -539,7 +524,7 @@ export default function AddExpense() {
                           {form.watch("recurringType") === 'weekly' && (
                             <div>
                               <Label htmlFor="recurringDayOfWeek" className="text-sm font-medium mb-2">
-                                On Day
+                                {t('onDay')}
                               </Label>
                               <Select
                                 value={form.watch("recurringDayOfWeek")?.toString() || '1'}
@@ -565,7 +550,7 @@ export default function AddExpense() {
                           {form.watch("recurringType") === 'monthly' && (
                             <div>
                               <Label htmlFor="recurringDayOfMonth" className="text-sm font-medium mb-2">
-                                On Day of Month
+                                {t('onDayOfMonth')}
                               </Label>
                               <Input
                                 id="recurringDayOfMonth"
@@ -578,7 +563,7 @@ export default function AddExpense() {
                                 className="text-base"
                               />
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Enter a day between 1-31
+                                {t('enterDayBetween')}
                               </p>
                             </div>
                           )}
@@ -588,7 +573,7 @@ export default function AddExpense() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <Label htmlFor="recurringMonth" className="text-sm font-medium mb-2">
-                                  Month
+                                  {t('month')}
                                 </Label>
                                 <Select
                                   value={form.watch("recurringMonth")?.toString() || '1'}
@@ -615,7 +600,7 @@ export default function AddExpense() {
                               </div>
                               <div>
                                 <Label htmlFor="recurringDay" className="text-sm font-medium mb-2">
-                                  Day
+                                  {t('day')}
                                 </Label>
                                 <Input
                                   id="recurringDay"
@@ -634,7 +619,7 @@ export default function AddExpense() {
                           {/* Start Date */}
                           <div>
                             <Label className="text-sm font-medium mb-2">
-                              Start Date (Optional)
+                              {t('startDateOptional')}
                             </Label>
                             <Popover>
                               <PopoverTrigger asChild>
@@ -650,7 +635,7 @@ export default function AddExpense() {
                                   {form.watch("recurringStartDate") ? (
                                     formatCzechDate(form.watch("recurringStartDate")!)
                                   ) : (
-                                    <span>Pick start date</span>
+                                    <span>{t('pickStartDate')}</span>
                                   )}
                                 </Button>
                               </PopoverTrigger>
@@ -667,7 +652,7 @@ export default function AddExpense() {
                           {/* End Date */}
                           <div>
                             <Label className="text-sm font-medium mb-2">
-                              End Date (Optional)
+                              {t('endDateOptional')}
                             </Label>
                             <Popover>
                               <PopoverTrigger asChild>
@@ -683,7 +668,7 @@ export default function AddExpense() {
                                   {form.watch("recurringEndDate") ? (
                                     formatCzechDate(form.watch("recurringEndDate")!)
                                   ) : (
-                                    <span>Pick end date (leave empty for no end)</span>
+                                    <span>{t('pickEndDate')}</span>
                                   )}
                                 </Button>
                               </PopoverTrigger>
@@ -699,14 +684,14 @@ export default function AddExpense() {
                               </PopoverContent>
                             </Popover>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              Leave empty for no end date
+                              {t('leaveEmptyForNoEndDate')}
                             </p>
                           </div>
 
                           {/* Summary */}
                           <div className="bg-white dark:bg-slate-900 p-3 rounded-md border border-slate-200 dark:border-slate-700">
                             <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                              Recurring Summary:
+                              {t('recurringSummary')}:
                             </p>
                             <p className="text-sm text-slate-900 dark:text-white">
                               {(() => {
@@ -752,9 +737,9 @@ export default function AddExpense() {
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-1">
                         <FileText className="h-6 w-6" />
-                        <h2 className="text-2xl font-bold tracking-wide">EXPENSE BILL</h2>
+                        <h2 className="text-2xl font-bold tracking-wide">{t('expenseBill').toUpperCase()}</h2>
                       </div>
-                      <p className="text-xs text-blue-100 uppercase tracking-widest">Davie Supply</p>
+                      <p className="text-xs text-blue-100 uppercase tracking-widest">{t('appName')}</p>
                     </div>
                   </div>
 
@@ -763,11 +748,11 @@ export default function AddExpense() {
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Bill Number</p>
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('billNumber')}</p>
                           <p className="font-mono text-sm font-bold text-slate-900 dark:text-white">{expenseId}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Date</p>
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('date')}</p>
                           <p className="text-sm font-semibold text-slate-900 dark:text-white">
                             {formatCzechDate(form.watch("date") || new Date())}
                           </p>
@@ -778,11 +763,11 @@ export default function AddExpense() {
                     {/* Vendor Information */}
                     {form.watch("vendorName") && (
                       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
-                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Bill From</p>
+                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{t('billFrom')}</p>
                         <p className="text-base font-bold text-slate-900 dark:text-white">{form.watch("vendorName")}</p>
                         {form.watch("invoiceNumber") && (
                           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                            Invoice # <span className="font-mono font-semibold">{form.watch("invoiceNumber")}</span>
+                            {t('invoiceNumber')} # <span className="font-mono font-semibold">{form.watch("invoiceNumber")}</span>
                           </p>
                         )}
                       </div>
@@ -790,17 +775,17 @@ export default function AddExpense() {
 
                     {/* Expense Details */}
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Expense Details</p>
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">{t('expenseDetails')}</p>
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">Category</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">{t('category')}</span>
                           <span className="font-semibold text-slate-900 dark:text-white">{form.watch("category")}</span>
                         </div>
                         
                         {form.watch("description") && (
                           <div className="py-2 border-b border-slate-200 dark:border-slate-700">
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Description</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('description')}</p>
                             <p className="text-sm text-slate-900 dark:text-white">{form.watch("description")}</p>
                           </div>
                         )}
@@ -808,7 +793,7 @@ export default function AddExpense() {
                         <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
                           <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
                             {getPaymentMethodIcon(form.watch("paymentMethod"))}
-                            Payment
+                            {t('payment')}
                           </span>
                           <span className="font-medium text-slate-900 dark:text-white capitalize text-sm">
                             {form.watch("paymentMethod").replace('_', ' ')}
@@ -816,7 +801,7 @@ export default function AddExpense() {
                         </div>
 
                         <div className="flex justify-between items-center py-2">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">Status</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">{t('status')}</span>
                           <div>{getStatusBadge(form.watch("status"))}</div>
                         </div>
                       </div>
@@ -826,8 +811,8 @@ export default function AddExpense() {
                     <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-lg p-5 mb-4 border-2 border-blue-700 dark:border-blue-600 shadow-lg">
                       <div className="flex justify-between items-end" data-testid="summary-total">
                         <div>
-                          <p className="text-xs text-blue-100 uppercase tracking-widest mb-1">Total Amount</p>
-                          <p className="text-sm text-blue-200">Due Now</p>
+                          <p className="text-xs text-blue-100 uppercase tracking-widest mb-1">{t('totalAmount')}</p>
+                          <p className="text-sm text-blue-200">{t('dueNow')}</p>
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold text-white tabular-nums">
@@ -840,7 +825,7 @@ export default function AddExpense() {
                     {/* Notes Section */}
                     {form.watch("notes") && (
                       <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4 border-2 border-amber-200 dark:border-amber-700">
-                        <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wide mb-2">Notes</p>
+                        <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wide mb-2">{t('notes')}</p>
                         <p className="text-sm text-amber-900 dark:text-amber-200">{form.watch("notes")}</p>
                       </div>
                     )}
@@ -857,12 +842,12 @@ export default function AddExpense() {
                         {createExpenseMutation.isPending ? (
                           <>
                             <span className="animate-spin mr-2">⏳</span>
-                            Processing...
+                            {t('processing')}...
                           </>
                         ) : (
                           <>
                             <Save className="mr-2 h-5 w-5" />
-                            Record Expense
+                            {t('recordExpense')}
                           </>
                         )}
                       </Button>
@@ -874,14 +859,14 @@ export default function AddExpense() {
                         onClick={() => navigate('/expenses')}
                         data-testid="button-cancel"
                       >
-                        Cancel
+                        {t('cancel')}
                       </Button>
                     </div>
 
                     {/* Footer */}
                     <div className="mt-6 pt-4 border-t-2 border-dashed border-slate-300 dark:border-slate-700 text-center">
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        This is an expense record for internal accounting purposes
+                        {t('expenseRecordPurpose')}
                       </p>
                     </div>
                   </CardContent>

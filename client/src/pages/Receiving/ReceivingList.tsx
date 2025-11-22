@@ -460,7 +460,7 @@ function StickyHeaderScanHeader({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{session.isCameraActive ? "Camera On" : "Camera Off"}</p>
+                  <p>{session.isCameraActive ? t('cameraOn') : t('cameraOff')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -470,7 +470,7 @@ function StickyHeaderScanHeader({
               <Input
                 ref={scanInputRef}
                 type="text"
-                placeholder="Scan or type barcode..."
+                placeholder={t('scanOrTypeBarcode')}
                 value={manualBarcode}
                 onChange={(e) => setManualBarcode(e.target.value)}
                 className="h-12 text-base"
@@ -486,7 +486,7 @@ function StickyHeaderScanHeader({
                 data-testid="button-scan"
               >
                 <ScanLine className="h-5 w-5 mr-2" />
-                Scan
+                {t('scan')}
               </Button>
             </form>
 
@@ -507,7 +507,7 @@ function StickyHeaderScanHeader({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Undo Last Scan</p>
+                  <p>{t('undoLastScan')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -574,7 +574,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold text-foreground">Active Receipts</h3>
+          <h3 className="text-base font-semibold text-foreground">{t('activeReceipts')}</h3>
           <Badge variant="secondary" className="text-xs">
             {receipts.length}
           </Badge>
@@ -645,7 +645,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
                     <div className="flex items-center justify-between text-sm pt-1">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Truck className="h-4 w-4" />
-                        <span className="font-medium">{receipt.carrier || 'Unknown'}</span>
+                        <span className="font-medium">{receipt.carrier || t('unknownCarrier')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="h-4 w-4" />
@@ -655,7 +655,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
                     
                     {/* Continue CTA */}
                     <div className="pt-2 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-semibold">
-                      <span>Continue Receiving</span>
+                      <span>{t('continueReceiving')}</span>
                       <ChevronRight className="h-4 w-4" />
                     </div>
                   </div>
@@ -1106,7 +1106,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge className={getStatusColor('receiving')}>
-              In Progress
+              {t('inProgress')}
             </Badge>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -1191,7 +1191,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>{itemCount} items pending storage</span>
+                <span>{itemCount} {t('itemsPendingStorage')}</span>
               </div>
               {shipment.receivedAt && (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -1243,7 +1243,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
               data-testid={`button-go-to-storage-${shipment.id}`}
             >
               <Warehouse className="h-5 w-5 mr-2" />
-              Go to Storage
+              {t('goToStorage')}
             </Button>
           </div>
         </CardContent>
@@ -1308,7 +1308,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>{itemCount} items completed</span>
+                <span>{itemCount} {t('itemsCompleted')}</span>
               </div>
               {shipment.completedAt && (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -1382,7 +1382,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                     data-testid={`menu-item-send-back-${shipment.id}`}
                   >
                     <Undo2 className="h-4 w-4 mr-2" />
-                    Send Back to Receive
+                    {t('sendBackToReceive')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1578,7 +1578,7 @@ export default function ReceivingList() {
         await soundEffects.playSuccessBeep();
         
         toast({
-          title: "Item Scanned",
+          title: t('itemScanned'),
           description: `Added ${product.name}`,
         });
 
@@ -1592,7 +1592,7 @@ export default function ReceivingList() {
         setShowUnmatchedDialog(true);
         
         toast({
-          title: "Unknown Barcode",
+          title: t('itemNotFound'),
           description: `${barcode} not found in database`,
           variant: "destructive",
         });
@@ -1600,7 +1600,7 @@ export default function ReceivingList() {
     } catch (error) {
       await soundEffects.playErrorBeep();
       toast({
-        title: "Scan Error",
+        title: t('common:error'),
         description: "Failed to process barcode",
         variant: "destructive",
       });
@@ -1619,8 +1619,8 @@ export default function ReceivingList() {
   const handleCompleteReceipt = useCallback(async () => {
     await soundEffects.playCompletionSound();
     toast({
-      title: "Receipt Completed",
-      description: "All items have been successfully received",
+      title: t('receiptApproved'),
+      description: t('receivingComplete'),
     });
     // Clear session and navigate
     navigate('/receiving');
@@ -1705,7 +1705,7 @@ export default function ReceivingList() {
                 data-testid="tab-archived"
               >
                 <Archive className="h-4 w-4 mr-2" />
-                Archived ({archivedShipments.length})
+                {t('archived')} ({archivedShipments.length})
               </Button>
             </div>
           </div>

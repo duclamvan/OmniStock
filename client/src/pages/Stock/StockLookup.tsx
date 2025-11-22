@@ -316,10 +316,10 @@ export default function StockLookup() {
 
   const getStockStatus = (stock: number, customThreshold?: number) => {
     const threshold = customThreshold ?? lowStockThreshold;
-    if (stock === 0) return { label: "Out of Stock", color: "bg-red-500", icon: AlertCircle };
-    if (stock <= threshold) return { label: "Low Stock", color: "bg-yellow-500", icon: TrendingDown };
-    if (stock <= threshold * 2) return { label: "Medium Stock", color: "bg-blue-500", icon: TrendingUp };
-    return { label: "In Stock", color: "bg-green-500", icon: TrendingUp };
+    if (stock === 0) return { label: t('outOfStock'), color: "bg-red-500", icon: AlertCircle };
+    if (stock <= threshold) return { label: t('lowStock'), color: "bg-yellow-500", icon: TrendingDown };
+    if (stock <= threshold * 2) return { label: t('mediumStock'), color: "bg-blue-500", icon: TrendingUp };
+    return { label: t('inStock'), color: "bg-green-500", icon: TrendingUp };
   };
 
   const handleBarcodeScan = (barcode: string) => {
@@ -355,7 +355,7 @@ export default function StockLookup() {
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 py-3">
           <div className="flex items-center justify-between mb-2.5">
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Stock Lookup</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('stockLookup')}</h1>
             {enableBarcodeScanning && (
               <Button
                 variant={barcodeMode ? "default" : "outline"}
@@ -365,7 +365,7 @@ export default function StockLookup() {
                 data-testid="button-toggle-barcode-mode"
               >
                 <Barcode className="h-4 w-4 mr-1.5" />
-                {barcodeMode ? "Scanning" : "Scan"}
+                {barcodeMode ? t('scanning') : t('scanLabel')}
               </Button>
             )}
           </div>
@@ -377,7 +377,7 @@ export default function StockLookup() {
                 <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-600" />
                 <Input
                   type="text"
-                  placeholder="Scan barcode to search product..."
+                  placeholder={t('scanBarcodeToSearch')}
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyPress={handleBarcodeKeyPress}
@@ -389,10 +389,10 @@ export default function StockLookup() {
               <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                 <div className="flex items-center gap-1">
                   <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></div>
-                  <span>Ready to scan</span>
+                  <span>{t('readyToScan')}</span>
                 </div>
                 <span>•</span>
-                <span>Scan to find product</span>
+                <span>{t('scanToFind')}</span>
               </div>
             </div>
           ) : (
@@ -401,7 +401,7 @@ export default function StockLookup() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                 <Input
                   type="text"
-                  placeholder="Search by name, SKU, or barcode..."
+                  placeholder={t('searchByNameSkuBarcode')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-10 h-12 text-base"
@@ -422,9 +422,9 @@ export default function StockLookup() {
 
               {/* Quick Stats */}
               <div className="mt-3 flex gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <span>{products.length} products</span>
+                <span>{products.length} {t('productsCount')}</span>
                 <span>•</span>
-                <span>{filteredProducts.length} results</span>
+                <span>{filteredProducts.length} {t('resultsCount')}</span>
               </div>
             </>
           )}
@@ -437,11 +437,11 @@ export default function StockLookup() {
                 <SelectTrigger className="flex-1 h-9 text-sm" data-testid="select-category-filter">
                   <div className="flex items-center gap-1.5">
                     <Filter className="h-3.5 w-3.5 text-gray-500" />
-                    <SelectValue placeholder="All Categories" />
+                    <SelectValue placeholder={t('allCategories')} />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t('allCategories')}</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.name}>
                       {cat.name}
@@ -455,11 +455,11 @@ export default function StockLookup() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9 px-3" data-testid="button-sort-menu">
                     <SortIcon className="h-3.5 w-3.5 mr-1.5" />
-                    Sort
+                    {t('sortBy')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel className="text-xs font-semibold text-gray-500">Sort By</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs font-semibold text-gray-500">{t('sortBy')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
                   <DropdownMenuItem 
@@ -467,7 +467,7 @@ export default function StockLookup() {
                     className={sortBy === 'name-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Name (A-Z)</span>
+                      <span className="text-sm">{t('nameAZ')}</span>
                       {sortBy === 'name-asc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -476,7 +476,7 @@ export default function StockLookup() {
                     className={sortBy === 'name-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Name (Z-A)</span>
+                      <span className="text-sm">{t('nameZA')}</span>
                       {sortBy === 'name-desc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -488,7 +488,7 @@ export default function StockLookup() {
                     className={sortBy === 'stock-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Stock (High-Low)</span>
+                      <span className="text-sm">{t('stockHighLow')}</span>
                       {sortBy === 'stock-desc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -497,7 +497,7 @@ export default function StockLookup() {
                     className={sortBy === 'stock-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Stock (Low-High)</span>
+                      <span className="text-sm">{t('stockLowHigh')}</span>
                       {sortBy === 'stock-asc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -509,7 +509,7 @@ export default function StockLookup() {
                     className={sortBy === 'sku-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">SKU (A-Z)</span>
+                      <span className="text-sm">{t('skuAZ')}</span>
                       {sortBy === 'sku-asc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -518,7 +518,7 @@ export default function StockLookup() {
                     className={sortBy === 'sku-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">SKU (Z-A)</span>
+                      <span className="text-sm">{t('skuZA')}</span>
                       {sortBy === 'sku-desc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -530,7 +530,7 @@ export default function StockLookup() {
                     className={sortBy === 'category-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Category (A-Z)</span>
+                      <span className="text-sm">{t('categoryAZ')}</span>
                       {sortBy === 'category-asc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -539,7 +539,7 @@ export default function StockLookup() {
                     className={sortBy === 'category-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm">Category (Z-A)</span>
+                      <span className="text-sm">{t('categoryZA')}</span>
                       {sortBy === 'category-desc' && <span className="text-blue-600">✓</span>}
                     </div>
                   </DropdownMenuItem>
@@ -561,10 +561,10 @@ export default function StockLookup() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                    Over-Allocated Inventory
+                    {t('overAllocated')}
                   </h3>
                   <p className="text-sm text-red-800 dark:text-red-200 mb-3">
-                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity ordered than available in stock
+                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('itemsWithMoreOrderedThanAvailable').toLowerCase()}
                   </p>
                   <Link href="/stock/over-allocated">
                     <Button 
@@ -572,7 +572,7 @@ export default function StockLookup() {
                       className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
                       data-testid="button-view-over-allocated"
                     >
-                      View & Resolve Issues
+                      {t('viewAndResolveIssues')}
                     </Button>
                   </Link>
                 </div>
@@ -596,10 +596,10 @@ export default function StockLookup() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                    Under-Allocated Inventory
+                    {t('underAllocated')}
                   </h3>
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity in record than in stock locations
+                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('itemsWithMoreRecordedThanLocation').toLowerCase()}
                   </p>
                   <Link href="/stock/under-allocated">
                     <Button 
@@ -607,7 +607,7 @@ export default function StockLookup() {
                       className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white"
                       data-testid="button-view-under-allocated"
                     >
-                      View & Resolve Issues
+                      {t('viewAndResolveIssues')}
                     </Button>
                   </Link>
                 </div>
@@ -631,10 +631,10 @@ export default function StockLookup() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm sm:text-base text-yellow-900 dark:text-yellow-100 mb-0.5">
-                    Showing Under-Allocated Items
+                    {t('showingUnderAllocatedItems')}
                   </h3>
                   <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
-                    Products below have discrepancies between recorded and stock location quantities
+                    {t('discrepanciesBetweenRecorded')}
                   </p>
                 </div>
                 <Badge className="bg-yellow-600 text-white text-xs sm:text-sm font-bold flex-shrink-0">
@@ -669,7 +669,7 @@ export default function StockLookup() {
             <CardContent className="p-8 text-center">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 dark:text-gray-400">
-                {searchQuery ? "No products found" : "No products available"}
+                {searchQuery ? t('noProductsFound') : t('noProductsAvailable')}
               </p>
             </CardContent>
           </Card>
@@ -761,7 +761,7 @@ export default function StockLookup() {
                         {displayProduct.locations && displayProduct.locations.length > 0 && (
                           <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                             <MapPin className="h-3.5 w-3.5" />
-                            <span className="text-[11px] font-medium">{displayProduct.locations.length} location{displayProduct.locations.length > 1 ? 's' : ''}</span>
+                            <span className="text-[11px] font-medium">{displayProduct.locations.length} {displayProduct.locations.length === 1 ? t('location') : t('location', { count: displayProduct.locations.length })}</span>
                           </div>
                         )}
                       </div>
@@ -777,12 +777,12 @@ export default function StockLookup() {
                       {/* Stock Breakdown */}
                       <div className={`grid gap-3 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Base Stock</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('baseStock')}</p>
                           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
                         </div>
                         {selectedProductData.variants.length > 0 && (
                           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Variant Stock</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('variantStock')}</p>
                             <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
                               {selectedProductData.variants.reduce((sum, v) => sum + (v.quantity || 0), 0)}
                             </p>
@@ -795,7 +795,7 @@ export default function StockLookup() {
                         <div>
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                             <Layers className="h-4 w-4" />
-                            Product Variants ({selectedProductData.variants.length})
+                            {t('productVariants')} ({selectedProductData.variants.length})
                           </h4>
                           <div className="space-y-2">
                             {selectedProductData.variants.map((variant) => (
@@ -844,7 +844,7 @@ export default function StockLookup() {
                                   </div>
                                 </div>
                                 <Badge variant="secondary" className="ml-2 flex-shrink-0">
-                                  {variant.quantity} units
+                                  {variant.quantity} {t('units')}
                                 </Badge>
                               </div>
                             ))}
@@ -863,11 +863,11 @@ export default function StockLookup() {
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                               <MapPin className="h-4 w-4" />
-                              Warehouse Locations ({selectedProductData.locations.length})
+                              {t('warehouseLocations')} ({selectedProductData.locations.length})
                             </h4>
                             <Link href={`/inventory/products/${product.id}`}>
                               <Button variant="ghost" size="sm" className="h-7 text-xs" data-testid={`button-view-all-locations-${product.id}`}>
-                                View All
+                                {t('viewAll')}
                               </Button>
                             </Link>
                           </div>
@@ -885,7 +885,7 @@ export default function StockLookup() {
                                     </p>
                                     {loc.isPrimary && (
                                       <Badge variant="default" className="mt-1 h-5 text-xs">
-                                        Primary
+                                        {t('primary')}
                                       </Badge>
                                     )}
                                   </div>
@@ -898,8 +898,8 @@ export default function StockLookup() {
                                         e.stopPropagation();
                                         if (loc.quantity <= 0) {
                                           toast({
-                                            title: "Cannot Reduce",
-                                            description: "Stock is already at 0",
+                                            title: t('cannotReduce'),
+                                            description: t('stockAlreadyZero'),
                                             variant: "destructive"
                                           });
                                           return;
@@ -910,12 +910,12 @@ export default function StockLookup() {
                                       }}
                                       disabled={loc.quantity <= 0}
                                       data-testid={`button-quick-minus-${loc.id}`}
-                                      title="Quick remove stock (uses last adjustment values)"
+                                      title={t('quickRemoveStock')}
                                     >
                                       <Minus className="h-3.5 w-3.5" />
                                     </Button>
                                     <Badge variant="secondary" className="px-2.5">
-                                      {loc.quantity} units
+                                      {loc.quantity} {t('units')}
                                     </Badge>
                                     <Button
                                       variant="outline"
@@ -928,7 +928,7 @@ export default function StockLookup() {
                                         setAdjustDialogOpen(true);
                                       }}
                                       data-testid={`button-quick-plus-${loc.id}`}
-                                      title="Quick add stock (uses last adjustment values)"
+                                      title={t('quickAddStock')}
                                     >
                                       <Plus className="h-3.5 w-3.5" />
                                     </Button>
@@ -947,7 +947,7 @@ export default function StockLookup() {
                                     data-testid={`button-move-${loc.id}`}
                                   >
                                     <MoveRight className="h-3 w-3 mr-1" />
-                                    Move
+                                    {t('move')}
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -962,7 +962,7 @@ export default function StockLookup() {
                                     data-testid={`button-adjust-${loc.id}`}
                                   >
                                     <ArrowUpDown className="h-3 w-3 mr-1" />
-                                    Adjust
+                                    {t('adjust')}
                                   </Button>
                                 </div>
                               </div>
@@ -973,7 +973,7 @@ export default function StockLookup() {
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
                           <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            No warehouse locations assigned
+                            {t('noWarehouseLocations')}
                           </p>
                         </div>
                       )}
@@ -991,7 +991,7 @@ export default function StockLookup() {
                           data-testid={`button-view-description-${product.id}`}
                         >
                           <FileText className="h-4 w-4 mr-2" />
-                          View Item Description
+                          {t('viewItemDescription')}
                         </Button>
                       )}
                     </div>
@@ -1010,7 +1010,7 @@ export default function StockLookup() {
             <Drawer open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
               <DrawerContent className="max-h-[85vh]">
                 <DrawerHeader>
-                  <DrawerTitle className="text-left">Item Description</DrawerTitle>
+                  <DrawerTitle className="text-left">{t('itemDescription')}</DrawerTitle>
                 </DrawerHeader>
                 <div className="px-4 pb-6 overflow-y-auto">
                   <div className="mb-4">
@@ -1046,7 +1046,7 @@ export default function StockLookup() {
             <Dialog open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
               <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                  <DialogTitle>Item Description</DialogTitle>
+                  <DialogTitle>{t('itemDescription')}</DialogTitle>
                 </DialogHeader>
                 <div className="overflow-y-auto flex-1 pr-2">
                   <div className="mb-4">

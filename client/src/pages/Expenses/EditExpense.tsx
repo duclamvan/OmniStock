@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft, 
   Save, 
@@ -38,13 +39,13 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const expenseSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  category: z.string().min(1, "Category is required"),
-  amount: z.string().min(1, "Amount is required"),
+const getExpenseSchema = (t: any) => z.object({
+  name: z.string().min(1, t('nameIsRequired')),
+  category: z.string().min(1, t('categoryIsRequired')),
+  amount: z.string().min(1, t('amountRequired')),
   currency: z.enum(['USD', 'EUR', 'CZK', 'VND', 'CNY']),
   date: z.date({
-    required_error: "Date is required",
+    required_error: t('dateIsRequired'),
   }),
   description: z.string().optional(),
   recurring: z.enum(['none', 'monthly', 'quarterly', 'yearly']).optional(),
@@ -52,7 +53,7 @@ const expenseSchema = z.object({
   status: z.enum(['pending', 'paid', 'overdue']),
 });
 
-type ExpenseFormData = z.infer<typeof expenseSchema>;
+type ExpenseFormData = z.infer<ReturnType<typeof getExpenseSchema>>;
 
 const categories = [
   'Office Supplies',
@@ -75,6 +76,7 @@ export default function EditExpense() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation(['financial', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: expense, isLoading } = useQuery<any>({
@@ -83,7 +85,7 @@ export default function EditExpense() {
   });
 
   const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(expenseSchema),
+    resolver: zodResolver(getExpenseSchema(t)),
     defaultValues: {
       name: '',
       category: 'Office Supplies',
@@ -124,15 +126,15 @@ export default function EditExpense() {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       queryClient.invalidateQueries({ queryKey: [`/api/expenses/${id}`] });
       toast({
-        title: "Success",
-        description: "Expense updated successfully",
+        title: t('common:success'),
+        description: t('expenseUpdatedSuccessfully'),
       });
       navigate('/expenses');
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update expense",
+        title: t('common:error'),
+        description: error.message || t('failedToUpdateExpense'),
         variant: "destructive",
       });
     },
@@ -166,7 +168,7 @@ export default function EditExpense() {
       <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading expense details...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('loadingExpenseDetails')}...</p>
         </div>
       </div>
     );
@@ -175,9 +177,9 @@ export default function EditExpense() {
   if (!expense) {
     return (
       <div className="text-center py-12 bg-white dark:bg-slate-900">
-        <p className="text-slate-600 dark:text-slate-400">Expense not found</p>
+        <p className="text-slate-600 dark:text-slate-400">{t('expenseNotFound')}</p>
         <Button onClick={() => window.history.back()} className="mt-4">
-          Back to Expenses
+          {t('backToExpenses')}
         </Button>
       </div>
     );
@@ -195,11 +197,11 @@ export default function EditExpense() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Edit Expense</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">Update expense details</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{t('editExpense')}</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('updateExpenseDetails')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-slate-500">Expense ID</p>
+          <p className="text-sm text-slate-500">{t('expenseId')}</p>
           <p className="font-mono font-semibold">{expense.expenseId}</p>
         </div>
       </div>
@@ -213,15 +215,15 @@ export default function EditExpense() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                   <Building className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  Basic Information
+                  {t('basicInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">{t('common:name')} *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Office Supplies, Monthly Rent"
+                    placeholder={t('namePlaceholder')}
                     {...form.register("name")}
                     className={form.formState.errors.name ? "border-red-500" : ""}
                   />
@@ -234,13 +236,13 @@ export default function EditExpense() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category">{t('category')} *</Label>
                     <Select
                       value={form.watch("category")}
                       onValueChange={(value) => form.setValue("category", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t('selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -253,29 +255,29 @@ export default function EditExpense() {
                   </div>
 
                   <div>
-                    <Label htmlFor="recurring">Recurring</Label>
+                    <Label htmlFor="recurring">{t('recurring')}</Label>
                     <Select
                       value={form.watch("recurring")}
                       onValueChange={(value: any) => form.setValue("recurring", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
+                        <SelectValue placeholder={t('selectFrequency')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
+                        <SelectItem value="none">{t('none')}</SelectItem>
+                        <SelectItem value="monthly">{t('monthly')}</SelectItem>
+                        <SelectItem value="quarterly">{t('quarterly')}</SelectItem>
+                        <SelectItem value="yearly">{t('yearly')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('common:description')}</Label>
                   <Textarea
                     id="description"
-                    placeholder="What was this expense for?"
+                    placeholder={t('descriptionPlaceholder')}
                     rows={3}
                     {...form.register("description")}
                   />
@@ -288,12 +290,12 @@ export default function EditExpense() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Payment Details
+                  {t('paymentDetails')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="amount">Amount *</Label>
+                  <Label htmlFor="amount">{t('amount')} *</Label>
                   <div className="flex gap-2">
                     <Input
                       id="amount"
@@ -340,7 +342,7 @@ export default function EditExpense() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Label htmlFor="paymentMethod">{t('paymentMethod')}</Label>
                     <Select
                       value={form.watch("paymentMethod")}
                       onValueChange={(value: any) => form.setValue("paymentMethod", value)}
@@ -349,17 +351,17 @@ export default function EditExpense() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="credit_card">Credit Card</SelectItem>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="cash">{t('cash')}</SelectItem>
+                        <SelectItem value="bank_transfer">{t('bankTransfer')}</SelectItem>
+                        <SelectItem value="credit_card">{t('creditCard')}</SelectItem>
+                        <SelectItem value="paypal">{t('paypal')}</SelectItem>
+                        <SelectItem value="other">{t('other')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label htmlFor="status">Status</Label>
+                    <Label htmlFor="status">{t('common:status')}</Label>
                     <Select
                       value={form.watch("status")}
                       onValueChange={(value: any) => form.setValue("status", value)}
@@ -368,16 +370,16 @@ export default function EditExpense() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
+                        <SelectItem value="pending">{t('pending')}</SelectItem>
+                        <SelectItem value="paid">{t('paid')}</SelectItem>
+                        <SelectItem value="overdue">{t('overdue')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div>
-                  <Label>Expense Date *</Label>
+                  <Label>{t('expenseDate')} *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -388,7 +390,7 @@ export default function EditExpense() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {form.watch("date") ? format(form.watch("date"), "PPP") : "Select date"}
+                        {form.watch("date") ? format(form.watch("date"), "PPP") : t('common:selectDate')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -413,32 +415,32 @@ export default function EditExpense() {
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Expense Summary
+                  {t('expenseSummary')}
                 </CardTitle>
-                <CardDescription>Review changes before saving</CardDescription>
+                <CardDescription>{t('reviewChangesBeforeSaving')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Expense ID:</span>
+                    <span className="text-slate-600">{t('expenseId')}:</span>
                     <span className="font-mono font-medium">{expense.expenseId}</span>
                   </div>
                   
                   {form.watch("name") && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Name:</span>
+                      <span className="text-slate-600">{t('common:name')}:</span>
                       <span className="font-medium">{form.watch("name")}</span>
                     </div>
                   )}
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Category:</span>
+                    <span className="text-slate-600">{t('category')}:</span>
                     <span className="font-medium">{form.watch("category")}</span>
                   </div>
                   
                   {form.watch("recurring") !== 'none' && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Recurring:</span>
+                      <span className="text-slate-600">{t('recurring')}:</span>
                       <span className="font-medium capitalize">{form.watch("recurring")}</span>
                     </div>
                   )}
@@ -446,7 +448,7 @@ export default function EditExpense() {
                   {form.watch("amount") && (
                     <div className="pt-3 border-t">
                       <div className="flex justify-between">
-                        <span className="text-slate-600">Total Amount:</span>
+                        <span className="text-slate-600">{t('totalAmount')}:</span>
                         <span className="text-xl font-bold">
                           {form.watch("currency") === 'USD' && '$'}
                           {form.watch("currency") === 'EUR' && '€'}
@@ -460,14 +462,14 @@ export default function EditExpense() {
                   )}
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Payment:</span>
+                    <span className="text-slate-600">{t('payment')}:</span>
                     <span className="font-medium capitalize">
                       {form.watch("paymentMethod").replace('_', ' ')}
                     </span>
                   </div>
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Status:</span>
+                    <span className="text-slate-600">{t('common:status')}:</span>
                     <span className={cn(
                       "font-medium capitalize",
                       form.watch("status") === 'paid' && "text-green-600",
@@ -489,11 +491,11 @@ export default function EditExpense() {
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
-                      <>Updating...</>
+                      <>{t('updating')}...</>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Update Expense
+                        {t('updateExpense')}
                       </>
                     )}
                   </Button>
@@ -504,7 +506,7 @@ export default function EditExpense() {
                     className="w-full"
                     onClick={() => navigate('/expenses')}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                 </div>
               </CardContent>

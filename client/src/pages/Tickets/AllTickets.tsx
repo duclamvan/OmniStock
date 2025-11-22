@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ import {
 } from "@/components/ui/select";
 
 export default function AllTickets() {
+  const { t } = useTranslation('system');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -122,12 +124,12 @@ export default function AllTickets() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load tickets",
+        title: t('error'),
+        description: t('failedToLoadTickets'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -136,16 +138,16 @@ export default function AllTickets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedTickets.length} ticket(s) successfully`,
+        title: t('success'),
+        description: t('deletedTicketsSuccess', { count: selectedTickets.length }),
       });
       setSelectedTickets([]);
     },
     onError: (error: any) => {
       console.error("Ticket delete error:", error);
-      const errorMessage = error.message || "Failed to delete tickets";
+      const errorMessage = error.message || t('failedToDeleteTickets');
       toast({
-        title: "Error",
+        title: t('error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -188,10 +190,10 @@ export default function AllTickets() {
     };
     
     const labels: Record<string, string> = {
-      open: "Open",
-      in_progress: "In Progress",
-      resolved: "Resolved",
-      closed: "Closed"
+      open: t('open'),
+      in_progress: t('inProgress'),
+      resolved: t('resolved'),
+      closed: t('closed')
     };
 
     return (
@@ -210,10 +212,10 @@ export default function AllTickets() {
     };
 
     const labels: Record<string, string> = {
-      low: "Low",
-      medium: "Medium",
-      high: "High",
-      urgent: "Urgent"
+      low: t('low'),
+      medium: t('medium'),
+      high: t('high'),
+      urgent: t('urgent')
     };
 
     return (
@@ -238,7 +240,7 @@ export default function AllTickets() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "ticketNumber",
-      header: "Ticket #",
+      header: t('ticketId'),
       sortable: true,
       className: "min-w-[120px]",
       cell: (ticket) => (
@@ -258,7 +260,7 @@ export default function AllTickets() {
     },
     {
       key: "customer",
-      header: "Customer",
+      header: t('customer'),
       sortable: true,
       className: "min-w-[150px]",
       cell: (ticket) => (
@@ -278,7 +280,7 @@ export default function AllTickets() {
     },
     {
       key: "subject",
-      header: "Subject",
+      header: t('subject'),
       sortable: true,
       className: "min-w-[250px]",
       cell: (ticket) => (
@@ -296,21 +298,21 @@ export default function AllTickets() {
     },
     {
       key: "priority",
-      header: "Priority",
+      header: t('priority'),
       sortable: true,
       className: "text-center",
       cell: (ticket) => getPriorityBadge(ticket.priority),
     },
     {
       key: "status",
-      header: "Status",
+      header: t('status'),
       sortable: true,
       className: "text-center",
       cell: (ticket) => getStatusBadge(ticket.status),
     },
     {
       key: "createdAt",
-      header: "Created",
+      header: t('created'),
       sortable: true,
       className: "text-right",
       cell: (ticket) => (
@@ -350,7 +352,7 @@ export default function AllTickets() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('delete'),
       variant: "destructive" as const,
       action: (tickets: any[]) => {
         setSelectedTickets(tickets);
@@ -389,14 +391,14 @@ export default function AllTickets() {
       exportToXLSX(exportData, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`, 'Tickets');
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} ticket(s) to XLSX`,
+        title: t('success'),
+        description: t('exportSuccessTickets', { count: exportData.length, format: 'XLSX' }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export tickets to XLSX",
+        title: t('error'),
+        description: t('exportFailedTickets', { format: 'XLSX' }),
         variant: "destructive",
       });
     }
@@ -437,14 +439,14 @@ export default function AllTickets() {
       exportToPDF('Tickets Report', exportData, columns, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} ticket(s) to PDF`,
+        title: t('success'),
+        description: t('exportSuccessTickets', { count: exportData.length, format: 'PDF' }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export tickets to PDF",
+        title: t('error'),
+        description: t('exportFailedTickets', { format: 'PDF' }),
         variant: "destructive",
       });
     }
@@ -458,7 +460,7 @@ export default function AllTickets() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading tickets...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('loadingTickets')}</p>
         </div>
       </div>
     );
@@ -470,10 +472,10 @@ export default function AllTickets() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Support Tickets
+            {t('supportTickets')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track customer support tickets and issues
+            {t('trackCustomerSupportTickets')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -481,26 +483,26 @@ export default function AllTickets() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export as XLSX
+                {t('exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t('exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/tickets/add">
             <Button data-testid="button-add-ticket">
               <Plus className="h-4 w-4 mr-2" />
-              New Ticket
+              {t('newTicket')}
             </Button>
           </Link>
         </div>
@@ -514,7 +516,7 @@ export default function AllTickets() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Tickets
+                  {t('totalTickets')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -542,7 +544,7 @@ export default function AllTickets() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Open
+                  {t('open')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -570,7 +572,7 @@ export default function AllTickets() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  In Progress
+                  {t('inProgress')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -598,7 +600,7 @@ export default function AllTickets() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Resolved
+                  {t('resolved')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -626,7 +628,7 @@ export default function AllTickets() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('filters')} & {t('search')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -634,7 +636,7 @@ export default function AllTickets() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search tickets..."
+                placeholder={t('searchTickets')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500"
@@ -643,27 +645,27 @@ export default function AllTickets() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500" data-testid="select-status-filter">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t('status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="all">{t('all')} {t('status')}</SelectItem>
+                <SelectItem value="open">{t('open')}</SelectItem>
+                <SelectItem value="in_progress">{t('inProgress')}</SelectItem>
+                <SelectItem value="resolved">{t('resolved')}</SelectItem>
+                <SelectItem value="closed">{t('closed')}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
               <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500" data-testid="select-priority-filter">
-                <SelectValue placeholder="Priority" />
+                <SelectValue placeholder={t('priority')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectItem value="all">{t('all')} {t('priority')}</SelectItem>
+                <SelectItem value="low">{t('low')}</SelectItem>
+                <SelectItem value="medium">{t('medium')}</SelectItem>
+                <SelectItem value="high">{t('high')}</SelectItem>
+                <SelectItem value="urgent">{t('urgent')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -675,7 +677,7 @@ export default function AllTickets() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">All Tickets</CardTitle>
+              <CardTitle className="text-lg">{t('allTickets')}</CardTitle>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
               </p>
@@ -723,43 +725,43 @@ export default function AllTickets() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('filters')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.ticketNumber !== false}
                       onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
                     >
-                      Ticket #
+                      {t('ticketId')}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.customer !== false}
                       onCheckedChange={() => toggleColumnVisibility('customer')}
                     >
-                      Customer
+                      {t('customer')}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.subject !== false}
                       onCheckedChange={() => toggleColumnVisibility('subject')}
                     >
-                      Subject
+                      {t('subject')}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.priority !== false}
                       onCheckedChange={() => toggleColumnVisibility('priority')}
                     >
-                      Priority
+                      {t('priority')}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.status !== false}
                       onCheckedChange={() => toggleColumnVisibility('status')}
                     >
-                      Status
+                      {t('status')}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.createdAt !== false}
                       onCheckedChange={() => toggleColumnVisibility('createdAt')}
                     >
-                      Created
+                      {t('created')}
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -773,7 +775,7 @@ export default function AllTickets() {
             {filteredTickets.length === 0 ? (
               <div className="text-center py-12">
                 <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
-                <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('noTicketsFound')}</p>
               </div>
             ) : (
               filteredTickets.map((ticket: any) => (
@@ -817,7 +819,7 @@ export default function AllTickets() {
                     {/* Middle Row - Key Details in 2 columns */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs">Customer</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">{t('customer')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
                           {ticket.customer?.name || '-'}
                         </p>
@@ -869,7 +871,7 @@ export default function AllTickets() {
                 {filteredTickets.length === 0 ? (
                   <div className="col-span-full text-center py-12">
                     <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
-                    <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
+                    <p className="text-slate-500 dark:text-slate-400">{t('noTicketsFound')}</p>
                   </div>
                 ) : (
                   filteredTickets.map((ticket: any) => (

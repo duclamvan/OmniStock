@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,8 @@ interface ItemRow {
 }
 
 export default function AddPreOrder() {
+  const { t } = useTranslation('orders');
+  const { t: tCommon } = useTranslation('common');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,14 +148,14 @@ export default function AddPreOrder() {
       setShowNewCustomerDialog(false);
       setNewCustomerData({ name: '', email: '', tel: '', country: '' });
       toast({
-        title: "Success",
-        description: "Customer created successfully",
+        title: tCommon('success'),
+        description: t('customerCreatedSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create customer",
+        title: tCommon('error'),
+        description: error.message || t('customerCreationFailed'),
         variant: "destructive",
       });
     },
@@ -165,15 +168,15 @@ export default function AddPreOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
       toast({
-        title: "Success",
-        description: "Pre-order created successfully",
+        title: tCommon('success'),
+        description: t('preOrderCreatedSuccess'),
       });
       navigate('/orders/pre-orders');
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create pre-order",
+        title: tCommon('error'),
+        description: error.message || t('preOrderCreationFailed'),
         variant: "destructive",
       });
     },
@@ -253,8 +256,8 @@ export default function AddPreOrder() {
   const handleCreateCustomer = () => {
     if (!newCustomerData.name.trim()) {
       toast({
-        title: "Error",
-        description: "Customer name is required",
+        title: tCommon('error'),
+        description: t('customerNameRequired2'),
         variant: "destructive",
       });
       return;
@@ -296,10 +299,10 @@ export default function AddPreOrder() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight" data-testid="heading-add-pre-order">
-            Create Pre-Order
+            {t('createPreOrder')}
           </h1>
           <p className="text-slate-600 mt-1 text-sm md:text-base">
-            Add a new customer pre-order
+            {t('addNewCustomerPreOrder')}
           </p>
         </div>
       </div>
@@ -310,13 +313,13 @@ export default function AddPreOrder() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
               <User className="h-5 w-5" />
-              Basic Information
+              {t('basicInformation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Customer Selector */}
             <div>
-              <Label htmlFor="customerId" className="text-sm font-medium text-slate-700">Customer *</Label>
+              <Label htmlFor="customerId" className="text-sm font-medium text-slate-700">{t('customer')} *</Label>
               <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -329,7 +332,7 @@ export default function AddPreOrder() {
                     {selectedCustomer ? (
                       <span className="truncate text-slate-900 font-medium">{selectedCustomer.name}</span>
                     ) : (
-                      <span className="text-slate-500">Search customers...</span>
+                      <span className="text-slate-500">{t('typeToSearchCustomers')}</span>
                     )}
                     <Search className="ml-2 h-4 w-4 shrink-0 text-slate-500" />
                   </Button>
@@ -337,13 +340,13 @@ export default function AddPreOrder() {
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Type to search customers..." 
+                      placeholder={t('typeToSearchCustomers')}
                       data-testid="input-search-customer"
                     />
                     <CommandList>
                       <CommandEmpty>
                         <div className="text-center py-6">
-                          <p className="text-sm text-slate-500 mb-3">No customer found</p>
+                          <p className="text-sm text-slate-500 mb-3">{t('noCustomerFound')}</p>
                           <Button
                             size="sm"
                             onClick={() => {
@@ -354,11 +357,11 @@ export default function AddPreOrder() {
                             data-testid="button-create-customer-empty"
                           >
                             <UserPlus className="h-4 w-4" />
-                            Create New Customer
+                            {t('createNewCustomer')}
                           </Button>
                         </div>
                       </CommandEmpty>
-                      <CommandGroup heading="Customers">
+                      <CommandGroup heading={t('customers')}>
                         {customers?.map((customer: any) => (
                           <CommandItem
                             key={customer.id}
@@ -393,7 +396,7 @@ export default function AddPreOrder() {
                         >
                           <div className="flex items-center gap-2 w-full justify-center py-1">
                             <UserPlus className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-blue-600">Create New Customer</span>
+                            <span className="font-medium text-blue-600">{t('createNewCustomer')}</span>
                           </div>
                         </CommandItem>
                       </CommandGroup>
@@ -411,7 +414,7 @@ export default function AddPreOrder() {
             {/* Expected Date */}
             <div>
               <Label htmlFor="expectedDate" className="text-sm font-medium text-slate-700">
-                Expected Arrival Date
+                {t('expectedArrivalDate')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -429,7 +432,7 @@ export default function AddPreOrder() {
                         {format(form.watch("expectedDate")!, "EEEE, MMMM d, yyyy")}
                       </span>
                     ) : (
-                      <span>Pick a date</span>
+                      <span>{t('pickADate')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -453,10 +456,10 @@ export default function AddPreOrder() {
 
             {/* Notes */}
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tCommon('notes')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Add any notes or special instructions..."
+                placeholder={t('addNotesOrInstructions')}
                 rows={3}
                 {...form.register("notes")}
                 data-testid="textarea-notes"
@@ -470,7 +473,7 @@ export default function AddPreOrder() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
               <Package className="h-5 w-5" />
-              Pre-Order Items
+              {t('preOrderItems')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -482,7 +485,7 @@ export default function AddPreOrder() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Item {index + 1}
+                    {t('itemNumber', { number: index + 1 })}
                   </span>
                   {items.length > 1 && (
                     <Button
@@ -501,7 +504,7 @@ export default function AddPreOrder() {
                 {/* Product Selector (Optional) */}
                 <div>
                   <Label htmlFor={`product-${item.id}`} className="text-xs">
-                    Select Existing Item (Optional)
+                    {t('selectExistingItem')}
                   </Label>
                   <Popover 
                     open={productSearchOpen[item.id] || false} 
@@ -526,7 +529,7 @@ export default function AddPreOrder() {
                             </span>
                           </span>
                         ) : (
-                          "Search products, pre-orders, or supplier items..."
+                          t('searchProductsPreOrdersSupplier')
                         )}
                         <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -534,12 +537,12 @@ export default function AddPreOrder() {
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
-                          placeholder="Search by name, SKU..." 
+                          placeholder={t('searchByNameSKU')}
                           data-testid={`input-search-product-${index}`}
                         />
                         <CommandList>
-                          <CommandEmpty>No items found.</CommandEmpty>
-                          <CommandGroup heading="Products">
+                          <CommandEmpty>{t('noItemsFound')}</CommandEmpty>
+                          <CommandGroup heading={t('products')}>
                             {getAllItems()
                               .filter(i => i.type === 'product')
                               .map((productItem: any) => (
@@ -561,7 +564,7 @@ export default function AddPreOrder() {
                                 </CommandItem>
                               ))}
                           </CommandGroup>
-                          <CommandGroup heading="Pre-Order Items">
+                          <CommandGroup heading={t('preOrderItemsGroup')}>
                             {getAllItems()
                               .filter(i => i.type === 'preorder')
                               .map((preOrderItem: any) => (
@@ -585,7 +588,7 @@ export default function AddPreOrder() {
                                 </CommandItem>
                               ))}
                           </CommandGroup>
-                          <CommandGroup heading="Purchase Order Items">
+                          <CommandGroup heading={t('purchaseOrderItems')}>
                             {getAllItems()
                               .filter(i => i.type === 'purchase')
                               .map((purchaseItem: any) => (
@@ -623,7 +626,7 @@ export default function AddPreOrder() {
                   {/* Item Name */}
                   <div>
                     <Label htmlFor={`itemName-${item.id}`}>
-                      Item Name *
+                      {t('itemNameRequired')}
                     </Label>
                     <Input
                       id={`itemName-${item.id}`}
@@ -637,7 +640,7 @@ export default function AddPreOrder() {
                   {/* Quantity */}
                   <div>
                     <Label htmlFor={`quantity-${item.id}`}>
-                      Quantity *
+                      {t('quantity')} *
                     </Label>
                     <Input
                       id={`quantity-${item.id}`}
@@ -654,11 +657,11 @@ export default function AddPreOrder() {
                 {/* Item Description */}
                 <div>
                   <Label htmlFor={`itemDescription-${item.id}`}>
-                    Item Description
+                    {t('itemDescription')}
                   </Label>
                   <Input
                     id={`itemDescription-${item.id}`}
-                    placeholder="Optional description or specifications"
+                    placeholder={t('optionalDescriptionSpec')}
                     value={item.itemDescription || ""}
                     onChange={(e) => updateItem(item.id, 'itemDescription', e.target.value)}
                     data-testid={`input-item-description-${index}`}
@@ -675,7 +678,7 @@ export default function AddPreOrder() {
               data-testid="button-add-item"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Item
+              {t('addItem')}
             </Button>
           </CardContent>
         </Card>
@@ -688,7 +691,7 @@ export default function AddPreOrder() {
             onClick={() => navigate('/orders/pre-orders')}
             data-testid="button-cancel"
           >
-            Cancel
+            {tCommon('cancel')}
           </Button>
           <Button
             type="submit"
@@ -696,7 +699,7 @@ export default function AddPreOrder() {
             data-testid="button-submit"
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Creating..." : "Create Pre-Order"}
+            {isSubmitting ? t('creating') : t('createPreOrder')}
           </Button>
         </div>
       </form>
@@ -707,16 +710,16 @@ export default function AddPreOrder() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-blue-600" />
-              Create New Customer
+              {t('createNewCustomer')}
             </DialogTitle>
             <DialogDescription>
-              Add a new customer to your database. Fill in at least the customer name.
+              {t('addNewCustomerDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="newCustomerName" className="text-sm font-medium">
-                Customer Name *
+                {t('customerNameRequired')}
               </Label>
               <Input
                 id="newCustomerName"
@@ -729,7 +732,7 @@ export default function AddPreOrder() {
             </div>
             <div>
               <Label htmlFor="newCustomerEmail" className="text-sm font-medium">
-                Email (Optional)
+                {tCommon('emailOptional')}
               </Label>
               <Input
                 id="newCustomerEmail"
@@ -743,7 +746,7 @@ export default function AddPreOrder() {
             </div>
             <div>
               <Label htmlFor="newCustomerTel" className="text-sm font-medium">
-                Phone (Optional)
+                {tCommon('phoneOptional')}
               </Label>
               <Input
                 id="newCustomerTel"
@@ -757,7 +760,7 @@ export default function AddPreOrder() {
             </div>
             <div>
               <Label htmlFor="newCustomerCountry" className="text-sm font-medium">
-                Country (Optional)
+                {tCommon('countryOptional')}
               </Label>
               <Input
                 id="newCustomerCountry"
@@ -778,7 +781,7 @@ export default function AddPreOrder() {
               }}
               data-testid="button-cancel-customer"
             >
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={handleCreateCustomer}

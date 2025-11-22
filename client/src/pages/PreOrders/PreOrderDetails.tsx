@@ -1,5 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,30 +42,33 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 
+// Status config defined outside component - labels will be translated in the component
 const statusConfig = {
   pending: {
-    label: "Pending",
+    labelKey: "pending",
     className: "bg-amber-100 text-amber-800 border-amber-200",
     icon: Clock3,
   },
   partially_arrived: {
-    label: "Partially Arrived",
+    labelKey: "partiallyArrived",
     className: "bg-blue-100 text-blue-800 border-blue-200",
     icon: TrendingUp,
   },
   fully_arrived: {
-    label: "Fully Arrived",
+    labelKey: "fullyArrived",
     className: "bg-green-100 text-green-800 border-green-200",
     icon: CheckCircle2,
   },
   cancelled: {
-    label: "Cancelled",
+    labelKey: "cancelled",
     className: "bg-red-100 text-red-800 border-red-200",
     icon: XCircle,
   },
 };
 
 export default function PreOrderDetails() {
+  const { t } = useTranslation('orders');
+  const { t: tCommon } = useTranslation('common');
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
@@ -82,15 +86,15 @@ export default function PreOrderDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
       toast({
-        title: "Success",
-        description: "Pre-order deleted successfully",
+        title: tCommon('success'),
+        description: t('preOrderDeletedSuccess'),
       });
       navigate('/orders/pre-orders');
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete pre-order",
+        title: tCommon('error'),
+        description: t('preOrderDeleteFailed'),
         variant: "destructive",
       });
     },
@@ -104,14 +108,14 @@ export default function PreOrderDetails() {
       queryClient.invalidateQueries({ queryKey: [`/api/pre-orders/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
       toast({
-        title: "Success",
-        description: "Pre-order status updated successfully",
+        title: tCommon('success'),
+        description: t('preOrderStatusUpdatedSuccess'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update pre-order status",
+        title: tCommon('error'),
+        description: t('preOrderStatusUpdateFailed'),
         variant: "destructive",
       });
     },
@@ -161,10 +165,10 @@ export default function PreOrderDetails() {
           </Button>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold" data-testid="heading-pre-order-details">
-              Pre-Order Details
+              {t('preOrderDetails')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {preOrder.customer?.name || "Unknown Customer"}
+              {preOrder.customer?.name || t('unknownCustomer')}
             </p>
           </div>
         </div>
@@ -173,7 +177,7 @@ export default function PreOrderDetails() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" data-testid="button-actions">
               <MoreVertical className="h-4 w-4 mr-2" />
-              Actions
+              {tCommon('actions')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -182,7 +186,7 @@ export default function PreOrderDetails() {
               data-testid="action-edit"
             >
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {tCommon('edit')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -191,7 +195,7 @@ export default function PreOrderDetails() {
               data-testid="action-mark-partially-arrived"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Mark as Partially Arrived
+              {t('markAsPartiallyArrived')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => updateStatusMutation.mutate('fully_arrived')}
@@ -199,7 +203,7 @@ export default function PreOrderDetails() {
               data-testid="action-mark-fully-arrived"
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
-              Mark as Fully Arrived
+              {t('markAsFullyArrived')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => updateStatusMutation.mutate('cancelled')}
@@ -208,7 +212,7 @@ export default function PreOrderDetails() {
               data-testid="action-cancel-pre-order"
             >
               <XCircle className="h-4 w-4 mr-2" />
-              Cancel Pre-Order
+              {t('cancelPreOrder')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -217,7 +221,7 @@ export default function PreOrderDetails() {
               data-testid="action-delete"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {tCommon('delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -227,14 +231,14 @@ export default function PreOrderDetails() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-xl md:text-2xl">Pre-Order Information</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">{t('preOrderInformation')}</CardTitle>
             <Badge 
               variant="outline" 
               className={`${config.className} px-3 py-1 text-sm font-medium border`}
               data-testid="badge-status"
             >
               <StatusIcon className="h-4 w-4 mr-2" />
-              {config.label}
+              {t(config.labelKey)}
             </Badge>
           </div>
         </CardHeader>
@@ -243,9 +247,9 @@ export default function PreOrderDetails() {
             <div className="flex items-start gap-3">
               <User className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Customer</p>
+                <p className="text-sm text-muted-foreground">{t('customer')}</p>
                 <p className="font-medium text-base" data-testid="text-customer-name">
-                  {preOrder.customer?.name || "Unknown Customer"}
+                  {preOrder.customer?.name || t('unknownCustomer')}
                 </p>
               </div>
             </div>
@@ -253,7 +257,7 @@ export default function PreOrderDetails() {
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Expected Arrival Date</p>
+                <p className="text-sm text-muted-foreground">{t('expectedArrivalDate')}</p>
                 <p className="font-medium text-base" data-testid="text-expected-date">
                   {formatDate(preOrder.expectedDate)}
                 </p>
@@ -263,7 +267,7 @@ export default function PreOrderDetails() {
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Created Date</p>
+                <p className="text-sm text-muted-foreground">{t('createdDate')}</p>
                 <p className="font-medium text-base" data-testid="text-created-date">
                   {formatDate(preOrder.createdAt)}
                 </p>
@@ -273,9 +277,9 @@ export default function PreOrderDetails() {
             <div className="flex items-start gap-3">
               <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Total Items</p>
+                <p className="text-sm text-muted-foreground">{t('totalItems')}</p>
                 <p className="font-medium text-base" data-testid="text-total-items">
-                  {preOrder.items?.length || 0} {preOrder.items?.length === 1 ? "item" : "items"}
+                  {preOrder.items?.length || 0} {preOrder.items?.length === 1 ? t('item') : t('items')}
                 </p>
               </div>
             </div>
@@ -288,7 +292,7 @@ export default function PreOrderDetails() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Pre-Order Items
+            {t('preOrderItems')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -328,7 +332,7 @@ export default function PreOrderDetails() {
                           }
                           data-testid={`badge-item-status-${item.id}`}
                         >
-                          {item.arrivedQuantity} / {item.quantity} arrived
+                          {item.arrivedQuantity} / {item.quantity} {t('arrived')}
                         </Badge>
                       </div>
                     </div>
@@ -336,7 +340,7 @@ export default function PreOrderDetails() {
                     {/* Progress Bar */}
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Arrival Progress</span>
+                        <span>{t('arrivalProgress')}</span>
                         <span data-testid={`text-progress-${item.id}`}>{progress}%</span>
                       </div>
                       <Progress 
@@ -348,13 +352,13 @@ export default function PreOrderDetails() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t text-sm">
                       <div>
-                        <p className="text-muted-foreground">Ordered Quantity</p>
+                        <p className="text-muted-foreground">{t('orderedQuantity')}</p>
                         <p className="font-medium" data-testid={`text-quantity-${item.id}`}>
                           {item.quantity}
                         </p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Arrived Quantity</p>
+                        <p className="text-muted-foreground">{t('arrivedQuantity')}</p>
                         <p className="font-medium" data-testid={`text-arrived-quantity-${item.id}`}>
                           {item.arrivedQuantity || 0}
                         </p>
@@ -368,7 +372,7 @@ export default function PreOrderDetails() {
             <div className="flex flex-col items-center justify-center py-12">
               <Package className="h-12 w-12 text-gray-400 mb-4" />
               <p className="text-gray-500 text-center" data-testid="text-no-items">
-                No items in this pre-order
+                {t('noItemsInPreOrder')}
               </p>
             </div>
           )}
@@ -381,7 +385,7 @@ export default function PreOrderDetails() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Notes
+              {t('notes')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -396,22 +400,21 @@ export default function PreOrderDetails() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Pre-Order</AlertDialogTitle>
+            <AlertDialogTitle>{t('deletePreOrder')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this pre-order? This action cannot be undone
-              and will also delete all associated items.
+              {t('deletePreOrderConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete">
-              Cancel
+              {tCommon('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-red-600 hover:bg-red-700"
               data-testid="button-confirm-delete"
             >
-              Delete
+              {tCommon('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

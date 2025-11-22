@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ interface TicketFormProps {
 }
 
 export default function TicketForm({ ticket, mode }: TicketFormProps) {
+  const { t } = useTranslation('system');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
@@ -100,18 +102,18 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
   const notifyDateOptions = useMemo(() => {
     const today = new Date();
     return [
-      { value: "NONE", label: "No reminder" },
-      { value: format(addDays(today, 1), "yyyy-MM-dd"), label: "Tomorrow" },
-      { value: format(addDays(today, 2), "yyyy-MM-dd"), label: "In 2 days" },
-      { value: format(addDays(today, 3), "yyyy-MM-dd"), label: "In 3 days" },
-      { value: format(addDays(today, 5), "yyyy-MM-dd"), label: "In 5 days" },
-      { value: format(addWeeks(today, 1), "yyyy-MM-dd"), label: "In 1 week" },
-      { value: format(addWeeks(today, 2), "yyyy-MM-dd"), label: "In 2 weeks" },
-      { value: format(addWeeks(today, 3), "yyyy-MM-dd"), label: "In 3 weeks" },
-      { value: format(addWeeks(today, 4), "yyyy-MM-dd"), label: "In 1 month" },
-      { value: "custom", label: "Custom date..." },
+      { value: "NONE", label: t('noReminder') },
+      { value: format(addDays(today, 1), "yyyy-MM-dd"), label: t('tomorrow') },
+      { value: format(addDays(today, 2), "yyyy-MM-dd"), label: t('in2Days') },
+      { value: format(addDays(today, 3), "yyyy-MM-dd"), label: t('in3Days') },
+      { value: format(addDays(today, 5), "yyyy-MM-dd"), label: t('in5Days') },
+      { value: format(addWeeks(today, 1), "yyyy-MM-dd"), label: t('in1Week') },
+      { value: format(addWeeks(today, 2), "yyyy-MM-dd"), label: t('in2Weeks') },
+      { value: format(addWeeks(today, 3), "yyyy-MM-dd"), label: t('in3Weeks') },
+      { value: format(addWeeks(today, 4), "yyyy-MM-dd"), label: t('in1Month') },
+      { value: "custom", label: t('customDate') },
     ];
-  }, []);
+  }, [t]);
 
   // Initialize customer search from existing ticket (wait for both ticket data AND customers to be loaded)
   useEffect(() => {
@@ -162,15 +164,15 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
         form.setValue("title", generatedSubject, { shouldValidate: true, shouldDirty: true });
         setHasManuallyEditedTitle(false);
         toast({
-          title: "Subject Generated",
+          title: t('subjectGenerated'),
           description: generatedSubject,
         });
       }
     } catch (error) {
       console.error("Error generating subject:", error);
       toast({
-        title: "AI Generation Failed",
-        description: "Could not auto-generate subject. Please enter manually.",
+        title: t('aiGenerationFailed'),
+        description: t('couldNotGenerateSubject'),
         variant: "destructive",
       });
     } finally {
@@ -183,8 +185,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
     const description = form.getValues("description");
     if (!description || description.trim().length < 10) {
       toast({
-        title: "Need More Details",
-        description: "Please write at least a few sentences in the description first.",
+        title: t('needMoreDetails'),
+        description: t('writeDescriptionFirst'),
         variant: "destructive",
       });
       return;
@@ -252,15 +254,15 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
-        title: "Success",
-        description: mode === "edit" ? "Ticket updated successfully" : "Ticket created successfully",
+        title: t('success'),
+        description: mode === "edit" ? t('ticketUpdatedSuccessfully') : t('ticketCreatedSuccessfully'),
       });
       navigate('/tickets');
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: mode === "edit" ? "Failed to update ticket" : "Failed to create ticket",
+        title: t('error'),
+        description: mode === "edit" ? t('failedToUpdateTicket') : t('failedToCreateTicket'),
         variant: "destructive",
       });
       console.error('Mutation error:', error);
@@ -294,10 +296,10 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {mode === "edit" ? "Edit Ticket" : "New Ticket"}
+            {mode === "edit" ? t('editTicket') : t('newTicket')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            {mode === "edit" ? "Update ticket details" : "Create a new support ticket"}
+            {mode === "edit" ? t('updateTicketDetails') : t('createNewSupportTicket')}
           </p>
         </div>
       </div>
@@ -310,7 +312,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
               {/* Customer Selection */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold">Customer Information</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('customerInformation')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2">
                   <FormField
@@ -324,7 +326,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                           <div className="relative">
                             <FormControl>
                               <Input
-                                placeholder="Start typing customer name..."
+                                placeholder={t('startTypingCustomerName')}
                                 value={customerSearch}
                                 onChange={(e) => {
                                   setCustomerSearch(e.target.value);
@@ -362,13 +364,13 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                           </div>
                           {customerNotFound && (
                             <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded border border-amber-200 dark:border-amber-800 flex items-center gap-2">
-                              <span className="font-medium">⚠️ Warning:</span>
-                              <span>Selected customer not found in system</span>
+                              <span className="font-medium">⚠️ {t('warning')}:</span>
+                              <span>{t('selectedCustomerNotFound')}</span>
                             </div>
                           )}
                           {field.value && customerSearch && !customerNotFound && (
                             <div className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-3 py-2 rounded border border-blue-300 dark:border-blue-700">
-                              Selected: <span className="font-medium">{customerSearch}</span>
+                              {t('selected')}: <span className="font-medium">{customerSearch}</span>
                             </div>
                           )}
                           <FormMessage />
@@ -382,7 +384,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
               {/* Description */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold">Ticket Description</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('ticketDescription')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2">
                   <FormField
@@ -392,7 +394,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            placeholder="Describe the issue or request..."
+                            placeholder={t('describeIssueOrRequest')}
                             className="min-h-[150px] text-base"
                             {...field}
                             data-testid="textarea-description"
@@ -408,7 +410,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
               {/* Additional Details */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold">Ticket Details</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('ticketDetails')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-2">
                   <FormField
@@ -416,11 +418,11 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Subject</FormLabel>
+                        <FormLabel className="text-sm font-medium">{t('subject')}</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
-                              placeholder="Brief subject line (optional)" 
+                              placeholder={t('briefSubjectLine')} 
                               {...field}
                               onChange={(e) => {
                                 field.onChange(e);
@@ -458,19 +460,19 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Category</FormLabel>
+                          <FormLabel className="text-sm font-medium">{t('category')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "general"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-category">
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('selectCategory')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="shipping_issue">Shipping Issue</SelectItem>
-                              <SelectItem value="product_question">Product Question</SelectItem>
-                              <SelectItem value="payment_problem">Payment Problem</SelectItem>
-                              <SelectItem value="complaint">Complaint</SelectItem>
-                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="shipping_issue">{t('shippingIssue')}</SelectItem>
+                              <SelectItem value="product_question">{t('productQuestion')}</SelectItem>
+                              <SelectItem value="payment_problem">{t('paymentProblem')}</SelectItem>
+                              <SelectItem value="complaint">{t('complaint')}</SelectItem>
+                              <SelectItem value="general">{t('general')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -483,18 +485,18 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="priority"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Priority</FormLabel>
+                          <FormLabel className="text-sm font-medium">{t('priority')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "medium"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-priority">
-                                <SelectValue placeholder="Select priority" />
+                                <SelectValue placeholder={t('selectPriority')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="low">Low</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="high">High</SelectItem>
-                              <SelectItem value="urgent">Urgent</SelectItem>
+                              <SelectItem value="low">{t('low')}</SelectItem>
+                              <SelectItem value="medium">{t('medium')}</SelectItem>
+                              <SelectItem value="high">{t('high')}</SelectItem>
+                              <SelectItem value="urgent">{t('urgent')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -509,18 +511,18 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Status</FormLabel>
+                          <FormLabel className="text-sm font-medium">{t('status')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "open"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-status">
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('selectStatus')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="open">Open</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
-                              <SelectItem value="closed">Closed</SelectItem>
+                              <SelectItem value="open">{t('open')}</SelectItem>
+                              <SelectItem value="in_progress">{t('inProgress')}</SelectItem>
+                              <SelectItem value="resolved">{t('resolved')}</SelectItem>
+                              <SelectItem value="closed">{t('closed')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -533,7 +535,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="dueDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Due Date</FormLabel>
+                          <FormLabel className="text-sm font-medium">{t('dueDate')}</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -548,7 +550,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                                   {field.value ? (
                                     format(field.value, "PPP")
                                   ) : (
-                                    <span>Pick a date</span>
+                                    <span>{t('pickDate')}</span>
                                   )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
@@ -556,7 +558,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <div className="p-3 border-b space-y-2">
-                                <p className="text-sm font-medium">Quick Options</p>
+                                <p className="text-sm font-medium">{t('quickOptions')}</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {notifyDateOptions.map((option) => (
                                     <Button
@@ -603,15 +605,15 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     name="orderId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Related Order</FormLabel>
+                        <FormLabel className="text-sm font-medium">{t('relatedOrder')}</FormLabel>
                         <Select onValueChange={(value) => field.onChange(value === "NONE" ? undefined : value)} value={field.value || "NONE"}>
                           <FormControl>
                             <SelectTrigger data-testid="select-order">
-                              <SelectValue placeholder="Select order (optional)" />
+                              <SelectValue placeholder={t('selectOrder')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="NONE">None</SelectItem>
+                            <SelectItem value="NONE">{t('none')}</SelectItem>
                             {orders.slice(0, 50).map((order: any) => (
                               <SelectItem key={order.id} value={order.id}>
                                 {order.orderId} - {order.customer?.name}
@@ -632,29 +634,29 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
               <div className="sticky top-20">
                 <Card className="shadow-md">
                   <CardHeader className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-b">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Ticket Summary</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('ticketSummary')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Category:</span>
+                        <span className="text-slate-600 dark:text-slate-400">{t('category')}:</span>
                         <span className="font-medium capitalize">
                           {form.watch("category")?.replace(/_/g, ' ') || "-"}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Priority:</span>
+                        <span className="text-slate-600 dark:text-slate-400">{t('priority')}:</span>
                         <span className="font-medium capitalize">{form.watch("priority") || "-"}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Status:</span>
+                        <span className="text-slate-600 dark:text-slate-400">{t('status')}:</span>
                         <span className="font-medium capitalize">
                           {form.watch("status")?.replace(/_/g, ' ') || "-"}
                         </span>
                       </div>
                       {form.watch("dueDate") && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400">Due Date:</span>
+                          <span className="text-slate-600 dark:text-slate-400">{t('dueDate')}:</span>
                           <span className="font-medium">
                             {format(form.watch("dueDate")!, "dd/MM/yyyy")}
                           </span>
@@ -673,12 +675,12 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                         {mutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Saving...
+                            {t('saving')}
                           </>
                         ) : (
                           <>
                             <Save className="mr-2 h-5 w-5" />
-                            {mode === "edit" ? "Update Ticket" : "Create Ticket"}
+                            {mode === "edit" ? t('updateTicket') : t('createTicket')}
                           </>
                         )}
                       </Button>
@@ -690,7 +692,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                         onClick={() => navigate('/tickets')}
                         data-testid="button-cancel"
                       >
-                        Cancel
+                        {t('cancel')}
                       </Button>
                     </div>
                   </CardContent>

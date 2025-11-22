@@ -555,7 +555,7 @@ export default function Services() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  In Progress
+                  {t('financial:inProgress')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -565,7 +565,7 @@ export default function Services() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{inProgressServices.toLocaleString()} in progress</p>
+                      <p className="font-mono">{inProgressServices.toLocaleString()} {t('financial:inProgress').toLowerCase()}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -583,7 +583,7 @@ export default function Services() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Completed
+                  {t('common:completed')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -593,7 +593,7 @@ export default function Services() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{completedServices.toLocaleString()} completed</p>
+                      <p className="font-mono">{completedServices.toLocaleString()} {t('common:completed').toLowerCase()}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -611,7 +611,7 @@ export default function Services() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('common:filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -621,7 +621,7 @@ export default function Services() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search services..."
+                  placeholder={t('financial:searchServices')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
@@ -634,14 +634,14 @@ export default function Services() {
             <div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('common:filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t('common:allStatuses')}</SelectItem>
+                  <SelectItem value="pending">{t('financial:pending')}</SelectItem>
+                  <SelectItem value="in_progress">{t('financial:inProgress')}</SelectItem>
+                  <SelectItem value="completed">{t('common:completed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('common:cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -650,15 +650,15 @@ export default function Services() {
           {/* Active Filters Display */}
           {(searchQuery || statusFilter !== "all") && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Active filters:</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t('common:activeFilters')}:</span>
               {searchQuery && (
                 <Badge variant="secondary" className="text-xs">
-                  Search: {searchQuery}
+                  {t('common:search')}: {searchQuery}
                 </Badge>
               )}
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
-                  Status: {statusFilter}
+                  {t('common:status')}: {statusFilter}
                 </Badge>
               )}
               <Button
@@ -670,7 +670,7 @@ export default function Services() {
                   setStatusFilter("all");
                 }}
               >
-                Clear all
+                {t('common:clearAll')}
               </Button>
             </div>
           )}
@@ -685,22 +685,22 @@ export default function Services() {
             {filteredServices?.map((service) => {
               const statusConfig = {
                 'pending': { 
-                  label: 'Pending', 
+                  label: t('financial:pending'), 
                   icon: Clock,
                   color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' 
                 },
                 'in_progress': { 
-                  label: 'In Progress', 
+                  label: t('financial:inProgress'), 
                   icon: PlayCircle,
                   color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' 
                 },
                 'completed': { 
-                  label: 'Completed', 
+                  label: t('common:completed'), 
                   icon: CheckCircle2,
                   color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' 
                 },
                 'cancelled': { 
-                  label: 'Cancelled', 
+                  label: t('common:cancelled'), 
                   icon: CheckCircle2,
                   color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' 
                 },
@@ -744,13 +744,13 @@ export default function Services() {
                     {/* Middle Row - Key Details (grid-cols-2) */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs">Customer</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">{t('orders:customer')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                          {service.customer?.name || 'N/A'}
+                          {service.customer?.name || t('common:na')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs">Created</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">{t('financial:created')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100">
                           {formatDate(service.createdAt)}
                         </p>
@@ -760,13 +760,13 @@ export default function Services() {
                     {/* Cost Details (grid-cols-2) */}
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs">Service Cost</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">{t('financial:serviceCost')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100">
                           {formatCurrency(service.serviceCost)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs">Parts Cost</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">{t('financial:partsCost')}</p>
                         <p className="font-medium text-slate-900 dark:text-slate-100">
                           {formatCurrency(service.partsCost)}
                         </p>
@@ -776,7 +776,7 @@ export default function Services() {
                     {/* Bottom Row - Total Cost and Actions */}
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Cost</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('financial:totalCost')}</p>
                         <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
                           {formatCurrency(service.totalCost)}
                         </p>
@@ -784,7 +784,7 @@ export default function Services() {
                       <div className="flex items-center gap-1">
                         <Link href={`/services/${service.id}`}>
                           <Button size="sm" variant="outline" className="h-8 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950" data-testid={`button-view-${service.id}`}>
-                            View
+                            {t('common:view')}
                           </Button>
                         </Link>
                         <Link href={`/services/${service.id}/edit`}>
@@ -800,18 +800,18 @@ export default function Services() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Service</AlertDialogTitle>
+                              <AlertDialogTitle>{t('financial:deleteServiceTitle')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{service.name}"? This action cannot be undone.
+                                {t('financial:deleteServiceConfirm').replace('this service', `"${service.name}"`)}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => deleteServiceMutation.mutate([service.id])}
                                 className="bg-red-600 hover:bg-red-700 text-white"
                               >
-                                Delete
+                                {t('common:delete')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -838,15 +838,15 @@ export default function Services() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Service Records
+                        {t('financial:serviceRecords')}
                       </h2>
                       <Badge variant="secondary" className="text-xs font-normal">
-                        {filteredServices?.length || 0} {filteredServices?.length === 1 ? 'service' : 'services'}
+                        {filteredServices?.length || 0} {filteredServices?.length === 1 ? t('financial:service').toLowerCase() : t('financial:services').toLowerCase()}
                       </Badge>
                       {selectedRows.size > 0 && (
                         <>
                           <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700">
-                            {selectedRows.size} selected
+                            {t('common:itemsSelected', { count: selectedRows.size })}
                           </Badge>
                           {actions.map((action, index) => {
                             if (action.type === "button") {
@@ -879,11 +879,11 @@ export default function Services() {
                           data-testid="button-column-settings"
                         >
                           <Settings className="h-4 w-4 mr-2" />
-                          Columns
+                          {t('common:columns')}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('common:toggleColumns')}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {columns
                           .filter(col => col.key !== 'actions' && col.key !== 'name' && col.key !== 'totalCost')
@@ -919,18 +919,18 @@ export default function Services() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Services</AlertDialogTitle>
+            <AlertDialogTitle>{t('common:deleteItems', { item: t('financial:services') })}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedServices.length} service(s)? This action cannot be undone.
+              {t('common:deleteBulkConfirmation', { count: selectedServices.length, item: t('financial:services').toLowerCase() })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteConfirm} 
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete Services
+              {t('common:deleteItems', { item: t('financial:services') })}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

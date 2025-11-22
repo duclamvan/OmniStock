@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ import {
 } from "@/components/ui/select";
 
 export default function AllExpenses() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,12 +110,12 @@ export default function AllExpenses() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load expenses. Please try again.",
+        title: t('error'),
+        description: t('failedToLoadExpenses'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -122,16 +124,16 @@ export default function AllExpenses() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       toast({
-        title: "Success",
-        description: "Expense deleted successfully",
+        title: t('success'),
+        description: t('expenseDeletedSuccessfully'),
       });
       setShowDeleteDialog(false);
       setSelectedExpenses([]);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete expense",
+        title: t('error'),
+        description: t('failedToDeleteExpense'),
         variant: "destructive",
       });
     },
@@ -236,8 +238,8 @@ export default function AllExpenses() {
     try {
       if (!filteredExpenses || filteredExpenses.length === 0) {
         toast({
-          title: "No data to export",
-          description: "There are no expenses to export.",
+          title: t('noDataToExport'),
+          description: t('thereAreNoExpensesToExport'),
           variant: "destructive",
         });
         return;
@@ -262,17 +264,17 @@ export default function AllExpenses() {
         };
       });
 
-      exportToXLSX(exportData, 'expenses', 'Expenses');
+      exportToXLSX(exportData, 'expenses', t('expenses'));
       
       toast({
-        title: "Export successful",
-        description: `Exported ${filteredExpenses.length} expense(s) to XLSX`,
+        title: t('exportSuccessful'),
+        description: t('exportedExpenses', { count: filteredExpenses.length }),
       });
     } catch (error) {
       console.error('Error exporting to XLSX:', error);
       toast({
-        title: "Export failed",
-        description: "Failed to export expenses. Please try again.",
+        title: t('exportFailed'),
+        description: t('failedToExportExpenses'),
         variant: "destructive",
       });
     }
@@ -283,8 +285,8 @@ export default function AllExpenses() {
     try {
       if (!filteredExpenses || filteredExpenses.length === 0) {
         toast({
-          title: "No data to export",
-          description: "There are no expenses to export.",
+          title: t('noDataToExport'),
+          description: t('thereAreNoExpensesToExport'),
           variant: "destructive",
         });
         return;
@@ -292,15 +294,15 @@ export default function AllExpenses() {
 
       // Define columns for PDF
       const pdfColumns: PDFColumn[] = [
-        { key: 'invoiceNumber', header: 'Invoice #' },
-        { key: 'description', header: 'Description' },
-        { key: 'vendor', header: 'Supplier/Vendor' },
-        { key: 'amount', header: 'Amount' },
-        { key: 'currency', header: 'Currency' },
-        { key: 'category', header: 'Category' },
-        { key: 'date', header: 'Date' },
-        { key: 'status', header: 'Status' },
-        { key: 'paymentMethod', header: 'Payment Method' },
+        { key: 'invoiceNumber', header: t('invoiceNumber') },
+        { key: 'description', header: t('description') },
+        { key: 'vendor', header: t('vendor') },
+        { key: 'amount', header: t('amount') },
+        { key: 'currency', header: t('currency') },
+        { key: 'category', header: t('category') },
+        { key: 'date', header: t('date') },
+        { key: 'status', header: t('status') },
+        { key: 'paymentMethod', header: t('paymentMethod') },
       ];
 
       // Prepare export data
@@ -322,17 +324,17 @@ export default function AllExpenses() {
         };
       });
 
-      exportToPDF('Expenses Report', exportData, pdfColumns, 'expenses');
+      exportToPDF(t('expensesReport'), exportData, pdfColumns, 'expenses');
       
       toast({
-        title: "Export initiated",
-        description: `Preparing PDF export of ${filteredExpenses.length} expense(s)`,
+        title: t('exportInitiated'),
+        description: t('preparingPDFExport', { count: filteredExpenses.length }),
       });
     } catch (error) {
       console.error('Error exporting to PDF:', error);
       toast({
-        title: "Export failed",
-        description: "Failed to export expenses. Please try again.",
+        title: t('exportFailed'),
+        description: t('failedToExportExpenses'),
         variant: "destructive",
       });
     }
@@ -341,7 +343,7 @@ export default function AllExpenses() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "invoiceNumber",
-      header: "Invoice #",
+      header: t('invoiceNumber'),
       sortable: true,
       cell: (row: any) => (
         <Link href={`/expenses/${row.id}`}>
@@ -353,7 +355,7 @@ export default function AllExpenses() {
     },
     {
       key: "vendor",
-      header: "Vendor",
+      header: t('vendor'),
       sortable: true,
       cell: (row: any) => (
         <span className="text-sm text-slate-700 dark:text-slate-300">
@@ -363,7 +365,7 @@ export default function AllExpenses() {
     },
     {
       key: "category",
-      header: "Category",
+      header: t('category'),
       sortable: true,
       className: "text-center",
       cell: (row: any) => (
@@ -374,7 +376,7 @@ export default function AllExpenses() {
     },
     {
       key: "amount",
-      header: "Amount",
+      header: t('amount'),
       sortable: true,
       className: "text-right",
       cell: (row: any) => {
@@ -392,15 +394,15 @@ export default function AllExpenses() {
     },
     {
       key: "paymentMethod",
-      header: "Payment Method",
+      header: t('paymentMethod'),
       sortable: true,
       className: "text-center",
       cell: (row: any) => {
         const methodConfig = {
-          'cash': { label: 'Cash', icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
-          'card': { label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' },
-          'bank_transfer': { label: 'Transfer', icon: Receipt, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800' },
-          'check': { label: 'Check', icon: Receipt, color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800' },
+          'cash': { label: t('cash'), icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+          'card': { label: t('card'), icon: CreditCard, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' },
+          'bank_transfer': { label: t('transfer'), icon: Receipt, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800' },
+          'check': { label: t('check'), icon: Receipt, color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800' },
         };
         
         if (!row.paymentMethod || !methodConfig[row.paymentMethod as keyof typeof methodConfig]) {
@@ -420,14 +422,14 @@ export default function AllExpenses() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('status'),
       sortable: true,
       className: "text-center",
       cell: (row: any) => {
         const statusConfig = {
-          'paid': { label: 'Paid', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
-          'pending': { label: 'Pending', icon: Clock, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
-          'overdue': { label: 'Overdue', icon: TrendingUp, color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800' },
+          'paid': { label: t('paid'), icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+          'pending': { label: t('pending'), icon: Clock, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
+          'overdue': { label: t('overdue'), icon: TrendingUp, color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800' },
         };
         
         const status = row.status || 'pending';
@@ -444,7 +446,7 @@ export default function AllExpenses() {
     },
     {
       key: "date",
-      header: "Date",
+      header: t('date'),
       sortable: true,
       cell: (row: any) => (
         <div className="flex items-center gap-2">
@@ -477,7 +479,7 @@ export default function AllExpenses() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete Selected",
+      label: t('deleteSelected'),
       action: (selectedItems: any[]) => {
         setSelectedExpenses(selectedItems);
         setShowDeleteDialog(true);
@@ -494,7 +496,7 @@ export default function AllExpenses() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading expenses...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('loadingExpenses')}</p>
         </div>
       </div>
     );
@@ -506,10 +508,10 @@ export default function AllExpenses() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Expenses
+            {t('expenses')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track business expenses and manage invoices
+            {t('trackBusinessExpenses')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -517,25 +519,25 @@ export default function AllExpenses() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="border-slate-200 dark:border-slate-700" data-testid="button-export">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t('export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('exportFormat')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
-                Export to XLSX
+                {t('exportToXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Export to PDF
+                {t('exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={() => navigate('/expenses/add')} data-testid="button-add-expense">
             <Plus className="h-4 w-4 mr-2" />
-            Add Expense
+            {t('addExpense')}
           </Button>
         </div>
       </div>
@@ -548,7 +550,7 @@ export default function AllExpenses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Expenses
+                  {t('totalExpenses')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -562,7 +564,7 @@ export default function AllExpenses() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">All time</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allTime')}</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
                 <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
@@ -577,7 +579,7 @@ export default function AllExpenses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  This Month
+                  {t('thisMonth')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -591,7 +593,7 @@ export default function AllExpenses() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{thisMonthExpenses.length} expenses</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{thisMonthExpenses.length} {t('expenses').toLowerCase()}</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
                 <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
@@ -606,7 +608,7 @@ export default function AllExpenses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Pending
+                  {t('pending')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -620,7 +622,7 @@ export default function AllExpenses() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{pendingExpenses.length} expenses</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{pendingExpenses.length} {t('expenses').toLowerCase()}</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
@@ -635,7 +637,7 @@ export default function AllExpenses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Paid
+                  {t('paid')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -649,7 +651,7 @@ export default function AllExpenses() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{paidExpenses.length} expenses</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{paidExpenses.length} {t('expenses').toLowerCase()}</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
                 <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
@@ -664,7 +666,7 @@ export default function AllExpenses() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -672,7 +674,7 @@ export default function AllExpenses() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Search expenses..."
+                placeholder={t('searchExpenses')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
@@ -681,21 +683,21 @@ export default function AllExpenses() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500" data-testid="select-status">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t('filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                <SelectItem value="paid">{t('paid')}</SelectItem>
+                <SelectItem value="pending">{t('pending')}</SelectItem>
+                <SelectItem value="overdue">{t('overdue')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500" data-testid="select-category">
-                <SelectValue placeholder="Filter by category" />
+                <SelectValue placeholder={t('filterByCategory')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t('allCategories')}</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -709,7 +711,7 @@ export default function AllExpenses() {
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">All Expenses ({filteredExpenses?.length || 0})</CardTitle>
+            <CardTitle className="text-lg">{t('allExpenses')} ({filteredExpenses?.length || 0})</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 border-slate-200 dark:border-slate-700" data-testid="button-column-visibility">
@@ -717,7 +719,7 @@ export default function AllExpenses() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('toggleColumns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns.filter(col => col.key !== 'actions').map((col) => (
                   <DropdownMenuItem
@@ -744,16 +746,16 @@ export default function AllExpenses() {
               const status = expense.status || 'pending';
               
               const statusConfig = {
-                'paid': { label: 'Paid', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
-                'pending': { label: 'Pending', icon: Clock, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
-                'overdue': { label: 'Overdue', icon: TrendingUp, color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800' },
+                'paid': { label: t('paid'), icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+                'pending': { label: t('pending'), icon: Clock, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
+                'overdue': { label: t('overdue'), icon: TrendingUp, color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800' },
               };
               
               const methodConfig = {
-                'cash': { label: 'Cash', icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
-                'card': { label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' },
-                'bank_transfer': { label: 'Transfer', icon: Receipt, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800' },
-                'check': { label: 'Check', icon: Receipt, color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800' },
+                'cash': { label: t('cash'), icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+                'card': { label: t('card'), icon: CreditCard, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' },
+                'bank_transfer': { label: t('transfer'), icon: Receipt, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800' },
+                'check': { label: t('check'), icon: Receipt, color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800' },
               };
               
               const statusInfo = statusConfig[status as keyof typeof statusConfig] || statusConfig['pending'];
@@ -767,7 +769,7 @@ export default function AllExpenses() {
                       <div className="flex-1 min-w-0">
                         <Link href={`/expenses/${expense.id}`}>
                           <p className="font-semibold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400">
-                            {expense.description || expense.name || expense.expenseId || 'Expense'}
+                            {expense.description || expense.name || expense.expenseId || t('expense')}
                           </p>
                         </Link>
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
@@ -790,13 +792,13 @@ export default function AllExpenses() {
                             <DropdownMenuItem asChild>
                               <Link href={`/expenses/${expense.id}`} className="flex items-center cursor-pointer">
                                 <Eye className="h-4 w-4 mr-2" />
-                                View Details
+                                {t('viewDetails')}
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href={`/expenses/${expense.id}/edit`} className="flex items-center cursor-pointer">
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit
+                                {t('edit')}
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -808,7 +810,7 @@ export default function AllExpenses() {
                               className="text-red-600 dark:text-red-400"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {t('delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -824,7 +826,7 @@ export default function AllExpenses() {
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Date</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">{t('date')}</p>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3 text-slate-400" />
                           <p className="font-medium text-slate-900 dark:text-slate-100 text-xs">
@@ -837,7 +839,7 @@ export default function AllExpenses() {
                     {/* Bottom Row - Amount & Payment Method */}
                     <div className="flex items-end justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Amount</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('amount')}</p>
                         <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                           {symbol}{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
@@ -846,7 +848,7 @@ export default function AllExpenses() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Payment</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('paymentMethod')}</p>
                         {expense.paymentMethod && methodConfig[expense.paymentMethod as keyof typeof methodConfig] ? (() => {
                           const PaymentIcon = methodConfig[expense.paymentMethod as keyof typeof methodConfig].icon;
                           return (
@@ -884,16 +886,15 @@ export default function AllExpenses() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedExpenses.length} expense(s). 
-              This action cannot be undone.
+              {t('deleteExpensesConfirmation', { count: selectedExpenses.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDelete}>
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

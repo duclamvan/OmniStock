@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
+import { useTranslation } from "react-i18next";
 import TicketForm from "./TicketForm";
 import { Loader2 } from "lucide-react";
 
 export default function EditTicket() {
+  const { t } = useTranslation('system');
   const [, params] = useRoute("/tickets/edit/:id");
   const ticketId = params?.id;
 
@@ -11,7 +13,7 @@ export default function EditTicket() {
     queryKey: ['/api/tickets', ticketId],
     queryFn: async () => {
       const response = await fetch(`/api/tickets/${ticketId}`);
-      if (!response.ok) throw new Error('Failed to fetch ticket');
+      if (!response.ok) throw new Error(t('failedToLoadTickets'));
       return response.json();
     },
     enabled: !!ticketId,
@@ -28,7 +30,7 @@ export default function EditTicket() {
   if (!ticket) {
     return (
       <div className="text-center py-12">
-        <p className="text-lg text-slate-600">Ticket not found</p>
+        <p className="text-lg text-slate-600">{t('ticketNotFound')}</p>
       </div>
     );
   }

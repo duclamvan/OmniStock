@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { BinDetailsPanel } from "@/components/warehouse/BinDetailsPanel";
 import { LayoutGeneratorDialog } from "@/components/warehouse/LayoutGeneratorDialog";
 
 export default function WarehouseMapNew() {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { id } = useParams();
   const [selectedBin, setSelectedBin] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,8 +61,8 @@ export default function WarehouseMapNew() {
     refetchLayout();
     refetchBins();
     toast({
-      title: "Layout generated",
-      description: "Warehouse layout has been generated successfully",
+      title: t('warehouse:layoutGenerated'),
+      description: t('warehouse:layoutGeneratedSuccess'),
     });
   };
 
@@ -82,12 +84,12 @@ export default function WarehouseMapNew() {
     return (
       <div className="p-6 bg-white dark:bg-slate-900">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Warehouse not found</h2>
-          <p className="text-muted-foreground dark:text-gray-400 mb-4">The warehouse you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">{t('warehouse:warehouseNotFound')}</h2>
+          <p className="text-muted-foreground dark:text-gray-400 mb-4">{t('warehouse:warehouseNotFoundDesc')}</p>
           <Link href="/warehouses">
             <Button data-testid="button-back-warehouses">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Warehouses
+              {t('warehouse:backToWarehouses')}
             </Button>
           </Link>
         </div>
@@ -117,7 +119,7 @@ export default function WarehouseMapNew() {
               className="flex-1 sm:flex-initial"
             >
               <Plus className="mr-2 h-4 w-4" />
-              <span className="sm:inline">Generate Layout</span>
+              <span className="sm:inline">{t('warehouse:generateLayout')}</span>
             </Button>
           )}
           {layout && (
@@ -128,7 +130,7 @@ export default function WarehouseMapNew() {
               className="flex-1 sm:flex-initial"
             >
               <Grid3x3 className="mr-2 h-4 w-4" />
-              <span className="sm:inline">Regenerate Layout</span>
+              <span className="sm:inline">{t('warehouse:regenerateLayout')}</span>
             </Button>
           )}
         </div>
@@ -139,7 +141,7 @@ export default function WarehouseMapNew() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card data-testid="card-total-bins">
               <CardHeader className="pb-2 p-3 md:p-6">
-                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Total Bins</CardTitle>
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">{t('warehouse:totalBins')}</CardTitle>
               </CardHeader>
               <CardContent className="p-3 md:p-6 pt-0">
                 <div className="text-xl md:text-2xl font-bold" data-testid="text-total-bins">
@@ -150,7 +152,7 @@ export default function WarehouseMapNew() {
 
             <Card data-testid="card-empty-bins">
               <CardHeader className="pb-2 p-3 md:p-6">
-                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Empty Bins</CardTitle>
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">{t('warehouse:emptyBins')}</CardTitle>
               </CardHeader>
               <CardContent className="p-3 md:p-6 pt-0">
                 <div className="text-xl md:text-2xl font-bold text-green-600" data-testid="text-empty-bins">
@@ -161,7 +163,7 @@ export default function WarehouseMapNew() {
 
             <Card data-testid="card-occupied-bins">
               <CardHeader className="pb-2 p-3 md:p-6">
-                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Occupied Bins</CardTitle>
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">{t('warehouse:occupiedBins')}</CardTitle>
               </CardHeader>
               <CardContent className="p-3 md:p-6 pt-0">
                 <div className="text-xl md:text-2xl font-bold text-blue-600" data-testid="text-occupied-bins">
@@ -172,7 +174,7 @@ export default function WarehouseMapNew() {
 
             <Card data-testid="card-utilization">
               <CardHeader className="pb-2 p-3 md:p-6">
-                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Utilization</CardTitle>
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">{t('warehouse:utilization')}</CardTitle>
               </CardHeader>
               <CardContent className="p-3 md:p-6 pt-0">
                 <div className="text-xl md:text-2xl font-bold text-orange-600" data-testid="text-utilization">
@@ -187,7 +189,7 @@ export default function WarehouseMapNew() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search bins..."
+                  placeholder={t('warehouse:searchBins')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -197,19 +199,19 @@ export default function WarehouseMapNew() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 text-xs">
                   <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500 mr-1 md:mr-2" />
-                  Empty
+                  {t('warehouse:empty')}
                 </Badge>
                 <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700 text-xs">
                   <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500 mr-1 md:mr-2" />
-                  Partial
+                  {t('warehouse:partial')}
                 </Badge>
                 <Badge variant="outline" className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700 text-xs">
                   <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 mr-1 md:mr-2" />
-                  Full
+                  {t('warehouse:full')}
                 </Badge>
                 <Badge variant="outline" className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 text-xs">
                   <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-500 mr-1 md:mr-2" />
-                  Inactive
+                  {t('common:inactive')}
                 </Badge>
               </div>
             </div>
@@ -217,7 +219,7 @@ export default function WarehouseMapNew() {
             {/* Zone/Section Filter */}
             {zones.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">Storage Zone:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{t('warehouse:storageZone')}:</span>
                 <Button
                   variant={selectedZone === "all" ? "default" : "outline"}
                   size="sm"
@@ -225,11 +227,11 @@ export default function WarehouseMapNew() {
                   data-testid="button-zone-all"
                   className="shrink-0"
                 >
-                  All ({bins?.length || 0})
+                  {t('common:all')} ({bins?.length || 0})
                 </Button>
                 {zones.map(zone => {
                   const zoneCount = bins?.filter(b => b.code.charAt(0) === zone).length || 0;
-                  const zoneName = zone === 'A' ? 'Shelves' : zone === 'B' ? 'Pallets' : zone === 'C' ? 'Bulk' : `Zone ${zone}`;
+                  const zoneName = zone === 'A' ? t('warehouse:shelves') : zone === 'B' ? t('warehouse:pallets') : zone === 'C' ? t('warehouse:bulk') : `${t('warehouse:zone')} ${zone}`;
                   return (
                     <Button
                       key={zone}
@@ -251,7 +253,7 @@ export default function WarehouseMapNew() {
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <Map className="h-4 w-4 md:h-5 md:w-5" />
-                Warehouse Map
+                {t('warehouse:warehouseMap')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
@@ -274,16 +276,16 @@ export default function WarehouseMapNew() {
           <CardContent className="py-12">
             <div className="text-center">
               <Grid3x3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No Layout Generated</h3>
+              <h3 className="text-xl font-semibold mb-2">{t('warehouse:noLayoutGenerated')}</h3>
               <p className="text-muted-foreground mb-4">
-                Generate a warehouse layout to start mapping your inventory bins
+                {t('warehouse:noLayoutGeneratedDesc')}
               </p>
               <Button 
                 onClick={() => setShowLayoutGenerator(true)}
                 data-testid="button-generate-layout-empty"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Generate Layout
+                {t('warehouse:generateLayout')}
               </Button>
             </div>
           </CardContent>
@@ -293,7 +295,7 @@ export default function WarehouseMapNew() {
       <Sheet open={!!selectedBin} onOpenChange={() => setSelectedBin(null)}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Bin Details</SheetTitle>
+            <SheetTitle>{t('warehouse:binDetails')}</SheetTitle>
           </SheetHeader>
           {selectedBin && (
             <BinDetailsPanel 

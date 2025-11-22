@@ -85,6 +85,7 @@ const warehouse = {
   editWarehouse: 'Chỉnh sửa kho',
   editWarehouseDesc: 'Cập nhật chi tiết kho và quản lý tệp đính kèm',
   warehouseNotFound: 'Không tìm thấy kho',
+  warehouseNotFoundDesc: 'Kho bạn đang tìm kiếm không tồn tại.',
   warehouseUpdatedSuccess: 'Cập nhật kho thành công',
   warehouseUpdateError: 'Không thể cập nhật kho',
   warehouseDeletedSuccess: 'Xóa kho thành công',
@@ -135,6 +136,37 @@ const warehouse = {
   uploadFiles: 'Tải lên tệp',
   noFiles: 'Chưa có tệp nào',
   uploadFirstFile: 'Tải lên tệp đầu tiên của bạn',
+  
+  // Warehouse Details - Additional Keys
+  warehouseId: 'ID Kho',
+  code: 'Mã',
+  units: 'đơn vị',
+  description: 'Mô tả',
+  contactLocation: 'Liên hệ & Vị trí',
+  address: 'Địa chỉ',
+  phone: 'Điện thoại',
+  email: 'Email',
+  manager: 'Quản lý',
+  warehouseInventory: 'Tồn kho trong kho',
+  items: 'mục',
+  searchProductsPlaceholder: 'Tìm kiếm sản phẩm theo tên, SKU, barcode hoặc vị trí...',
+  qty: 'SL',
+  move: 'Chuyển',
+  noProductsFound: 'Không tìm thấy sản phẩm',
+  noProductsInWarehouse: 'Chưa có sản phẩm trong kho này',
+  documentsFiles: 'Tài liệu & Tệp tin',
+  upload: 'Tải lên',
+  noFilesYet: 'Chưa có tệp nào',
+  monthlyCost: 'Chi phí hàng tháng',
+  notes: 'Ghi chú',
+  noFinancialContracts: 'Chưa có hợp đồng tài chính',
+  moveProductToWarehouse: 'Chuyển sản phẩm sang kho khác',
+  selectDestinationWarehouse: 'Chọn kho đích cho',
+  moving: 'Đang chuyển...',
+  deleteFile: 'Xóa tệp',
+  deleteFileConfirm: 'Bạn có chắc chắn muốn xóa',
+  thisActionCannotBeUndone: 'Hành động này không thể hoàn tác.',
+  
   type: {
     fulfillment: 'Thực hiện đơn hàng',
     storage: 'Lưu trữ',
@@ -312,6 +344,31 @@ const warehouse = {
   inTransit: 'Đang vận chuyển',
   damaged: 'Hư hỏng',
   expired: 'Hết hạn',
+  
+  // Warehouse Map & Layout
+  warehouseMap: 'Sơ đồ kho',
+  generateLayout: 'Tạo bố cục',
+  regenerateLayout: 'Tạo lại bố cục',
+  layoutGenerated: 'Đã tạo bố cục',
+  layoutGeneratedSuccess: 'Bố cục kho đã được tạo thành công',
+  noLayoutGenerated: 'Chưa có bố cục',
+  noLayoutGeneratedDesc: 'Tạo bố cục kho để bắt đầu lập sơ đồ các ngăn tồn kho',
+  
+  // Bins & Storage
+  totalBins: 'Tổng số ngăn',
+  emptyBins: 'Ngăn trống',
+  occupiedBins: 'Ngăn đã dùng',
+  searchBins: 'Tìm kiếm ngăn...',
+  binDetails: 'Chi tiết ngăn',
+  empty: 'Trống',
+  partial: 'Một phần',
+  full: 'Đầy',
+  
+  // Zones
+  storageZone: 'Khu vực lưu trữ',
+  shelves: 'Kệ',
+  pallets: 'Pallet',
+  bulk: 'Hàng rời',
 } as const;
 
 export default warehouse;

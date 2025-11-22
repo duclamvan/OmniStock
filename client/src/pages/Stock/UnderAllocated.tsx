@@ -43,19 +43,19 @@ export default function UnderAllocated() {
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                Under-Allocated
+                {t('underAllocated')}
               </h1>
             </div>
           </div>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-10 sm:ml-11 mb-3">
-            Items with more quantity in record than in stock locations
+            {t('itemsWithMoreRecordedThanLocation')}
           </p>
           {!isLoading && items.length > 0 && (
             <div className="ml-10 sm:ml-11">
               <Link href={`/stock?q=${items.map(i => i.productSku || i.productName).filter(Boolean).join(' ')}&from=under-allocated`}>
                 <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white" size="sm" data-testid="button-check-all-locations">
                   <MapPin className="h-4 w-4 mr-2" />
-                  Check All Stock Locations
+                  {t('checkAllStockLocations')}
                 </Button>
               </Link>
             </div>
@@ -89,10 +89,10 @@ export default function UnderAllocated() {
                 <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                All Inventory Records Aligned
+                {t('allInventoryRecordsAligned')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                No items have more quantity in record than in stock locations
+                {t('noUnderAllocatedItems')}
               </p>
             </CardContent>
           </Card>
@@ -103,13 +103,13 @@ export default function UnderAllocated() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Under-Allocated Items</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('totalUnderAllocatedItems')}</p>
                     <p className="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{items.length}</p>
                   </div>
                   <div className="sm:text-right">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Discrepancy</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('totalDiscrepancy')}</p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                      {items.reduce((sum, item) => sum + item.discrepancy, 0)} units
+                      {items.reduce((sum, item) => sum + item.discrepancy, 0)} {t('units')}
                     </p>
                   </div>
                 </div>
@@ -151,36 +151,36 @@ export default function UnderAllocated() {
                             </h3>
                             {item.productSku && (
                               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
-                                SKU: {item.productSku}
+                                {t('sku')}: {item.productSku}
                               </p>
                             )}
                             {item.variantBarcode && (
                               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
-                                Barcode: {item.variantBarcode}
+                                {t('barcode')}: {item.variantBarcode}
                               </p>
                             )}
                           </div>
                           <Badge className="flex-shrink-0 bg-yellow-600 text-white text-xs">
-                            {item.type === 'variant' ? 'Variant' : 'Product'}
+                            {item.type === 'variant' ? t('variant') : t('productLabel')}
                           </Badge>
                         </div>
 
                         {/* Stock Stats */}
                         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-4">
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">Recorded</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('recorded')}</p>
                             <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                               {item.recordedQuantity}
                             </p>
                           </div>
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">In Stock</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('inStockQty')}</p>
                             <p className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400">
                               {item.locationQuantity}
                             </p>
                           </div>
                           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">Missing</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('missing')}</p>
                             <p className="text-base sm:text-xl font-bold text-yellow-600 dark:text-yellow-400">
                               +{item.discrepancy}
                             </p>
@@ -192,15 +192,15 @@ export default function UnderAllocated() {
                           <Link href={`/inventory/products/${item.productId}`} className="flex-1 sm:flex-none">
                             <Button size="sm" variant="outline" className="w-full sm:w-auto" data-testid={`button-view-product-${item.productId}`}>
                               <ExternalLink className="h-4 w-4 mr-1.5" />
-                              <span className="hidden sm:inline">View Product</span>
-                              <span className="sm:hidden">View</span>
+                              <span className="hidden sm:inline">{t('viewProduct')}</span>
+                              <span className="sm:hidden">{t('common:view')}</span>
                             </Button>
                           </Link>
                           <Link href={`/stock?q=${encodeURIComponent(item.productSku || item.productName)}`} className="flex-1 sm:flex-none">
                             <Button size="sm" className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white" data-testid={`button-check-locations-${item.productId}`}>
                               <MapPin className="h-4 w-4 mr-1.5" />
-                              <span className="hidden sm:inline">Check Stock Locations</span>
-                              <span className="sm:hidden">Check Locations</span>
+                              <span className="hidden sm:inline">{t('checkStockLocations')}</span>
+                              <span className="sm:hidden">{t('checkStockLocations')}</span>
                             </Button>
                           </Link>
                         </div>

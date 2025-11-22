@@ -57,10 +57,11 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { insertServiceSchema } from "@shared/schema";
 import { formatCzechDate } from "@/lib/dateUtils";
 
+// Note: Validation messages will be translated in the form
 const serviceFormSchema = insertServiceSchema.extend({
   customerId: z.string().optional().nullable(),
   orderId: z.string().optional().nullable(),
-  name: z.string().min(1, "Service name is required"),
+  name: z.string().min(1),
   serviceDate: z.date().optional().nullable(),
   serviceCost: z.string().optional().default("0"),
   currency: z.string().default('EUR'),
@@ -111,6 +112,7 @@ export default function AddService() {
   const [, navigate] = useLocation();
   const params = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isEditing = !!params.id;
 
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
@@ -226,15 +228,15 @@ export default function AddService() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       toast({
-        title: "Success",
-        description: `Service ${isEditing ? 'updated' : 'created'} successfully`,
+        title: t('common:success'),
+        description: isEditing ? t('financial:serviceUpdatedSuccessfully') : t('financial:serviceCreatedSuccessfully'),
       });
       navigate('/services');
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || `Failed to ${isEditing ? 'update' : 'create'} service`,
+        title: t('common:error'),
+        description: error.message || (isEditing ? t('financial:failedToUpdateService') : t('financial:failedToCreateService')),
         variant: "destructive",
       });
     },
@@ -368,13 +370,13 @@ export default function AddService() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900">{t('financial:pending')}</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900">{t('financial:inProgress')}</Badge>;
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900">{t('common:completed')}</Badge>;
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900">{t('common:cancelled')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -385,7 +387,7 @@ export default function AddService() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading service...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('common:loading')}...</p>
         </div>
       </div>
     );
@@ -404,13 +406,13 @@ export default function AddService() {
               data-testid="button-back"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('common:back')}
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-2">
               <Wrench className="h-5 w-5 text-slate-700 dark:text-slate-300" />
               <h2 className="font-semibold text-sm">
-                {isEditing ? 'Edit Service Bill' : 'New Service Bill'}
+                {isEditing ? t('financial:editServiceBill') : t('financial:newServiceBill')}
               </h2>
             </div>
           </div>
@@ -431,21 +433,21 @@ export default function AddService() {
                       <div className="flex items-center gap-2 mb-2">
                         <Wrench className="h-6 w-6 text-slate-700 dark:text-slate-300" />
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="text-page-title">
-                          SERVICE BILL
+                          {t('financial:serviceBill_title')}
                         </h1>
                       </div>
                       <p className="text-slate-600 dark:text-slate-400 font-medium">Davie Supply</p>
                       <p className="text-sm text-slate-500 dark:text-slate-500">
-                        Professional Service & Repair
+                        {t('financial:professionalServiceRepair')}
                       </p>
                     </div>
                     
                     <div className="text-right">
                       <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-1">
-                        {isEditing ? 'Bill ID' : 'Draft'}
+                        {isEditing ? t('financial:billId') : t('financial:draft')}
                       </p>
                       <p className="text-lg font-mono font-semibold text-slate-900 dark:text-white">
-                        {isEditing && params.id ? `#${params.id.substring(0, 8).toUpperCase()}` : 'NEW'}
+                        {isEditing && params.id ? `#${params.id.substring(0, 8).toUpperCase()}` : t('common:new').toUpperCase()}
                       </p>
                     </div>
                   </div>
@@ -456,11 +458,11 @@ export default function AddService() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <User className="h-3 w-3" />
-                        Bill To
+                        {t('financial:billTo')}
                       </h3>
                       <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded border border-slate-200 dark:border-slate-700 space-y-3">
                         <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Customer</Label>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('orders:customer')}</Label>
                           <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
                             <PopoverTrigger asChild>
                               <Button
@@ -472,14 +474,14 @@ export default function AddService() {
                               >
                                 {form.watch('customerId')
                                   ? customers.find((c) => c.id === form.watch('customerId'))?.name
-                                  : "Select customer..."}
+                                  : t('financial:selectCustomer')}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-full p-0">
                               <Command>
-                                <CommandInput placeholder="Search customer..." />
-                                <CommandEmpty>No customer found.</CommandEmpty>
+                                <CommandInput placeholder={t('financial:searchCustomer')} />
+                                <CommandEmpty>{t('financial:noCustomerFound')}</CommandEmpty>
                                 <CommandGroup>
                                   {customers.map((customer) => (
                                     <CommandItem
@@ -508,7 +510,7 @@ export default function AddService() {
                         
                         <div>
                           <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                            Linked Order
+                            {t('financial:linkedOrder')}
                           </Label>
                           <Popover open={orderOpen} onOpenChange={setOrderOpen}>
                             <PopoverTrigger asChild>
@@ -521,14 +523,14 @@ export default function AddService() {
                               >
                                 {form.watch('orderId')
                                   ? orders.find((o) => o.id === form.watch('orderId'))?.orderId
-                                  : "None"}
+                                  : t('financial:none')}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-full p-0">
                               <Command>
-                                <CommandInput placeholder="Search order..." />
-                                <CommandEmpty>No order found.</CommandEmpty>
+                                <CommandInput placeholder={t('financial:searchOrder')} />
+                                <CommandEmpty>{t('financial:noOrderFound')}</CommandEmpty>
                                 <CommandGroup>
                                   <CommandItem
                                     value="none"
@@ -544,7 +546,7 @@ export default function AddService() {
                                         !form.watch('orderId') ? "opacity-100" : "opacity-0"
                                       )}
                                     />
-                                    None
+                                    {t('financial:none')}
                                   </CommandItem>
                                   {orders.map((order) => (
                                     <CommandItem
@@ -580,11 +582,11 @@ export default function AddService() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <CalendarIcon className="h-3 w-3" />
-                        Service Information
+                        {t('financial:serviceInformation')}
                       </h3>
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Service Date</Label>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('financial:serviceDate')}</Label>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -596,7 +598,7 @@ export default function AddService() {
                                 data-testid="button-select-date"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {form.watch("serviceDate") ? formatCzechDate(form.watch("serviceDate")!) : "Select date"}
+                                {form.watch("serviceDate") ? formatCzechDate(form.watch("serviceDate")!) : t('financial:selectDate')}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -611,7 +613,7 @@ export default function AddService() {
                         </div>
 
                         <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Currency</Label>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('common:currency')}</Label>
                           <Select
                             value={form.watch("currency")}
                             onValueChange={(value) => form.setValue("currency", value)}
@@ -630,7 +632,7 @@ export default function AddService() {
                         </div>
 
                         <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Status</Label>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('common:status')}</Label>
                           <Select
                             value={form.watch("status")}
                             onValueChange={(value) => form.setValue("status", value)}
@@ -639,10 +641,10 @@ export default function AddService() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="pending">{t('financial:pending')}</SelectItem>
+                              <SelectItem value="in_progress">{t('financial:inProgress')}</SelectItem>
+                              <SelectItem value="completed">{t('common:completed')}</SelectItem>
+                              <SelectItem value="cancelled">{t('common:cancelled')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -655,17 +657,17 @@ export default function AddService() {
                 <div className="p-8 border-b border-slate-200 dark:border-slate-700">
                   <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                     <FileText className="h-3 w-3" />
-                    Service Details
+                    {t('financial:serviceDetails_section')}
                   </h3>
                   
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="name" className="text-sm font-medium mb-2">
-                        Service Name <span className="text-red-500">*</span>
+                        {t('financial:serviceName')} <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         id="name"
-                        placeholder="e.g., Phone Screen Repair"
+                        placeholder={t('financial:serviceNamePlaceholder')}
                         {...form.register("name")}
                         data-testid="input-service-name"
                         className={cn(
@@ -675,16 +677,16 @@ export default function AddService() {
                       />
                       {form.formState.errors.name && (
                         <p className="text-sm text-red-500 mt-1">
-                          {form.formState.errors.name.message}
+                          {t('financial:serviceNameRequired')}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-sm font-medium mb-2">Description</Label>
+                      <Label htmlFor="description" className="text-sm font-medium mb-2">{t('common:description')}</Label>
                       <Textarea
                         id="description"
-                        placeholder="Describe the service performed..."
+                        placeholder={t('financial:describeServicePerformed')}
                         rows={3}
                         {...form.register("description")}
                         data-testid="input-description"
@@ -694,7 +696,7 @@ export default function AddService() {
 
                     <div>
                       <Label htmlFor="serviceCost" className="text-sm font-medium mb-2">
-                        Service Labor Cost (€)
+                        {t('financial:serviceLaborCost')} (€)
                       </Label>
                       <Input
                         id="serviceCost"
@@ -708,10 +710,10 @@ export default function AddService() {
                     </div>
 
                     <div>
-                      <Label htmlFor="notes" className="text-sm font-medium mb-2">Additional Notes</Label>
+                      <Label htmlFor="notes" className="text-sm font-medium mb-2">{t('financial:additionalNotes')}</Label>
                       <Textarea
                         id="notes"
-                        placeholder="Any additional information or special instructions..."
+                        placeholder={t('financial:additionalNotesPlaceholder')}
                         rows={2}
                         {...form.register("notes")}
                         data-testid="input-notes"
@@ -727,10 +729,10 @@ export default function AddService() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2">
                         <Package className="h-3 w-3" />
-                        Parts & Materials
+                        {t('financial:partsAndMaterials')}
                       </h3>
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        Add parts from inventory or create custom items
+                        {t('financial:addPartsFromInventory')}
                       </p>
                     </div>
                     <Button
@@ -741,16 +743,16 @@ export default function AddService() {
                       data-testid="button-add-part"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Part
+                      {t('financial:addPart')}
                     </Button>
                   </div>
 
                   {serviceItems.length === 0 ? (
                     <div className="text-center py-12 border-2 border-dashed rounded-lg bg-slate-50 dark:bg-slate-800/50" data-testid="text-no-parts">
                       <Package className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                      <p className="text-slate-500 dark:text-slate-400 font-medium">No parts added</p>
+                      <p className="text-slate-500 dark:text-slate-400 font-medium">{t('financial:noPartsAdded')}</p>
                       <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-                        Click "Add Part" to include parts and materials
+                        {t('common:clickAddItemToInclude', { item: t('financial:parts').toLowerCase() })}
                       </p>
                     </div>
                   ) : (
@@ -778,9 +780,9 @@ export default function AddService() {
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                               {/* Product Name with Autocomplete - 5 cols */}
                               <div className="md:col-span-5 relative">
-                                <Label className="text-xs font-medium mb-1.5 block">Product Name</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:productName')}</Label>
                                 <Input
-                                  placeholder="Click to select or type..."
+                                  placeholder={t('financial:clickToSelectOrType')}
                                   value={searchTerm}
                                   onChange={(e) => handleProductNameChange(index, e.target.value)}
                                   onFocus={() => setOpenDropdownIndex(index)}
@@ -797,7 +799,7 @@ export default function AddService() {
                                     {searchTerm.length === 0 && (
                                       <div className="px-3 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600 sticky top-0">
                                         <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                                          Quick Select - Top Products
+                                          {t('financial:quickSelectTopProducts')}
                                         </p>
                                       </div>
                                     )}
@@ -819,7 +821,7 @@ export default function AddService() {
 
                               {/* Quantity - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs font-medium mb-1.5 block">Qty</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:qty')}</Label>
                                 <Input
                                   type="number"
                                   min="1"
@@ -832,7 +834,7 @@ export default function AddService() {
 
                               {/* Unit Price - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs font-medium mb-1.5 block">Price (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:price')} (€)</Label>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -845,7 +847,7 @@ export default function AddService() {
 
                               {/* Total - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs font-medium mb-1.5 block">Total (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('common:total')} (€)</Label>
                                 <Input
                                   type="text"
                                   value={formatCurrency(parseFloat(item.totalPrice || '0'))}
@@ -886,16 +888,16 @@ export default function AddService() {
                   <CardHeader className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b-2">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <DollarSign className="h-5 w-5" />
-                      Cost Summary
+                      {t('financial:costSummary')}
                     </CardTitle>
-                    <CardDescription>Review totals</CardDescription>
+                    <CardDescription>{t('financial:reviewTotals')}</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       {/* Cost Breakdown */}
                       <div className="space-y-3 pb-4">
                         <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700" data-testid="summary-service-cost">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">Service Labor:</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">{t('financial:serviceLabor')}:</span>
                           <span className="font-semibold text-slate-900 dark:text-white">
                             {formatCurrency(parseFloat(form.watch('serviceCost') || '0'))}
                           </span>
@@ -903,7 +905,7 @@ export default function AddService() {
                         
                         <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700" data-testid="summary-parts-cost">
                           <span className="text-sm text-slate-600 dark:text-slate-400">
-                            Parts & Materials:
+                            {t('financial:partsAndMaterialsColon')}
                             {serviceItems.length > 0 && (
                               <span className="ml-1 text-xs">({serviceItems.length})</span>
                             )}
@@ -917,7 +919,7 @@ export default function AddService() {
                       {/* Total */}
                       <div className="pt-4 border-t-2 border-slate-300 dark:border-slate-600">
                         <div className="flex justify-between items-center" data-testid="summary-total-cost">
-                          <span className="font-bold text-base text-slate-900 dark:text-white">Total Amount:</span>
+                          <span className="font-bold text-base text-slate-900 dark:text-white">{t('financial:totalAmount')}:</span>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-primary">
                               {formatCurrency(totalCost)}
@@ -928,7 +930,7 @@ export default function AddService() {
 
                       {/* Status Display */}
                       <div className="pt-4 pb-2">
-                        <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">Current Status</Label>
+                        <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">{t('financial:currentStatus')}</Label>
                         <div className="mt-2">
                           {getStatusBadge(form.watch("status") || "pending")}
                         </div>
@@ -948,12 +950,12 @@ export default function AddService() {
                           {saveServiceMutation.isPending ? (
                             <>
                               <span className="animate-spin mr-2">⏳</span>
-                              Saving...
+                              {t('financial:saving')}
                             </>
                           ) : (
                             <>
                               <Save className="mr-2 h-4 w-4" />
-                              {isEditing ? 'Update Service' : 'Create Service'}
+                              {isEditing ? t('financial:updateService') : t('financial:createService')}
                             </>
                           )}
                         </Button>
@@ -965,7 +967,7 @@ export default function AddService() {
                           onClick={() => navigate('/services')}
                           data-testid="button-cancel"
                         >
-                          Cancel
+                          {t('common:cancel')}
                         </Button>
                       </div>
                     </div>

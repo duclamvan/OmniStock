@@ -407,12 +407,12 @@ export default function WarehouseDetails() {
               <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Warehouse ID</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:warehouseId')}</p>
                     <p className="text-sm font-mono text-slate-900 dark:text-slate-100" data-testid="text-warehouse-id">{warehouse.id}</p>
                   </div>
                   {warehouse.code && (
                     <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Code</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:code')}</p>
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-code">{warehouse.code}</p>
                     </div>
                   )}
@@ -420,7 +420,7 @@ export default function WarehouseDetails() {
                 
                 {warehouse.floorArea && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Floor Area</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:floorArea')}</p>
                     <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-floor-area">
                       {warehouse.floorArea.toLocaleString()} m²
                     </p>
@@ -429,16 +429,16 @@ export default function WarehouseDetails() {
                 
                 {warehouse.capacity && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Capacity</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:capacity')}</p>
                     <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-capacity">
-                      {warehouse.capacity.toLocaleString()} units
+                      {warehouse.capacity.toLocaleString()} {t('warehouse:units')}
                     </p>
                   </div>
                 )}
 
                 {warehouse.description && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Description</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('common:description')}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300" data-testid="text-description">{warehouse.description}</p>
                   </div>
                 )}
@@ -450,7 +450,7 @@ export default function WarehouseDetails() {
               <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
                 <CardTitle className="text-base md:text-lg flex items-center gap-2">
                   <MapPin className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
-                  Contact & Location
+                  {t('warehouse:contactLocation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
@@ -458,7 +458,7 @@ export default function WarehouseDetails() {
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Address</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:address')}</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-address">{warehouse.address}</p>
                     </div>
                   </div>
@@ -468,7 +468,7 @@ export default function WarehouseDetails() {
                   <div className="flex items-start gap-2">
                     <Phone className="h-4 w-4 text-slate-500 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phone</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:phone')}</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-phone">{warehouse.phone}</p>
                     </div>
                   </div>
@@ -478,7 +478,7 @@ export default function WarehouseDetails() {
                   <div className="flex items-start gap-2">
                     <Mail className="h-4 w-4 text-slate-500 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:email')}</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-email">{warehouse.email}</p>
                     </div>
                   </div>
@@ -488,7 +488,7 @@ export default function WarehouseDetails() {
                   <div className="flex items-start gap-2">
                     <User className="h-4 w-4 text-slate-500 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Manager</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:manager')}</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-manager">{warehouse.managerName}</p>
                     </div>
                   </div>
@@ -505,9 +505,9 @@ export default function WarehouseDetails() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <CardTitle className="text-base md:text-lg flex items-center gap-2">
                   <Box className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
-                  Warehouse Inventory
+                  {t('warehouse:warehouseInventory')}
                 </CardTitle>
-                <Badge variant="outline" className="font-mono text-xs w-fit">{filteredProducts.length} items</Badge>
+                <Badge variant="outline" className="font-mono text-xs w-fit">{filteredProducts.length} {t('warehouse:items')}</Badge>
               </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
@@ -516,7 +516,7 @@ export default function WarehouseDetails() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search products by name, SKU, barcode, or location..."
+                    placeholder={t('warehouse:searchProductsPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -570,7 +570,7 @@ export default function WarehouseDetails() {
                                 {product.primaryLocation}
                               </span>
                             )}
-                            <span className="font-medium">Qty: {product.quantity || 0}</span>
+                            <span className="font-medium">{t('warehouse:qty')}: {product.quantity || 0}</span>
                           </div>
                         </div>
                       </div>
@@ -585,7 +585,7 @@ export default function WarehouseDetails() {
                         data-testid={`button-move-${product.id}`}
                       >
                         <MoveRight className="h-4 w-4 mr-2" />
-                        Move
+                        {t('warehouse:move')}
                       </Button>
                     </div>
                   ))}
@@ -594,7 +594,7 @@ export default function WarehouseDetails() {
                 <div className="text-center py-12">
                   <Box className="h-12 w-12 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">
-                    {searchQuery ? 'No products found' : 'No products in this warehouse'}
+                    {searchQuery ? t('warehouse:noProductsFound') : t('warehouse:noProductsInWarehouse')}
                   </p>
                 </div>
               )}
@@ -609,7 +609,7 @@ export default function WarehouseDetails() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                  Documents & Files
+                  {t('warehouse:documentsFiles')}
                 </CardTitle>
                 <ObjectUploader
                   onGetUploadParameters={handleGetUploadParameters}
@@ -617,7 +617,7 @@ export default function WarehouseDetails() {
                   trigger={
                     <Button size="sm" data-testid="button-upload-file">
                       <Upload className="h-4 w-4 mr-2" />
-                      Upload
+                      {t('warehouse:upload')}
                     </Button>
                   }
                 />
@@ -677,14 +677,14 @@ export default function WarehouseDetails() {
               ) : (
                 <div className="text-center py-12">
                   <UploadCloud className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">No files uploaded yet</p>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">{t('warehouse:noFilesYet')}</p>
                   <ObjectUploader
                     onGetUploadParameters={handleGetUploadParameters}
                     onUploadComplete={handleFileUploadComplete}
                     trigger={
                       <Button variant="outline" size="sm">
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload First File
+                        {t('warehouse:uploadFirstFile')}
                       </Button>
                     }
                   />
@@ -700,7 +700,7 @@ export default function WarehouseDetails() {
             <CardHeader className="border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="text-lg flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                Financial Contracts
+                {t('warehouse:financialContracts')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -735,14 +735,14 @@ export default function WarehouseDetails() {
                       
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Monthly Cost</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{t('warehouse:monthlyCost')}</p>
                           <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-cost-${contract.id}`}>
                             {formatCurrency(contract.monthlyCost, contract.currency)}
                           </p>
                         </div>
                         {contract.notes && (
                           <div className="col-span-2">
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:notes')}</p>
                             <p className="text-sm text-slate-700 dark:text-slate-300">{contract.notes}</p>
                           </div>
                         )}
@@ -753,7 +753,7 @@ export default function WarehouseDetails() {
               ) : (
                 <div className="text-center py-12">
                   <DollarSign className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400">No financial contracts</p>
+                  <p className="text-slate-600 dark:text-slate-400">{t('warehouse:noFinancialContracts')}</p>
                 </div>
               )}
             </CardContent>
@@ -765,16 +765,16 @@ export default function WarehouseDetails() {
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
         <DialogContent data-testid="dialog-move-product">
           <DialogHeader>
-            <DialogTitle>Move Product to Another Warehouse</DialogTitle>
+            <DialogTitle>{t('warehouse:moveProductToWarehouse')}</DialogTitle>
             <DialogDescription>
-              Select the destination warehouse for {productToMove?.name}
+              {t('warehouse:selectDestinationWarehouse')} {productToMove?.name}
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
             <Select value={targetWarehouseId} onValueChange={setTargetWarehouseId}>
               <SelectTrigger data-testid="select-target-warehouse">
-                <SelectValue placeholder="Select warehouse" />
+                <SelectValue placeholder={t('warehouse:selectWarehouse')} />
               </SelectTrigger>
               <SelectContent>
                 {allWarehouses
@@ -798,7 +798,7 @@ export default function WarehouseDetails() {
               }}
               data-testid="button-cancel-move"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               onClick={() => {
@@ -812,7 +812,7 @@ export default function WarehouseDetails() {
               disabled={!targetWarehouseId || moveProductMutation.isPending}
               data-testid="button-confirm-move"
             >
-              {moveProductMutation.isPending ? 'Moving...' : 'Move Product'}
+              {moveProductMutation.isPending ? t('warehouse:moving') : t('warehouse:moveProduct')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -822,19 +822,19 @@ export default function WarehouseDetails() {
       <AlertDialog open={showDeleteFileDialog} onOpenChange={setShowDeleteFileDialog}>
         <AlertDialogContent data-testid="dialog-delete-file">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete File</AlertDialogTitle>
+            <AlertDialogTitle>{t('warehouse:deleteFile')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{fileToDelete?.fileName}"? This action cannot be undone.
+              {t('warehouse:deleteFileConfirm')} "{fileToDelete?.fileName}"? {t('warehouse:thisActionCannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => fileToDelete && deleteFileMutation.mutate(fileToDelete.id)}
               className="bg-red-600 hover:bg-red-700"
               data-testid="button-confirm-delete"
             >
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

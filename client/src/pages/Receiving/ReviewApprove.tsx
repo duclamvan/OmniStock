@@ -132,8 +132,8 @@ export default function ReviewApprove() {
     },
     onSuccess: () => {
       toast({
-        title: "Shipment Approved",
-        description: "The shipment has been successfully approved and completed.",
+        title: t('shipmentApproved'),
+        description: t('shipmentApprovedSuccess'),
       });
       // Comprehensive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
@@ -148,8 +148,8 @@ export default function ReviewApprove() {
     },
     onError: (error: any) => {
       toast({
-        title: "Approval Failed",
-        description: error.message || "Failed to approve the shipment. Please try again.",
+        title: t('approvalFailed'),
+        description: error.message || t('approvalFailedDesc'),
         variant: "destructive",
       });
     }
@@ -168,8 +168,8 @@ export default function ReviewApprove() {
     },
     onSuccess: () => {
       toast({
-        title: "Shipment Rejected",
-        description: "The shipment has been rejected and returned to receiving status.",
+        title: t('shipmentRejected'),
+        description: t('shipmentRejectedDesc'),
         variant: "destructive",
       });
       // Comprehensive cache invalidation
@@ -185,8 +185,8 @@ export default function ReviewApprove() {
     },
     onError: (error: any) => {
       toast({
-        title: "Rejection Failed",
-        description: error.message || "Failed to reject the shipment. Please try again.",
+        title: t('rejectionFailed'),
+        description: error.message || t('rejectionFailedDesc'),
         variant: "destructive",
       });
     }
@@ -255,14 +255,14 @@ export default function ReviewApprove() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            Failed to load shipment details. Please try again.
+            {t('failedToLoadShipmentDetails')}
           </AlertDescription>
         </Alert>
         <div className="mt-4">
           <Link href="/receiving">
             <Button variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Receiving
+              {t('backToReceiving')}
             </Button>
           </Link>
         </div>
@@ -283,14 +283,14 @@ export default function ReviewApprove() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Review & Approve</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t('reviewApprove')}</h1>
             <p className="text-muted-foreground">
               Review the received shipment and approve or reject
             </p>
           </div>
         </div>
         <Badge variant={hasDiscrepancies ? "warning" : "default"} className="text-sm px-3 py-1">
-          {hasDiscrepancies ? "Has Discrepancies" : "No Issues"}
+          {hasDiscrepancies ? t('hasDiscrepancies') : t('noIssues')}
         </Badge>
       </div>
 
@@ -303,7 +303,7 @@ export default function ReviewApprove() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Shipment Information
+                {t('shipmentInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -353,7 +353,7 @@ export default function ReviewApprove() {
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Package2 className="h-5 w-5" />
-                  Received Items
+                  {t('receivedItems')}
                 </span>
                 <Badge variant="outline">
                   {statistics.totalItems} items

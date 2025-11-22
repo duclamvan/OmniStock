@@ -162,8 +162,8 @@ export default function ReceiptDetails() {
     },
     onSuccess: () => {
       toast({
-        title: "Item Updated",
-        description: "Item verification details saved"
+        title: t('itemUpdated'),
+        description: t('itemVerificationSaved')
       });
       refetch();
       setSelectedItem(null);
@@ -190,8 +190,8 @@ export default function ReceiptDetails() {
     },
     onSuccess: () => {
       toast({
-        title: "Verification Complete",
-        description: "Receipt sent for approval"
+        title: t('verificationComplete'),
+        description: t('receiptSentForApproval')
       });
       refetch();
       setShowVerifyDialog(false);
@@ -225,8 +225,8 @@ export default function ReceiptDetails() {
       const createdCount = data.inventoryItems?.filter((i: any) => i.action === 'created').length || 0;
       
       toast({
-        title: "Receipt Approved ✅",
-        description: `Successfully processed ${itemCount} items: ${createdCount} new products created, ${updatedCount} existing products updated with weighted average cost calculations`
+        title: t('receiptApproved'),
+        description: `${t('successfullyProcessed')} ${itemCount} ${t('items')}: ${createdCount} ${t('newProductsCreated')}, ${updatedCount} ${t('productsUpdated')}`
       });
       refetch();
       setShowApprovalDialog(false);
@@ -299,8 +299,8 @@ export default function ReceiptDetails() {
     
     if (unverifiedItems.length === 0) {
       toast({
-        title: "All Items Verified",
-        description: "All items have already been verified"
+        title: t('allItemsVerified'),
+        description: t('allItemsAlreadyVerified')
       });
       return;
     }
@@ -327,8 +327,8 @@ export default function ReceiptDetails() {
     });
 
     toast({
-      title: "Bulk Verification Started",
-      description: `Verifying ${unverifiedItems.length} items with default values...`
+      title: t('bulkVerificationStarted'),
+      description: `${t('verifying')} ${unverifiedItems.length} ${t('items')}...`
     });
   };
 
@@ -351,8 +351,8 @@ export default function ReceiptDetails() {
     });
 
     toast({
-      title: "Verification Undone",
-      description: "Item verification has been removed"
+      title: t('verificationUndone'),
+      description: t('verificationRemoved')
     });
   };
 
@@ -376,8 +376,8 @@ export default function ReceiptDetails() {
       const updatedCount = data.revertedItems?.filter((i: any) => i.action === 'updated').length || 0;
       
       toast({
-        title: "Approval Undone ✅",
-        description: `Successfully reverted ${itemCount} items: ${deletedCount} products deleted, ${updatedCount} products updated with reduced quantities`
+        title: t('approvalUndone'),
+        description: `${t('successfullyReverted')} ${itemCount} ${t('items')}: ${deletedCount} ${t('productsDeleted')}, ${updatedCount} ${t('productsUpdated')}`
       });
       refetch();
     },
@@ -404,8 +404,8 @@ export default function ReceiptDetails() {
     
     if (verifiedItems.length === 0) {
       toast({
-        title: "No Verified Items",
-        description: "No items have been verified yet"
+        title: t('noVerifiedItems'),
+        description: t('noItemsVerifiedYet')
       });
       return;
     }

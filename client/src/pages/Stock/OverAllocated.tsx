@@ -43,12 +43,12 @@ export default function OverAllocated() {
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400 flex-shrink-0" />
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                Over-Allocated
+                {t('overAllocated')}
               </h1>
             </div>
           </div>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-10 sm:ml-11">
-            Items with more quantity ordered than available in stock
+            {t('itemsWithMoreOrderedThanAvailable')}
           </p>
         </div>
       </div>
@@ -79,10 +79,10 @@ export default function OverAllocated() {
                 <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                All Stock Levels Healthy
+                {t('allStockLevelsHealthy')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                No items have more quantity ordered than available in stock
+                {t('noOverAllocatedItems')}
               </p>
             </CardContent>
           </Card>
@@ -93,13 +93,13 @@ export default function OverAllocated() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Over-Allocated Items</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('totalOverAllocatedItems')}</p>
                     <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{items.length}</p>
                   </div>
                   <div className="sm:text-right">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Shortfall</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('totalShortfall')}</p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                      {items.reduce((sum, item) => sum + item.shortfall, 0)} units
+                      {items.reduce((sum, item) => sum + item.shortfall, 0)} {t('units')}
                     </p>
                   </div>
                 </div>
@@ -141,36 +141,36 @@ export default function OverAllocated() {
                             </h3>
                             {item.productSku && (
                               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
-                                SKU: {item.productSku}
+                                {t('sku')}: {item.productSku}
                               </p>
                             )}
                             {item.variantBarcode && (
                               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
-                                Barcode: {item.variantBarcode}
+                                {t('barcode')}: {item.variantBarcode}
                               </p>
                             )}
                           </div>
                           <Badge variant="destructive" className="flex-shrink-0 text-xs">
-                            {item.type === 'variant' ? 'Variant' : 'Product'}
+                            {item.type === 'variant' ? t('variant') : t('productLabel')}
                           </Badge>
                         </div>
 
                         {/* Stock Stats */}
                         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-4">
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">Available</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('available')}</p>
                             <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                               {item.availableStock}
                             </p>
                           </div>
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">Ordered</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('ordered')}</p>
                             <p className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400">
                               {item.orderedQuantity}
                             </p>
                           </div>
                           <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2 sm:p-3">
-                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">Shortfall</p>
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 leading-tight">{t('shortfall')}</p>
                             <p className="text-base sm:text-xl font-bold text-red-600 dark:text-red-400">
                               -{item.shortfall}
                             </p>
@@ -182,21 +182,21 @@ export default function OverAllocated() {
                           <Link href={`/inventory/products/${item.productId}`} className="flex-1 sm:flex-none">
                             <Button size="sm" variant="outline" className="w-full sm:w-auto" data-testid={`button-view-product-${item.productId}`}>
                               <ExternalLink className="h-4 w-4 mr-1.5" />
-                              <span className="hidden sm:inline">View Product</span>
-                              <span className="sm:hidden">View</span>
+                              <span className="hidden sm:inline">{t('viewProduct')}</span>
+                              <span className="sm:hidden">{t('common:view')}</span>
                             </Button>
                           </Link>
                           <Link href={`/stock`} className="flex-1 sm:flex-none">
                             <Button size="sm" className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white" data-testid={`button-add-stock-${item.productId}`}>
                               <TrendingUp className="h-4 w-4 mr-1.5" />
-                              <span className="hidden sm:inline">Add Stock</span>
-                              <span className="sm:hidden">Add</span>
+                              <span className="hidden sm:inline">{t('addStock')}</span>
+                              <span className="sm:hidden">{t('add')}</span>
                             </Button>
                           </Link>
                           <Link href={`/orders`} className="flex-1 sm:flex-none">
                             <Button size="sm" variant="outline" className="w-full sm:w-auto" data-testid={`button-view-orders-${item.productId}`}>
-                              <span className="hidden sm:inline">View Related Orders</span>
-                              <span className="sm:hidden">Orders</span>
+                              <span className="hidden sm:inline">{t('viewRelatedOrders')}</span>
+                              <span className="sm:hidden">{t('common:orders')}</span>
                             </Button>
                           </Link>
                         </div>

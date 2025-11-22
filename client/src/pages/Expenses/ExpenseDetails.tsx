@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft, 
   Edit, 
@@ -43,6 +44,7 @@ export default function ExpenseDetails() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation(['financial', 'common']);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: expense, isLoading, error } = useQuery<any>({
@@ -57,15 +59,15 @@ export default function ExpenseDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       toast({
-        title: "Success",
-        description: "Expense deleted successfully",
+        title: t('common:success'),
+        description: t('expenseDeletedSuccessfully'),
       });
       navigate('/expenses');
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete expense",
+        title: t('common:error'),
+        description: t('failedToDeleteExpense'),
         variant: "destructive",
       });
     },
@@ -79,14 +81,14 @@ export default function ExpenseDetails() {
       queryClient.invalidateQueries({ queryKey: [`/api/expenses/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       toast({
-        title: "Success",
-        description: "Expense status updated successfully",
+        title: t('common:success'),
+        description: t('expenseStatusUpdatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update expense status",
+        title: t('common:error'),
+        description: t('failedToUpdateExpenseStatus'),
         variant: "destructive",
       });
     },
@@ -146,7 +148,7 @@ export default function ExpenseDetails() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-mobile-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Expense Details</h1>
+            <h1 className="text-mobile-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('expenseDetails')}</h1>
             <p className="text-muted-foreground dark:text-gray-400">{expense.expenseId}</p>
           </div>
         </div>
@@ -155,7 +157,7 @@ export default function ExpenseDetails() {
           onClick={() => navigate(`/expenses/edit/${id}`)}
         >
           <Edit className="mr-2 h-4 w-4" />
-          Edit
+          {t('common:edit')}
         </Button>
       </div>
 
@@ -164,9 +166,9 @@ export default function ExpenseDetails() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>Expense Information</CardTitle>
+              <CardTitle>{t('expenseInformation')}</CardTitle>
               <CardDescription>
-                Created on {format(new Date(expense.createdAt), 'PPP')}
+                {t('createdOn')} {format(new Date(expense.createdAt), 'PPP')}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -176,25 +178,25 @@ export default function ExpenseDetails() {
                 disabled={updateStatusMutation.isPending}
               >
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      Pending
+                      {t('pending')}
                     </div>
                   </SelectItem>
                   <SelectItem value="paid">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500" />
-                      Paid
+                      {t('paid')}
                     </div>
                   </SelectItem>
                   <SelectItem value="overdue">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-red-500" />
-                      Overdue
+                      {t('overdue')}
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -212,7 +214,7 @@ export default function ExpenseDetails() {
               <div className="flex items-center gap-3">
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Amount</p>
+                  <p className="text-sm text-muted-foreground">{t('amount')}</p>
                   <p className="text-2xl font-bold">
                     {symbol}{parseFloat(amount).toFixed(2)} {currency}
                   </p>
@@ -222,7 +224,7 @@ export default function ExpenseDetails() {
               <div className="flex items-center gap-3">
                 <Building className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="text-sm text-muted-foreground">{t('common:name')}</p>
                   <p className="font-medium">{expense.name}</p>
                 </div>
               </div>
@@ -230,7 +232,7 @@ export default function ExpenseDetails() {
               <div className="flex items-center gap-3">
                 <Tag className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Category</p>
+                  <p className="text-sm text-muted-foreground">{t('category')}</p>
                   <p className="font-medium">{expense.category}</p>
                 </div>
               </div>
@@ -240,7 +242,7 @@ export default function ExpenseDetails() {
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Date</p>
+                  <p className="text-sm text-muted-foreground">{t('common:date')}</p>
                   <p className="font-medium">
                     {format(new Date(expense.date), 'PPP')}
                   </p>
@@ -251,7 +253,7 @@ export default function ExpenseDetails() {
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Due Date</p>
+                    <p className="text-sm text-muted-foreground">{t('dueDate')}</p>
                     <p className="font-medium">
                       {format(new Date(expense.dueDate), 'PPP')}
                     </p>
@@ -263,7 +265,7 @@ export default function ExpenseDetails() {
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Payment Method</p>
+                    <p className="text-sm text-muted-foreground">{t('paymentMethod')}</p>
                     <p className="font-medium">{expense.paymentMethod}</p>
                   </div>
                 </div>
@@ -273,7 +275,7 @@ export default function ExpenseDetails() {
                 <div className="flex items-center gap-3">
                   <RefreshCw className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Recurring</p>
+                    <p className="text-sm text-muted-foreground">{t('recurring')}</p>
                     <p className="font-medium capitalize">{expense.recurring}</p>
                   </div>
                 </div>
@@ -288,7 +290,7 @@ export default function ExpenseDetails() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-medium">Description</h3>
+                <h3 className="font-medium">{t('common:description')}</h3>
               </div>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {expense.description}
@@ -300,11 +302,11 @@ export default function ExpenseDetails() {
           <div className="space-y-2 pt-4 border-t">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h3 className="font-medium text-sm">Audit Trail</h3>
+                <h3 className="font-medium text-sm">{t('auditTrail')}</h3>
                 <div className="text-sm text-muted-foreground space-y-1 mt-2">
-                  <p>Created: {format(new Date(expense.createdAt), 'PPp')}</p>
+                  <p>{t('created')}: {format(new Date(expense.createdAt), 'PPp')}</p>
                   {expense.updatedAt && expense.updatedAt !== expense.createdAt && (
-                    <p>Last Updated: {format(new Date(expense.updatedAt), 'PPp')}</p>
+                    <p>{t('lastUpdated')}: {format(new Date(expense.updatedAt), 'PPp')}</p>
                   )}
                 </div>
               </div>
@@ -325,18 +327,18 @@ export default function ExpenseDetails() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteExpense')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this expense? This action cannot be undone.
+              {t('deleteExpenseConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

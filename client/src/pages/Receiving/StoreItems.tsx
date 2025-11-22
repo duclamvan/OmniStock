@@ -127,8 +127,8 @@ export default function StoreItems() {
       setScanFeedback({ type: 'error', message: 'Invalid location format' });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
-        title: "Invalid Location",
-        description: "Location must be in format: WH1-A01-R02-L03",
+        title: t('invalidLocation'),
+        description: t('locationFormatInvalid'),
         variant: "destructive",
         duration: 3000
       });
@@ -209,8 +209,8 @@ export default function StoreItems() {
     setItems(updatedItems);
     
     toast({
-      title: "Primary Location Set",
-      description: `${item.newLocations[locationIndex].locationCode} is now the primary location`,
+      title: t('primaryLocationSet'),
+      description: `${item.newLocations[locationIndex].locationCode} ${t('isPrimaryLocation')}`,
       duration: 2000
     });
   };
@@ -259,8 +259,8 @@ export default function StoreItems() {
     },
     onSuccess: () => {
       toast({
-        title: "Items Stored Successfully",
-        description: `${completedItems} items have been stored in their locations`,
+        title: t('itemsStoredSuccessfully'),
+        description: `${completedItems} ${t('items')} ${t('haveBeenStored')}`,
         duration: 3000
       });
       
@@ -269,8 +269,8 @@ export default function StoreItems() {
     },
     onError: (error: any) => {
       toast({
-        title: "Storage Failed",
-        description: error.message || "Failed to store items in locations",
+        title: t('storageFailed'),
+        description: error.message || t('failedToStoreItems'),
         variant: "destructive",
         duration: 3000
       });
@@ -318,9 +318,9 @@ export default function StoreItems() {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Store Items</h1>
+            <h1 className="text-2xl font-bold">{t('storeItems')}</h1>
             <p className="text-sm text-muted-foreground">
-              Assign warehouse locations to received items
+              {t('assignWarehouseLocations')}
             </p>
           </div>
         </div>
@@ -338,7 +338,7 @@ export default function StoreItems() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Save & Complete
+            {t('saveComplete')}
           </Button>
         </div>
       </div>
@@ -347,14 +347,14 @@ export default function StoreItems() {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Storage Progress</span>
-            <span className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</span>
+            <span className="text-sm font-medium">{t('storageProgress')}</span>
+            <span className="text-sm text-muted-foreground">{Math.round(progress)}% {t('complete', { ns: 'common' })}</span>
           </div>
           <Progress value={progress} className="h-3 mb-2" />
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <span>{completedItems}/{totalItems} items stored</span>
+            <span>{completedItems}/{totalItems} {t('itemsStored')}</span>
             <span>•</span>
-            <span>{items.reduce((sum, item) => sum + item.newLocations.length, 0)} locations assigned</span>
+            <span>{items.reduce((sum, item) => sum + item.newLocations.length, 0)} {t('locationsAssigned')}</span>
           </div>
         </CardContent>
       </Card>

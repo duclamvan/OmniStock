@@ -699,8 +699,8 @@ export default function StartReceiving() {
       console.error('Item quantity update failed:', error);
       // Show toast but don't revert UI - user can retry if needed
       toast({
-        title: "Update Failed",
-        description: "Failed to save quantity update. Please try again.",
+        title: t('updateFailed'),
+        description: t('failedToSaveQuantity'),
         variant: "destructive"
       });
     }
@@ -908,7 +908,7 @@ export default function StartReceiving() {
       }
       console.error('Photos update failed:', error);
       toast({
-        title: "Failed to update photos",
+        title: t('updateFailed'),
         description: "Please try again",
         variant: "destructive"
       });
@@ -1005,7 +1005,7 @@ export default function StartReceiving() {
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         updateItemQuantity(item.id, 1);
         toast({
-          title: "Item Scanned",
+          title: t('itemScanned'),
           description: `${item.name} - Quantity updated`,
           duration: 2000
         });
@@ -1246,7 +1246,7 @@ export default function StartReceiving() {
     },
     onSuccess: () => {
       toast({
-        title: "Receipt Updated",
+        title: t('receiptUpdated'),
         description: "Successfully updated the receiving process"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
@@ -1281,7 +1281,7 @@ export default function StartReceiving() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Receipt Created",
+        title: t('receiptCreated'),
         description: "Successfully started the receiving process"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
@@ -1340,7 +1340,7 @@ export default function StartReceiving() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Receiving Completed",
+        title: t('receivingCompleted'),
         description: "The shipment has been successfully received and is now ready for storage"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
@@ -1523,7 +1523,7 @@ export default function StartReceiving() {
     const receiptStatus = receipt?.receipt?.status || receipt?.status;
     if (receiptStatus === 'pending_approval' || receiptStatus === 'verified' || receiptStatus === 'approved') {
       toast({
-        title: "Already Completed",
+        title: t('alreadyCompleted'),
         description: "This receipt has already been completed and is awaiting approval.",
         variant: "destructive"
       });
