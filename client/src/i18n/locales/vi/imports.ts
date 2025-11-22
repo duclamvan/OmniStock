@@ -1468,6 +1468,23 @@ const imports = {
   specialStorageRequirements: 'Yêu cầu lưu trữ đặc biệt...',
   yourName: 'Tên của bạn',
   
+  // StartReceiving - Additional toast messages
+  preScannedDataLoaded: 'Đã tải dữ liệu đã quét trước',
+  loadedXTrackingNumbers: 'Đã tải {{count}} mã vận đơn đã quét trước',
+  trackingNumbersAlreadyScanned: 'Mã vận đơn đã được quét',
+  allXTrackingNumbersAlreadyRecorded: 'Tất cả {{count}} mã vận đơn đã được ghi nhận',
+  invalidTrackingNumber: 'Mã vận đơn không hợp lệ',
+  trackingNumberNotInShipment: '{{value}} không có trong danh sách vận đơn của lô hàng này',
+  alreadyScanned: 'Đã quét',
+  trackingNumberAlreadyScanned: 'Mã vận đơn {{value}} đã được quét',
+  shipmentNotInReceivingStatus: 'Lô hàng này không ở trạng thái nhận hàng (hiện tại: {{status}}). Vui lòng làm việc với lô hàng đang được nhận.',
+  allItemsReceived: '✨ Đã nhận tất cả sản phẩm',
+  greatJobShipmentFullyReceived: 'Làm tốt lắm! Lô hàng đã được nhận đầy đủ.',
+  saveFailed: 'Lưu thất bại',
+  photosUploadedButFailedToSave: 'Đã tải ảnh lên nhưng không thể lưu. Chúng sẽ được lưu với lần cập nhật tiếp theo.',
+  photosUploaded: 'Đã tải ảnh lên',
+  successfullyUploadedXPhotos: 'Đã tải lên thành công {{count}} ảnh{{reduction, select, 0{} other{ (nhỏ hơn {{reduction}}%)}}} • Hình thu nhỏ: {{thumbnailSize}}KB tổng',
+  
 } as const;
 
 export default imports;

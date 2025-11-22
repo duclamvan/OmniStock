@@ -1567,6 +1567,23 @@ const imports = {
   specialStorageRequirements: 'Special storage requirements...',
   yourName: 'Your name',
   
+  // StartReceiving - Additional toast messages
+  preScannedDataLoaded: 'Pre-scanned Data Loaded',
+  loadedXTrackingNumbers: 'Loaded {{count}} pre-scanned tracking number(s)',
+  trackingNumbersAlreadyScanned: 'Tracking Numbers Already Scanned',
+  allXTrackingNumbersAlreadyRecorded: 'All {{count}} tracking numbers were already recorded',
+  invalidTrackingNumber: 'Invalid Tracking Number',
+  trackingNumberNotInShipment: '{{value}} is not in this shipment\'s tracking list',
+  alreadyScanned: 'Already Scanned',
+  trackingNumberAlreadyScanned: 'Tracking number {{value}} has already been scanned',
+  shipmentNotInReceivingStatus: 'This shipment is not in receiving status (current: {{status}}). Please work on a shipment that is currently being received.',
+  allItemsReceived: '✨ All items received',
+  greatJobShipmentFullyReceived: 'Great job! The shipment is fully received.',
+  saveFailed: 'Save Failed',
+  photosUploadedButFailedToSave: 'Photos uploaded but failed to save. They will be saved with next update.',
+  photosUploaded: 'Photos Uploaded',
+  successfullyUploadedXPhotos: 'Successfully uploaded {{count}} photo(s){{reduction, select, 0{} other{ ({{reduction}}% smaller)}}} • Thumbnails: {{thumbnailSize}}KB total',
+  
 } as const;
 
 export default imports;

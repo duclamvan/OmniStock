@@ -1162,19 +1162,19 @@ export default function ReceiptDetails() {
         <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Verify Item</DialogTitle>
+              <DialogTitle>{t('verifyItem')}</DialogTitle>
               <DialogDescription>
-                {selectedItem.details?.name || `Item #${selectedItem.itemId}`}
+                {selectedItem.details?.name || `${t('item')} #${selectedItem.itemId}`}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Label>Expected Quantity</Label>
+                  <Label>{t('expectedQuantity')}</Label>
                   <Input value={selectedItem.expectedQuantity} disabled className="h-11" />
                 </div>
                 <div>
-                  <Label>Received Quantity</Label>
+                  <Label>{t('receivedQuantity')}</Label>
                   <div className="flex gap-2">
                     <Button
                       size="icon"
@@ -1210,7 +1210,7 @@ export default function ReceiptDetails() {
                   </div>
                 </div>
                 <div>
-                  <Label>Damaged Quantity</Label>
+                  <Label>{t('damagedQuantity')}</Label>
                   <Input
                     type="number"
                     value={selectedItem.damagedQuantity}
@@ -1226,7 +1226,7 @@ export default function ReceiptDetails() {
               <div className="grid grid-cols-2 gap-4">
                 {scanningEnabled && (
                   <div>
-                    <Label>Barcode</Label>
+                    <Label>{t('barcode')}</Label>
                     <div className="relative">
                       <QrCode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -1235,14 +1235,14 @@ export default function ReceiptDetails() {
                           ...selectedItem,
                           barcode: e.target.value
                         })}
-                        placeholder="Scan or enter barcode"
+                        placeholder={t('scanOrEnterBarcode')}
                         className="pl-10"
                       />
                     </div>
                   </div>
                 )}
                 <div className={scanningEnabled ? "" : "col-span-2"}>
-                  <Label>Condition</Label>
+                  <Label>{t('condition')}</Label>
                   <Select
                     value={selectedItem.condition}
                     onValueChange={(value) => setSelectedItem({
@@ -1254,10 +1254,10 @@ export default function ReceiptDetails() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="good">Good</SelectItem>
-                      <SelectItem value="damaged">Damaged</SelectItem>
-                      <SelectItem value="partial">Partial</SelectItem>
+                      <SelectItem value="pending">{t('pending')}</SelectItem>
+                      <SelectItem value="good">{t('good')}</SelectItem>
+                      <SelectItem value="damaged">{t('damaged')}</SelectItem>
+                      <SelectItem value="partial">{t('partial')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1265,59 +1265,59 @@ export default function ReceiptDetails() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Warehouse Location</Label>
+                  <Label>{t('warehouseLocation')}</Label>
                   <Input
                     value={selectedItem.warehouseLocation || ""}
                     onChange={(e) => setSelectedItem({
                       ...selectedItem,
                       warehouseLocation: e.target.value
                     })}
-                    placeholder="e.g., A-12-3"
+                    placeholder={t('egA123')}
                   />
                 </div>
                 <div>
-                  <Label>Additional Location</Label>
+                  <Label>{t('additionalLocation')}</Label>
                   <Input
                     value={selectedItem.additionalLocation || ""}
                     onChange={(e) => setSelectedItem({
                       ...selectedItem,
                       additionalLocation: e.target.value
                     })}
-                    placeholder="e.g., Shelf 2"
+                    placeholder={t('egShelf2')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label>Storage Instructions</Label>
+                <Label>{t('storageInstructions')}</Label>
                 <Textarea
                   value={selectedItem.storageInstructions || ""}
                   onChange={(e) => setSelectedItem({
                     ...selectedItem,
                     storageInstructions: e.target.value
                   })}
-                  placeholder="Special storage requirements..."
+                  placeholder={t('specialStorageRequirements')}
                 />
               </div>
 
               <div>
-                <Label>Notes</Label>
+                <Label>{t('notes')}</Label>
                 <Textarea
                   value={selectedItem.notes || ""}
                   onChange={(e) => setSelectedItem({
                     ...selectedItem,
                     notes: e.target.value
                   })}
-                  placeholder="Additional notes about this item..."
+                  placeholder={t('additionalNotesItem')}
                 />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSelectedItem(null)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={saveItemVerification}>
-                Save Verification
+                {t('saveVerification')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1328,35 +1328,35 @@ export default function ReceiptDetails() {
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Complete Verification</DialogTitle>
+            <DialogTitle>{t('completeVerification')}</DialogTitle>
             <DialogDescription>
-              Send this receipt for founder approval
+              {t('sendThisReceiptForFounderApproval')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Verified By</Label>
+              <Label>{t('verifiedBy')}</Label>
               <Input
                 value={verifiedBy}
                 onChange={(e) => setVerifiedBy(e.target.value)}
-                placeholder="Your name"
+                placeholder={t('yourName')}
               />
             </div>
             <div>
-              <Label>Damage Report (if any)</Label>
+              <Label>{t('damageReport')}</Label>
               <Textarea
                 value={damageNotes}
                 onChange={(e) => setDamageNotes(e.target.value)}
-                placeholder="Describe any damage or issues found..."
+                placeholder={t('damageReportPlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowVerifyDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={handleCompleteVerification}>
-              Complete Verification
+              {t('completeVerification')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1366,27 +1366,27 @@ export default function ReceiptDetails() {
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Receipt</DialogTitle>
+            <DialogTitle>{t('approveReceipt')}</DialogTitle>
             <DialogDescription>
-              Approve this receipt and add items to inventory
+              {t('approveThisReceiptAndAddToInventory')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Approved By</Label>
+              <Label>{t('approvedBy')}</Label>
               <Input
                 value={approvedBy}
                 onChange={(e) => setApprovedBy(e.target.value)}
-                placeholder="Your name"
+                placeholder={t('yourName')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={() => handleApproval()}>
-              Approve & Add to Inventory
+              {t('approveAndAddToInventory')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1397,10 +1397,10 @@ export default function ReceiptDetails() {
         <DialogContent className="max-w-4xl max-h-[90vh] p-2" onKeyDown={handleKeyDown}>
           <DialogHeader className="px-4 py-2">
             <div className="flex items-center justify-between">
-              <DialogTitle>Photo Preview</DialogTitle>
+              <DialogTitle>{t('photoPreview')}</DialogTitle>
               {receipt?.photos && receipt.photos.length > 1 && (
                 <Badge variant="secondary" className="text-xs">
-                  {currentPhotoIndex + 1} of {receipt.photos.length}
+                  {currentPhotoIndex + 1} {t('of')} {receipt.photos.length}
                 </Badge>
               )}
             </div>
@@ -1452,7 +1452,7 @@ export default function ReceiptDetails() {
           <DialogFooter className="px-4 py-2">
             <div className="flex items-center justify-between w-full">
               <div className="text-xs text-muted-foreground">
-                Use arrow keys to navigate
+                {t('useArrowKeysToNavigate')}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -1470,10 +1470,10 @@ export default function ReceiptDetails() {
                   data-testid="button-download-single-photo"
                 >
                   <Download className="h-4 w-4" />
-                  Download
+                  {t('download')}
                 </Button>
                 <Button size="sm" onClick={() => setShowImagePreview(false)}>
-                  Close
+                  {t('close')}
                 </Button>
               </div>
             </div>

@@ -819,8 +819,8 @@ export default function StartReceiving() {
           
           // Show toast notification
           toast({
-            title: "Pre-scanned Data Loaded",
-            description: `Loaded ${newNumbers.length} pre-scanned tracking number${newNumbers.length > 1 ? 's' : ''}`,
+            title: t('preScannedDataLoaded'),
+            description: t('loadedXTrackingNumbers', { count: newNumbers.length }),
             duration: 4000,
           });
           
@@ -833,8 +833,8 @@ export default function StartReceiving() {
         } else if (prefilledTrackingNumbers.length > 0) {
           // All tracking numbers were duplicates
           toast({
-            title: "Tracking Numbers Already Scanned",
-            description: `All ${prefilledTrackingNumbers.length} tracking numbers were already recorded`,
+            title: t('trackingNumbersAlreadyScanned'),
+            description: t('allXTrackingNumbersAlreadyRecorded', { count: prefilledTrackingNumbers.length }),
             variant: "default",
             duration: 3000,
           });
@@ -932,8 +932,8 @@ export default function StartReceiving() {
         setScanFeedback({ type: 'error', message: `Invalid tracking number: ${value}` });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
         toast({
-          title: "Invalid Tracking Number",
-          description: `${value} is not in this shipment's tracking list`,
+          title: t('invalidTrackingNumber'),
+          description: t('trackingNumberNotInShipment', { value }),
           variant: "destructive",
           duration: 4000
         });
@@ -947,8 +947,8 @@ export default function StartReceiving() {
         setScanFeedback({ type: 'duplicate', message: `Already scanned: ${value}` });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
-          title: "Already Scanned",
-          description: `Tracking number ${value} has already been scanned`,
+          title: t('alreadyScanned'),
+          description: t('trackingNumberAlreadyScanned', { value }),
           variant: "destructive",
           duration: 3000
         });
@@ -1014,8 +1014,8 @@ export default function StartReceiving() {
         setScanFeedback({ type: 'error', message: 'Item not found' });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
-          title: "Item Not Found",
-          description: "This SKU is not in the current shipment",
+          title: t('itemNotFound'),
+          description: t('thisSkuIsNotInCurrentShipment'),
           variant: "destructive",
           duration: 3000
         });
@@ -1178,8 +1178,8 @@ export default function StartReceiving() {
       onError: () => {
         // Don't revert UI - show error toast instead
         toast({
-          title: "Update Failed",
-          description: "Failed to save status update. Please try again.",
+          title: t('updateFailed'),
+          description: t('failedToSaveStatusUpdate'),
           variant: "destructive"
         });
       }
@@ -1192,8 +1192,8 @@ export default function StartReceiving() {
     const itemToUpdate = receivingItems.find(item => item.id === itemId);
     if (!itemToUpdate) {
       toast({
-        title: "Update Failed",
-        description: "Item not found.",
+        title: t('updateFailed'),
+        description: t('itemNotFound'),
         variant: "destructive"
       });
       return;
@@ -1219,8 +1219,8 @@ export default function StartReceiving() {
       onError: () => {
         // Don't revert UI - show error toast instead
         toast({
-          title: "Update Failed",
-          description: "Failed to save notes. Please try again.",
+          title: t('updateFailed'),
+          description: t('failedToSaveNotes'),
           variant: "destructive"
         });
       }
@@ -1247,7 +1247,7 @@ export default function StartReceiving() {
     onSuccess: () => {
       toast({
         title: t('receiptUpdated'),
-        description: "Successfully updated the receiving process"
+        description: t('successfullyUpdatedReceivingProcess')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
@@ -1256,8 +1256,8 @@ export default function StartReceiving() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update receipt",
+        title: t('error'),
+        description: error.message || t('failedToUpdateReceipt'),
         variant: "destructive"
       });
     }
@@ -1282,7 +1282,7 @@ export default function StartReceiving() {
     onSuccess: (data) => {
       toast({
         title: t('receiptCreated'),
-        description: "Successfully started the receiving process"
+        description: t('successfullyStartedReceivingProcess')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
@@ -1290,8 +1290,8 @@ export default function StartReceiving() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create receipt",
+        title: t('error'),
+        description: error.message || t('failedToCreateReceipt'),
         variant: "destructive"
       });
     }
@@ -1341,7 +1341,7 @@ export default function StartReceiving() {
     onSuccess: (data) => {
       toast({
         title: t('receivingCompleted'),
-        description: "The shipment has been successfully received and is now ready for storage"
+        description: t('shipmentSuccessfullyReceived')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
@@ -1356,8 +1356,8 @@ export default function StartReceiving() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to complete receiving",
+        title: t('error'),
+        description: error.message || t('failedToCompleteReceiving'),
         variant: "destructive"
       });
     }
@@ -1524,7 +1524,7 @@ export default function StartReceiving() {
     if (receiptStatus === 'pending_approval' || receiptStatus === 'verified' || receiptStatus === 'approved') {
       toast({
         title: t('alreadyCompleted'),
-        description: "This receipt has already been completed and is awaiting approval.",
+        description: t('alreadyCompleted'),
         variant: "destructive"
       });
       return;
@@ -1533,8 +1533,8 @@ export default function StartReceiving() {
     // Check if shipment is in receiving status
     if (shipment?.receivingStatus !== 'receiving') {
       toast({
-        title: "Cannot Complete",
-        description: `This shipment is not in receiving status (current: ${shipment?.receivingStatus || 'none'}). Please work on a shipment that is currently being received.`,
+        title: t('cannotComplete'),
+        description: t('shipmentNotInReceivingStatus', { status: shipment?.receivingStatus || 'none' }),
         variant: "destructive"
       });
       return;
@@ -1545,8 +1545,8 @@ export default function StartReceiving() {
     
     if (pendingItems.length > 0) {
       toast({
-        title: "Incomplete Items",
-        description: `Please process all items before completing. ${pendingItems.length} items are still pending.`,
+        title: t('incompleteItems'),
+        description: t('pleaseProcessAllItemsBeforeCompleting', { count: pendingItems.length }),
         variant: "destructive"
       });
       return;
@@ -1660,8 +1660,8 @@ export default function StartReceiving() {
     if (progress >= 100 && !hasShownCompletionToast && receivingItems.length > 0) {
       setHasShownCompletionToast(true);
       toast({
-        title: "✨ All items received",
-        description: "Great job! The shipment is fully received.",
+        title: t('allItemsReceived'),
+        description: t('greatJobShipmentFullyReceived'),
         className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
         duration: 4000
       });
@@ -1752,8 +1752,8 @@ export default function StartReceiving() {
           onError: () => {
             // Don't revert UI, just show error
             toast({
-              title: "Save Failed",
-              description: "Photos uploaded but failed to save. They will be saved with next update.",
+              title: t('saveFailed'),
+              description: t('photosUploadedButFailedToSave'),
               variant: "destructive"
             });
           }
@@ -1769,8 +1769,8 @@ export default function StartReceiving() {
       ) / 1024);
       
       toast({
-        title: "Photos Uploaded",
-        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''}${reduction > 0 ? ` (${reduction}% smaller)` : ''} • Thumbnails: ${thumbnailSizeKB}KB total`,
+        title: t('photosUploaded'),
+        description: t('successfullyUploadedXPhotos', { count: totalFiles, reduction, thumbnailSize: thumbnailSizeKB }),
         className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
         duration: 3000
       });
