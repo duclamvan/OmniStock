@@ -1129,15 +1129,12 @@ const imports = {
   showIssues: 'Hiện có vấn đề',
   activeReceipts: 'Phiếu nhận đang hoạt động',
   receipt: 'Phiếu nhận',
-  searchProducts: 'Tìm sản phẩm...',
   
   // ReceivingList - Actions
-  removeItem: 'Xóa sản phẩm',
   decreaseQuantity: 'Giảm số lượng',
   increaseQuantity: 'Tăng số lượng',
   batchUpdate: 'Cập nhật hàng loạt',
   allItemsMarkedAsComplete: 'Tất cả sản phẩm đã đánh dấu hoàn thành',
-  statusUpdated: 'Đã cập nhật trạng thái',
   receiptSentBackToReceiveStatus: 'Phiếu nhận đã chuyển về trạng thái Nhận hàng',
   failedToUpdateReceiptStatus: 'Không thể cập nhật trạng thái phiếu nhận',
   failedToProcessBarcode: 'Không thể xử lý mã vạch',
@@ -1164,7 +1161,6 @@ const imports = {
   addAnyAdditionalNotesAboutReceivingProcess: 'Thêm ghi chú bổ sung về quy trình nhận hàng...',
   allItemsCompletedSwitchToShowAll: 'Tất cả sản phẩm đã hoàn tất. Chuyển sang "Hiện tất cả" để xem.',
   clickAddPhotosToUpload: 'Nhấp "Thêm ảnh" để tải ảnh lên của lô hàng',
-  pallets: 'Pallet',
   parcels: 'Kiện hàng',
   
   // StartReceiving - Toast Messages
@@ -1174,7 +1170,6 @@ const imports = {
   invalidTrackingNumber: 'Mã vận đơn không hợp lệ',
   alreadyScanned: 'Đã quét',
   thisSkuNotInCurrentShipment: 'SKU này không có trong lô hàng hiện tại',
-  updateFailed: 'Cập nhật thất bại',
   failedToSaveStatusUpdate: 'Không thể lưu cập nhật trạng thái. Vui lòng thử lại.',
   failedToSaveNotes: 'Không thể lưu ghi chú. Vui lòng thử lại.',
   successfullyUpdatedReceivingProcess: 'Đã cập nhật quy trình nhận hàng thành công',
@@ -1194,7 +1189,6 @@ const imports = {
   photoRemoved: 'Đã xóa ảnh',
   photoDeleted: 'Đã xóa ảnh',
   autoReceiveComplete: 'Hoàn tất tự động nhận',
-  cleared: 'Đã xóa',
   allTrackingNumbersCleared: 'Tất cả mã vận đơn đã được xóa',
   
   // ReviewApprove - Page & Headers
@@ -1208,7 +1202,6 @@ const imports = {
   receivingNotes: 'Ghi chú nhận hàng:',
   receivedItems: 'Sản phẩm đã nhận',
   expected: 'Dự kiến',
-  damaged: 'hỏng',
   missing: 'thiếu',
   
   // ReviewApprove - Dialog Content
@@ -1253,7 +1246,6 @@ const imports = {
   manualUndoByUser: 'Hoàn tác thủ công bởi người dùng',
   
   // ReceiptDetails - Toast Messages
-  itemUpdated: 'Đã cập nhật sản phẩm',
   itemVerificationSaved: 'Đã lưu xác minh sản phẩm',
   verificationComplete: 'Hoàn tất xác minh',
   receiptSentForApproval: 'Phiếu nhận đã được gửi để duyệt',
@@ -1296,11 +1288,9 @@ const imports = {
   scanOrEnterLocationCodeExample: 'Quét hoặc nhập mã vị trí (VD: WH1-A01-R02-L03)',
   
   // ItemsToStore & StoreItems - Allocation Methods
-  auto: 'TỰ ĐỘNG',
   weightLabel: 'TRỌNG LƯỢNG',
   valueLabel: 'GIÁ TRỊ',
   unitsLabel: 'ĐƠN VỊ',
-  hybrid: 'KẾT HỢP',
   eurLabel: 'EUR (€)',
   czkLabel: 'CZK (Kč)',
   
@@ -1320,7 +1310,6 @@ const imports = {
   noReceiptSelected: 'Chưa chọn phiếu nhận',
   failedToSaveStorage: 'Không thể lưu kho',
   noMoreItemsToScan: 'Không còn sản phẩm để quét',
-  na: 'Không xác định',
   
   // LandingCostDetails - Page & Headers
   landedCostPerItem: 'Chi phí nhập hàng từng sản phẩm',
@@ -1507,19 +1496,7 @@ const imports = {
   itemRemoveFailed: 'Không thể xóa sản phẩm',
   unpackFailed: 'Không thể mở kiện sản phẩm',
   itemsUnpacked: 'Đã mở kiện thành công {{count}} sản phẩm',
-  unpackAllItems: 'Mở tất cả kiện',
-  editPackage: 'Chỉnh sửa gói',
-  deletePackage: 'Xóa gói',
-  setClassification: 'Đặt phân loại',
-  none: 'Không',
-  generalGoods: 'Hàng hóa thông thường',
-  sensitiveGoods: 'Hàng hóa nhạy cảm',
-  kg: 'kg',
   deletePurchaseAction: 'Xóa đơn nhập',
-  allLocations: 'Tất cả địa điểm',
-  addSpecialInstructions: 'Thêm hướng dẫn hoặc ghi chú đặc biệt...',
-  selectNewStatus: 'Chọn trạng thái mới',
-  itemsMovedToConsolidation: 'Đã chuyển {{count}} sản phẩm đến {{name}}',
   enterConsolidationNamePlaceholder: 'Nhập tên consolidation',
   
 } as const;

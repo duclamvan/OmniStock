@@ -7906,7 +7906,7 @@ export default function PickPack() {
                               <div className="relative flex-1">
                                 <Input
                                   type="text"
-                                  placeholder="Enter DHL tracking number..."
+                                  placeholder={t('orders:enterDhlTrackingNumber')}
                                   value={currentValue}
                                   onChange={(e) => {
                                     setTrackingInputs(prev => ({
@@ -8245,7 +8245,7 @@ export default function PickPack() {
                                       <div className="relative flex-1">
                                         <Input
                                           type="text"
-                                          placeholder="Enter GLS tracking number..."
+                                          placeholder={t('orders:enterGlsTrackingNumber')}
                                           value={currentValue}
                                           onChange={(e) => {
                                             setTrackingInputs(prev => ({
@@ -8722,7 +8722,7 @@ export default function PickPack() {
                                 <div className="relative flex-1">
                                   <Input
                                     type="text"
-                                    placeholder="Enter DHL tracking number..."
+                                    placeholder={t('orders:enterDhlTrackingNumber')}
                                     value={currentValue}
                                     onChange={(e) => {
                                       setTrackingInputs(prev => ({
@@ -9039,7 +9039,7 @@ export default function PickPack() {
                             <div className="relative flex-1">
                               <Input
                                 type="text"
-                                placeholder="Enter GLS tracking number..."
+                                placeholder={t('orders:enterGlsTrackingNumber')}
                                 value={currentValue}
                                 onChange={(e) => {
                                   setTrackingInputs(prev => ({
@@ -10293,7 +10293,7 @@ export default function PickPack() {
                           <div className="relative flex-1">
                             <Input
                               type="text"
-                              placeholder="Enter tracking number..."
+                              placeholder={t('orders:enterTrackingNumber')}
                               value={currentValue}
                               onChange={(e) => {
                                 // Update controlled state immediately
@@ -10450,7 +10450,7 @@ export default function PickPack() {
                           <div className="relative flex-1">
                             <Input
                               type="text"
-                              placeholder="Enter DHL tracking number..."
+                              placeholder={t('orders:enterDhlTrackingNumber')}
                               value={currentValue}
                               onChange={(e) => {
                                 // Update controlled state immediately
@@ -10585,7 +10585,7 @@ export default function PickPack() {
                                     <div className="relative flex-1">
                                       <Input
                                         type="text"
-                                        placeholder="Enter DHL tracking number..."
+                                        placeholder={t('orders:enterDhlTrackingNumber')}
                                         value={currentValue}
                                         onChange={(e) => {
                                           setTrackingInputs(prev => ({
@@ -10705,7 +10705,7 @@ export default function PickPack() {
                                       <div className="relative flex-1">
                                         <Input
                                           type="text"
-                                          placeholder="Enter GLS tracking number..."
+                                          placeholder={t('orders:enterGlsTrackingNumber')}
                                           value={currentValue}
                                           onChange={(e) => {
                                             setTrackingInputs(prev => ({

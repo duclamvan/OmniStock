@@ -999,6 +999,13 @@ const orders = {
   itemNameRequired: 'Item name is required',
   quantityMinOne: 'Quantity must be at least 1',
   atLeastOneItemRequired: 'At least one item is required',
+
+  // Placeholder Text
+  pleaseProvideReturnReason: 'Please provide a reason for the return...',
+  enterCustomPrice: 'Enter custom price',
+  enterDhlTrackingNumber: 'Enter DHL tracking number...',
+  enterGlsTrackingNumber: 'Enter GLS tracking number...',
+  enterTrackingNumber: 'Enter tracking number...',
   
 } as const;
 

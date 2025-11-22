@@ -274,59 +274,212 @@ export default function POS() {
     createOrderMutation.mutate();
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Mobile Header */}
-      <div className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
-        <div className="p-4 space-y-3">
-          {/* Title and Currency */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">{t('financial:pos')}</h1>
-            <div className="flex items-center gap-2">
-              <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
-                <SelectTrigger className="w-20 h-9 bg-primary-foreground text-primary border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="CZK">CZK</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Warehouse Selection */}
-          <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-            <SelectTrigger className="w-full bg-primary-foreground text-primary border-0" data-testid="select-warehouse">
-              <SelectValue placeholder={t('common:selectWarehouse')} />
-            </SelectTrigger>
-            <SelectContent>
-              {warehouses.map((warehouse: any) => (
-                <SelectItem key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder={t('products:searchItems')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 bg-white dark:bg-slate-800 border-0"
-              data-testid="input-search"
-            />
-          </div>
+  // Reusable Cart Content Component
+  const CartContent = ({ showHeader = true }: { showHeader?: boolean }) => (
+    <>
+      {showHeader && (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">
+            {t('financial:cart')} ({totalItems} {t('common:items')})
+          </h3>
+          {cart.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearCart}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+              data-testid="button-clear-cart"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {t('common:clear')}
+            </Button>
+          )}
         </div>
+      )}
+
+      <div className="space-y-3 flex-1">
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <ShoppingCart className="h-16 w-16 mb-4 opacity-30" />
+            <p>{t('financial:cartIsEmpty')}</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-280px)] lg:h-[calc(100vh-320px)]">
+            <div className="space-y-2 pr-4">
+              {cart.map((item) => (
+                <Card key={item.id} className="p-3">
+                  <div className="flex gap-3">
+                    {/* Product Image */}
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shrink-0"
+                        data-testid={`img-cart-item-${item.id}`}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                        <Package className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    {/* Item Info & Controls */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      {/* Product Name - Full Display */}
+                      <div>
+                        <h4 className="font-semibold text-sm leading-tight break-words">{item.name}</h4>
+                        {item.sku && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{t('financial:sku')}: {item.sku}</p>
+                        )}
+                      </div>
+
+                      {/* Price & Quantity Row */}
+                      <div className="flex items-center justify-between gap-3">
+                        {/* Unit Price */}
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">{t('financial:unit')}: </span>
+                          <span className="font-semibold text-primary">
+                            {currency} {item.price.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            data-testid={`button-decrease-${item.id}`}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="font-bold min-w-[2.5rem] text-center text-base">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            data-testid={`button-increase-${item.id}`}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Subtotal & Remove */}
+                      <div className="flex items-center justify-between pt-1.5 border-t">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">{t('financial:subtotal')}: </span>
+                          <span className="font-bold text-base text-primary">
+                            {currency} {(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 -mr-2"
+                          onClick={() => removeFromCart(item.id)}
+                          data-testid={`button-remove-${item.id}`}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          {t('common:remove')}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
       </div>
 
-      {/* Products Grid */}
-      <ScrollArea className="flex-1">
-        <div className="p-3 pb-28">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+      {/* Total and Checkout */}
+      {cart.length > 0 && (
+        <div className="pt-4 border-t space-y-3 mt-4">
+          <div className="flex items-center justify-between text-lg font-bold">
+            <span>{t('financial:total')}</span>
+            <span className="text-primary">{currency} {total.toFixed(2)}</span>
+          </div>
+          <Button
+            size="lg"
+            className="w-full h-12"
+            onClick={handleCheckout}
+            disabled={createOrderMutation.isPending}
+            data-testid="button-checkout"
+          >
+            {createOrderMutation.isPending ? (
+              t('common:processing')
+            ) : (
+              <>
+                <Check className="mr-2 h-5 w-5" />
+                {t('financial:completeSale')}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
+      {/* Left Panel: Products (Mobile: full screen, Desktop: 70% width) */}
+      <div className="flex flex-col flex-1 lg:w-[70%] overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
+          <div className="p-4 space-y-3">
+            {/* Title and Currency */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold">{t('financial:pos')}</h1>
+              <div className="flex items-center gap-2">
+                <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
+                  <SelectTrigger className="w-20 h-9 bg-primary-foreground text-primary border-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="CZK">CZK</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Warehouse Selection */}
+            <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+              <SelectTrigger className="w-full bg-primary-foreground text-primary border-0" data-testid="select-warehouse">
+                <SelectValue placeholder={t('common:selectWarehouse')} />
+              </SelectTrigger>
+              <SelectContent>
+                {warehouses.map((warehouse: any) => (
+                  <SelectItem key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder={t('products:searchItems')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 bg-white dark:bg-slate-800 border-0"
+                data-testid="input-search"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <ScrollArea className="flex-1">
+          <div className="p-3 pb-28 lg:pb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
             {displayProducts.map((product: any) => {
               const cartItem = cart.find(item => item.id === product.id);
               const isInCart = !!cartItem;
@@ -395,10 +548,21 @@ export default function POS() {
             })}
           </div>
         </div>
-      </ScrollArea>
+        </ScrollArea>
+      </div>
 
-      {/* Fixed Bottom Cart Bar - Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-lg z-50">
+      {/* Right Panel: Desktop Cart (Hidden on Mobile, Visible on lg+) */}
+      <div className="hidden lg:flex lg:flex-col lg:w-[30%] border-l bg-card">
+        <div className="p-4 border-b bg-primary text-primary-foreground">
+          <h2 className="text-xl font-bold">{t('financial:cart')}</h2>
+        </div>
+        <div className="flex flex-col p-4 overflow-hidden h-full">
+          <CartContent showHeader={false} />
+        </div>
+      </div>
+
+      {/* Fixed Bottom Cart Bar - Mobile Only (Hidden on Desktop) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-lg z-50">
         <div className="p-3 space-y-2">
           {/* Cart Summary */}
           <div className="flex items-center justify-between text-sm">
@@ -444,131 +608,9 @@ export default function POS() {
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="mt-4 space-y-3">
-                  {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                      <ShoppingCart className="h-16 w-16 mb-4 opacity-30" />
-                      <p>{t('financial:cartIsEmpty')}</p>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[50vh]">
-                      <div className="space-y-2 pr-4">
-                        {cart.map((item) => (
-                          <Card key={item.id} className="p-3">
-                            <div className="flex gap-3">
-                              {/* Product Image */}
-                              {item.imageUrl ? (
-                                <img
-                                  src={item.imageUrl}
-                                  alt={item.name}
-                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shrink-0"
-                                  data-testid={`img-cart-item-${item.id}`}
-                                />
-                              ) : (
-                                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
-                                  <Package className="h-8 w-8 text-gray-400" />
-                                </div>
-                              )}
-                              
-                              {/* Item Info & Controls */}
-                              <div className="flex-1 min-w-0 space-y-2">
-                                {/* Product Name - Full Display */}
-                                <div>
-                                  <h4 className="font-semibold text-sm leading-tight break-words">{item.name}</h4>
-                                  {item.sku && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{t('financial:sku')}: {item.sku}</p>
-                                  )}
-                                </div>
-
-                                {/* Price & Quantity Row */}
-                                <div className="flex items-center justify-between gap-3">
-                                  {/* Unit Price */}
-                                  <div className="text-sm">
-                                    <span className="text-muted-foreground">{t('financial:unit')}: </span>
-                                    <span className="font-semibold text-primary">
-                                      {currency} {item.price.toFixed(2)}
-                                    </span>
-                                  </div>
-
-                                  {/* Quantity Controls */}
-                                  <div className="flex items-center gap-1.5">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                      data-testid={`button-decrease-${item.id}`}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <span className="font-bold min-w-[2.5rem] text-center text-base">
-                                      {item.quantity}
-                                    </span>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                      data-testid={`button-increase-${item.id}`}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                {/* Subtotal & Remove */}
-                                <div className="flex items-center justify-between pt-1.5 border-t">
-                                  <div className="text-sm">
-                                    <span className="text-muted-foreground">{t('financial:subtotal')}: </span>
-                                    <span className="font-bold text-base text-primary">
-                                      {currency} {(item.price * item.quantity).toFixed(2)}
-                                    </span>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 -mr-2"
-                                    onClick={() => removeFromCart(item.id)}
-                                    data-testid={`button-remove-${item.id}`}
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    {t('common:remove')}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  )}
+                <div className="mt-4 flex flex-col h-[calc(80vh-120px)]">
+                  <CartContent showHeader={false} />
                 </div>
-
-                {/* Total and Checkout */}
-                {cart.length > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t space-y-3">
-                    <div className="flex items-center justify-between text-lg font-bold">
-                      <span>{t('financial:total')}</span>
-                      <span className="text-primary">{currency} {total.toFixed(2)}</span>
-                    </div>
-                    <Button
-                      size="lg"
-                      className="w-full h-12"
-                      onClick={handleCheckout}
-                      disabled={createOrderMutation.isPending}
-                      data-testid="button-checkout"
-                    >
-                      {createOrderMutation.isPending ? (
-                        t('common:processing')
-                      ) : (
-                        <>
-                          <Check className="mr-2 h-5 w-5" />
-                          {t('financial:completeSale')}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
               </SheetContent>
             </Sheet>
 

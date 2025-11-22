@@ -2370,7 +2370,7 @@ export default function OrderDetails() {
               <Label htmlFor="return-reason">{t('orders:returnReason')}</Label>
               <Textarea
                 id="return-reason"
-                placeholder="Please provide a reason for the return..."
+                placeholder={t('orders:pleaseProvideReturnReason')}
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
                 className="min-h-[100px]"
@@ -2488,7 +2488,7 @@ export default function OrderDetails() {
                 min="0"
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}
-                placeholder="Enter custom price"
+                placeholder={t('orders:enterCustomPrice')}
               />
             </div>
 

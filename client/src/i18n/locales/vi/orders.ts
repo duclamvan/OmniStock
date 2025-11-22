@@ -208,11 +208,6 @@ const orders = {
   printError: 'Lỗi in',
   labelsSentToPrinter: 'Đã gửi nhãn đến máy in',
   
-  // Toast Messages - Clipboard/Copy
-  copied: 'Đã sao chép!',
-  copiedToClipboard: 'Đã sao chép vào clipboard',
-  copyFailed: 'Sao chép thất bại',
-  
   // Toast Messages - Label Generation
   noCartons: 'Không có thùng',
   generatingLabels: 'Đang tạo nhãn...',
@@ -699,7 +694,6 @@ const orders = {
   fileRemovedFromList: 'Tệp đã được xóa khỏi danh sách tải lên',
   pleaseAddAtLeastOneItem: 'Vui lòng thêm ít nhất một mục vào đơn hàng',
   addressCopiedToClipboard: 'Địa chỉ đã được sao chép vào clipboard',
-  addressSavedWithCustomer: 'Địa chỉ đã lưu (sẽ được tạo cùng khách hàng)',
   editShippingAddress: 'Sửa địa chỉ giao hàng',
   addShippingAddress: 'Thêm địa chỉ giao hàng',
   updateShippingAddressDetails: 'Cập nhật chi tiết địa chỉ giao hàng',
@@ -825,7 +819,6 @@ const orders = {
   
   // Product Info
   productName: 'Tên sản phẩm',
-  location: 'Vị trí',
   pickStatus: 'Trạng thái lấy hàng',
   barcode: 'Mã vạch',
   
@@ -853,10 +846,7 @@ const orders = {
   
   // Carton & Packing
   addToCarton: 'Thêm vào thùng',
-  cartonNumber: 'Thùng #{{number}}',
-  cartonType: 'Loại thùng',
   packageWeight: 'Trọng lượng kiện',
-  dimensions: 'Kích thước',
   packingMaterials: 'Vật liệu đóng gói',
   weight: 'Trọng lượng',
   weightKg: 'Trọng lượng (kg)',
@@ -867,8 +857,6 @@ const orders = {
   wrongProductScanned: 'Quét sai sản phẩm',
   quantityMismatch: 'Số lượng không khớp',
   itemAlreadyPicked: 'Sản phẩm đã được lấy',
-  weightLimitExceeded: 'Vượt quá giới hạn trọng lượng',
-  weightLimitExceededDesc: 'Lô hàng GLS không được vượt quá 40kg mỗi thùng. Vui lòng giảm trọng lượng hoặc chia thành nhiều thùng.',
   
   // Instructions
   scanEachProductToPick: 'Quét từng sản phẩm để lấy hàng',
@@ -891,7 +879,6 @@ const orders = {
   
   // Loading States
   loadingOrder: 'Đang tải đơn hàng...',
-  processing: 'Đang xử lý...',
   generatingLabel: 'Đang tạo nhãn...',
   loadingDocuments: 'Đang tải tài liệu...',
   loadingFiles: 'Đang tải tệp...',
@@ -902,16 +889,10 @@ const orders = {
   noFilesAttachedToOrder: 'Không có tệp đính kèm trong đơn hàng này',
   
   // Documents & Labels
-  packingList: 'Phiếu đóng gói',
-  filesSent: 'Tệp đã gửi',
-  productDocuments: 'Tài liệu sản phẩm',
   orderFiles: 'Tệp đơn hàng',
   documentsCount: 'Tài liệu sản phẩm ({{count}})',
-  documentsSentToPrinter: 'Tài liệu đã gửi đến máy in',
-  printError: 'Lỗi in',
   
   // Service Items
-  service: 'Dịch vụ',
   serviceItemNoLocation: 'Lấy cuối cùng - Không có vị trí vật lý',
   note: 'Ghi chú',
   
@@ -924,39 +905,22 @@ const orders = {
   promotionalMaterials: 'Vật liệu quảng cáo',
   
   // Error Messages
-  error: 'Lỗi',
   failedToCreateCartons: 'Không thể tạo thùng đề xuất bởi AI',
-  errorCreatingCarton: 'Lỗi tạo thùng',
   failedToCreateCarton: 'Không thể tạo thùng',
-  failedToSave: 'Lưu thất bại',
   failedToUpdateTrackingNumber: 'Không thể cập nhật mã vận đơn',
   failedToCreateLabels: 'Không thể tạo nhãn PPL',
   failedToCancelLabels: 'Không thể hủy nhãn PPL',
   failedToDeleteLabels: 'Không thể xóa nhãn PPL',
   failedToRetrieveLabel: 'Không thể lấy nhãn PPL',
-  labelRetrievalFailed: 'Lấy nhãn thất bại',
-  failedToRecalculateCartons: 'Không thể tính lại thùng',
-  failedToInitiateRepacking: 'Không thể bắt đầu đóng gói lại',
   failedToSaveTrackingNumbers: 'Không thể lưu mã vận đơn. Vui lòng thử lại.',
-  cannotCompletePacking: 'Không thể hoàn thành đóng gói',
-  failedToShipOrder: 'Không thể giao hàng',
   failedToShipSomeOrders: 'Không thể giao một số đơn hàng',
-  failedToUndoShipment: 'Không thể hoàn tác giao hàng',
   
   // Success Messages
   shippingLabelsCancelled: 'Đã hủy nhãn vận chuyển với PPL',
   labelDataRemoved: 'Đã xóa dữ liệu nhãn khỏi đơn hàng',
-  orderReset: 'Đã đặt lại đơn hàng',
   allPickedQuantitiesCleared: 'Đã xóa tất cả số lượng đã lấy.',
-  ordersShipped: 'Đơn hàng đã giao vận',
-  shipmentUndone: 'Đã hoàn tác giao hàng',
-  ordersReturnedToReady: 'Đơn hàng đã được trả về trạng thái sẵn sàng',
-  copiedToClipboard: 'Đã sao chép vào clipboard',
-  copyFailed: 'Sao chép thất bại',
-  pleaseTryAgain: 'Vui lòng thử lại',
   
   // Repacking
-  repackingOrder: 'Đóng gói lại đơn hàng',
   orderSentForRepacking: 'Đơn hàng đã được gửi để đóng gói lại',
   recalculateCartonsBasedOnCurrentItems: 'Tính lại thùng dựa trên sản phẩm hiện tại',
   
@@ -966,11 +930,7 @@ const orders = {
   enterGLSTrackingNumber: 'Nhập mã vận đơn GLS...',
   
   // Copy Fields
-  copied: 'Đã sao chép!',
-  country: 'Quốc gia',
   paketSize: 'Kích thước gói',
-  firstName: 'Tên',
-  lastName: 'Họ',
   fullAddress: 'Địa chỉ đầy đủ',
   
   // Mute/Unmute
@@ -987,7 +947,6 @@ const orders = {
   // Export Columns (Pre-Orders)
   preOrderIdColumn: 'Mã đặt trước',
   customerColumn: 'Khách hàng',
-  unknownCustomer: 'Không rõ',
   itemsColumn: 'Sản phẩm',
   statusColumn: 'Trạng thái',
   createdDateColumn: 'Ngày tạo',
@@ -995,9 +954,14 @@ const orders = {
   notesColumn: 'Ghi chú',
 
   // Validation Messages (Pre-Orders)
-  itemNameRequired: 'Cần nhập tên sản phẩm',
   quantityMinOne: 'Số lượng tối thiểu là 1',
   atLeastOneItemRequired: 'Cần ít nhất một sản phẩm',
+
+  // Placeholder Text
+  pleaseProvideReturnReason: 'Vui lòng cung cấp lý do trả hàng...',
+  enterCustomPrice: 'Nhập giá tùy chỉnh',
+  enterDhlTrackingNumber: 'Nhập mã vận đơn DHL...',
+  enterGlsTrackingNumber: 'Nhập mã vận đơn GLS...',
   
 } as const;
 
