@@ -2469,7 +2469,7 @@ export default function StartReceiving() {
                           handleBarcodeScan(barcodeScan);
                         }
                       }}
-                      placeholder="Scan item barcode here..."
+                      placeholder={t('scanItemBarcodePlaceholder')}
                       className="border-blue-300 transition-all duration-200"
                     />
                   </div>
@@ -2768,7 +2768,7 @@ export default function StartReceiving() {
                                   <Input
                                     value={item.notes || ''}
                                     onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                                    placeholder="Add notes about this item..."
+                                    placeholder={t('addNotesAboutItemPlaceholder')}
                                     className="text-sm bg-white dark:bg-gray-800"
                                   />
                                 </div>
@@ -2991,7 +2991,7 @@ export default function StartReceiving() {
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
                 onBlur={handleNotesBlur}
-                placeholder="Add any additional notes about this receiving process..."
+                placeholder={t('addAdditionalNotesAboutReceivingPlaceholder')}
                 rows={3}
                 className="resize-none"
               />

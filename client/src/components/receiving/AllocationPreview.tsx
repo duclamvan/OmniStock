@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useTranslation } from 'react-i18next';
 import { 
   Download,
   AlertTriangle,
@@ -170,6 +171,7 @@ const ALLOCATION_METHODS: AllocationMethod[] = [
 
 const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const { toast } = useToast();
+  const { t } = useTranslation('imports');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isManualOverride, setIsManualOverride] = useState(false);
@@ -200,15 +202,15 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     onSuccess: (data) => {
       queryClient.setQueryData([`/api/imports/shipments/${shipmentId}/landing-cost-preview`, selectedMethod], data);
       toast({
-        title: "Allocation Updated",
-        description: `Switched to ${ALLOCATION_METHODS.find(m => m.id === selectedMethod)?.name} allocation method`
+        title: t('allocationUpdated'),
+        description: t('switchedToMethod', { method: ALLOCATION_METHODS.find(m => m.id === selectedMethod)?.name })
       });
     },
     onError: (error) => {
       console.error('Method update error:', error);
       toast({
-        title: "Error",
-        description: "Failed to update allocation method",
+        title: t('error'),
+        description: t('failedToUpdateAllocationMethod'),
         variant: "destructive"
       });
     }
@@ -233,8 +235,8 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     setIsManualOverride(false);
     refetch();
     toast({
-      title: "Reset to Automatic",
-      description: "Allocation method reset to automatic selection"
+      title: t('resetToAutomatic'),
+      description: t('allocationMethodReset')
     });
   };
 
@@ -343,7 +345,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Allocation Preview...</CardTitle>
+          <CardTitle>{t('loadingAllocationPreview')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -360,9 +362,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('error')}</AlertTitle>
         <AlertDescription>
-          Failed to load allocation preview. Please try again.
+          {t('failedToLoadAllocationPreview')}
         </AlertDescription>
       </Alert>
     );
@@ -374,8 +376,8 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         <CardContent className="py-8">
           <div className="text-center text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No items to display</p>
-            <p className="text-sm mt-2">Add costs and items to see allocation preview</p>
+            <p>{t('noItemsToDisplay')}</p>
+            <p className="text-sm mt-2">{t('addCostsAndItems')}</p>
           </div>
         </CardContent>
       </Card>
@@ -403,7 +405,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                           {currentMethod.name}
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-xs text-blue-600">Manual Override</Badge>
+                      <Badge variant="outline" className="text-xs text-blue-600">{t('manualOverride')}</Badge>
                     </>
                   ) : currentMethod ? (
                     <Badge variant="outline" className="text-xs text-green-600">
@@ -418,7 +420,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 </div>
                 {!isManualOverride && currentMethod && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    <strong>Why this method?</strong> Weight-based allocation is optimal for freight costs as heavier items consume more shipping resources.
+                    <strong>{t('whyThisMethod')}</strong> {t('weightBasedOptimal')}
                   </p>
                 )}
               </div>
@@ -445,7 +447,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     data-testid="switch-manual-override"
                   />
                   <Label htmlFor="manual-override" className="text-xs">
-                    Manual override
+                    {t('manualOverride')}
                   </Label>
                 </div>
                 {isManualOverride && (
@@ -456,7 +458,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     className="h-7 text-xs"
                     data-testid="button-reset-auto"
                   >
-                    Reset to Auto
+                    {t('resetToAuto')}
                   </Button>
                 )}
               </div>

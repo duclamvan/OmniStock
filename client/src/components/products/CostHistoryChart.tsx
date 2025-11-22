@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CostHistoryData {
   id: number;
@@ -28,6 +29,8 @@ export default function CostHistoryChart({
   currency = '€',
   height = 300 
 }: CostHistoryChartProps) {
+  const { t } = useTranslation('products');
+  
   // Process and calculate trends
   const { chartData, average, trend, trendPercentage } = useMemo(() => {
     if (!data || data.length === 0) {
@@ -84,11 +87,11 @@ export default function CostHistoryChart({
             {currency}{data.cost.toFixed(2)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Method: {data.method}
+            {t('methodLabel', { method: data.method })}
           </p>
           {data.source !== data.method && (
             <p className="text-xs text-muted-foreground">
-              Source: {data.source}
+              {t('sourceLabel', { source: data.source })}
             </p>
           )}
         </div>
@@ -112,7 +115,7 @@ export default function CostHistoryChart({
     return (
       <Card className="p-8">
         <div className="text-center text-muted-foreground">
-          <p>No cost history data available</p>
+          <p>{t('noCostHistoryData')}</p>
         </div>
       </Card>
     );
@@ -127,7 +130,7 @@ export default function CostHistoryChart({
             <>
               <TrendingUp className="h-5 w-5 text-red-500" />
               <span className="text-sm text-red-600 font-medium">
-                +{Math.abs(trendPercentage).toFixed(1)}% trend
+                {t('trendIncreasing', { percent: Math.abs(trendPercentage).toFixed(1) })}
               </span>
             </>
           )}
@@ -135,7 +138,7 @@ export default function CostHistoryChart({
             <>
               <TrendingDown className="h-5 w-5 text-green-500" />
               <span className="text-sm text-green-600 font-medium">
-                -{Math.abs(trendPercentage).toFixed(1)}% trend
+                {t('trendDecreasing', { percent: Math.abs(trendPercentage).toFixed(1) })}
               </span>
             </>
           )}
@@ -143,13 +146,13 @@ export default function CostHistoryChart({
             <>
               <Minus className="h-5 w-5 text-gray-500" />
               <span className="text-sm text-gray-600 font-medium">
-                Stable
+                {t('stable')}
               </span>
             </>
           )}
         </div>
         <Badge variant="outline">
-          Avg: {currency}{average.toFixed(2)}
+          {t('avgPrice', { currency, price: average.toFixed(2) })}
         </Badge>
       </div>
 
@@ -177,7 +180,7 @@ export default function CostHistoryChart({
             y={average} 
             stroke="#888" 
             strokeDasharray="5 5" 
-            label={{ value: "Average", position: "right", className: "text-xs" }}
+            label={{ value: t('average'), position: "right", className: "text-xs" }}
           />
           
           {/* Main cost line */}
@@ -196,19 +199,19 @@ export default function CostHistoryChart({
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="text-center p-2 bg-muted rounded">
-          <div className="text-muted-foreground">Min</div>
+          <div className="text-muted-foreground">{t('min')}</div>
           <div className="font-semibold">
             {currency}{Math.min(...chartData.map(d => d.cost)).toFixed(2)}
           </div>
         </div>
         <div className="text-center p-2 bg-muted rounded">
-          <div className="text-muted-foreground">Average</div>
+          <div className="text-muted-foreground">{t('average')}</div>
           <div className="font-semibold">
             {currency}{average.toFixed(2)}
           </div>
         </div>
         <div className="text-center p-2 bg-muted rounded">
-          <div className="text-muted-foreground">Max</div>
+          <div className="text-muted-foreground">{t('max')}</div>
           <div className="font-semibold">
             {currency}{Math.max(...chartData.map(d => d.cost)).toFixed(2)}
           </div>

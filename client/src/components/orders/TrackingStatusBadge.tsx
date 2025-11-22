@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Truck, Package, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface TrackingStatusBadgeProps {
   orderId: string;
 }
 
 export function TrackingStatusBadge({ orderId }: TrackingStatusBadgeProps) {
+  const { t } = useTranslation(['orders', 'common']);
+  
   const { data: tracking, isLoading } = useQuery({
     queryKey: ['/api/orders', orderId, 'tracking'],
     queryFn: async () => {
@@ -19,11 +22,11 @@ export function TrackingStatusBadge({ orderId }: TrackingStatusBadgeProps) {
   });
   
   if (isLoading) {
-    return <Badge variant="outline" className="text-xs"><Clock className="h-3 w-3 mr-1" />Loading...</Badge>;
+    return <Badge variant="outline" className="text-xs"><Clock className="h-3 w-3 mr-1" />{t('common:loading')}</Badge>;
   }
   
   if (!tracking || tracking.length === 0) {
-    return <Badge variant="outline" className="text-xs">No tracking</Badge>;
+    return <Badge variant="outline" className="text-xs">{t('orders:noTracking')}</Badge>;
   }
   
   // Get the most recent status
@@ -33,18 +36,18 @@ export function TrackingStatusBadge({ orderId }: TrackingStatusBadgeProps) {
   }, null);
   
   const statusConfig = {
-    delivered: { variant: 'default', icon: CheckCircle2, label: 'Delivered' },
-    out_for_delivery: { variant: 'secondary', icon: Truck, label: 'Out for Delivery' },
-    in_transit: { variant: 'outline', icon: Package, label: 'In Transit' },
-    exception: { variant: 'destructive', icon: AlertCircle, label: 'Exception' },
-    created: { variant: 'outline', icon: Clock, label: 'Label Created' },
-    unknown: { variant: 'outline', icon: Package, label: 'Unknown' },
+    delivered: { variant: 'default', icon: CheckCircle2, label: t('orders:delivered') },
+    out_for_delivery: { variant: 'secondary', icon: Truck, label: t('orders:outForDelivery') },
+    in_transit: { variant: 'outline', icon: Package, label: t('orders:inTransit') },
+    exception: { variant: 'destructive', icon: AlertCircle, label: t('orders:exception') },
+    created: { variant: 'outline', icon: Clock, label: t('orders:labelCreated') },
+    unknown: { variant: 'outline', icon: Package, label: t('common:unknown') },
   } as const;
   
   const config = statusConfig[latest?.statusCode as keyof typeof statusConfig] || statusConfig.unknown;
   const Icon = config.icon;
   
-  const lastUpdate = latest?.lastCheckedAt ? new Date(latest.lastCheckedAt).toLocaleString() : 'Never';
+  const lastUpdate = latest?.lastCheckedAt ? new Date(latest.lastCheckedAt).toLocaleString() : t('orders:never');
   
   return (
     <TooltipProvider>
@@ -59,9 +62,9 @@ export function TrackingStatusBadge({ orderId }: TrackingStatusBadgeProps) {
           <div className="text-xs">
             <div className="font-medium">{latest?.statusLabel}</div>
             <div className="text-muted-foreground">
-              {tracking.length} carton{tracking.length !== 1 ? 's' : ''}
+              {t('orders:cartonsCount', { count: tracking.length })}
             </div>
-            <div className="text-muted-foreground">Last update: {lastUpdate}</div>
+            <div className="text-muted-foreground">{t('orders:lastUpdate', { time: lastUpdate })}</div>
           </div>
         </TooltipContent>
       </Tooltip>

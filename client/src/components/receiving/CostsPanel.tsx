@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from 'react-i18next';
 import { 
   Plus,
   Edit2,
@@ -75,6 +76,7 @@ interface CostsPanelProps {
 
 const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const { toast } = useToast();
+  const { t } = useTranslation('imports');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCost, setSelectedCost] = useState<ShipmentCost | null>(null);
   const [costToDelete, setCostToDelete] = useState<ShipmentCost | null>(null);
@@ -149,8 +151,10 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             
             if (calcResponse.ok) {
               toast({
-                title: "Landing Costs Calculated",
-                description: `Freight cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} added and allocated to items`
+                title: t('landingCostsCalculated'),
+                description: t('freightCostAddedAndAllocated', { 
+                  cost: formatCurrency(freightCost.amountOriginal, freightCost.currency) 
+                })
               });
             } else {
               throw new Error('Calculation failed');
@@ -158,8 +162,10 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           } catch (calcError: any) {
             console.error('Failed to auto-calculate landing costs:', calcError);
             toast({
-              title: "Warning",
-              description: `Freight cost added but calculation failed: ${calcError.message || 'Unknown error'}. Please try refreshing the page.`,
+              title: t('warning'),
+              description: t('freightCostAddedButFailed', { 
+                error: calcError.message || 'Unknown error'
+              }),
               variant: "destructive"
             });
           }
@@ -183,8 +189,8 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     },
     onSuccess: async () => {
       toast({
-        title: "Cost Deleted",
-        description: "Recalculating landing costs..."
+        title: t('costDeleted'),
+        description: t('recalculatingLandingCosts')
       });
       setCostToDelete(null);
       
@@ -192,14 +198,16 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
       try {
         await apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
         toast({
-          title: "Updated",
-          description: "Cost deleted and landing costs recalculated"
+          title: t('updated'),
+          description: t('costDeletedAndRecalculated')
         });
       } catch (error: any) {
         console.error('Auto-calculation failed:', error);
         toast({
-          title: "Warning",
-          description: `Cost deleted but calculation failed: ${error.message || 'Unknown error'}. Please try refreshing the page.`,
+          title: t('warning'),
+          description: t('costDeletedButFailed', { 
+            error: error.message || 'Unknown error'
+          }),
           variant: "destructive"
         });
       }
@@ -211,8 +219,8 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete cost",
+        title: t('error'),
+        description: error.message || 'Failed to delete cost',
         variant: "destructive"
       });
     }
@@ -291,23 +299,23 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
         {/* Header with Status */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h3 className="text-xl font-semibold">Landing Costs</h3>
+            <h3 className="text-xl font-semibold">{t('landingCosts')}</h3>
             {hasAnyCosts ? (
               isCalculated ? (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Costed ✓
+                  {t('costed')}
                 </Badge>
               ) : (
                 <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                   <AlertTriangle className="h-3 w-3 mr-1" />
-                  Pending ⚠️
+                  {t('pendingStatus')}
                 </Badge>
               )
             ) : (
               <Badge variant="secondary">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                No Costs
+                {t('noCosts')}
               </Badge>
             )}
           </div>
@@ -340,7 +348,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
               className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Cost
+              {t('addCost')}
             </Button>
           </div>
         </div>
@@ -351,22 +359,22 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Cost</p>
+                  <p className="text-sm text-muted-foreground">{t('totalCost')}</p>
                   <p className="text-xl font-bold">
                     {formatCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Items</p>
+                  <p className="text-sm text-muted-foreground">{t('items')}</p>
                   <p className="text-xl font-semibold">{summary.itemCount || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Display Currency</p>
+                  <p className="text-sm text-muted-foreground">{t('displayCurrency')}</p>
                   <p className="text-xl font-semibold">{displayCurrency}</p>
                 </div>
                 {summary.lastCalculated && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Last Calculated</p>
+                    <p className="text-sm text-muted-foreground">{t('lastCalculated')}</p>
                     <p className="text-sm">{format(new Date(summary.lastCalculated), 'MMM dd, HH:mm')}</p>
                   </div>
                 )}
@@ -378,10 +386,10 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="allocation">Allocation</TabsTrigger>
-            <TabsTrigger value="cartons">Cartons</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="allocation">{t('allocation')}</TabsTrigger>
+            <TabsTrigger value="cartons">{t('cartons')}</TabsTrigger>
+            <TabsTrigger value="details">{t('details')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-3">
@@ -397,7 +405,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="h-4 w-4 text-blue-600" />
-                        <h3 className="font-semibold text-sm">Freight</h3>
+                        <h3 className="font-semibold text-sm">{t('freight')}</h3>
                         {freightCosts.length > 0 && (
                           <Badge variant="secondary" className="text-xs h-4 px-1.5">{freightCosts.length}</Badge>
                         )}
@@ -406,7 +414,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                         {total > 0 ? formatCurrency(total, 'EUR') : '—'}
                       </div>
                       {freightCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No costs</p>
+                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
                       ) : (
                         <div className="space-y-1.5">
                           {freightCosts.map(cost => (
@@ -463,7 +471,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="h-4 w-4 text-amber-600" />
-                        <h3 className="font-semibold text-sm">Customs</h3>
+                        <h3 className="font-semibold text-sm">{t('customs')}</h3>
                         {allCosts.length > 0 && (
                           <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
                         )}
@@ -472,7 +480,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                         {total > 0 ? formatCurrency(total, 'EUR') : '—'}
                       </div>
                       {allCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No costs</p>
+                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
                       ) : (
                         <div className="space-y-1.5">
                           {allCosts.map(cost => (
@@ -527,7 +535,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="h-4 w-4 text-green-600" />
-                        <h3 className="font-semibold text-sm">Other</h3>
+                        <h3 className="font-semibold text-sm">{t('other')}</h3>
                         {allCosts.length > 0 && (
                           <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
                         )}
@@ -536,7 +544,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                         {total > 0 ? formatCurrency(total, 'EUR') : '—'}
                       </div>
                       {allCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No costs</p>
+                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
                       ) : (
                         <div className="space-y-1.5">
                           {allCosts.map(cost => (
@@ -592,15 +600,15 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           <TabsContent value="details" className="space-y-3">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Cost Breakdown</CardTitle>
+                <CardTitle className="text-base">{t('costBreakdown')}</CardTitle>
                 <CardDescription className="text-xs">
-                  Detailed view of all cost lines
+                  {t('detailedViewOfCostLines')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {costs.length === 0 ? (
                   <p className="text-muted-foreground text-center py-6 text-sm">
-                    No costs have been added yet
+                    {t('noCostsAddedYet')}
                   </p>
                 ) : (
                   <div className="space-y-1.5">
@@ -677,14 +685,16 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             try {
               await apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
               toast({
-                title: "Cost Saved",
-                description: "Landing costs recalculated automatically"
+                title: t('costSaved'),
+                description: t('landingCostsRecalculatedAutomatically')
               });
             } catch (error: any) {
               console.error('Auto-calculation failed:', error);
               toast({
-                title: "Warning",
-                description: `Cost saved but calculation failed: ${error.message || 'Unknown error'}. Please try refreshing the page.`,
+                title: t('warning'),
+                description: t('costSavedButCalculationFailed', { 
+                  error: error.message || 'Unknown error'
+                }),
                 variant: "destructive"
               });
             }
@@ -701,20 +711,21 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
       <AlertDialog open={!!costToDelete} onOpenChange={() => setCostToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Cost?</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteCostQuestion')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {costToDelete?.type.toLowerCase()} cost of {' '}
-              {costToDelete && formatCurrency(costToDelete.amountOriginal, costToDelete.currency)}?
-              This action cannot be undone.
+              {t('deleteCostConfirmation', {
+                type: costToDelete?.type.toLowerCase(),
+                amount: costToDelete && formatCurrency(costToDelete.amountOriginal, costToDelete.currency)
+              })} {t('cannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => costToDelete && deleteCostMutation.mutate(costToDelete.id)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

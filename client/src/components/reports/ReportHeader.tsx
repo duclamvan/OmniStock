@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown, FileText, Calendar } from "lucide-react";
 import { useReports, DateRangeType, CurrencyFilter } from "@/contexts/ReportsContext";
+import { useTranslation } from 'react-i18next';
 
 interface ReportHeaderProps {
   title: string;
@@ -18,6 +19,7 @@ export function ReportHeader({
   onExportPDF,
   showCurrencyFilter = false,
 }: ReportHeaderProps) {
+  const { t } = useTranslation();
   const { dateRange, setDateRange, currencyFilter, setCurrencyFilter } = useReports();
 
   return (
@@ -36,12 +38,12 @@ export function ReportHeader({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">Last 7 Days</SelectItem>
-            <SelectItem value="month">Last 30 Days</SelectItem>
-            <SelectItem value="thisMonth">This Month</SelectItem>
-            <SelectItem value="year">This Year</SelectItem>
-            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="today">{t('reports:today')}</SelectItem>
+            <SelectItem value="week">{t('reports:last7Days')}</SelectItem>
+            <SelectItem value="month">{t('reports:last30Days')}</SelectItem>
+            <SelectItem value="thisMonth">{t('reports:thisMonth')}</SelectItem>
+            <SelectItem value="year">{t('reports:thisYear')}</SelectItem>
+            <SelectItem value="all">{t('reports:allTime')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -51,7 +53,7 @@ export function ReportHeader({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Currencies</SelectItem>
+              <SelectItem value="all">{t('common:allCurrencies')}</SelectItem>
               <SelectItem value="CZK">CZK</SelectItem>
               <SelectItem value="EUR">EUR</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
@@ -67,7 +69,7 @@ export function ReportHeader({
             data-testid="button-export-excel"
           >
             <FileDown className="h-4 w-4 mr-2" />
-            Export XLSX
+            {t('common:exportAsXLSX')}
           </Button>
         )}
 
@@ -79,7 +81,7 @@ export function ReportHeader({
             data-testid="button-export-pdf"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Export PDF
+            {t('common:exportAsPDF')}
           </Button>
         )}
       </div>

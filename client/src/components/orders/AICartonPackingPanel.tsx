@@ -18,6 +18,7 @@ import {
   Plus
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { useTranslation } from "react-i18next";
 
 interface AICartonPackingPanelProps {
   packingPlan: any;
@@ -36,6 +37,8 @@ export function AICartonPackingPanel({
   orderItems,
   onAddManualCarton
 }: AICartonPackingPanelProps) {
+  const { t } = useTranslation('orders');
+  
   if (orderItems.length === 0) {
     return null;
   }
@@ -46,7 +49,7 @@ export function AICartonPackingPanel({
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
             <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            Carton Packing
+            {t('cartonPacking')}
           </CardTitle>
           <div className="flex gap-2">
             {onAddManualCarton && (
@@ -58,7 +61,7 @@ export function AICartonPackingPanel({
                 data-testid="button-add-manual-carton"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add Carton
+                {t('addCarton')}
               </Button>
             )}
             <Button
@@ -71,12 +74,12 @@ export function AICartonPackingPanel({
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  AI Optimize
+                  {t('aiOptimize')}
                 </>
               ) : (
                 <>
                   <Package className="h-4 w-4 mr-1" />
-                  AI Optimize
+                  {t('aiOptimize')}
                 </>
               )}
             </Button>
@@ -90,8 +93,8 @@ export function AICartonPackingPanel({
           {packingPlan.cartons && packingPlan.cartons.length > 0 && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center justify-between">
-                <span>{packingPlan.totalCartons || 0} Carton{(packingPlan.totalCartons || 0) !== 1 ? 's' : ''}</span>
-                <span>Total: {packingPlan.totalWeight ? `${packingPlan.totalWeight.toFixed(2)} kg` : '0 kg'}</span>
+                <span>{t('cartonsCount', { count: packingPlan.totalCartons || 0 })}</span>
+                <span>{t('totalWeight', { weight: packingPlan.totalWeight ? packingPlan.totalWeight.toFixed(2) : '0' })}</span>
               </div>
               <div className="space-y-1.5">
                 {packingPlan.cartons.map((carton: any, index: number) => (
@@ -106,10 +109,10 @@ export function AICartonPackingPanel({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                            {carton.cartonName || 'Standard Box'}
+                            {carton.cartonName || t('standardBox')}
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400">
-                            {carton.weight ? `${carton.weight.toFixed(2)} kg` : '0 kg'}
+                            {t('weightKg', { weight: carton.weight ? carton.weight.toFixed(2) : '0' })}
                           </div>
                         </div>
                       </div>
@@ -133,7 +136,10 @@ export function AICartonPackingPanel({
                           <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
                             <span>{item.productName || item.name}</span>
                             <span>
-                              {item.quantity}x ({item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0'} kg)
+                              {t('itemQuantityWeight', { 
+                                quantity: item.quantity, 
+                                weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
+                              })}
                               {item.isEstimated && <span className="ml-1 text-yellow-600">*</span>}
                             </span>
                           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -26,6 +27,7 @@ export function Warehouse3DView({
   selectedLocation, 
   onLocationSelect 
 }: Warehouse3DViewProps) {
+  const { t } = useTranslation(['warehouse']);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rotation, setRotation] = useState({ x: 30, y: 45 });
   const [zoom, setZoom] = useState(1);
@@ -258,7 +260,7 @@ export function Warehouse3DView({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Move3d className="h-5 w-5" />
-            3D Warehouse View
+            {t('warehouse:warehouse3DView')}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button

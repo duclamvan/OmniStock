@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { useTranslation } from 'react-i18next';
 import { Star, Gem, Award, Medal, Trophy, Clock, Sparkles, Heart, RefreshCw, AlertTriangle, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/currencyUtils';
 import type { CustomerBadge } from '@shared/schema';
@@ -27,6 +28,8 @@ interface CustomerBadgesProps {
 }
 
 export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: CustomerBadgesProps) {
+  const { t } = useTranslation();
+  
   if (!badges && !customer) return null;
   
   if (badges && badges.length > 0) {
@@ -56,7 +59,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Manually marked as VIP customer</p>
+            <p className="text-xs">{t('common:vipCustomerManual')}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -157,7 +160,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Payment scheduled for later</p>
+            <p className="text-xs">{t('common:paymentScheduledLater')}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -256,6 +259,8 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
 }
 
 function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: CustomerBadge[], currency?: string }) {
+  const { t } = useTranslation();
+  
   const badgeConfig: Record<string, {
     icon: typeof Star;
     label: string;
@@ -266,7 +271,7 @@ function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: Cust
       icon: Star,
       label: 'VIP',
       className: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      getTooltip: () => 'Manually marked as VIP customer',
+      getTooltip: () => t('common:vipCustomerManual'),
     },
     'Diamond': {
       icon: Gem,
@@ -308,7 +313,7 @@ function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: Cust
       icon: Clock,
       label: 'Pay Later',
       className: 'bg-purple-50 text-purple-700 border-purple-300',
-      getTooltip: () => 'Payment scheduled for later',
+      getTooltip: () => t('common:paymentScheduledLater'),
     },
     'NewCustomer': {
       icon: Sparkles,

@@ -436,7 +436,7 @@ export default function FinancialSettings() {
                         <Input
                           {...field}
                           value={field.value ?? ''}
-                          placeholder="CZ12345678"
+                          placeholder={t('settings:vatRegistrationNumberPlaceholder')}
                           data-testid="input-vat_registration_number"
                         />
                       </FormControl>
@@ -720,7 +720,7 @@ export default function FinancialSettings() {
                           <Input
                             {...field}
                             value={field.value ?? ''}
-                            placeholder="INV-"
+                            placeholder={t('settings:invoiceNumberPrefixPlaceholder')}
                             data-testid="input-invoice_number_prefix"
                           />
                         </FormControl>
@@ -740,7 +740,7 @@ export default function FinancialSettings() {
                           <Input
                             {...field}
                             value={field.value ?? ''}
-                            placeholder="INV-0001 or 2024-0001"
+                            placeholder={t('settings:invoiceNumberFormatPlaceholder')}
                             data-testid="input-invoice_number_format"
                           />
                         </FormControl>

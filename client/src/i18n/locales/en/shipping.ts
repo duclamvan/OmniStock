@@ -230,6 +230,52 @@ const shipping = {
   glsMobileStep6: 'Edit the script ONLY if your URL doesn\'t contain "replit" (replace YOUR_REPLIT_URL)',
   glsMobileStep7: 'Click "Ship with GLS" on any order - the GLS form will auto-fill when you arrive at their website!',
   
+  // PPL Shipping Label
+  createPplLabel: 'Create PPL Label',
+  createPplShippingLabel: 'Create PPL Shipping Label',
+  generatePplShippingLabel: 'Generate a PPL shipping label for order {{orderId}}',
+  pplLabelCreated: 'PPL Label Created',
+  labelCreatedSuccessfully: 'Label created successfully. Tracking: {{trackingNumber}}',
+  failedToCreatePplLabel: 'Failed to Create PPL Label',
+  unknownErrorOccurred: 'Unknown error occurred',
+  orderSummary: 'Order Summary',
+  customer: 'Customer',
+  orderId: 'Order ID',
+  address: 'Address',
+  items: 'Items',
+  weight: 'Weight',
+  notSet: 'Not set',
+  dobirka: 'Dobírka (Cash on Delivery)',
+  codAmountOptional: 'COD Amount (optional)',
+  currency: 'Currency',
+  codCollectionNote: 'If you specify a COD amount, the carrier will collect this amount from the recipient upon delivery.',
+  creating: 'Creating...',
+  shippingLabelCreated: 'Shipping Label Created',
+  trackPackage: 'Track Package',
+  noShippingLabelCreated: 'No shipping label created yet.',
+  
+  // Order Tracking Panel
+  shipmentTracking: 'Shipment Tracking',
+  trackingDisabled: 'Tracking is disabled. Enable it in Settings > Shipping to view shipment tracking.',
+  loadingTrackingInfo: 'Loading tracking information...',
+  noTrackingInfoAvailable: 'No tracking information available',
+  cartonsTracked: '{{count}} carton tracked',
+  cartonsTrackedPlural: '{{count}} cartons tracked',
+  refresh: 'Refresh',
+  trackingRefreshed: 'Tracking Refreshed',
+  trackingInfoUpdated: 'Tracking information has been updated',
+  refreshFailed: 'Refresh Failed',
+  failedToRefreshTracking: 'Failed to refresh tracking',
+  estimatedDelivery: 'Estimated delivery',
+  trackingHistory: 'Tracking History',
+  
+  // ShippingManagement placeholders
+  cityPlaceholder: 'Berlin',
+  ibanPlaceholder: 'DE89370400440532013000',
+  bicPlaceholder: 'COBADEFFXXX',
+  companyNamePlaceholder: 'Your Company GmbH',
+  cityNamePlaceholder: 'Your City',
+  
 } as const;
 
 export default shipping;

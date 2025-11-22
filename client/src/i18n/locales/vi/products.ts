@@ -126,6 +126,11 @@ const products = {
   skuPattern: 'Mẫu SKU',
   skuPrefix: 'Tiền tố SKU',
   customSku: 'SKU tùy chỉnh',
+  selectASupplier: 'Chọn nhà cung cấp',
+  searchSuppliersPlaceholder: 'Tìm nhà cung cấp...',
+  noSupplierFound: 'Không tìm thấy nhà cung cấp.',
+  addNewSupplier: 'Thêm nhà cung cấp mới',
+  scanOrEnter: 'Quét hoặc nhập',
   
   // Product Attributes
   attributes: 'Thuộc tính',

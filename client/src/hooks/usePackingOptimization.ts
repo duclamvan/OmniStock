@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { computePlanChecksum } from '@shared/schema';
+import i18n from '@/i18n';
 
 interface PackingItem {
   productId: string;
@@ -128,11 +129,11 @@ export function usePackingOptimization(
     mutationFn: async ({ items, shippingCountry }: { items: PackingItem[]; shippingCountry: string }) => {
       // No-op if AI is disabled
       if (!enableAiCartonPacking) {
-        throw new Error('AI Carton Packing is disabled. Enable it in Settings to use this feature.');
+        throw new Error(i18n.t('orders:aiPackingDisabledError'));
       }
       
       if (items.length === 0) {
-        throw new Error('Please add items to the order first');
+        throw new Error(i18n.t('orders:pleaseAddItemsFirst'));
       }
       
       const response = await apiRequest('POST', '/api/packing/optimize', {
@@ -153,14 +154,14 @@ export function usePackingOptimization(
       }
       
       toast({
-        title: "Success",
-        description: "Packing plan optimized successfully",
+        title: i18n.t('common:success'),
+        description: i18n.t('orders:packingPlanOptimized'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to optimize packing",
+        title: i18n.t('common:error'),
+        description: error.message || i18n.t('orders:failedToOptimizePacking'),
         variant: "destructive",
       });
     },
@@ -170,8 +171,8 @@ export function usePackingOptimization(
     // No-op if AI is disabled
     if (!enableAiCartonPacking) {
       toast({
-        title: "AI Packing Disabled",
-        description: "Please enable AI Carton Packing in Settings to use this feature",
+        title: i18n.t('orders:aiPackingDisabled'),
+        description: i18n.t('orders:enableAiPackingInSettings'),
         variant: "destructive",
       });
       return;
@@ -179,8 +180,8 @@ export function usePackingOptimization(
     
     if (items.length === 0) {
       toast({
-        title: "Error",
-        description: "Please add items to the order first",
+        title: i18n.t('common:error'),
+        description: i18n.t('orders:pleaseAddItemsFirst'),
         variant: "destructive",
       });
       return;

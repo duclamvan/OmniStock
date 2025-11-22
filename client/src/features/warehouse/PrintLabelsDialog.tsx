@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { Printer, Check, X } from "lucide-react";
 import type { WarehouseLocation } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface PrintLabelsDialogProps {
   warehouseCode: string;
@@ -14,6 +15,7 @@ interface PrintLabelsDialogProps {
 }
 
 export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialogProps) {
+  const { t } = useTranslation('warehouse');
   const [open, setOpen] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(["BIN"]));
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
@@ -55,8 +57,8 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
   const handlePrint = () => {
     if (selectedLocations.size === 0) {
       toast({
-        title: "No locations selected",
-        description: "Please select at least one location to print labels.",
+        title: t('noLocationsSelected'),
+        description: t('selectLocationsForLabels'),
         variant: "destructive",
       });
       return;
@@ -66,8 +68,8 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast({
-        title: "Error",
-        description: "Failed to open print window. Please check your popup settings.",
+        title: t('common:error'),
+        description: t('failedToOpenPrintWindow'),
         variant: "destructive",
       });
       return;
@@ -136,8 +138,8 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
     };
 
     toast({
-      title: "Labels sent to printer",
-      description: `Printing ${selectedLocations.size} location labels.`,
+      title: t('labelsSentToPrinter'),
+      description: t('printingLocationLabels', { count: selectedLocations.size }),
     });
     
     setOpen(false);
@@ -148,12 +150,12 @@ export function PrintLabelsDialog({ warehouseCode, locations }: PrintLabelsDialo
       <DialogTrigger asChild>
         <Button variant="outline">
           <Printer className="h-4 w-4 mr-2" />
-          Print Labels
+          {t('printLabels')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Print Location Labels</DialogTitle>
+          <DialogTitle>{t('printLocationLabels')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">

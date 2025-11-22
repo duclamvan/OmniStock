@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Package, MapPin, BarChart3, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "react-i18next";
 
 interface BinDetailsPanelProps {
   bin: any;
@@ -11,6 +12,7 @@ interface BinDetailsPanelProps {
 }
 
 export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps) {
+  const { t } = useTranslation(['warehouse']);
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -38,7 +40,7 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground" data-testid="text-bin-type">
-          {bin.type} bin
+          {bin.type} {t('binType')}
         </p>
       </div>
 
@@ -48,12 +50,12 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
         <div className="flex items-start gap-3">
           <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium">Location</p>
+            <p className="text-sm font-medium">{t('locationLabel')}</p>
             <p className="text-sm text-muted-foreground" data-testid="text-bin-location">
-              Row {bin.row}, Column {bin.column}
+              {t('row')} {bin.row}, {t('column')} {bin.column}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Coordinates: ({bin.x}, {bin.y})
+              {t('coordinates')}: ({bin.x}, {bin.y})
             </p>
           </div>
         </div>
@@ -61,12 +63,12 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
         <div className="flex items-start gap-3">
           <BarChart3 className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium">Capacity</p>
+            <p className="text-sm font-medium">{t('capacity')}</p>
             <p className={`text-sm font-semibold ${getOccupancyColor(bin.occupancy || 0)}`} data-testid="text-bin-occupancy">
-              {Math.round(bin.occupancy || 0)}% occupied
+              {Math.round(bin.occupancy || 0)}{t('percentOccupied')}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Capacity: {bin.capacity} units
+              {t('capacityUnits', { capacity: bin.capacity })}
             </p>
           </div>
         </div>
@@ -74,9 +76,9 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
         <div className="flex items-start gap-3">
           <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium">Inventory</p>
+            <p className="text-sm font-medium">{t('inventory')}</p>
             <p className="text-sm text-muted-foreground" data-testid="text-bin-inventory-count">
-              {bin.inventoryItems || 0} items
+              {bin.inventoryItems || 0} {t('items')}
             </p>
           </div>
         </div>
@@ -85,11 +87,11 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
       <Separator />
 
       <div>
-        <h4 className="text-sm font-semibold mb-3">Products in this bin</h4>
+        <h4 className="text-sm font-semibold mb-3">{t('productsInThisBin')}</h4>
         {(!bin.products || bin.products.length === 0) ? (
           <div className="text-center py-8 text-muted-foreground" data-testid="text-no-products">
             <Package className="h-12 w-12 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No products stored in this bin</p>
+            <p className="text-sm">{t('noProductsStoredInBin')}</p>
           </div>
         ) : (
           <ScrollArea className="h-64">
@@ -103,10 +105,10 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="font-medium text-sm" data-testid={`text-product-name-${index}`}>
-                        {product.productId || 'Unknown Product'}
+                        {product.productId || t('unknownProduct')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Location: {product.locationCode}
+                        {t('locationLabel')}: {product.locationCode}
                       </p>
                     </div>
                     <Badge variant="outline" data-testid={`badge-product-quantity-${index}`}>
@@ -124,7 +126,7 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
 
       <div className="space-y-2">
         <Button variant="outline" className="w-full" disabled data-testid="button-move-inventory">
-          Move Inventory
+          {t('moveInventory')}
         </Button>
         <Button 
           variant="outline" 
@@ -132,7 +134,7 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
           disabled
           data-testid="button-mark-inactive"
         >
-          Mark as {bin.status === 'active' ? 'Inactive' : 'Active'}
+          {bin.status === 'active' ? t('markAsInactive') : t('markAsActive')}
         </Button>
       </div>
     </div>

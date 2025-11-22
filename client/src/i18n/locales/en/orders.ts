@@ -80,6 +80,8 @@ const orders = {
   image: 'Image',
   variant: 'Variant',
   bundle: 'Bundle',
+  scanBarcodeOrSku: 'Scan barcode or SKU...',
+  readyToScan: 'Ready to scan...',
   
   // Fulfillment
   fulfillmentStage: 'Fulfillment Stage',
@@ -188,6 +190,16 @@ const orders = {
   orderReset: 'Order Reset',
   orderResetDesc: 'All picked quantities have been cleared.',
   cannotCompletePacking: 'Cannot Complete Packing',
+  orderReturnedToPacking: 'Order {{orderId}} returned to packing',
+  failedToReturnToPacking: 'Failed to return order to packing',
+  orderSentBackToPick: 'Order {{orderId}} sent back to pick',
+  failedToSendBackToPick: 'Failed to send order back to pick',
+  orderOnHold: 'Order On Hold',
+  orderPutOnHold: '{{orderId}} has been put on hold',
+  failedToPutOnHold: 'Failed to put order on hold',
+  orderCancelled: 'Order Cancelled',
+  orderCancelledDesc: '{{orderId}} has been cancelled',
+  failedToCancelOrder: 'Failed to cancel order',
   
   // Toast Messages - Shipping Actions
   failedToSaveTracking: 'Failed to save tracking numbers. Please try again.',
@@ -261,6 +273,13 @@ const orders = {
   itemsWeight: 'Items Weight',
   dimensions: 'Dimensions (L×W×H)',
   totalShipmentWeight: 'Total Shipment Weight',
+  
+  // Shipping Categories
+  czechiaSlovakia: 'Czechia & Slovakia',
+  germanyEU: 'Germany & EU',
+  personalDelivery: 'Personal Delivery',
+  customerPickup: 'Customer Pickup',
+  otherDestinations: 'Other Destinations',
   
   // Order Items Table
   landingCost: 'Landing Cost',
@@ -686,6 +705,11 @@ const orders = {
   orderCreatedError: 'Failed to create order. Please try again',
   aiPackingDisabled: 'AI Packing Disabled',
   aiPackingDisabledDesc: 'AI Carton Packing is disabled in settings',
+  aiPackingDisabledError: 'AI Carton Packing is disabled. Enable it in Settings to use this feature.',
+  enableAiPackingInSettings: 'Please enable AI Carton Packing in Settings to use this feature',
+  pleaseAddItemsFirst: 'Please add items to the order first',
+  packingPlanOptimized: 'Packing plan optimized successfully',
+  failedToOptimizePacking: 'Failed to optimize packing',
   saveOrderBeforeCartons: 'Please save the order before adding cartons',
   addManualCartonError: 'Failed to add manual carton',
   noVariantsSelected: 'No Variants Selected',
@@ -985,6 +1009,14 @@ const orders = {
   // Packing Instructions
   packingInstructions: 'Packing instructions',
 
+  // Pick & Pack - PickPack Component Labels
+  skuLabel: 'SKU:',
+  barcodeLabel: 'Barcode:',
+  cartonHash: 'Carton #',
+  optionalMax40kg: '(optional, max 40kg)',
+  exceedsGls40kgLimit: 'Exceeds GLS 40kg limit',
+  aiCalculated: 'AI calculated',
+
   // Export Columns (Pre-Orders)
   preOrderIdColumn: 'Pre-Order ID',
   customerColumn: 'Customer',
@@ -1006,6 +1038,144 @@ const orders = {
   enterDhlTrackingNumber: 'Enter DHL tracking number...',
   enterGlsTrackingNumber: 'Enter GLS tracking number...',
   enterTrackingNumber: 'Enter tracking number...',
+  
+  // Order Document Selector
+  productDocuments: 'Product Documents',
+  selectDocumentsToInclude: 'Select documents to include with this order',
+  available: 'available',
+  documentsPreviouslySent: 'document(s) previously sent (marked with',
+  documentSelected: '{{count}} selected',
+  documentsSelected: '{{count}} selected',
+  documentWillBeIncluded: '{{count}} document will be included',
+  documentsWillBeIncluded: '{{count}} documents will be included',
+  
+  // MarginPill Component
+  marginBreakdown: 'Margin Breakdown',
+  sellingPrice: 'Selling Price',
+  quantityUnits: 'Quantity: {{count}} units',
+  
+  // TrackingStatusBadge Component
+  noTracking: 'No tracking',
+  outForDelivery: 'Out for Delivery',
+  inTransit: 'In Transit',
+  exception: 'Exception',
+  labelCreated: 'Label Created',
+  cartonsCount: '{{count}} carton',
+  cartonsCount_plural: '{{count}} cartons',
+  lastUpdate: 'Last update: {{time}}',
+  never: 'Never',
+  
+  // AICartonPackingPanel Component
+  cartonPacking: 'Carton Packing',
+  addCarton: 'Add Carton',
+  aiOptimize: 'AI Optimize',
+  standardBox: 'Standard Box',
+
+  // PickPack.tsx - Comprehensive Translation Keys
+  // Default values & placeholders
+  walkInCustomer: 'Walk-in Customer',
+  weightPlaceholder: '0.000',
+  
+  // UI Labels & Headers
+  exit: 'Exit',
+  closeModal: 'CLOSE',
+  time: 'Time',
+  cartons: 'Cartons',
+  weight: 'Weight',
+  weightKg: 'Weight (kg)',
+  items: 'Items',
+  score: 'Score',
+  clickToMinimize: 'Click to minimize',
+  service: 'Service',
+  orderItems: 'Order Items',
+  trackYourPickingProgress: 'Track your picking progress',
+  pickPackWorkflow: 'Pick & Pack Workflow',
+  manageOrderFulfillment: 'Manage order fulfillment from picking to shipping',
+  orderProgress: 'Order Progress',
+  swipeToView: 'Swipe to view →',
+  orderLabel: 'Order:',
+  
+  // Tab Labels
+  all: 'All',
+  overview: 'Overview',
+  pend: 'Pend',
+  ready: 'Ready',
+  pack: 'Pack',
+  
+  // Shipping Information
+  noShippingAddressProvided: 'No shipping address provided',
+  shippingAddressLabel: 'Shipping Address',
+  shippingMethodLabel: 'Shipping Method',
+  trackingNumberLabel: 'Tracking Number',
+  
+  // Packing Completion Modal
+  packingComplete: 'Packing Complete!',
+  excellentWork: 'Excellent work! Order {{orderId}} is ready to ship',
+  pickNextOrder: 'PICK NEXT ORDER ({{count}})',
+  packNextOrder: 'PACK NEXT ORDER ({{count}})',
+  goToReadyToShip: 'GO TO READY TO SHIP ({{count}})',
+  proceedToPacking: 'PROCEED TO PACKING',
+  backToOverview: 'BACK TO OVERVIEW',
+  
+  // PPL Label Management
+  noCarton: 'No Carton',
+  cancelled: 'CANCELLED',
+  noTrackingNumber: 'No tracking number',
+  printed: 'Printed',
+  print: 'Print',
+  addCartonLabel: 'Add Carton Label',
+  
+  // GLS Shipping
+  glsShipping: 'GLS Shipping ({{count}} {{unit}})',
+  carton: 'carton',
+  cartonsPlural: 'cartons',
+  totalWeight: 'Total weight: {{weight}} kg',
+  noCartonsAddedToGls: 'No cartons added to GLS yet. Use the button below to add cartons for cost-effective shipping.',
+  empfanger: 'Empfänger (Recipient)',
+  absender: 'Absender (Sender)',
+  vorUndNachname: 'Vor- und Nachname*',
+  firma: 'Firma',
+  strasse: 'Straße*',
+  hausnummer: 'Hausnummer*',
+  plz: 'PLZ*',
+  wohnort: 'Wohnort*',
+  land: 'Land*',
+  eMail: 'E-Mail',
+  telefon: 'Telefon',
+  glsShippingLabels: 'GLS Shipping Labels ({{count}})',
+  duplicate: 'Duplicate',
+  
+  // Toast Error Messages (Extended)
+  errorTitle: 'Error',
+  failedToPrintLabel: 'Failed to print label',
+  failedToGenerateLabel: 'Failed to generate label',
+  failedToAddCartonLabel: 'Failed to add carton label',
+  cartonDataPreserved: 'Carton data preserved. You can regenerate the label if needed.',
+  failedToDeleteLabel: 'Failed to delete label',
+  creatingShippingLabelFromPPL: 'Creating shipping label from PPL API',
+  labelPdfNotAvailable: 'Label PDF not available. The label might still be processing.',
+  couldNotOpenPrintWindow: 'Could not open print window. Please allow popups for this site.',
+  labelRemovedSuccessfully: 'Label removed successfully.',
+  pleaseAllowClipboardAccess: 'Please allow clipboard access',
+  
+  // Mobile Labels
+  unableToDisplayItemDetails: 'Unable to displayItemDetails. Please navigate using the Previous/Next buttons.',
+  ordersCompletedToday: 'Orders Completed Today',
+  ordersPickedAndReadyToPack: 'Orders that have been picked and ready to pack',
+  ordersOrganizedByDestination: 'Orders organized by shipping destination',
+  
+  // Confirmation messages
+  deleteLabelConfirm: 'Delete label #{{labelNumber}}?\n\nThis will cancel the shipment with PPL.',
+  
+  // Additional UI Labels
+  pickingItem: 'Picking Item',
+  nextItem: 'Next Item',
+  previous: 'Previous',
+  bundleItems: 'Bundle Items',
+  sku: 'SKU:',
+  pickingAccuracy: 'Picking Accuracy',
+  avgItemsPerOrder: 'Avg. Items/Order',
+  avgPickTime: 'Avg. Pick Time',
   
 } as const;
 

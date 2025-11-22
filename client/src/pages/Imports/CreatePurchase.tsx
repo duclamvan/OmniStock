@@ -1743,7 +1743,7 @@ export default function CreatePurchase() {
                         }
                       }
                     }}
-                    placeholder="L×W×H"
+                    placeholder={t('dimensionsPlaceholder')}
                     data-testid="input-dimensions"
                   />
                 </div>
@@ -2039,7 +2039,7 @@ export default function CreatePurchase() {
                                   setItems(updatedItems);
                                 }}
                                 className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input focus:px-2 focus:py-1"
-                                placeholder="Item name"
+                                placeholder={t('itemNamePlaceholder')}
                               />
                               <Button
                                 variant="ghost"
@@ -2486,28 +2486,28 @@ export default function CreatePurchase() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
-                        View in USD{purchaseCurrency === "USD" ? " (purchase)" : paymentCurrency === "USD" ? " (payment)" : ""}
+                        {t('viewIn')} USD{purchaseCurrency === "USD" ? ` (${t('purchase')})` : paymentCurrency === "USD" ? ` (${t('payment')})` : ""}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setDisplayCurrency("EUR")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "EUR" ? "opacity-100" : "opacity-0")} />
-                        View in EUR{purchaseCurrency === "EUR" ? " (purchase)" : paymentCurrency === "EUR" ? " (payment)" : ""}
+                        {t('viewIn')} EUR{purchaseCurrency === "EUR" ? ` (${t('purchase')})` : paymentCurrency === "EUR" ? ` (${t('payment')})` : ""}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setDisplayCurrency("CZK")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CZK" ? "opacity-100" : "opacity-0")} />
-                        View in CZK{purchaseCurrency === "CZK" ? " (purchase)" : paymentCurrency === "CZK" ? " (payment)" : ""}
+                        {t('viewIn')} CZK{purchaseCurrency === "CZK" ? ` (${t('purchase')})` : paymentCurrency === "CZK" ? ` (${t('payment')})` : ""}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setDisplayCurrency("VND")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "VND" ? "opacity-100" : "opacity-0")} />
-                        View in VND{purchaseCurrency === "VND" ? " (purchase)" : paymentCurrency === "VND" ? " (payment)" : ""}
+                        {t('viewIn')} VND{purchaseCurrency === "VND" ? ` (${t('purchase')})` : paymentCurrency === "VND" ? ` (${t('payment')})` : ""}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setDisplayCurrency("CNY")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
-                        View in CNY{purchaseCurrency === "CNY" ? " (purchase)" : paymentCurrency === "CNY" ? " (payment)" : ""}
+                        {t('viewIn')} CNY{purchaseCurrency === "CNY" ? ` (${t('purchase')})` : paymentCurrency === "CNY" ? ` (${t('payment')})` : ""}
                       </DropdownMenuItem>
                       {customCurrencies.map(currency => (
                         <DropdownMenuItem key={currency} onClick={() => setDisplayCurrency(currency)}>
                           <Check className={cn("mr-2 h-4 w-4", displayCurrency === currency ? "opacity-100" : "opacity-0")} />
-                          View in {currency}{purchaseCurrency === currency ? " (purchase)" : paymentCurrency === currency ? " (payment)" : ""}
+                          {t('viewIn')} {currency}{purchaseCurrency === currency ? ` (${t('purchase')})` : paymentCurrency === currency ? ` (${t('payment')})` : ""}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -2727,7 +2727,7 @@ export default function CreatePurchase() {
                 <Input
                   value={newVariant.dimensions}
                   onChange={(e) => setNewVariant({...newVariant, dimensions: e.target.value})}
-                  placeholder="L×W×H"
+                  placeholder={t('dimensionsPlaceholder')}
                 />
               </div>
             </div>

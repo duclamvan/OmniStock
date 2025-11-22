@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const editCustomerSchema = (t: (key: string) => string) => z.object({
-  name: z.string().min(1, t('customers.nameRequired')),
+  name: z.string().min(1, t('customers:nameRequired')),
   country: z.string().optional().nullable(),
   
   // Facebook & Profile fields
@@ -68,7 +68,7 @@ const editCustomerSchema = (t: (key: string) => string) => z.object({
   profilePictureUrl: z.string().optional().nullable(),
   
   // Contact fields
-  email: z.string().email(t('customers.emailInvalid')).optional().or(z.literal("")).nullable(),
+  email: z.string().email(t('customers:emailInvalid')).optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
   
   // Shipping Address fields (legacy)
@@ -84,7 +84,7 @@ const editCustomerSchema = (t: (key: string) => string) => z.object({
   billingCompany: z.string().optional().nullable(),
   billingFirstName: z.string().optional().nullable(),
   billingLastName: z.string().optional().nullable(),
-  billingEmail: z.string().email(t('customers.emailInvalid')).optional().or(z.literal("")).nullable(),
+  billingEmail: z.string().email(t('customers:emailInvalid')).optional().or(z.literal("")).nullable(),
   billingTel: z.string().optional().nullable(),
   billingStreet: z.string().optional().nullable(),
   billingStreetNumber: z.string().optional().nullable(),
@@ -360,7 +360,7 @@ export default function EditCustomer() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">{t('customers.loadingCustomerData')}</p>
+          <p className="text-slate-600">{t('customers:loadingCustomerData')}</p>
         </div>
       </div>
     );
@@ -369,14 +369,14 @@ export default function EditCustomer() {
   if (!customer) {
     return (
       <div className="text-center py-8">
-        <p className="text-slate-600">{t('customers.customerNotFound')}</p>
+        <p className="text-slate-600">{t('customers:customerNotFound')}</p>
         <Button
           variant="outline"
           onClick={() => window.history.back()}
           className="mt-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Customers
+          {t('customers:backToCustomers')}
         </Button>
       </div>
     );
@@ -394,7 +394,7 @@ export default function EditCustomer() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">{t('customers.editCustomer')}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('customers:editCustomer')}</h1>
         </div>
       </div>
 
@@ -402,7 +402,7 @@ export default function EditCustomer() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('customers.basicInformation')}</CardTitle>
+              <CardTitle>{t('customers:basicInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -411,7 +411,7 @@ export default function EditCustomer() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.customerName')} *</FormLabel>
+                      <FormLabel>{t('customers:customerName')} *</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder={t("customers.enterCustomerName")} 
@@ -429,17 +429,17 @@ export default function EditCustomer() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.customerType')}</FormLabel>
+                      <FormLabel>{t('customers:customerType')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
-                            <SelectValue placeholder={t('customers.selectTypePlaceholder')} />
+                            <SelectValue placeholder={t('customers:selectTypePlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="regular">{t('customers.regular')}</SelectItem>
-                          <SelectItem value="vip">{t('customers.vip')}</SelectItem>
-                          <SelectItem value="wholesale">{t('customers.wholesale')}</SelectItem>
+                          <SelectItem value="regular">{t('customers:regular')}</SelectItem>
+                          <SelectItem value="vip">{t('customers:vip')}</SelectItem>
+                          <SelectItem value="wholesale">{t('customers:wholesale')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -454,7 +454,7 @@ export default function EditCustomer() {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.country')}</FormLabel>
+                      <FormLabel>{t('customers:country')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder={t("customers.country")} 
@@ -475,18 +475,18 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>
                         <Globe className="inline-block h-4 w-4 mr-1" />
-                        Preferred Language
+                        {t('customers:preferredLanguageLabel')}
                       </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || "cs"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-language">
-                            <SelectValue placeholder={t('customers.selectLanguagePlaceholder')} />
+                            <SelectValue placeholder={t('customers:selectLanguagePlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="cs">{t('customers.czechLanguage')}</SelectItem>
-                          <SelectItem value="en">{t('customers.englishLanguage')}</SelectItem>
-                          <SelectItem value="vn">{t('customers.vietnameseLanguage')}</SelectItem>
+                          <SelectItem value="cs">{t('customers:czechLanguage')}</SelectItem>
+                          <SelectItem value="en">{t('customers:englishLanguage')}</SelectItem>
+                          <SelectItem value="vn">{t('customers:vietnameseLanguage')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -503,20 +503,20 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>
                         <Receipt className="inline-block h-4 w-4 mr-1" />
-                        Preferred Currency
+                        {t('customers:preferredCurrency')}
                       </FormLabel>
                       <FormDescription>
-                        Default currency for this customer's orders (CZK or EUR)
+                        {t('customers:defaultCurrencyDescription')}
                       </FormDescription>
                       <Select onValueChange={field.onChange} value={field.value || "EUR"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-preferredCurrency">
-                            <SelectValue placeholder={t('customers.selectCurrency')} />
+                            <SelectValue placeholder={t('customers:selectCurrency')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="EUR">{t('customers.eurCurrency')}</SelectItem>
-                          <SelectItem value="CZK">{t('customers.czkCurrency')}</SelectItem>
+                          <SelectItem value="EUR">{t('customers:eurCurrency')}</SelectItem>
+                          <SelectItem value="CZK">{t('customers:czkCurrency')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -529,7 +529,7 @@ export default function EditCustomer() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Facebook & Profile Information</CardTitle>
+              <CardTitle>{t('customers:facebookProfileInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -538,10 +538,10 @@ export default function EditCustomer() {
                   name="facebookName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.facebookName')}</FormLabel>
+                      <FormLabel>{t('customers:facebookName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.facebookDisplayNamePlaceholder')} 
+                          placeholder={t('customers:facebookDisplayNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-facebook-name"
@@ -557,10 +557,10 @@ export default function EditCustomer() {
                   name="facebookId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Facebook ID/Username</FormLabel>
+                      <FormLabel>{t('customers:facebookIdUsername')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.facebookIdPlaceholder')} 
+                          placeholder={t('customers:facebookIdPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-facebook-id"
@@ -577,10 +577,10 @@ export default function EditCustomer() {
                 name="facebookUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Facebook Profile URL</FormLabel>
+                    <FormLabel>{t('customers:facebookProfileUrl')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t("customers.facebookUrlPlaceholder")} 
+                        placeholder={t("customers:facebookUrlPlaceholder")} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-facebook-url"
@@ -596,17 +596,17 @@ export default function EditCustomer() {
                 name="profilePictureUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('customers.profilePictureUrl')}</FormLabel>
+                    <FormLabel>{t('customers:profilePictureUrl')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t('customers.profilePicturePlaceholder')} 
+                        placeholder={t('customers:profilePicturePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-profile-picture"
                       />
                     </FormControl>
                     <FormDescription>
-                      Local path or URL to customer's profile picture
+                      {t('customers:profilePictureDescription')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -617,7 +617,7 @@ export default function EditCustomer() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('customers.contactInformation')}</CardTitle>
+              <CardTitle>{t('customers:contactInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -626,11 +626,11 @@ export default function EditCustomer() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.email')}</FormLabel>
+                      <FormLabel>{t('customers:email')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="email" 
-                          placeholder={t('customers.emailPlaceholder')} 
+                          placeholder={t('customers:emailPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-email"
@@ -646,10 +646,10 @@ export default function EditCustomer() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.phone')}</FormLabel>
+                      <FormLabel>{t('customers:phone')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.phoneInternationalPlaceholder')} 
+                          placeholder={t('customers:phoneInternationalPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-phone"
@@ -668,16 +668,16 @@ export default function EditCustomer() {
             <CardHeader>
               <CardTitle>
                 <Truck className="inline-block h-5 w-5 mr-2" />
-                Shipping Addresses
+                {t('customers:shippingAddresses')}
               </CardTitle>
               <CardDescription>
-                Manage multiple shipping addresses for this customer
+                {t('customers:manageMultipleShippingAddresses')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <p className="text-sm text-muted-foreground">
-                  {shippingAddresses.length} shipping {shippingAddresses.length === 1 ? 'address' : 'addresses'}
+                  {t('customers:shippingAddressCount', { count: shippingAddresses.length })}
                 </p>
                 <Button
                   type="button"
@@ -686,7 +686,7 @@ export default function EditCustomer() {
                   data-testid="button-add-shipping"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Shipping Address
+                  {t('customers:addShippingAddress')}
                 </Button>
               </div>
 
@@ -701,11 +701,11 @@ export default function EditCustomer() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{address.label || 'Shipping Address'}</span>
+                            <span className="font-medium">{address.label || t('customers:shippingAddress')}</span>
                             {address.isPrimary && (
                               <Badge variant="secondary" className="ml-2">
                                 <Star className="h-3 w-3 mr-1" />
-                                Primary
+                                {t('customers:primary')}
                               </Badge>
                             )}
                           </div>
@@ -734,7 +734,7 @@ export default function EditCustomer() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleSetPrimaryAddress(address.id)}
-                              title="Set as primary"
+                              title={t('customers:setPrimary')}
                               data-testid={`button-set-primary-${address.id}`}
                             >
                               <Star className="h-4 w-4" />
@@ -771,7 +771,7 @@ export default function EditCustomer() {
             <CardHeader>
               <CardTitle>
                 <Building className="inline-block h-5 w-5 mr-2" />
-                Billing Address Information
+                {t('customers:billingAddressInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -780,10 +780,10 @@ export default function EditCustomer() {
                 name="billingCompany"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('customers.companyName')}</FormLabel>
+                    <FormLabel>{t('customers:companyName')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t('customers.companyNamePlaceholder')} 
+                        placeholder={t('customers:companyNamePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-billing-company"
@@ -800,10 +800,10 @@ export default function EditCustomer() {
                   name="billingFirstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.firstName')}</FormLabel>
+                      <FormLabel>{t('customers:firstName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.firstNamePlaceholder')} 
+                          placeholder={t('customers:firstNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-firstname"
@@ -819,10 +819,10 @@ export default function EditCustomer() {
                   name="billingLastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.lastName')}</FormLabel>
+                      <FormLabel>{t('customers:lastName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.lastNamePlaceholder')} 
+                          placeholder={t('customers:lastNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-lastname"
@@ -840,11 +840,11 @@ export default function EditCustomer() {
                   name="billingEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.email')}</FormLabel>
+                      <FormLabel>{t('customers:email')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="email" 
-                          placeholder={t('customers.billingEmailPlaceholder')} 
+                          placeholder={t('customers:billingEmailPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-email"
@@ -860,10 +860,10 @@ export default function EditCustomer() {
                   name="billingTel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.phone')}</FormLabel>
+                      <FormLabel>{t('customers:phone')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.phonePlaceholder')} 
+                          placeholder={t('customers:phonePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-tel"
@@ -881,10 +881,10 @@ export default function EditCustomer() {
                   name="billingStreet"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>{t('customers.street')}</FormLabel>
+                      <FormLabel>{t('customers:street')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.streetNamePlaceholder')} 
+                          placeholder={t('customers:streetNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-street"
@@ -900,10 +900,10 @@ export default function EditCustomer() {
                   name="billingStreetNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.streetNumber')}</FormLabel>
+                      <FormLabel>{t('customers:streetNumber')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.streetNumberPlaceholder')} 
+                          placeholder={t('customers:streetNumberPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-streetnumber"
@@ -921,10 +921,10 @@ export default function EditCustomer() {
                   name="billingCity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.city')}</FormLabel>
+                      <FormLabel>{t('customers:city')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.cityPlaceholder')} 
+                          placeholder={t('customers:cityPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-city"
@@ -940,10 +940,10 @@ export default function EditCustomer() {
                   name="billingZipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zip Code</FormLabel>
+                      <FormLabel>{t('customers:zipCodeLabel')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.zipCodePlaceholder')} 
+                          placeholder={t('customers:zipCodePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-zipcode"
@@ -959,7 +959,7 @@ export default function EditCustomer() {
                   name="billingCountry"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.country')}</FormLabel>
+                      <FormLabel>{t('customers:country')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder={t("customers.country")} 
@@ -980,7 +980,7 @@ export default function EditCustomer() {
             <CardHeader>
               <CardTitle>
                 <Receipt className="inline-block h-5 w-5 mr-2" />
-                Tax & VAT Information
+                {t('customers:taxVatInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -990,10 +990,10 @@ export default function EditCustomer() {
                   name="ico"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>IČO (Czech Company ID)</FormLabel>
+                      <FormLabel>{t('customers:icoCzechCompanyId')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.icoPlaceholder')} 
+                          placeholder={t('customers:icoPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-ico"
@@ -1009,10 +1009,10 @@ export default function EditCustomer() {
                   name="dic"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>DIČ (Czech Tax ID)</FormLabel>
+                      <FormLabel>{t('customers:dicCzechTaxId')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.dicPlaceholder')} 
+                          placeholder={t('customers:dicPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-dic"
@@ -1028,10 +1028,10 @@ export default function EditCustomer() {
                   name="vatNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('customers.vatNumber')}</FormLabel>
+                      <FormLabel>{t('customers:vatNumber')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder={t('customers.vatNumberPlaceholder')} 
+                          placeholder={t('customers:vatNumberPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-vat-number"
@@ -1056,9 +1056,9 @@ export default function EditCustomer() {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>VAT Number is Valid</FormLabel>
+                      <FormLabel>{t('customers:vatNumberIsValid')}</FormLabel>
                       <FormDescription>
-                        Checked if VAT number has been validated
+                        {t('customers:vatNumberValidationChecked')}
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -1070,17 +1070,17 @@ export default function EditCustomer() {
                 name="vatCompanyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('customers.vatCompanyName')}</FormLabel>
+                    <FormLabel>{t('customers:vatCompanyName')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t('customers.vatCompanyNamePlaceholder')} 
+                        placeholder={t('customers:vatCompanyNamePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-vat-company-name"
                       />
                     </FormControl>
                     <FormDescription>
-                      Auto-filled from VAT validation service
+                      {t('customers:autoFilledFromVatValidation')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -1092,10 +1092,10 @@ export default function EditCustomer() {
                 name="vatCompanyAddress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('customers.vatCompanyAddress')}</FormLabel>
+                    <FormLabel>{t('customers:vatCompanyAddress')}</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder={t('customers.vatCompanyAddressPlaceholder')} 
+                        placeholder={t('customers:vatCompanyAddressPlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         rows={2}
@@ -1103,7 +1103,7 @@ export default function EditCustomer() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Auto-filled from VAT validation service
+                      {t('customers:autoFilledFromVatValidation')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -1114,7 +1114,7 @@ export default function EditCustomer() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
+              <CardTitle>{t('customers:additionalInformation')}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -1122,10 +1122,10 @@ export default function EditCustomer() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('customers.notes')}</FormLabel>
+                    <FormLabel>{t('customers:notes')}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder={t('customers.notesPlaceholder')}
+                        placeholder={t('customers:notesPlaceholder')}
                         className="resize-none"
                         rows={4}
                         {...field}
@@ -1147,7 +1147,7 @@ export default function EditCustomer() {
               onClick={() => navigate("/customers")}
               data-testid="button-cancel"
             >
-              Cancel
+              {t('customers:cancel')}
             </Button>
             <Button 
               type="submit" 
@@ -1155,7 +1155,7 @@ export default function EditCustomer() {
               data-testid="button-save"
             >
               <Save className="mr-2 h-4 w-4" />
-              {updateCustomerMutation.isPending ? "Saving..." : "Save Changes"}
+              {updateCustomerMutation.isPending ? t('customers:savingChanges') : t('customers:saveChanges')}
             </Button>
           </div>
         </form>
@@ -1168,11 +1168,11 @@ export default function EditCustomer() {
         onSave={handleSaveShippingAddress}
         editingAddress={editingAddress}
         existingAddresses={shippingAddresses}
-        title={editingAddress ? 'Edit Shipping Address' : 'Add Shipping Address'}
+        title={editingAddress ? t('customers:editShippingAddress') : t('customers:addShippingAddress')}
         description={
           editingAddress 
-            ? 'Update the shipping address details below'
-            : 'Enter the new shipping address details below'
+            ? t('customers:updateShippingAddressDetails')
+            : t('customers:enterNewShippingAddressDetails')
         }
       />
 
@@ -1180,18 +1180,18 @@ export default function EditCustomer() {
       <AlertDialog open={!!addressToDelete} onOpenChange={(open) => !open && setAddressToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Shipping Address</AlertDialogTitle>
+            <AlertDialogTitle>{t('customers:deleteShippingAddress')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this shipping address? This action cannot be undone.
+              {t('customers:confirmDeleteShippingAddress')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('customers.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('customers:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => addressToDelete && handleDeleteShippingAddress(addressToDelete.id)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t('customers:deleteButton')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

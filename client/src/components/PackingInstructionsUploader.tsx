@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +44,7 @@ export default function PackingInstructionsUploader({
   onTextsChange,
   productId
 }: PackingInstructionsUploaderProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -99,8 +101,8 @@ export default function PackingInstructionsUploader({
 
     if (!validTypes.includes(file.type)) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a JPG, PNG, GIF, or WebP image",
+        title: t('common:invalidFileType'),
+        description: t('common:pleaseUploadValidImageFormat'),
         variant: "destructive"
       });
       return false;
@@ -108,8 +110,8 @@ export default function PackingInstructionsUploader({
 
     if (file.size > maxSize) {
       toast({
-        title: "File too large",
-        description: "Image must be less than 5MB",
+        title: t('common:fileTooLarge'),
+        description: t('common:imageMustBeLessThan5MB'),
         variant: "destructive"
       });
       return false;
@@ -159,15 +161,15 @@ export default function PackingInstructionsUploader({
       if (forDialog) {
         setCurrentImageUrl(data.imageUrl);
         toast({
-          title: "Upload successful",
-          description: "Image uploaded successfully",
+          title: t('common:uploadSuccess'),
+          description: t('common:imageUploadedSuccessfully'),
         });
       }
     } catch (error) {
       console.error('Upload error:', error);
       toast({
-        title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        title: t('common:uploadFailed'),
+        description: t('common:failedToUploadImageRetry'),
         variant: "destructive"
       });
     } finally {
@@ -197,8 +199,8 @@ export default function PackingInstructionsUploader({
   const handleSaveInstruction = () => {
     if (!currentTextValue.trim() && !currentImageUrl) {
       toast({
-        title: "Empty instruction",
-        description: "Please add either an image or text instruction",
+        title: t('common:emptyInstruction'),
+        description: t('common:pleaseAddImageOrText'),
         variant: "destructive"
       });
       return;
@@ -211,14 +213,14 @@ export default function PackingInstructionsUploader({
         i === editingInstructionIndex ? { image: currentImageUrl || undefined, text: currentTextValue } : inst
       );
       toast({
-        title: "Instruction updated",
-        description: "Packing instruction has been updated",
+        title: t('common:instructionUpdated'),
+        description: t('common:packingInstructionUpdated'),
       });
     } else {
       updatedInstructions = [...instructions, { image: currentImageUrl || undefined, text: currentTextValue }];
       toast({
-        title: "Instruction added",
-        description: "New packing instruction has been added",
+        title: t('common:instructionAdded'),
+        description: t('common:newPackingInstructionAdded'),
       });
     }
 
@@ -236,8 +238,8 @@ export default function PackingInstructionsUploader({
     syncToParent(updatedInstructions);
     
     toast({
-      title: "Instruction removed",
-      description: "Packing instruction has been removed",
+      title: t('common:instructionRemoved'),
+      description: t('common:packingInstructionRemoved'),
     });
   };
 
@@ -274,10 +276,10 @@ export default function PackingInstructionsUploader({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
-          Packing Instructions
+          {t('common:packingInstructions')}
         </CardTitle>
         <CardDescription>
-          Each instruction can include a visual image and written text to help packers handle this product correctly
+          {t('common:packingInstructionsDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -285,8 +287,8 @@ export default function PackingInstructionsUploader({
         {instructions.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Instructions</Label>
-              <Badge variant="secondary">{instructions.length} instruction{instructions.length !== 1 ? 's' : ''}</Badge>
+              <Label className="text-base font-semibold">{t('common:instructions')}</Label>
+              <Badge variant="secondary">{instructions.length} {t('common:instruction')}{instructions.length !== 1 ? 's' : ''}</Badge>
             </div>
             
             {instructions.map((instruction, index) => (
@@ -319,7 +321,7 @@ export default function PackingInstructionsUploader({
                       </p>
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                        No text provided
+                        {t('common:noTextProvided')}
                       </p>
                     )}
                   </div>
@@ -381,14 +383,14 @@ export default function PackingInstructionsUploader({
           data-testid="button-add-instruction"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Packing Instruction
+          {t('common:addPackingInstruction')}
         </Button>
 
         {/* Info Alert */}
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Packing instructions will be prominently displayed in the Pick & Pack workflow to ensure proper handling of this product.
+            {t('common:packingInstructionsWillBeDisplayed')}
           </AlertDescription>
         </Alert>
       </CardContent>
@@ -398,17 +400,17 @@ export default function PackingInstructionsUploader({
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-instruction">
           <DialogHeader>
             <DialogTitle>
-              {editingInstructionIndex !== null ? 'Edit Packing Instruction' : 'Add Packing Instruction'}
+              {editingInstructionIndex !== null ? t('common:editPackingInstruction') : t('common:addPackingInstruction')}
             </DialogTitle>
             <DialogDescription>
-              Add a visual image and/or written text to guide packers
+              {t('common:addPackingInstructionDescription')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             {/* Image Upload Section */}
             <div className="space-y-2">
-              <Label>Visual Instruction (Optional)</Label>
+              <Label>{t('common:visualInstructionOptional')}</Label>
               
               {currentImageUrl ? (
                 <div className="relative">
@@ -450,7 +452,7 @@ export default function PackingInstructionsUploader({
                     <>
                       <ImageIcon className="h-10 w-10 mx-auto text-gray-400 mb-3" />
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        Add a visual instruction image
+                        {t('common:addVisualInstructionImage')}
                       </p>
                       <p className="text-xs text-gray-500 mb-3">
                         JPG, PNG, GIF, WebP (max 5MB)
@@ -462,7 +464,7 @@ export default function PackingInstructionsUploader({
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload Image
+                        {t('common:uploadImage')}
                       </Button>
                     </>
                   )}
@@ -472,10 +474,10 @@ export default function PackingInstructionsUploader({
 
             {/* Text Instruction Section */}
             <div className="space-y-2">
-              <Label htmlFor="instruction-text">Written Instruction</Label>
+              <Label htmlFor="instruction-text">{t('common:writtenInstruction')}</Label>
               <Textarea
                 id="instruction-text"
-                placeholder="Enter detailed packing instructions...&#10;&#10;Example:&#10;• Wrap in bubble wrap before placing in box&#10;• Mark as FRAGILE&#10;• Include protective padding on all sides"
+                placeholder={`${t('common:enterDetailedPackingInstructions')}\n\n${t('common:exampleInstructions')}`}
                 value={currentTextValue}
                 onChange={(e) => setCurrentTextValue(e.target.value)}
                 rows={8}
@@ -497,14 +499,14 @@ export default function PackingInstructionsUploader({
               }}
               data-testid="button-cancel-instruction"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               type="button"
               onClick={handleSaveInstruction}
               data-testid="button-save-instruction"
             >
-              {editingInstructionIndex !== null ? 'Update' : 'Add'} Instruction
+              {editingInstructionIndex !== null ? t('common:update') : t('common:add')} {t('common:instruction')}
             </Button>
           </DialogFooter>
         </DialogContent>

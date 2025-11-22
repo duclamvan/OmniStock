@@ -184,6 +184,7 @@ const system = {
   disableMaintenance: 'Disable Maintenance Mode',
   maintenanceMessage: 'Maintenance Message',
   scheduledMaintenance: 'Scheduled Maintenance',
+  employeeIdPlaceholder: 'EMP-001',
   
   // Common Actions
   enable: 'Enable',
@@ -204,6 +205,14 @@ const system = {
   restartRequired: 'Restart Required',
   systemRestarting: 'System Restarting',
   pleaseWait: 'Please Wait',
+  
+  // Settings Updates
+  settingUpdated: 'Setting Updated',
+  settingUpdatedSuccess: '{{key}} has been updated successfully.',
+  failedToUpdateSetting: 'Failed to update setting.',
+  settingsUpdated: 'Settings Updated',
+  allSettingsUpdatedSuccess: 'All settings have been updated successfully.',
+  failedToUpdateSettings: 'Failed to update settings.',
   
   // Employees
   employees: 'Employees',

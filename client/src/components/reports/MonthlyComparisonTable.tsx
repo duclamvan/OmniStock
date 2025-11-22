@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MonthlyData } from "@/lib/reportUtils";
+import { useTranslation } from 'react-i18next';
 
 interface MonthlyComparisonTableProps {
   title: string;
@@ -17,6 +18,7 @@ export function MonthlyComparisonTable({
   formatCurrency = (value) => `${value.toLocaleString()} Kč`,
   testId,
 }: MonthlyComparisonTableProps) {
+  const { t } = useTranslation();
   const calculateChange = (current: number, previous: number): number => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return ((current - previous) / previous) * 100;
@@ -38,14 +40,14 @@ export function MonthlyComparisonTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead className="text-right">Revenue (CZK)</TableHead>
-                <TableHead className="text-right">Revenue (EUR)</TableHead>
-                <TableHead className="text-right">Revenue (USD)</TableHead>
-                <TableHead className="text-right">Total Cost</TableHead>
-                <TableHead className="text-right">Profit</TableHead>
-                <TableHead className="text-right">Margin %</TableHead>
-                <TableHead className="text-right">vs Previous</TableHead>
+                <TableHead>{t('common:month')}</TableHead>
+                <TableHead className="text-right">{t('reports:revenueCZK')}</TableHead>
+                <TableHead className="text-right">{t('reports:revenueEUR')}</TableHead>
+                <TableHead className="text-right">{t('reports:revenueUSD')}</TableHead>
+                <TableHead className="text-right">{t('reports:totalCost')}</TableHead>
+                <TableHead className="text-right">{t('reports:profit')}</TableHead>
+                <TableHead className="text-right">{t('reports:marginPercent')}</TableHead>
+                <TableHead className="text-right">{t('reports:vsPrevious')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

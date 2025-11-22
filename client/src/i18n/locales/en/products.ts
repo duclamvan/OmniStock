@@ -118,6 +118,11 @@ const products = {
   warehouseLocation: 'Warehouse Location',
   warehouseLocationPlaceholder: 'e.g., A1-5',
   selectSupplier: 'Select Supplier',
+  selectASupplier: 'Select a supplier',
+  searchSuppliersPlaceholder: 'Search suppliers...',
+  noSupplierFound: 'No supplier found.',
+  addNewSupplier: 'Add New Supplier',
+  scanOrEnter: 'Scan or enter',
   
   // ProductForm - Stock Fields
   currentQuantity: 'Current Quantity',
@@ -384,6 +389,18 @@ const products = {
     title: 'Warehouse Locations',
     infoMessage: 'Warehouse locations can be added after creating the product.',
   },
+  
+  // CostHistoryChart Component
+  noCostHistoryData: 'No cost history data available',
+  trendIncreasing: '+{{percent}}% trend',
+  trendDecreasing: '-{{percent}}% trend',
+  stable: 'Stable',
+  avgPrice: 'Avg: {{currency}}{{price}}',
+  min: 'Min',
+  max: 'Max',
+  methodLabel: 'Method: {{method}}',
+  sourceLabel: 'Source: {{source}}',
+  average: 'Average',
   
 } as const;
 

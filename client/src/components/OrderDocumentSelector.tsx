@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -91,6 +92,8 @@ export default function OrderDocumentSelector({
   customerId,
   existingOrderId,
 }: OrderDocumentSelectorProps) {
+  const { t } = useTranslation('orders');
+  
   // Memoize unique product IDs to prevent query refetches
   // Sort to ensure stable array order for queryKey comparison
   const productIds = useMemo(
@@ -184,7 +187,7 @@ export default function OrderDocumentSelector({
     return (
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Product Documents</CardTitle>
+          <CardTitle className="text-base">{t('orders:productDocuments')}</CardTitle>
         </CardHeader>
         <CardContent className="p-3 space-y-3">
           <Skeleton className="h-20 w-full" />
@@ -204,15 +207,15 @@ export default function OrderDocumentSelector({
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-semibold">
-              Product Documents
+              {t('orders:productDocuments')}
             </CardTitle>
             <CardDescription className="text-xs mt-1">
-              Select documents to include with this order
+              {t('orders:selectDocumentsToInclude')}
             </CardDescription>
           </div>
           {totalFiles > 0 && (
             <Badge variant="secondary" className="text-xs px-2 h-6 shrink-0">
-              {totalFiles} available
+              {totalFiles} {t('orders:available')}
             </Badge>
           )}
         </div>
@@ -224,7 +227,7 @@ export default function OrderDocumentSelector({
             <div className="flex items-center gap-2">
               <History className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="text-blue-800 dark:text-blue-200 text-xs">
-                {customerHistory.length} document(s) previously sent (marked with <CheckCircle className="h-3 w-3 inline text-green-600" />)
+                {customerHistory.length} {t('orders:documentsPreviouslySent')} <CheckCircle className="h-3 w-3 inline text-green-600" />)
               </AlertDescription>
             </div>
           </Alert>
@@ -256,7 +259,7 @@ export default function OrderDocumentSelector({
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className="text-xs text-slate-500">
-                      {selectedCount}/{files.length}
+                      {t(selectedCount === 1 ? 'orders:documentSelected' : 'orders:documentsSelected', { count: selectedCount })}/{files.length}
                     </span>
                     <Checkbox
                       checked={allSelected}
@@ -324,7 +327,7 @@ export default function OrderDocumentSelector({
           <div className="flex items-center gap-2 py-2 px-3 bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-md mt-3">
             <Info className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="text-xs font-medium text-teal-900 dark:text-teal-100">
-              {selectedDocumentIds.length} document{selectedDocumentIds.length !== 1 ? 's' : ''} will be included
+              {t(selectedDocumentIds.length === 1 ? 'orders:documentWillBeIncluded' : 'orders:documentsWillBeIncluded', { count: selectedDocumentIds.length })}
             </span>
           </div>
         )}

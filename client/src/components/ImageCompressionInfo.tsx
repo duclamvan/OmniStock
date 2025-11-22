@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from 'react-i18next';
 import { FileImage, HardDrive, Zap, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -16,6 +17,8 @@ interface ImageCompressionInfoProps {
 }
 
 export function ImageCompressionInfo({ compressionInfo, showAlert = true }: ImageCompressionInfoProps) {
+  const { t } = useTranslation();
+  
   if (!compressionInfo) return null;
 
   const { originalSize, compressedSize, compressionRatio } = compressionInfo;
@@ -29,7 +32,7 @@ export function ImageCompressionInfo({ compressionInfo, showAlert = true }: Imag
         <Alert className="border-green-200 bg-green-50">
           <Zap className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Image compressed successfully! Saved {compressionRatio} of storage space.
+            {t('common:imageCompressedSuccessfully', { ratio: compressionRatio })}
           </AlertDescription>
         </Alert>
       )}
@@ -38,24 +41,24 @@ export function ImageCompressionInfo({ compressionInfo, showAlert = true }: Imag
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <FileImage className="h-4 w-4" />
-            Compression Details
+            {t('common:compressionDetails')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Original Size</p>
+              <p className="text-xs text-muted-foreground">{t('common:originalSize')}</p>
               <p className="text-sm font-medium">{originalKB} KB</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Compressed Size</p>
+              <p className="text-xs text-muted-foreground">{t('common:compressedSize')}</p>
               <p className="text-sm font-medium text-green-600">{compressedKB} KB</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Space Saved</span>
+              <span className="text-muted-foreground">{t('common:spaceSaved')}</span>
               <span className="font-medium">{compressionRatio}</span>
             </div>
             <Progress value={savingsPercent} className="h-2" />
@@ -64,7 +67,7 @@ export function ImageCompressionInfo({ compressionInfo, showAlert = true }: Imag
           <div className="flex items-center gap-2 pt-2">
             <HardDrive className="h-3 w-3 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              Format: {compressionInfo.format.toUpperCase()} (Lossless)
+              {t('common:format')}: {compressionInfo.format.toUpperCase()} ({t('common:lossless')})
             </p>
           </div>
         </CardContent>
@@ -74,6 +77,8 @@ export function ImageCompressionInfo({ compressionInfo, showAlert = true }: Imag
 }
 
 export function BatchCompressionResults({ results }: { results: any[] }) {
+  const { t } = useTranslation();
+  
   if (!results || results.length === 0) return null;
 
   const successCount = results.filter(r => r.success).length;
@@ -87,19 +92,19 @@ export function BatchCompressionResults({ results }: { results: any[] }) {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Zap className="h-5 w-5 text-green-600" />
-          Batch Compression Results
+          {t('common:batchCompressionResults')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Images Compressed</p>
+            <p className="text-sm text-muted-foreground">{t('common:imagesCompressed')}</p>
             <p className="text-2xl font-bold text-green-600">
               {successCount}/{results.length}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total Space Saved</p>
+            <p className="text-sm text-muted-foreground">{t('common:totalSpaceSaved')}</p>
             <p className="text-2xl font-bold text-green-600">
               {(totalSaved / 1024 / 1024).toFixed(2)} MB
             </p>
@@ -108,7 +113,7 @@ export function BatchCompressionResults({ results }: { results: any[] }) {
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Average Compression</span>
+            <span className="text-muted-foreground">{t('common:averageCompression')}</span>
             <span className="font-medium">{avgRatio}%</span>
           </div>
           <Progress value={parseFloat(avgRatio)} className="h-2" />
@@ -118,15 +123,14 @@ export function BatchCompressionResults({ results }: { results: any[] }) {
           <Alert className="border-orange-200 bg-orange-50">
             <Info className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800 text-sm">
-              {results.filter(r => !r.success).length} image(s) failed to compress.
-              Check console for details.
+              {results.filter(r => !r.success).length} {t('common:failedToCompress')}
             </AlertDescription>
           </Alert>
         )}
 
         <div className="border-t pt-4">
           <details className="cursor-pointer">
-            <summary className="text-sm font-medium mb-2">Detailed Results</summary>
+            <summary className="text-sm font-medium mb-2">{t('common:detailedResults')}</summary>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {results.map((result, index) => (
                 <div
@@ -141,10 +145,10 @@ export function BatchCompressionResults({ results }: { results: any[] }) {
                     </span>
                     {result.success ? (
                       <span className="text-green-600">
-                        {result.compressionRatio?.toFixed(2)}% saved
+                        {result.compressionRatio?.toFixed(2)}% {t('common:saved')}
                       </span>
                     ) : (
-                      <span className="text-red-600">Failed</span>
+                      <span className="text-red-600">{t('common:failed')}</span>
                     )}
                   </div>
                   {result.error && (

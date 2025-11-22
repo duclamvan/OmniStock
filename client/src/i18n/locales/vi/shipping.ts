@@ -238,7 +238,6 @@ const shipping = {
   customCarrier: 'Đơn vị vận chuyển tùy chỉnh',
   
   // Tracking Statuses Detailed
-  created: 'Đã tạo',
   confirmed: 'Đã xác nhận',
   pickedUp: 'Đã lấy hàng',
   inWarehouse: 'Tại kho',
@@ -375,6 +374,50 @@ const shipping = {
   addressInvalid: 'Địa chỉ không hợp lệ',
   addressCorrected: 'Địa chỉ đã sửa',
   suggestedAddress: 'Địa chỉ đề xuất',
+  
+  // PPL Shipping Label
+  createPplLabel: 'Tạo Nhãn PPL',
+  createPplShippingLabel: 'Tạo Nhãn Vận Chuyển PPL',
+  generatePplShippingLabel: 'Tạo nhãn vận chuyển PPL cho đơn hàng {{orderId}}',
+  pplLabelCreated: 'Đã Tạo Nhãn PPL',
+  labelCreatedSuccessfully: 'Đã tạo nhãn thành công. Mã vận đơn: {{trackingNumber}}',
+  failedToCreatePplLabel: 'Không Thể Tạo Nhãn PPL',
+  unknownErrorOccurred: 'Đã xảy ra lỗi không xác định',
+  orderSummary: 'Tóm tắt Đơn hàng',
+  customer: 'Khách hàng',
+  orderId: 'Mã đơn hàng',
+  address: 'Địa chỉ',
+  items: 'Sản phẩm',
+  weight: 'Cân nặng',
+  notSet: 'Chưa đặt',
+  dobirka: 'Dobírka (Thu hộ COD)',
+  codAmountOptional: 'Số tiền COD (tùy chọn)',
+  currency: 'Tiền tệ',
+  codCollectionNote: 'Nếu bạn chỉ định số tiền COD, đơn vị vận chuyển sẽ thu số tiền này từ người nhận khi giao hàng.',
+  creating: 'Đang tạo...',
+  shippingLabelCreated: 'Đã Tạo Nhãn Vận Chuyển',
+  trackPackage: 'Theo dõi Gói hàng',
+  noShippingLabelCreated: 'Chưa tạo nhãn vận chuyển.',
+  
+  // Order Tracking Panel
+  shipmentTracking: 'Theo dõi Vận chuyển',
+  trackingDisabled: 'Theo dõi bị tắt. Bật trong Cài đặt > Vận chuyển để xem theo dõi vận chuyển.',
+  loadingTrackingInfo: 'Đang tải thông tin theo dõi...',
+  noTrackingInfoAvailable: 'Không có thông tin theo dõi',
+  cartonsTracked: '{{count}} thùng được theo dõi',
+  cartonsTrackedPlural: '{{count}} thùng được theo dõi',
+  refresh: 'Làm mới',
+  trackingRefreshed: 'Đã Làm mới Theo dõi',
+  trackingInfoUpdated: 'Thông tin theo dõi đã được cập nhật',
+  refreshFailed: 'Làm mới Thất bại',
+  failedToRefreshTracking: 'Không thể làm mới theo dõi',
+  
+  // ShippingManagement placeholders
+  cityPlaceholder: 'Berlin',
+  ibanPlaceholder: 'DE89370400440532013000',
+  bicPlaceholder: 'COBADEFFXXX',
+  companyNamePlaceholder: 'Công ty Của Bạn GmbH',
+  cityNamePlaceholder: 'Thành Phố Của Bạn',
   
 } as const;
 

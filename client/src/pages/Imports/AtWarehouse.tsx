@@ -1610,10 +1610,10 @@ export default function AtWarehouse() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('allLocations')}</SelectItem>
-                  <SelectItem value="China">🇨🇳 China</SelectItem>
-                  <SelectItem value="USA">🇺🇸 USA</SelectItem>
-                  <SelectItem value="Vietnam">🇻🇳 Vietnam</SelectItem>
-                  <SelectItem value="Europe">🇪🇺 Europe</SelectItem>
+                  <SelectItem value="China">🇨🇳 {t('china')}</SelectItem>
+                  <SelectItem value="USA">🇺🇸 {t('usa')}</SelectItem>
+                  <SelectItem value="Vietnam">🇻🇳 {t('vietnam')}</SelectItem>
+                  <SelectItem value="Europe">🇪🇺 {t('europe')}</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -1660,7 +1660,7 @@ export default function AtWarehouse() {
                   {isProcessingScreenshot && (
                     <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                      <span>Processing...</span>
+                      <span>{t('processing')}</span>
                     </div>
                   )}
                 </div>
@@ -1771,7 +1771,7 @@ export default function AtWarehouse() {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Item Name *</Label>
+                        <Label htmlFor="name">{t('itemName')} *</Label>
                         <Input 
                           id="name" 
                           name="name" 
@@ -1781,17 +1781,17 @@ export default function AtWarehouse() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="source">Source Platform *</Label>
+                        <Label htmlFor="source">{t('sourcePlatform')} *</Label>
                         <Select name="source" required>
                           <SelectTrigger data-testid="select-source">
                             <SelectValue placeholder={t('selectPlatformPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="taobao">Taobao</SelectItem>
-                            <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                            <SelectItem value="taobao">{t('taobao')}</SelectItem>
+                            <SelectItem value="pinduoduo">{t('pinduoduo')}</SelectItem>
                             <SelectItem value="1688">1688</SelectItem>
-                            <SelectItem value="alibaba">Alibaba</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="alibaba">{t('alibaba')}</SelectItem>
+                            <SelectItem value="other">{t('other')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1799,7 +1799,7 @@ export default function AtWarehouse() {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="orderNumber">Order Number</Label>
+                        <Label htmlFor="orderNumber">{t('orderNumber')}</Label>
                         <Input 
                           id="orderNumber" 
                           name="orderNumber" 
@@ -1808,7 +1808,7 @@ export default function AtWarehouse() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="classification">Goods Classification *</Label>
+                        <Label htmlFor="classification">{t('goodsClassification')} *</Label>
                         <Select name="classification" defaultValue="general">
                           <SelectTrigger data-testid="select-classification">
                             <SelectValue />
@@ -1817,13 +1817,13 @@ export default function AtWarehouse() {
                             <SelectItem value="general">
                               <div className="flex items-center">
                                 <Flag className="h-4 w-4 mr-2 text-green-500" />
-                                General Goods
+                                {t('generalGoods')}
                               </div>
                             </SelectItem>
                             <SelectItem value="sensitive">
                               <div className="flex items-center">
                                 <Shield className="h-4 w-4 mr-2 text-red-500" />
-                                Sensitive Goods
+                                {t('sensitiveGoods')}
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -1833,7 +1833,7 @@ export default function AtWarehouse() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="quantity">Quantity *</Label>
+                        <Label htmlFor="quantity">{t('quantity')} *</Label>
                         <Input 
                           id="quantity" 
                           name="quantity" 
@@ -1845,7 +1845,7 @@ export default function AtWarehouse() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                        <Label htmlFor="unitPrice">{t('unitPrice')}</Label>
                         <Input 
                           id="unitPrice" 
                           name="unitPrice" 
@@ -1858,7 +1858,7 @@ export default function AtWarehouse() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Notes</Label>
+                      <Label htmlFor="notes">{t('notes')}</Label>
                       <Textarea 
                         id="notes" 
                         name="notes" 
@@ -1872,10 +1872,10 @@ export default function AtWarehouse() {
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsAddCustomItemOpen(false)}>
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button type="submit" disabled={createCustomItemMutation.isPending} data-testid="button-submit-item">
-                    {createCustomItemMutation.isPending ? "Adding..." : extractedItems.length > 0 ? `Add ${extractedItems.length} Items` : "Add Item"}
+                    {createCustomItemMutation.isPending ? t('adding') : extractedItems.length > 0 ? `${t('addItems')} (${extractedItems.length})` : t('addItems')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -1886,14 +1886,14 @@ export default function AtWarehouse() {
             <DialogTrigger asChild>
               <Button data-testid="button-create-consolidation" size="sm" className="h-9">
                 <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden sm:inline">Create Consolidation</span>
+                <span className="hidden sm:inline">{t('createConsolidation')}</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Create New Consolidation</DialogTitle>
+                <DialogTitle>{t('createNewConsolidation')}</DialogTitle>
                 <DialogDescription>
-                  Create a new shipment consolidation for grouping items
+                  {t('createConsolidationDesc')}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateConsolidation} className="space-y-4">
@@ -1912,49 +1912,49 @@ export default function AtWarehouse() {
                         <SelectItem value="general_air_ddp">
                           <div className="flex items-center space-x-2">
                             <Plane className="h-4 w-4 text-blue-600" />
-                            <span>General Air DDP</span>
+                            <span>{t('generalAirDDP')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="sensitive_air_ddp">
                           <div className="flex items-center space-x-2">
                             <Plane className="h-4 w-4 text-orange-600" />
-                            <span>Sensitive Air DDP</span>
+                            <span>{t('sensitiveAirDDP')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="general_express">
                           <div className="flex items-center space-x-2">
                             <Zap className="h-4 w-4 text-red-600" />
-                            <span>General Express</span>
+                            <span>{t('generalExpress')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="sensitive_express">
                           <div className="flex items-center space-x-2">
                             <Zap className="h-4 w-4 text-red-800" />
-                            <span>Sensitive Express</span>
+                            <span>{t('sensitiveExpress')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="general_railway">
                           <div className="flex items-center space-x-2">
                             <Truck className="h-4 w-4 text-green-600" />
-                            <span>General Railway</span>
+                            <span>{t('generalRailway')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="sensitive_railway">
                           <div className="flex items-center space-x-2">
                             <Truck className="h-4 w-4 text-green-800" />
-                            <span>Sensitive Railway</span>
+                            <span>{t('sensitiveRailway')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="general_sea">
                           <div className="flex items-center space-x-2">
                             <Ship className="h-4 w-4 text-cyan-600" />
-                            <span>General Sea</span>
+                            <span>{t('generalSea')}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="sensitive_sea">
                           <div className="flex items-center space-x-2">
                             <Ship className="h-4 w-4 text-cyan-800" />
-                            <span>Sensitive Sea</span>
+                            <span>{t('sensitiveSea')}</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -1962,7 +1962,7 @@ export default function AtWarehouse() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Destination Location *</Label>
+                  <Label htmlFor="location">{t('destinationLocation')} *</Label>
                   <Input 
                     id="location" 
                     name="location" 
@@ -1975,7 +1975,7 @@ export default function AtWarehouse() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="warehouse">Warehouse *</Label>
+                  <Label htmlFor="warehouse">{t('warehouse')} *</Label>
                   <input type="hidden" name="warehouse" value={selectedWarehouse} required />
                   <Popover open={warehouseComboOpen} onOpenChange={setWarehouseComboOpen}>
                       <PopoverTrigger asChild>
@@ -2768,7 +2768,7 @@ export default function AtWarehouse() {
                                           <div 
                                             data-drag-handle
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
-                                            title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
+                                            title={itemSortBy === 'custom' ? t('dragToReorder') : t('dragToConsolidation')}
                                           >
                                             <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
                                           </div>
@@ -2781,7 +2781,7 @@ export default function AtWarehouse() {
                                           
                                           {/* Compact metadata row */}
                                           <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
-                                            <span>Qty: {item.quantity}</span>
+                                            <span>{t('qty')}: {item.quantity}</span>
                                             {item.weight && <span>• {item.weight} kg</span>}
                                             {item.source && (
                                               <>
@@ -2807,10 +2807,10 @@ export default function AtWarehouse() {
                                                     e.stopPropagation();
                                                     toggleItemExpanded(item.id);
                                                   }}
-                                                  title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
+                                                  title={expandedItems.has(item.id) ? t('hideItems') : t('showItems')}
                                                 >
                                                   <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
-                                                  <span className="ml-1">{item.orderItems.length} items</span>
+                                                  <span className="ml-1">{item.orderItems.length} {t('items')}</span>
                                                 </Button>
                                               </>
                                             )}
@@ -2952,7 +2952,7 @@ export default function AtWarehouse() {
                                           setMoveToConsolidationItem({ id: item.id, name: item.name });
                                         }}
                                         className="h-8 px-2"
-                                        title="Move to consolidation"
+                                        title={t('moveToConsolidation')}
                                       >
                                         <ArrowRightToLine className="h-4 w-4" />
                                       </Button>
@@ -3474,18 +3474,18 @@ export default function AtWarehouse() {
                   <SelectContent>
                     {statusTarget.type === 'order' ? (
                       <>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="ordered">Ordered</SelectItem>
-                        <SelectItem value="in_transit">In Transit</SelectItem>
-                        <SelectItem value="at_warehouse">Consolidation</SelectItem>
-                        <SelectItem value="unpacked">Unpacked</SelectItem>
+                        <SelectItem value="pending">{t('pending')}</SelectItem>
+                        <SelectItem value="ordered">{t('ordered')}</SelectItem>
+                        <SelectItem value="in_transit">{t('inTransit')}</SelectItem>
+                        <SelectItem value="at_warehouse">{t('consolidated')}</SelectItem>
+                        <SelectItem value="unpacked">{t('unpacked')}</SelectItem>
                       </>
                     ) : (
                       <>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="assigned">Assigned</SelectItem>
-                        <SelectItem value="consolidated">Consolidated</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="available">{t('available')}</SelectItem>
+                        <SelectItem value="assigned">{t('assigned')}</SelectItem>
+                        <SelectItem value="consolidated">{t('consolidated')}</SelectItem>
+                        <SelectItem value="shipped">{t('shipped')}</SelectItem>
                       </>
                     )}
                   </SelectContent>

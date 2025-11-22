@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface RackGridProps {
 }
 
 export function RackGrid({ locations, onLocationSelect, selectedLocation }: RackGridProps) {
+  const { t } = useTranslation(['warehouse']);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [selectedAisle, setSelectedAisle] = useState<string | null>(null);
   const [selectedRack, setSelectedRack] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
     <div className="space-y-4">
       {/* Zone Selection */}
       <div>
-        <h3 className="text-sm font-medium mb-2">Select Zone</h3>
+        <h3 className="text-sm font-medium mb-2">{t('warehouse:selectZone')}</h3>
         <div className="flex flex-wrap gap-2">
           {zones.map(zone => (
             <Card
@@ -64,7 +66,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
               }}
             >
               <div className="font-medium">{zone.code}</div>
-              <div className="text-xs text-gray-500 mt-1">Zone</div>
+              <div className="text-xs text-gray-500 mt-1">{t('warehouse:zone')}</div>
             </Card>
           ))}
         </div>
@@ -73,7 +75,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
       {/* Aisle Selection */}
       {selectedZone && aisles.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-2">Select Aisle</h3>
+          <h3 className="text-sm font-medium mb-2">{t('warehouse:selectAisle')}</h3>
           <div className="flex flex-wrap gap-2">
             {aisles.map(aisle => (
               <Card
@@ -88,7 +90,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
                 }}
               >
                 <div className="font-medium">{aisle.code}</div>
-                <div className="text-xs text-gray-500 mt-1">Aisle</div>
+                <div className="text-xs text-gray-500 mt-1">{t('warehouse:aisle')}</div>
               </Card>
             ))}
           </div>
@@ -98,7 +100,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
       {/* Rack Selection */}
       {selectedAisle && racks.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-2">Select Rack</h3>
+          <h3 className="text-sm font-medium mb-2">{t('warehouse:selectRack')}</h3>
           <div className="flex flex-wrap gap-2">
             {racks.map(rack => (
               <Card
@@ -110,7 +112,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
                 onClick={() => setSelectedRack(rack.id)}
               >
                 <div className="font-medium">{rack.code}</div>
-                <div className="text-xs text-gray-500 mt-1">Rack</div>
+                <div className="text-xs text-gray-500 mt-1">{t('warehouse:rack')}</div>
               </Card>
             ))}
           </div>
@@ -120,7 +122,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
       {/* Shelf and Bin Grid */}
       {selectedRack && shelves.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-2">Shelves & Bins</h3>
+          <h3 className="text-sm font-medium mb-2">{t('warehouse:shelvesAndBins')}</h3>
           <div className="space-y-4">
             {shelves.map(shelf => {
               const bins = getBinsForShelf(shelf.id);
@@ -167,7 +169,7 @@ export function RackGrid({ locations, onLocationSelect, selectedLocation }: Rack
       {/* Empty State */}
       {!selectedZone && (
         <div className="text-center py-12 text-gray-500">
-          Select a zone to view its layout
+          {t('warehouse:selectZoneToViewLayout')}
         </div>
       )}
     </div>

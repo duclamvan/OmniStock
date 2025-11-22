@@ -431,12 +431,12 @@ const ProductImage = memo(({
           )}
           <div className="flex items-center gap-2">
             <Hash className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-            <span className="text-sm text-gray-500">SKU:</span>
+            <span className="text-sm text-gray-500">{t('skuLabel')}</span>
             <span className="font-mono font-semibold text-sm text-gray-900">{item.sku}</span>
           </div>
           <div className="flex items-center gap-2">
             <ScanLine className="h-4 w-4 text-purple-500 dark:text-purple-400" />
-            <span className="text-sm text-gray-500">Barcode:</span>
+            <span className="text-sm text-gray-500">{t('barcodeLabel')}</span>
             <span className="font-mono font-semibold text-sm text-gray-900">{item.barcode}</span>
           </div>
         </div>
@@ -535,7 +535,7 @@ const CartonCard = memo(({
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200 flex items-center gap-2">
             <Box className="h-5 w-5" />
-            Carton #{carton.cartonNumber}
+            {t('cartonHash')}{carton.cartonNumber}
           </h3>
           <Button
             variant="destructive"
@@ -558,7 +558,7 @@ const CartonCard = memo(({
 
         {/* Carton Type Selector */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Carton Type</label>
+          <label className="text-sm font-medium text-gray-700">{t('cartonType')}</label>
           <CartonTypeAutocomplete
             value={carton.cartonType === 'non-company' ? null : carton.cartonId}
             onValueChange={(cartonId, cartonDataParam) => {
@@ -620,7 +620,7 @@ const CartonCard = memo(({
             >
               <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Weight {localWeight && `(${parseFloat(localWeight).toFixed(3)} kg)`}
+                {t('weight')} {localWeight && `(${parseFloat(localWeight).toFixed(3)} kg)`}
               </span>
               {isWeightExpanded ? (
                 <ChevronUp className="h-4 w-4 text-gray-500" />
@@ -632,13 +632,13 @@ const CartonCard = memo(({
             {isWeightExpanded && (
               <div className="p-3 space-y-2 border-t-2 border-gray-200">
                 <label className="text-sm font-medium text-gray-700">
-                  Weight (kg) <span className="text-xs text-gray-500 font-normal">(optional, max 40kg)</span>
+                  {t('weightKg')} <span className="text-xs text-gray-500 font-normal">{t('optionalMax40kg')}</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
                     step="0.001"
-                    placeholder="0.000"
+                    placeholder={t('weightPlaceholder')}
                     value={localWeight}
                     onChange={(e) => {
                       const newWeight = e.target.value;
@@ -691,13 +691,13 @@ const CartonCard = memo(({
                 {localWeight && parseFloat(localWeight) > 40 && (
                   <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-semibold">
                     <AlertCircle className="h-3 w-3" />
-                    Exceeds GLS 40kg limit
+                    {t('exceedsGls40kgLimit')}
                   </div>
                 )}
                 {carton.aiWeightCalculation && (
                   <div className="text-xs text-purple-700 dark:text-purple-200 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    AI calculated
+                    {t('aiCalculated')}
                     {carton.volumeUtilization && (
                       <span className="ml-1">
                         - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
@@ -711,7 +711,7 @@ const CartonCard = memo(({
         ) : (
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
-              Weight (kg)
+              {t('weightKg')}
             </label>
             <div className="flex items-center gap-2">
               <Input
@@ -739,7 +739,7 @@ const CartonCard = memo(({
             {carton.aiWeightCalculation && (
               <div className="text-xs text-purple-700 dark:text-purple-200 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
-                AI calculated
+                {t('aiCalculated')}
                 {carton.volumeUtilization && (
                   <span className="ml-1">
                     - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
@@ -4025,7 +4025,7 @@ export default function PickPack() {
     .map((order: any) => ({
       id: order.id,
       orderId: order.orderId,
-      customerName: order.customerName || 'Walk-in Customer',
+      customerName: order.customerName || t('walkInCustomer'),
       shippingMethod: order.shippingMethod || 'Standard',
       shippingAddress: order.shippingAddress,
       priority: order.priority || 'medium',
@@ -4147,8 +4147,8 @@ export default function PickPack() {
       
       // Show immediate success feedback
       toast({
-        title: 'Success',
-        description: `Order ${order.orderId} returned to packing`
+        title: t('success'),
+        description: t('orderReturnedToPacking', { orderId: order.orderId })
       });
       
       // Create all API promises at once (parallel execution)
@@ -4194,8 +4194,8 @@ export default function PickPack() {
             return newSet;
           });
           toast({
-            title: 'Error',
-            description: 'Failed to return order to packing',
+            title: t('error'),
+            description: t('failedToReturnToPacking'),
             variant: 'destructive'
           });
         });
@@ -4290,8 +4290,8 @@ export default function PickPack() {
       // Show immediate feedback if not in active mode
       if (!activePickingOrder && !activePackingOrder) {
         toast({
-          title: 'Success',
-          description: `Order ${order.orderId} sent back to pick`
+          title: t('success'),
+          description: t('orderSentBackToPick', { orderId: order.orderId })
         });
       }
       
@@ -4343,8 +4343,8 @@ export default function PickPack() {
           });
           if (!activePickingOrder && !activePackingOrder) {
             toast({
-              title: 'Error',
-              description: 'Failed to send order back to pick',
+              title: t('error'),
+              description: t('failedToSendBackToPick'),
               variant: 'destructive'
             });
           }
@@ -4372,16 +4372,16 @@ export default function PickPack() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       
       toast({
-        title: 'Order On Hold',
-        description: `${order.orderId} has been put on hold`,
+        title: t('orderOnHold'),
+        description: t('orderPutOnHold', { orderId: order.orderId }),
       });
       
       setOrderToHold(null);
     } catch (error) {
       console.error('Error putting order on hold:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to put order on hold',
+        title: t('error'),
+        description: t('failedToPutOnHold'),
         variant: 'destructive'
       });
     }
@@ -4399,16 +4399,16 @@ export default function PickPack() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       
       toast({
-        title: 'Order Cancelled',
-        description: `${order.orderId} has been cancelled`,
+        title: t('orderCancelled'),
+        description: t('orderCancelledDesc', { orderId: order.orderId }),
       });
       
       setOrderToCancel(null);
     } catch (error) {
       console.error('Error cancelling order:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to cancel order',
+        title: t('error'),
+        description: t('failedToCancelOrder'),
         variant: 'destructive'
       });
     }
@@ -6079,24 +6079,24 @@ export default function PickPack() {
                 <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 text-white" />
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 lg:mb-4 text-gray-800">
-                🎉 Packing Complete!
+                🎉 {t('packingComplete')}
               </h2>
               <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-4 lg:mb-8">
-                Excellent work! Order {activePackingOrder.orderId} is ready to ship
+                {t('excellentWork', { orderId: activePackingOrder.orderId })}
               </p>
               
               <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
                 <div className="grid grid-cols-3 gap-2 lg:gap-4">
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-500">Time</p>
+                    <p className="text-xs lg:text-sm text-gray-500">{t('time')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600 dark:text-amber-400">{formatTimer(packingTimer)}</p>
                   </div>
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-500">Cartons</p>
+                    <p className="text-xs lg:text-sm text-gray-500">{t('cartons')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-600 dark:text-indigo-400">{cartons.length}</p>
                   </div>
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-500">Weight</p>
+                    <p className="text-xs lg:text-sm text-gray-500">{t('weight')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{packageWeight}kg</p>
                   </div>
                 </div>
@@ -6250,7 +6250,7 @@ export default function PickPack() {
                 data-testid="button-exit-packing"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="ml-1 text-xs lg:text-sm hidden sm:inline">Exit</span>
+                <span className="ml-1 text-xs lg:text-sm hidden sm:inline">{t('exit')}</span>
               </Button>
               
               {/* Left-Aligned: Order Info */}
@@ -6305,7 +6305,7 @@ export default function PickPack() {
                   variant="ghost"
                   className="h-8 w-8 lg:h-9 lg:w-9 bg-white/20 hover:bg-white/30 text-white"
                   onClick={() => setAudioEnabled(!audioEnabled)}
-                  title={audioEnabled ? "Mute sounds" : "Unmute sounds"}
+                  title={audioEnabled ? t('muteSounds') : t('unmuteSounds')}
                   data-testid="button-toggle-sound"
                 >
                   {audioEnabled ? (
@@ -6785,7 +6785,7 @@ export default function PickPack() {
                                   )}
                                   {item.sku && (
                                     <span className="text-xs text-gray-500 truncate">
-                                      SKU: {item.sku}
+                                      {t('skuLabel')} {item.sku}
                                     </span>
                                   )}
                                 </div>
@@ -8325,7 +8325,7 @@ export default function PickPack() {
                   <div className="sm:col-span-2 p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Shipping Address</span>
+                      <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
                     </div>
                     {(() => {
                       const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
@@ -8337,7 +8337,7 @@ export default function PickPack() {
                         <div className="pl-6">
                           <p className="text-sm text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded px-3 py-2 inline-flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                            No shipping address provided
+                            {t('noShippingAddressProvided')}
                           </p>
                         </div>
                       );
@@ -8349,7 +8349,7 @@ export default function PickPack() {
                     <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Shipping Method</span>
+                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingMethodLabel')}</span>
                       </div>
                       <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
                         {activePackingOrder.shippingMethod}
@@ -8362,7 +8362,7 @@ export default function PickPack() {
                     <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Tracking Number</span>
+                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('trackingNumberLabel')}</span>
                       </div>
                       <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
                         {activePackingOrder.trackingNumber}
@@ -9850,8 +9850,8 @@ export default function PickPack() {
                                         } catch (error: any) {
                                           console.error('❌ Generate error:', error);
                                           toast({
-                                            title: "Error",
-                                            description: error.message || "Failed to generate label",
+                                            title: t('errorTitle'),
+                                            description: error.message || t('failedToGenerateLabel'),
                                             variant: "destructive"
                                           });
                                         } finally {
@@ -9890,8 +9890,8 @@ export default function PickPack() {
                                           if (!label.labelBase64) {
                                             console.error('❌ No labelBase64 found!');
                                             toast({
-                                              title: "Error",
-                                              description: "Label PDF not available. The label might still be processing.",
+                                              title: t('errorTitle'),
+                                              description: t('labelPdfNotAvailable'),
                                               variant: "destructive"
                                             });
                                             return;
@@ -9927,8 +9927,8 @@ export default function PickPack() {
                                           } else {
                                             console.error('❌ Failed to open print window - might be blocked by popup blocker');
                                             toast({
-                                              title: "Error",
-                                              description: "Could not open print window. Please allow popups for this site.",
+                                              title: t('errorTitle'),
+                                              description: t('couldNotOpenPrintWindow'),
                                               variant: "destructive"
                                             });
                                           }
@@ -9936,8 +9936,8 @@ export default function PickPack() {
                                         } catch (error: any) {
                                           console.error('❌ Print error:', error);
                                           toast({
-                                            title: "Error",
-                                            description: error.message || "Failed to print label",
+                                            title: t('errorTitle'),
+                                            description: error.message || t('failedToPrintLabel'),
                                             variant: "destructive"
                                           });
                                         }
@@ -9947,12 +9947,12 @@ export default function PickPack() {
                                       {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
                                         <>
                                           <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                          Printed
+                                          {t('printed')}
                                         </>
                                       ) : (
                                         <>
                                           <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                          Print
+                                          {t('print')}
                                         </>
                                       )}
                                     </Button>
@@ -9982,12 +9982,12 @@ export default function PickPack() {
                                             
                                             toast({ 
                                               title: t('labelDeleted'),
-                                              description: "Carton data preserved. You can regenerate the label if needed."
+                                              description: t('cartonDataPreserved')
                                             });
                                           } catch (error) {
                                             toast({
-                                              title: t('error'),
-                                              description: "Failed to delete label",
+                                              title: t('errorTitle'),
+                                              description: t('failedToDeleteLabel'),
                                               variant: "destructive"
                                             });
                                           } finally {
@@ -10036,11 +10036,11 @@ export default function PickPack() {
                                         CZ-PPL{label.labelData?.hasCOD || (activePackingOrder.codAmount && parseFloat(String(activePackingOrder.codAmount)) > 0) ? '-DOB' : ''} #{labelNumber}
                                       </p>
                                       <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-amber-500 text-amber-700 dark:text-amber-200">
-                                        No Carton
+                                        {t('noCarton')}
                                       </Badge>
                                       {isCancelled && (
                                         <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
-                                          CANCELLED
+                                          {t('cancelled')}
                                         </Badge>
                                       )}
                                     </div>
@@ -10049,7 +10049,7 @@ export default function PickPack() {
                                         {label.trackingNumbers[0]}
                                       </p>
                                     ) : (
-                                      <p className="text-xs text-gray-400 italic">No tracking number</p>
+                                      <p className="text-xs text-gray-400 italic">{t('noTrackingNumber')}</p>
                                     )}
                                   </div>
                                   
@@ -10087,8 +10087,8 @@ export default function PickPack() {
                                           setTimeout(() => URL.revokeObjectURL(url), 1000);
                                         } catch (error) {
                                           toast({
-                                            title: "Error",
-                                            description: "Failed to print label",
+                                            title: t('error'),
+                                            description: t('failedToPrintLabel'),
                                             variant: "destructive"
                                           });
                                         }
@@ -10098,12 +10098,12 @@ export default function PickPack() {
                                       {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
                                         <>
                                           <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                          Printed
+                                          {t('printed')}
                                         </>
                                       ) : (
                                         <>
                                           <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                          Print
+                                          {t('print')}
                                         </>
                                       )}
                                     </Button>
@@ -10215,7 +10215,7 @@ export default function PickPack() {
                         } catch (error: any) {
                           console.error('❌ Error adding carton label:', error);
                           toast({
-                            title: t('error'),
+                            title: t('errorTitle'),
                             description: error.message || t('failedToAddCartonLabel'),
                             variant: "destructive"
                           });
@@ -10224,7 +10224,7 @@ export default function PickPack() {
                       data-testid="button-add-ppl-shipment"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Carton Label
+                      {t('addCartonLabel')}
                     </Button>
                   )}
                 </>
@@ -10281,7 +10281,7 @@ export default function PickPack() {
                           {isDuplicate ? (
                             <div className="flex items-center gap-1 ml-auto">
                               <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                              <span className="text-xs font-medium text-red-600 dark:text-red-400">Duplicate</span>
+                              <span className="text-xs font-medium text-red-600 dark:text-red-400">{t('duplicate')}</span>
                             </div>
                           ) : isValid ? (
                             <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300 ml-auto" />
@@ -10438,7 +10438,7 @@ export default function PickPack() {
                           {isDuplicate ? (
                             <div className="flex items-center gap-1 ml-auto">
                               <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                              <span className="text-xs font-medium text-red-600 dark:text-red-400">Duplicate</span>
+                              <span className="text-xs font-medium text-red-600 dark:text-red-400">{t('duplicate')}</span>
                             </div>
                           ) : isValid ? (
                             <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300 ml-auto" />
@@ -10747,8 +10747,8 @@ export default function PickPack() {
                                             }
                                           } catch (error) {
                                             toast({
-                                              title: "Paste failed",
-                                              description: "Please allow clipboard access",
+                                              title: t('pasteFailed'),
+                                              description: t('pasteFailedClipboardAccessShort'),
                                               variant: "destructive"
                                             });
                                           }
@@ -11308,7 +11308,7 @@ export default function PickPack() {
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Esc</kbd>
-                <span>Exit/Close</span>
+                <span>{t('exit')}/{t('closeModal')}</span>
               </div>
             </div>
           </div>
@@ -11328,7 +11328,7 @@ export default function PickPack() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <h2 className="text-base sm:text-lg font-bold">Order Items Overview</h2>
+                    <h2 className="text-base sm:text-lg font-bold">{t('orderItems')} {t('overview')}</h2>
                   </div>
                   <Button 
                     size="sm" 
@@ -11548,7 +11548,7 @@ export default function PickPack() {
                     <div className="relative flex-1">
                       <Input
                         ref={overviewBarcodeInputRef}
-                        placeholder="Scan barcode or SKU..."
+                        placeholder={t('scanBarcodeOrSku')}
                         value={overviewBarcodeInput}
                         onChange={(e) => setOverviewBarcodeInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -11937,7 +11937,7 @@ export default function PickPack() {
                           <div className="relative flex-1">
                             <Input
                               ref={barcodeInputRef}
-                              placeholder="Ready to scan..."
+                              placeholder={t('readyToScan')}
                               value={barcodeInput}
                               className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
                               readOnly
@@ -12126,7 +12126,7 @@ export default function PickPack() {
                   <Alert className="mb-4 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700">
                     <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     <AlertDescription className="text-yellow-800 dark:text-yellow-200 font-semibold">
-                      Unable to display item details. Please navigate using the Previous/Next buttons.
+                      {t('unableToDisplayItemDetails')}
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -12140,13 +12140,13 @@ export default function PickPack() {
               <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <ClipboardList className="h-4 xl:h-5 w-4 xl:w-5" />
-                  Order Items
+                  {t('orderItems')}
                 </span>
                 <Badge className="bg-white text-gray-800 font-bold px-2 xl:px-3 py-1 text-sm">
                   {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
                 </Badge>
               </h3>
-              <div className="text-xs xl:text-sm text-gray-200">Track your picking progress</div>
+              <div className="text-xs xl:text-sm text-gray-200">{t('trackYourPickingProgress')}</div>
             </div>
             
             <div className="space-y-2 xl:space-y-3">
@@ -12221,8 +12221,8 @@ export default function PickPack() {
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm">Order Progress</span>
-                      <span className="text-xs text-gray-500">Swipe to view →</span>
+                      <span className="font-bold text-sm">{t('orderProgress')}</span>
+                      <span className="text-xs text-gray-500">{t('swipeToView')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className="bg-gray-800 text-white text-xs px-2">
@@ -12310,9 +12310,9 @@ export default function PickPack() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
-                Pick & Pack Workflow
+                {t('pickPackWorkflow')}
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage order fulfillment from picking to shipping</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('manageOrderFulfillment')}</p>
             </div>
 
             {/* Quick Stats Overview */}
@@ -12451,7 +12451,7 @@ export default function PickPack() {
                         <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                           {transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length}
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Orders Completed Today</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('ordersCompletedToday')}</p>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">
@@ -12994,7 +12994,7 @@ export default function PickPack() {
                     </span>
                   )}
                 </CardTitle>
-                <CardDescription className="text-sm mt-1">Orders that have been picked and ready to pack</CardDescription>
+                <CardDescription className="text-sm mt-1">{t('ordersPickedAndReadyToPack')}</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-4">
                 {isLoading ? (
@@ -13151,7 +13151,7 @@ export default function PickPack() {
                     <CardTitle className="text-lg sm:text-xl font-bold">
                       Ready to Ship {getOrdersByStatus('ready').length > 0 && `(${getOrdersByStatus('ready').length})`}
                     </CardTitle>
-                    <CardDescription className="text-sm mt-1">Orders organized by shipping destination</CardDescription>
+                    <CardDescription className="text-sm mt-1">{t('ordersOrganizedByDestination')}</CardDescription>
                   </div>
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
@@ -13299,7 +13299,7 @@ export default function PickPack() {
                       
                       const sections = [
                         { 
-                          title: 'Czechia & Slovakia', 
+                          title: t('czechiaSlovakia'), 
                           icon: MapPin,
                           color: 'bg-teal-50 border-teal-200',
                           headerColor: 'from-teal-50 dark:from-teal-900/30 via-teal-50 dark:via-teal-900/30 to-white dark:to-gray-900',
@@ -13308,7 +13308,7 @@ export default function PickPack() {
                           orders: czechiaSlovakia 
                         },
                         { 
-                          title: 'Germany & EU', 
+                          title: t('germanyEU'), 
                           icon: Globe,
                           color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700',
                           headerColor: 'from-purple-50 dark:from-purple-900/30 via-purple-50 to-white',
@@ -13317,7 +13317,7 @@ export default function PickPack() {
                           orders: germanyEU 
                         },
                         { 
-                          title: 'Personal Delivery', 
+                          title: t('personalDelivery'), 
                           icon: Users,
                           color: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700',
                           headerColor: 'from-orange-50 dark:from-orange-900/30 via-orange-50 to-white',
@@ -13326,7 +13326,7 @@ export default function PickPack() {
                           orders: personalDelivery 
                         },
                         { 
-                          title: 'Customer Pickup', 
+                          title: t('customerPickup'), 
                           icon: Building,
                           color: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700',
                           headerColor: 'from-emerald-50 dark:from-emerald-900/30 via-emerald-50 to-white',
@@ -13335,7 +13335,7 @@ export default function PickPack() {
                           orders: pickup 
                         },
                         { 
-                          title: 'Other Destinations', 
+                          title: t('otherDestinations'), 
                           icon: Package,
                           color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
                           headerColor: 'from-blue-50 dark:from-blue-900/30 via-blue-50 to-white',
@@ -13645,7 +13645,7 @@ export default function PickPack() {
               <div className="pb-3 border-b">
                 <div className="space-y-1.5 text-xs sm:text-sm">
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-500 dark:text-gray-400">Order:</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('orderLabel')}</span>
                     <span className="font-bold text-gray-900 dark:text-gray-100">{previewOrder?.orderId}</span>
                   </div>
                   <div className="flex justify-between items-start">

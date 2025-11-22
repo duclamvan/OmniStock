@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -90,6 +91,7 @@ export function DataTable<T>({
   tableId,
   renderBulkActions,
 }: DataTableProps<T>) {
+  const { t } = useTranslation(['common']);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => {
     // Initialize with all rows expanded if defaultExpandAll is true
@@ -342,7 +344,7 @@ export function DataTable<T>({
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge variant="secondary" className="font-medium">
-                  {selectedRows.size} selected
+                  {selectedRows.size} {t('selected')}
                 </Badge>
                 <div className="h-4 w-px bg-border hidden sm:block" />
                 <div className="flex items-center gap-2 flex-wrap">
@@ -437,7 +439,7 @@ export function DataTable<T>({
                   colSpan={displayColumns.length + (bulkActions ? 1 : 0)}
                   className="h-24 text-center"
                 >
-                  No results found.
+                  {t('noResults')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -553,9 +555,9 @@ export function DataTable<T>({
           {/* Mobile Pagination Info */}
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-              <span className="hidden sm:inline">Showing </span>
+              <span className="hidden sm:inline">{t('showing')} </span>
               {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, sortedData.length)}
-              <span className="hidden sm:inline"> of</span>
+              <span className="hidden sm:inline"> {t('of')}</span>
               <span className="inline sm:hidden">/</span>
               {" "}{sortedData.length}
             </p>
@@ -569,7 +571,7 @@ export function DataTable<T>({
               <SelectContent>
                 {itemsPerPageOptions.map((option) => (
                   <SelectItem key={option} value={option.toString()}>
-                    {option}<span className="hidden sm:inline"> / page</span>
+                    {option}<span className="hidden sm:inline">{t('perPageShort')}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -585,7 +587,7 @@ export function DataTable<T>({
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
             >
-              First
+              {t('first')}
             </Button>
             <Button
               variant="outline"
@@ -595,7 +597,7 @@ export function DataTable<T>({
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous</span>
+              <span className="sr-only">{t('previous')}</span>
             </Button>
             <div className="flex items-center px-2">
               <span className="text-xs sm:text-sm whitespace-nowrap">
@@ -610,7 +612,7 @@ export function DataTable<T>({
               disabled={currentPage === totalPages}
             >
               <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next</span>
+              <span className="sr-only">{t('next')}</span>
             </Button>
             <Button
               variant="outline"
@@ -619,7 +621,7 @@ export function DataTable<T>({
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
             >
-              Last
+              {t('last')}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -630,7 +632,7 @@ export function DataTable<T>({
                   data-testid="button-column-visibility"
                 >
                   <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Column visibility</span>
+                  <span className="sr-only">{t('columnVisibility')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

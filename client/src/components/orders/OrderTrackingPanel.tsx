@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ interface OrderTrackingPanelProps {
 }
 
 export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
+  const { t } = useTranslation('orders');
   const { toast } = useToast();
   const [expandedCartons, setExpandedCartons] = useState<Set<string>>(new Set());
   const { shippingSettings } = useSettings();
@@ -46,15 +48,15 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'tracking'] });
       toast({
-        title: "Tracking Refreshed",
-        description: "Tracking information has been updated",
+        title: t('orders:trackingRefreshed'),
+        description: t('orders:trackingInfoUpdated'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Refresh Failed",
-        description: error.message || "Failed to refresh tracking",
+        title: t('orders:refreshFailed'),
+        description: error.message || t('orders:failedToRefreshTracking'),
       });
     },
   });
@@ -78,12 +80,12 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Shipment Tracking
+            {t('orders:shipmentTracking')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            Tracking is disabled. Enable it in Settings &gt; Shipping to view shipment tracking.
+            {t('orders:trackingDisabled')}
           </div>
         </CardContent>
       </Card>
@@ -96,11 +98,11 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Shipment Tracking
+            {t('orders:shipmentTracking')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">Loading tracking information...</div>
+          <div className="text-sm text-muted-foreground">{t('orders:loadingTrackingInfo')}</div>
         </CardContent>
       </Card>
     );
@@ -112,11 +114,11 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Shipment Tracking
+            {t('orders:shipmentTracking')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">No tracking information available</div>
+          <div className="text-sm text-muted-foreground">{t('orders:noTrackingInfo')}</div>
         </CardContent>
       </Card>
     );
@@ -138,9 +140,9 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
-              Shipment Tracking
+              {t('orders:shipmentTracking')}
             </CardTitle>
-            <CardDescription>{tracking.length} carton{tracking.length !== 1 ? 's' : ''} tracked</CardDescription>
+            <CardDescription>{t(tracking.length === 1 ? 'orders:cartonTracked' : 'orders:cartonsTracked', { count: tracking.length })}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -150,7 +152,7 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
             data-testid="button-refresh-tracking"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('common:refresh')}
           </Button>
         </div>
       </CardHeader>
@@ -175,7 +177,7 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
                   </div>
                   {shipment.estimatedDelivery && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Estimated delivery: {formatDate(shipment.estimatedDelivery)}
+                      {t('orders:estimatedDelivery')}: {formatDate(shipment.estimatedDelivery)}
                     </div>
                   )}
                   {shipment.errorState && (
@@ -201,7 +203,7 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
                 <>
                   <Separator />
                   <div className="space-y-3">
-                    <div className="text-sm font-medium">Tracking History</div>
+                    <div className="text-sm font-medium">{t('orders:trackingHistory')}</div>
                     <div className="space-y-2">
                       {shipment.checkpoints.map((checkpoint: any, checkIdx: number) => (
                         <div key={checkIdx} className="flex gap-3 text-sm">

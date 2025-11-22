@@ -184,6 +184,7 @@ const system = {
   disableMaintenance: 'Tắt chế độ bảo trì',
   maintenanceMessage: 'Thông báo bảo trì',
   scheduledMaintenance: 'Bảo trì theo lịch',
+  employeeIdPlaceholder: 'NV-001',
   
   // Common Actions
   enable: 'Bật',
@@ -204,6 +205,14 @@ const system = {
   restartRequired: 'Yêu cầu khởi động lại',
   systemRestarting: 'Hệ thống đang khởi động lại',
   pleaseWait: 'Vui lòng đợi',
+  
+  // Settings Updates
+  settingUpdated: 'Đã cập nhật cài đặt',
+  settingUpdatedSuccess: '{{key}} đã được cập nhật thành công.',
+  failedToUpdateSetting: 'Không thể cập nhật cài đặt.',
+  settingsUpdated: 'Đã cập nhật các cài đặt',
+  allSettingsUpdatedSuccess: 'Tất cả cài đặt đã được cập nhật thành công.',
+  failedToUpdateSettings: 'Không thể cập nhật cài đặt.',
   
   // Employees
   employees: 'Nhân viên',

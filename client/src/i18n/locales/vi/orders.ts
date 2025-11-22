@@ -80,6 +80,8 @@ const orders = {
   image: 'Hình ảnh',
   variant: 'Biến thể',
   bundle: 'Combo',
+  scanBarcodeOrSku: 'Quét mã vạch hoặc SKU...',
+  readyToScan: 'Sẵn sàng quét...',
   
   // Fulfillment
   fulfillmentStage: 'Giai đoạn xử lý',
@@ -188,6 +190,13 @@ const orders = {
   orderReset: 'Đã đặt lại đơn hàng',
   orderResetDesc: 'Tất cả số lượng đã lấy đã được xóa.',
   cannotCompletePacking: 'Không thể hoàn thành đóng gói',
+  orderReturnedToPacking: 'Đơn hàng {{orderId}} đã được trả về đóng gói',
+  failedToReturnToPacking: 'Không thể trả đơn hàng về đóng gói',
+  orderSentBackToPick: 'Đơn hàng {{orderId}} đã được gửi về lấy hàng',
+  failedToSendBackToPick: 'Không thể gửi đơn hàng về lấy hàng',
+  orderOnHold: 'Đơn hàng tạm giữ',
+  orderPutOnHold: '{{orderId}} đã được tạm giữ',
+  failedToPutOnHold: 'Không thể tạm giữ đơn hàng',
   
   // Toast Messages - Shipping Actions
   failedToSaveTracking: 'Không thể lưu mã vận đơn. Vui lòng thử lại.',
@@ -681,6 +690,11 @@ const orders = {
   orderCreatedError: 'Không thể tạo đơn hàng. Vui lòng thử lại',
   aiPackingDisabled: 'Đã tắt đóng gói AI',
   aiPackingDisabledDesc: 'Đóng gói thùng AI đã bị tắt trong cài đặt',
+  aiPackingDisabledError: 'Đóng gói thùng AI đã bị tắt. Bật nó trong Cài đặt để sử dụng tính năng này.',
+  enableAiPackingInSettings: 'Vui lòng bật Đóng gói thùng AI trong Cài đặt để sử dụng tính năng này',
+  pleaseAddItemsFirst: 'Vui lòng thêm sản phẩm vào đơn hàng trước',
+  packingPlanOptimized: 'Kế hoạch đóng gói đã được tối ưu hóa thành công',
+  failedToOptimizePacking: 'Không thể tối ưu hóa đóng gói',
   saveOrderBeforeCartons: 'Vui lòng lưu đơn hàng trước khi thêm thùng',
   addManualCartonError: 'Không thể thêm thùng thủ công',
   noVariantsSelected: 'Chưa chọn biến thể',
@@ -944,6 +958,14 @@ const orders = {
   // Packing Instructions
   packingInstructions: 'Hướng dẫn đóng gói',
 
+  // Pick & Pack - PickPack Component Labels
+  skuLabel: 'SKU:',
+  barcodeLabel: 'Mã vạch:',
+  cartonHash: 'Thùng #',
+  optionalMax40kg: '(tùy chọn, tối đa 40kg)',
+  exceedsGls40kgLimit: 'Vượt quá giới hạn 40kg của GLS',
+  aiCalculated: 'Tính toán bởi AI',
+
   // Export Columns (Pre-Orders)
   preOrderIdColumn: 'Mã đặt trước',
   customerColumn: 'Khách hàng',
@@ -962,6 +984,119 @@ const orders = {
   enterCustomPrice: 'Nhập giá tùy chỉnh',
   enterDhlTrackingNumber: 'Nhập mã vận đơn DHL...',
   enterGlsTrackingNumber: 'Nhập mã vận đơn GLS...',
+  
+  // Order Document Selector
+  selectDocumentsToInclude: 'Chọn tài liệu để đính kèm với đơn hàng này',
+  documentsPreviouslySent: 'tài liệu đã gửi trước đây (được đánh dấu bằng',
+  documentSelected: '{{count}} đã chọn',
+  documentWillBeIncluded: '{{count}} tài liệu sẽ được đính kèm',
+  documentsWillBeIncluded: '{{count}} tài liệu sẽ được đính kèm',
+
+  // PickPack.tsx - Comprehensive Translation Keys
+  // Default values & placeholders
+  walkInCustomer: 'Khách vãng lai',
+  weightPlaceholder: '0.000',
+  
+  // UI Labels & Headers
+  exit: 'Thoát',
+  closeModal: 'ĐÓNG',
+  time: 'Thời gian',
+  cartons: 'Thùng',
+  weight: 'Trọng lượng',
+  weightKg: 'Trọng lượng (kg)',
+  items: 'Sản phẩm',
+  score: 'Điểm',
+  clickToMinimize: 'Nhấp để thu nhỏ',
+  service: 'Dịch vụ',
+  orderItems: 'Sản phẩm trong đơn',
+  trackYourPickingProgress: 'Theo dõi tiến độ lấy hàng',
+  pickPackWorkflow: 'Quy trình Lấy & Đóng gói',
+  manageOrderFulfillment: 'Quản lý thực hiện đơn hàng từ lấy hàng đến vận chuyển',
+  orderProgress: 'Tiến độ đơn hàng',
+  swipeToView: 'Vuốt để xem →',
+  orderLabel: 'Đơn hàng:',
+  
+  // Tab Labels
+  all: 'Tất cả',
+  overview: 'Tổng quan',
+  pend: 'Chờ',
+  ready: 'Sẵn sàng',
+  pack: 'Đóng gói',
+  
+  // Shipping Information
+  noShippingAddressProvided: 'Chưa cung cấp địa chỉ giao hàng',
+  shippingAddressLabel: 'Địa chỉ giao hàng',
+  shippingMethodLabel: 'Phương thức vận chuyển',
+  trackingNumberLabel: 'Mã vận đơn',
+  
+  // Packing Completion Modal
+  packingComplete: 'Hoàn thành đóng gói!',
+  excellentWork: 'Tuyệt vời! Đơn hàng {{orderId}} đã sẵn sàng để giao',
+  pickNextOrder: 'LẤY ĐƠN TIẾP ({{count}})',
+  packNextOrder: 'ĐÓNG ĐƠN TIẾP ({{count}})',
+  goToReadyToShip: 'ĐẾN SÀNSÀNG GIAO ({{count}})',
+  proceedToPacking: 'TIẾP TỤC ĐÓNG GÓI',
+  backToOverview: 'TRỞ VỀ TỔNG QUAN',
+  
+  // PPL Label Management
+  noCarton: 'Không có thùng',
+  cancelled: 'ĐÃ HỦY',
+  noTrackingNumber: 'Không có mã vận đơn',
+  printed: 'Đã in',
+  print: 'In',
+  addCartonLabel: 'Thêm nhãn thùng',
+  
+  // GLS Shipping
+  glsShipping: 'Vận chuyển GLS ({{count}} {{unit}})',
+  carton: 'thùng',
+  cartonsPlural: 'thùng',
+  totalWeight: 'Tổng trọng lượng: {{weight}} kg',
+  noCartonsAddedToGls: 'Chưa thêm thùng vào GLS. Sử dụng nút bên dưới để thêm thùng cho vận chuyển tiết kiệm.',
+  empfanger: 'Empfänger (Người nhận)',
+  absender: 'Absender (Người gửi)',
+  vorUndNachname: 'Vor- und Nachname*',
+  firma: 'Firma',
+  strasse: 'Straße*',
+  hausnummer: 'Hausnummer*',
+  plz: 'PLZ*',
+  wohnort: 'Wohnort*',
+  land: 'Land*',
+  eMail: 'E-Mail',
+  telefon: 'Telefon',
+  glsShippingLabels: 'Nhãn vận chuyển GLS ({{count}})',
+  duplicate: 'Trùng lặp',
+  
+  // Toast Error Messages (Extended)
+  errorTitle: 'Lỗi',
+  failedToPrintLabel: 'Không thể in nhãn',
+  failedToGenerateLabel: 'Không thể tạo nhãn',
+  failedToAddCartonLabel: 'Không thể thêm nhãn thùng',
+  cartonDataPreserved: 'Dữ liệu thùng đã được giữ lại. Bạn có thể tạo lại nhãn nếu cần.',
+  failedToDeleteLabel: 'Không thể xóa nhãn',
+  creatingShippingLabelFromPPL: 'Đang tạo nhãn vận chuyển từ PPL API',
+  labelPdfNotAvailable: 'PDF nhãn không khả dụng. Nhãn có thể vẫn đang được xử lý.',
+  couldNotOpenPrintWindow: 'Không thể mở cửa sổ in. Vui lòng cho phép popup trên trang này.',
+  labelRemovedSuccessfully: 'Đã xóa nhãn thành công.',
+  pleaseAllowClipboardAccess: 'Vui lòng cho phép truy cập clipboard',
+  
+  // Mobile Labels
+  unableToDisplayItemDetails: 'Không thể hiển thị chi tiết sản phẩm. Vui lòng điều hướng bằng các nút Trước/Sau.',
+  ordersCompletedToday: 'Đơn hàng hoàn thành hôm nay',
+  ordersPickedAndReadyToPack: 'Đơn hàng đã lấy và sẵn sàng để đóng gói',
+  ordersOrganizedByDestination: 'Đơn hàng được tổ chức theo điểm đến',
+  
+  // Confirmation messages
+  deleteLabelConfirm: 'Xóa nhãn #{{labelNumber}}?\n\nĐiều này sẽ hủy vận chuyển với PPL.',
+  
+  // Additional UI Labels
+  pickingItem: 'Lấy sản phẩm',
+  nextItem: 'Sản phẩm tiếp theo',
+  previous: 'Trước',
+  bundleItems: 'Sản phẩm combo',
+  sku: 'SKU:',
+  pickingAccuracy: 'Độ chính xác lấy hàng',
+  avgItemsPerOrder: 'TB sản phẩm/Đơn',
+  avgPickTime: 'TB thời gian lấy',
   
 } as const;
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ interface BinDetailsProps {
 }
 
 export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetailsProps) {
+  const { t } = useTranslation('warehouse');
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     code: location.code,
@@ -50,8 +52,8 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
     },
     onSuccess: () => {
       toast({
-        title: "Location updated",
-        description: "The location has been updated successfully.",
+        title: t('locationUpdated'),
+        description: t('locationUpdatedSuccess'),
       });
       setEditMode(false);
       onUpdate(formData);
@@ -59,8 +61,8 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update location.",
+        title: t('error'),
+        description: t('failedToUpdateLocation'),
         variant: "destructive",
       });
     },
@@ -91,7 +93,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
           {/* Capacity Bar */}
           <div>
             <div className="flex justify-between mb-2">
-              <Label>Occupancy</Label>
+              <Label>{t('occupancy')}</Label>
               <span className="text-sm text-gray-500">{location.currentOccupancy || 0}%</span>
             </div>
             <Progress value={location.currentOccupancy || 0} className="h-2" />
@@ -100,7 +102,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
           {/* Current Inventory */}
           {!isLoading && balances && balances.length > 0 && (
             <div>
-              <Label className="mb-2">Current Inventory</Label>
+              <Label className="mb-2">{t('currentInventory')}</Label>
               <div className="space-y-2">
                 {balances.map((balance: InventoryBalance) => (
                   <div key={balance.id} className="p-2 border rounded">
@@ -111,7 +113,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
                       <Badge variant="secondary">{balance.quantity}</Badge>
                     </div>
                     {balance.lotNumber && (
-                      <div className="text-xs text-gray-500 mt-1">Lot: {balance.lotNumber}</div>
+                      <div className="text-xs text-gray-500 mt-1">{t('lot')} {balance.lotNumber}</div>
                     )}
                   </div>
                 ))}
@@ -122,7 +124,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
           {/* Edit Form */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Location Code</Label>
+              <Label>{t('locationCode')}</Label>
               {editMode ? (
                 <Input
                   value={formData.code}
@@ -135,7 +137,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="pickable">Pickable</Label>
+              <Label htmlFor="pickable">{t('pickable')}</Label>
               <Switch
                 id="pickable"
                 checked={formData.pickable}
@@ -145,7 +147,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="putaway">Putaway Allowed</Label>
+              <Label htmlFor="putaway">{t('putawayAllowed')}</Label>
               <Switch
                 id="putaway"
                 checked={formData.putawayAllowed}
@@ -155,7 +157,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="sortKey">Sort Key</Label>
+              <Label htmlFor="sortKey">{t('sortKey')}</Label>
               {editMode ? (
                 <Input
                   id="sortKey"
@@ -170,25 +172,25 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div>
-              <Label htmlFor="temperature">Temperature</Label>
+              <Label htmlFor="temperature">{t('temperature')}</Label>
               <Select
                 value={formData.temperature}
                 onValueChange={(value) => setFormData({ ...formData, temperature: value })}
                 disabled={!editMode}
               >
                 <SelectTrigger id="temperature">
-                  <SelectValue placeholder="Select temperature" />
+                  <SelectValue placeholder={t('selectTemperature')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ambient">Ambient</SelectItem>
-                  <SelectItem value="cool">Cool</SelectItem>
-                  <SelectItem value="warm">Warm</SelectItem>
+                  <SelectItem value="ambient">{t('ambient')}</SelectItem>
+                  <SelectItem value="cool">{t('cool')}</SelectItem>
+                  <SelectItem value="warm">{t('warm')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="hazmat">Hazmat Area</Label>
+              <Label htmlFor="hazmat">{t('hazmatArea')}</Label>
               <Switch
                 id="hazmat"
                 checked={formData.hazmat}
@@ -200,7 +202,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             {/* Dimensions */}
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label htmlFor="height">Height (cm)</Label>
+                <Label htmlFor="height">{t('heightCm')}</Label>
                 <Input
                   id="height"
                   type="number"
@@ -210,7 +212,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
                 />
               </div>
               <div>
-                <Label htmlFor="width">Width (cm)</Label>
+                <Label htmlFor="width">{t('widthCm')}</Label>
                 <Input
                   id="width"
                   type="number"
@@ -220,7 +222,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
                 />
               </div>
               <div>
-                <Label htmlFor="depth">Depth (cm)</Label>
+                <Label htmlFor="depth">{t('depthCm')}</Label>
                 <Input
                   id="depth"
                   type="number"
@@ -232,7 +234,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div>
-              <Label htmlFor="maxWeight">Max Weight (kg)</Label>
+              <Label htmlFor="maxWeight">{t('maxWeightKg')}</Label>
               <Input
                 id="maxWeight"
                 type="number"
@@ -243,7 +245,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
             </div>
 
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
@@ -260,15 +262,15 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
               <>
                 <Button onClick={handleSave} className="flex-1">
                   <Save className="h-4 w-4 mr-2" />
-                  Save Changes
+                  {t('saveChanges')}
                 </Button>
                 <Button variant="outline" onClick={() => setEditMode(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </>
             ) : (
               <Button onClick={() => setEditMode(true)} className="flex-1">
-                Edit Location
+                {t('editLocation')}
               </Button>
             )}
           </div>

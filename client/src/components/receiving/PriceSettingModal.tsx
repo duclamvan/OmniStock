@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export default function PriceSettingModal({
   items = [],
   onApprove
 }: PriceSettingModalProps) {
+  const { t } = useTranslation(['imports', 'common']);
   const { toast } = useToast();
   const [itemPrices, setItemPrices] = useState<Record<string, { priceCzk: string; priceEur: string; exists: boolean }>>({});
   const [approvedBy, setApprovedBy] = useState("");
@@ -223,8 +225,8 @@ export default function PriceSettingModal({
   const handleSaveAndApprove = async () => {
     if (!approvedBy) {
       toast({
-        title: "Error",
-        description: "Please enter your name for approval",
+        title: t('common:error'),
+        description: t('imports:pleaseEnterNameForApproval'),
         variant: "destructive"
       });
       return;
@@ -232,8 +234,8 @@ export default function PriceSettingModal({
 
     if (!allPricesSet()) {
       toast({
-        title: "Error",
-        description: "Please set all prices before approving",
+        title: t('common:error'),
+        description: t('imports:pleaseSetAllPricesBeforeApproving'),
         variant: "destructive"
       });
       return;
@@ -244,12 +246,12 @@ export default function PriceSettingModal({
     
     // Show progress toast with animation
     const { id } = toast({
-      title: "⚙️ Processing Receipt Approval...",
+      title: `⚙️ ${t('imports:processingReceiptApproval')}`,
       description: (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span>Updating {items.length} products in inventory...</span>
+            <span>{t('imports:updatingProductsInInventory', { count: items.length })}</span>
           </div>
           <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
             <div 
@@ -261,7 +263,7 @@ export default function PriceSettingModal({
             />
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Setting prices • Updating costs • Creating inventory records
+            {t('imports:settingPricesUpdatingCosts')}
           </div>
         </div>
       ),
@@ -314,25 +316,25 @@ export default function PriceSettingModal({
       const total = inventoryUpdated + inventoryCreated;
       
       toast({
-        title: "✅ Receipt Approved Successfully",
+        title: `✅ ${t('imports:receiptApprovedSuccessfully')}`,
         description: (
           <div className="space-y-2 text-sm">
-            <div className="font-semibold">Approved by: {approvedBy}</div>
+            <div className="font-semibold">{t('imports:approvedByLabel')} {approvedBy}</div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="col-span-2 font-medium border-b pb-1">Prices Updated:</div>
-              <div>• Existing products:</div>
+              <div className="col-span-2 font-medium border-b pb-1">{t('imports:pricesUpdatedLabel')}</div>
+              <div>• {t('imports:existingProducts')}</div>
               <div>{pricesUpdated}</div>
-              <div>• New products:</div>
+              <div>• {t('imports:newProducts')}</div>
               <div>{pricesCreated}</div>
               
-              <div className="col-span-2 font-medium border-b pb-1 mt-2">Inventory Changes:</div>
-              <div>• Products updated:</div>
+              <div className="col-span-2 font-medium border-b pb-1 mt-2">{t('imports:inventoryChanges')}</div>
+              <div>• {t('imports:productsUpdated')}</div>
               <div>{inventoryUpdated}</div>
-              <div>• New products created:</div>
+              <div>• {t('imports:newProductsCreated')}</div>
               <div>{inventoryCreated}</div>
               
               <div className="col-span-2 font-semibold mt-2 pt-2 border-t">
-                Total: {total} products processed
+                {t('imports:totalProductsProcessed', { total })}
               </div>
             </div>
           </div>
@@ -366,8 +368,8 @@ export default function PriceSettingModal({
       
       console.error('Error approving receipt:', error);
       toast({
-        title: "❌ Approval Failed",
-        description: error instanceof Error ? error.message : "Failed to approve receipt. Please try again.",
+        title: `❌ ${t('imports:approvalFailed')}`,
+        description: error instanceof Error ? error.message : t('imports:failedToApproveReceiptTryAgain'),
         variant: "destructive",
         duration: 6000,
       });
@@ -392,18 +394,18 @@ export default function PriceSettingModal({
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Set Selling Prices Before Approval
+              {t('imports:setSellingPricesBeforeApproval')}
             </DialogTitle>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 gap-2">
                   <Settings className="h-3.5 w-3.5" />
-                  <span className="text-xs">Columns</span>
+                  <span className="text-xs">{t('imports:columns')}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-64" align="end">
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold">Show/Hide Columns</h4>
+                  <h4 className="text-sm font-semibold">{t('imports:showHideColumns')}</h4>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -411,7 +413,7 @@ export default function PriceSettingModal({
                         checked={showColumns.sku}
                         onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, sku: !!checked }))}
                       />
-                      <Label htmlFor="col-sku" className="text-xs cursor-pointer">SKU</Label>
+                      <Label htmlFor="col-sku" className="text-xs cursor-pointer">{t('common:sku')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -419,7 +421,7 @@ export default function PriceSettingModal({
                         checked={showColumns.qty}
                         onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, qty: !!checked }))}
                       />
-                      <Label htmlFor="col-qty" className="text-xs cursor-pointer">Quantity</Label>
+                      <Label htmlFor="col-qty" className="text-xs cursor-pointer">{t('common:quantity')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -427,7 +429,7 @@ export default function PriceSettingModal({
                         checked={showColumns.landingCostCzk}
                         onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostCzk: !!checked }))}
                       />
-                      <Label htmlFor="col-landing-czk" className="text-xs cursor-pointer">Landing Cost CZK</Label>
+                      <Label htmlFor="col-landing-czk" className="text-xs cursor-pointer">{t('imports:landingCostCZK')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -435,7 +437,7 @@ export default function PriceSettingModal({
                         checked={showColumns.landingCostEur}
                         onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
                       />
-                      <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
+                      <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">{t('imports:landingCostEUR')}</Label>
                     </div>
                   </div>
                 </div>
@@ -450,7 +452,7 @@ export default function PriceSettingModal({
             <div className="flex items-center gap-3">
               <Repeat className="h-4 w-4 text-blue-600" />
               <label className="text-xs font-semibold text-blue-900 dark:text-blue-100">
-                EUR to CZK Exchange Rate:
+                {t('imports:eurToCzkExchangeRate')}
               </label>
               <Input
                 type="number"
@@ -461,7 +463,7 @@ export default function PriceSettingModal({
                 data-testid="input-exchange-rate"
               />
               <span className="text-xs text-muted-foreground">
-                (CZK auto-fills when EUR is entered)
+                {t('imports:czkAutoFillsWhenEurEntered')}
               </span>
             </div>
           </div>
@@ -472,7 +474,7 @@ export default function PriceSettingModal({
               <div className="flex items-center gap-2 text-xs text-green-800 dark:text-green-200">
                 <CheckCircle className="h-3.5 w-3.5" />
                 <span className="font-medium">
-                  {getItemsToUpdateCount()} {getItemsToUpdateCount() === 1 ? 'item' : 'items'} auto-filled with existing inventory prices (green highlighted)
+                  {getItemsToUpdateCount()} {getItemsToUpdateCount() === 1 ? t('common:item') : t('common:items')} {t('imports:autoFilledWithExistingPrices')}
                 </span>
               </div>
             </div>
@@ -481,18 +483,18 @@ export default function PriceSettingModal({
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2 text-sm">Loading existing prices...</span>
+              <span className="ml-2 text-sm">{t('imports:loadingExistingPrices')}</span>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow className="text-xs">
-                  <TableHead className="py-2">Item</TableHead>
-                  {showColumns.qty && <TableHead className="text-center w-[60px] py-2">Qty</TableHead>}
-                  {showColumns.landingCostCzk && <TableHead className="text-right w-[100px] py-2">Cost CZK</TableHead>}
-                  {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">Cost EUR</TableHead>}
-                  <TableHead className="w-[130px] py-2">Price CZK</TableHead>
-                  <TableHead className="w-[130px] py-2">Price EUR</TableHead>
+                  <TableHead className="py-2">{t('common:item')}</TableHead>
+                  {showColumns.qty && <TableHead className="text-center w-[60px] py-2">{t('common:qty')}</TableHead>}
+                  {showColumns.landingCostCzk && <TableHead className="text-right w-[100px] py-2">{t('imports:costCZK')}</TableHead>}
+                  {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">{t('imports:costEUR')}</TableHead>}
+                  <TableHead className="w-[130px] py-2">{t('imports:priceCZK')}</TableHead>
+                  <TableHead className="w-[130px] py-2">{t('imports:priceEUR')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -510,7 +512,7 @@ export default function PriceSettingModal({
                             {prices.exists && (
                               <Badge variant="outline" className="text-[10px] px-1 py-0">
                                 <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
-                                Exists
+                                {t('imports:exists')}
                               </Badge>
                             )}
                           </div>
@@ -584,27 +586,27 @@ export default function PriceSettingModal({
             <div className="p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                <h3 className="text-xs font-semibold">Summary</h3>
+                <h3 className="text-xs font-semibold">{t('common:summary')}</h3>
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                <div className="text-muted-foreground">New items:</div>
+                <div className="text-muted-foreground">{t('imports:newItems')}</div>
                 <div className="font-medium">{getItemsToAddCount()}</div>
-                <div className="text-muted-foreground">Existing:</div>
+                <div className="text-muted-foreground">{t('imports:existing')}</div>
                 <div className="font-medium">{getItemsToUpdateCount()}</div>
-                <div className="text-muted-foreground">Total units:</div>
+                <div className="text-muted-foreground">{t('imports:totalUnitsLabel')}</div>
                 <div className="font-medium">{items.reduce((sum, item) => sum + item.receivedQuantity, 0)}</div>
               </div>
             </div>
             
             <div className="p-3 bg-muted/50 rounded-lg">
               <label className="text-xs font-semibold mb-2 block">
-                Approver Name
+                {t('imports:approverName')}
               </label>
               <Input
                 value={approvedBy}
                 onChange={(e) => setApprovedBy(e.target.value)}
                 onClick={(e) => e.currentTarget.select()}
-                placeholder="Enter your name"
+                placeholder={t('imports:enterYourName')}
                 className="h-8 text-xs"
                 data-testid="input-approver-name"
               />
@@ -616,11 +618,11 @@ export default function PriceSettingModal({
           {!allPricesSet() && (
             <div className="flex items-center gap-1.5 mr-auto text-xs text-orange-600">
               <AlertCircle className="h-3.5 w-3.5" />
-              Please set all prices before approving
+              {t('imports:pleaseSetAllPricesBeforeApproving')}
             </div>
           )}
           <Button variant="outline" onClick={onClose} disabled={saving} className="h-9 text-xs">
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button
             onClick={handleSaveAndApprove}
@@ -631,12 +633,12 @@ export default function PriceSettingModal({
             {saving ? (
               <>
                 <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-2"></div>
-                Saving...
+                {t('common:saving')}
               </>
             ) : (
               <>
                 <CheckCircle className="h-3.5 w-3.5 mr-2" />
-                Approve & Save Prices
+                {t('imports:approveAndSavePrices')}
               </>
             )}
           </Button>

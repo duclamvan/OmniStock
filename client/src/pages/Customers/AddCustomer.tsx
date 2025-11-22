@@ -526,7 +526,7 @@ export default function AddCustomer() {
       generatedLabel = `${generatedLabel} (#${addressCount})`;
     } else {
       // If no details available, use a simple format
-      generatedLabel = `Address #${addressCount}`;
+      generatedLabel = t('customers:addressNumber', { count: addressCount });
     }
     
     if (generatedLabel) {
@@ -579,7 +579,7 @@ export default function AddCustomer() {
     if (generatedLabel) {
       generatedLabel = `${generatedLabel} (#${addressCount})`;
     } else {
-      generatedLabel = `Address #${addressCount}`;
+      generatedLabel = t('customers:addressNumber', { count: addressCount });
     }
     
     if (generatedLabel) {
@@ -1762,10 +1762,10 @@ export default function AddCustomer() {
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('common:back')}
         </Button>
         <h1 className="text-2xl font-bold text-slate-900">
-          {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+          {isEditMode ? t('customers.editCustomer') : t('customers.addCustomer')}
         </h1>
       </div>
 
@@ -1777,7 +1777,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-500" />
-                    Location & Business Info
+                    {t('customers.locationBusinessInfo')}
                   </CardTitle>
                   <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", customerDetailsOpen ? "rotate-0" : "-rotate-90")} />
                 </div>
@@ -1802,7 +1802,7 @@ export default function AddCustomer() {
                     }}
                   />
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-slate-500">Paste Facebook profile URL to auto-fill ID</p>
+                    <p className="text-xs text-slate-500">{t('customers.pasteFacebookUrlHint')}</p>
                     {extractedFacebookId && (
                       <>
                         <span className="text-xs text-slate-400">•</span>
@@ -1819,7 +1819,7 @@ export default function AddCustomer() {
                       <div className="flex items-start gap-3 mb-3">
                         <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-base font-bold text-amber-900">Customer Already Exists</p>
+                          <p className="text-base font-bold text-amber-900">{t('customers.customerAlreadyExists')}</p>
                           <p className="text-sm text-amber-700 mt-0.5">
                             A customer with Facebook ID "{extractedFacebookId}" already exists in the database
                           </p>
@@ -1852,19 +1852,19 @@ export default function AddCustomer() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                               {duplicateCustomer.billingEmail && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Email:</span>
+                                  <span className="text-slate-500">{t('customers.emailLabel')}</span>
                                   <span className="font-medium text-slate-900">{duplicateCustomer.billingEmail}</span>
                                 </div>
                               )}
                               {duplicateCustomer.billingTel && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Phone:</span>
+                                  <span className="text-slate-500">{t('customers.phoneLabel')}</span>
                                   <span className="font-medium text-slate-900">{duplicateCustomer.billingTel}</span>
                                 </div>
                               )}
                               {duplicateCustomer.country && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Country:</span>
+                                  <span className="text-slate-500">{t('customers.countryLabel')}</span>
                                   <span className="font-medium text-slate-900">
                                     {getCountryFlag(duplicateCustomer.country)} {europeanCountries.find(c => c.code === duplicateCustomer.country)?.name || duplicateCustomer.country}
                                   </span>
@@ -1872,7 +1872,7 @@ export default function AddCustomer() {
                               )}
                               {duplicateCustomer.preferredCurrency && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Currency:</span>
+                                  <span className="text-slate-500">{t('customers.currencyLabel')}</span>
                                   <Badge variant="outline" className="font-medium">
                                     {duplicateCustomer.preferredCurrency}
                                   </Badge>
@@ -1905,11 +1905,11 @@ export default function AddCustomer() {
                     className="text-base"
                     data-testid="input-facebookName"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Optional: Customer's name as shown on Facebook</p>
+                  <p className="text-xs text-slate-500 mt-1">{t('customers.facebookNameOptionalHint')}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
+                  <Label htmlFor="name" className="text-base font-semibold">{t('customers.nameRequiredLabel')}</Label>
                   <Input
                     id="name"
                     {...form.register('name', {
@@ -1922,12 +1922,12 @@ export default function AddCustomer() {
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                   )}
-                  <p className="text-xs text-slate-500 mt-1">Auto-syncs with Facebook name (editable)</p>
+                  <p className="text-xs text-slate-500 mt-1">{t('customers.autoSyncsFacebookName')}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="country" className="text-base font-semibold">Country / Location</Label>
-                  <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
+                  <Label htmlFor="country" className="text-base font-semibold">{t('customers.countryLocation')}</Label>
+                  <p className="text-sm text-slate-500 mb-2">{t('customers.selectPrimaryCountryHint')}</p>
                   <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
                     <PopoverTrigger asChild>
                       <Button
@@ -1957,10 +1957,10 @@ export default function AddCustomer() {
                           data-testid="input-country-search"
                         />
                         <CommandList>
-                          <CommandEmpty>No country found.</CommandEmpty>
+                          <CommandEmpty>{t('customers.noCountryFound')}</CommandEmpty>
                           
                           {pinnedFilteredCountries.length > 0 && (
-                            <CommandGroup heading="Pinned Countries">
+                            <CommandGroup heading={t('customers.pinnedCountries')}>
                               {pinnedFilteredCountries.map((country) => (
                                 <CommandItem
                                   key={country.code}
@@ -2008,7 +2008,7 @@ export default function AddCustomer() {
                           )}
                           
                           {unpinnedFilteredCountries.length > 0 && (
-                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? "All Countries" : undefined}>
+                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? t('customers.allCountries') : undefined}>
                               {unpinnedFilteredCountries.map((country) => (
                                 <CommandItem
                                   key={country.code}
@@ -2064,8 +2064,8 @@ export default function AddCustomer() {
                 </div>
 
                 <div>
-                  <Label htmlFor="preferredCurrency" className="text-base font-semibold">Preferred Currency</Label>
-                  <p className="text-sm text-slate-500 mb-2">Choose the default currency for this customer's orders (CZK or EUR)</p>
+                  <Label htmlFor="preferredCurrency" className="text-base font-semibold">{t('customers.preferredCurrency')}</Label>
+                  <p className="text-sm text-slate-500 mb-2">{t('customers.defaultCurrencyForOrders')}</p>
                   <Select
                     value={form.watch('preferredCurrency')}
                     onValueChange={(value: 'CZK' | 'EUR') => form.setValue('preferredCurrency', value)}
@@ -2074,8 +2074,8 @@ export default function AddCustomer() {
                       <SelectValue placeholder={t('customers.selectCurrency')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EUR" data-testid="option-currency-EUR">EUR (Euro)</SelectItem>
-                      <SelectItem value="CZK" data-testid="option-currency-CZK">CZK (Czech Koruna)</SelectItem>
+                      <SelectItem value="EUR" data-testid="option-currency-EUR">{t('customers.currencyEurWithName')}</SelectItem>
+                      <SelectItem value="CZK" data-testid="option-currency-CZK">{t('customers.currencyCzkWithName')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {form.formState.errors.preferredCurrency && (
@@ -2095,7 +2095,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-orange-500" />
-                    Shipping Addresses
+                    {t('customers.shippingAddresses')}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {!isAddingShipping && (
@@ -2110,7 +2110,7 @@ export default function AddCustomer() {
                         data-testid="button-addShipping"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Shipping Address
+                        {t('customers.addShippingAddress')}
                       </Button>
                     )}
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", shippingAddressesOpen ? "rotate-0" : "-rotate-90")} />
@@ -2138,7 +2138,7 @@ export default function AddCustomer() {
                         onClick={() => handleSetPrimary(index)}
                         data-testid={`button-setPrimary-${index}`}
                       >
-                        Set Primary
+                        {t('customers.setPrimary')}
                       </Button>
                     )}
                     <Button
@@ -2167,8 +2167,8 @@ export default function AddCustomer() {
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
                   {addr.city && <p>{addr.zipCode} {addr.city}</p>}
                   {addr.country && <p>{addr.country}</p>}
-                  {addr.tel && <p>Tel: {addr.tel}</p>}
-                  {addr.email && <p>Email: {addr.email}</p>}
+                  {addr.tel && <p>{t('customers.telLabel')} {addr.tel}</p>}
+                  {addr.email && <p>{t('customers.emailLabel')} {addr.email}</p>}
                 </div>
               </div>
             ))}
@@ -2176,7 +2176,7 @@ export default function AddCustomer() {
             {isAddingShipping && (
               <div className="p-4 border rounded-lg bg-slate-50">
                 <h4 className="font-semibold mb-4">
-                  {editingShippingIndex !== null ? 'Edit' : 'Add'} Shipping Address
+                  {editingShippingIndex !== null ? t('customers.editShippingAddress') : t('customers.addShippingAddressForm')}
                 </h4>
                 <div className="space-y-4">
                   <div>
@@ -2190,14 +2190,14 @@ export default function AddCustomer() {
                       data-testid="input-shippingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Auto-generated from address fields (editable)
+                      {t('customers.autoGeneratedEditable')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="rawShippingAddress">{t('customers.smartPaste')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
+                      {t('customers.smartPasteDescription')}
                     </p>
                     <div className="flex gap-2">
                       <Textarea
@@ -2219,10 +2219,10 @@ export default function AddCustomer() {
                       {parseShippingAddressMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Parsing...
+                          {t('customers.parsing')}
                         </>
                       ) : (
-                        'Parse & Fill'
+                        t('customers.parseFill')
                       )}
                     </Button>
                   </div>
@@ -2238,7 +2238,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="shippingFirstName">First Name *</Label>
+                      <Label htmlFor="shippingFirstName">{t('customers.firstNameRequiredLabel')}</Label>
                       <Input
                         id="shippingFirstName"
                         {...shippingForm.register('firstName')}
@@ -2256,7 +2256,7 @@ export default function AddCustomer() {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="shippingLastName">Last Name *</Label>
+                      <Label htmlFor="shippingLastName">{t('customers.lastNameRequiredLabel')}</Label>
                       <Input
                         id="shippingLastName"
                         {...shippingForm.register('lastName')}
@@ -2434,7 +2434,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500">No countries found</div>
+                              <div className="p-4 text-center text-slate-500">{t('customers.noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2455,7 +2455,7 @@ export default function AddCustomer() {
                       data-testid="button-cancelShipping"
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Cancel
+                      {t('customers.cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -2476,7 +2476,7 @@ export default function AddCustomer() {
                       data-testid="button-saveShipping"
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      Save Address
+                      {t('customers.saveAddress')}
                     </Button>
                   </div>
                 </div>
@@ -2484,7 +2484,7 @@ export default function AddCustomer() {
             )}
 
             {shippingAddresses.length === 0 && !isAddingShipping && (
-              <p className="text-center text-slate-500 py-8">No shipping addresses added yet</p>
+              <p className="text-center text-slate-500 py-8">{t('customers.noShippingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2498,7 +2498,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-blue-500" />
-                    Billing Addresses
+                    {t('customers.billingAddresses')}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {!isAddingBilling && (
@@ -2513,7 +2513,7 @@ export default function AddCustomer() {
                         data-testid="button-addBilling"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Billing Address
+                        {t('customers.addBillingAddress')}
                       </Button>
                     )}
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", billingAddressesOpen ? "rotate-0" : "-rotate-90")} />
@@ -2859,7 +2859,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500">No countries found</div>
+                              <div className="p-4 text-center text-slate-500">{t('customers.noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2879,18 +2879,18 @@ export default function AddCustomer() {
                           placeholder={t('customers.icoPlaceholder')}
                           data-testid="input-billingIco"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Czech company registration number</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('customers.czechCompanyRegistrationHint')}</p>
                       </div>
                     )}
                     <div className={billingAddressForm.watch('country') === 'Czech Republic' ? '' : 'md:col-span-2'}>
-                      <Label htmlFor="billingVatId">VAT ID</Label>
+                      <Label htmlFor="billingVatId">{t('customers.vatId')}</Label>
                       <Input
                         id="billingVatId"
                         {...billingAddressForm.register('vatId')}
                         placeholder={t('customers.vatNumberExamplePlaceholder')}
                         data-testid="input-billingVatId"
                       />
-                      <p className="text-xs text-slate-500 mt-1">Company VAT identification number</p>
+                      <p className="text-xs text-slate-500 mt-1">{t('customers.companyVatIdHint')}</p>
                     </div>
                   </div>
 
@@ -2904,7 +2904,7 @@ export default function AddCustomer() {
                       className="rounded border-gray-300"
                       data-testid="checkbox-billingIsPrimary"
                     />
-                    <Label htmlFor="billingIsPrimary">Set as primary billing address</Label>
+                    <Label htmlFor="billingIsPrimary">{t('customers.setAsPrimaryBillingAddress')}</Label>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4 border-t">
@@ -2920,7 +2920,7 @@ export default function AddCustomer() {
                       data-testid="button-cancelBilling"
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Cancel
+                      {t('customers.cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -2928,7 +2928,7 @@ export default function AddCustomer() {
                       data-testid="button-saveBilling"
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      Save Address
+                      {t('customers.saveAddress')}
                     </Button>
                   </div>
                 </div>
@@ -2936,7 +2936,7 @@ export default function AddCustomer() {
             )}
 
             {billingAddresses.length === 0 && !isAddingBilling && (
-              <p className="text-center text-slate-500 py-8">No billing addresses added yet</p>
+              <p className="text-center text-slate-500 py-8">{t('customers.noBillingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2951,7 +2951,7 @@ export default function AddCustomer() {
                   <div className="flex items-center justify-between w-full">
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-purple-500" />
-                      Tax & Business Information
+                      {t('customers.taxBusinessInformation')}
                     </CardTitle>
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", taxInfoOpen ? "rotate-0" : "-rotate-90")} />
                   </div>
@@ -2963,7 +2963,7 @@ export default function AddCustomer() {
                 <div className="space-y-4 pb-4 border-b">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="text-2xl">🇨🇿</span>
-                    Czech Company Information
+                    {t('customers.czechCompanyInformation')}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2978,7 +2978,7 @@ export default function AddCustomer() {
                         />
                         {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">Enter IČO to auto-fill company details from ARES</p>
+                      <p className="text-xs text-slate-500 mt-1">{t('customers.enterIcoToAutofill')}</p>
                     </div>
                     <div>
                       <Label htmlFor="dic">{t('customers.dic')}</Label>
@@ -2990,7 +2990,7 @@ export default function AddCustomer() {
                         className="bg-slate-50"
                         data-testid="input-dic"
                       />
-                      <p className="text-xs text-slate-500 mt-1">Auto-filled from ARES</p>
+                      <p className="text-xs text-slate-500 mt-1">{t('customers.autoFilledFromAres')}</p>
                     </div>
                   </div>
                 </div>
@@ -3000,7 +3000,7 @@ export default function AddCustomer() {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="text-2xl">🇪🇺</span>
-                    VAT Information
+                    {t('customers.vatInformation')}
                   </h4>
                   <div>
                     <Label htmlFor="vatNumber">{t('customers.vatNumber')}</Label>
@@ -3019,7 +3019,7 @@ export default function AddCustomer() {
                           }}
                           data-testid="input-vatNumber"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Will be validated using EU VIES system</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('customers.willBeValidatedVies')}</p>
                       </div>
                       {isValidatingVat && (
                         <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
@@ -3042,7 +3042,7 @@ export default function AddCustomer() {
                     </div>
                     {vatValidationResult?.companyName && (
                       <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
-                        Company: {vatValidationResult.companyName}
+                        {t('customers.companyLabel')} {vatValidationResult.companyName}
                       </p>
                     )}
                     {vatValidationResult?.error && (

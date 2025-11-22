@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import { 
   Square, 
   Grid3X3, 
@@ -115,6 +116,7 @@ type Tool = "select" | "move" | "create" | "resize";
 type CreateType = "ZONE" | "AISLE" | "RACK" | "SHELF" | "BIN";
 
 export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<Tool>("select");
   const [createType, setCreateType] = useState<CreateType>("ZONE");
@@ -447,11 +449,11 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Layout saved successfully" });
+      toast({ title: t("common:success"), description: t("warehouse:layoutSavedSuccessfully") });
       queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${warehouseCode}/locations`] });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to save layout", variant: "destructive" });
+      toast({ title: t("common:error"), description: t("warehouse:failedToSaveLayout"), variant: "destructive" });
     }
   });
 
@@ -879,9 +881,9 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
           const imported = JSON.parse(e.target?.result as string);
           setState(prev => ({ ...prev, elements: imported, selectedIds: [] }));
           pushHistory();
-          toast({ title: "Success", description: "Layout imported successfully" });
+          toast({ title: t("common:success"), description: t("warehouse:layoutImportedSuccessfully") });
         } catch (error) {
-          toast({ title: "Error", description: "Invalid layout file", variant: "destructive" });
+          toast({ title: t("common:error"), description: t("warehouse:invalidLayoutFile"), variant: "destructive" });
         }
       };
       reader.readAsText(file);
@@ -1465,7 +1467,7 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                               }}
                               id="pickable"
                             />
-                            <Label htmlFor="pickable">Pickable</Label>
+                            <Label htmlFor="pickable">{t('pickable')}</Label>
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -1483,7 +1485,7 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                               }}
                               id="putaway"
                             />
-                            <Label htmlFor="putaway">Putaway Allowed</Label>
+                            <Label htmlFor="putaway">{t('putawayAllowed')}</Label>
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -1501,11 +1503,11 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                               }}
                               id="hazmat"
                             />
-                            <Label htmlFor="hazmat">Hazmat</Label>
+                            <Label htmlFor="hazmat">{t('hazmat')}</Label>
                           </div>
 
                           <div>
-                            <Label htmlFor="temperature">Temperature</Label>
+                            <Label htmlFor="temperature">{t('temperature')}</Label>
                             <Select
                               value={element.metadata?.temperature || "none"}
                               onValueChange={(value) => {
@@ -1520,21 +1522,21 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                               }}
                             >
                               <SelectTrigger id="temperature">
-                                <SelectValue placeholder="None" />
+                                <SelectValue placeholder={t('none')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="frozen">Frozen</SelectItem>
-                                <SelectItem value="cold">Cold</SelectItem>
-                                <SelectItem value="cool">Cool</SelectItem>
-                                <SelectItem value="ambient">Ambient</SelectItem>
-                                <SelectItem value="warm">Warm</SelectItem>
+                                <SelectItem value="none">{t('none')}</SelectItem>
+                                <SelectItem value="frozen">{t('frozen')}</SelectItem>
+                                <SelectItem value="cold">{t('cold')}</SelectItem>
+                                <SelectItem value="cool">{t('cool')}</SelectItem>
+                                <SelectItem value="ambient">{t('ambient')}</SelectItem>
+                                <SelectItem value="warm">{t('warm')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
 
                           <div>
-                            <Label htmlFor="maxWeight">Max Weight (kg)</Label>
+                            <Label htmlFor="maxWeight">{t('maxWeightKg')}</Label>
                             <Input
                               id="maxWeight"
                               type="number"

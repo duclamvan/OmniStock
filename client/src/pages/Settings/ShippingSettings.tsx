@@ -620,7 +620,7 @@ export default function ShippingSettings() {
                     <FormItem>
                       <FormLabel>Available Carriers</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="GLS DE,PPL CZ,DHL DE" data-testid="input-available_carriers" />
+                        <Input {...field} placeholder={t('settings:availableCarriersPlaceholder')} data-testid="input-available_carriers" />
                       </FormControl>
                       <FormDescription>Comma-separated list of available carriers</FormDescription>
                       <FormMessage />

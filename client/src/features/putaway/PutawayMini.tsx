@@ -9,8 +9,10 @@ import { toast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Package, MapPin, TrendingUp, CheckCircle } from "lucide-react";
 import type { PutawaySuggestion } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export function PutawayMini() {
+  const { t } = useTranslation();
   const [productCode, setProductCode] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [selectedSuggestion, setSelectedSuggestion] = useState<PutawaySuggestion | null>(null);
@@ -49,8 +51,8 @@ export function PutawayMini() {
     },
     onSuccess: () => {
       toast({
-        title: "Putaway completed",
-        description: `${quantity} units putaway to ${selectedSuggestion?.locationAddress}`,
+        title: t("warehouse:putawayCompleted"),
+        description: `${quantity} ${t("warehouse:unitsPutawayTo")} ${selectedSuggestion?.locationAddress}`,
       });
       // Reset form
       setProductCode("");
@@ -60,8 +62,8 @@ export function PutawayMini() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to complete putaway.",
+        title: t("common:error"),
+        description: t("warehouse:failedToCompletePutaway"),
         variant: "destructive",
       });
     },
@@ -78,23 +80,23 @@ export function PutawayMini() {
       {/* Input Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Scan Product</CardTitle>
+          <CardTitle>{t("warehouse:scanProduct")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="product">Product Code / Barcode</Label>
+              <Label htmlFor="product">{t("warehouse:productCodeBarcode")}</Label>
               <Input
                 id="product"
                 value={productCode}
                 onChange={(e) => setProductCode(e.target.value)}
-                placeholder="Scan or enter code"
+                placeholder={t("warehouse:scanOrEnterCode")}
                 autoFocus
               />
             </div>
 
             <div>
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="quantity">{t("common:quantity")}</Label>
               <Input
                 id="quantity"
                 type="number"
@@ -112,11 +114,11 @@ export function PutawayMini() {
                     <span className="font-medium">{currentProduct.name}</span>
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    Current Stock: {currentProduct.quantity} units
+                    {t("warehouse:currentStock")}: {currentProduct.quantity} {t("common:units")}
                   </div>
                   {currentProduct.warehouseLocation && (
                     <div className="text-sm text-gray-600">
-                      Current Location: {currentProduct.warehouseLocation}
+                      {t("warehouse:currentLocation")}: {currentProduct.warehouseLocation}
                     </div>
                   )}
                 </CardContent>
@@ -129,7 +131,7 @@ export function PutawayMini() {
       {/* Suggestions Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Suggested Locations</CardTitle>
+          <CardTitle>{t("warehouse:suggestedLocations")}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -153,12 +155,12 @@ export function PutawayMini() {
                         <span className="font-medium">{suggestion.locationAddress}</span>
                       </div>
                       <Badge className={getScoreColor(suggestion.score)}>
-                        Score: {suggestion.score}
+                        {t("warehouse:score")}: {suggestion.score}
                       </Badge>
                     </div>
                     
                     <div className="mt-2 text-sm text-gray-600">
-                      <div>Strategy: {suggestion.strategy}</div>
+                      <div>{t("warehouse:strategy")}: {suggestion.strategy}</div>
                       {suggestion.reason && (
                         <div className="text-xs mt-1">{suggestion.reason}</div>
                       )}
@@ -168,7 +170,7 @@ export function PutawayMini() {
                       {suggestion.priority === "high" && (
                         <Badge variant="destructive" className="text-xs">
                           <TrendingUp className="h-3 w-3 mr-1" />
-                          Priority
+                          {t("warehouse:priority")}
                         </Badge>
                       )}
                     </div>
@@ -178,11 +180,11 @@ export function PutawayMini() {
             </div>
           ) : currentProduct ? (
             <div className="text-center py-8 text-gray-500">
-              No putaway locations available
+              {t("warehouse:noPutawayLocationsAvailable")}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              Scan a product to see putaway suggestions
+              {t("warehouse:scanProductToSeeSuggestions")}
             </div>
           )}
 
@@ -193,7 +195,7 @@ export function PutawayMini() {
               className="w-full mt-4"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              {completeMutation.isPending ? "Processing..." : "Complete Putaway"}
+              {completeMutation.isPending ? t("warehouse:processing") : t("warehouse:completePutaway")}
             </Button>
           )}
         </CardContent>

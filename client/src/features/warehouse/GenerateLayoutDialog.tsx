@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface GenerateLayoutDialogProps {
 }
 
 export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProps) {
+  const { t } = useTranslation('warehouse');
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     zonesStart: "A",
@@ -189,16 +191,16 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
     },
     onSuccess: () => {
       toast({
-        title: "Layout generated",
-        description: "Warehouse layout has been generated successfully.",
+        title: t('layoutGenerated'),
+        description: t('layoutGeneratedSuccess'),
       });
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${warehouseCode}/locations`] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to generate layout.",
+        title: t('error'),
+        description: t('failedToGenerateLayout'),
         variant: "destructive",
       });
     },
@@ -218,17 +220,17 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Generate Layout
+          {t('generateLayout')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Generate Warehouse Layout</DialogTitle>
+          <DialogTitle>{t('generateWarehouseLayout')}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <Label>Zones Range</Label>
+            <Label>{t('zonesRange')}</Label>
             <div className="flex gap-2">
               <Input
                 value={formData.zonesStart}
@@ -236,7 +238,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
                 maxLength={1}
                 className="w-16"
               />
-              <span className="self-center">to</span>
+              <span className="self-center">{t('to')}</span>
               <Input
                 value={formData.zonesEnd}
                 onChange={(e) => setFormData({ ...formData, zonesEnd: e.target.value.toUpperCase() })}
@@ -247,7 +249,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           </div>
 
           <div>
-            <Label>Aisles per Zone</Label>
+            <Label>{t('aislesPerZone')}</Label>
             <Input
               type="number"
               value={formData.aislesPerZone}
@@ -258,7 +260,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           </div>
 
           <div>
-            <Label>Racks per Aisle</Label>
+            <Label>{t('racksPerAisle')}</Label>
             <Input
               type="number"
               value={formData.racksPerAisle}
@@ -269,7 +271,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           </div>
 
           <div>
-            <Label>Shelves per Rack</Label>
+            <Label>{t('shelvesPerRack')}</Label>
             <Input
               type="number"
               value={formData.shelvesPerRack}
@@ -280,7 +282,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           </div>
 
           <div>
-            <Label>Bins per Shelf</Label>
+            <Label>{t('binsPerShelf')}</Label>
             <Input
               type="number"
               value={formData.binsPerShelf}
@@ -291,7 +293,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           </div>
 
           <div>
-            <Label>Total Locations</Label>
+            <Label>{t('totalLocations')}</Label>
             <Badge variant="secondary" className="text-lg px-3 py-1">
               {totalLocations()}
             </Badge>
@@ -300,7 +302,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
 
         <div className="mt-4">
           <Button onClick={generatePreview} variant="outline" className="mb-2">
-            Preview Addresses
+            {t('previewAddresses')}
           </Button>
           
           {preview.length > 0 && (
@@ -309,7 +311,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
                 {preview.map((addr, i) => (
                   <div key={i}>{addr}</div>
                 ))}
-                <div className="text-gray-500">... and {totalLocations() - 10} more</div>
+                <div className="text-gray-500">{t('andMore', { count: totalLocations() - 10 })}</div>
               </div>
             </ScrollArea>
           )}
@@ -321,10 +323,10 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
             disabled={generateMutation.isPending}
             className="flex-1"
           >
-            {generateMutation.isPending ? "Generating..." : "Generate Layout"}
+            {generateMutation.isPending ? t('generating') : t('generateLayout')}
           </Button>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t('cancel')}
           </Button>
         </div>
       </DialogContent>

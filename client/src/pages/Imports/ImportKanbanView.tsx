@@ -330,28 +330,28 @@ export default function ImportKanbanView() {
   const [columns, setColumns] = useState<KanbanColumn[]>([
     {
       id: "processing",
-      title: "Purchase Orders",
+      title: t('purchaseOrders'),
       color: "bg-yellow-50 dark:bg-yellow-900/20",
       icon: <Activity className="h-3.5 w-3.5" />,
       items: []
     },
     {
       id: "at_warehouse",
-      title: "Consolidation",
+      title: t('consolidation'),
       color: "bg-indigo-50 dark:bg-indigo-900/20",
       icon: <Building2 className="h-3.5 w-3.5" />,
       items: []
     },
     {
       id: "international",
-      title: "International Transit",
+      title: t('internationalTransit'),
       color: "bg-orange-50 dark:bg-orange-900/20",
       icon: <Plane className="h-3.5 w-3.5" />,
       items: []
     },
     {
       id: "delivered",
-      title: "Delivered",
+      title: t('delivered'),
       color: "bg-green-50 dark:bg-green-900/20",
       icon: <CheckCircle className="h-3.5 w-3.5" />,
       items: []

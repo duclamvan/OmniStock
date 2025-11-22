@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -58,6 +59,7 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps = {}) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -138,7 +140,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
         <Input
           ref={inputRef}
           type="text"
-          placeholder="Search items, shipments, or customers..."
+          placeholder={t('common:searchItemsShipmentsCustomers')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => {
@@ -162,15 +164,15 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
         <Card className="absolute top-full mt-2 w-full max-h-[80vh] overflow-y-auto z-50 shadow-lg dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           {searchQuery.trim().length === 1 ? (
             <div className="p-4 text-center text-sm text-muted-foreground dark:text-gray-400">
-              Type at least 2 characters to search...
+              {t('common:typeAtLeastTwoCharacters')}
             </div>
           ) : isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground dark:text-gray-400">
-              Searching...
+              {t('common:searching')}
             </div>
           ) : totalResults === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground dark:text-gray-400">
-              No results found for "{searchQuery}"
+              {t('common:noResultsFoundFor', { query: searchQuery })}
             </div>
           ) : (
             <div className="p-2">
@@ -179,7 +181,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                 <div className="mb-4">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Package className="h-3 w-3" />
-                    Current Stock ({results.inventoryItems.length})
+                    {t('common:currentStock')} ({results.inventoryItems.length})
                   </div>
                   {results.inventoryItems.map((item) => (
                     <button
@@ -215,7 +217,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                 <div className="mb-4">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Truck className="h-3 w-3" />
-                    Upcoming Shipments ({results.shipmentItems.length})
+                    {t('common:upcomingShipments')} ({results.shipmentItems.length})
                   </div>
                   {results.shipmentItems.map((item) => (
                     <button
@@ -323,7 +325,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                     <>
                       <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2 mt-2">
                         <ShoppingCart className="h-3 w-3" />
-                        Recent Orders
+                        {t('common:recentOrders')}
                       </div>
                       {results.customers.flatMap(customer => 
                         customer.recentOrders?.map(order => (

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import { 
   Square, 
   Grid3X3, 
@@ -63,6 +64,7 @@ const COLORS = {
 };
 
 export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<DesignElement[]>([]);
   const [selectedElement, setSelectedElement] = useState<DesignElement | null>(null);
@@ -238,15 +240,15 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Layout saved successfully"
+        title: t("common:success"),
+        description: t("warehouse:layoutSavedSuccessfully")
       });
       queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${warehouseCode}/locations`] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save layout",
+        title: t("common:error"),
+        description: t("warehouse:failedToSaveLayout"),
         variant: "destructive"
       });
     }
@@ -443,13 +445,13 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
           const imported = JSON.parse(e.target?.result as string);
           setElements(imported);
           toast({
-            title: "Success",
-            description: "Layout imported successfully"
+            title: t("common:success"),
+            description: t("warehouse:layoutImportedSuccessfully")
           });
         } catch (error) {
           toast({
-            title: "Error",
-            description: "Invalid layout file",
+            title: t("common:error"),
+            description: t("warehouse:invalidLayoutFile"),
             variant: "destructive"
           });
         }
@@ -470,7 +472,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={() => setDragState({ ...dragState, createType: "ZONE" })}
             >
               <Square className="h-4 w-4 mr-2" />
-              Zone
+              {t("common:zone")}
             </Button>
             <Button
               variant={dragState.createType === "AISLE" ? "default" : "outline"}
@@ -478,7 +480,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={() => setDragState({ ...dragState, createType: "AISLE" })}
             >
               <Grid3X3 className="h-4 w-4 mr-2" />
-              Aisle
+              {t("common:aisle")}
             </Button>
             <Button
               variant={dragState.createType === "RACK" ? "default" : "outline"}
@@ -486,7 +488,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={() => setDragState({ ...dragState, createType: "RACK" })}
             >
               <Layers className="h-4 w-4 mr-2" />
-              Rack
+              {t("common:rack")}
             </Button>
             <Button
               variant={dragState.createType === "SHELF" ? "default" : "outline"}
@@ -494,7 +496,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={() => setDragState({ ...dragState, createType: "SHELF" })}
             >
               <Package className="h-4 w-4 mr-2" />
-              Shelf
+              {t("common:shelf")}
             </Button>
             <Button
               variant={dragState.createType === "BIN" ? "default" : "outline"}
@@ -502,7 +504,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={() => setDragState({ ...dragState, createType: "BIN" })}
             >
               <Package className="h-4 w-4 mr-2" />
-              Bin
+              {t("common:bin")}
             </Button>
             
             <div className="border-l mx-2 h-6" />
@@ -512,14 +514,14 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               size="sm"
               onClick={() => setShowGrid(!showGrid)}
             >
-              Grid
+              {t("warehouse:grid")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setSnapToGrid(!snapToGrid)}
             >
-              Snap
+              {t("warehouse:snap")}
             </Button>
             <Button
               variant="outline"
@@ -532,7 +534,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
           
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 px-3 py-1 rounded border">
-              <Label htmlFor="auto-save" className="text-xs">Auto-save</Label>
+              <Label htmlFor="auto-save" className="text-xs">{t("warehouse:autoSave")}</Label>
               <input
                 id="auto-save"
                 type="checkbox"
@@ -541,7 +543,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
                 className="w-3 h-3"
               />
               {saveLayoutMutation.isPending && (
-                <div className="text-xs text-blue-500">Saving...</div>
+                <div className="text-xs text-blue-500">{t("common:saving")}</div>
               )}
             </div>
           </div>
@@ -581,12 +583,12 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               onClick={exportLayout}
             >
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t("common:export")}
             </Button>
             <label htmlFor="import-layout" className="inline-block">
               <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 cursor-pointer">
                 <Upload className="h-4 w-4 mr-2" />
-                Import
+                {t("common:import")}
               </div>
             </label>
             <input
@@ -603,7 +605,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               disabled={saveLayoutMutation.isPending}
             >
               <Save className="h-4 w-4 mr-2" />
-              Save Layout
+              {t("warehouse:saveLayout")}
             </Button>
           </div>
         </div>
@@ -665,11 +667,11 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
         {/* Properties Panel */}
         {showProperties && selectedElement && (
           <div className="w-80 bg-white border-l p-4 overflow-y-auto">
-            <h3 className="font-semibold mb-4">Properties</h3>
+            <h3 className="font-semibold mb-4">{t("warehouse:properties")}</h3>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="element-code">Code</Label>
+                <Label htmlFor="element-code">{t("common:code")}</Label>
                 <Input
                   id="element-code"
                   value={selectedElement.code}
@@ -686,7 +688,7 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
               </div>
               
               <div>
-                <Label htmlFor="element-type">Type</Label>
+                <Label htmlFor="element-type">{t("common:type")}</Label>
                 <Select
                   value={selectedElement.type}
                   onValueChange={(value) => {

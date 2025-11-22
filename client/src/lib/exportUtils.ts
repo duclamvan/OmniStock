@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import i18n from '@/i18n/i18n';
 
 /**
  * Interface for PDF column configuration
@@ -407,7 +408,7 @@ function generatePrintHTML(
       <div class="container">
         <div class="header">
           <h1>${title}</h1>
-          <div class="subtitle">Export Report</div>
+          <div class="subtitle">${i18n.t('reports:exportReport')}</div>
         </div>
 
         <div class="meta-info">

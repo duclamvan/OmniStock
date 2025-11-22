@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
+import i18n from '@/i18n';
 
 export interface UpdateSettingParams {
   key: string;
@@ -40,15 +41,15 @@ export function useAppSettings() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       toast({
-        title: 'Setting Updated',
-        description: `${variables.key} has been updated successfully.`,
+        title: i18n.t('system:settingUpdated'),
+        description: i18n.t('system:settingUpdatedSuccess', { key: variables.key }),
       });
     },
     onError: (error: any) => {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to update setting.',
+        title: i18n.t('common:error'),
+        description: error.message || i18n.t('system:failedToUpdateSetting'),
       });
     },
   });
@@ -64,15 +65,15 @@ export function useAppSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       toast({
-        title: 'Settings Updated',
-        description: 'All settings have been updated successfully.',
+        title: i18n.t('system:settingsUpdated'),
+        description: i18n.t('system:allSettingsUpdatedSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to update settings.',
+        title: i18n.t('common:error'),
+        description: error.message || i18n.t('system:failedToUpdateSettings'),
       });
     },
   });

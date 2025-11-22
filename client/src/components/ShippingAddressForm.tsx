@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +42,10 @@ export function ShippingAddressForm({
   onCancel,
   initialData,
   isSaving = false,
-  title = "New Shipping Address"
+  title
 }: ShippingAddressFormProps) {
+  const { t } = useTranslation();
+  const defaultTitle = title || t('common:newShippingAddress');
   const [shippingAddressSearch, setShippingAddressSearch] = useState("");
   const [shippingAddressSuggestions, setShippingAddressSuggestions] = useState<any[]>([]);
   const [showShippingAddressDropdown, setShowShippingAddressDropdown] = useState(false);
@@ -185,7 +188,7 @@ export function ShippingAddressForm({
   return (
     <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg" data-testid="form-new-address">
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-blue-900">{title}</h4>
+        <h4 className="font-medium text-blue-900">{defaultTitle}</h4>
         <Button
           type="button"
           variant="ghost"
@@ -199,20 +202,20 @@ export function ShippingAddressForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="firstName">First Name *</Label>
+          <Label htmlFor="firstName">{t('common:firstName')} *</Label>
           <Input
             id="firstName"
-            placeholder="John"
+            placeholder={t('common:firstNamePlaceholder')}
             defaultValue={initialData?.firstName}
             data-testid="input-first-name"
             onChange={(e) => generateLabel('firstName', e.target.value)}
           />
         </div>
         <div>
-          <Label htmlFor="lastName">Last Name *</Label>
+          <Label htmlFor="lastName">{t('common:lastName')} *</Label>
           <Input
             id="lastName"
-            placeholder="Doe"
+            placeholder={t('common:lastNamePlaceholder')}
             defaultValue={initialData?.lastName}
             data-testid="input-last-name"
             onChange={(e) => generateLabel('lastName', e.target.value)}
@@ -221,10 +224,10 @@ export function ShippingAddressForm({
       </div>
 
       <div>
-        <Label htmlFor="addressCompany">Company</Label>
+        <Label htmlFor="addressCompany">{t('common:companyName')}</Label>
         <Input
           id="addressCompany"
-          placeholder="Optional"
+          placeholder={t('common:companyNamePlaceholder')}
           defaultValue={initialData?.company}
           data-testid="input-company"
           onChange={(e) => generateLabel('company', e.target.value)}
@@ -233,7 +236,7 @@ export function ShippingAddressForm({
 
       {/* Search Address - Dynamic with autocomplete */}
       <div className="space-y-2">
-        <Label htmlFor="searchAddress">Search Address</Label>
+        <Label htmlFor="searchAddress">{t('common:searchAddress')}</Label>
         <div className="relative">
           <Input
             id="searchAddress"
@@ -253,7 +256,7 @@ export function ShippingAddressForm({
                 setShowShippingAddressDropdown(false);
               }
             }}
-            placeholder="Start typing an address..."
+            placeholder={t('common:startTypingAddress')}
             data-testid="input-search-address"
             className="pr-10"
           />
@@ -278,12 +281,15 @@ export function ShippingAddressForm({
             <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
               {isLoadingShippingSearch ? (
                 <div className="p-4 text-center text-slate-500">
-                  <div className="text-sm">Searching addresses...</div>
+                  <div className="text-sm">{t('common:searchingAddresses')}</div>
                 </div>
               ) : shippingAddressSuggestions.length > 0 ? (
                 <>
                   <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
-                    {shippingAddressSuggestions.length} address{shippingAddressSuggestions.length !== 1 ? 'es' : ''} found
+                    {shippingAddressSuggestions.length === 1 
+                      ? t('common:addressFound', { count: shippingAddressSuggestions.length })
+                      : t('common:addressesFound', { count: shippingAddressSuggestions.length })
+                    }
                   </div>
                   {shippingAddressSuggestions.map((suggestion, index) => (
                     <div
@@ -299,32 +305,32 @@ export function ShippingAddressForm({
                 </>
               ) : (
                 <div className="p-4 text-center text-slate-500">
-                  <div className="text-sm">No addresses found</div>
+                  <div className="text-sm">{t('common:noAddressesFound')}</div>
                 </div>
               )}
             </div>
           )}
         </div>
         <p className="text-xs text-slate-500">
-          Search for an official address to auto-fill the fields below
+          {t('common:searchForOfficialAddress')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="addressStreet">Street *</Label>
+          <Label htmlFor="addressStreet">{t('common:street')} *</Label>
           <Input
             id="addressStreet"
-            placeholder="Main Street"
+            placeholder={t('common:streetNamePlaceholder')}
             defaultValue={initialData?.street}
             data-testid="input-street"
           />
         </div>
         <div>
-          <Label htmlFor="addressStreetNumber">Street Number</Label>
+          <Label htmlFor="addressStreetNumber">{t('common:streetNumber')}</Label>
           <Input
             id="addressStreetNumber"
-            placeholder="123A"
+            placeholder={t('common:streetNumberPlaceholder')}
             defaultValue={initialData?.streetNumber}
             data-testid="input-street-number"
           />
@@ -333,29 +339,29 @@ export function ShippingAddressForm({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="addressCity">City *</Label>
+          <Label htmlFor="addressCity">{t('common:city')} *</Label>
           <Input
             id="addressCity"
-            placeholder="Prague"
+            placeholder={t('common:cityPlaceholder')}
             defaultValue={initialData?.city}
             data-testid="input-city"
             onChange={(e) => generateLabel('city', e.target.value)}
           />
         </div>
         <div>
-          <Label htmlFor="addressZipCode">Zip Code *</Label>
+          <Label htmlFor="addressZipCode">{t('common:zipCode')} *</Label>
           <Input
             id="addressZipCode"
-            placeholder="110 00"
+            placeholder={t('common:zipCodePlaceholder')}
             defaultValue={initialData?.zipCode}
             data-testid="input-zip-code"
           />
         </div>
         <div>
-          <Label htmlFor="addressCountry">Country *</Label>
+          <Label htmlFor="addressCountry">{t('common:country')} *</Label>
           <Input
             id="addressCountry"
-            placeholder="Czechia"
+            placeholder={t('common:czechiaPlaceholder')}
             defaultValue={initialData?.country}
             data-testid="input-country"
           />
@@ -365,20 +371,20 @@ export function ShippingAddressForm({
       {/* Email and Phone */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="addressEmail">Email</Label>
+          <Label htmlFor="addressEmail">{t('common:email')}</Label>
           <Input
             id="addressEmail"
             type="email"
-            placeholder="Optional"
+            placeholder={t('common:emailPlaceholder')}
             defaultValue={initialData?.email}
             data-testid="input-email"
           />
         </div>
         <div>
-          <Label htmlFor="addressTel">Phone</Label>
+          <Label htmlFor="addressTel">{t('common:phone')}</Label>
           <Input
             id="addressTel"
-            placeholder="Optional"
+            placeholder={t('common:phonePlaceholder')}
             defaultValue={initialData?.tel}
             data-testid="input-tel"
           />
@@ -387,11 +393,11 @@ export function ShippingAddressForm({
 
       {/* Label/Name - Moved to bottom, editable but locks when manually changed */}
       <div>
-        <Label htmlFor="addressLabel">Label / Name</Label>
+        <Label htmlFor="addressLabel">{t('common:labelName')}</Label>
         <Input
           id="addressLabel"
           value={addressLabelValue}
-          placeholder="Auto-generated from name and company"
+          placeholder={t('common:autoGeneratedFromName')}
           data-testid="input-label"
           className={labelManuallyEdited ? "bg-white" : "bg-slate-50"}
           onChange={(e) => {
@@ -400,7 +406,7 @@ export function ShippingAddressForm({
           }}
         />
         <p className="text-xs text-slate-500 mt-1">
-          {labelManuallyEdited ? "🔒 Manually edited - auto-generation disabled" : "Auto-generated from name, company, and city"}
+          {labelManuallyEdited ? t('common:manuallyEditedAutoGenerationDisabled') : t('common:autoGeneratedFromNameCompanyCity')}
         </p>
       </div>
 
@@ -411,7 +417,7 @@ export function ShippingAddressForm({
           disabled={isSaving}
           data-testid="button-save-address"
         >
-          {isSaving ? "Saving..." : "Save Address"}
+          {isSaving ? t('common:savingAddress') : t('common:saveAddress')}
         </Button>
         <Button
           type="button"
@@ -419,7 +425,7 @@ export function ShippingAddressForm({
           onClick={onCancel}
           data-testid="button-cancel-new-address"
         >
-          Cancel
+          {t('common:cancel')}
         </Button>
       </div>
     </div>

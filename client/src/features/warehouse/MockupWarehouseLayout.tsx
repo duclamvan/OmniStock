@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,12 +32,13 @@ interface Zone {
 }
 
 export function MockupWarehouseLayout() {
+  const { t } = useTranslation();
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
 
   const zones: Zone[] = [
     {
       id: "Z1",
-      name: "Receiving Area",
+      name: t('warehouse:receivingArea'),
       type: "receiving",
       color: "bg-blue-100 border-blue-300",
       icon: Truck,
@@ -46,7 +48,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z2",
-      name: "Cold Storage",
+      name: t('warehouse:coldStorage'),
       type: "storage",
       color: "bg-cyan-100 border-cyan-300",
       icon: Thermometer,
@@ -57,7 +59,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z3",
-      name: "General Storage",
+      name: t('warehouse:generalStorage'),
       type: "storage",
       color: "bg-gray-100 border-gray-300",
       icon: Archive,
@@ -67,7 +69,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z4",
-      name: "Picking Area",
+      name: t('warehouse:pickingArea'),
       type: "picking",
       color: "bg-green-100 border-green-300",
       icon: ShoppingCart,
@@ -77,7 +79,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z5",
-      name: "Shipping Dock",
+      name: t('warehouse:shippingDock'),
       type: "shipping",
       color: "bg-purple-100 border-purple-300",
       icon: Package,
@@ -87,7 +89,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z6",
-      name: "Returns Processing",
+      name: t('warehouse:returnsProcessing'),
       type: "returns",
       color: "bg-yellow-100 border-yellow-300",
       icon: Clock,
@@ -97,7 +99,7 @@ export function MockupWarehouseLayout() {
     },
     {
       id: "Z7",
-      name: "Quarantine Zone",
+      name: t('warehouse:quarantineZone'),
       type: "quarantine",
       color: "bg-red-100 border-red-300",
       icon: AlertTriangle,
@@ -136,7 +138,7 @@ export function MockupWarehouseLayout() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Locations</p>
+                <p className="text-sm text-gray-500">{t('warehouse:totalLocations')}</p>
                 <p className="text-2xl font-bold">388</p>
               </div>
               <MapPin className="h-8 w-8 text-gray-400" />
@@ -147,7 +149,7 @@ export function MockupWarehouseLayout() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Utilization</p>
+                <p className="text-sm text-gray-500">{t('warehouse:utilization')}</p>
                 <p className="text-2xl font-bold">76.5%</p>
               </div>
               <Grid3x3 className="h-8 w-8 text-gray-400" />
@@ -158,7 +160,7 @@ export function MockupWarehouseLayout() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Items</p>
+                <p className="text-sm text-gray-500">{t('warehouse:totalItems')}</p>
                 <p className="text-2xl font-bold">13,491</p>
               </div>
               <Package className="h-8 w-8 text-gray-400" />
@@ -169,7 +171,7 @@ export function MockupWarehouseLayout() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Active Zones</p>
+                <p className="text-sm text-gray-500">{t('warehouse:activeZones')}</p>
                 <p className="text-2xl font-bold">7</p>
               </div>
               <Layers className="h-8 w-8 text-gray-400" />
@@ -180,15 +182,15 @@ export function MockupWarehouseLayout() {
 
       <Tabs defaultValue="layout" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="layout">2D Layout</TabsTrigger>
-          <TabsTrigger value="zones">Zone Details</TabsTrigger>
-          <TabsTrigger value="heatmap">Utilization Heatmap</TabsTrigger>
+          <TabsTrigger value="layout">{t('warehouse:layout2D')}</TabsTrigger>
+          <TabsTrigger value="zones">{t('warehouse:zoneDetails')}</TabsTrigger>
+          <TabsTrigger value="heatmap">{t('warehouse:utilizationHeatmap')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="layout" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Warehouse Floor Plan</CardTitle>
+              <CardTitle>{t('warehouse:warehouseFloorPlan')}</CardTitle>
             </CardHeader>
             <CardContent>
               {/* Warehouse Layout Grid */}
@@ -205,9 +207,9 @@ export function MockupWarehouseLayout() {
                         <span className="font-semibold text-sm">{zones[0].name}</span>
                       </div>
                       <div className="text-xs space-y-1">
-                        <p>Docks: 1-4</p>
+                        <p>{t('warehouse:docks')}: 1-4</p>
                         <p className={getUtilizationColor(zones[0].utilization)}>
-                          {zones[0].utilization}% Full
+                          {zones[0].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                     </div>
@@ -225,9 +227,9 @@ export function MockupWarehouseLayout() {
                       </div>
                       <div className="text-xs space-y-1">
                         <p>{zones[1].temperature}</p>
-                        <p>Racks: C1-C6</p>
+                        <p>{t('warehouse:racks')}: C1-C6</p>
                         <p className={getUtilizationColor(zones[1].utilization)}>
-                          {zones[1].utilization}% Full
+                          {zones[1].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                     </div>
@@ -250,7 +252,7 @@ export function MockupWarehouseLayout() {
                               <div
                                 key={rack}
                                 className="bg-gray-300 rounded text-xs p-1 text-center hover:bg-gray-400"
-                                title={`Rack ${rack}`}
+                                title={`${t('warehouse:rack')} ${rack}`}
                               >
                                 {rack}
                               </div>
@@ -259,7 +261,7 @@ export function MockupWarehouseLayout() {
                         ))}
                       </div>
                       <p className={`text-xs mt-2 ${getUtilizationColor(zones[2].utilization)}`}>
-                        {zones[2].utilization}% Full
+                        {zones[2].utilization}{t('warehouse:percentFull')}
                       </p>
                     </div>
                   </div>
@@ -275,9 +277,9 @@ export function MockupWarehouseLayout() {
                         <span className="font-semibold text-sm">{zones[4].name}</span>
                       </div>
                       <div className="text-xs space-y-1">
-                        <p>Docks: 5-8</p>
+                        <p>{t('warehouse:docks')}: 5-8</p>
                         <p className={getUtilizationColor(zones[4].utilization)}>
-                          {zones[4].utilization}% Full
+                          {zones[4].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                     </div>
@@ -294,9 +296,9 @@ export function MockupWarehouseLayout() {
                         <span className="font-semibold text-sm">{zones[3].name}</span>
                       </div>
                       <div className="text-xs space-y-1">
-                        <p>Stations: P1-P12</p>
+                        <p>{t('warehouse:stations')}: P1-P12</p>
                         <p className={getUtilizationColor(zones[3].utilization)}>
-                          {zones[3].utilization}% Full
+                          {zones[3].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                     </div>
@@ -314,7 +316,7 @@ export function MockupWarehouseLayout() {
                           <span className="font-semibold text-xs">{zones[5].name}</span>
                         </div>
                         <p className={`text-xs mt-1 ${getUtilizationColor(zones[5].utilization)}`}>
-                          {zones[5].utilization}% Full
+                          {zones[5].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                       <div 
@@ -326,7 +328,7 @@ export function MockupWarehouseLayout() {
                           <span className="font-semibold text-xs">{zones[6].name}</span>
                         </div>
                         <p className={`text-xs mt-1 ${getUtilizationColor(zones[6].utilization)}`}>
-                          {zones[6].utilization}% Full
+                          {zones[6].utilization}{t('warehouse:percentFull')}
                         </p>
                       </div>
                     </div>
@@ -337,15 +339,15 @@ export function MockupWarehouseLayout() {
                 <div className="mt-6 flex flex-wrap gap-4 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span>Low Utilization (&lt;50%)</span>
+                    <span>{t('warehouse:lowUtilization')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span>Medium Utilization (50-80%)</span>
+                    <span>{t('warehouse:mediumUtilization')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span>High Utilization (&gt;80%)</span>
+                    <span>{t('warehouse:highUtilization')}</span>
                   </div>
                 </div>
               </div>
@@ -358,25 +360,25 @@ export function MockupWarehouseLayout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <selectedZone.icon className="h-5 w-5" />
-                  {selectedZone.name} Details
+                  {selectedZone.name} {t('warehouse:details')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Zone ID</p>
+                    <p className="text-sm text-gray-500">{t('warehouse:zoneId')}</p>
                     <p className="font-semibold">{selectedZone.id}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Locations</p>
+                    <p className="text-sm text-gray-500">{t('warehouse:locations')}</p>
                     <p className="font-semibold">{selectedZone.locations}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Items Stored</p>
+                    <p className="text-sm text-gray-500">{t('warehouse:itemsStored')}</p>
                     <p className="font-semibold">{selectedZone.items?.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Utilization</p>
+                    <p className="text-sm text-gray-500">{t('warehouse:utilization')}</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div 
@@ -391,7 +393,7 @@ export function MockupWarehouseLayout() {
                   </div>
                   {selectedZone.temperature && (
                     <div>
-                      <p className="text-sm text-gray-500">Temperature</p>
+                      <p className="text-sm text-gray-500">{t('warehouse:temperature')}</p>
                       <p className="font-semibold">{selectedZone.temperature}</p>
                     </div>
                   )}
@@ -417,22 +419,22 @@ export function MockupWarehouseLayout() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">Locations</span>
+                      <span className="text-sm text-gray-500">{t('warehouse:locations')}</span>
                       <span className="font-semibold">{zone.locations}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">Items</span>
+                      <span className="text-sm text-gray-500">{t('warehouse:items')}</span>
                       <span className="font-semibold">{zone.items?.toLocaleString()}</span>
                     </div>
                     {zone.temperature && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Temperature</span>
+                        <span className="text-sm text-gray-500">{t('warehouse:temperature')}</span>
                         <Badge variant="secondary">{zone.temperature}</Badge>
                       </div>
                     )}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-500">Utilization</span>
+                        <span className="text-sm text-gray-500">{t('warehouse:utilization')}</span>
                         <span className={`text-sm font-semibold ${getUtilizationColor(zone.utilization)}`}>
                           {zone.utilization}%
                         </span>
@@ -454,7 +456,7 @@ export function MockupWarehouseLayout() {
         <TabsContent value="heatmap" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Warehouse Utilization Heatmap</CardTitle>
+              <CardTitle>{t('warehouse:warehouseUtilizationHeatmap')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-8 gap-1">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ interface ShippingLabelProps {
 }
 
 export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
+  const { t } = useTranslation('shipping');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -54,8 +56,8 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
       apiRequest('POST', '/api/shipping/create-label', data),
     onSuccess: (data) => {
       toast({
-        title: "PPL Label Created",
-        description: `Label created successfully. Tracking: ${data.trackingNumber || 'N/A'}`
+        title: t('shipping:pplLabelCreated'),
+        description: t('shipping:labelCreatedSuccessfully', { trackingNumber: data.trackingNumber || 'N/A' })
       });
       setIsDialogOpen(false);
       onLabelCreated?.(data);
@@ -63,8 +65,8 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Create PPL Label",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToCreatePplLabel'),
+        description: error.message || t('shipping:unknownErrorOccurred'),
         variant: "destructive"
       });
     }
@@ -85,14 +87,14 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2" data-testid="button-create-label">
           <Package className="w-4 h-4" />
-          Create PPL Label
+          {t('shipping:createPplLabel')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create PPL Shipping Label</DialogTitle>
+          <DialogTitle>{t('shipping:createPplShippingLabel')}</DialogTitle>
           <DialogDescription>
-            Generate a PPL shipping label for order {order.orderId}
+            {t('shipping:generatePplShippingLabel', { orderId: order.orderId })}
           </DialogDescription>
         </DialogHeader>
 
@@ -100,24 +102,24 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
           {/* Order Summary */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Order Summary</CardTitle>
+              <CardTitle className="text-lg">{t('shipping:orderSummary')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">Customer:</span> {order.customerName}
+                  <span className="font-medium">{t('shipping:customer')}:</span> {order.customerName}
                 </div>
                 <div>
-                  <span className="font-medium">Order ID:</span> {order.orderId}
+                  <span className="font-medium">{t('shipping:orderId')}:</span> {order.orderId}
                 </div>
                 <div className="col-span-2">
-                  <span className="font-medium">Address:</span> {order.shippingAddress}
+                  <span className="font-medium">{t('shipping:address')}:</span> {order.shippingAddress}
                 </div>
                 <div>
-                  <span className="font-medium">Items:</span> {order.items.length}
+                  <span className="font-medium">{t('shipping:items')}:</span> {order.items.length}
                 </div>
                 <div>
-                  <span className="font-medium">Weight:</span> {order.weight ? `${order.weight} kg` : 'Not set'}
+                  <span className="font-medium">{t('shipping:weight')}:</span> {order.weight ? `${order.weight} kg` : t('shipping:notSet')}
                 </div>
               </div>
             </CardContent>
@@ -128,14 +130,14 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Banknote className="w-5 h-5" />
-                Dobírka (Cash on Delivery)
+                {t('shipping:dobirka')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dobirka-amount" data-testid="label-dobirka-amount">
-                    COD Amount (optional)
+                    {t('shipping:codAmountOptional')}
                   </Label>
                   <Input
                     id="dobirka-amount"
@@ -150,7 +152,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dobirka-currency" data-testid="label-dobirka-currency">
-                    Currency
+                    {t('shipping:currency')}
                   </Label>
                   <Select value={codCurrency} onValueChange={setDobirkaCurrency}>
                     <SelectTrigger id="dobirka-currency" data-testid="select-dobirka-currency">
@@ -167,7 +169,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
               <Alert>
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>
-                  If you specify a COD amount, the carrier will collect this amount from the recipient upon delivery.
+                  {t('shipping:codCollectionNote')}
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -180,7 +182,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
               onClick={() => setIsDialogOpen(false)}
               data-testid="button-cancel"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button 
               onClick={handleCreateLabel}
@@ -191,12 +193,12 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
               {createLabelMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {t('shipping:creating')}
                 </>
               ) : (
                 <>
                   <Package className="w-4 h-4" />
-                  Create PPL Label
+                  {t('shipping:createPplLabel')}
                 </>
               )}
             </Button>
@@ -215,12 +217,14 @@ interface ShippingStatusProps {
 }
 
 export function ShippingStatus({ trackingNumber, carrier, trackingUrl }: ShippingStatusProps) {
+  const { t } = useTranslation('shipping');
+
   if (!trackingNumber) {
     return (
       <Alert>
         <AlertCircle className="w-4 h-4" />
         <AlertDescription>
-          No shipping label created yet.
+          {t('shipping:noShippingLabelCreated')}
         </AlertDescription>
       </Alert>
     );
@@ -231,18 +235,18 @@ export function ShippingStatus({ trackingNumber, carrier, trackingUrl }: Shippin
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-green-600" />
-          Shipping Label Created
+          {t('shipping:shippingLabelCreated')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium">Tracking Number:</span>
+            <span className="font-medium">{t('orders:trackingNumber')}:</span>
             <p className="font-mono">{trackingNumber}</p>
           </div>
           {carrier && (
             <div>
-              <span className="font-medium">Carrier:</span>
+              <span className="font-medium">{t('orders:carrier')}:</span>
               <p>{carrier}</p>
             </div>
           )}
@@ -252,7 +256,7 @@ export function ShippingStatus({ trackingNumber, carrier, trackingUrl }: Shippin
           <Button variant="outline" size="sm" asChild>
             <a href={trackingUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-4 h-4 mr-2" />
-              Track Package
+              {t('shipping:trackPackage')}
             </a>
           </Button>
         )}

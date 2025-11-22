@@ -540,8 +540,8 @@ export default function ProductLocations({
                 : 'text-slate-600 dark:text-slate-400'
             }`}>
               {stockDifference === 0 
-                ? 'Quantity matches' 
-                : `Product: ${productQuantity}`}
+                ? t('common:quantityMatches') 
+                : t('common:productQuantity', { quantity: productQuantity })}
             </p>
           </div>
 
@@ -555,7 +555,7 @@ export default function ProductLocations({
                 {formatLocationCode(primaryLocation.locationCode)}
               </p>
               <p className="text-sm text-blue-600 dark:text-blue-400" data-testid="text-primary-quantity">
-                {primaryLocation.quantity} units
+                {primaryLocation.quantity} {t('common:units')}
               </p>
             </div>
           )}
@@ -654,7 +654,7 @@ export default function ProductLocations({
                                   data-testid={`menu-move-${location.id}`}
                                 >
                                   <MoveRight className="h-4 w-4 mr-2" />
-                                  Move Inventory
+                                  {t('common:moveInventory')}
                                 </DropdownMenuItem>
                               )}
 
@@ -666,7 +666,7 @@ export default function ProductLocations({
                                 data-testid={`menu-delete-${location.id}`}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Location
+                                {t('common:deleteLocation')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -681,9 +681,9 @@ export default function ProductLocations({
         ) : (
           <div className="text-center py-8 text-slate-500">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-            <p>No locations assigned yet</p>
+            <p>{t('common:noLocationsAssigned')}</p>
             {!readOnly && (
-              <p className="text-sm mt-1">Click "Add Location" to assign storage locations</p>
+              <p className="text-sm mt-1">{t('common:addLocationDescription')}</p>
             )}
           </div>
         )}
@@ -697,7 +697,7 @@ export default function ProductLocations({
       <Dialog open={!!editLocation} onOpenChange={(open) => !open && setEditLocation(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Location</DialogTitle>
+            <DialogTitle>{t('common:editLocation')}</DialogTitle>
             <DialogDescription>
               Update location details for {productName}
             </DialogDescription>
@@ -713,7 +713,7 @@ export default function ProductLocations({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-quantity">Quantity at Location</Label>
+                <Label htmlFor="edit-quantity">{t('common:quantityAtLocation')}</Label>
                 <Input
                   id="edit-quantity"
                   type="number"
@@ -747,7 +747,7 @@ export default function ProductLocations({
                 id="edit-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Optional notes about this location"
+                placeholder={t('common:optionalNotesAboutLocation')}
                 rows={2}
                 data-testid="textarea-edit-notes"
               />
@@ -779,7 +779,7 @@ export default function ProductLocations({
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move Inventory</DialogTitle>
+            <DialogTitle>{t('common:moveInventory')}</DialogTitle>
             <DialogDescription>
               Move inventory from {moveFromLocation?.locationCode} to another location
             </DialogDescription>
@@ -787,23 +787,23 @@ export default function ProductLocations({
 
           <div className="space-y-4 py-4">
             <div>
-              <Label>From Location</Label>
+              <Label>{t('common:fromLocation')}</Label>
               <div className="mt-1 p-3 bg-slate-50 rounded-md">
                 <p className="font-mono font-medium">{moveFromLocation?.locationCode}</p>
                 <p className="text-sm text-slate-600">
-                  Available: {moveFromLocation?.quantity} units
+                  Available: {moveFromLocation?.quantity} {t('common:units')}
                 </p>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="move-to">To Location</Label>
+              <Label htmlFor="move-to">{t('common:toLocation')}</Label>
               <Select
                 value={moveToLocation}
                 onValueChange={setMoveToLocation}
               >
                 <SelectTrigger id="move-to" data-testid="select-move-to">
-                  <SelectValue placeholder="Select destination location" />
+                  <SelectValue placeholder={t('common:selectDestinationLocation')} />
                 </SelectTrigger>
                 <SelectContent>
                   {locations
@@ -814,7 +814,7 @@ export default function ProductLocations({
                         value={loc.id}
                         data-testid={`option-move-to-${loc.id}`}
                       >
-                        {loc.locationCode} ({loc.quantity} units)
+                        {loc.locationCode} ({loc.quantity} {t('common:units')})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -822,7 +822,7 @@ export default function ProductLocations({
             </div>
 
             <div>
-              <Label htmlFor="move-quantity">Quantity to Move</Label>
+              <Label htmlFor="move-quantity">{t('common:quantityToMove')}</Label>
               <Input
                 id="move-quantity"
                 type="number"
@@ -850,7 +850,7 @@ export default function ProductLocations({
               disabled={moveInventoryMutation.isPending}
               data-testid="button-confirm-move"
             >
-              Move Inventory
+              {t('common:moveInventory')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -860,26 +860,26 @@ export default function ProductLocations({
       <AlertDialog open={!!deleteLocation} onOpenChange={(open) => !open && setDeleteLocation(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+            <AlertDialogTitle>{t('common:deleteLocation')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete location{" "}
               <span className="font-mono font-semibold">{deleteLocation?.locationCode}</span>?
               {deleteLocation?.quantity && deleteLocation.quantity > 0 && (
                 <span className="block mt-2 text-red-600">
-                  Warning: This location contains {deleteLocation.quantity} units. Consider moving
+                  Warning: This location contains {deleteLocation.quantity} {t('common:units')}. Consider moving
                   the inventory first.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteLocation && deleteLocationMutation.mutate(deleteLocation.id)}
               className="bg-red-600 hover:bg-red-700"
               data-testid="button-confirm-delete"
             >
-              Delete Location
+              {t('common:deleteLocation')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

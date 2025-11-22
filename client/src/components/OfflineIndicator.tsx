@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WifiOff, Wifi, CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { offlineQueue } from "@/lib/offlineQueue";
 
 export function OfflineIndicator() {
+  const { t } = useTranslation();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
@@ -57,29 +59,29 @@ export function OfflineIndicator() {
         {failedCount > 0 ? (
           <>
             <AlertTriangle className="h-3 w-3" />
-            <span>{failedCount} failed sync(s)</span>
+            <span>{t('common:failedSyncs', { count: failedCount })}</span>
           </>
         ) : isOnline ? (
           <>
             {pendingCount > 0 ? (
               <>
                 <RefreshCw className="h-3 w-3 animate-spin" />
-                <span>Syncing {pendingCount} change(s)...</span>
+                <span>{t('common:syncingChanges', { count: pendingCount })}</span>
               </>
             ) : (
               <>
                 <Wifi className="h-3 w-3" />
-                <span>Online</span>
+                <span>{t('common:online')}</span>
               </>
             )}
           </>
         ) : (
           <>
             <CloudOff className="h-3 w-3" />
-            <span>Offline Mode</span>
+            <span>{t('common:offlineMode')}</span>
             {pendingCount > 0 && (
               <span className="ml-1 bg-white/20 rounded-full px-2 py-0.5">
-                {pendingCount} pending
+                {pendingCount} {t('common:pending')}
               </span>
             )}
           </>
@@ -95,7 +97,7 @@ export function OfflineIndicator() {
           data-testid="button-retry-failed-syncs"
         >
           <RefreshCw className="h-3 w-3 mr-1" />
-          Retry Failed Syncs
+          {t('common:retryFailedSyncs')}
         </Button>
       )}
     </div>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from 'react-i18next';
 import { 
   AlertCircle,
   RefreshCcw,
@@ -79,24 +80,25 @@ interface AddCostModalProps {
   onSave: () => void;
 }
 
-const costFormSchema = z.object({
-  type: z.enum(['FREIGHT', 'BROKERAGE', 'INSURANCE', 'PACKAGING', 'OTHER']),
-  mode: z.enum(['AIR', 'SEA', 'COURIER']).optional().nullable(),
-  amountOriginal: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-    message: "Amount must be a positive number"
-  }),
-  currency: z.string().min(1, "Currency is required"),
-  volumetricDivisor: z.string().optional(),
-  fxRate: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type CostFormValues = z.infer<typeof costFormSchema>;
-
 const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) => {
   const { toast } = useToast();
+  const { t } = useTranslation('imports');
   const [fetchingRate, setFetchingRate] = useState(false);
   const isEditing = !!cost;
+
+  const costFormSchema = z.object({
+    type: z.enum(['FREIGHT', 'BROKERAGE', 'INSURANCE', 'PACKAGING', 'OTHER']),
+    mode: z.enum(['AIR', 'SEA', 'COURIER']).optional().nullable(),
+    amountOriginal: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+      message: t('amountMustBePositive')
+    }),
+    currency: z.string().min(1, t('currencyRequired')),
+    volumetricDivisor: z.string().optional(),
+    fxRate: z.string().optional(),
+    notes: z.string().optional(),
+  });
+
+  type CostFormValues = z.infer<typeof costFormSchema>;
 
   const form = useForm<CostFormValues>({
     resolver: zodResolver(costFormSchema),
@@ -153,13 +155,13 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
       const rate = mockRates[watchCurrency] || 1;
       form.setValue('fxRate', rate.toString());
       toast({
-        title: "Exchange Rate Updated",
+        title: t('exchangeRateUpdated'),
         description: `1 ${watchCurrency} = ${rate} EUR`,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to fetch exchange rate",
+        title: t('error'),
+        description: t('failedToFetchExchangeRate'),
         variant: "destructive"
       });
     } finally {
@@ -188,16 +190,16 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
     },
     onSuccess: () => {
       toast({
-        title: isEditing ? "Cost Updated" : "Cost Added",
-        description: isEditing ? "Cost line has been updated" : "New cost line has been added",
+        title: isEditing ? t('costUpdated') : t('costAdded'),
+        description: isEditing ? t('costLineUpdated') : t('newCostLineAdded'),
       });
       onSave();
       onClose();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || `Failed to ${isEditing ? 'update' : 'add'} cost`,
+        title: t('error'),
+        description: error.message || (isEditing ? t('failedToUpdateCost') : t('failedToAddCost')),
         variant: "destructive"
       });
     }
@@ -220,9 +222,9 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Cost' : 'Add Cost'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('editCost') : t('addCost')}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Update the details of this cost line' : 'Add a new cost line to this shipment'}
+            {isEditing ? t('updateCostLineDetails') : t('addNewCostLine')}
           </DialogDescription>
         </DialogHeader>
 
@@ -234,19 +236,19 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cost Type</FormLabel>
+                  <FormLabel>{t('costType')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-cost-type">
-                        <SelectValue placeholder="Select cost type" />
+                        <SelectValue placeholder={t('selectCostType')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="FREIGHT">Freight</SelectItem>
-                      <SelectItem value="BROKERAGE">Customs Fee</SelectItem>
-                      <SelectItem value="INSURANCE">Insurance</SelectItem>
-                      <SelectItem value="PACKAGING">Packaging</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
+                      <SelectItem value="FREIGHT">{t('freight')}</SelectItem>
+                      <SelectItem value="BROKERAGE">{t('customsFee')}</SelectItem>
+                      <SelectItem value="INSURANCE">{t('insurance')}</SelectItem>
+                      <SelectItem value="PACKAGING">{t('packaging')}</SelectItem>
+                      <SelectItem value="OTHER">{t('other')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -262,24 +264,24 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                   name="mode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shipping Mode</FormLabel>
+                      <FormLabel>{t('shippingMode')}</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-shipping-mode">
-                            <SelectValue placeholder="Select shipping mode" />
+                            <SelectValue placeholder={t('selectShippingMode')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="AIR">Air Freight</SelectItem>
-                          <SelectItem value="SEA">Sea Freight</SelectItem>
-                          <SelectItem value="COURIER">Courier/Express</SelectItem>
+                          <SelectItem value="AIR">{t('airFreight')}</SelectItem>
+                          <SelectItem value="SEA">{t('seaFreight')}</SelectItem>
+                          <SelectItem value="COURIER">{t('courierExpress')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        This affects volumetric weight calculations
+                        {t('affectsVolumetricWeight')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -292,15 +294,15 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Volumetric Divisor
+                        {t('volumetricDivisor')}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="h-3 w-3 ml-2 inline-block cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Used to calculate volumetric weight</p>
-                              <p>Standard: Air=6000, Sea=1000000, Courier=5000</p>
+                              <p>{t('volumetricWeightHelper')}</p>
+                              <p>{t('volumetricStandard')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -327,7 +329,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                 name="amountOriginal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>{t('amount')}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -347,11 +349,11 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Currency</FormLabel>
+                    <FormLabel>{t('currency')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-currency">
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder={t('selectCurrency')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -376,7 +378,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Exchange Rate (1 {watchCurrency} = ? EUR)
+                      {t('exchangeRate', { currency: watchCurrency })}
                     </FormLabel>
                     <div className="flex gap-2">
                       <FormControl>
@@ -400,13 +402,13 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                         ) : (
                           <>
                             <RefreshCcw className="h-4 w-4 mr-2" />
-                            Fetch
+                            {t('fetch')}
                           </>
                         )}
                       </Button>
                     </div>
                     <FormDescription>
-                      Leave blank to auto-fetch current rate
+                      {t('leaveBlankAutoFetch')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -418,7 +420,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
             {watchAmount && form.watch('fxRate') && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Converted Amount</AlertTitle>
+                <AlertTitle>{t('convertedAmount')}</AlertTitle>
                 <AlertDescription>
                   {watchAmount} {watchCurrency} = <strong>{calculateBaseAmount()} EUR</strong>
                   {watchCurrency !== 'EUR' && (
@@ -436,10 +438,10 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormLabel>{t('notesOptional')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Add any relevant notes about this cost..."
+                      placeholder={t('addRelevantNotes')}
                       className="resize-none"
                       rows={3}
                       {...field}
@@ -447,7 +449,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                     />
                   </FormControl>
                   <FormDescription>
-                    Any additional information about this cost
+                    {t('additionalCostInfo')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -461,7 +463,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                 onClick={onClose}
                 disabled={saveCostMutation.isPending}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 type="submit" 
@@ -471,10 +473,10 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                 {saveCostMutation.isPending ? (
                   <>
                     <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('saving')}
                   </>
                 ) : (
-                  isEditing ? 'Update Cost' : 'Add Cost'
+                  isEditing ? t('updateCost') : t('addCost')
                 )}
               </Button>
             </DialogFooter>

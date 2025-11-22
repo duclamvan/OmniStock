@@ -42,18 +42,18 @@ interface CustomerPrice {
   variant?: ProductVariant | null;
 }
 
-const createCustomerPriceSchema = (t: (key: string) => string) => z.object({
-  productId: z.string().min(1, t('customers.productRequired')),
+const customerPriceSchema = z.object({
+  productId: z.string().min(1, 'Product is required'),
   variantId: z.string().optional(),
-  price: z.coerce.number().positive(t('customers.pricePositive')),
+  price: z.coerce.number().positive('Price must be positive'),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
-  validFrom: z.string().min(1, t('customers.validFromRequired')),
+  validFrom: z.string().min(1, 'Valid from date is required'),
   validTo: z.string().optional(),
   isActive: z.boolean().default(true),
   notes: z.string().optional(),
 });
 
-type CreateCustomerPriceInput = z.infer<typeof createCustomerPriceSchema>;
+type CreateCustomerPriceInput = z.infer<typeof customerPriceSchema>;
 
 interface CustomerPricesProps {
   customerId: string;
@@ -88,7 +88,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   );
 
   const form = useForm<CreateCustomerPriceInput>({
-    resolver: zodResolver(createCustomerPriceSchema(t)),
+    resolver: zodResolver(customerPriceSchema),
     defaultValues: {
       productId: '',
       variantId: '',
@@ -218,7 +218,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   const columns = [
     {
       key: 'productId',
-      header: 'Product',
+      header: t('customers.product'),
       accessorKey: 'productId',
       className: 'min-w-[120px]',
       cell: (row: any) => {
@@ -238,7 +238,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     },
     {
       key: 'price',
-      header: 'Price',
+      header: t('customers.price'),
       accessorKey: 'price',
       className: 'text-right',
       cell: (row: any) => (
@@ -263,20 +263,20 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       className: 'hidden lg:table-cell',
       cell: (row: any) => (
         <span className="text-xs">
-          {row.validTo ? format(new Date(row.validTo), 'dd/MM/yy') : 'No expiry'}
+          {row.validTo ? format(new Date(row.validTo), 'dd/MM/yy') : t('customers.noExpiry')}
         </span>
       ),
     },
     {
       key: 'isActive',
-      header: 'Status',
+      header: t('customers.status'),
       accessorKey: 'isActive',
       cell: (row: any) => (
         <Badge 
           variant={row.isActive ? 'default' : 'secondary'}
           className="text-xs px-1.5 py-0"
         >
-          {row.isActive ? 'Active' : 'Inactive'}
+          {row.isActive ? t('customers.active') : t('customers.inactive')}
         </Badge>
       ),
     },
@@ -355,13 +355,13 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     variant="outline"
                     onClick={() => setIsBulkDialogOpen(false)}
                   >
-                    Cancel
+                    {t('customers.cancel')}
                   </Button>
                   <Button
                     onClick={handleBulkImport}
                     disabled={!csvContent.trim() || bulkImportMutation.isPending}
                   >
-                    Import
+                    {t('customers.import')}
                   </Button>
                 </div>
               </div>
@@ -578,10 +578,10 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       variant="outline"
                       onClick={() => setIsAddDialogOpen(false)}
                     >
-                      Cancel
+                      {t('customers.cancel')}
                     </Button>
                     <Button type="submit" disabled={createPriceMutation.isPending}>
-                      Add Price
+                      {t('customers.addPrice')}
                     </Button>
                   </div>
                 </form>
@@ -600,9 +600,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 <Tag className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
               <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">0</p>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">No custom prices</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('customers.noCustomPrices')}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Add custom prices to override default product pricing
+                {t('customers.addCustomPricesToOverride')}
               </p>
             </div>
           </CardContent>
@@ -627,11 +627,11 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                            {product?.name || 'Unknown Product'}
+                            {product?.name || t('customers.unknownProduct')}
                           </p>
                           {price.variantId && (
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Variant: {price.variantId}
+                              {t('customers.variantLabel')} {price.variantId}
                             </p>
                           )}
                         </div>
@@ -640,7 +640,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                             variant={isActive ? 'default' : 'secondary'}
                             className="text-xs px-2 py-0.5"
                           >
-                            {isExpired ? 'Expired' : price.isActive ? 'Active' : 'Inactive'}
+                            {isExpired ? t('customers.expired') : price.isActive ? t('customers.active') : t('customers.inactive')}
                           </Badge>
                           <Button
                             variant="ghost"
@@ -657,19 +657,19 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       {/* Middle Row - Price Comparison */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Custom Price</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customers.customPrice')}</p>
                           <p className="font-bold text-lg text-gray-900 dark:text-gray-100">
                             {customPrice.toFixed(2)} {price.currency}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Standard Price</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customers.standardPrice')}</p>
                           <p className="font-medium text-gray-600 dark:text-gray-300">
                             {standardPrice.toFixed(2)} {price.currency}
                           </p>
                           {discount > 0 && (
                             <Badge variant="outline" className="text-xs mt-1 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
-                              -{discount}% discount
+                              -{discount}% {t('customers.discount')}
                             </Badge>
                           )}
                         </div>
@@ -686,7 +686,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                         <div>
                           <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customers.validTo')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {price.validTo ? format(new Date(price.validTo), 'dd/MM/yyyy') : 'No expiry'}
+                            {price.validTo ? format(new Date(price.validTo), 'dd/MM/yyyy') : t('customers.noExpiry')}
                           </p>
                         </div>
                       </div>
@@ -694,7 +694,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       {/* Notes if available */}
                       {price.notes && (
                         <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Notes</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('customers.notes')}</p>
                           <p className="text-sm text-gray-700 dark:text-gray-300">{price.notes}</p>
                         </div>
                       )}

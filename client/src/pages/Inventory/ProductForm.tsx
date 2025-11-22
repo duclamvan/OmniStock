@@ -111,11 +111,14 @@ import CostHistoryChart from "@/components/products/CostHistoryChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
+// Translation must be imported at module level for schema
+import { i18n } from '@/i18n';
+
 // Unified schema with all fields from both AddProduct and EditProduct
 const productSchema = z.object({
-  name: z.string().min(1, "Product name is required"),
+  name: z.string().min(1, i18n.t('products:productNameRequired')),
   vietnameseName: z.string().optional(),
-  sku: z.string().min(1, "SKU is required"),
+  sku: z.string().min(1, i18n.t('products:skuRequired')),
   categoryId: z.string().optional(),
   warehouseId: z.string().optional(),
   warehouseLocation: z.string().optional(),
@@ -137,7 +140,7 @@ const productSchema = z.object({
 });
 
 const tieredPricingSchema = z.object({
-  minQuantity: z.coerce.number().min(1, "Minimum quantity is required"),
+  minQuantity: z.coerce.number().min(1, i18n.t('products:minimumQuantityRequired')),
   maxQuantity: z.coerce.number().optional(),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
@@ -145,7 +148,7 @@ const tieredPricingSchema = z.object({
 }).refine((data) => {
   return data.priceCzk || data.priceEur;
 }, {
-  message: "At least one price must be specified",
+  message: i18n.t('products:atLeastOnePriceRequired'),
   path: ["priceCzk"],
 });
 
@@ -2511,16 +2514,16 @@ export default function ProductForm() {
                         >
                           {supplierId
                             ? suppliers?.find((supplier: any) => supplier.id === supplierId)?.name
-                            : "Select a supplier"}
+                            : t('selectASupplier')}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0" align="start">
                         <Command>
-                          <CommandInput placeholder="Search suppliers..." />
+                          <CommandInput placeholder={t('searchSuppliersPlaceholder')} />
                           <CommandEmpty>
                             <div className="p-4 text-center space-y-2">
-                              <p className="text-sm text-slate-500">No supplier found.</p>
+                              <p className="text-sm text-slate-500">{t('noSupplierFound')}</p>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -2531,7 +2534,7 @@ export default function ProductForm() {
                                 data-testid="button-add-supplier"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
-                                Add New Supplier
+                                {t('addNewSupplier')}
                               </Button>
                             </div>
                           </CommandEmpty>
@@ -3280,7 +3283,7 @@ export default function ProductForm() {
                                   value={variant.barcode}
                                   onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
                                   className="h-8 font-mono min-w-[120px] text-right"
-                                  placeholder="Scan or enter"
+                                  placeholder={t('scanOrEnter')}
                                   data-testid={`input-variant-barcode-${variant.id}`}
                                 />
                               </TableCell>

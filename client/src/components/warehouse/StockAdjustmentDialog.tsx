@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -68,6 +69,7 @@ export default function StockAdjustmentDialog({
   initialValues,
   onValuesChange,
 }: StockAdjustmentDialogProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { inventorySettings } = useSettings();
@@ -146,8 +148,8 @@ export default function StockAdjustmentDialog({
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
       toast({
-        title: "Request Submitted",
-        description: "Stock adjustment request sent for admin approval",
+        title: t('warehouse:requestSubmitted'),
+        description: t('warehouse:requestSubmittedDesc'),
       });
       onOpenChange(false);
       setNewQuantity(0);
@@ -157,8 +159,8 @@ export default function StockAdjustmentDialog({
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create adjustment request",
+        title: t('common:error'),
+        description: error.message || t('warehouse:failedToCreateRequest'),
         variant: "destructive",
       });
     },
@@ -183,8 +185,8 @@ export default function StockAdjustmentDialog({
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
       toast({
-        title: "Stock Updated",
-        description: "Stock adjustment completed successfully",
+        title: t('warehouse:stockUpdated'),
+        description: t('warehouse:stockUpdatedDesc'),
       });
       onOpenChange(false);
       setNewQuantity(0);
@@ -194,8 +196,8 @@ export default function StockAdjustmentDialog({
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to adjust stock",
+        title: t('common:error'),
+        description: error.message || t('warehouse:failedToAdjustStock'),
         variant: "destructive",
       });
     },
@@ -204,8 +206,8 @@ export default function StockAdjustmentDialog({
   const handleAdjustStock = () => {
     if (!location) {
       toast({
-        title: "Error",
-        description: "No location selected",
+        title: t('common:error'),
+        description: t('warehouse:noLocationSelected'),
         variant: "destructive",
       });
       return;
@@ -213,8 +215,8 @@ export default function StockAdjustmentDialog({
 
     if (!notes || notes.trim() === "") {
       toast({
-        title: "Error",
-        description: "Please provide a reason for this adjustment",
+        title: t('common:error'),
+        description: t('warehouse:pleaseProvideReason'),
         variant: "destructive",
       });
       return;
@@ -241,8 +243,8 @@ export default function StockAdjustmentDialog({
     const calculatedFinalQuantity = calculateFinalQuantity();
     if (calculatedFinalQuantity < 0) {
       toast({
-        title: "Error",
-        description: "Quantity cannot be negative",
+        title: t('common:error'),
+        description: t('warehouse:quantityCannotBeNegative'),
         variant: "destructive",
       });
       return;
@@ -304,8 +306,8 @@ export default function StockAdjustmentDialog({
     
     // Show success feedback
     toast({
-      title: "Item Scanned",
-      description: `Total: ${scanCount + 1} items`,
+      title: t('warehouse:itemScanned'),
+      description: t('warehouse:totalItems', { count: scanCount + 1 }),
       duration: 1000,
     });
     
@@ -331,21 +333,21 @@ export default function StockAdjustmentDialog({
         <>
           <div className="space-y-2">
             <Label className="text-xs text-gray-600 dark:text-gray-400">
-              Location
+              {t('warehouse:location')}
             </Label>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
               <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
                 {location.locationCode}
               </p>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Current Stock: {location.quantity} units
+                {t('warehouse:currentStockUnits', { quantity: location.quantity })}
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="adjustment-type" className="text-xs">
-              Adjustment Type *
+              {t('warehouse:adjustmentTypeRequired')}
             </Label>
             <Select
               value={adjustmentType}
@@ -359,19 +361,19 @@ export default function StockAdjustmentDialog({
                 <SelectItem value="set" data-testid="option-set">
                   <div className="flex items-center gap-2">
                     <Package className="h-3 w-3" />
-                    <span>Set Quantity</span>
+                    <span>{t('warehouse:setQuantity')}</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="increment" data-testid="option-increment">
                   <div className="flex items-center gap-2">
                     <Plus className="h-3 w-3" />
-                    <span>Add Stock</span>
+                    <span>{t('warehouse:addStock')}</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="decrement" data-testid="option-decrement">
                   <div className="flex items-center gap-2">
                     <Minus className="h-3 w-3" />
-                    <span>Reduce Stock</span>
+                    <span>{t('warehouse:reduceStock')}</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -381,7 +383,7 @@ export default function StockAdjustmentDialog({
           {adjustmentType === "set" && (
             <div className="space-y-2">
               <Label htmlFor="new-quantity" className="text-xs">
-                New Quantity *
+                {t('warehouse:newQuantityRequired')}
               </Label>
               <Input
                 id="new-quantity"
@@ -399,7 +401,7 @@ export default function StockAdjustmentDialog({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="adjustment-amount" className="text-xs">
-                  {adjustmentType === "increment" ? "Amount to Add" : "Amount to Reduce"} *
+                  {adjustmentType === "increment" ? t('warehouse:amountToAdd') : t('warehouse:amountToReduce')} *
                 </Label>
                 {adjustmentType === "increment" && (
                   <Button
@@ -411,7 +413,7 @@ export default function StockAdjustmentDialog({
                     data-testid="button-toggle-barcode-scan"
                   >
                     <Barcode className="h-3.5 w-3.5 mr-1" />
-                    {barcodeScanMode ? "Scanning" : "Scan"}
+                    {barcodeScanMode ? t('warehouse:scanning') : t('warehouse:scan')}
                   </Button>
                 )}
               </div>
@@ -423,7 +425,7 @@ export default function StockAdjustmentDialog({
                     <Input
                       ref={barcodeInputRef}
                       type="text"
-                      placeholder="Scan barcode or press Enter..."
+                      placeholder={t('warehouse:scanBarcodeOrEnter')}
                       value={barcodeInput}
                       onChange={(e) => setBarcodeInput(e.target.value)}
                       onKeyPress={handleBarcodeKeyPress}
@@ -435,15 +437,15 @@ export default function StockAdjustmentDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <div className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></div>
-                      <span>Ready to scan</span>
+                      <span>{t('warehouse:readyToScan')}</span>
                     </div>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                      {scanCount} scans
+                      {scanCount} {t('warehouse:scans')}
                     </Badge>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Total items to add:</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{t('warehouse:totalItemsToAdd')}</span>
                       <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{adjustmentAmount}</span>
                     </div>
                   </div>
@@ -464,40 +466,40 @@ export default function StockAdjustmentDialog({
 
           <div className="space-y-2">
             <Label htmlFor="adjustment-notes" className="text-xs">
-              Reason for Adjustment *
+              {t('warehouse:reasonForAdjustmentRequired')}
             </Label>
             <Textarea
               ref={notesInputRef}
               id="adjustment-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Required: Explain why this adjustment is needed..."
+              placeholder={t('warehouse:reasonPlaceholder')}
               disabled={createRequestMutation.isPending}
               data-testid="input-adjustment-notes"
               className="h-20"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              This request will be sent to admin for approval
+              {t('warehouse:requestWillBeSentForApproval')}
             </p>
           </div>
 
           <div className={`rounded-lg p-3 space-y-1 ${isValid ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
               <Package className="h-3 w-3" />
-              <span>Product: {productName}</span>
+              <span>{t('warehouse:productLabel', { name: productName })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-600 dark:text-gray-400">
-                Current: {location.quantity} units
+                {t('warehouse:currentLabel', { quantity: location.quantity })}
               </span>
               <span className={`text-sm font-semibold ${isValid ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
-                New: {finalQuantity} units
+                {t('warehouse:newLabel', { quantity: finalQuantity })}
               </span>
             </div>
             {!isValid && (
               <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 mt-2">
                 <AlertCircle className="h-3 w-3" />
-                <span>Quantity cannot be negative</span>
+                <span>{t('warehouse:quantityCannotBeNegative')}</span>
               </div>
             )}
           </div>
@@ -514,14 +516,14 @@ export default function StockAdjustmentDialog({
         disabled={createRequestMutation.isPending}
         data-testid="button-cancel-adjust"
       >
-        Cancel
+        {t('common:cancel')}
       </Button>
       <Button
         onClick={handleAdjustStock}
         disabled={!isValid || createRequestMutation.isPending || !notes.trim()}
         data-testid="button-confirm-adjust"
       >
-        {createRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+        {createRequestMutation.isPending ? t('warehouse:submitting') : t('warehouse:submitRequest')}
       </Button>
     </>
   );
@@ -531,9 +533,9 @@ export default function StockAdjustmentDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Request Stock Adjustment</DrawerTitle>
+            <DrawerTitle>{t('warehouse:requestStockAdjustment')}</DrawerTitle>
             <DrawerDescription>
-              Submit a request to adjust inventory quantity (requires admin approval)
+              {t('warehouse:requestStockAdjustmentDesc')}
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4">{content}</div>
@@ -547,9 +549,9 @@ export default function StockAdjustmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Request Stock Adjustment</DialogTitle>
+          <DialogTitle>{t('warehouse:requestStockAdjustment')}</DialogTitle>
           <DialogDescription>
-            Submit a request to adjust inventory quantity (requires admin approval)
+            {t('warehouse:requestStockAdjustmentDesc')}
           </DialogDescription>
         </DialogHeader>
         {content}

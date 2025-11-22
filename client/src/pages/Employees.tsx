@@ -431,7 +431,7 @@ export default function Employees() {
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {employee.paymentFrequency}
+                          {t(`system:${employee.paymentFrequency}`)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -490,7 +490,7 @@ export default function Employees() {
                     <FormItem>
                       <FormLabel>{t('system:employeeId')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="EMP-001" {...field} data-testid="input-employee-id" />
+                        <Input placeholder={t('system:employeeIdPlaceholder')} {...field} data-testid="input-employee-id" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

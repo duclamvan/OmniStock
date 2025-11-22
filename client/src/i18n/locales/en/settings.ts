@@ -1046,6 +1046,7 @@ const settings = {
   defaultVatRatePlaceholder: '21',
   defaultTaxRateCzkPlaceholder: '21',
   defaultTaxRateEurPlaceholder: '19',
+  vatRegistrationNumberPlaceholder: 'CZ12345678',
   invoiceNumberPrefixPlaceholder: 'INV-',
   invoiceNumberFormatPlaceholder: 'INV-0001 or 2024-0001',
   nextInvoiceNumberPlaceholder: '1',

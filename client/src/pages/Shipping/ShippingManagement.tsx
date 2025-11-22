@@ -876,7 +876,7 @@ export default function ShippingManagement() {
                             id="dhl-city"
                             value={dhlAddress.city}
                             onChange={(e) => setDhlAddress({ ...dhlAddress, city: e.target.value })}
-                            placeholder="Berlin"
+                            placeholder={t('shipping:cityPlaceholder')}
                             data-testid="input-dhl-city"
                           />
                         </div>
@@ -933,7 +933,7 @@ export default function ShippingManagement() {
                             id="dhl-iban"
                             value={dhlBankDetails.iban}
                             onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, iban: e.target.value })}
-                            placeholder="DE89370400440532013000"
+                            placeholder={t('shipping:ibanPlaceholder')}
                             data-testid="input-dhl-iban"
                           />
                         </div>
@@ -943,7 +943,7 @@ export default function ShippingManagement() {
                             id="dhl-bic"
                             value={dhlBankDetails.bic}
                             onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, bic: e.target.value })}
-                            placeholder="COBADEFFXXX"
+                            placeholder={t('shipping:bicPlaceholder')}
                             data-testid="input-dhl-bic"
                           />
                         </div>
@@ -955,7 +955,7 @@ export default function ShippingManagement() {
                             id="dhl-accountHolder"
                             value={dhlBankDetails.accountHolder}
                             onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, accountHolder: e.target.value })}
-                            placeholder="Davie Supply GmbH"
+                            placeholder={t('shipping:companyNamePlaceholder')}
                             data-testid="input-dhl-accountholder"
                           />
                         </div>
@@ -1167,7 +1167,7 @@ export default function ShippingManagement() {
                             id="gls-city"
                             value={glsAddress.city}
                             onChange={(e) => setGlsAddress({ ...glsAddress, city: e.target.value })}
-                            placeholder="Waldsassen"
+                            placeholder={t('shipping:cityNamePlaceholder')}
                             data-testid="input-gls-city"
                           />
                         </div>

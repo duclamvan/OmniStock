@@ -382,8 +382,8 @@ export default function EditWarehouse() {
   const handleFileUploadComplete = (result: any) => {
     if (result.successful && result.successful.length > 0) {
       toast({
-        title: "Success",
-        description: "Files uploaded successfully",
+        title: t('common:success'),
+        description: t('warehouse:filesUploadedSuccess'),
       });
     }
   };
@@ -648,28 +648,28 @@ export default function EditWarehouse() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="capacity">Storage Capacity (units)</Label>
+                    <Label htmlFor="capacity">{t('warehouse:storageCapacity')}</Label>
                     <div className="relative mt-1">
                       <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="capacity"
                         type="number"
                         {...form.register("capacity", { valueAsNumber: true })}
-                        placeholder="e.g., 5000"
+                        placeholder={t('warehouse:capacityPlaceholder')}
                         className="pl-10"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="floorArea">Floor Area (m²)</Label>
+                    <Label htmlFor="floorArea">{t('warehouse:floorAreaM2')}</Label>
                     <div className="relative mt-1">
                       <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="floorArea"
                         type="number"
                         {...form.register("floorArea", { valueAsNumber: true })}
-                        placeholder="e.g., 2500"
+                        placeholder={t('warehouse:floorAreaPlaceholder')}
                         className="pl-10"
                       />
                     </div>
@@ -683,48 +683,48 @@ export default function EditWarehouse() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-green-600" />
-                  Location & Address
+                  {t('warehouse:locationAddress')}
                 </CardTitle>
-                <CardDescription>Physical location and contact information</CardDescription>
+                <CardDescription>{t('warehouse:locationDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="address">Street Address</Label>
+                  <Label htmlFor="address">{t('warehouse:streetAddress')}</Label>
                   <Input
                     id="address"
                     {...form.register("address")}
-                    placeholder="e.g., 123 Industrial Park Road"
+                    placeholder={t('warehouse:addressPlaceholder')}
                     className="mt-1"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t('warehouse:city')}</Label>
                     <Input
                       id="city"
                       {...form.register("city")}
-                      placeholder="e.g., Berlin"
+                      placeholder={t('warehouse:cityPlaceholder')}
                       className="mt-1"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="zipCode">ZIP/Postal Code</Label>
+                    <Label htmlFor="zipCode">{t('warehouse:zipPostalCode')}</Label>
                     <Input
                       id="zipCode"
                       {...form.register("zipCode")}
-                      placeholder="e.g., 10115"
+                      placeholder={t('warehouse:zipPlaceholder')}
                       className="mt-1"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">{t('warehouse:country')}</Label>
                     <Input
                       id="country"
                       {...form.register("country")}
-                      placeholder="e.g., Germany"
+                      placeholder={t('warehouse:countryPlaceholder')}
                       className="mt-1"
                     />
                   </div>
@@ -734,27 +734,27 @@ export default function EditWarehouse() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t('warehouse:phoneNumber')}</Label>
                     <div className="relative mt-1">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="phone"
                         {...form.register("phone")}
-                        placeholder="e.g., +49 30 12345678"
+                        placeholder={t('warehouse:phonePlaceholder')}
                         className="pl-10"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">{t('warehouse:emailAddress')}</Label>
                     <div className="relative mt-1">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="email"
                         type="email"
                         {...form.register("email")}
-                        placeholder="e.g., warehouse@company.com"
+                        placeholder={t('warehouse:emailPlaceholder')}
                         className="pl-10"
                       />
                     </div>
@@ -765,11 +765,11 @@ export default function EditWarehouse() {
                 </div>
 
                 <div>
-                  <Label htmlFor="contact">Primary Contact Person</Label>
+                  <Label htmlFor="contact">{t('warehouse:primaryContact')}</Label>
                   <Input
                     id="contact"
                     {...form.register("contact")}
-                    placeholder="e.g., Jane Doe - Operations Manager"
+                    placeholder={t('warehouse:contactPlaceholder')}
                     className="mt-1"
                   />
                 </div>
@@ -783,9 +783,9 @@ export default function EditWarehouse() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <ScrollText className="h-5 w-5 text-orange-600" />
-                      Financial Contracts
+                      {t('warehouse:financialContracts')}
                     </CardTitle>
-                    <CardDescription>Manage rental, lease, and other financial agreements</CardDescription>
+                    <CardDescription>{t('warehouse:manageFinancialAgreements')}</CardDescription>
                   </div>
                   <Button
                     type="button"
@@ -794,7 +794,7 @@ export default function EditWarehouse() {
                     data-testid="button-add-contract"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Contract
+                    {t('warehouse:addContract')}
                   </Button>
                 </div>
               </CardHeader>
@@ -806,8 +806,8 @@ export default function EditWarehouse() {
                 ) : (financialContracts as WarehouseFinancialContract[]).length === 0 ? (
                   <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
                     <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                    <p className="text-slate-600 font-medium">No financial contracts</p>
-                    <p className="text-sm text-slate-500 mt-1">Add your first contract to track financial agreements</p>
+                    <p className="text-slate-600 font-medium">{t('warehouse:noFinancialContractsFound')}</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('warehouse:addFirstContractFinancial')}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -831,22 +831,22 @@ export default function EditWarehouse() {
                         <CardContent className="space-y-3">
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-600">Amount:</span>
+                              <span className="text-slate-600">{t('warehouse:amount')}</span>
                               <span className="font-semibold text-slate-900" data-testid={`text-contract-price-${contract.id}`}>
                                 {contract.price} {contract.currency}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-600">Billing:</span>
+                              <span className="text-slate-600">{t('warehouse:billingLabel')}</span>
                               <span className="text-slate-900" data-testid={`text-contract-billing-${contract.id}`}>
                                 {contract.billingPeriod === 'custom' 
-                                  ? `Every ${contract.customBillingDays} days`
+                                  ? t('warehouse:everyXDays', { days: contract.customBillingDays })
                                   : contract.billingPeriod}
                               </span>
                             </div>
                             {contract.rentalDueDate && (
                               <div className="flex items-center justify-between">
-                                <span className="text-slate-600">Due Date:</span>
+                                <span className="text-slate-600">{t('warehouse:dueDate')}</span>
                                 <span className="text-slate-900" data-testid={`text-contract-due-${contract.id}`}>
                                   {formatDate(contract.rentalDueDate)}
                                 </span>
@@ -854,7 +854,7 @@ export default function EditWarehouse() {
                             )}
                             {contract.startDate && (
                               <div className="flex items-center justify-between">
-                                <span className="text-slate-600">Start:</span>
+                                <span className="text-slate-600">{t('warehouse:start')}</span>
                                 <span className="text-slate-900" data-testid={`text-contract-start-${contract.id}`}>
                                   {formatDate(contract.startDate)}
                                 </span>
@@ -862,7 +862,7 @@ export default function EditWarehouse() {
                             )}
                             {contract.endDate && (
                               <div className="flex items-center justify-between">
-                                <span className="text-slate-600">End:</span>
+                                <span className="text-slate-600">{t('warehouse:end')}</span>
                                 <span className="text-slate-900" data-testid={`text-contract-end-${contract.id}`}>
                                   {formatDate(contract.endDate)}
                                 </span>
@@ -886,7 +886,7 @@ export default function EditWarehouse() {
                               data-testid={`button-edit-contract-${contract.id}`}
                             >
                               <Edit className="h-3 w-3 mr-1" />
-                              Edit
+                              {t('common:edit')}
                             </Button>
                             <Button
                               type="button"
@@ -897,7 +897,7 @@ export default function EditWarehouse() {
                               data-testid={`button-delete-contract-${contract.id}`}
                             >
                               <Trash2 className="h-3 w-3 mr-1" />
-                              Delete
+                              {t('common:delete')}
                             </Button>
                           </div>
                         </CardContent>
@@ -913,28 +913,28 @@ export default function EditWarehouse() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-slate-600" />
-                  Internal Notes
+                  {t('warehouse:internalNotes')}
                 </CardTitle>
-                <CardDescription>General warehouse notes and observations</CardDescription>
+                <CardDescription>{t('warehouse:generalWarehouseNotes')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="location">Location Reference/Code</Label>
+                  <Label htmlFor="location">{t('warehouse:locationCode')}</Label>
                   <Input
                     id="location"
                     {...form.register("location")}
-                    placeholder="e.g., WH-BER-01"
+                    placeholder={t('warehouse:locationCodePlaceholder')}
                     className="mt-1"
                     data-testid="input-location"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('common:notes')}</Label>
                   <Textarea
                     id="notes"
                     {...form.register("notes")}
-                    placeholder="Add any important notes about this warehouse..."
+                    placeholder={t('warehouse:notesPlaceholder')}
                     className="min-h-[120px] mt-1"
                     data-testid="input-notes"
                   />
@@ -950,9 +950,9 @@ export default function EditWarehouse() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-purple-600" />
-                  Documents
+                  {t('warehouse:documents')}
                 </CardTitle>
-                <CardDescription>Upload contracts, photos, or documents</CardDescription>
+                <CardDescription>{t('warehouse:documentsDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ObjectUploader
@@ -964,8 +964,8 @@ export default function EditWarehouse() {
                 >
                   <div className="flex flex-col items-center gap-2 text-slate-600">
                     <FileUp className="h-10 w-10 text-blue-500" />
-                    <p className="text-sm font-medium">Click or drag files</p>
-                    <p className="text-xs text-slate-500">PDF, Images, Documents (max 50MB)</p>
+                    <p className="text-sm font-medium">{t('warehouse:clickDragFiles')}</p>
+                    <p className="text-xs text-slate-500">{t('warehouse:uploadFileTypes')}</p>
                   </div>
                 </ObjectUploader>
               </CardContent>
@@ -976,7 +976,7 @@ export default function EditWarehouse() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5 text-gray-600" />
-                  Actions
+                  {t('warehouse:actions')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -986,7 +986,7 @@ export default function EditWarehouse() {
                   disabled={updateWarehouseMutation.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {updateWarehouseMutation.isPending ? "Saving..." : "Save Changes"}
+                  {updateWarehouseMutation.isPending ? t('warehouse:saving') : t('warehouse:saveChanges')}
                 </Button>
                 
                 <Button 
@@ -995,7 +995,7 @@ export default function EditWarehouse() {
                   className="w-full"
                   onClick={() => navigate("/warehouses")}
                 >
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
 
                 <Separator />
@@ -1008,14 +1008,14 @@ export default function EditWarehouse() {
                   disabled={deleteWarehouseMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Warehouse
+                  {t('warehouse:deleteWarehouseButton')}
                 </Button>
 
                 {/* Status Info */}
                 <div className="pt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    <span>Created: {warehouse?.createdAt ? formatDate(warehouse.createdAt) : 'Never'}</span>
+                    <span>{t('warehouse:created')} {warehouse?.createdAt ? formatDate(warehouse.createdAt) : t('warehouse:never')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -1029,23 +1029,23 @@ export default function EditWarehouse() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingContract ? 'Edit Financial Contract' : 'Add Financial Contract'}
+              {editingContract ? t('warehouse:editFinancialContract') : t('warehouse:addFinancialContract')}
             </DialogTitle>
             <DialogDescription>
               {editingContract 
-                ? 'Update the details of this financial contract' 
-                : 'Create a new financial contract for this warehouse'}
+                ? t('warehouse:updateContractDetails')
+                : t('warehouse:createNewContractForWarehouse')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={contractForm.handleSubmit(onContractSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="contractName">Contract Name *</Label>
+                <Label htmlFor="contractName">{t('warehouse:contractNameLabel')}</Label>
                 <Input
                   id="contractName"
                   {...contractForm.register("contractName")}
-                  placeholder="e.g., Main Warehouse Rental Agreement"
+                  placeholder={t('warehouse:contractNamePlaceholder')}
                   className="mt-1"
                   data-testid="input-contract-name"
                 />
@@ -1055,7 +1055,7 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="contractType">Contract Type *</Label>
+                <Label htmlFor="contractType">{t('warehouse:contractTypeLabel')}</Label>
                 <Select 
                   value={contractForm.watch("contractType")} 
                   onValueChange={(value) => contractForm.setValue("contractType", value as any)}
@@ -1064,42 +1064,42 @@ export default function EditWarehouse() {
                     <SelectValue placeholder={t('common:selectContractType')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rental">Rental</SelectItem>
-                    <SelectItem value="lease">Lease</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="utilities">Utilities</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="rental">{t('warehouse:rental')}</SelectItem>
+                    <SelectItem value="lease">{t('warehouse:lease')}</SelectItem>
+                    <SelectItem value="purchase">{t('warehouse:purchase')}</SelectItem>
+                    <SelectItem value="maintenance">{t('warehouse:maintenanceContract')}</SelectItem>
+                    <SelectItem value="utilities">{t('warehouse:utilities')}</SelectItem>
+                    <SelectItem value="other">{t('warehouse:other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('warehouse:statusLabel')}</Label>
                 <Select 
                   value={contractForm.watch("status") || "active"} 
                   onValueChange={(value) => contractForm.setValue("status", value as any)}
                 >
                   <SelectTrigger className="mt-1" data-testid="select-contract-status">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t('warehouse:selectStatusPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="active">{t('common:active')}</SelectItem>
+                    <SelectItem value="expired">{t('common:expired')}</SelectItem>
+                    <SelectItem value="pending">{t('common:pending')}</SelectItem>
+                    <SelectItem value="cancelled">{t('common:cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="price">Price/Amount *</Label>
+                <Label htmlFor="price">{t('warehouse:priceAmountLabel')}</Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
                   {...contractForm.register("price")}
-                  placeholder="e.g., 15000"
+                  placeholder={t('warehouse:pricePlaceholder')}
                   className="mt-1"
                   data-testid="input-contract-price"
                 />
@@ -1109,7 +1109,7 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="currency">Currency</Label>
+                <Label htmlFor="currency">{t('warehouse:currencyLabel')}</Label>
                 <Select 
                   value={contractForm.watch("currency")} 
                   onValueChange={(value) => contractForm.setValue("currency", value as any)}
@@ -1128,7 +1128,7 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="billingPeriod">Billing Period</Label>
+                <Label htmlFor="billingPeriod">{t('warehouse:billingPeriodLabel')}</Label>
                 <Select 
                   value={contractForm.watch("billingPeriod")} 
                   onValueChange={(value) => contractForm.setValue("billingPeriod", value as any)}
@@ -1137,22 +1137,22 @@ export default function EditWarehouse() {
                     <SelectValue placeholder={t('common:selectBillingPeriod')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="monthly">{t('common:monthly')}</SelectItem>
+                    <SelectItem value="yearly">{t('common:yearly')}</SelectItem>
+                    <SelectItem value="quarterly">{t('common:quarterly')}</SelectItem>
+                    <SelectItem value="custom">{t('common:custom')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {contractForm.watch("billingPeriod") === "custom" && (
                 <div>
-                  <Label htmlFor="customBillingDays">Custom Billing Days *</Label>
+                  <Label htmlFor="customBillingDays">{t('warehouse:customBillingDaysLabel')}</Label>
                   <Input
                     id="customBillingDays"
                     type="number"
                     {...contractForm.register("customBillingDays", { valueAsNumber: true })}
-                    placeholder="e.g., 45"
+                    placeholder={t('warehouse:customBillingDaysPlaceholder')}
                     className="mt-1"
                     data-testid="input-custom-billing-days"
                   />
@@ -1163,7 +1163,7 @@ export default function EditWarehouse() {
               )}
 
               <div>
-                <Label htmlFor="rentalDueDate">Rental Due Date</Label>
+                <Label htmlFor="rentalDueDate">{t('warehouse:rentalDueDateLabel')}</Label>
                 <Input
                   id="rentalDueDate"
                   type="date"
@@ -1174,7 +1174,7 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate">{t('warehouse:startDateLabel')}</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -1185,7 +1185,7 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="endDate">End Date</Label>
+                <Label htmlFor="endDate">{t('warehouse:endDateLabel')}</Label>
                 <Input
                   id="endDate"
                   type="date"
@@ -1196,11 +1196,11 @@ export default function EditWarehouse() {
               </div>
 
               <div className="md:col-span-2">
-                <Label htmlFor="contractNotes">Notes</Label>
+                <Label htmlFor="contractNotes">{t('common:notes')}</Label>
                 <Textarea
                   id="contractNotes"
                   {...contractForm.register("notes")}
-                  placeholder="Add any additional notes about this contract..."
+                  placeholder={t('warehouse:contractNotesPlaceholder')}
                   className="min-h-[100px] mt-1"
                   data-testid="input-contract-notes"
                 />
@@ -1218,7 +1218,7 @@ export default function EditWarehouse() {
                 }}
                 data-testid="button-cancel-contract"
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="submit"
@@ -1226,8 +1226,8 @@ export default function EditWarehouse() {
                 data-testid="button-save-contract"
               >
                 {(createContractMutation.isPending || updateContractMutation.isPending) 
-                  ? 'Saving...' 
-                  : editingContract ? 'Update Contract' : 'Create Contract'}
+                  ? t('warehouse:saving')
+                  : editingContract ? t('warehouse:updateContractButton') : t('warehouse:createContractButton')}
               </Button>
             </DialogFooter>
           </form>
@@ -1238,18 +1238,18 @@ export default function EditWarehouse() {
       <AlertDialog open={!!deleteContractId} onOpenChange={() => setDeleteContractId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Financial Contract</AlertDialogTitle>
+            <AlertDialogTitle>{t('warehouse:deleteFinancialContractTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contract? This action cannot be undone.
+              {t('warehouse:deleteContractConfirmMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDeleteContract}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1259,19 +1259,20 @@ export default function EditWarehouse() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Warehouse</AlertDialogTitle>
+            <AlertDialogTitle>{t('warehouse:deleteWarehouseTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this warehouse? This action cannot be undone.
-              This will also remove all associated data.
+              {t('warehouse:deleteWarehouseConfirm')}
+              {' '}
+              {t('warehouse:deleteWarehouseDataWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

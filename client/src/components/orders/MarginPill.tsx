@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatCurrency } from "@/lib/currencyUtils";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface MarginPillProps {
   sellingPrice: number;
@@ -22,6 +23,8 @@ export default function MarginPill({
   showIcon = true,
   showProfit = true
 }: MarginPillProps) {
+  const { t } = useTranslation(['orders', 'common']);
+  
   // Handle null/undefined landing costs gracefully
   if (!landingCost || landingCost <= 0 || !sellingPrice || sellingPrice <= 0) {
     return (
@@ -29,7 +32,7 @@ export default function MarginPill({
         className={cn("text-xs text-gray-500 dark:text-gray-400", className)}
         data-testid="margin-pill-unavailable"
       >
-        N/A
+        {t('common:na')}
       </span>
     );
   }
@@ -64,31 +67,31 @@ export default function MarginPill({
   // Format tooltip content
   const tooltipContent = (
     <div className="space-y-2 text-xs">
-      <div className="font-medium border-b pb-1">Margin Breakdown</div>
+      <div className="font-medium border-b pb-1">{t('orders:marginBreakdown')}</div>
       <div className="space-y-1">
         <div className="flex justify-between gap-4">
-          <span>Selling Price:</span>
+          <span>{t('orders:sellingPrice')}:</span>
           <span className="font-medium">{formatCurrency(totalSellingPrice, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span>Landing Cost:</span>
+          <span>{t('orders:landingCost')}:</span>
           <span className="font-medium">{formatCurrency(totalLandingCost, currency)}</span>
         </div>
         <div className="flex justify-between gap-4 pt-1 border-t">
-          <span>Profit:</span>
+          <span>{t('common:profit')}:</span>
           <span className={cn("font-bold", profit >= 0 ? "text-green-600" : "text-red-600")}>
             {formatCurrency(profit, currency)}
           </span>
         </div>
         <div className="flex justify-between gap-4">
-          <span>Margin:</span>
+          <span>{t('common:margin')}:</span>
           <span className={cn("font-bold", marginPercentage >= 0 ? "text-green-600" : "text-red-600")}>
             {marginPercentage.toFixed(1)}%
           </span>
         </div>
         {quantity > 1 && (
           <div className="text-xs text-muted-foreground pt-1 border-t">
-            Quantity: {quantity} units
+            {t('orders:quantityUnits', { count: quantity })}
           </div>
         )}
       </div>
