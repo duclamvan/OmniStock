@@ -1,6 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,7 @@ export default function OrderDetails() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
+  const { t } = useTranslation();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -142,14 +144,14 @@ export default function OrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
-        title: "Status Updated",
-        description: "Order status has been updated successfully",
+        title: t('orders:statusUpdated'),
+        description: t('orders:statusUpdatedDesc'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update order status",
+        title: t('orders:updateFailed'),
+        description: error.message || t('orders:failedToUpdateStatus'),
         variant: "destructive",
       });
     },
@@ -165,14 +167,14 @@ export default function OrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
-        title: "Payment Status Updated",
-        description: "Payment status has been updated successfully",
+        title: t('orders:paymentStatusUpdated'),
+        description: t('orders:paymentStatusUpdatedDesc'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update payment status",
+        title: t('orders:updateFailed'),
+        description: error.message || t('orders:failedToUpdatePayment'),
         variant: "destructive",
       });
     },
@@ -188,14 +190,14 @@ export default function OrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
-        title: "Priority Updated",
-        description: "Order priority has been updated successfully",
+        title: t('orders:priorityUpdated'),
+        description: t('orders:priorityUpdatedDesc'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update priority",
+        title: t('orders:updateFailed'),
+        description: error.message || t('orders:failedToUpdatePriority'),
         variant: "destructive",
       });
     },
@@ -264,8 +266,8 @@ export default function OrderDetails() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "Copied!",
-      description: `${label} copied to clipboard`,
+      title: t('orders:copied'),
+      description: t('orders:copiedToClipboard', { label }),
     });
   };
 
@@ -554,14 +556,14 @@ export default function OrderDetails() {
       link.click();
 
       toast({
-        title: "Order Captured",
-        description: "Order screenshot saved successfully",
+        title: t('orders:orderCaptured'),
+        description: t('orders:orderCapturedDesc'),
       });
     } catch (error) {
       console.error('Invoice generation error:', error);
       toast({
-        title: "Download Failed",
-        description: "Could not generate invoice",
+        title: t('orders:downloadFailed'),
+        description: t('orders:downloadFailedDesc'),
         variant: "destructive",
       });
     }
@@ -579,8 +581,8 @@ export default function OrderDetails() {
   const handleExport = () => {
     // Export order as PDF/CSV logic would go here
     toast({
-      title: "Export Order",
-      description: "Export functionality coming soon",
+      title: t('orders:exportOrder'),
+      description: t('orders:exportOrderDesc'),
     });
   };
 
@@ -1015,7 +1017,7 @@ export default function OrderDetails() {
               className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
             >
               <Download className="mr-2 h-4 w-4" />
-              Capture Order
+              {t('orders:captureOrder')}
             </Button>
             {order.orderStatus === 'to_fulfill' && (
               <Button
@@ -1025,7 +1027,7 @@ export default function OrderDetails() {
                 className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
+                {showPickingMode ? t('orders:exitPickingMode') : t('orders:startPickingMode')}
               </Button>
             )}
           </div>
@@ -1035,7 +1037,7 @@ export default function OrderDetails() {
             <CardHeader className="border-b border-slate-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
                 <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                Invoice
+                {t('orders:invoice')}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-0">
@@ -1280,8 +1282,8 @@ export default function OrderDetails() {
                             setShowReturnDialog(true);
                           } else {
                             toast({
-                              title: "All items picked",
-                              description: "No items to return - all items have been picked successfully",
+                              title: t('orders:allItemsPicked'),
+                              description: t('orders:allItemsPickedDesc'),
                             });
                           }
                         }}
@@ -1354,7 +1356,7 @@ export default function OrderDetails() {
                         "font-medium",
                         order.adjustment > 0 ? "text-blue-700 dark:text-blue-500" : "text-orange-700 dark:text-orange-500"
                       )}>
-                        Adjustment
+                        {t('orders:adjustment')}
                       </span>
                       <span className={cn(
                         "font-semibold",
@@ -1368,7 +1370,7 @@ export default function OrderDetails() {
                   <div className="border-t-2 border-slate-300 dark:border-gray-700 my-3"></div>
                   
                   <div className="flex justify-between items-center pt-2 pb-1">
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-lg">Grand Total</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t('orders:grandTotal')}</span>
                     <span className="font-bold text-xl text-slate-900 dark:text-slate-100">
                       {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                     </span>
@@ -1383,7 +1385,7 @@ export default function OrderDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base text-gray-900 dark:text-gray-100">
                 <Truck className="h-4 w-4" />
-                Shipping Information
+                {t('orders:shippingInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1392,7 +1394,7 @@ export default function OrderDetails() {
                 <div className="border-2 border-blue-500 dark:border-blue-600 rounded-lg p-4" data-testid="section-shipping-address">
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Shipping Address</h3>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('orders:shippingAddress')}</h3>
                   </div>
                   
                   <div className="space-y-1 text-sm">
@@ -1651,7 +1653,7 @@ export default function OrderDetails() {
                 <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="section-warehouse-location">
                   <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
                     <Package className="h-3.5 w-3.5" />
-                    Fulfillment Location
+                    {t('orders:fulfillmentLocation')}
                   </h4>
                   <p className="text-sm text-slate-700 dark:text-slate-300">{order.warehouseLocation}</p>
                 </div>
@@ -1665,7 +1667,7 @@ export default function OrderDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base text-gray-900 dark:text-gray-100">
                   <FileText className="h-4 w-4" />
-                  Files Sent
+                  {t('orders:filesSent')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1675,7 +1677,7 @@ export default function OrderDetails() {
                     <CollapsibleTrigger className="w-full">
                       <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                         <Package className="h-4 w-4" />
-                        Product Documents ({productFiles.length})
+                        {t('orders:productDocuments')} ({productFiles.length})
                         {isProductDocsOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
                       </h4>
                     </CollapsibleTrigger>
@@ -1748,7 +1750,7 @@ export default function OrderDetails() {
                     <CollapsibleTrigger className="w-full">
                       <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                         <Upload className="h-4 w-4" />
-                        Uploaded Files ({orderFiles.length})
+                        {t('orders:uploadedFiles')} ({orderFiles.length})
                         {isUploadedFilesOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
                       </h4>
                     </CollapsibleTrigger>
@@ -1797,7 +1799,7 @@ export default function OrderDetails() {
                     <CollapsibleTrigger className="w-full">
                       <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                         <Truck className="h-4 w-4" />
-                        Shipping Labels ({shipmentLabels.filter((label: any) => label.status !== 'cancelled').length})
+                        {t('orders:shippingLabels')} ({shipmentLabels.filter((label: any) => label.status !== 'cancelled').length})
                         {isShippingLabelsOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
                       </h4>
                     </CollapsibleTrigger>
@@ -1857,7 +1859,7 @@ export default function OrderDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Package className="h-4 w-4" />
-                  Pick & Pack Activity
+                  {t('orders:pickPackLogs')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1909,7 +1911,7 @@ export default function OrderDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <User className="h-4 w-4" />
-                  Customer Information
+                  {t('orders:customerInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1996,7 +1998,7 @@ export default function OrderDetails() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Ticket className="h-4 w-4" />
-                Support Tickets
+                {t('orders:supportTickets')}
                 {tickets.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
                     {tickets.length}
@@ -2070,7 +2072,7 @@ export default function OrderDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Clock className="h-4 w-4" />
-                Order Timeline
+                {t('orders:orderProgress')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -2244,9 +2246,9 @@ export default function OrderDetails() {
       <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
         <DialogContent className="max-w-3xl w-[95vw] sm:w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Return Ticket</DialogTitle>
+            <DialogTitle>{t('orders:createReturnTicket')}</DialogTitle>
             <DialogDescription>
-              Select items to return from order {order?.orderId}
+              {t('orders:selectItemsToReturn', { orderId: order?.orderId })}
             </DialogDescription>
           </DialogHeader>
           
@@ -2295,7 +2297,7 @@ export default function OrderDetails() {
                   }
                 }}
               />
-              <Label className="font-medium">Select All Items</Label>
+              <Label className="font-medium">{t('orders:selectAllItems')}</Label>
             </div>
 
             {/* Items to Return */}
@@ -2365,7 +2367,7 @@ export default function OrderDetails() {
 
             {/* Return Reason */}
             <div className="space-y-2">
-              <Label htmlFor="return-reason">Return Reason</Label>
+              <Label htmlFor="return-reason">{t('orders:returnReason')}</Label>
               <Textarea
                 id="return-reason"
                 placeholder="Please provide a reason for the return..."
@@ -2405,8 +2407,8 @@ export default function OrderDetails() {
               onClick={() => {
                 if (selectedItems.size === 0) {
                   toast({
-                    title: "No items selected",
-                    description: "Please select at least one item to return",
+                    title: t('orders:noItemsSelected'),
+                    description: t('orders:noItemsSelectedDesc'),
                     variant: "destructive",
                   });
                   return;
@@ -2414,8 +2416,8 @@ export default function OrderDetails() {
                 
                 if (!returnReason.trim()) {
                   toast({
-                    title: "Reason required",
-                    description: "Please provide a reason for the return",
+                    title: t('orders:reasonRequired'),
+                    description: t('orders:reasonRequiredDesc'),
                     variant: "destructive",
                   });
                   return;
@@ -2450,7 +2452,7 @@ export default function OrderDetails() {
               }}
               disabled={selectedItems.size === 0}
             >
-              Create Return Ticket
+              {t('orders:createReturnTicket')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2460,7 +2462,7 @@ export default function OrderDetails() {
       <Dialog open={showCustomPriceDialog} onOpenChange={setShowCustomPriceDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create Custom Price</DialogTitle>
+            <DialogTitle>{t('orders:createCustomPrice')}</DialogTitle>
             <DialogDescription>
               Set a custom price for {selectedPriceItem?.productName} for {order?.customer?.name}
             </DialogDescription>
@@ -2555,8 +2557,8 @@ export default function OrderDetails() {
               onClick={async () => {
                 if (!customPrice || !priceValidFrom) {
                   toast({
-                    title: "Missing Information",
-                    description: "Please enter a custom price and valid from date",
+                    title: t('orders:missingInformation'),
+                    description: t('orders:missingInformationDesc'),
                     variant: "destructive",
                   });
                   return;
@@ -2574,8 +2576,8 @@ export default function OrderDetails() {
                   });
 
                   toast({
-                    title: "Success",
-                    description: `Custom price created for ${selectedPriceItem?.productName}`,
+                    title: t('common:success'),
+                    description: t('orders:customPriceCreated', { product: selectedPriceItem?.productName }),
                   });
 
                   // Reset and close
@@ -2590,15 +2592,15 @@ export default function OrderDetails() {
                 } catch (error) {
                   console.error('Error creating custom price:', error);
                   toast({
-                    title: "Error",
-                    description: "Failed to create custom price",
+                    title: t('common:error'),
+                    description: t('orders:customPriceError'),
                     variant: "destructive",
                   });
                 }
               }}
               disabled={!customPrice || !priceValidFrom}
             >
-              Create Custom Price
+              {t('orders:createCustomPrice')}
             </Button>
           </DialogFooter>
         </DialogContent>

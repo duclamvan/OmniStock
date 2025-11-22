@@ -12,6 +12,12 @@ const orders = {
   addOrder: 'Add Order',
   pickAndPack: 'Pick & Pack',
   shipOrder: 'Ship Order',
+  captureOrder: 'Capture Order',
+  createReturn: 'Create Return',
+  createTicket: 'Create Ticket',
+  createCustomPrice: 'Create Custom Price',
+  startPickingMode: 'Start Picking Mode',
+  exitPickingMode: 'Exit Picking Mode',
   
   // Order Fields
   orderNumber: 'Order Number',
@@ -27,6 +33,10 @@ const orders = {
   orderNotes: 'Order Notes',
   paymentMethod: 'Payment Method',
   paymentStatus: 'Payment Status',
+  priority: 'Priority',
+  orderType: 'Order Type',
+  currency: 'Currency',
+  orderLocation: 'Order Location',
   
   // Order Status
   pending: 'Pending',
@@ -63,8 +73,13 @@ const orders = {
   product: 'Product',
   sku: 'SKU',
   qty: 'Qty',
+  quantity: 'Quantity',
   unitPrice: 'Unit Price',
   lineTotal: 'Line Total',
+  price: 'Price',
+  image: 'Image',
+  variant: 'Variant',
+  bundle: 'Bundle',
   
   // Fulfillment
   fulfillmentStage: 'Fulfillment Stage',
@@ -73,6 +88,7 @@ const orders = {
   shippingLabel: 'Shipping Label',
   trackingNumber: 'Tracking Number',
   carrier: 'Carrier',
+  fulfillmentLocation: 'Fulfillment Location',
   
   // Communication
   communicationChannel: 'Communication Channel',
@@ -80,11 +96,251 @@ const orders = {
   whatsapp: 'WhatsApp',
   zalo: 'Zalo',
   
-  // Messages
-  orderCreated: 'Order created successfully',
-  orderUpdated: 'Order updated successfully',
-  orderDeleted: 'Order deleted successfully',
-  orderShipped: 'Order shipped successfully',
+  // Toast Messages - Status Updates
+  statusUpdated: 'Status Updated',
+  statusUpdatedDesc: 'Order status has been updated successfully',
+  paymentStatusUpdated: 'Payment Status Updated',
+  paymentStatusUpdatedDesc: 'Payment status has been updated successfully',
+  priorityUpdated: 'Priority Updated',
+  priorityUpdatedDesc: 'Order priority has been updated successfully',
+  updateFailed: 'Update Failed',
+  failedToUpdateStatus: 'Failed to update order status',
+  failedToUpdatePayment: 'Failed to update payment status',
+  failedToUpdatePriority: 'Failed to update priority',
+  
+  // Toast Messages - Order Actions
+  orderCaptured: 'Order Captured',
+  orderCapturedDesc: 'Order screenshot saved successfully',
+  downloadFailed: 'Download Failed',
+  downloadFailedDesc: 'Could not generate invoice',
+  exportOrder: 'Export Order',
+  exportOrderDesc: 'Export functionality coming soon',
+  copied: 'Copied!',
+  copiedToClipboard: '{{label}} copied to clipboard',
+  
+  // Toast Messages - Return/Custom Price
+  allItemsPicked: 'All items picked',
+  allItemsPickedDesc: 'No items to return - all items have been picked successfully',
+  noItemsSelected: 'No items selected',
+  noItemsSelectedDesc: 'Please select at least one item to return',
+  reasonRequired: 'Reason required',
+  reasonRequiredDesc: 'Please provide a reason for the return',
+  missingInformation: 'Missing Information',
+  missingInformationDesc: 'Please enter a custom price and valid from date',
+  customPriceCreated: 'Custom price created for {{product}}',
+  customPriceError: 'Failed to create custom price',
+  nameRequired: 'Name required',
+  nameRequiredDesc: 'Please enter a customer name',
+  phoneRequired: 'Phone required',
+  phoneRequiredDesc: 'Please enter a phone number',
+  
+  // Order Details Sections
+  invoice: 'Invoice',
+  customerInformation: 'Customer Information',
+  supportTickets: 'Support Tickets',
+  pickPackLogs: 'Pick & Pack Logs',
+  orderProgress: 'Order Progress',
+  shippingMethodTracking: 'Shipping Method & Tracking',
+  warehouseLocation: 'Warehouse Location',
+  filesSent: 'Files Sent',
+  productDocuments: 'Product Documents',
+  uploadedFiles: 'Uploaded Files',
+  shippingLabels: 'Shipping Labels',
+  
+  // Customer Details
+  customerDetails: 'Customer Details',
+  customerType: 'Customer Type',
+  phone: 'Phone',
+  email: 'Email',
+  company: 'Company',
+  location: 'Location',
+  badges: 'Badges',
+  showBadges: 'Show Badges',
+  hideBadges: 'Hide Badges',
+  
+  // Shipping Details
+  method: 'Method',
+  tracking: 'Tracking',
+  noTrackingNumber: 'No tracking number',
+  shippedAt: 'Shipped At',
+  cartons: 'Cartons',
+  box: 'box',
+  boxes: 'boxes',
+  cartonNumber: 'Carton #{{number}}',
+  companyBox: 'Company Box',
+  nonCompany: 'Non-Company',
+  totalWeight: 'Total Weight',
+  itemsWeight: 'Items Weight',
+  dimensions: 'Dimensions (L×W×H)',
+  totalShipmentWeight: 'Total Shipment Weight',
+  
+  // Order Items Table
+  landingCost: 'Landing Cost',
+  itemNotes: 'Item Notes',
+  addNote: 'Add Note',
+  editNote: 'Edit Note',
+  saveNote: 'Save Note',
+  shippingNotes: 'Shipping Notes',
+  quickNoteTemplates: 'Quick Note Templates',
+  
+  // Pricing & Calculations
+  subtotal: 'Subtotal',
+  discount: 'Discount',
+  discountType: 'Discount Type',
+  discountValue: 'Discount Value',
+  flatDiscount: 'Flat',
+  rateDiscount: 'Rate',
+  tax: 'Tax',
+  taxRate: 'Tax Rate',
+  taxAmount: 'Tax Amount',
+  shipping: 'Shipping',
+  adjustment: 'Adjustment',
+  grandTotal: 'Grand Total',
+  actualShippingCost: 'Actual Shipping Cost',
+  profitMargin: 'Profit Margin',
+  
+  // Tax Invoice
+  taxInvoice: 'Tax Invoice',
+  taxInvoiceEnabled: 'Tax Invoice Enabled',
+  ico: 'IČO',
+  dic: 'DIČ',
+  vatId: 'VAT ID',
+  nameAndAddress: 'Name & Address',
+  country: 'Country',
+  
+  // COD (Cash on Delivery)
+  codAmount: 'COD Amount',
+  codCurrency: 'COD Currency',
+  enableCod: 'Enable COD',
+  
+  // Customer Selection & Creation
+  searchCustomer: 'Search Customer',
+  searchCustomerPlaceholder: 'Type to search customers (Vietnamese diacritics supported)...',
+  customersFound: '{{count}} customer(s) found',
+  quickCustomer: 'Quick Customer',
+  newCustomer: 'New',
+  quickTemp: 'Quick',
+  telephoneCustomer: 'Tel',
+  messagingCustomer: 'Msg',
+  customCustomer: 'Custom',
+  quickCustomerOneTime: 'Quick Customer (One-time)',
+  telephoneOrder: 'Telephone Order',
+  socialMediaCustomer: 'Social Media Customer',
+  customCustomerOneTime: 'Custom Customer (One-time)',
+  selectCustomer: 'Select Customer',
+  idPhoneNumber: 'ID/Phone Number *',
+  socialMediaApp: 'Social Media App *',
+  formatWithoutSpaces: 'Format without spaces (e.g. +420776887045)',
+  confirm: 'Confirm',
+  
+  // Product Selection
+  searchProduct: 'Search Product',
+  searchProductPlaceholder: 'Search products, SKUs, or scan barcode...',
+  productsFound: '{{count}} product(s) found',
+  selectProduct: 'Select Product',
+  selectVariant: 'Select Variant',
+  selectBundle: 'Select Bundle',
+  addItem: 'Add Item',
+  addToOrder: 'Add to Order',
+  removeItem: 'Remove Item',
+  noProductsFound: 'No products found',
+  barcodeScanMode: 'Barcode Scan Mode',
+  
+  // Shipping Address
+  shippingAddressSelection: 'Shipping Address Selection',
+  selectShippingAddress: 'Select Shipping Address',
+  searchAddress: 'Search Address',
+  searchAddressPlaceholder: 'Type to search addresses...',
+  street: 'Street',
+  streetNumber: 'Street Number',
+  city: 'City',
+  state: 'State',
+  zipCode: 'Zip Code',
+  pickupPoint: 'Pickup Point',
+  addNewAddress: 'Add New Address',
+  editAddress: 'Edit Address',
+  deleteAddress: 'Delete Address',
+  setAsDefault: 'Set as Default',
+  
+  // Documents & Files
+  productDocumentsSelection: 'Product Documents Selection',
+  selectDocumentsToSend: 'Select Documents to Send',
+  documentsSelected: '{{count}} document(s) selected',
+  uploadFiles: 'Upload Files',
+  fileUpload: 'File Upload',
+  dropFilesHere: 'Drop files here or click to browse',
+  maxFileSize: 'Max file size: 10MB',
+  supportedFormats: 'Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG',
+  
+  // Order Form Sections
+  orderDetails: 'Order Details',
+  itemsSection: 'Items',
+  shippingInformation: 'Shipping Information',
+  paymentInformation: 'Payment Information',
+  additionalInformation: 'Additional Information',
+  orderSummary: 'Order Summary',
+  
+  // Priority Levels
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  
+  // Order Types
+  pos: 'POS',
+  ord: 'ORD',
+  web: 'Web',
+  tel: 'Tel',
+  
+  // Column Visibility
+  showVatColumn: 'Show VAT Column',
+  showDiscountColumn: 'Show Discount Column',
+  showColumn: 'Show Column',
+  hideColumn: 'Hide Column',
+  
+  // Buttons
+  saveOrder: 'Save Order',
+  updateOrder: 'Update Order',
+  calculateShipping: 'Calculate Shipping',
+  applyDiscount: 'Apply Discount',
+  removeDiscount: 'Remove Discount',
+  addShipping: 'Add Shipping',
+  backToOrders: 'Back to Orders',
+  
+  // Validation Messages
+  customerRequired: 'Please select a customer',
+  itemsRequired: 'Please add at least one item to the order',
+  invalidQuantity: 'Invalid quantity',
+  invalidPrice: 'Invalid price',
+  invalidDiscount: 'Invalid discount',
+  
+  // Create Return Dialog
+  createReturnTicket: 'Create Return Ticket',
+  selectItemsToReturn: 'Select items to return from order {{orderId}}',
+  selectAllItems: 'Select All Items',
+  returnReason: 'Return Reason',
+  returnReasonPlaceholder: 'Enter reason for return...',
+  returnQuantity: 'Return Quantity',
+  
+  // Custom Price Dialog
+  customPrice: 'Custom Price',
+  validFrom: 'Valid From',
+  validTo: 'Valid To',
+  setCustomPrice: 'Set Custom Price',
+  
+  // Variant/Bundle Selection
+  selectVariantOrBundle: 'Select Variant/Bundle',
+  availableVariants: 'Available Variants',
+  availableBundles: 'Available Bundles',
+  variantQuantity: 'Quantity',
+  addSelectedVariants: 'Add Selected Variants',
+  addSelectedBundles: 'Add Selected Bundles',
+  
+  // AI Carton Packing
+  aiCartonPacking: 'AI Carton Packing',
+  optimizePackaging: 'Optimize Packaging',
+  packingPlan: 'Packing Plan',
+  cartonType: 'Carton Type',
+  recommendedCartons: 'Recommended Cartons',
   
   // AllOrders Page
   allOrders: 'All Orders',
@@ -121,6 +377,10 @@ const orders = {
   
   // Toast Messages
   loadError: 'Failed to load orders',
+  orderCreated: 'Order created successfully',
+  orderUpdated: 'Order updated successfully',
+  orderDeleted: 'Order deleted successfully',
+  orderShipped: 'Order shipped successfully',
   updateSuccess: 'Order updated successfully',
   updateError: 'Failed to update order',
   deleteSuccess: 'Deleted {{count}} order(s) successfully',
@@ -154,6 +414,24 @@ const orders = {
   deleteConfirmMessage: 'Are you sure you want to delete {{count}} order(s)? This action cannot be undone.',
   deleteCancel: 'Cancel',
   deleteConfirm: 'Delete',
+  
+  // Pick & Pack Logs
+  logTime: 'Time',
+  logUser: 'User',
+  logAction: 'Action',
+  logItem: 'Item',
+  logQuantity: 'Quantity',
+  logLocation: 'Location',
+  noLogsYet: 'No pick/pack activity logs yet',
+  
+  // Support Tickets
+  ticketStatus: 'Status',
+  ticketPriority: 'Priority',
+  ticketSubject: 'Subject',
+  ticketCreated: 'Created',
+  noTicketsYet: 'No support tickets for this order yet',
+  createNewTicket: 'Create New Ticket',
+  viewTicket: 'View Ticket',
   
 } as const;
 

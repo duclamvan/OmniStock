@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ const valuesAreEqual = (a: any, b: any): boolean => {
 };
 
 export default function FinancialSettings() {
+  const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
   const { financialSettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
@@ -201,15 +203,15 @@ export default function FinancialSettings() {
       
       // The useEffect will automatically update originalSettings when new data loads
       toast({
-        title: "Settings Saved",
-        description: "Financial settings have been updated successfully.",
+        title: t('settings:settingsSaved'),
+        description: t('settings:financialSettingsSavedSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to save settings.",
+        title: t('common:error'),
+        description: error.message || t('settings:settingsSaveError'),
       });
     },
   });
@@ -935,12 +937,12 @@ export default function FinancialSettings() {
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t('settings:savingSettings')}
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Save Settings
+                {t('common:save')} {t('settings:settings')}
               </>
             )}
           </Button>

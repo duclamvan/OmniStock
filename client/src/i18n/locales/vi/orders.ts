@@ -12,6 +12,12 @@ const orders = {
   addOrder: 'Thêm đơn hàng',
   pickAndPack: 'Lấy hàng & Đóng gói',
   shipOrder: 'Giao hàng',
+  captureOrder: 'Chụp đơn hàng',
+  createReturn: 'Tạo phiếu trả hàng',
+  createTicket: 'Tạo Ticket',
+  createCustomPrice: 'Tạo giá tùy chỉnh',
+  startPickingMode: 'Bắt đầu lấy hàng',
+  exitPickingMode: 'Thoát chế độ lấy hàng',
   
   // Order Fields
   orderNumber: 'Mã đơn hàng',
@@ -27,6 +33,10 @@ const orders = {
   orderNotes: 'Ghi chú đơn hàng',
   paymentMethod: 'Phương thức thanh toán',
   paymentStatus: 'Trạng thái thanh toán',
+  priority: 'Độ ưu tiên',
+  orderType: 'Loại đơn',
+  currency: 'Tiền tệ',
+  orderLocation: 'Vị trí đơn hàng',
   
   // Order Status
   pending: 'Chờ xử lý',
@@ -63,8 +73,13 @@ const orders = {
   product: 'Sản phẩm',
   sku: 'SKU',
   qty: 'SL',
+  quantity: 'Số lượng',
   unitPrice: 'Đơn giá',
   lineTotal: 'Thành tiền',
+  price: 'Giá',
+  image: 'Hình ảnh',
+  variant: 'Biến thể',
+  bundle: 'Combo',
   
   // Fulfillment
   fulfillmentStage: 'Giai đoạn xử lý',
@@ -73,6 +88,7 @@ const orders = {
   shippingLabel: 'Nhãn vận chuyển',
   trackingNumber: 'Mã vận đơn',
   carrier: 'Đơn vị vận chuyển',
+  fulfillmentLocation: 'Vị trí xử lý',
   
   // Communication
   communicationChannel: 'Kênh liên lạc',
@@ -80,11 +96,251 @@ const orders = {
   whatsapp: 'WhatsApp',
   zalo: 'Zalo',
   
-  // Messages
-  orderCreated: 'Tạo đơn hàng thành công',
-  orderUpdated: 'Cập nhật đơn hàng thành công',
-  orderDeleted: 'Xóa đơn hàng thành công',
-  orderShipped: 'Giao hàng thành công',
+  // Toast Messages - Status Updates
+  statusUpdated: 'Đã cập nhật trạng thái',
+  statusUpdatedDesc: 'Trạng thái đơn hàng đã được cập nhật thành công',
+  paymentStatusUpdated: 'Đã cập nhật thanh toán',
+  paymentStatusUpdatedDesc: 'Trạng thái thanh toán đã được cập nhật thành công',
+  priorityUpdated: 'Đã cập nhật độ ưu tiên',
+  priorityUpdatedDesc: 'Độ ưu tiên đơn hàng đã được cập nhật thành công',
+  updateFailed: 'Cập nhật thất bại',
+  failedToUpdateStatus: 'Không thể cập nhật trạng thái đơn hàng',
+  failedToUpdatePayment: 'Không thể cập nhật trạng thái thanh toán',
+  failedToUpdatePriority: 'Không thể cập nhật độ ưu tiên',
+  
+  // Toast Messages - Order Actions
+  orderCaptured: 'Đã chụp đơn hàng',
+  orderCapturedDesc: 'Đã lưu ảnh chụp đơn hàng thành công',
+  downloadFailed: 'Tải xuống thất bại',
+  downloadFailedDesc: 'Không thể tạo hóa đơn',
+  exportOrder: 'Xuất đơn hàng',
+  exportOrderDesc: 'Tính năng xuất sẽ sớm ra mắt',
+  copied: 'Đã sao chép!',
+  copiedToClipboard: 'Đã sao chép {{label}} vào clipboard',
+  
+  // Toast Messages - Return/Custom Price
+  allItemsPicked: 'Đã lấy tất cả hàng',
+  allItemsPickedDesc: 'Không có sản phẩm để trả - tất cả đã được lấy thành công',
+  noItemsSelected: 'Chưa chọn sản phẩm',
+  noItemsSelectedDesc: 'Vui lòng chọn ít nhất một sản phẩm để trả hàng',
+  reasonRequired: 'Cần lý do',
+  reasonRequiredDesc: 'Vui lòng cung cấp lý do trả hàng',
+  missingInformation: 'Thiếu thông tin',
+  missingInformationDesc: 'Vui lòng nhập giá tùy chỉnh và ngày bắt đầu',
+  customPriceCreated: 'Đã tạo giá tùy chỉnh cho {{product}}',
+  customPriceError: 'Không thể tạo giá tùy chỉnh',
+  nameRequired: 'Cần tên',
+  nameRequiredDesc: 'Vui lòng nhập tên khách hàng',
+  phoneRequired: 'Cần số điện thoại',
+  phoneRequiredDesc: 'Vui lòng nhập số điện thoại',
+  
+  // Order Details Sections
+  invoice: 'Hóa đơn',
+  customerInformation: 'Thông tin khách hàng',
+  supportTickets: 'Ticket hỗ trợ',
+  pickPackLogs: 'Lịch sử lấy hàng & đóng gói',
+  orderProgress: 'Tiến độ đơn hàng',
+  shippingMethodTracking: 'Phương thức vận chuyển & Theo dõi',
+  warehouseLocation: 'Vị trí kho',
+  filesSent: 'Tệp đã gửi',
+  productDocuments: 'Tài liệu sản phẩm',
+  uploadedFiles: 'Tệp đã tải lên',
+  shippingLabels: 'Nhãn vận chuyển',
+  
+  // Customer Details
+  customerDetails: 'Thông tin khách hàng',
+  customerType: 'Loại khách hàng',
+  phone: 'Điện thoại',
+  email: 'Email',
+  company: 'Công ty',
+  location: 'Vị trí',
+  badges: 'Huy hiệu',
+  showBadges: 'Hiện huy hiệu',
+  hideBadges: 'Ẩn huy hiệu',
+  
+  // Shipping Details
+  method: 'Phương thức',
+  tracking: 'Theo dõi',
+  noTrackingNumber: 'Chưa có mã vận đơn',
+  shippedAt: 'Giao vận lúc',
+  cartons: 'Thùng',
+  box: 'thùng',
+  boxes: 'thùng',
+  cartonNumber: 'Thùng #{{number}}',
+  companyBox: 'Thùng công ty',
+  nonCompany: 'Không công ty',
+  totalWeight: 'Tổng trọng lượng',
+  itemsWeight: 'Trọng lượng hàng',
+  dimensions: 'Kích thước (D×R×C)',
+  totalShipmentWeight: 'Tổng trọng lượng lô hàng',
+  
+  // Order Items Table
+  landingCost: 'Giá nhập',
+  itemNotes: 'Ghi chú sản phẩm',
+  addNote: 'Thêm ghi chú',
+  editNote: 'Sửa ghi chú',
+  saveNote: 'Lưu ghi chú',
+  shippingNotes: 'Ghi chú vận chuyển',
+  quickNoteTemplates: 'Mẫu ghi chú nhanh',
+  
+  // Pricing & Calculations
+  subtotal: 'Tạm tính',
+  discount: 'Giảm giá',
+  discountType: 'Loại giảm giá',
+  discountValue: 'Giá trị giảm',
+  flatDiscount: 'Cố định',
+  rateDiscount: 'Phần trăm',
+  tax: 'Thuế',
+  taxRate: 'Thuế suất',
+  taxAmount: 'Tiền thuế',
+  shipping: 'Vận chuyển',
+  adjustment: 'Điều chỉnh',
+  grandTotal: 'Tổng cộng',
+  actualShippingCost: 'Phí vận chuyển thực tế',
+  profitMargin: 'Biên lợi nhuận',
+  
+  // Tax Invoice
+  taxInvoice: 'Hóa đơn thuế',
+  taxInvoiceEnabled: 'Bật hóa đơn thuế',
+  ico: 'IČO',
+  dic: 'DIČ',
+  vatId: 'Mã số thuế',
+  nameAndAddress: 'Tên & Địa chỉ',
+  country: 'Quốc gia',
+  
+  // COD (Cash on Delivery)
+  codAmount: 'Số tiền COD',
+  codCurrency: 'Tiền tệ COD',
+  enableCod: 'Bật COD',
+  
+  // Customer Selection & Creation
+  searchCustomer: 'Tìm khách hàng',
+  searchCustomerPlaceholder: 'Nhập để tìm kiếm khách hàng (hỗ trợ tiếng Việt có dấu)...',
+  customersFound: 'Tìm thấy {{count}} khách hàng',
+  quickCustomer: 'Khách nhanh',
+  newCustomer: 'Mới',
+  quickTemp: 'Nhanh',
+  telephoneCustomer: 'ĐT',
+  messagingCustomer: 'Tin nhắn',
+  customCustomer: 'Tùy chỉnh',
+  quickCustomerOneTime: 'Khách nhanh (Một lần)',
+  telephoneOrder: 'Đơn điện thoại',
+  socialMediaCustomer: 'Khách mạng xã hội',
+  customCustomerOneTime: 'Khách tùy chỉnh (Một lần)',
+  selectCustomer: 'Chọn khách hàng',
+  idPhoneNumber: 'ID/Số điện thoại *',
+  socialMediaApp: 'App mạng xã hội *',
+  formatWithoutSpaces: 'Định dạng không có khoảng trắng (vd: +420776887045)',
+  confirm: 'Xác nhận',
+  
+  // Product Selection
+  searchProduct: 'Tìm sản phẩm',
+  searchProductPlaceholder: 'Tìm sản phẩm, SKU, hoặc quét mã vạch...',
+  productsFound: 'Tìm thấy {{count}} sản phẩm',
+  selectProduct: 'Chọn sản phẩm',
+  selectVariant: 'Chọn biến thể',
+  selectBundle: 'Chọn combo',
+  addItem: 'Thêm sản phẩm',
+  addToOrder: 'Thêm vào đơn',
+  removeItem: 'Xóa sản phẩm',
+  noProductsFound: 'Không tìm thấy sản phẩm',
+  barcodeScanMode: 'Chế độ quét mã vạch',
+  
+  // Shipping Address
+  shippingAddressSelection: 'Chọn địa chỉ giao hàng',
+  selectShippingAddress: 'Chọn địa chỉ giao hàng',
+  searchAddress: 'Tìm địa chỉ',
+  searchAddressPlaceholder: 'Nhập để tìm địa chỉ...',
+  street: 'Đường',
+  streetNumber: 'Số nhà',
+  city: 'Thành phố',
+  state: 'Tỉnh/Bang',
+  zipCode: 'Mã bưu điện',
+  pickupPoint: 'Điểm lấy hàng',
+  addNewAddress: 'Thêm địa chỉ mới',
+  editAddress: 'Sửa địa chỉ',
+  deleteAddress: 'Xóa địa chỉ',
+  setAsDefault: 'Đặt làm mặc định',
+  
+  // Documents & Files
+  productDocumentsSelection: 'Chọn tài liệu sản phẩm',
+  selectDocumentsToSend: 'Chọn tài liệu để gửi',
+  documentsSelected: 'Đã chọn {{count}} tài liệu',
+  uploadFiles: 'Tải lên tệp',
+  fileUpload: 'Tải lên tệp',
+  dropFilesHere: 'Thả tệp vào đây hoặc nhấp để chọn',
+  maxFileSize: 'Kích thước tối đa: 10MB',
+  supportedFormats: 'Định dạng hỗ trợ: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG',
+  
+  // Order Form Sections
+  orderDetails: 'Chi tiết đơn hàng',
+  itemsSection: 'Sản phẩm',
+  shippingInformation: 'Thông tin vận chuyển',
+  paymentInformation: 'Thông tin thanh toán',
+  additionalInformation: 'Thông tin bổ sung',
+  orderSummary: 'Tóm tắt đơn hàng',
+  
+  // Priority Levels
+  low: 'Thấp',
+  medium: 'Trung bình',
+  high: 'Cao',
+  
+  // Order Types
+  pos: 'POS',
+  ord: 'ORD',
+  web: 'Web',
+  tel: 'ĐT',
+  
+  // Column Visibility
+  showVatColumn: 'Hiện cột VAT',
+  showDiscountColumn: 'Hiện cột giảm giá',
+  showColumn: 'Hiện cột',
+  hideColumn: 'Ẩn cột',
+  
+  // Buttons
+  saveOrder: 'Lưu đơn hàng',
+  updateOrder: 'Cập nhật đơn hàng',
+  calculateShipping: 'Tính phí vận chuyển',
+  applyDiscount: 'Áp dụng giảm giá',
+  removeDiscount: 'Xóa giảm giá',
+  addShipping: 'Thêm vận chuyển',
+  backToOrders: 'Quay lại đơn hàng',
+  
+  // Validation Messages
+  customerRequired: 'Vui lòng chọn khách hàng',
+  itemsRequired: 'Vui lòng thêm ít nhất một sản phẩm vào đơn hàng',
+  invalidQuantity: 'Số lượng không hợp lệ',
+  invalidPrice: 'Giá không hợp lệ',
+  invalidDiscount: 'Giảm giá không hợp lệ',
+  
+  // Create Return Dialog
+  createReturnTicket: 'Tạo phiếu trả hàng',
+  selectItemsToReturn: 'Chọn sản phẩm để trả từ đơn {{orderId}}',
+  selectAllItems: 'Chọn tất cả sản phẩm',
+  returnReason: 'Lý do trả hàng',
+  returnReasonPlaceholder: 'Nhập lý do trả hàng...',
+  returnQuantity: 'Số lượng trả',
+  
+  // Custom Price Dialog
+  customPrice: 'Giá tùy chỉnh',
+  validFrom: 'Có hiệu lực từ',
+  validTo: 'Có hiệu lực đến',
+  setCustomPrice: 'Đặt giá tùy chỉnh',
+  
+  // Variant/Bundle Selection
+  selectVariantOrBundle: 'Chọn biến thể/Combo',
+  availableVariants: 'Biến thể có sẵn',
+  availableBundles: 'Combo có sẵn',
+  variantQuantity: 'Số lượng',
+  addSelectedVariants: 'Thêm biến thể đã chọn',
+  addSelectedBundles: 'Thêm combo đã chọn',
+  
+  // AI Carton Packing
+  aiCartonPacking: 'Đóng gói AI',
+  optimizePackaging: 'Tối ưu đóng gói',
+  packingPlan: 'Kế hoạch đóng gói',
+  cartonType: 'Loại thùng',
+  recommendedCartons: 'Thùng đề xuất',
   
   // AllOrders Page
   allOrders: 'Tất cả đơn hàng',
@@ -121,6 +377,10 @@ const orders = {
   
   // Toast Messages
   loadError: 'Không thể tải đơn hàng',
+  orderCreated: 'Tạo đơn hàng thành công',
+  orderUpdated: 'Cập nhật đơn hàng thành công',
+  orderDeleted: 'Xóa đơn hàng thành công',
+  orderShipped: 'Giao hàng thành công',
   updateSuccess: 'Cập nhật đơn hàng thành công',
   updateError: 'Cập nhật đơn hàng thất bại',
   deleteSuccess: 'Đã xóa {{count}} đơn hàng thành công',
@@ -154,6 +414,24 @@ const orders = {
   deleteConfirmMessage: 'Bạn có chắc chắn muốn xóa {{count}} đơn hàng? Hành động này không thể hoàn tác.',
   deleteCancel: 'Hủy',
   deleteConfirm: 'Xóa',
+  
+  // Pick & Pack Logs
+  logTime: 'Thời gian',
+  logUser: 'Người dùng',
+  logAction: 'Hành động',
+  logItem: 'Sản phẩm',
+  logQuantity: 'Số lượng',
+  logLocation: 'Vị trí',
+  noLogsYet: 'Chưa có lịch sử lấy hàng/đóng gói',
+  noTicketsYet: 'Chưa có ticket hỗ trợ cho đơn hàng này',
+  createNewTicket: 'Tạo Ticket mới',
+  viewTicket: 'Xem Ticket',
+  
+  // Support Tickets
+  ticketStatus: 'Trạng thái',
+  ticketPriority: 'Độ ưu tiên',
+  ticketSubject: 'Tiêu đề',
+  ticketCreated: 'Ngày tạo',
   
 } as const;
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function AllCustomers() {
+  const { t } = useTranslation(['customers', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -83,12 +85,12 @@ export default function AllCustomers() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load customers",
+        title: t('common:error'),
+        description: t('customers:failedToLoadCustomers'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteCustomerMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -97,18 +99,18 @@ export default function AllCustomers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedCustomers.length} customer(s) successfully`,
+        title: t('common:success'),
+        description: t('customers:deletedCustomersSuccess', { count: selectedCustomers.length }),
       });
       setSelectedCustomers([]);
     },
     onError: (error: any) => {
       console.error("Customer delete error:", error);
-      const errorMessage = error.message || "Failed to delete customers";
+      const errorMessage = error.message || t('customers:failedToDeleteCustomers');
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete customer - they have existing orders or records" 
+          ? t('customers:cannotDeleteCustomerHasRecords') 
           : errorMessage,
         variant: "destructive",
       });
@@ -123,7 +125,7 @@ export default function AllCustomers() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Customer",
+      header: t('customers:customer'),
       sortable: true,
       className: "min-w-[150px]",
       cell: (customer) => (
@@ -146,7 +148,7 @@ export default function AllCustomers() {
     },
     {
       key: "country",
-      header: "Country",
+      header: t('customers:country'),
       sortable: true,
       className: "hidden lg:table-cell",
       cell: (customer) => customer.country ? (
@@ -158,7 +160,7 @@ export default function AllCustomers() {
     },
     {
       key: "lastOrderDate",
-      header: "Last Purchase",
+      header: t('customers:lastPurchase'),
       sortable: true,
       className: "hidden md:table-cell",
       cell: (customer) => (
@@ -171,7 +173,7 @@ export default function AllCustomers() {
     },
     {
       key: "orderCount",
-      header: "Orders",
+      header: t('common:orders'),
       sortable: true,
       className: "text-center",
       cell: (customer) => (
@@ -180,7 +182,7 @@ export default function AllCustomers() {
     },
     {
       key: "totalSpent",
-      header: "Sales",
+      header: t('common:sales'),
       sortable: true,
       className: "text-right",
       cell: (customer) => (
@@ -240,7 +242,7 @@ export default function AllCustomers() {
                 <DropdownMenuItem asChild>
                   <Link href={`/customers/${customer.id}/edit`}>
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('common:edit')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -249,7 +251,7 @@ export default function AllCustomers() {
                   className="text-destructive"
                 >
                   <Ban className="h-4 w-4 mr-2" />
-                  Blacklist Customer
+                  {t('customers:blacklistCustomer')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -268,27 +270,27 @@ export default function AllCustomers() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Send Email",
+      label: t('common:sendEmail'),
       action: (customers: any[]) => {
         toast({
-          title: "Send Email",
-          description: `Sending email to ${customers.length} customers...`,
+          title: t('common:sendEmail'),
+          description: t('customers:sendingEmailToCustomers', { count: customers.length }),
         });
       },
     },
     {
       type: "button" as const,
-      label: "Update Type",
+      label: t('customers:updateType'),
       action: (customers: any[]) => {
         toast({
-          title: "Update Type",
-          description: `Updating type for ${customers.length} customers...`,
+          title: t('customers:updateType'),
+          description: t('customers:updatingTypeForCustomers', { count: customers.length }),
         });
       },
     },
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('common:delete'),
       variant: "destructive" as const,
       action: (customers: any[]) => {
         setSelectedCustomers(customers);
@@ -297,11 +299,11 @@ export default function AllCustomers() {
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('common:export'),
       action: (customers: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${customers.length} customers...`,
+          title: t('common:export'),
+          description: t('customers:exportingCustomers', { count: customers.length }),
         });
       },
     },
@@ -314,8 +316,8 @@ export default function AllCustomers() {
 
   const handleBlacklistCustomer = (customer: any) => {
     toast({
-      title: "Blacklist Customer",
-      description: `This will block ${customer.name}'s Facebook ID and address for future orders.`,
+      title: t('customers:blacklistCustomer'),
+      description: t('customers:blacklistCustomerDescription', { name: customer.name }),
     });
     // TODO: Implement blacklist functionality
   };
@@ -324,8 +326,8 @@ export default function AllCustomers() {
     try {
       if (!filteredCustomers || filteredCustomers.length === 0) {
         toast({
-          title: "No Data",
-          description: "No customers to export",
+          title: t('common:noData'),
+          description: t('customers:noCustomersToExport'),
           variant: "destructive",
         });
         return;
@@ -341,17 +343,17 @@ export default function AllCustomers() {
         "Total Spent": formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
       }));
 
-      exportToXLSX(exportData, 'customers', 'Customers');
+      exportToXLSX(exportData, 'customers', t('customers:customers'));
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${filteredCustomers.length} customers to XLSX`,
+        title: t('common:exportSuccessful'),
+        description: t('customers:exportedCustomersToXLSX', { count: filteredCustomers.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export customers to XLSX",
+        title: t('common:exportFailed'),
+        description: t('customers:failedToExportCustomersToXLSX'),
         variant: "destructive",
       });
     }
@@ -361,8 +363,8 @@ export default function AllCustomers() {
     try {
       if (!filteredCustomers || filteredCustomers.length === 0) {
         toast({
-          title: "No Data",
-          description: "No customers to export",
+          title: t('common:noData'),
+          description: t('customers:noCustomersToExport'),
           variant: "destructive",
         });
         return;
@@ -388,17 +390,17 @@ export default function AllCustomers() {
         totalSpent: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
       }));
 
-      exportToPDF('Customers Report', exportData, columns, 'customers');
+      exportToPDF(t('customers:customersReport'), exportData, columns, 'customers');
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${filteredCustomers.length} customers to PDF`,
+        title: t('common:exportSuccessful'),
+        description: t('customers:exportedCustomersToPDF', { count: filteredCustomers.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export customers to PDF",
+        title: t('common:exportFailed'),
+        description: t('customers:failedToExportCustomersToPDF'),
         variant: "destructive",
       });
     }
@@ -412,7 +414,7 @@ export default function AllCustomers() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading customers...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('customers:loadingCustomers')}</p>
         </div>
       </div>
     );
@@ -424,10 +426,10 @@ export default function AllCustomers() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Customers
+            {t('customers:customers')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Monitor customer relationships and track sales performance
+            {t('customers:monitorCustomerRelationships')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -435,24 +437,24 @@ export default function AllCustomers() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export-customers">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('common:export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-item-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export to XLSX
+                {t('common:exportToXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-item-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export to PDF
+                {t('common:exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/customers/add">
             <Button data-testid="button-add-customer">
               <Plus className="h-4 w-4 mr-2" />
-              Add Customer
+              {t('customers:addCustomer')}
             </Button>
           </Link>
         </div>
@@ -466,7 +468,7 @@ export default function AllCustomers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Customers
+                  {t('customers:totalCustomers')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.length || 0}
@@ -485,7 +487,7 @@ export default function AllCustomers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  VIP Customers
+                  {t('customers:vipCustomers')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.filter((c: any) => c.type === 'vip').length || 0}
@@ -504,7 +506,7 @@ export default function AllCustomers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Regular Customers
+                  {t('customers:regularCustomers')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.filter((c: any) => c.type === 'regular').length || 0}
@@ -523,7 +525,7 @@ export default function AllCustomers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Revenue
+                  {t('common:totalRevenue')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -551,7 +553,7 @@ export default function AllCustomers() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg text-slate-900 dark:text-slate-100">Filters & Search</CardTitle>
+            <CardTitle className="text-lg text-slate-900 dark:text-slate-100">{t('common:filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -559,7 +561,7 @@ export default function AllCustomers() {
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
-                placeholder="Search customers..."
+                placeholder={t('common:searchPlaceholder', { item: t('customers:customers').toLowerCase() })}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 focus:border-cyan-500 dark:focus:border-cyan-400 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
@@ -686,13 +688,13 @@ export default function AllCustomers() {
                     {/* Bottom Row - Orders & Spending */}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Orders</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('customers:totalOrders')}</p>
                         <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid={`text-order-count-${customer.id}`}>
                           {customer.orderCount || 0}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lifetime Spending</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('customers:lifetimeSpending')}</p>
                         <p className="text-lg font-bold text-cyan-600 dark:text-cyan-400" data-testid={`text-total-spent-${customer.id}`}>
                           {formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR')}
                         </p>
@@ -707,7 +709,7 @@ export default function AllCustomers() {
           {/* Header & Controls - Always Visible */}
           <div className="flex items-center justify-between gap-3 px-4 sm:px-0 py-4 sm:py-0 sm:pb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Customers</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('customers:customers')}</h2>
               <Badge variant="secondary" className="text-sm">
                 {filteredCustomers?.length || 0}
               </Badge>
@@ -719,37 +721,37 @@ export default function AllCustomers() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
-                <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">{t('common:toggleColumns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.name !== false}
                   onCheckedChange={() => toggleColumnVisibility('name')}
                 >
-                  Customer
+                  {t('customers:customer')}
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.country !== false}
                   onCheckedChange={() => toggleColumnVisibility('country')}
                 >
-                  Country
+                  {t('customers:country')}
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.lastOrderDate !== false}
                   onCheckedChange={() => toggleColumnVisibility('lastOrderDate')}
                 >
-                  Last Purchase
+                  {t('customers:lastPurchase')}
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.orderCount !== false}
                   onCheckedChange={() => toggleColumnVisibility('orderCount')}
                 >
-                  Orders
+                  {t('common:orders')}
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.totalSpent !== false}
                   onCheckedChange={() => toggleColumnVisibility('totalSpent')}
                 >
-                  Sales
+                  {t('common:sales')}
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -775,15 +777,15 @@ export default function AllCustomers() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Delete Customers</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">{t('customers:deleteCustomer')}</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-700 dark:text-gray-300">
-              Are you sure you want to delete {selectedCustomers.length} customer(s)? This action cannot be undone.
+              {t('common:deleteConfirmCount', { count: selectedCustomers.length, item: t('customers:customers').toLowerCase() })} {t('common:deleteWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

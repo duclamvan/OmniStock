@@ -1,12 +1,26 @@
 # Overview
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, designed to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, customer relationship management (CRM), and multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. The project envisions advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization to enhance efficiency and accuracy in supply chain logistics.
 
-# Recent Changes (November 21, 2025)
+# Recent Changes (November 22, 2025)
 
 ## Latest Updates
-1. **Dynamic User Display in Header** - Fixed hardcoded username "ronak_03" in MobileResponsiveLayout.tsx by replacing with `{user?.firstName} {user?.lastName}` from useAuth context. Role and email now also display dynamically from the authenticated user object.
+1. **Comprehensive Vietnamese/English Bilingual Internationalization (i18n)** - Implemented complete localization system using react-i18next:
+   - **Infrastructure**: Created 11 translation namespaces (common, orders, products, inventory, customers, settings, warehouse, shipping, financial, reports, system) with 500+ translation keys in both English and Vietnamese
+   - **Settings Integration**: Language switcher in Settings > General now immediately changes entire UI without page refresh via `i18n.changeLanguage()` with localStorage persistence
+   - **Fully Translated Pages**: Layout (Sidebar, TopBar, breadcrumbs, navigation), Dashboard, OrderDetails (100%), AllOrders (major elements), ProductDetails (100%), AllInventory (60%), AllCustomers (100%), CustomerDetails (100%), All Settings pages (toast messages, buttons, tabs)
+   - **useLanguageSync Hook**: Automatic synchronization between SettingsContext and i18n, reads from localStorage on first load, persists language preference across sessions
+   - **Translation Pattern**: All components use `const { t } = useTranslation(['namespace', 'common'])` with `{t('namespace:key')}` for dynamic text
+   - **Vietnamese Terminology**: Proper business WMS terminology, keeps technical loanwords (API, SKU, COD, VAT) in English per industry standards
 
-2. **Landing Cost List Expandable Items** - Added collapsible items section to each shipment card in Landing Cost List showing:
+2. **Toast Notification Repositioning** - Moved toast notifications to top-right below notification bell icon with improved UX:
+   - Positioned at top: 72px (64px header + 8px gap), right: 16px
+   - Stack downward from top-right with smooth animations
+   - Mobile responsive with proper width constraints
+   - Z-index: 100 (above content, below modals)
+
+3. **Dynamic User Display in Header** - Fixed hardcoded username "ronak_03" in MobileResponsiveLayout.tsx by replacing with `{user?.firstName} {user?.lastName}` from useAuth context. Role and email now also display dynamically from the authenticated user object.
+
+4. **Landing Cost List Expandable Items** - Added collapsible items section to each shipment card in Landing Cost List showing:
    - Product name, quantity (with × symbol), SKU, and category for each item
    - Type-safe implementation with `ensureNumber()` helper to prevent string/number type mismatches
    - Array-based state management (`useState<number[]>`) with proper deduplication

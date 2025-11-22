@@ -211,6 +211,161 @@ const products = {
   oldCost: 'Giá cũ',
   newCost: 'Giá mới',
   
+  // ProductForm - Form Sections
+  imageSection: 'Hình ảnh sản phẩm',
+  basicInfoSection: 'Thông tin cơ bản',
+  stockSection: 'Tồn kho',
+  pricingSection: 'Giá cả',
+  supplierSection: 'Thông tin nhà cung cấp',
+  variantsSection: 'Biến thể sản phẩm',
+  packingSection: 'Hướng dẫn đóng gói',
+  filesSection: 'Tệp đính kèm',
+  
+  // ProductForm - Basic Fields
+  vietnameseName: 'Tên tiếng Việt',
+  vietnameseNamePlaceholder: 'Nhập tên sản phẩm tiếng Việt',
+  productNameRequired: 'Tên sản phẩm là bắt buộc',
+  skuRequired: 'SKU là bắt buộc',
+  descriptionPlaceholder: 'Nhập mô tả sản phẩm',
+  selectCategory: 'Chọn danh mục',
+  selectWarehouse: 'Chọn kho',
+  warehouseLocation: 'Vị trí trong kho',
+  warehouseLocationPlaceholder: 'vd: A1-5',
+  selectSupplier: 'Chọn nhà cung cấp',
+  
+  // ProductForm - Stock Fields
+  currentQuantity: 'Số lượng hiện tại',
+  lowStockAlertHelp: 'Cảnh báo khi tồn kho thấp hơn con số này',
+  
+  // ProductForm - Pricing Fields
+  priceUsd: 'Giá USD',
+  priceVnd: 'Giá VND',
+  priceCny: 'Giá CNY',
+  salesPrice: 'Giá bán',
+  importCost: 'Giá nhập',
+  
+  // ProductForm - Physical Attributes
+  dimensionsCm: 'Kích thước (cm)',
+  weightKg: 'Trọng lượng (kg)',
+  lengthCm: 'Dài (cm)',
+  widthCm: 'Rộng (cm)',
+  heightCm: 'Cao (cm)',
+  
+  // ProductForm - Image Upload
+  uploadProductImages: 'Tải lên hình ảnh sản phẩm',
+  imagePurpose: 'Mục đích hình ảnh',
+  setPrimary: 'Đặt làm chính',
+  viewImage: 'Xem hình ảnh',
+  imageUploaded: 'Đã tải lên hình ảnh',
+  
+  // Image Purpose Descriptions
+  mainWmsImageDesc: 'Hình ảnh sản phẩm chính cho quản lý kho',
+  inHandDesc: 'Sản phẩm cầm tay để tham khảo khi lấy/đóng gói',
+  detailShotDesc: 'Chi tiết cận cảnh, kết cấu hoặc tính năng',
+  packagingDesc: 'Bao bì và hộp sản phẩm',
+  labelBarcodeDesc: 'Nhãn sản phẩm, mã vạch hoặc thẻ SKU',
+  
+  // ProductForm - Variants
+  addVariantSeries: 'Thêm loạt biến thể',
+  bulkScanBarcodes: 'Quét mã vạch hàng loạt',
+  variantBarcode: 'Mã vạch',
+  variantQuantity: 'Số lượng',
+  variantImportCost: 'Giá nhập',
+  noVariantsYet: 'Chưa có biến thể nào',
+  variantImage: 'Hình ảnh biến thể',
+  uploadVariantImage: 'Tải lên hình ảnh',
+  
+  // ProductForm - Series Input
+  seriesInputLabel: 'Nhập loạt',
+  seriesInputPlaceholder: 'vd: 001-005 hoặc 1,3,5',
+  seriesInputHelp: 'Nhập khoảng (001-005) hoặc phân cách bằng dấu phẩy (1,3,5)',
+  generateVariants: 'Tạo biến thể',
+  
+  // ProductForm - Bulk Scan
+  bulkScanTitle: 'Quét mã vạch hàng loạt',
+  bulkScanPlaceholder: 'Quét hoặc dán mã vạch (mỗi dòng một mã)',
+  bulkScanHelp: 'Mỗi mã vạch sẽ tạo một biến thể mới',
+  startScanning: 'Bắt đầu quét',
+  stopScanning: 'Dừng quét',
+  
+  // ProductForm - Tiered Pricing
+  addTieredPrice: 'Thêm giá theo số lượng',
+  editTieredPrice: 'Sửa giá theo số lượng',
+  deleteTieredPrice: 'Xóa giá theo số lượng',
+  minQuantity: 'Số lượng tối thiểu',
+  maxQuantity: 'Số lượng tối đa',
+  priceType: 'Loại giá',
+  tiered: 'Theo bậc',
+  wholesale: 'Bán sỉ',
+  noTieredPricing: 'Chưa thiết lập giá theo số lượng',
+  
+  // ProductForm - Packing
+  packingMaterial: 'Vật liệu đóng gói',
+  selectPackingMaterial: 'Chọn vật liệu đóng gói',
+  packingInstructions: 'Hướng dẫn đóng gói',
+  addPackingInstruction: 'Thêm hướng dẫn',
+  packingInstructionText: 'Văn bản hướng dẫn',
+  packingInstructionImage: 'Hình ảnh hướng dẫn',
+  noPackingInstructions: 'Chưa có hướng dẫn đóng gói',
+  
+  // ProductForm - Buttons
+  saveProduct: 'Lưu sản phẩm',
+  updateProduct: 'Cập nhật sản phẩm',
+  cancel: 'Hủy',
+  add: 'Thêm',
+  save: 'Lưu',
+  delete: 'Xóa',
+  close: 'Đóng',
+  confirm: 'Xác nhận',
+  expandAll: 'Mở rộng tất cả',
+  collapseAll: 'Thu gọn tất cả',
+  
+  // ProductForm - Toast Messages
+  productSaved: 'Lưu sản phẩm thành công',
+  productSaveError: 'Không thể lưu sản phẩm',
+  variantAdded: 'Thêm biến thể thành công',
+  variantUpdated: 'Cập nhật biến thể thành công',
+  variantDeleted: 'Xóa biến thể thành công',
+  variantError: 'Không thể lưu biến thể',
+  tieredPriceAdded: 'Thêm giá theo số lượng thành công',
+  tieredPriceUpdated: 'Cập nhật giá theo số lượng thành công',
+  tieredPriceDeleted: 'Xóa giá theo số lượng thành công',
+  tieredPriceError: 'Không thể lưu giá theo số lượng',
+  imageUploadSuccess: 'Tải lên hình ảnh thành công',
+  imageUploadError: 'Không thể tải lên hình ảnh',
+  imageDeleteSuccess: 'Xóa hình ảnh thành công',
+  imageDeleteError: 'Không thể xóa hình ảnh',
+  
+  // ProductForm - Validation
+  enterVariantName: 'Nhập tên biến thể',
+  enterBarcode: 'Nhập mã vạch',
+  enterQuantity: 'Nhập số lượng',
+  enterPrice: 'Nhập giá',
+  enterImportCost: 'Nhập giá nhập',
+  enterSeriesInput: 'Nhập loạt',
+  enterMinQuantity: 'Nhập số lượng tối thiểu',
+  atLeastOnePrice: 'Phải chỉ định ít nhất một giá',
+  invalidSeriesFormat: 'Định dạng loạt không hợp lệ',
+  
+  // ProductForm - Auto-conversion
+  autoConverted: 'Tự động chuyển đổi từ {{from}}',
+  currencyAutoConversion: 'Tự động chuyển đổi tiền tệ',
+  conversionNote: 'Các tiền tệ khác sẽ tự động điền sau 1 giây',
+  
+  // ProductDetails - Tabs
+  detailsTab: 'Chi tiết',
+  variantsTab: 'Biến thể',
+  imagesTab: 'Hình ảnh',
+  filesTab: 'Tệp tin',
+  historyTab: 'Lịch sử',
+  locationsTab: 'Vị trí',
+  
+  // ProductDetails - Actions
+  saveChanges: 'Lưu thay đổi',
+  discardChanges: 'Hủy thay đổi',
+  downloadInvoice: 'Tải hóa đơn',
+  printLabel: 'In nhãn',
+  
 } as const;
 
 export default products;

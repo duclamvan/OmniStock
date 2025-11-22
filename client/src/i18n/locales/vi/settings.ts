@@ -270,6 +270,106 @@ const settings = {
   invalidUrl: 'URL không hợp lệ',
   valueTooLow: 'Giá trị quá thấp',
   valueTooHigh: 'Giá trị quá cao',
+  
+  // GeneralSettings specific
+  pageTitle: 'Cài đặt chung',
+  pageDescription: 'Cấu hình các cài đặt kinh doanh cốt lõi, bản địa hóa và tùy chọn vận hành',
+  
+  // Tab names
+  tabCompany: 'Công ty',
+  tabLocalization: 'Bản địa hóa',
+  tabOperations: 'Vận hành',
+  tabCustomer: 'Khách hàng',
+  tabSecurity: 'Bảo mật',
+  
+  // Company Info descriptions
+  companyInfoDescription: 'Thông tin công ty cơ bản và chi tiết liên hệ',
+  companyNamePlaceholder: 'Nhập tên công ty của bạn',
+  companyEmailPlaceholder: 'congty@vidu.com',
+  companyPhonePlaceholder: '+84 XXX XXX XXX',
+  companyAddressPlaceholder: '123 Đường Kinh Doanh',
+  companyCityPlaceholder: 'Thành phố',
+  companyZipPlaceholder: '12345',
+  companyWebsitePlaceholder: 'https://vidu.com',
+  companyVatIdPlaceholder: 'XX123456789',
+  companyLogoUrlDescription: 'URL công khai đến logo công ty (dùng trong hóa đơn và email)',
+  
+  // Localization descriptions
+  localizationDescription: 'Đặt ngôn ngữ, múi giờ và tùy chọn khu vực cho doanh nghiệp của bạn',
+  localizationHelp: 'Tất cả ngày và giờ hệ thống sẽ được hiển thị theo cài đặt này',
+  switchLanguage: 'Chuyển ngôn ngữ',
+  languageDescription: 'Ngôn ngữ chính cho giao diện hệ thống',
+  timezoneDescription: 'Múi giờ địa phương của bạn (ảnh hưởng đến hiển thị ngày/giờ)',
+  dateFormatDescription: 'Cách hiển thị ngày trong hệ thống',
+  timeFormatDescription: 'Cách hiển thị giờ trong hệ thống',
+  
+  // Regional Settings
+  regionalSettingsTitle: 'Cài đặt khu vực',
+  regionalSettingsDescription: 'Giờ hoạt động kinh doanh và thông tin liên hệ',
+  workingDaysDescription: 'Ngày hoạt động trong tuần',
+  workingDaysHelp: 'Chọn tất cả ngày kho của bạn hoạt động',
+  businessHoursDescription: 'Giờ làm việc hàng ngày',
+  warehouseEmergencyContactDescription: 'Đường dây khẩn cấp kho 24/7',
+  warehouseEmergencyContactPlaceholder: '+420 XXX XXX XXX',
+  warehouseContactEmailDescription: 'Yêu cầu chung về kho',
+  warehouseContactEmailPlaceholder: 'kho@daviesupply.com',
+  
+  // Notification Preferences
+  notificationPreferencesDescription: 'Cài đặt thông báo Email và SMS',
+  emailNotificationsLabel: 'Thông báo Email',
+  emailNotificationsDescription: 'Nhận thông báo qua email',
+  smsNotificationsLabel: 'Thông báo SMS',
+  smsNotificationsDescription: 'Nhận thông báo qua SMS',
+  lowStockAlertsLabel: 'Cảnh báo sắp hết hàng',
+  lowStockAlertsDescription: 'Nhận thông báo khi tồn kho thấp',
+  orderStatusChangesLabel: 'Thay đổi trạng thái đơn hàng',
+  orderStatusChangesDescription: 'Nhận thông báo khi trạng thái đơn hàng thay đổi',
+  dailySummaryLabel: 'Báo cáo tổng kết hàng ngày',
+  dailySummaryDescription: 'Nhận tổng kết kinh doanh hàng ngày',
+  weeklyReportLabel: 'Báo cáo tuần',
+  weeklyReportDescription: 'Nhận báo cáo kinh doanh hàng tuần',
+  
+  // Customer Portal
+  customerPortalTitle: 'Cổng khách hàng',
+  customerPortalDescription: 'Cổng khách hàng tự phục vụ và chính sách',
+  enableCustomerPortalLabel: 'Bật cổng khách hàng',
+  enableCustomerPortalDescription: 'Cho phép khách hàng theo dõi đơn hàng và quản lý tài khoản',
+  returnPolicyLabel: 'Chính sách đổi trả',
+  returnPolicyPlaceholder: 'Nhập chính sách đổi trả của bạn tại đây...',
+  returnPolicyDescription: 'Văn bản này sẽ được hiển thị cho khách hàng',
+  
+  // AI Features
+  aiFeaturesTitle: 'Tính năng AI',
+  aiFeaturesDescription: 'Trí tuệ nhân tạo và tính năng tự động hóa',
+  aiAddressParsingLabel: 'Phân tích địa chỉ bằng AI',
+  aiAddressParsingDescription: 'Tự động phân tích và xác thực địa chỉ khách hàng',
+  aiCartonPackingLabel: 'Đóng gói thùng bằng AI',
+  aiCartonPackingDescription: 'Tối ưu hóa lựa chọn gói hàng với AI',
+  
+  // Compliance & Security
+  complianceSecurityTitle: 'Tuân thủ & Bảo mật',
+  complianceSecurityDescription: 'Nhật ký kiểm toán và chính sách lưu trữ dữ liệu',
+  auditLogRetentionLabel: 'Lưu trữ nhật ký kiểm toán (Ngày)',
+  auditLogRetentionDescription: 'Thời gian lưu nhật ký kiểm toán (7-365 ngày, đề xuất: 90 ngày)',
+  
+  // Toast messages
+  savingSettings: 'Đang lưu...',
+  saveAllSettings: 'Lưu tất cả cài đặt',
+  settingsSavedSuccess: 'Đã lưu cài đặt thành công!',
+  settingsSaveError: 'Lưu cài đặt thất bại',
+  loadingSettings: 'Đang tải cài đặt...',
+  errorLoadingSettings: 'Lỗi khi tải cài đặt',
+  
+  // Form validation errors
+  formValidationErrors: 'Lỗi xác thực biểu mẫu',
+  
+  // Language options
+  english: 'Tiếng Anh',
+  vietnamese: 'Tiếng Việt',
+  
+  // Select placeholders
+  selectCountry: 'Chọn quốc gia',
+  selectOption: 'Chọn tùy chọn',
 } as const;
 
 export default settings;

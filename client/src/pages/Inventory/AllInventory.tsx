@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AllInventory() {
+  const { t } = useTranslation(['inventory', 'common']);
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");

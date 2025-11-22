@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from 'react-i18next';
 import { Package, Save, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useQuery } from "@tanstack/react-query";
@@ -112,6 +113,7 @@ const valuesAreEqual = (a: any, b: any): boolean => {
 };
 
 export default function InventorySettings() {
+  const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
   const { inventorySettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
@@ -237,15 +239,15 @@ export default function InventorySettings() {
       
       // The useEffect will automatically update originalSettings when new data loads
       toast({
-        title: "Settings Saved",
-        description: "Inventory settings have been updated successfully.",
+        title: t('settings:settingsSaved'),
+        description: t('settings:inventorySettingsSavedSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to save settings.",
+        title: t('common:error'),
+        description: error.message || t('settings:settingsSaveError'),
       });
     },
   });
@@ -1248,12 +1250,12 @@ export default function InventorySettings() {
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t('settings:savingSettings')}
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Save Settings
+                {t('common:save')} {t('settings:settings')}
               </>
             )}
           </Button>

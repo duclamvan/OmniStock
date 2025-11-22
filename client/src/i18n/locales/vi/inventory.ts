@@ -158,6 +158,105 @@ const inventory = {
   stockAllocation: 'Phân bổ tồn kho',
   stockReservation: 'Đặt trước tồn kho',
   
+  // AllInventory Page
+  allInventory: 'Tất cả tồn kho',
+  manageProductsDescription: 'Quản lý sản phẩm, mức tồn kho và theo dõi tồn kho',
+  viewingArchive: 'Xem kho lưu trữ',
+  viewingActive: 'Xem tồn kho đang hoạt động',
+  
+  // Actions - AllInventory
+  addProduct: 'Thêm sản phẩm',
+  exportToXLSX: 'Xuất Excel',
+  exportToPDF: 'Xuất PDF',
+  importFromExcel: 'Nhập từ Excel',
+  showArchive: 'Hiện kho lưu trữ',
+  showActive: 'Hiện đang hoạt động',
+  toggleArchive: 'Chuyển kho lưu trữ',
+  restoreProduct: 'Khôi phục sản phẩm',
+  archiveProduct: 'Lưu trữ sản phẩm',
+  editProduct: 'Sửa sản phẩm',
+  deleteProduct: 'Xóa sản phẩm',
+  columnSettings: 'Cài đặt cột',
+  backToInventory: 'Quay lại tồn kho',
+  
+  // Search & Filters
+  searchPlaceholder: 'Tìm kiếm sản phẩm theo tên, SKU hoặc mô tả...',
+  filterByCategory: 'Lọc theo danh mục',
+  allCategories: 'Tất cả danh mục',
+  
+  // Table Columns
+  image: 'Hình ảnh',
+  productColumn: 'Sản phẩm',
+  category: 'Danh mục',
+  qty: 'SL',
+  quantity: 'Số lượng',
+  unitsSold: 'Đã bán',
+  lowStockAlert: 'Cảnh báo tồn kho thấp',
+  priceEur: 'Giá EUR',
+  priceCzk: 'Giá CZK',
+  importCostUsd: 'Giá nhập USD',
+  importCostCzk: 'Giá nhập CZK',
+  importCostEur: 'Giá nhập EUR',
+  sku: 'SKU',
+  barcode: 'Mã vạch',
+  supplier: 'Nhà cung cấp',
+  status: 'Trạng thái',
+  actions: 'Thao tác',
+  name: 'Tên',
+  
+  // Product Status Badges
+  active: 'Đang hoạt động',
+  inactive: 'Không hoạt động',
+  inStock: 'Còn hàng',
+  warning: 'Cảnh báo',
+  new: 'Mới',
+  restocked: 'Đã nhập thêm',
+  
+  // Toast Messages - Success
+  success: 'Thành công',
+  error: 'Lỗi',
+  productUpdatedSuccess: 'Cập nhật sản phẩm thành công',
+  productDeletedSuccess: 'Đã đánh dấu sản phẩm không hoạt động',
+  productRestoredSuccess: 'Khôi phục sản phẩm thành công',
+  productArchivedSuccess: 'Đã chuyển sản phẩm vào kho lưu trữ',
+  exportSuccessXLSX: 'Đã xuất {{count}} sản phẩm ra XLSX',
+  exportSuccessPDF: 'Đã xuất {{count}} sản phẩm ra PDF',
+  exportSuccessful: 'Xuất dữ liệu thành công',
+  importSuccessful: 'Nhập dữ liệu thành công',
+  importSuccess: 'Nhập thành công {{count}} sản phẩm',
+  
+  // Toast Messages - Errors
+  loadError: 'Không thể tải sản phẩm',
+  updateError: 'Không thể cập nhật sản phẩm',
+  deleteError: 'Không thể xóa sản phẩm',
+  deleteErrorReferenced: 'Không thể xóa sản phẩm - sản phẩm đang được sử dụng trong đơn hàng',
+  restoreError: 'Không thể khôi phục sản phẩm',
+  archiveError: 'Không thể lưu trữ sản phẩm',
+  noDataToExport: 'Không có dữ liệu để xuất',
+  noProductsToExport: 'Không có sản phẩm để xuất',
+  exportFailed: 'Xuất dữ liệu thất bại',
+  exportFailedXLSX: 'Không thể xuất ra XLSX',
+  exportFailedPDF: 'Không thể xuất ra PDF',
+  importFailed: 'Nhập dữ liệu thất bại',
+  
+  // Import Messages
+  importCompletedWithErrors: 'Nhập hoàn tất nhưng có lỗi',
+  importSuccessWithErrors: 'Đã nhập {{successCount}} sản phẩm, {{errorCount}} lỗi. Xem console để biết chi tiết.',
+  importFailedExcel: 'Không thể nhập tệp Excel',
+  noDataFound: 'Không tìm thấy dữ liệu',
+  excelFileEmpty: 'Tệp Excel trống',
+  rowSkipped: 'Bỏ qua dòng: Thiếu tên hoặc SKU',
+  
+  // Column Visibility
+  showColumn: 'Hiện {{column}}',
+  hideColumn: 'Ẩn {{column}}',
+  visibleColumns: 'Các cột hiển thị',
+  
+  // Empty States
+  noProducts: 'Không tìm thấy sản phẩm',
+  noProductsDescription: 'Thêm sản phẩm đầu tiên để bắt đầu',
+  noProductsInCategory: 'Không có sản phẩm trong danh mục này',
+  
 } as const;
 
 export default inventory;

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft, 
   Edit, 
@@ -56,6 +57,7 @@ import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
 export default function CustomerDetails() {
+  const { t } = useTranslation(['customers', 'common']);
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
@@ -179,7 +181,7 @@ export default function CustomerDetails() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading customer details...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('customers:loadingCustomerDetails')}</p>
         </div>
       </div>
     );
@@ -235,17 +237,17 @@ export default function CustomerDetails() {
       const daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysSinceLastOrder < 30) {
-        badges.push({ label: 'Active', icon: Activity, color: 'bg-green-50 border-green-300 text-green-700' });
+        badges.push({ label: t('customers:active'), icon: Activity, color: 'bg-green-50 border-green-300 text-green-700' });
       } else if (daysSinceLastOrder > 180) {
-        badges.push({ label: 'Inactive', icon: AlertCircle, color: 'bg-red-50 border-red-300 text-red-700' });
+        badges.push({ label: t('customers:inactive'), icon: AlertCircle, color: 'bg-red-50 border-red-300 text-red-700' });
       }
     }
     
     // Type badges
     if (customer.type === 'wholesale') {
-      badges.push({ label: 'Wholesale', icon: Building, color: 'bg-slate-50 border-slate-300 text-slate-700' });
+      badges.push({ label: t('customers:wholesale'), icon: Building, color: 'bg-slate-50 border-slate-300 text-slate-700' });
     } else if (customer.type === 'vip') {
-      badges.push({ label: 'VIP', icon: Star, color: 'bg-purple-50 border-purple-300 text-purple-700' });
+      badges.push({ label: t('customers:vip'), icon: Star, color: 'bg-purple-50 border-purple-300 text-purple-700' });
     }
     
     return badges;
@@ -277,7 +279,7 @@ export default function CustomerDetails() {
                   {customerDuration && (
                     <>
                       <span className="hidden lg:inline">•</span>
-                      <span className="shrink-0">Customer for {customerDuration}</span>
+                      <span className="shrink-0">{t('customers:customerFor', { duration: customerDuration })}</span>
                     </>
                   )}
                 </div>
@@ -286,7 +288,7 @@ export default function CustomerDetails() {
             <Link href={`/customers/${id}/edit`}>
               <Button data-testid="button-editCustomer" className="shrink-0">
                 <Edit className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Edit</span>
+                <span className="hidden lg:inline">{t('common:edit')}</span>
               </Button>
             </Link>
           </div>
@@ -306,7 +308,7 @@ export default function CustomerDetails() {
               {customer.hasPayLaterBadge && (
                 <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
                   <CreditCard className="mr-1 h-3 w-3" />
-                  Pay Later
+                  {t('customers:payLater')}
                 </Badge>
               )}
             </div>
@@ -325,7 +327,7 @@ export default function CustomerDetails() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100">{orders.length}</p>
-                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Total Orders</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">{t('customers:totalOrders')}</p>
                 </div>
               </div>
             </CardContent>
@@ -338,7 +340,7 @@ export default function CustomerDetails() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-base lg:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{formatCurrency(totalSpent, customerCurrency)}</p>
-                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Total Spent</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">{t('customers:totalSpent')}</p>
                 </div>
               </div>
             </CardContent>
@@ -351,7 +353,7 @@ export default function CustomerDetails() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-base lg:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{formatCurrency(averageOrderValue, customerCurrency)}</p>
-                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Avg Order</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">{t('customers:avgOrder')}</p>
                 </div>
               </div>
             </CardContent>
@@ -364,7 +366,7 @@ export default function CustomerDetails() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100">{unpaidOrders}</p>
-                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Unpaid</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">{t('customers:unpaid')}</p>
                 </div>
               </div>
             </CardContent>
@@ -384,7 +386,7 @@ export default function CustomerDetails() {
                 data-testid="tab-details"
               >
                 <FileText className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Details</span>
+                <span className="hidden lg:inline">{t('common:details')}</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="orders" 
@@ -392,7 +394,7 @@ export default function CustomerDetails() {
                 data-testid="tab-orders"
               >
                 <Package className="h-4 w-4 lg:mr-2" />
-                <span className="hidden sm:inline">Orders</span>
+                <span className="hidden sm:inline">{t('common:orders')}</span>
                 <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                   {orders.length}
                 </Badge>
@@ -403,7 +405,7 @@ export default function CustomerDetails() {
                 data-testid="tab-prices"
               >
                 <Tag className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Prices</span>
+                <span className="hidden lg:inline">{t('customers:prices')}</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="tickets" 
@@ -411,7 +413,7 @@ export default function CustomerDetails() {
                 data-testid="tab-tickets"
               >
                 <Ticket className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Tickets</span>
+                <span className="hidden lg:inline">{t('customers:tickets')}</span>
                 {tickets.length > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                     {tickets.length}
@@ -428,7 +430,7 @@ export default function CustomerDetails() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <Globe className="h-5 w-5 text-blue-600" />
-                    Location & Business Info
+                    {t('customers:locationBusinessInfo')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -452,13 +454,13 @@ export default function CustomerDetails() {
                       )}
                       {customer.facebookId && (
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-600 ml-6">Facebook ID:</span>
+                          <span className="text-slate-600 ml-6">{t('customers:facebookId')}:</span>
                           <span className="font-medium" data-testid="text-facebookId">{customer.facebookId}</span>
                         </div>
                       )}
                       {customer.facebookName && customer.facebookName !== customer.name && (
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-600 ml-6">Facebook Name:</span>
+                          <span className="text-slate-600 ml-6">{t('customers:facebookName')}:</span>
                           <span className="font-medium" data-testid="text-facebookName">{customer.facebookName}</span>
                         </div>
                       )}
@@ -468,7 +470,7 @@ export default function CustomerDetails() {
                   {/* Customer Name */}
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-slate-400 shrink-0" />
-                    <span className="text-slate-600 dark:text-slate-300">Customer:</span>
+                    <span className="text-slate-600 dark:text-slate-300">{t('customers:customer')}:</span>
                     <span className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-customerName">{customer.name}</span>
                   </div>
 
@@ -476,7 +478,7 @@ export default function CustomerDetails() {
                   {customer.country && (
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="text-slate-600 dark:text-slate-300">Country:</span>
+                      <span className="text-slate-600 dark:text-slate-300">{t('customers:country')}:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5" data-testid="text-country">
                         <span className="text-lg">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
                         {customer.country}
@@ -488,7 +490,7 @@ export default function CustomerDetails() {
                   {customer.preferredCurrency && (
                     <div className="flex items-center gap-2 text-sm">
                       <Banknote className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="text-slate-600 dark:text-slate-300">Preferred Currency:</span>
+                      <span className="text-slate-600 dark:text-slate-300">{t('customers:preferredCurrency')}:</span>
                       <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid="badge-currency">
                         {customer.preferredCurrency}
                       </Badge>
@@ -502,7 +504,7 @@ export default function CustomerDetails() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <Receipt className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Tax & Business Information
+                    {t('customers:taxBusinessInfo')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -511,7 +513,7 @@ export default function CustomerDetails() {
                       {/* Czech Company Information */}
                       {customer.country === 'Czech Republic' && (customer.ico || customer.dic) && (
                         <div className="space-y-2 pb-3 border-b dark:border-gray-700">
-                          <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Czech Company Information</h4>
+                          <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">{t('customers:czechCompanyInformation')}</h4>
                           {customer.ico && (
                             <div className="flex items-center gap-2 text-sm">
                               <Building className="h-4 w-4 text-slate-400 shrink-0" />
@@ -532,30 +534,30 @@ export default function CustomerDetails() {
                       {/* EU VAT Information */}
                       {customer.vatNumber && (
                         <div className="space-y-2">
-                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">EU VAT Information</h4>
+                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('customers:euVatInformation')}</h4>
                           <div className="flex items-center gap-2 text-sm">
                             <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="text-slate-600">VAT Number:</span>
+                            <span className="text-slate-600">{t('customers:vatNumber')}:</span>
                             <span className="font-medium font-mono" data-testid="text-vatNumber">{customer.vatNumber}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-slate-600 ml-6">VAT Status:</span>
+                            <span className="text-slate-600 ml-6">{t('customers:vatStatus')}:</span>
                             {customer.vatValid ? (
                               <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700" data-testid="badge-vatValid">
                                 <CheckCircle className="h-3 w-3 mr-1" />
-                                Valid
+                                {t('customers:valid')}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="bg-red-50 border-red-300 text-red-700" data-testid="badge-vatInvalid">
                                 <X className="h-3 w-3 mr-1" />
-                                Invalid
+                                {t('customers:invalid')}
                               </Badge>
                             )}
                           </div>
                           {customer.vatCheckedAt && (
                             <div className="flex items-center gap-2 text-xs text-slate-500">
                               <Clock className="h-3 w-3 shrink-0 ml-6" />
-                              <span>Last checked: {formatDate(customer.vatCheckedAt)}</span>
+                              <span>{t('customers:lastChecked')}: {formatDate(customer.vatCheckedAt)}</span>
                             </div>
                           )}
                           {/* VAT Company Metadata */}
@@ -564,14 +566,14 @@ export default function CustomerDetails() {
                               {customer.vatCompanyName && (
                                 <div className="flex items-center gap-2 text-sm">
                                   <Building className="h-4 w-4 text-slate-400 shrink-0" />
-                                  <span className="text-slate-600">Company Name:</span>
+                                  <span className="text-slate-600">{t('customers:companyName')}:</span>
                                   <span className="font-medium" data-testid="text-vatCompanyName">{customer.vatCompanyName}</span>
                                 </div>
                               )}
                               {customer.vatCompanyAddress && (
                                 <div className="flex items-start gap-2 text-sm">
                                   <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                                  <span className="text-slate-600 shrink-0">Company Address:</span>
+                                  <span className="text-slate-600 shrink-0">{t('customers:companyAddress')}:</span>
                                   <span className="font-medium" data-testid="text-vatCompanyAddress">{customer.vatCompanyAddress}</span>
                                 </div>
                               )}
@@ -583,7 +585,7 @@ export default function CustomerDetails() {
                   ) : (
                     <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
                       <Receipt className="mx-auto h-10 w-10 mb-2 text-slate-300" />
-                      <p className="text-sm text-slate-500">No tax information available</p>
+                      <p className="text-sm text-slate-500">{t('customers:noTaxInfo')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -594,7 +596,7 @@ export default function CustomerDetails() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <User className="h-5 w-5 text-blue-600" />
-                    Contact Information
+                    {t('customers:contactInformation')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -616,7 +618,7 @@ export default function CustomerDetails() {
                       {customer.email && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="text-slate-600">Email:</span>
+                          <span className="text-slate-600">{t('customers:email')}:</span>
                           <a 
                             href={`mailto:${customer.email}`}
                             className="font-medium text-blue-600 hover:underline truncate"
@@ -631,7 +633,7 @@ export default function CustomerDetails() {
                       {customer.phone && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="text-slate-600">Phone:</span>
+                          <span className="text-slate-600">{t('customers:phone')}:</span>
                           <a 
                             href={`tel:${customer.phone}`}
                             className="font-medium text-blue-600 hover:underline"
@@ -647,7 +649,7 @@ export default function CustomerDetails() {
                         <div className="flex items-start gap-2 text-sm">
                           <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <span className="text-slate-600">Address:</span>
+                            <span className="text-slate-600">{t('customers:address')}:</span>
                             <div className="font-medium mt-1 space-y-0.5" data-testid="text-address">
                               {customer.address && <p>{customer.address}</p>}
                               {(customer.city || customer.zipCode) && (
@@ -666,7 +668,7 @@ export default function CustomerDetails() {
                         <div className="flex items-start gap-2 text-sm pt-3 border-t">
                           <MessageCircle className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <span className="text-slate-600 block mb-1">Notes:</span>
+                            <span className="text-slate-600 block mb-1">{t('customers:notes')}:</span>
                             <p className="text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg" data-testid="text-notes">
                               {customer.notes}
                             </p>
@@ -677,7 +679,7 @@ export default function CustomerDetails() {
                   ) : (
                     <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
                       <User className="mx-auto h-10 w-10 mb-2 text-slate-300" />
-                      <p className="text-sm text-slate-500">No contact information available</p>
+                      <p className="text-sm text-slate-500">{t('customers:noContactInformation')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -689,7 +691,7 @@ export default function CustomerDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                   <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  Shipping Addresses
+                  {t('customers:shippingAddresses')}
                   {shippingAddresses.length > 0 && (
                     <Badge variant="secondary" className="ml-2">
                       {shippingAddresses.length}
@@ -701,8 +703,8 @@ export default function CustomerDetails() {
                 {shippingAddresses.length === 0 ? (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <Truck className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No shipping addresses added yet</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Shipping addresses will appear here when added</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('customers:noShippingAddresses')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:shippingAddressesWillAppear')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -721,7 +723,7 @@ export default function CustomerDetails() {
                           </div>
                           {address.isPrimary && (
                             <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid={`badge-primary-${index}`}>
-                              Primary
+                              {t('customers:primary')}
                             </Badge>
                           )}
                         </div>
@@ -768,7 +770,7 @@ export default function CustomerDetails() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                   <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  Billing Addresses
+                  {t('customers:billingAddresses')}
                   {billingAddresses.length > 0 && (
                     <Badge variant="secondary" className="ml-2">
                       {billingAddresses.length}
@@ -780,8 +782,8 @@ export default function CustomerDetails() {
                 {billingAddresses.length === 0 ? (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <Building className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No billing addresses added yet</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Billing addresses will appear here when added</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('customers:noBillingAddresses')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:billingAddressesWillAppear')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -795,12 +797,12 @@ export default function CustomerDetails() {
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                             <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                              {address.company || `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Billing Address'}
+                              {address.company || `${address.firstName || ''} ${address.lastName || ''}`.trim() || t('customers:billingAddress')}
                             </span>
                           </div>
                           {address.isPrimary && (
                             <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid={`badge-billingPrimary-${index}`}>
-                              Primary
+                              {t('customers:primary')}
                             </Badge>
                           )}
                         </div>
@@ -875,7 +877,7 @@ export default function CustomerDetails() {
                 <div className="flex items-center justify-between mb-4">
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <Package className="h-5 w-5 text-blue-600" />
-                    Order History ({filteredOrders.length}{orderSearch && orders.length !== filteredOrders.length ? ` of ${orders.length}` : ''})
+                    {t('customers:orderHistory')} ({filteredOrders.length}{orderSearch && orders.length !== filteredOrders.length ? ` ${t('customers:of')} ${orders.length}` : ''})
                   </CardTitle>
                   {orders.length > 0 && (
                     <Button
@@ -888,12 +890,12 @@ export default function CustomerDetails() {
                       {expandAll ? (
                         <>
                           <Minimize2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Collapse All</span>
+                          <span className="hidden sm:inline">{t('customers:collapseAll')}</span>
                         </>
                       ) : (
                         <>
                           <Maximize2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Expand All</span>
+                          <span className="hidden sm:inline">{t('customers:expandAll')}</span>
                         </>
                       )}
                     </Button>
@@ -904,7 +906,7 @@ export default function CustomerDetails() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       type="text"
-                      placeholder="Search orders, items, products..."
+                      placeholder={t('customers:searchOrdersPlaceholder')}
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
                       className="pl-10 pr-10"
@@ -926,21 +928,21 @@ export default function CustomerDetails() {
                 {orders.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
                     <Package className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">No orders found</p>
-                    <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
+                    <p className="text-sm font-medium text-slate-700">{t('customers:noOrders')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('customers:ordersWillAppear')}</p>
                   </div>
                 ) : filteredOrders.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
                     <Search className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">No orders match your search</p>
-                    <p className="text-xs text-slate-500 mt-1">Try a different search term</p>
+                    <p className="text-sm font-medium text-slate-700">{t('customers:noOrdersMatch')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('customers:tryDifferentSearch')}</p>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="mt-3"
                       onClick={() => setOrderSearch('')}
                     >
-                      Clear Search
+                      {t('customers:clearSearch')}
                     </Button>
                   </div>
                 ) : (
@@ -963,7 +965,7 @@ export default function CustomerDetails() {
                                   <span className="text-slate-300">•</span>
                                   <div className="flex items-center gap-1">
                                     <Package className="h-3 w-3 shrink-0" />
-                                    <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span>
+                                    <span>{order.items?.length || 0} {order.items?.length === 1 ? t('customers:item') : t('customers:items')}</span>
                                   </div>
                                 </div>
                               </div>
@@ -988,12 +990,12 @@ export default function CustomerDetails() {
                                   }
                                   className="text-xs font-medium h-5 px-2"
                                 >
-                                  {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-                                   order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
-                                   order.orderStatus === 'delivered' ? 'Delivered' :
-                                   order.orderStatus === 'shipped' ? 'Shipped' :
-                                   order.orderStatus === 'cancelled' ? 'Cancelled' :
-                                   'Pending'}
+                                  {order.orderStatus === 'to_fulfill' ? t('customers:toFulfill') :
+                                   order.orderStatus === 'ready_to_ship' ? t('customers:readyToShip') :
+                                   order.orderStatus === 'delivered' ? t('customers:delivered') :
+                                   order.orderStatus === 'shipped' ? t('customers:shipped') :
+                                   order.orderStatus === 'cancelled' ? t('customers:cancelled') :
+                                   t('customers:pending')}
                                 </Badge>
                                 <Badge 
                                   variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
@@ -1001,7 +1003,7 @@ export default function CustomerDetails() {
                                     'text-xs font-medium h-5 px-2 bg-green-50 border-green-300 text-green-700' : 
                                     'text-xs font-medium h-5 px-2 bg-orange-50 border-orange-300 text-orange-700'}
                                 >
-                                  {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Unpaid'}
+                                  {order.paymentStatus === 'paid' ? `✓ ${t('customers:paid')}` : `⏳ ${t('customers:unpaid')}`}
                                 </Badge>
                               </div>
                               {order.shippingMethod && (
@@ -1028,7 +1030,7 @@ export default function CustomerDetails() {
                               }}
                             >
                               <span className="text-xs font-medium text-slate-600">
-                                Order Items ({order.items.length})
+                                {t('common:orderItems')} ({order.items.length})
                               </span>
                               {expandedOrders[order.id] ? (
                                 <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
@@ -1076,11 +1078,11 @@ export default function CustomerDetails() {
 
           <TabsContent value="tickets" className="space-y-4 mt-0">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Customer Tickets</h3>
+              <h3 className="text-lg font-semibold">{t('customers:tickets')}</h3>
               <Link href={`/tickets/add?customerId=${id}`}>
                 <Button size="sm" data-testid="button-create-ticket">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Ticket
+                  {t('customers:createTicket')}
                 </Button>
               </Link>
             </div>
@@ -1089,11 +1091,11 @@ export default function CustomerDetails() {
               <Card>
                 <CardContent className="p-8 text-center">
                   <Ticket className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-500 mb-4">No tickets yet</p>
+                  <p className="text-slate-500 mb-4">{t('customers:noTickets')}</p>
                   <Link href={`/tickets/add?customerId=${id}`}>
                     <Button variant="outline" size="sm">
                       <Plus className="h-4 w-4 mr-2" />
-                      Create First Ticket
+                      {t('customers:createTicket')}
                     </Button>
                   </Link>
                 </CardContent>

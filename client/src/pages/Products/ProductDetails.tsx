@@ -51,7 +51,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
-// Image purpose config - will be converted to use translations inside the component
 const IMAGE_PURPOSE_ICONS = {
   main: { icon: ImageIcon, color: 'text-blue-600', labelKey: 'mainWmsImage' },
   in_hand: { icon: Hand, color: 'text-emerald-600', labelKey: 'inHand' },
@@ -204,7 +203,7 @@ export default function ProductDetails() {
         <Link href={`/inventory/${id}/edit`}>
           <Button className="shrink-0">
             <Edit className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Edit Product</span>
+            <span className="hidden sm:inline">{t('products:editProduct')}</span>
           </Button>
         </Link>
       </div>
@@ -254,7 +253,7 @@ export default function ProductDetails() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Current Stock</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t('products:stockQty')}</CardTitle>
                 <Box className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
@@ -263,19 +262,19 @@ export default function ProductDetails() {
               {stockStatus === 'critical' && (
                 <Badge variant="destructive" className="mt-2">
                   <AlertTriangle className="h-3 w-3 mr-1" />
-                  Critical Stock
+                  {t('products:outOfStock')}
                 </Badge>
               )}
               {stockStatus === 'low' && (
                 <Badge variant="outline" className="mt-2 border-orange-500 text-orange-700">
                   <AlertTriangle className="h-3 w-3 mr-1" />
-                  Low Stock
+                  {t('products:lowStock')}
                 </Badge>
               )}
               {stockStatus === 'healthy' && (
                 <Badge className="mt-2 bg-green-100 text-green-800 hover:bg-green-100">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  In Stock
+                  {t('products:inStock')}
                 </Badge>
               )}
             </CardContent>
@@ -284,26 +283,26 @@ export default function ProductDetails() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Sold</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:totalSold')}</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totalSold}</div>
-              <p className="text-xs text-muted-foreground mt-2">All time</p>
+              <p className="text-xs text-muted-foreground mt-2">{t('common:allTime')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:totalRevenue')}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{formatCurrency(totalRevenue, 'CZK')}</div>
-              <p className="text-xs text-muted-foreground mt-2">All time</p>
+              <p className="text-xs text-muted-foreground mt-2">{t('common:allTime')}</p>
             </CardContent>
           </Card>
 
@@ -311,7 +310,7 @@ export default function ProductDetails() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Profit Margin</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{t('products:margin')}</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </div>
               </CardHeader>
@@ -319,7 +318,7 @@ export default function ProductDetails() {
                 <div className={`text-3xl font-bold ${parseFloat(primaryMargin) > 30 ? 'text-green-600' : parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
                   {primaryMargin}%
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Per unit</p>
+                <p className="text-xs text-muted-foreground mt-2">{t('common:perUnit')}</p>
               </CardContent>
             </Card>
           )}
@@ -327,16 +326,16 @@ export default function ProductDetails() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Reorder Rate</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:reorderRate')}</CardTitle>
                 <Repeat className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {product.reorderRate !== null && product.reorderRate !== undefined ? `${parseFloat(product.reorderRate).toFixed(1)}%` : 'N/A'}
+                {product.reorderRate !== null && product.reorderRate !== undefined ? `${parseFloat(product.reorderRate).toFixed(1)}%` : t('common:na')}
               </div>
               <div className="flex items-center gap-2 mt-2">
-                <p className="text-xs text-muted-foreground">1-year repeat rate</p>
+                <p className="text-xs text-muted-foreground">{t('common:oneYearRepeatRate')}</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -362,43 +361,43 @@ export default function ProductDetails() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Basic Information
+                {t('products:basicInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Product Name</p>
+                  <p className="text-muted-foreground">{t('products:productName')}</p>
                   <p className="font-medium">{product.name}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">SKU</p>
+                  <p className="text-muted-foreground">{t('products:sku')}</p>
                   <p className="font-medium font-mono">{product.sku}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Category</p>
-                  <p className="font-medium">{category?.name || 'Uncategorized'}</p>
+                  <p className="text-muted-foreground">{t('products:category')}</p>
+                  <p className="font-medium">{category?.name || t('common:uncategorized')}</p>
                 </div>
                 {product.vietnameseName && (
                   <div>
-                    <p className="text-muted-foreground">Vietnamese Name</p>
+                    <p className="text-muted-foreground">{t('products:vietnameseName')}</p>
                     <p className="font-medium">{product.vietnameseName}</p>
                   </div>
                 )}
                 {product.barcode && (
                   <div>
-                    <p className="text-muted-foreground">Barcode</p>
+                    <p className="text-muted-foreground">{t('products:barcode')}</p>
                     <p className="font-medium font-mono">{product.barcode}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-muted-foreground">Low Stock Alert</p>
-                  <p className="font-medium">{product.lowStockAlert || 5} units</p>
+                  <p className="text-muted-foreground">{t('products:lowStockThreshold')}</p>
+                  <p className="font-medium">{product.lowStockAlert || 5} {t('common:units')}</p>
                 </div>
               </div>
               {product.description && (
                 <div className="pt-2 border-t">
-                  <p className="text-muted-foreground text-sm mb-1">Description</p>
+                  <p className="text-muted-foreground text-sm mb-1">{t('products:description')}</p>
                   <p className="text-sm">{product.description}</p>
                 </div>
               )}
@@ -410,7 +409,7 @@ export default function ProductDetails() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Euro className="h-5 w-5" />
-                Pricing & Costs
+                {t('products:pricingInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -419,7 +418,7 @@ export default function ProductDetails() {
                 <div>
                   <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Selling Prices
+                    {t('common:sellingPrice')}
                   </h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="p-2 rounded bg-muted/50">
@@ -438,7 +437,7 @@ export default function ProductDetails() {
                   <div>
                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                       <Truck className="h-4 w-4" />
-                      Import Costs
+                      {t('products:importCost')}
                     </h4>
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       {product.importCostUsd && (
@@ -468,18 +467,18 @@ export default function ProductDetails() {
                   <div>
                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
-                      Profit Margins
+                      {t('products:margin')}
                     </h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       {marginCzk && (
                         <div className="p-2 rounded bg-green-50 dark:bg-green-950/30">
-                          <p className="text-muted-foreground text-xs">CZK Margin</p>
+                          <p className="text-muted-foreground text-xs">{t('common:marginCzk')}</p>
                           <p className="font-bold text-green-700 dark:text-green-400">{marginCzk}%</p>
                         </div>
                       )}
                       {marginEur && (
                         <div className="p-2 rounded bg-green-50 dark:bg-green-950/30">
-                          <p className="text-muted-foreground text-xs">EUR Margin</p>
+                          <p className="text-muted-foreground text-xs">{t('common:marginEur')}</p>
                           <p className="font-bold text-green-700 dark:text-green-400">{marginEur}%</p>
                         </div>
                       )}
@@ -496,33 +495,33 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Ruler className="h-5 w-5" />
-                  Dimensions & Weight
+                  {t('products:physicalAttributes')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   {product.length && (
                     <div>
-                      <p className="text-muted-foreground">Length</p>
-                      <p className="font-medium">{product.length} cm</p>
+                      <p className="text-muted-foreground">{t('products:length')}</p>
+                      <p className="font-medium">{product.length} {t('common:cm')}</p>
                     </div>
                   )}
                   {product.width && (
                     <div>
-                      <p className="text-muted-foreground">Width</p>
-                      <p className="font-medium">{product.width} cm</p>
+                      <p className="text-muted-foreground">{t('products:width')}</p>
+                      <p className="font-medium">{product.width} {t('common:cm')}</p>
                     </div>
                   )}
                   {product.height && (
                     <div>
-                      <p className="text-muted-foreground">Height</p>
-                      <p className="font-medium">{product.height} cm</p>
+                      <p className="text-muted-foreground">{t('products:height')}</p>
+                      <p className="font-medium">{product.height} {t('common:cm')}</p>
                     </div>
                   )}
                   {product.weight && (
                     <div>
-                      <p className="text-muted-foreground">Weight</p>
-                      <p className="font-medium">{parseFloat(product.weight).toFixed(3)} kg</p>
+                      <p className="text-muted-foreground">{t('products:weight')}</p>
+                      <p className="font-medium">{parseFloat(product.weight).toFixed(3)} {t('common:kg')}</p>
                     </div>
                   )}
                 </div>
@@ -535,25 +534,25 @@ export default function ProductDetails() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Warehouse className="h-5 w-5" />
-                Warehouse & Location
+                {t('common:warehouseLocation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Warehouse</p>
-                  <p className="font-medium">{warehouse?.name || 'Not assigned'}</p>
+                  <p className="text-muted-foreground">{t('common:warehouse')}</p>
+                  <p className="font-medium">{warehouse?.name || t('common:notAssigned')}</p>
                 </div>
                 {product.warehouseLocation && (
                   <div>
-                    <p className="text-muted-foreground">Location Code</p>
+                    <p className="text-muted-foreground">{t('common:locationCode')}</p>
                     <p className="font-medium font-mono">{product.warehouseLocation}</p>
                   </div>
                 )}
               </div>
               {product.shipmentNotes && (
                 <div className="pt-2 border-t">
-                  <p className="text-muted-foreground text-sm mb-1">Shipment Notes</p>
+                  <p className="text-muted-foreground text-sm mb-1">{t('common:shipmentNotes')}</p>
                   <p className="text-sm">{product.shipmentNotes}</p>
                 </div>
               )}
@@ -566,30 +565,30 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Supplier Information
+                  {t('products:supplierSection')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Supplier Name</p>
+                    <p className="text-muted-foreground">{t('products:supplier')}</p>
                     <p className="font-medium">{supplier.name}</p>
                   </div>
                   {supplier.country && (
                     <div>
-                      <p className="text-muted-foreground">Country</p>
+                      <p className="text-muted-foreground">{t('common:country')}</p>
                       <p className="font-medium">{supplier.country}</p>
                     </div>
                   )}
                   {supplier.contactPerson && (
                     <div>
-                      <p className="text-muted-foreground">Contact Person</p>
+                      <p className="text-muted-foreground">{t('common:contactPerson')}</p>
                       <p className="font-medium">{supplier.contactPerson}</p>
                     </div>
                   )}
                   {supplier.email && (
                     <div>
-                      <p className="text-muted-foreground">Email</p>
+                      <p className="text-muted-foreground">{t('common:email')}</p>
                       <p className="font-medium">{supplier.email}</p>
                     </div>
                   )}
@@ -604,7 +603,7 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Layers className="h-5 w-5" />
-                  Packing Material
+                  {t('products:packingMaterial')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -632,7 +631,7 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Packing Instructions ({packingInstructions.length} steps)
+                  {t('products:packingInstructions')} ({packingInstructions.length} {t('common:steps')})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -640,10 +639,10 @@ export default function ProductDetails() {
                   {packingInstructions.map((instruction, index) => (
                     <div key={index} className="border rounded-lg p-3 bg-muted/30">
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">Step {index + 1}</Badge>
+                        <Badge variant="outline" className="text-xs">{t('common:step')} {index + 1}</Badge>
                       </div>
                       {instruction.image && (
-                        <img src={instruction.image} alt={`Step ${index + 1}`} className="w-full h-32 object-contain rounded border mb-2" />
+                        <img src={instruction.image} alt={`${t('common:step')} ${index + 1}`} className="w-full h-32 object-contain rounded border mb-2" />
                       )}
                       {instruction.text && (
                         <p className="text-sm">{instruction.text}</p>
@@ -661,9 +660,9 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  Product Variants ({variants.length})
+                  {t('products:variantsTab')} ({variants.length})
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Multiple variants available - can be selected individually in orders</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('common:multipleVariantsAvailable')}</p>
               </CardHeader>
               <CardContent>
                 <ProductVariants productId={id!} />
@@ -677,7 +676,7 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Layers className="h-5 w-5" />
-                  Included in Bundles ({bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length})
+                  {t('common:includedInBundles')} ({bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -695,7 +694,7 @@ export default function ProductDetails() {
                           </Link>
                           {bundleItem && (
                             <p className="text-sm text-muted-foreground">
-                              Quantity in bundle: {bundleItem.quantity}× {bundleItem.variantName ? `(${bundleItem.variantName})` : ''}
+                              {t('common:quantityInBundle')}: {bundleItem.quantity}× {bundleItem.variantName ? `(${bundleItem.variantName})` : ''}
                             </p>
                           )}
                         </div>
@@ -721,23 +720,23 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Tiered Pricing
+                  {t('products:tieredPricing')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Quantity Range</TableHead>
-                      <TableHead className="text-right">Price CZK</TableHead>
-                      <TableHead className="text-right">Price EUR</TableHead>
+                      <TableHead>{t('products:quantityRange')}</TableHead>
+                      <TableHead className="text-right">{t('products:priceCzk')}</TableHead>
+                      <TableHead className="text-right">{t('products:priceEur')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {tieredPricing.map((tier: any) => (
                       <TableRow key={tier.id}>
                         <TableCell className="font-medium">
-                          {tier.minQuantity}+ units
+                          {tier.minQuantity}+ {t('common:units')}
                         </TableCell>
                         <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
                         <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
@@ -755,7 +754,7 @@ export default function ProductDetails() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Cost History
+                  {t('products:costHistory')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -769,7 +768,7 @@ export default function ProductDetails() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MapPinned className="h-5 w-5" />
-                Storage Locations
+                {t('products:productLocations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -782,7 +781,7 @@ export default function ProductDetails() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Documents & Files
+                {t('products:productFiles')}
               </CardTitle>
             </CardHeader>
             <CardContent>

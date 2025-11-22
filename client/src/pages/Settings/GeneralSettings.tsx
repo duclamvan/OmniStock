@@ -17,6 +17,7 @@ import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles,
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import i18n from "@/i18n/i18n";
+import { useTranslation } from 'react-i18next';
 
 const formSchema = z.object({
   // Company Information
@@ -116,6 +117,7 @@ const valuesAreEqual = (a: any, b: any): boolean => {
 };
 
 export default function GeneralSettings() {
+  const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
   const { generalSettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
@@ -273,15 +275,15 @@ export default function GeneralSettings() {
       
       // The useEffect will automatically update originalSettings when new data loads
       toast({
-        title: "Settings Saved",
-        description: "General settings have been updated successfully.",
+        title: t('settings:settingsSaved'),
+        description: t('settings:settingsSavedSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to save settings.",
+        title: t('common:error'),
+        description: error.message || t('settings:settingsSaveError'),
       });
     },
   });
@@ -307,28 +309,28 @@ export default function GeneralSettings() {
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto gap-2">
             <TabsTrigger value="profile" className="flex items-center gap-2 px-3 py-2" data-testid="tab-profile">
               <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Company Profile</span>
-              <span className="sm:hidden">Profile</span>
+              <span className="hidden sm:inline">{t('settings:tabCompany')}</span>
+              <span className="sm:hidden">{t('settings:tabCompany')}</span>
             </TabsTrigger>
             <TabsTrigger value="localization" className="flex items-center gap-2 px-3 py-2" data-testid="tab-localization">
               <Globe className="h-4 w-4" />
-              <span className="hidden sm:inline">Localization</span>
-              <span className="sm:hidden">Local</span>
+              <span className="hidden sm:inline">{t('settings:tabLocalization')}</span>
+              <span className="sm:hidden">{t('settings:tabLocalization')}</span>
             </TabsTrigger>
             <TabsTrigger value="operations" className="flex items-center gap-2 px-3 py-2" data-testid="tab-operations">
               <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Operations</span>
-              <span className="sm:hidden">Ops</span>
+              <span className="hidden sm:inline">{t('settings:tabOperations')}</span>
+              <span className="sm:hidden">{t('settings:tabOperations')}</span>
             </TabsTrigger>
             <TabsTrigger value="customer" className="flex items-center gap-2 px-3 py-2" data-testid="tab-customer">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Customer</span>
-              <span className="sm:hidden">Customer</span>
+              <span className="hidden sm:inline">{t('settings:tabCustomer')}</span>
+              <span className="sm:hidden">{t('settings:tabCustomer')}</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2 px-3 py-2" data-testid="tab-security">
               <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Security</span>
-              <span className="sm:hidden">Security</span>
+              <span className="hidden sm:inline">{t('settings:tabSecurity')}</span>
+              <span className="sm:hidden">{t('settings:tabSecurity')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -338,9 +340,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Company Information
+                  {t('settings:companyInformation')}
                 </CardTitle>
-                <CardDescription>Basic company details and contact information</CardDescription>
+                <CardDescription>{t('settings:companyInfoDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,11 +351,11 @@ export default function GeneralSettings() {
                     name="company_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Name</FormLabel>
+                        <FormLabel>{t('settings:companyName')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Davie Supply" data-testid="input-company_name" />
+                          <Input {...field} placeholder={t('settings:companyNamePlaceholder')} data-testid="input-company_name" />
                         </FormControl>
-                        <FormDescription>Your business legal name</FormDescription>
+                        <FormDescription>{t('common:yourBusinessLegalName')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -364,11 +366,11 @@ export default function GeneralSettings() {
                     name="company_email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Email</FormLabel>
+                        <FormLabel>{t('settings:companyEmail')}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder="info@daviesupply.com" data-testid="input-company_email" />
+                          <Input {...field} type="email" placeholder={t('settings:companyEmailPlaceholder')} data-testid="input-company_email" />
                         </FormControl>
-                        <FormDescription>Primary business email</FormDescription>
+                        <FormDescription>{t('common:primaryBusinessEmail')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -379,9 +381,9 @@ export default function GeneralSettings() {
                     name="company_phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Phone</FormLabel>
+                        <FormLabel>{t('settings:companyPhone')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+420 XXX XXX XXX" data-testid="input-company_phone" />
+                          <Input {...field} placeholder={t('settings:companyPhonePlaceholder')} data-testid="input-company_phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -393,9 +395,9 @@ export default function GeneralSettings() {
                     name="company_website"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website</FormLabel>
+                        <FormLabel>{t('settings:companyWebsite')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://daviesupply.com" data-testid="input-company_website" />
+                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_website" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -407,9 +409,9 @@ export default function GeneralSettings() {
                     name="company_address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street Address</FormLabel>
+                        <FormLabel>{t('settings:companyAddress')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="123 Main Street" data-testid="input-company_address" />
+                          <Input {...field} placeholder={t('settings:companyAddressPlaceholder')} data-testid="input-company_address" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -421,9 +423,9 @@ export default function GeneralSettings() {
                     name="company_city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>{t('settings:companyCity')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Prague" data-testid="input-company_city" />
+                          <Input {...field} placeholder={t('settings:companyCityPlaceholder')} data-testid="input-company_city" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -435,9 +437,9 @@ export default function GeneralSettings() {
                     name="company_zip"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ZIP / Postal Code</FormLabel>
+                        <FormLabel>{t('settings:companyZip')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="110 00" data-testid="input-company_zip" />
+                          <Input {...field} placeholder={t('settings:companyZipPlaceholder')} data-testid="input-company_zip" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -449,9 +451,9 @@ export default function GeneralSettings() {
                     name="company_country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Country</FormLabel>
+                        <FormLabel>{t('settings:companyCountry')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Czech Republic" data-testid="input-company_country" />
+                          <Input {...field} placeholder={t('settings:selectCountry')} data-testid="input-company_country" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -463,11 +465,11 @@ export default function GeneralSettings() {
                     name="company_vat_id"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>VAT / Tax ID</FormLabel>
+                        <FormLabel>{t('settings:companyVatId')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="CZ12345678" data-testid="input-company_vat_id" />
+                          <Input {...field} placeholder={t('settings:companyVatIdPlaceholder')} data-testid="input-company_vat_id" />
                         </FormControl>
-                        <FormDescription>Your company's tax identification number</FormDescription>
+                        <FormDescription>{t('common:yourCompanyTaxId')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1310,7 +1312,7 @@ export default function GeneralSettings() {
           <Card className="border-red-500 bg-red-50 dark:bg-red-950/20">
             <CardHeader>
               <CardTitle className="text-red-700 dark:text-red-400 text-sm">
-                ⚠️ Form Validation Errors ({Object.keys(form.formState.errors).length})
+                ⚠️ {t('settings:formValidationErrors')} ({Object.keys(form.formState.errors).length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1333,12 +1335,12 @@ export default function GeneralSettings() {
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('settings:savingSettings')}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Save All Settings
+                  {t('settings:saveAllSettings')}
                 </>
               )}
             </Button>

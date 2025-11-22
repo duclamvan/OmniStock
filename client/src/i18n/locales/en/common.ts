@@ -25,10 +25,18 @@ const common = {
   previous: 'Previous',
   submit: 'Submit',
   search: 'Search',
+  searchPlaceholder: 'Search {{item}}...',
   filter: 'Filter',
+  filtersAndSearch: 'Filters & Search',
+  toggleColumns: 'Toggle Columns',
   clear: 'Clear',
   reset: 'Reset',
   export: 'Export',
+  exportToXLSX: 'Export to XLSX',
+  exportToPDF: 'Export to PDF',
+  exportSuccessful: 'Export successful',
+  exportFailed: 'Export failed',
+  sendEmail: 'Send Email',
   import: 'Import',
   download: 'Download',
   upload: 'Upload',
@@ -92,6 +100,7 @@ const common = {
   
   // Confirmation Dialogs
   deleteConfirm: 'Are you sure you want to delete this item?',
+  deleteConfirmCount: 'Are you sure you want to delete {{count}} {{item}}?',
   deleteWarning: 'This action cannot be undone.',
   unsavedChanges: 'You have unsaved changes',
   unsavedChangesWarning: 'If you leave, your changes will be lost.',
@@ -216,6 +225,11 @@ const common = {
   // Language Messages
   languageChanged: 'Language changed successfully',
   languageChangeFailed: 'Failed to change language',
+  
+  // Common Descriptions
+  yourBusinessLegalName: 'Your business legal name',
+  primaryBusinessEmail: 'Primary business email',
+  yourCompanyTaxId: "Your company's tax identification number",
   
   // Sidebar Navigation Additional Keys
   stock: 'Stock',
@@ -376,6 +390,31 @@ const common = {
   productRunningLow: '{{product}} is running low',
   minutesAgo: '{{count}} minutes ago',
   searchPlaceholder: 'Search...',
+  
+  // Product Details Common Keys
+  totalSold: 'Total Sold',
+  allTime: 'All time',
+  perUnit: 'Per unit',
+  reorderRate: 'Reorder Rate',
+  oneYearRepeatRate: '1-year repeat rate',
+  uncategorized: 'Uncategorized',
+  units: 'units',
+  cm: 'cm',
+  kg: 'kg',
+  warehouseLocation: 'Warehouse & Location',
+  warehouse: 'Warehouse',
+  notAssigned: 'Not assigned',
+  locationCode: 'Location Code',
+  shipmentNotes: 'Shipment Notes',
+  contactPerson: 'Contact Person',
+  sellingPrice: 'Selling Price',
+  marginCzk: 'CZK Margin',
+  marginEur: 'EUR Margin',
+  steps: 'steps',
+  step: 'Step',
+  multipleVariantsAvailable: 'Multiple variants available - can be selected individually in orders',
+  includedInBundles: 'Included in Bundles',
+  quantityInBundle: 'Quantity in bundle',
   
 } as const;
 

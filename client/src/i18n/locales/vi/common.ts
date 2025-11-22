@@ -32,10 +32,18 @@ const common = {
   previous: 'Trước đó',
   submit: 'Gửi',
   search: 'Tìm kiếm',
+  searchPlaceholder: 'Tìm kiếm {{item}}...',
   filter: 'Lọc',
+  filtersAndSearch: 'Bộ lọc & Tìm kiếm',
+  toggleColumns: 'Chuyển đổi cột',
   clear: 'Xóa',
   reset: 'Đặt lại',
   export: 'Xuất dữ liệu',
+  exportToXLSX: 'Xuất ra XLSX',
+  exportToPDF: 'Xuất ra PDF',
+  exportSuccessful: 'Xuất dữ liệu thành công',
+  exportFailed: 'Xuất dữ liệu thất bại',
+  sendEmail: 'Gửi Email',
   import: 'Nhập dữ liệu',
   download: 'Tải xuống',
   upload: 'Tải lên',
@@ -99,6 +107,7 @@ const common = {
   
   // Confirmation Dialogs
   deleteConfirm: 'Bạn có chắc chắn muốn xóa mục này?',
+  deleteConfirmCount: 'Bạn có chắc chắn muốn xóa {{count}} {{item}}?',
   deleteWarning: 'Hành động này không thể hoàn tác.',
   unsavedChanges: 'Bạn có thay đổi chưa lưu',
   unsavedChangesWarning: 'Nếu rời đi, các thay đổi của bạn sẽ bị mất.',
@@ -223,6 +232,11 @@ const common = {
   // Language Messages
   languageChanged: 'Đã thay đổi ngôn ngữ thành công',
   languageChangeFailed: 'Thay đổi ngôn ngữ thất bại',
+  
+  // Common Descriptions
+  yourBusinessLegalName: 'Tên pháp lý doanh nghiệp của bạn',
+  primaryBusinessEmail: 'Email kinh doanh chính',
+  yourCompanyTaxId: 'Mã số thuế của công ty bạn',
   
   // Sidebar Navigation Additional Keys
   stock: 'Tồn kho',

@@ -270,6 +270,106 @@ const settings = {
   invalidUrl: 'Invalid URL',
   valueTooLow: 'Value is too low',
   valueTooHigh: 'Value is too high',
+  
+  // GeneralSettings specific
+  pageTitle: 'General Settings',
+  pageDescription: 'Configure core business settings, localization, and operational preferences',
+  
+  // Tab names
+  tabCompany: 'Company',
+  tabLocalization: 'Localization',
+  tabOperations: 'Operations',
+  tabCustomer: 'Customer',
+  tabSecurity: 'Security',
+  
+  // Company Info descriptions
+  companyInfoDescription: 'Basic company information and contact details',
+  companyNamePlaceholder: 'Enter your company name',
+  companyEmailPlaceholder: 'company@example.com',
+  companyPhonePlaceholder: '+1 (555) 000-0000',
+  companyAddressPlaceholder: '123 Business Street',
+  companyCityPlaceholder: 'City',
+  companyZipPlaceholder: '12345',
+  companyWebsitePlaceholder: 'https://example.com',
+  companyVatIdPlaceholder: 'XX123456789',
+  companyLogoUrlDescription: 'Public URL to your company logo (used in invoices and emails)',
+  
+  // Localization descriptions
+  localizationDescription: 'Set language, timezone, and regional preferences for your business',
+  localizationHelp: 'All system dates and times will be displayed according to these settings',
+  switchLanguage: 'Switch Language',
+  languageDescription: 'Primary language for the system interface',
+  timezoneDescription: 'Your local timezone (affects all date/time displays)',
+  dateFormatDescription: 'How dates are displayed throughout the system',
+  timeFormatDescription: 'How times are displayed throughout the system',
+  
+  // Regional Settings
+  regionalSettingsTitle: 'Regional Settings',
+  regionalSettingsDescription: 'Business operational hours and contact information',
+  workingDaysDescription: 'Operating days of the week',
+  workingDaysHelp: 'Select all days your warehouse operates',
+  businessHoursDescription: 'Daily business hours',
+  warehouseEmergencyContactDescription: '24/7 warehouse emergency line',
+  warehouseEmergencyContactPlaceholder: '+420 XXX XXX XXX',
+  warehouseContactEmailDescription: 'General warehouse inquiries',
+  warehouseContactEmailPlaceholder: 'warehouse@daviesupply.com',
+  
+  // Notification Preferences
+  notificationPreferencesDescription: 'Email and SMS notification settings',
+  emailNotificationsLabel: 'Email Notifications',
+  emailNotificationsDescription: 'Receive notifications via email',
+  smsNotificationsLabel: 'SMS Notifications',
+  smsNotificationsDescription: 'Receive notifications via SMS',
+  lowStockAlertsLabel: 'Low Stock Alerts',
+  lowStockAlertsDescription: 'Get notified when inventory is low',
+  orderStatusChangesLabel: 'Order Status Changes',
+  orderStatusChangesDescription: 'Get notified when order status changes',
+  dailySummaryLabel: 'Daily Summary Report',
+  dailySummaryDescription: 'Receive daily business summary',
+  weeklyReportLabel: 'Weekly Report',
+  weeklyReportDescription: 'Receive weekly business report',
+  
+  // Customer Portal
+  customerPortalTitle: 'Customer Portal',
+  customerPortalDescription: 'Self-service customer portal and policies',
+  enableCustomerPortalLabel: 'Enable Customer Portal',
+  enableCustomerPortalDescription: 'Allow customers to track orders and manage their account',
+  returnPolicyLabel: 'Return Policy',
+  returnPolicyPlaceholder: 'Enter your return policy here...',
+  returnPolicyDescription: 'This text will be displayed to customers',
+  
+  // AI Features
+  aiFeaturesTitle: 'AI Features',
+  aiFeaturesDescription: 'Artificial intelligence and automation features',
+  aiAddressParsingLabel: 'AI Address Parsing',
+  aiAddressParsingDescription: 'Automatically parse and validate customer addresses',
+  aiCartonPackingLabel: 'AI Carton Packing',
+  aiCartonPackingDescription: 'Optimize package selection with AI',
+  
+  // Compliance & Security
+  complianceSecurityTitle: 'Compliance & Security',
+  complianceSecurityDescription: 'Audit logs and data retention policies',
+  auditLogRetentionLabel: 'Audit Log Retention (Days)',
+  auditLogRetentionDescription: 'How long to keep audit logs (7-365 days, recommended: 90 days)',
+  
+  // Toast messages
+  savingSettings: 'Saving...',
+  saveAllSettings: 'Save All Settings',
+  settingsSavedSuccess: 'Settings saved successfully!',
+  settingsSaveError: 'Failed to save settings',
+  loadingSettings: 'Loading settings...',
+  errorLoadingSettings: 'Error loading settings',
+  
+  // Form validation errors
+  formValidationErrors: 'Form Validation Errors',
+  
+  // Language options
+  english: 'English',
+  vietnamese: 'Vietnamese',
+  
+  // Select placeholders
+  selectCountry: 'Select a country',
+  selectOption: 'Select an option',
 } as const;
 
 export default settings;
