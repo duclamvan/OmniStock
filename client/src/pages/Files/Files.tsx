@@ -33,17 +33,17 @@ import { FileText, Upload, Download, Trash2, Edit, FileIcon, Search, Filter } fr
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from 'react-i18next';
 
-const FILE_TYPES = [
-  { value: "MSDS", label: "MSDS (Material Safety Data Sheet)" },
-  { value: "CPNP", label: "CPNP Certificate" },
-  { value: "Leaflet", label: "Product Leaflet" },
-  { value: "Manual", label: "User Manual" },
-  { value: "Certificate", label: "Other Certificate" },
-  { value: "Other", label: "Other Document" },
-];
-
 export default function Files() {
   const { t } = useTranslation(['system', 'common']);
+  
+  const FILE_TYPES = [
+    { value: "MSDS", label: t('system:msds') },
+    { value: "CPNP", label: t('system:cpnp') },
+    { value: "Leaflet", label: t('system:leaflet') },
+    { value: "Manual", label: t('system:manual') },
+    { value: "Certificate", label: t('system:certificate') },
+    { value: "Other", label: t('system:otherDocument') },
+  ];
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<any>(null);
@@ -58,7 +58,7 @@ export default function Files() {
       const params = new URLSearchParams();
       if (filterType !== "all") params.set("fileType", filterType);
       const response = await fetch(`/api/product-files?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch files");
+      if (!response.ok) throw new Error(t('system:failedToFetchFiles'));
       return response.json();
     },
   });
@@ -201,7 +201,7 @@ export default function Files() {
                       name="fileName"
                       defaultValue={editingFile?.fileName}
                       required
-                      placeholder="e.g., Product Safety Sheet"
+                      placeholder={t('system:fileNamePlaceholder')}
                     />
                   </div>
 
@@ -243,14 +243,14 @@ export default function Files() {
                   </div>
 
                   <div>
-                    <Label htmlFor="fileUrl">File URL</Label>
+                    <Label htmlFor="fileUrl">{t('common:url')}</Label>
                     <Input
                       id="fileUrl"
                       name="fileUrl"
                       type="url"
                       defaultValue={editingFile?.fileUrl}
                       required
-                      placeholder="https://example.com/file.pdf"
+                      placeholder={t('system:fileUrlPlaceholder')}
                     />
                   </div>
 
@@ -266,12 +266,12 @@ export default function Files() {
                   </div>
 
                   <div>
-                    <Label htmlFor="tags">{t('common:na')}</Label>
+                    <Label htmlFor="tags">{t('common:tags')}</Label>
                     <Input
                       id="tags"
                       name="tags"
                       defaultValue={editingFile?.tags?.join(", ")}
-                      placeholder="safety, certification, 2024"
+                      placeholder={t('system:tagsPlaceholder')}
                     />
                   </div>
 

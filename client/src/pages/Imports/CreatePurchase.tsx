@@ -849,7 +849,7 @@ export default function CreatePurchase() {
       setSeriesDialogOpen(false);
       toast({
         title: t('success'),
-        description: `Added ${newVariantsArray.length} variants`,
+        description: t('addedVariantsCount', { count: newVariantsArray.length }),
       });
     } else {
       toast({
@@ -939,7 +939,7 @@ export default function CreatePurchase() {
     
     toast({
       title: t('success'),
-      description: `Added ${variantItems.length} items`,
+      description: t('addedItemsCount', { count: variantItems.length }),
     });
   };
   
@@ -2634,8 +2634,8 @@ export default function CreatePurchase() {
                       [newCurrencyCode]: 1
                     }));
                     toast({ 
-                      title: "Note", 
-                      description: `Exchange rate not found for ${newCurrencyCode}, defaulting to 1:1 with USD` 
+                      title: t('exchangeRateNote'), 
+                      description: t('exchangeRateNotFound', { currency: newCurrencyCode }) 
                     });
                   }
                 } catch (error) {

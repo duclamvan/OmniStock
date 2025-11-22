@@ -69,19 +69,19 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/currencyUtils";
 import type { Employee } from "@shared/schema";
 
-const employeeFormSchema = z.object({
-  employeeId: z.string().min(1, "Employee ID is required"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
+const createEmployeeFormSchema = (t: (key: string) => string) => z.object({
+  employeeId: z.string().min(1, t('system:employeeIdRequired')),
+  firstName: z.string().min(1, t('system:firstNameRequired')),
+  lastName: z.string().min(1, t('system:lastNameRequired')),
+  email: z.string().email(t('system:invalidEmail')).optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
-  position: z.string().min(1, "Position is required"),
-  department: z.string().min(1, "Department is required"),
-  hireDate: z.string().min(1, "Hire date is required"),
+  position: z.string().min(1, t('system:positionRequired')),
+  department: z.string().min(1, t('system:departmentRequired')),
+  hireDate: z.string().min(1, t('system:hireDateRequired')),
   terminationDate: z.string().optional().or(z.literal("")),
   status: z.enum(["active", "on_leave", "terminated"]),
-  salary: z.string().min(1, "Salary is required"),
+  salary: z.string().min(1, t('system:salaryRequired')),
   paymentFrequency: z.enum(["monthly", "biweekly", "weekly"]),
   currency: z.enum(["CZK", "EUR", "USD"]),
   bankAccount: z.string().optional(),
@@ -93,10 +93,11 @@ const employeeFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
+type EmployeeFormValues = z.infer<ReturnType<typeof createEmployeeFormSchema>>;
 
 export default function Employees() {
   const { t } = useTranslation(['system', 'common']);
+  const employeeFormSchema = createEmployeeFormSchema(t);
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

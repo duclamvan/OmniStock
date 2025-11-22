@@ -229,7 +229,7 @@ export default function POS() {
         paymentMethod: 'cash',
         fulfillmentStage: 'completed',
         customerEmail: 'walkin@pos.local',
-        customerName: 'Walk-in Customer',
+        customerName: t('financial:walkInCustomer'),
         customerPhone: '+420000000000',
       };
 
@@ -476,7 +476,7 @@ export default function POS() {
                                 <div>
                                   <h4 className="font-semibold text-sm leading-tight break-words">{item.name}</h4>
                                   {item.sku && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{t('financial:sku')}: {item.sku}</p>
                                   )}
                                 </div>
 

@@ -984,6 +984,21 @@ const orders = {
   
   // Packing Instructions
   packingInstructions: 'Packing instructions',
+
+  // Export Columns (Pre-Orders)
+  preOrderIdColumn: 'Pre-Order ID',
+  customerColumn: 'Customer',
+  unknownCustomer: 'Unknown',
+  itemsColumn: 'Items',
+  statusColumn: 'Status',
+  createdDateColumn: 'Created Date',
+  expectedDeliveryColumn: 'Expected Delivery',
+  notesColumn: 'Notes',
+
+  // Validation Messages (Pre-Orders)
+  itemNameRequired: 'Item name is required',
+  quantityMinOne: 'Quantity must be at least 1',
+  atLeastOneItemRequired: 'At least one item is required',
   
 } as const;
 

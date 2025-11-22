@@ -162,13 +162,13 @@ export default function AllPreOrders() {
       }
 
       const exportData = filteredPreOrders.map(preOrder => ({
-        'Pre-Order ID': preOrder.id,
-        'Customer': preOrder.customer?.name || 'Unknown',
-        'Items': preOrder.itemsCount,
-        'Status': statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
-        'Created Date': formatDate(preOrder.createdAt),
-        'Expected Delivery': formatDate(preOrder.expectedDate),
-        'Notes': preOrder.notes || '',
+        [t('preOrderIdColumn')]: preOrder.id,
+        [t('customerColumn')]: preOrder.customer?.name || t('unknownCustomer'),
+        [t('itemsColumn')]: preOrder.itemsCount,
+        [t('statusColumn')]: statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
+        [t('createdDateColumn')]: formatDate(preOrder.createdAt),
+        [t('expectedDeliveryColumn')]: formatDate(preOrder.expectedDate),
+        [t('notesColumn')]: preOrder.notes || '',
       }));
 
       exportToXLSX(exportData, 'pre-orders', 'PreOrders');
@@ -200,7 +200,7 @@ export default function AllPreOrders() {
 
       const exportData = filteredPreOrders.map(preOrder => ({
         id: preOrder.id,
-        customer: preOrder.customer?.name || 'Unknown',
+        customer: preOrder.customer?.name || t('unknownCustomer'),
         items: preOrder.itemsCount.toString(),
         status: statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
         createdDate: formatDate(preOrder.createdAt),
@@ -208,12 +208,12 @@ export default function AllPreOrders() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'id', header: 'Pre-Order ID' },
-        { key: 'customer', header: 'Customer' },
-        { key: 'items', header: 'Items' },
-        { key: 'status', header: 'Status' },
-        { key: 'createdDate', header: 'Created Date' },
-        { key: 'expectedDelivery', header: 'Expected Delivery' },
+        { key: 'id', header: t('preOrderIdColumn') },
+        { key: 'customer', header: t('customerColumn') },
+        { key: 'items', header: t('itemsColumn') },
+        { key: 'status', header: t('statusColumn') },
+        { key: 'createdDate', header: t('createdDateColumn') },
+        { key: 'expectedDelivery', header: t('expectedDeliveryColumn') },
       ];
 
       exportToPDF('Pre-Orders Report', exportData, columns, 'pre-orders');

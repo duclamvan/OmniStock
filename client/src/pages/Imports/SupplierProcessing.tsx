@@ -1107,7 +1107,7 @@ export default function SupplierProcessing() {
                             {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
                               <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground truncate">
-                                  Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
+                                  {t('paidLabel')} {purchase.paymentCurrency} {purchase.totalPaid || '0'}
                                 </span>
                               </div>
                             )}

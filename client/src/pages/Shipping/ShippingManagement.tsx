@@ -1236,13 +1236,13 @@ export default function ShippingManagement() {
                         {t('shipping:mobileAndroidSetup')}
                       </h4>
                       <ol className="text-sm space-y-2 list-decimal list-inside">
-                        <li>Install <strong>Kiwi Browser</strong> from Google Play Store (supports Chrome extensions on mobile)</li>
-                        <li>In Kiwi Browser, install <strong>Tampermonkey</strong> extension from Chrome Web Store</li>
-                        <li>Download the userscript: <a href="/api/download/gls-autofill-userscript" className="text-purple-600 font-semibold underline hover:text-purple-800" download="gls-autofill-mobile.user.js">gls-autofill-mobile.user.js</a></li>
-                        <li>Tap the downloaded file to open it - Tampermonkey should detect it and show an install prompt</li>
-                        <li>If auto-detection fails: Open Tampermonkey → Utilities tab → "Import from file" → Select the downloaded .user.js file</li>
-                        <li>Edit the script ONLY if your URL doesn't contain "replit" (replace <code className="bg-purple-100 px-1 rounded">YOUR_REPLIT_URL</code>)</li>
-                        <li>Click "Ship with GLS" on any order - the GLS form will auto-fill when you arrive at their website!</li>
+                        <li>{t('shipping:glsMobileStep1')}</li>
+                        <li>{t('shipping:glsMobileStep2')}</li>
+                        <li>{t('shipping:glsMobileStep3')} <a href="/api/download/gls-autofill-userscript" className="text-purple-600 font-semibold underline hover:text-purple-800" download="gls-autofill-mobile.user.js">gls-autofill-mobile.user.js</a></li>
+                        <li>{t('shipping:glsMobileStep4')}</li>
+                        <li>{t('shipping:glsMobileStep5')}</li>
+                        <li>{t('shipping:glsMobileStep6')}</li>
+                        <li>{t('shipping:glsMobileStep7')}</li>
                       </ol>
                       <div className="mt-3 p-3 bg-purple-100 rounded-lg text-xs">
                         <strong className="text-purple-900">{t('shipping:importantNotes')}:</strong> {t('shipping:glsMobileNote')}

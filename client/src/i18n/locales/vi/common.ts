@@ -31,6 +31,7 @@ const common = {
   next: 'Tiếp theo',
   previous: 'Trước đó',
   submit: 'Gửi',
+  processing: 'Đang xử lý...',
   search: 'Tìm kiếm',
   searchPlaceholder: 'Tìm kiếm {{item}}...',
   filter: 'Lọc',
@@ -64,6 +65,8 @@ const common = {
   select: 'Chọn',
   selectAll: 'Chọn tất cả',
   deselectAll: 'Bỏ chọn tất cả',
+  items: 'mục',
+  item: 'mục',
   
   // Form Labels
   name: 'Tên',

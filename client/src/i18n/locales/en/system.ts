@@ -247,6 +247,16 @@ const system = {
   selectFrequency: 'Select frequency',
   selectCurrency: 'Select currency',
   
+  // Employee validation messages
+  employeeIdRequired: 'Employee ID is required',
+  firstNameRequired: 'First name is required',
+  lastNameRequired: 'Last name is required',
+  invalidEmail: 'Invalid email',
+  positionRequired: 'Position is required',
+  departmentRequired: 'Department is required',
+  hireDateRequired: 'Hire date is required',
+  salaryRequired: 'Salary is required',
+  
   // Files
   files: 'Files',
   file: 'File',
@@ -262,6 +272,18 @@ const system = {
   fileType: 'File Type',
   downloadFile: 'Download File',
   deleteFile: 'Delete File',
+  failedToFetchFiles: 'Failed to fetch files',
+  fileNamePlaceholder: 'e.g., Product Safety Sheet',
+  fileUrlPlaceholder: 'https://example.com/file.pdf',
+  tagsPlaceholder: 'safety, certification, 2024',
+  
+  // File types
+  msds: 'MSDS (Material Safety Data Sheet)',
+  cpnp: 'CPNP Certificate',
+  leaflet: 'Product Leaflet',
+  manual: 'User Manual',
+  certificate: 'Other Certificate',
+  otherDocument: 'Other Document',
   
   // Notifications (additional)
   all: 'All',
@@ -269,7 +291,9 @@ const system = {
   noUnreadNotifications: 'No unread notifications',
   noNotificationsYet: 'No notifications yet',
   youreAllCaughtUp: "You're all caught up!",
+  allCaughtUp: "You're all caught up!",
   notificationsWillAppearHere: 'Notifications will appear here',
+  notificationsWillAppear: 'Notifications will appear here when you have updates',
   viewAndManageNotifications: 'View and manage your notifications',
   success: 'Success',
   

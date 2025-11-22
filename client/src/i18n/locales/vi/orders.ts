@@ -983,6 +983,21 @@ const orders = {
   
   // Packing Instructions
   packingInstructions: 'Hướng dẫn đóng gói',
+
+  // Export Columns (Pre-Orders)
+  preOrderIdColumn: 'Mã đặt trước',
+  customerColumn: 'Khách hàng',
+  unknownCustomer: 'Không rõ',
+  itemsColumn: 'Sản phẩm',
+  statusColumn: 'Trạng thái',
+  createdDateColumn: 'Ngày tạo',
+  expectedDeliveryColumn: 'Ngày dự kiến',
+  notesColumn: 'Ghi chú',
+
+  // Validation Messages (Pre-Orders)
+  itemNameRequired: 'Cần nhập tên sản phẩm',
+  quantityMinOne: 'Số lượng tối thiểu là 1',
+  atLeastOneItemRequired: 'Cần ít nhất một sản phẩm',
   
 } as const;
 

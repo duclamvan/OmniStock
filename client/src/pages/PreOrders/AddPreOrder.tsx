@@ -58,16 +58,18 @@ import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 import { getCountryFlag } from "@/lib/countries";
 
+// Note: We'll use t() for error messages in the component, not in the schema
+// The schema uses English by default and we translate in the form errors display
 const formSchema = insertPreOrderSchema.extend({
   expectedDate: z.date().optional(),
   items: z.array(
     z.object({
       productId: z.string().optional(),
-      itemName: z.string().min(1, "Item name is required"),
+      itemName: z.string().min(1),
       itemDescription: z.string().optional(),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+      quantity: z.coerce.number().min(1),
     })
-  ).min(1, "At least one item is required"),
+  ).min(1),
 }).omit({ expectedDate: true }).extend({
   expectedDate: z.date().optional(),
 });

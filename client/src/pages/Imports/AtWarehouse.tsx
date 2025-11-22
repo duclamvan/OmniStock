@@ -711,8 +711,8 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Purchase order has been unpacked successfully",
+        title: t('success'),
+        description: t('orderUnpackedSuccessfully'),
       });
       setShowUnpackDialog(false);
       setSelectedOrder(null);
@@ -722,8 +722,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to unpack purchase order",
+        title: t('error'),
+        description: error.message || t('failedToUnpackOrder'),
         variant: "destructive",
       });
     },
@@ -736,8 +736,8 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Purchase order received as a single package",
+        title: t('success'),
+        description: t('receivedAsPackageSuccess'),
       });
       setShowReceiveDialog(false);
       setSelectedOrder(null);
@@ -746,8 +746,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to receive purchase order",
+        title: t('error'),
+        description: error.message || t('failedToReceiveOrder'),
         variant: "destructive",
       });
     },
@@ -760,8 +760,8 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Order status updated successfully",
+        title: t('success'),
+        description: t('orderStatusUpdatedSuccess'),
       });
       setShowStatusDialog(false);
       setStatusTarget(null);
@@ -770,8 +770,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update order status",
+        title: t('error'),
+        description: error.message || t('failedToUpdateOrderStatus'),
         variant: "destructive",
       });
     },
@@ -784,8 +784,8 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Item status updated successfully",
+        title: t('success'),
+        description: t('itemStatusUpdatedSuccess'),
       });
       setShowStatusDialog(false);
       setStatusTarget(null);
@@ -794,8 +794,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update item status",
+        title: t('error'),
+        description: error.message || t('failedToUpdateItemStatus'),
         variant: "destructive",
       });
     },
@@ -808,16 +808,16 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Item classification updated successfully",
+        title: t('success'),
+        description: t('itemClassificationUpdatedSuccess'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update classification",
+        title: t('error'),
+        description: error.message || t('failedToUpdateItemClassification'),
         variant: "destructive",
       });
     },
@@ -847,16 +847,16 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Shipment created and moved to International Transit",
+        title: t('success'),
+        description: t('shipmentCreatedMovedToTransit'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create shipment",
+        title: t('error'),
+        description: error.message || t('failedToCreateShipmentError'),
         variant: "destructive",
       });
     },
@@ -1777,14 +1777,14 @@ export default function AtWarehouse() {
                           name="name" 
                           required 
                           data-testid="input-item-name"
-                          placeholder="Enter item name"
+                          placeholder={t('enterItemNamePlaceholder')}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="source">Source Platform *</Label>
                         <Select name="source" required>
                           <SelectTrigger data-testid="select-source">
-                            <SelectValue placeholder="Select platform" />
+                            <SelectValue placeholder={t('selectPlatformPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="taobao">Taobao</SelectItem>
@@ -1804,7 +1804,7 @@ export default function AtWarehouse() {
                           id="orderNumber" 
                           name="orderNumber" 
                           data-testid="input-order-number"
-                          placeholder="Platform order number"
+                          placeholder={t('platformOrderNumberPlaceholder')}
                         />
                       </div>
                       <div className="space-y-2">
@@ -1852,7 +1852,7 @@ export default function AtWarehouse() {
                           type="number" 
                           step="0.01" 
                           data-testid="input-unit-price"
-                          placeholder="0.00"
+                          placeholder={t('zeroDecimalPlaceholder')}
                         />
                       </div>
                     </div>
@@ -1863,7 +1863,7 @@ export default function AtWarehouse() {
                         id="notes" 
                         name="notes" 
                         data-testid="textarea-notes"
-                        placeholder="Additional notes..."
+                        placeholder={t('additionalNotesEllipsis')}
                         rows={2}
                       />
                     </div>
@@ -1906,7 +1906,7 @@ export default function AtWarehouse() {
                     onValueChange={setConsolidationShippingMethod}
                   >
                       <SelectTrigger data-testid="select-shipping-method">
-                        <SelectValue placeholder="Select shipping method" />
+                        <SelectValue placeholder={t('selectShippingMethodPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="general_air_ddp">
@@ -1968,7 +1968,7 @@ export default function AtWarehouse() {
                     name="location" 
                     required 
                     data-testid="input-consolidation-location"
-                    placeholder="e.g., Czech Republic, USA, Vietnam"
+                    placeholder={t('locationExamplePlaceholder')}
                     value={consolidationLocation}
                     onChange={(e) => setConsolidationLocation(e.target.value)}
                   />
@@ -3955,7 +3955,7 @@ export default function AtWarehouse() {
                         navigator.clipboard.writeText(selectedConsolidationTracking.trackingNumbers.join('\n'));
                         toast({
                           title: t('copied'),
-                          description: `${selectedConsolidationTracking.trackingNumbers.length} tracking number(s) copied to clipboard`,
+                          description: t('trackingNumbersCopiedWithCount', { count: selectedConsolidationTracking.trackingNumbers.length }),
                         });
                       }
                     }}

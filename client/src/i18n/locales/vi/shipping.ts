@@ -222,6 +222,13 @@ const shipping = {
   glsDesktopStep3: 'Làm theo hướng dẫn cài đặt bookmarklet một lần',
   glsDesktopStep4: 'Sử dụng bookmarklet để tự động điền biểu mẫu GLS bất cứ lúc nào',
   glsMobileNote: 'Lưu ý: Script mobile hoạt động giống như bookmarklet trên desktop nhưng chạy tự động khi bạn truy cập trang web GLS từ đơn hàng.',
+  glsMobileStep1: 'Cài đặt Kiwi Browser từ Google Play Store (hỗ trợ tiện ích Chrome trên mobile)',
+  glsMobileStep2: 'Trong Kiwi Browser, cài đặt tiện ích Tampermonkey từ Chrome Web Store',
+  glsMobileStep3: 'Tải xuống userscript:',
+  glsMobileStep4: 'Nhấn vào tệp đã tải xuống để mở - Tampermonkey sẽ phát hiện và hiển thị lời nhắc cài đặt',
+  glsMobileStep5: 'Nếu tự động phát hiện thất bại: Mở Tampermonkey → tab Utilities → "Import from file" → Chọn tệp .user.js đã tải xuống',
+  glsMobileStep6: 'Chỉnh sửa script ONLY nếu URL của bạn không chứa "replit" (thay thế YOUR_REPLIT_URL)',
+  glsMobileStep7: 'Nhấp "Ship with GLS" trên bất kỳ đơn hàng nào - biểu mẫu GLS sẽ tự động điền khi bạn đến trang web của họ!',
   
   // Additional Carriers
   zasilkovna: 'Zásilkovna',

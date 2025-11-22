@@ -25,6 +25,7 @@ const common = {
   previous: 'Previous',
   submit: 'Submit',
   creating: 'Creating...',
+  processing: 'Processing...',
   search: 'Search',
   searchPlaceholder: 'Search {{item}}...',
   filter: 'Filter',
@@ -58,6 +59,8 @@ const common = {
   select: 'Select',
   selectAll: 'Select All',
   deselectAll: 'Deselect All',
+  items: 'items',
+  item: 'item',
   
   // Form Labels
   name: 'Name',

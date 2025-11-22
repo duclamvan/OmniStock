@@ -247,6 +247,16 @@ const system = {
   selectFrequency: 'Chọn tần suất',
   selectCurrency: 'Chọn tiền tệ',
   
+  // Employee validation messages
+  employeeIdRequired: 'Mã nhân viên là bắt buộc',
+  firstNameRequired: 'Tên là bắt buộc',
+  lastNameRequired: 'Họ là bắt buộc',
+  invalidEmail: 'Email không hợp lệ',
+  positionRequired: 'Vị trí là bắt buộc',
+  departmentRequired: 'Phòng ban là bắt buộc',
+  hireDateRequired: 'Ngày tuyển dụng là bắt buộc',
+  salaryRequired: 'Lương là bắt buộc',
+  
   // Files
   files: 'Tệp tin',
   file: 'Tệp',
@@ -262,6 +272,18 @@ const system = {
   fileType: 'Loại tệp',
   downloadFile: 'Tải xuống tệp',
   deleteFile: 'Xóa tệp',
+  failedToFetchFiles: 'Không thể tải tệp tin',
+  fileNamePlaceholder: 'vd: Giấy Chứng nhận An toàn Sản phẩm',
+  fileUrlPlaceholder: 'https://example.com/file.pdf',
+  tagsPlaceholder: 'an toàn, chứng nhận, 2024',
+  
+  // File types
+  msds: 'MSDS (Phiếu Dữ liệu An toàn Vật liệu)',
+  cpnp: 'Chứng nhận CPNP',
+  leaflet: 'Tờ rơi Sản phẩm',
+  manual: 'Hướng dẫn Sử dụng',
+  certificate: 'Chứng nhận Khác',
+  otherDocument: 'Tài liệu Khác',
   
   // Notifications (additional)
   all: 'Tất cả',
@@ -269,7 +291,9 @@ const system = {
   noUnreadNotifications: 'Không có thông báo chưa đọc',
   noNotificationsYet: 'Chưa có thông báo',
   youreAllCaughtUp: 'Bạn đã xem hết!',
+  allCaughtUp: 'Bạn đã xem hết!',
   notificationsWillAppearHere: 'Thông báo sẽ xuất hiện ở đây',
+  notificationsWillAppear: 'Thông báo sẽ xuất hiện ở đây khi có cập nhật',
   viewAndManageNotifications: 'Xem và quản lý thông báo của bạn',
   success: 'Thành công',
   

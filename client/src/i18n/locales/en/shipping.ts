@@ -222,6 +222,13 @@ const shipping = {
   glsDesktopStep3: 'Follow the one-time bookmarklet setup instructions',
   glsDesktopStep4: 'Use the bookmarklet to auto-fill the GLS form anytime',
   glsMobileNote: 'Note: The mobile script works the same as the desktop bookmarklet but runs automatically when you visit the GLS website from an order.',
+  glsMobileStep1: 'Install Kiwi Browser from Google Play Store (supports Chrome extensions on mobile)',
+  glsMobileStep2: 'In Kiwi Browser, install Tampermonkey extension from Chrome Web Store',
+  glsMobileStep3: 'Download the userscript:',
+  glsMobileStep4: 'Tap the downloaded file to open it - Tampermonkey should detect it and show an install prompt',
+  glsMobileStep5: 'If auto-detection fails: Open Tampermonkey → Utilities tab → "Import from file" → Select the downloaded .user.js file',
+  glsMobileStep6: 'Edit the script ONLY if your URL doesn\'t contain "replit" (replace YOUR_REPLIT_URL)',
+  glsMobileStep7: 'Click "Ship with GLS" on any order - the GLS form will auto-fill when you arrive at their website!',
   
 } as const;
 
