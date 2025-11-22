@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -158,50 +159,52 @@ interface ProductImage {
   isPrimary: boolean;
 }
 
-const IMAGE_PURPOSE_CONFIG = {
+const getImagePurposeConfig = (t: any) => ({
   main: {
-    label: 'Main WMS Image',
-    description: 'Primary product image for warehouse management',
+    label: t('products:images.purposes.main'),
+    description: t('products:images.purposes.mainDescription'),
     icon: ImageIcon,
     color: 'text-blue-600 bg-blue-50 border-blue-300',
     uploadedColor: 'text-blue-700 bg-blue-100 border-blue-500',
     bgGradient: 'from-blue-50 to-blue-100',
   },
   in_hand: {
-    label: 'In Hand (Pick & Pack)',
-    description: 'Product held in hand for picking/packing reference',
+    label: t('products:images.purposes.inHand'),
+    description: t('products:images.purposes.inHandDescription'),
     icon: Hand,
     color: 'text-emerald-600 bg-emerald-50 border-emerald-300',
     uploadedColor: 'text-emerald-700 bg-emerald-100 border-emerald-500',
     bgGradient: 'from-emerald-50 to-emerald-100',
   },
   detail: {
-    label: 'Detail Shot',
-    description: 'Close-up details, texture, or features',
+    label: t('products:images.purposes.detail'),
+    description: t('products:images.purposes.detailDescription'),
     icon: PackageOpen,
     color: 'text-indigo-600 bg-indigo-50 border-indigo-300',
     uploadedColor: 'text-indigo-700 bg-indigo-100 border-indigo-500',
     bgGradient: 'from-indigo-50 to-indigo-100',
   },
   packaging: {
-    label: 'Packaging',
-    description: 'Product packaging and box',
+    label: t('products:images.purposes.packaging'),
+    description: t('products:images.purposes.packagingDescription'),
     icon: Package,
     color: 'text-orange-600 bg-orange-50 border-orange-300',
     uploadedColor: 'text-orange-700 bg-orange-100 border-orange-500',
     bgGradient: 'from-orange-50 to-orange-100',
   },
   label: {
-    label: 'Label/Barcode',
-    description: 'Product label, barcode, or SKU tag',
+    label: t('products:images.purposes.label'),
+    description: t('products:images.purposes.labelDescription'),
     icon: FileType,
     color: 'text-cyan-600 bg-cyan-50 border-cyan-300',
     uploadedColor: 'text-cyan-700 bg-cyan-100 border-cyan-500',
     bgGradient: 'from-cyan-50 to-cyan-100',
   },
-};
+});
 
 export default function ProductForm() {
+  const { t } = useTranslation(['products', 'inventory', 'common']);
+  const IMAGE_PURPOSE_CONFIG = getImagePurposeConfig(t);
   const params = useParams();
   const id = params.id;
   const isEditMode = !!id;
@@ -927,8 +930,8 @@ export default function ProductForm() {
           const savedPercent = Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100);
           
           toast({
-            title: `${productImages.filter(img => img.file).length} Images Compressed`,
-            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% saved)`,
+            title: t('products:toasts.imagesCompressed', { count: productImages.filter(img => img.file).length }),
+            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% ${t('common:saved')})`,
           });
         }
       }
@@ -957,8 +960,8 @@ export default function ProductForm() {
       await queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       
       toast({
-        title: "Success",
-        description: "Product created successfully",
+        title: t('common:success'),
+        description: t('products:toasts.productCreated'),
       });
       
       // Small delay to ensure refetch completes
@@ -969,8 +972,8 @@ export default function ProductForm() {
     onError: (error) => {
       console.error("Product creation error:", error);
       toast({
-        title: "Error",
-        description: "Failed to create product",
+        title: t('common:error'),
+        description: t('products:toasts.productCreatedError'),
         variant: "destructive",
       });
     },
@@ -1034,8 +1037,8 @@ export default function ProductForm() {
           const savedPercent = Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100);
           
           toast({
-            title: `${productImages.filter(img => img.file).length} New Images Compressed`,
-            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% saved)`,
+            title: t('products:toasts.newImagesCompressed', { count: productImages.filter(img => img.file).length }),
+            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% ${t('common:saved')})`,
           });
         }
       }
@@ -1051,8 +1054,8 @@ export default function ProductForm() {
       ]);
       
       toast({
-        title: "Success",
-        description: "Product updated successfully",
+        title: t('common:success'),
+        description: t('products:toasts.productUpdated'),
       });
       
       // Small delay to ensure refetch completes
@@ -1063,8 +1066,8 @@ export default function ProductForm() {
     onError: (error) => {
       console.error("Product update error:", error);
       toast({
-        title: "Error",
-        description: "Failed to update product",
+        title: t('common:error'),
+        description: t('products:toasts.productUpdatedError'),
         variant: "destructive",
       });
     },
@@ -1078,16 +1081,16 @@ export default function ProductForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
       toast({
-        title: "Success",
-        description: "Tiered pricing added successfully",
+        title: t('common:success'),
+        description: t('products:toasts.tieredPricingAdded'),
       });
       setTieredPricingDialogOpen(false);
       tierForm.reset();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to add tiered pricing",
+        title: t('common:error'),
+        description: t('products:toasts.tieredPricingAddedError'),
         variant: "destructive",
       });
     },
@@ -1100,16 +1103,16 @@ export default function ProductForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
       toast({
-        title: "Success",
-        description: "Tiered pricing updated successfully",
+        title: t('common:success'),
+        description: t('products:toasts.tieredPricingUpdated'),
       });
       setTieredPricingDialogOpen(false);
       tierForm.reset();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update tiered pricing",
+        title: t('common:error'),
+        description: t('products:toasts.tieredPricingUpdatedError'),
         variant: "destructive",
       });
     },
@@ -1122,14 +1125,14 @@ export default function ProductForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
       toast({
-        title: "Success",
-        description: "Tiered pricing deleted successfully",
+        title: t('common:success'),
+        description: t('products:toasts.tieredPricingDeleted'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to delete tiered pricing",
+        title: t('common:error'),
+        description: t('products:toasts.tieredPricingDeletedError'),
         variant: "destructive",
       });
     },
@@ -1187,8 +1190,8 @@ export default function ProductForm() {
     setProductImages([...productImages, newImage]);
     
     toast({
-      title: "Image Added",
-      description: `Added ${IMAGE_PURPOSE_CONFIG[purpose].label}`,
+      title: t('products:toasts.imageAdded'),
+      description: t('products:toasts.imageAddedDescription', { type: IMAGE_PURPOSE_CONFIG[purpose].label }),
     });
   };
 
@@ -1214,8 +1217,8 @@ export default function ProductForm() {
     setProductImages(newImages);
     
     toast({
-      title: "Primary Image Set",
-      description: "This image will be used as the main product image",
+      title: t('products:toasts.primaryImageSet'),
+      description: t('products:toasts.primaryImageSetDescription'),
     });
   };
 
@@ -1238,13 +1241,13 @@ export default function ProductForm() {
       window.URL.revokeObjectURL(url);
       
       toast({
-        title: "Image Downloaded",
-        description: `Downloaded ${IMAGE_PURPOSE_CONFIG[img.purpose].label}`,
+        title: t('products:toasts.imageDownloaded'),
+        description: t('products:toasts.imageDownloadedDescription', { type: IMAGE_PURPOSE_CONFIG[img.purpose].label }),
       });
     } catch (error) {
       toast({
-        title: "Download Failed",
-        description: "Could not download the image",
+        title: t('products:toasts.downloadFailed'),
+        description: t('products:toasts.downloadFailedDescription'),
         variant: "destructive",
       });
     }
@@ -1341,8 +1344,8 @@ export default function ProductForm() {
     form.setValue('sku', baseSKU);
     
     toast({
-      title: "SKU Generated",
-      description: `Generated: ${baseSKU}`,
+      title: t('products:toasts.skuGenerated'),
+      description: t('products:toasts.skuGeneratedDescription', { sku: baseSKU }),
     });
   };
 
@@ -1374,8 +1377,8 @@ export default function ProductForm() {
         } catch (error) {
           console.error('Variant image upload error:', error);
           toast({
-            title: "Warning",
-            description: "Variant added but image upload failed",
+            title: t('common:warning'),
+            description: t('products:toasts.variantAddedImageFailed'),
             variant: "destructive",
           });
         }
@@ -1405,8 +1408,8 @@ export default function ProductForm() {
       setNewVariantImageUploading(false);
       setIsAddDialogOpen(false);
       toast({
-        title: "Success",
-        description: "Product variant added successfully",
+        title: t('common:success'),
+        description: t('products:toasts.variantAdded'),
       });
     }
   };
@@ -1414,8 +1417,8 @@ export default function ProductForm() {
   const addVariantSeries = () => {
     if (!seriesInput.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a series pattern",
+        title: t('common:error'),
+        description: t('products:toasts.enterSeriesPattern'),
         variant: "destructive",
       });
       return;
@@ -1429,8 +1432,8 @@ export default function ProductForm() {
       
       if (end - start > 200) {
         toast({
-          title: "Error",
-          description: "Series range too large. Maximum 200 variants at once.",
+          title: t('common:error'),
+          description: t('products:toasts.seriesRangeTooLarge'),
           variant: "destructive",
         });
         return;
@@ -1462,13 +1465,13 @@ export default function ProductForm() {
       setSeriesImportCostEur("");
       setIsSeriesDialogOpen(false);
       toast({
-        title: "Success",
-        description: `Added ${newVariantsArray.length} variants`,
+        title: t('common:success'),
+        description: t('products:toasts.variantsAdded', { count: newVariantsArray.length }),
       });
     } else {
       toast({
-        title: "Error",
-        description: "Use format like 'Size <1-10>' to create series",
+        title: t('common:error'),
+        description: t('products:toasts.seriesFormatError'),
         variant: "destructive",
       });
     }
@@ -1482,8 +1485,8 @@ export default function ProductForm() {
     
     if (barcodes.length === 0) {
       toast({
-        title: "Error",
-        description: "Please enter at least one barcode",
+        title: t('common:error'),
+        description: t('products:toasts.enterAtLeastOneBarcode'),
         variant: "destructive",
       });
       return;
@@ -1502,14 +1505,14 @@ export default function ProductForm() {
     
     const assignedCount = Math.min(barcodes.length, variantsWithoutBarcode.length);
     toast({
-      title: "Success",
-      description: `Assigned ${assignedCount} barcode(s) to variants`,
+      title: t('common:success'),
+      description: t('products:toasts.barcodesAssigned', { count: assignedCount }),
     });
 
     if (barcodes.length > variantsWithoutBarcode.length) {
       toast({
-        title: "Info",
-        description: `${barcodes.length - variantsWithoutBarcode.length} barcode(s) were not assigned (no more variants without barcodes)`,
+        title: t('common:info'),
+        description: t('products:toasts.barcodesNotAssigned', { count: barcodes.length - variantsWithoutBarcode.length }),
       });
     }
   };
@@ -1524,8 +1527,8 @@ export default function ProductForm() {
     setVariants(variants.filter(v => !selectedVariants.includes(v.id)));
     setSelectedVariants([]);
     toast({
-      title: "Success",
-      description: `Deleted ${selectedVariants.length} variants`,
+      title: t('common:success'),
+      description: t('products:toasts.variantsDeleted', { count: selectedVariants.length }),
     });
   };
 
@@ -1577,14 +1580,14 @@ export default function ProductForm() {
       ));
       
       toast({
-        title: "Success",
-        description: "Variant image uploaded successfully",
+        title: t('common:success'),
+        description: t('products:toasts.variantImageUploaded'),
       });
     } catch (error) {
       console.error('Variant image upload error:', error);
       toast({
-        title: "Error",
-        description: "Failed to upload variant image",
+        title: t('common:error'),
+        description: t('products:toasts.variantImageUploadError'),
         variant: "destructive",
       });
     } finally {
@@ -1673,14 +1676,14 @@ export default function ProductForm() {
   if (isEditMode && !product) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Product not found</div>
+        <div className="text-slate-500">{t('products:productNotFound')}</div>
       </div>
     );
   }
 
-  const pageTitle = isEditMode ? "Edit Product" : "Add New Product";
-  const pageDescription = isEditMode ? "Update product details and settings" : "Create a new product with details";
-  const submitButtonText = isEditMode ? "Update Product" : "Create Product";
+  const pageTitle = isEditMode ? t('products:editProduct') : t('products:addNewProduct');
+  const pageDescription = isEditMode ? t('products:editProductDescription') : t('products:addNewProductDescription');
+  const submitButtonText = isEditMode ? t('products:updateProduct') : t('products:createProduct');
   const submitIcon = isEditMode ? Pencil : Plus;
   const isPending = isEditMode ? updateProductMutation.isPending : createProductMutation.isPending;
 
@@ -1699,7 +1702,7 @@ export default function ProductForm() {
                 className="shrink-0"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Back</span>
+                <span className="hidden sm:inline">{t('common:back')}</span>
               </Button>
               <Separator orientation="vertical" className="h-8 hidden sm:block" />
               <div>
@@ -1713,7 +1716,7 @@ export default function ProductForm() {
               </div>
             </div>
             <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600" : "text-emerald-600 border-emerald-600"}>
-              {isEditMode ? <><Pencil className="h-3 w-3 mr-1" />Edit Mode</> : <><Plus className="h-3 w-3 mr-1" />Add Mode</>}
+              {isEditMode ? <><Pencil className="h-3 w-3 mr-1" />{t('products:editMode')}</> : <><Plus className="h-3 w-3 mr-1" />{t('products:addMode')}</>}
             </Badge>
           </div>
         </div>
@@ -1721,8 +1724,8 @@ export default function ProductForm() {
         <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
           console.error('Product form validation errors:', errors);
           toast({
-            title: "Form Validation Error",
-            description: "Please check all required fields and try again",
+            title: t('common:formValidationError'),
+            description: t('common:formValidationErrorDescription'),
             variant: "destructive",
           });
         })} className="space-y-4">
@@ -1736,7 +1739,7 @@ export default function ProductForm() {
                       <ImageIcon className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Images</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:images.title')}</p>
                       <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-image-count">{productImages.length}</p>
                     </div>
                   </div>
@@ -1745,7 +1748,7 @@ export default function ProductForm() {
                       <Tag className="h-4 w-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Variants</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:variants.title')}</p>
                       <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-variant-count">{variants.length}</p>
                     </div>
                   </div>
@@ -1754,7 +1757,7 @@ export default function ProductForm() {
                       <BarChart className="h-4 w-4 text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Stock</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{t('inventory:stock')}</p>
                       <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-stock">{product?.quantity || 0}</p>
                     </div>
                   </div>
@@ -1763,7 +1766,7 @@ export default function ProductForm() {
                       <DollarSign className="h-4 w-4 text-amber-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Tiered Prices</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:tieredPricing.title')}</p>
                       <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-tier-count">{tieredPricing.length}</p>
                     </div>
                   </div>
@@ -1782,12 +1785,12 @@ export default function ProductForm() {
                       <ImageIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Images</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Upload multiple images per category</p>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:images.title')}</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:images.uploadMultiple')}</p>
                     </div>
                   </div>
                   <Badge variant="secondary" className="text-xs">
-                    {productImages.length} image{productImages.length !== 1 ? 's' : ''}
+                    {t('products:images.count', { count: productImages.length })}
                   </Badge>
                 </div>
               </AccordionTrigger>
@@ -1817,7 +1820,7 @@ export default function ProductForm() {
                                 <div className="absolute top-2 left-2">
                                   <Badge className="bg-yellow-500 text-white border-0 shadow-lg">
                                     <Star className="h-3 w-3 mr-1 fill-white" />
-                                    Primary
+                                    {t('products:images.primary')}
                                   </Badge>
                                 </div>
                               )}
@@ -1843,7 +1846,7 @@ export default function ProductForm() {
                                   data-testid={`button-download-image-${index}`}
                                 >
                                   <Download className="h-3 w-3 mr-1" />
-                                  Download
+                                  {t('common:download')}
                                 </Button>
                                 {!img.isPrimary && (
                                   <Button
@@ -1855,7 +1858,7 @@ export default function ProductForm() {
                                     data-testid={`button-set-primary-${index}`}
                                   >
                                     <Star className="h-3 w-3 mr-1" />
-                                    Set Primary
+                                    {t('products:images.setPrimary')}
                                   </Button>
                                 )}
                               </div>
@@ -1932,14 +1935,14 @@ export default function ProductForm() {
                   {productImages.length === 0 && (
                     <div className="text-center py-6 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
                       <ImageIcon className="h-10 w-10 mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">No images added yet</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Upload images by clicking the category cards above</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('products:images.noImagesYet')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('products:images.uploadInstruction')}</p>
                     </div>
                   )}
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
                     <Info className="h-3 w-3" />
-                    Images are automatically compressed on upload. First image is primary by default. You can upload multiple images per category.
+                    {t('products:images.autoCompressInfo')}
                   </p>
                 </div>
               </AccordionContent>
@@ -1956,8 +1959,8 @@ export default function ProductForm() {
                     <Box className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Basic Information</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Product name, SKU, category, description</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:basicInformation.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:basicInformation.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -1966,10 +1969,10 @@ export default function ProductForm() {
                   {/* Product Name & English Name */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name" className="text-sm font-medium">Product Name *</Label>
+                      <Label htmlFor="name" className="text-sm font-medium">{t('products:basicInformation.productName')} *</Label>
                       <Input
                         {...form.register('name')}
-                        placeholder="Enter product name"
+                        placeholder={t('products:basicInformation.productNamePlaceholder')}
                         data-testid="input-name"
                         className="mt-1"
                       />
@@ -1979,10 +1982,10 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="vietnameseName" className="text-sm font-medium">Vietnamese Name</Label>
+                      <Label htmlFor="vietnameseName" className="text-sm font-medium">{t('products:basicInformation.vietnameseName')}</Label>
                       <Input
                         {...form.register('vietnameseName')}
-                        placeholder="Enter Vietnamese name (optional)"
+                        placeholder={t('products:basicInformation.vietnameseNamePlaceholder')}
                         data-testid="input-vietnamese-name"
                         className="mt-1"
                       />
@@ -1992,11 +1995,11 @@ export default function ProductForm() {
                   {/* SKU & Category */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="sku" className="text-sm font-medium">SKU *</Label>
+                      <Label htmlFor="sku" className="text-sm font-medium">{t('products:basicInformation.sku')} *</Label>
                       <div className="flex gap-2 mt-1">
                         <Input
                           {...form.register('sku')}
-                          placeholder="Auto-generate or enter SKU"
+                          placeholder={t('products:basicInformation.skuPlaceholder')}
                           data-testid="input-sku"
                           className="flex-1"
                         />
@@ -2010,10 +2013,10 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="categoryId" className="text-sm font-medium">Category</Label>
+                      <Label htmlFor="categoryId" className="text-sm font-medium">{t('products:basicInformation.category')}</Label>
                       <Select value={categoryId} onValueChange={(value) => form.setValue('categoryId', value)}>
                         <SelectTrigger data-testid="select-category" className="mt-1">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder={t('common:select')} />
                         </SelectTrigger>
                         <SelectContent>
                           {categories?.map((category: any) => (
@@ -2028,10 +2031,10 @@ export default function ProductForm() {
 
                   {/* Description */}
                   <div>
-                    <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                    <Label htmlFor="description" className="text-sm font-medium">{t('products:basicInformation.description')}</Label>
                     <Textarea
                       {...form.register('description')}
-                      placeholder="Product description..."
+                      placeholder={t('products:basicInformation.descriptionPlaceholder')}
                       rows={3}
                       data-testid="input-description"
                       className="mt-1"
@@ -2049,8 +2052,8 @@ export default function ProductForm() {
                     <BarChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Stock & Inventory</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Quantity, alerts, barcode</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:stockInventory.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:stockInventory.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -2058,7 +2061,7 @@ export default function ProductForm() {
                 <div className="space-y-4 pt-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                      <Label htmlFor="quantity" className="text-sm font-medium">{t('products:stockInventory.quantity')}</Label>
                       <Input
                         type="number"
                         min="0"
@@ -2069,7 +2072,7 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">Low Stock Alert</Label>
+                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">{t('products:stockInventory.lowStockAlert')}</Label>
                       <Input
                         type="number"
                         min="0"
@@ -2081,11 +2084,11 @@ export default function ProductForm() {
                   </div>
 
                   <div>
-                    <Label htmlFor="barcode" className="text-sm font-medium">Barcode (EAN-13)</Label>
+                    <Label htmlFor="barcode" className="text-sm font-medium">{t('products:stockInventory.barcode')}</Label>
                     <div className="flex gap-2 mt-1">
                       <Input
                         {...form.register('barcode')}
-                        placeholder="Enter or scan barcode"
+                        placeholder={t('products:stockInventory.barcodePlaceholder')}
                         data-testid="input-barcode"
                         className="flex-1"
                       />
@@ -2096,8 +2099,8 @@ export default function ProductForm() {
                         onClick={() => {
                           setIsScanning(true);
                           toast({
-                            title: "Scanner Ready",
-                            description: "Please scan the barcode now",
+                            title: t('products:toasts.scannerReady'),
+                            description: t('products:toasts.scannerReadyDescription'),
                           });
                           setTimeout(() => {
                             setIsScanning(false);
@@ -2121,10 +2124,10 @@ export default function ProductForm() {
                           <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                           <div>
                             <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                              Warehouse Locations
+                              {t('products:warehouseLocations.title')}
                             </h4>
                             <p className="text-xs text-blue-700 dark:text-blue-300">
-                              Multiple warehouse locations can be assigned after creating the product. This allows you to track inventory across different storage areas.
+                              {t('products:warehouseLocations.infoMessage')}
                             </p>
                           </div>
                         </div>
@@ -2143,8 +2146,8 @@ export default function ProductForm() {
                     <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Pricing & Costs</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Sales prices, import costs</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:pricing.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:pricing.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -2152,7 +2155,7 @@ export default function ProductForm() {
                 <div className="space-y-4 pt-2">
                   {/* Sales Prices */}
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Sales Prices</Label>
+                    <Label className="text-sm font-medium mb-2 block">{t('products:pricing.salesPrices')}</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="priceCzk" className="text-xs text-slate-500">CZK</Label>
@@ -2193,14 +2196,14 @@ export default function ProductForm() {
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Enter price in one currency, other will auto-convert when you finish typing
+                      {t('products:pricing.autoConvertHelper')}
                     </p>
                   </div>
 
                   {/* Import Costs */}
                   {canAccessFinancialData && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Import Costs</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('products:pricing.importCosts')}</Label>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
@@ -2272,7 +2275,7 @@ export default function ProductForm() {
                         </div>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Enter cost in one currency, others auto-convert in real-time
+                        {t('products:pricing.autoConvertRealtime')}
                       </p>
                     </div>
                   )}
@@ -2282,7 +2285,7 @@ export default function ProductForm() {
                     <div className="pt-2">
                       <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-amber-600" />
-                        Cost History
+                        {t('products:pricing.costHistory')}
                       </Label>
                       <CostHistoryChart data={costHistory} />
                     </div>
@@ -2295,26 +2298,26 @@ export default function ProductForm() {
                       <div className="flex items-center justify-between mb-3">
                         <Label className="text-sm font-medium flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-amber-600" />
-                          Tiered Pricing
+                          {t('products:tieredPricing.title')}
                         </Label>
                         <Dialog open={tieredPricingDialogOpen} onOpenChange={setTieredPricingDialogOpen}>
                           <DialogTrigger asChild>
                             <Button type="button" size="sm" variant="outline" data-testid="button-add-tier">
                               <Plus className="h-4 w-4 mr-1" />
-                              Add Tier
+                              {t('products:tieredPricing.addTier')}
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-[500px]">
                             <DialogHeader>
-                              <DialogTitle>{editingTier ? 'Edit' : 'Add'} Tiered Pricing</DialogTitle>
+                              <DialogTitle>{editingTier ? t('common:edit') : t('common:add')} {t('products:tieredPricing.title')}</DialogTitle>
                               <DialogDescription>
-                                Set prices for different quantity ranges
+                                {t('products:tieredPricing.dialogDescription')}
                               </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={tierForm.handleSubmit(onTierSubmit)} className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <Label htmlFor="minQuantity">Min Quantity *</Label>
+                                  <Label htmlFor="minQuantity">{t('products:tieredPricing.minQuantity')} *</Label>
                                   <Input
                                     type="number"
                                     {...tierForm.register('minQuantity')}
@@ -2323,7 +2326,7 @@ export default function ProductForm() {
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="maxQuantity">Max Quantity</Label>
+                                  <Label htmlFor="maxQuantity">{t('products:tieredPricing.maxQuantity')}</Label>
                                   <Input
                                     type="number"
                                     {...tierForm.register('maxQuantity')}
@@ -2334,14 +2337,14 @@ export default function ProductForm() {
                               </div>
                               
                               <div>
-                                <Label htmlFor="priceType">Price Type</Label>
+                                <Label htmlFor="priceType">{t('products:tieredPricing.priceType')}</Label>
                                 <Select value={tierForm.watch('priceType')} onValueChange={(value) => tierForm.setValue('priceType', value as 'tiered' | 'wholesale')}>
                                   <SelectTrigger data-testid="select-tier-type">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="tiered">Tiered (per unit)</SelectItem>
-                                    <SelectItem value="wholesale">Wholesale (total)</SelectItem>
+                                    <SelectItem value="tiered">{t('products:tieredPricing.tiered')}</SelectItem>
+                                    <SelectItem value="wholesale">{t('products:tieredPricing.wholesale')}</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -2381,12 +2384,12 @@ export default function ProductForm() {
                                 </div>
                               </div>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Enter price in one currency, others will auto-convert when you finish typing
+                                {t('products:pricing.autoConvertHelper')}
                               </p>
                               
                               <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setTieredPricingDialogOpen(false)} data-testid="button-cancel-tier">
-                                  Cancel
+                                  {t('common:cancel')}
                                 </Button>
                                 <Button type="submit" data-testid="button-save-tier">
                                   {editingTier ? 'Update' : 'Add'} Tier

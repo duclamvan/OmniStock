@@ -1783,18 +1783,18 @@ export default function AddOrder() {
                 className="w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Back to Orders</span>
-                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">{t('orders:backToOrders')}</span>
+                <span className="sm:hidden">{t('orders:back')}</span>
               </Button>
               <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Create New Order</h1>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">Add products and configure details</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('orders:createNewOrder')}</h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{t('orders:addProductsConfigureDetails')}</p>
               </div>
             </div>
             <Badge variant="outline" className="text-green-600 border-green-600 w-fit">
               <Plus className="h-3 w-3 mr-1" />
-              New Order
+              {t('orders:newOrder')}
             </Badge>
           </div>
         </div>
@@ -1802,8 +1802,8 @@ export default function AddOrder() {
         <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
           console.error('Order form validation errors:', errors);
           toast({
-            title: "Form Validation Error",
-            description: "Please check all required fields and try again",
+            title: t('orders:formValidationError'),
+            description: t('orders:checkRequiredFields'),
             variant: "destructive",
           });
         })}>
@@ -1815,12 +1815,12 @@ export default function AddOrder() {
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4 text-blue-600" />
-                    Order Location
+                    {t('orders:orderLocation')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
                   <Input
-                    placeholder="e.g., Prague Warehouse, Main Office"
+                    placeholder={t('orders:orderLocationPlaceholder')}
                     value={form.watch('orderLocation') || ''}
                     onChange={(e) => form.setValue('orderLocation', e.target.value)}
                     data-testid="input-order-location"
@@ -1833,12 +1833,12 @@ export default function AddOrder() {
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <Settings className="h-4 w-4 text-blue-600" />
-                    Order Settings
+                    {t('orders:orderSettings')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 space-y-3">
                   <div>
-                    <Label htmlFor="currency-mobile" className="text-xs">Currency</Label>
+                    <Label htmlFor="currency-mobile" className="text-xs">{t('orders:currency')}</Label>
                     <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
                       <SelectTrigger className="mt-1 h-9">
                         <SelectValue />
@@ -1854,7 +1854,7 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="priority-mobile" className="text-xs">Priority</Label>
+                    <Label htmlFor="priority-mobile" className="text-xs">{t('orders:priority')}</Label>
                     <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
                       <SelectTrigger className="mt-1 h-9">
                         <SelectValue />
@@ -1863,19 +1863,19 @@ export default function AddOrder() {
                         <SelectItem value="low">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                            Low
+                            {t('orders:low')}
                           </div>
                         </SelectItem>
                         <SelectItem value="medium">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                            Medium
+                            {t('orders:medium')}
                           </div>
                         </SelectItem>
                         <SelectItem value="high">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-red-500 rounded-full" />
-                            High
+                            {t('orders:high')}
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -1885,7 +1885,7 @@ export default function AddOrder() {
                   {/* Order Status and Payment Status side by side */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label htmlFor="orderStatus-mobile" className="text-xs">Order Status</Label>
+                      <Label htmlFor="orderStatus-mobile" className="text-xs">{t('orders:orderStatus')}</Label>
                       <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
                         <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
@@ -1894,43 +1894,43 @@ export default function AddOrder() {
                           <SelectItem value="pending">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-amber-500 rounded-full" />
-                              Pending
+                              {t('orders:pending')}
                             </div>
                           </SelectItem>
                           <SelectItem value="awaiting_stock">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                              Awaiting Stock
+                              {t('orders:awaitingStock')}
                             </div>
                           </SelectItem>
                           <SelectItem value="to_fulfill">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                              To Fulfill
+                              {t('orders:toFulfill')}
                             </div>
                           </SelectItem>
                           <SelectItem value="ready_to_ship">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-cyan-500 rounded-full" />
-                              Ready to Ship
+                              {t('orders:readyToShip')}
                             </div>
                           </SelectItem>
                           <SelectItem value="shipped">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-purple-500 rounded-full" />
-                              Shipped
+                              {t('orders:shipped')}
                             </div>
                           </SelectItem>
                           <SelectItem value="delivered">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-emerald-500 rounded-full" />
-                              Delivered
+                              {t('orders:delivered')}
                             </div>
                           </SelectItem>
                           <SelectItem value="cancelled">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-red-500 rounded-full" />
-                              Cancelled
+                              {t('orders:cancelled')}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -1938,7 +1938,7 @@ export default function AddOrder() {
                     </div>
 
                     <div>
-                      <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
+                      <Label htmlFor="paymentStatus-mobile" className="text-xs">{t('orders:paymentStatus')}</Label>
                       <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                         <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
@@ -1947,19 +1947,19 @@ export default function AddOrder() {
                           <SelectItem value="pending">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                              Pending
+                              {t('orders:pending')}
                             </div>
                           </SelectItem>
                           <SelectItem value="paid">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-green-500 rounded-full" />
-                              Paid
+                              {t('orders:paid')}
                             </div>
                           </SelectItem>
                           <SelectItem value="pay_later">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                              Pay Later
+                              {t('orders:payLater')}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -1981,15 +1981,15 @@ export default function AddOrder() {
               <CardHeader className="p-3 border-b">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <User className="h-4 w-4 text-blue-600" />
-                  Customer Details
+                  {t('orders:customerDetails')}
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1">{t('orders:searchSelectOrCreateNew')}</CardDescription>
               </CardHeader>
               <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
             {!selectedCustomer && !quickCustomerType && !showNewCustomerForm && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Quick Customer</Label>
+                <Label className="text-sm font-medium">{t('orders:quickCustomer')}</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <Button
                     type="button"
@@ -2003,7 +2003,7 @@ export default function AddOrder() {
                     data-testid="button-new-customer"
                   >
                     <UserPlus className="h-3.5 w-3.5" />
-                    New
+                    {t('orders:newCustomer')}
                   </Button>
                   <Button
                     type="button"
@@ -2017,7 +2017,7 @@ export default function AddOrder() {
                     data-testid="button-quick-temp-customer"
                   >
                     <User className="h-3.5 w-3.5" />
-                    Quick
+                    {t('orders:quickTemp')}
                   </Button>
                   <Button
                     type="button"
@@ -2033,7 +2033,7 @@ export default function AddOrder() {
                     data-testid="button-telephone-customer"
                   >
                     <Phone className="h-3.5 w-3.5" />
-                    Tel
+                    {t('orders:telephoneCustomer')}
                   </Button>
                   <Button
                     type="button"
@@ -2049,7 +2049,7 @@ export default function AddOrder() {
                     data-testid="button-messaging-customer"
                   >
                     <MessageSquare className="h-3.5 w-3.5" />
-                    Msg
+                    {t('orders:messagingCustomer')}
                   </Button>
                   <Button
                     type="button"
@@ -2063,7 +2063,7 @@ export default function AddOrder() {
                     data-testid="button-custom-customer"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Custom
+                    {t('orders:customCustomer')}
                   </Button>
                 </div>
                 <Separator className="my-3" />
@@ -2075,10 +2075,10 @@ export default function AddOrder() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-blue-900">
-                    {quickCustomerType === 'quick' && 'Quick Customer (One-time)'}
-                    {quickCustomerType === 'tel' && 'Telephone Order'}
-                    {quickCustomerType === 'msg' && 'Social Media Customer'}
-                    {quickCustomerType === 'custom' && 'Custom Customer (One-time)'}
+                    {quickCustomerType === 'quick' && t('orders:quickCustomerOneTime')}
+                    {quickCustomerType === 'tel' && t('orders:telephoneOrder')}
+                    {quickCustomerType === 'msg' && t('orders:socialMediaCustomer')}
+                    {quickCustomerType === 'custom' && t('orders:customCustomerOneTime')}
                   </h4>
                   <Button
                     type="button"
@@ -2096,12 +2096,12 @@ export default function AddOrder() {
 
                 {/* Name field - shown for all types */}
                 <div>
-                  <Label htmlFor="quickCustomerName">Name *</Label>
+                  <Label htmlFor="quickCustomerName">{t('orders:name')} *</Label>
                   <Input
                     id="quickCustomerName"
                     value={quickCustomerName}
                     onChange={(e) => setQuickCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
+                    placeholder={t('orders:enterCustomerName')}
                     data-testid="input-quick-customer-name"
                   />
                 </div>
@@ -2110,7 +2110,7 @@ export default function AddOrder() {
                 {(quickCustomerType === 'tel' || quickCustomerType === 'msg') && (
                   <div>
                     <Label htmlFor="quickCustomerPhone">
-                      {quickCustomerType === 'msg' ? 'ID/Phone Number *' : 'Phone *'}
+                      {quickCustomerType === 'msg' ? t('orders:idPhoneNumber') : t('orders:phone') + ' *'}
                     </Label>
                     <Input
                       id="quickCustomerPhone"
@@ -2123,14 +2123,14 @@ export default function AddOrder() {
                       placeholder="+420776887045"
                       data-testid="input-quick-customer-phone"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Format without spaces (e.g. +420776887045)</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('orders:formatWithoutSpaces')}</p>
                   </div>
                 )}
 
                 {/* Social Media App - shown for Msg only */}
                 {quickCustomerType === 'msg' && (
                   <div>
-                    <Label htmlFor="quickCustomerSocialApp">Social Media App *</Label>
+                    <Label htmlFor="quickCustomerSocialApp">{t('orders:socialMediaApp')}</Label>
                     <Select 
                       value={quickCustomerSocialApp} 
                       onValueChange={(value: any) => setQuickCustomerSocialApp(value)}
@@ -2139,10 +2139,10 @@ export default function AddOrder() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="viber">Viber</SelectItem>
-                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                        <SelectItem value="zalo">Zalo</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
+                        <SelectItem value="viber">{t('orders:viber')}</SelectItem>
+                        <SelectItem value="whatsapp">{t('orders:whatsapp')}</SelectItem>
+                        <SelectItem value="zalo">{t('orders:zalo')}</SelectItem>
+                        <SelectItem value="email">{t('orders:email')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2155,8 +2155,8 @@ export default function AddOrder() {
                   onClick={() => {
                     if (!quickCustomerName.trim()) {
                       toast({
-                        title: "Name required",
-                        description: "Please enter a customer name",
+                        title: t('orders:nameRequired'),
+                        description: t('orders:nameRequiredDesc'),
                         variant: "destructive"
                       });
                       return;
@@ -2164,8 +2164,8 @@ export default function AddOrder() {
 
                     if ((quickCustomerType === 'tel' || quickCustomerType === 'msg') && !quickCustomerPhone.trim()) {
                       toast({
-                        title: "Phone required",
-                        description: "Please enter a phone number",
+                        title: t('orders:phoneRequired'),
+                        description: t('orders:phoneRequiredDesc'),
                         variant: "destructive"
                       });
                       return;
@@ -2189,19 +2189,19 @@ export default function AddOrder() {
                   data-testid="button-confirm-quick-customer"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Confirm
+                  {t('orders:confirm')}
                 </Button>
               </div>
             )}
 
             {!showNewCustomerForm && (
             <div className="relative customer-search-container">
-              <Label htmlFor="customer">Search Customer</Label>
+              <Label htmlFor="customer">{t('orders:searchCustomer')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   ref={customerSearchRef}
-                  placeholder="Type to search customers (Vietnamese diacritics supported)..."
+                  placeholder={t('orders:searchCustomerPlaceholder')}
                   value={customerSearch}
                   onChange={(e) => {
                     setCustomerSearch(e.target.value);
@@ -2266,7 +2266,7 @@ export default function AddOrder() {
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-96 overflow-y-auto z-50">
                   <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
-                    {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                    {t('orders:customersFound', { count: filteredCustomers.length })}
                   </div>
                   {filteredCustomers.map((customer: any) => (
                     <div
@@ -3058,7 +3058,7 @@ export default function AddOrder() {
                     }
                   }}
                 >
-                  Add Customer to Order
+                  {t('orders:addCustomerToOrder')}
                 </Button>
               </div>
             )}
@@ -3070,14 +3070,14 @@ export default function AddOrder() {
           <CardHeader className="p-3 border-b">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Package className="h-4 w-4 text-blue-600" />
-              Add Products
+              {t('orders:addProducts')}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">{t('orders:searchAddProducts')}</CardDescription>
           </CardHeader>
           <CardContent className="sticky top-0 z-40 p-3 space-y-3 bg-white dark:bg-slate-950 shadow-sm backdrop-blur-sm">
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="product">Search Products</Label>
+                <Label htmlFor="product">{t('orders:searchProducts')}</Label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -3087,15 +3087,15 @@ export default function AddOrder() {
                     onClick={() => {
                       setBarcodeScanMode(!barcodeScanMode);
                       toast({
-                        title: barcodeScanMode ? "Barcode scan mode OFF" : "Barcode scan mode ON",
+                        title: barcodeScanMode ? t('orders:barcodeScanModeOff') : t('orders:barcodeScanModeOn'),
                         description: barcodeScanMode 
-                          ? "Normal mode: Products clear after adding" 
-                          : "Rapid mode: Keep scanning without clearing",
+                          ? t('orders:normalModeClearAfterAdd')
+                          : t('orders:rapidModeContinueScanning'),
                       });
                     }}
                   >
                     <Package className="h-3 w-3 mr-1" />
-                    {barcodeScanMode ? "Scan Mode: ON" : "Scan Mode: OFF"}
+                    {barcodeScanMode ? t('orders:scanModeOn') : t('orders:scanModeOff')}
                   </Button>
                 </div>
               </div>
@@ -3103,7 +3103,7 @@ export default function AddOrder() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   ref={productSearchRef}
-                  placeholder="Click to see all products (Vietnamese diacritics supported)..."
+                  placeholder={t('orders:clickToSeeAllProducts')}
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-10"
@@ -3168,7 +3168,7 @@ export default function AddOrder() {
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[70vh] overflow-y-auto z-50">
                   <div className="px-2 py-1.5 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
-                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+                    {t('orders:productsFoundCount', { count: filteredProducts.length })}
                   </div>
                   {filteredProducts.map((product: any, index: number) => {
                     const frequency = productFrequency[product.id] || 0;
@@ -3222,17 +3222,17 @@ export default function AddOrder() {
                                 <div className="font-medium text-sm text-slate-900 dark:text-slate-100 line-clamp-2 flex-1">{product.name}</div>
                               {isBestMatch && (
                                 <Badge variant="default" className="text-[10px] px-1 py-0 bg-blue-600 flex-shrink-0">
-                                  Best
+                                  {t('orders:best')}
                                 </Badge>
                               )}
                               {isService && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 border-orange-500 text-orange-600 flex-shrink-0">
-                                  Service
+                                  {t('orders:service')}
                                 </Badge>
                               )}
                               {isBundle && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 border-purple-500 text-purple-600 flex-shrink-0">
-                                  Bundle
+                                  {t('orders:bundle')}
                                 </Badge>
                               )}
                             </div>
@@ -3280,8 +3280,8 @@ export default function AddOrder() {
               {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
-                  <div>No products found for "{productSearch}"</div>
-                  <div className="text-xs mt-1">Try searching by name, SKU, or category</div>
+                  <div>{t('orders:noProductsFoundFor', { search: productSearch })}</div>
+                  <div className="text-xs mt-1">{t('orders:trySearchingByNameSKU')}</div>
                 </div>
               )}
             </div>
@@ -3295,10 +3295,10 @@ export default function AddOrder() {
               <div>
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <ShoppingCart className="h-4 w-4 text-blue-600" />
-                  Order Items
+                  {t('orders:orderItems')}
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">
-                  {orderItems.length > 0 ? `${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} added` : 'No items yet'}
+                  {orderItems.length > 0 ? t('orders:itemsAdded', { count: orderItems.length }) : t('orders:noItemsYet')}
                 </CardDescription>
               </div>
               {/* Column Toggles */}
@@ -3314,7 +3314,7 @@ export default function AddOrder() {
                       htmlFor="show-vat"
                       className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                      VAT
+                      {t('orders:vat')}
                     </label>
                   </div>
                   <div className="flex items-center space-x-2" data-testid="toggle-discount-column">
@@ -3327,7 +3327,7 @@ export default function AddOrder() {
                       htmlFor="show-discount"
                       className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                      Discount
+                      {t('orders:disc')}
                     </label>
                   </div>
                 </div>
@@ -3344,17 +3344,17 @@ export default function AddOrder() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">{t('orders:product')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">{t('orders:qty')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:price')}</TableHead>
                           {showDiscountColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Discount</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:discount')}</TableHead>
                           )}
                           {showVatColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">VAT</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:vat')}</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:lineTotal')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">{t('orders:actionsHeader')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -3394,21 +3394,21 @@ export default function AddOrder() {
                                   )}
                                   {item.bundleId && (
                                     <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                      Bundle
+                                      {t('orders:bundle')}
                                     </Badge>
                                   )}
                                   {item.serviceId && (
                                     <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                      Service
+                                      {t('orders:service')}
                                     </Badge>
                                   )}
                                 </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
+                                  {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
                                 </span>
                                 {item.serviceId && (
                                   <Input
-                                    placeholder="Add note (optional)"
+                                    placeholder={t('orders:addOptionalNote')}
                                     value={item.notes || ''}
                                     onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
                                     className="text-xs h-7 mt-1 bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400"

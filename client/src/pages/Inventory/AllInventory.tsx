@@ -171,8 +171,8 @@ export default function AllInventory() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load products",
+        title: t('inventory:error'),
+        description: t('inventory:loadError'),
         variant: "destructive",
       });
     }
@@ -185,15 +185,15 @@ export default function AllInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Product updated successfully",
+        title: t('inventory:success'),
+        description: t('inventory:productUpdatedSuccess'),
       });
     },
     onError: (error) => {
       console.error("Product update error:", error);
       toast({
-        title: "Error",
-        description: "Failed to update product",
+        title: t('inventory:error'),
+        description: t('inventory:updateError'),
         variant: "destructive",
       });
     },
@@ -206,17 +206,17 @@ export default function AllInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Product marked as inactive",
+        title: t('inventory:success'),
+        description: t('inventory:productDeletedSuccess'),
       });
     },
     onError: (error: any) => {
       console.error("Product delete error:", error);
-      const errorMessage = error.message || "Failed to delete product";
+      const errorMessage = error.message || t('inventory:deleteError');
       toast({
-        title: "Error",
+        title: t('inventory:error'),
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete product - it's being used in existing orders" 
+          ? t('inventory:deleteErrorReferenced') 
           : errorMessage,
         variant: "destructive",
       });
@@ -230,15 +230,15 @@ export default function AllInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Product restored successfully",
+        title: t('inventory:success'),
+        description: t('inventory:productRestoredSuccess'),
       });
     },
     onError: (error) => {
       console.error("Product restore error:", error);
       toast({
-        title: "Error",
-        description: "Failed to restore product",
+        title: t('inventory:error'),
+        description: t('inventory:restoreError'),
         variant: "destructive",
       });
     },
@@ -251,15 +251,15 @@ export default function AllInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
-        title: "Success",
-        description: "Product moved to archive",
+        title: t('inventory:success'),
+        description: t('inventory:productArchivedSuccess'),
       });
     },
     onError: (error) => {
       console.error("Product archive error:", error);
       toast({
-        title: "Error",
-        description: "Failed to archive product",
+        title: t('inventory:error'),
+        description: t('inventory:archiveError'),
         variant: "destructive",
       });
     },
@@ -269,8 +269,8 @@ export default function AllInventory() {
   const handleExportXLSX = () => {
     if (!filteredProducts || filteredProducts.length === 0) {
       toast({
-        title: "No data to export",
-        description: "There are no products to export",
+        title: t('inventory:noDataToExport'),
+        description: t('inventory:noProductsToExport'),
         variant: "destructive",
       });
       return;
@@ -279,27 +279,27 @@ export default function AllInventory() {
     try {
       // Prepare data for export
       const exportData = filteredProducts.map((product: any) => ({
-        Name: product.name,
-        SKU: product.sku,
-        Category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
-        Quantity: product.quantity,
-        'Units Sold': unitsSoldByProduct[product.id] || 0,
-        'Price (EUR)': formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
-        'Price (CZK)': formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
-        Status: product.isActive ? 'Active' : 'Inactive',
+        [t('inventory:name')]: product.name,
+        [t('inventory:sku')]: product.sku,
+        [t('inventory:category')]: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
+        [t('inventory:quantity')]: product.quantity,
+        [t('inventory:unitsSold')]: unitsSoldByProduct[product.id] || 0,
+        [t('inventory:priceEur')]: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
+        [t('inventory:priceCzk')]: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
+        [t('inventory:status')]: product.isActive ? t('inventory:active') : t('inventory:inactive'),
       }));
 
-      exportToXLSX(exportData, 'inventory', 'Products');
+      exportToXLSX(exportData, 'inventory', t('inventory:products'));
 
       toast({
-        title: "Export successful",
-        description: `Exported ${filteredProducts.length} products to XLSX`,
+        title: t('inventory:exportSuccessful'),
+        description: t('inventory:exportSuccessXLSX', { count: filteredProducts.length }),
       });
     } catch (error: any) {
       console.error("Export error:", error);
       toast({
-        title: "Export failed",
-        description: error.message || "Failed to export to XLSX",
+        title: t('inventory:exportFailed'),
+        description: error.message || t('inventory:exportFailedXLSX'),
         variant: "destructive",
       });
     }
@@ -309,8 +309,8 @@ export default function AllInventory() {
   const handleExportPDF = () => {
     if (!filteredProducts || filteredProducts.length === 0) {
       toast({
-        title: "No data to export",
-        description: "There are no products to export",
+        title: t('inventory:noDataToExport'),
+        description: t('inventory:noProductsToExport'),
         variant: "destructive",
       });
       return;
@@ -326,32 +326,32 @@ export default function AllInventory() {
         unitsSold: unitsSoldByProduct[product.id] || 0,
         priceEur: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
         priceCzk: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
-        status: product.isActive ? 'Active' : 'Inactive',
+        status: product.isActive ? t('inventory:active') : t('inventory:inactive'),
       }));
 
       // Define columns for PDF
       const columns: PDFColumn[] = [
-        { key: 'name', header: 'Name' },
-        { key: 'sku', header: 'SKU' },
-        { key: 'category', header: 'Category' },
-        { key: 'quantity', header: 'Quantity' },
-        { key: 'unitsSold', header: 'Units Sold' },
-        { key: 'priceEur', header: 'Price (EUR)' },
-        { key: 'priceCzk', header: 'Price (CZK)' },
-        { key: 'status', header: 'Status' },
+        { key: 'name', header: t('inventory:name') },
+        { key: 'sku', header: t('inventory:sku') },
+        { key: 'category', header: t('inventory:category') },
+        { key: 'quantity', header: t('inventory:quantity') },
+        { key: 'unitsSold', header: t('inventory:unitsSold') },
+        { key: 'priceEur', header: t('inventory:priceEur') },
+        { key: 'priceCzk', header: t('inventory:priceCzk') },
+        { key: 'status', header: t('inventory:status') },
       ];
 
-      exportToPDF('Inventory Report', exportData, columns, 'inventory');
+      exportToPDF(t('inventory:inventoryReport'), exportData, columns, 'inventory');
 
       toast({
-        title: "Export successful",
-        description: `Exported ${filteredProducts.length} products to PDF`,
+        title: t('inventory:exportSuccessful'),
+        description: t('inventory:exportSuccessPDF', { count: filteredProducts.length }),
       });
     } catch (error: any) {
       console.error("Export error:", error);
       toast({
-        title: "Export failed",
-        description: error.message || "Failed to export to PDF",
+        title: t('inventory:exportFailed'),
+        description: error.message || t('inventory:exportFailedPDF'),
         variant: "destructive",
       });
     }
@@ -370,8 +370,8 @@ export default function AllInventory() {
 
       if (jsonData.length === 0) {
         toast({
-          title: "No data found",
-          description: "The Excel file is empty",
+          title: t('inventory:noDataFound'),
+          description: t('inventory:excelFileEmpty'),
           variant: "destructive",
         });
         return;
@@ -401,7 +401,7 @@ export default function AllInventory() {
 
           // Validate required fields
           if (!productData.name || !productData.sku) {
-            errors.push(`Row skipped: Missing name or SKU`);
+            errors.push(t('inventory:rowSkipped'));
             errorCount++;
             continue;
           }
@@ -460,22 +460,22 @@ export default function AllInventory() {
       // Show result
       if (errorCount > 0) {
         toast({
-          title: "Import completed with errors",
-          description: `${successCount} products imported, ${errorCount} errors. Check console for details.`,
+          title: t('inventory:importCompletedWithErrors'),
+          description: t('inventory:importSuccessWithErrors', { successCount, errorCount }),
           variant: "destructive",
         });
         console.error("Import errors:", errors);
       } else {
         toast({
-          title: "Import successful",
-          description: `Successfully imported ${successCount} products`,
+          title: t('inventory:importSuccessful'),
+          description: t('inventory:importSuccess', { count: successCount }),
         });
       }
     } catch (error: any) {
       console.error("Import error:", error);
       toast({
-        title: "Import failed",
-        description: error.message || "Failed to import Excel file",
+        title: t('inventory:importFailed'),
+        description: error.message || t('inventory:importFailedExcel'),
         variant: "destructive",
       });
       
@@ -515,11 +515,11 @@ export default function AllInventory() {
 
   const getStockStatus = (quantity: number, lowStockAlert: number) => {
     if (quantity <= lowStockAlert) {
-      return <Badge variant="destructive">Low Stock</Badge>;
+      return <Badge variant="destructive">{t('inventory:lowStock')}</Badge>;
     } else if (quantity <= lowStockAlert * 2) {
-      return <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">Warning</Badge>;
+      return <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">{t('inventory:warning')}</Badge>;
     } else {
-      return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">In Stock</Badge>;
+      return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">{t('inventory:inStock')}</Badge>;
     }
   };
 
@@ -538,7 +538,7 @@ export default function AllInventory() {
       return (
         <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4 ml-2">
           <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-          New
+          {t('inventory:new')}
         </Badge>
       );
     }
@@ -548,7 +548,7 @@ export default function AllInventory() {
       return (
         <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0 h-4 ml-2">
           <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
-          Restocked
+          {t('inventory:restocked')}
         </Badge>
       );
     }
@@ -584,7 +584,7 @@ export default function AllInventory() {
     },
     {
       key: "name",
-      header: "Product",
+      header: t('inventory:productColumn'),
       sortable: true,
       className: "min-w-[200px]",
       cell: (product) => (
@@ -592,17 +592,17 @@ export default function AllInventory() {
           <Link href={`/inventory/products/${product.id}`}>
             <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
               {product.name}
-              {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">(Inactive)</span>}
+              {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">({t('inventory:inactive')})</span>}
               {product.isActive && getProductStatusBadge(product)}
             </span>
           </Link>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">SKU: {product.sku}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('inventory:sku')}: {product.sku}</p>
         </div>
       ),
     },
     {
       key: "categoryId",
-      header: "Category",
+      header: t('inventory:category'),
       sortable: true,
       cell: (product) => {
         const category = (categories as any[])?.find((c: any) => String(c.id) === product.categoryId);
@@ -611,13 +611,13 @@ export default function AllInventory() {
     },
     {
       key: "quantity",
-      header: "Qty",
+      header: t('inventory:qty'),
       sortable: true,
       className: "text-right w-[80px]",
     },
     {
       key: "unitsSold",
-      header: "Units Sold",
+      header: t('inventory:unitsSold'),
       sortable: true,
       className: "text-right w-[100px]",
       cell: (product) => {
@@ -632,66 +632,66 @@ export default function AllInventory() {
     },
     {
       key: "lowStockAlert",
-      header: "Low Stock Alert",
+      header: t('inventory:lowStockAlert'),
       sortable: true,
       className: "text-right",
     },
     {
       key: "priceEur",
-      header: "Price EUR",
+      header: t('inventory:priceEur'),
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
       className: "text-right",
     },
     {
       key: "priceCzk",
-      header: "Price CZK",
+      header: t('inventory:priceCzk'),
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
       className: "text-right",
     },
     {
       key: "importCostUsd",
-      header: "Import Cost USD",
+      header: t('inventory:importCostUsd'),
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.importCostUsd || '0'), 'USD'),
       className: "text-right",
     },
     {
       key: "importCostCzk",
-      header: "Import Cost CZK",
+      header: t('inventory:importCostCzk'),
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.importCostCzk || '0'), 'CZK'),
       className: "text-right",
     },
     {
       key: "importCostEur",
-      header: "Import Cost EUR",
+      header: t('inventory:importCostEur'),
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR'),
       className: "text-right",
     },
     {
       key: "sku",
-      header: "SKU",
+      header: t('inventory:sku'),
       sortable: true,
       cell: (product) => product.sku || '-',
     },
     {
       key: "barcode",
-      header: "Barcode",
+      header: t('inventory:barcode'),
       sortable: true,
       cell: (product) => product.barcode || '-',
     },
     {
       key: "supplierId",
-      header: "Supplier",
+      header: t('inventory:supplier'),
       sortable: true,
       cell: (product) => product.supplier?.name || '-',
     },
     {
       key: "warehouseId",
-      header: "Warehouse",
+      header: t('inventory:warehouse'),
       sortable: true,
       cell: (product) => {
         const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
@@ -700,12 +700,12 @@ export default function AllInventory() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('inventory:status'),
       cell: (product) => getStockStatus(product.quantity, product.lowStockAlert),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: t('inventory:actions'),
       cell: (product) => (
         <div className="flex items-center gap-1">
           {product.isActive ? (
@@ -723,24 +723,24 @@ export default function AllInventory() {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                    <AlertDialogTitle>{t('inventory:deleteProductTitle')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete "{product.name}"?
+                      {t('inventory:deleteConfirmation', { name: product.name })}
                     </AlertDialogDescription>
                     <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4">
                       <div className="text-amber-600 dark:text-amber-400 font-medium">
-                        ℹ️ Product will be marked as inactive and hidden from inventory.
+                        {t('inventory:productWillBeInactive')}
                       </div>
-                      <div>This preserves order history while removing the product from active use.</div>
+                      <div>{t('inventory:preservesOrderHistory')}</div>
                     </div>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={() => deleteProductMutation.mutate(product.id)}
                       className="bg-red-600 hover:bg-red-700"
                     >
-                      Delete
+                      {t('inventory:delete')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -753,7 +753,7 @@ export default function AllInventory() {
               className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
               onClick={() => restoreProductMutation.mutate(product.id)}
             >
-              Restore
+              {t('inventory:restore')}
             </Button>
           )}
         </div>
@@ -790,7 +790,7 @@ export default function AllInventory() {
   const bulkActions = showArchive ? [
     {
       type: "button" as const,
-      label: "Restore Selected",
+      label: t('inventory:restoreSelected'),
       action: async (products: any[]) => {
         const results = await Promise.allSettled(
           products.map(product => 
@@ -803,42 +803,42 @@ export default function AllInventory() {
         
         if (failed > 0) {
           toast({
-            title: "Partial Success",
-            description: `${succeeded} products restored. ${failed} products could not be restored.`,
+            title: t('inventory:partialSuccess'),
+            description: t('inventory:productsRestoredWithErrors', { succeeded, failed }),
             variant: succeeded > 0 ? "default" : "destructive",
           });
         } else {
           toast({
-            title: "Success",
-            description: `All ${succeeded} products have been restored.`,
+            title: t('inventory:success'),
+            description: t('inventory:allProductsRestored', { succeeded }),
           });
         }
       },
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('inventory:export'),
       action: (products: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${products.length} archived products...`,
+          title: t('inventory:export'),
+          description: t('inventory:exportingArchivedProducts', { count: products.length }),
         });
       },
     },
   ] : [
     {
       type: "button" as const,
-      label: "Update Stock",
+      label: t('inventory:updateStock'),
       action: (products: any[]) => {
         toast({
-          title: "Bulk Update",
-          description: `Updating stock for ${products.length} products...`,
+          title: t('inventory:bulkUpdate'),
+          description: t('inventory:updatingStock', { count: products.length }),
         });
       },
     },
     {
       type: "button" as const,
-      label: "Move to Archive",
+      label: t('inventory:moveToArchive'),
       variant: "outline" as const,
       action: async (products: any[]) => {
         const results = await Promise.allSettled(
@@ -852,21 +852,21 @@ export default function AllInventory() {
         
         if (failed > 0) {
           toast({
-            title: "Partial Success",
-            description: `${succeeded} products moved to archive. ${failed} products could not be archived.`,
+            title: t('inventory:partialSuccess'),
+            description: t('inventory:productsArchivedWithErrors', { succeeded, failed }),
             variant: succeeded > 0 ? "default" : "destructive",
           });
         } else {
           toast({
-            title: "Success",
-            description: `All ${succeeded} products have been moved to archive.`,
+            title: t('inventory:success'),
+            description: t('inventory:allProductsArchived', { succeeded }),
           });
         }
       },
     },
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('inventory:delete'),
       variant: "destructive" as const,
       action: async (products: any[]) => {
         setSelectedProducts(products);
@@ -886,11 +886,11 @@ export default function AllInventory() {
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('inventory:export'),
       action: (products: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${products.length} products...`,
+          title: t('inventory:export'),
+          description: t('inventory:exportingProducts', { count: products.length }),
         });
       },
     },
@@ -908,14 +908,14 @@ export default function AllInventory() {
     
     if (failed > 0) {
       toast({
-        title: "Partial Success",
-        description: `${succeeded} products marked as inactive. ${failed} products could not be processed.`,
+        title: t('inventory:partialSuccess'),
+        description: t('inventory:productsDeletedWithErrors', { succeeded, failed }),
         variant: succeeded > 0 ? "default" : "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: `All ${succeeded} products have been marked as inactive.`,
+        title: t('inventory:success'),
+        description: t('inventory:allProductsDeleted', { succeeded }),
       });
     }
     
@@ -931,7 +931,7 @@ export default function AllInventory() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading inventory...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('inventory:loadingInventory')}</p>
         </div>
       </div>
     );
@@ -955,11 +955,11 @@ export default function AllInventory() {
           )}
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              {showArchive ? "Archived Products" : "Inventory"}
+              {showArchive ? t('inventory:archivedProducts') : t('inventory:inventory')}
             </h1>
             {!showArchive && (
               <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your product catalog and inventory levels
+                {t('inventory:manageProductCatalog')}
               </p>
             )}
           </div>
@@ -979,7 +979,7 @@ export default function AllInventory() {
                 }}
               >
                 <Archive className="mr-2 h-4 w-4" />
-                {showArchive ? "View Active Products" : "View Archive"}
+                {showArchive ? t('inventory:viewActiveProducts') : t('inventory:viewArchive')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1002,7 +1002,7 @@ export default function AllInventory() {
                 data-testid="button-import-xls"
               >
                 <FileUp className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                <span className="hidden xs:inline truncate">Import</span>
+                <span className="hidden xs:inline truncate">{t('inventory:import')}</span>
                 <span className="hidden sm:inline ml-0.5">XLS</span>
               </Button>
               <DropdownMenu>
@@ -1014,33 +1014,33 @@ export default function AllInventory() {
                     data-testid="button-export"
                   >
                     <FileDown className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                    <span className="hidden xs:inline truncate">Export</span>
+                    <span className="hidden xs:inline truncate">{t('inventory:export')}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleExportXLSX}
                     data-testid="menuitem-export-xlsx"
                   >
                     <FileDown className="mr-2 h-4 w-4" />
-                    Export as XLSX
+                    {t('inventory:exportAsXLSX')}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={handleExportPDF}
                     data-testid="menuitem-export-pdf"
                   >
                     <FileText className="mr-2 h-4 w-4" />
-                    Export as PDF
+                    {t('inventory:exportAsPDF')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Link href="/inventory/add" className="flex-1 sm:flex-none">
                 <Button className="w-full h-9 px-2 sm:px-4 min-w-0">
                   <Plus className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                  <span className="hidden xs:inline truncate">Add</span>
-                  <span className="hidden sm:inline ml-0.5">Product</span>
+                  <span className="hidden xs:inline truncate">{t('inventory:add')}</span>
+                  <span className="hidden sm:inline ml-0.5">{t('inventory:product')}</span>
                 </Button>
               </Link>
             </>
@@ -1059,10 +1059,13 @@ export default function AllInventory() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                    Over-Allocated Inventory
+                    {t('inventory:overAllocatedInventory')}
                   </h3>
                   <p className="text-sm text-red-800 dark:text-red-200 mb-3">
-                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity ordered than available in stock
+                    {t('inventory:overAllocatedMessage', { 
+                      count: overAllocatedItems.length, 
+                      items: overAllocatedItems.length === 1 ? t('inventory:item') : t('inventory:items') 
+                    })}
                   </p>
                   <Link href="/stock/over-allocated">
                     <Button 
@@ -1070,7 +1073,7 @@ export default function AllInventory() {
                       className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
                       data-testid="button-view-over-allocated"
                     >
-                      View & Resolve Issues
+                      {t('inventory:viewResolveIssues')}
                     </Button>
                   </Link>
                 </div>
@@ -1094,10 +1097,13 @@ export default function AllInventory() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                    Under-Allocated Inventory
+                    {t('inventory:underAllocatedInventory')}
                   </h3>
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity in record than in stock locations
+                    {t('inventory:underAllocatedMessage', { 
+                      count: underAllocatedItems.length, 
+                      items: underAllocatedItems.length === 1 ? t('inventory:item') : t('inventory:items') 
+                    })}
                   </p>
                   <Link href="/stock/under-allocated">
                     <Button 
@@ -1105,7 +1111,7 @@ export default function AllInventory() {
                       className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white"
                       data-testid="button-view-under-allocated"
                     >
-                      View & Resolve Issues
+                      {t('inventory:viewResolveIssues')}
                     </Button>
                   </Link>
                 </div>
@@ -1127,7 +1133,7 @@ export default function AllInventory() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Products
+                    {t('inventory:totalProducts')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -1137,7 +1143,7 @@ export default function AllInventory() {
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.length || 0).toLocaleString()} products</p>
+                        <p className="font-mono">{(filteredProducts?.length || 0).toLocaleString()} {t('inventory:products')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1155,7 +1161,7 @@ export default function AllInventory() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Low Stock
+                    {t('inventory:lowStock')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -1165,7 +1171,7 @@ export default function AllInventory() {
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0).toLocaleString()} items</p>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0).toLocaleString()} {t('inventory:itemsCount')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1183,7 +1189,7 @@ export default function AllInventory() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Out of Stock
+                    {t('inventory:outOfStock')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -1193,7 +1199,7 @@ export default function AllInventory() {
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0).toLocaleString()} items</p>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0).toLocaleString()} {t('inventory:itemsCount')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1211,7 +1217,7 @@ export default function AllInventory() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Value
+                    {t('inventory:totalValue')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -1250,7 +1256,7 @@ export default function AllInventory() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('inventory:filtersSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -1260,7 +1266,7 @@ export default function AllInventory() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder={t('inventory:searchProductsPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
@@ -1273,10 +1279,10 @@ export default function AllInventory() {
             <div className="flex gap-2">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700" data-testid="select-category-filter">
-                  <SelectValue placeholder="Filter by category" />
+                  <SelectValue placeholder={t('inventory:filterByCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t('inventory:allCategories')}</SelectItem>
                   {(categories as any[])?.map((category: any) => (
                     <SelectItem key={category.id} value={String(category.id)}>
                       {category.name}
@@ -1302,20 +1308,20 @@ export default function AllInventory() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="h-10 border-slate-300 dark:border-slate-700" data-testid="button-columns-selector">
                   <Settings className="mr-2 h-4 w-4" />
-                  Columns
+                  {t('inventory:toggleColumns')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('inventory:toggleColumnsLabel')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <ScrollArea className="h-[400px]">
                   {/* Basic Info */}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Basic Info</div>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{t('inventory:basicInfo')}</div>
                   {[
-                    { key: 'name', label: 'Product' },
-                    { key: 'sku', label: 'SKU' },
-                    { key: 'barcode', label: 'Barcode' },
-                    { key: 'categoryId', label: 'Category' },
+                    { key: 'name', label: t('inventory:productColumn') },
+                    { key: 'sku', label: t('inventory:sku') },
+                    { key: 'barcode', label: t('inventory:barcode') },
+                    { key: 'categoryId', label: t('inventory:category') },
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
@@ -1340,13 +1346,13 @@ export default function AllInventory() {
                   <DropdownMenuSeparator />
                   
                   {/* Stock */}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Stock</div>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{t('inventory:stockInfo')}</div>
                   {[
-                    { key: 'quantity', label: 'Qty' },
-                    { key: 'unitsSold', label: 'Units Sold' },
-                    { key: 'lowStockAlert', label: 'Low Stock Alert' },
-                    { key: 'status', label: 'Status' },
-                    { key: 'warehouseId', label: 'Warehouse' },
+                    { key: 'quantity', label: t('inventory:qty') },
+                    { key: 'unitsSold', label: t('inventory:unitsSold') },
+                    { key: 'lowStockAlert', label: t('inventory:lowStockAlert') },
+                    { key: 'status', label: t('inventory:status') },
+                    { key: 'warehouseId', label: t('inventory:warehouse') },
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
@@ -1369,13 +1375,13 @@ export default function AllInventory() {
                   <DropdownMenuSeparator />
                   
                   {/* Pricing */}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Pricing</div>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{t('inventory:pricingInfo')}</div>
                   {[
-                    { key: 'priceEur', label: 'Price EUR' },
-                    { key: 'priceCzk', label: 'Price CZK' },
-                    { key: 'importCostUsd', label: 'Import Cost USD' },
-                    { key: 'importCostEur', label: 'Import Cost EUR' },
-                    { key: 'importCostCzk', label: 'Import Cost CZK' },
+                    { key: 'priceEur', label: t('inventory:priceEur') },
+                    { key: 'priceCzk', label: t('inventory:priceCzk') },
+                    { key: 'importCostUsd', label: t('inventory:importCostUsd') },
+                    { key: 'importCostEur', label: t('inventory:importCostEur') },
+                    { key: 'importCostCzk', label: t('inventory:importCostCzk') },
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
@@ -1398,10 +1404,10 @@ export default function AllInventory() {
                   <DropdownMenuSeparator />
                   
                   {/* Other */}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Other</div>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{t('inventory:otherInfo')}</div>
                   {[
-                    { key: 'supplierId', label: 'Supplier' },
-                    { key: 'actions', label: 'Actions' },
+                    { key: 'supplierId', label: t('inventory:supplier') },
+                    { key: 'actions', label: t('inventory:actions') },
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}

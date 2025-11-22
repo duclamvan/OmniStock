@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/select";
 
 export default function AllWarehouses() {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -90,12 +92,12 @@ export default function AllWarehouses() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load warehouses",
+        title: t('common:error'),
+        description: t('common:loadError', { item: t('warehouse:warehouses') }),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteWarehouseMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -104,18 +106,18 @@ export default function AllWarehouses() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedWarehouses.length} warehouse(s) successfully`,
+        title: t('common:success'),
+        description: t('common:deleteSuccess', { count: selectedWarehouses.length, item: t('warehouse:warehouse') }),
       });
       setSelectedWarehouses([]);
     },
     onError: (error: any) => {
       console.error("Warehouse delete error:", error);
-      const errorMessage = error.message || "Failed to delete warehouses";
+      const errorMessage = error.message || t('common:deleteError', { item: t('warehouse:warehouses') });
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete warehouse - it's being used in existing records" 
+          ? t('common:cannotDeleteInUse', { item: t('warehouse:warehouse') })
           : errorMessage,
         variant: "destructive",
       });
@@ -156,7 +158,7 @@ export default function AllWarehouses() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Warehouse",
+      header: t('warehouse:warehouse'),
       sortable: true,
       className: "min-w-[200px]",
       cell: (warehouse) => (
@@ -182,28 +184,28 @@ export default function AllWarehouses() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('common:status'),
       sortable: true,
       className: "text-center",
       cell: (warehouse) => {
         const statusConfig = {
           'active': { 
-            label: 'Active', 
+            label: t('common:active'), 
             icon: Activity,
             color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' 
           },
           'inactive': { 
-            label: 'Inactive', 
+            label: t('common:inactive'), 
             icon: Activity,
             color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' 
           },
           'maintenance': { 
-            label: 'Maintenance', 
+            label: t('common:maintenance'), 
             icon: Settings,
             color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' 
           },
           'rented': { 
-            label: 'Rented', 
+            label: t('common:rented'), 
             icon: Building2,
             color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-400 dark:border-indigo-800' 
           },
@@ -226,14 +228,14 @@ export default function AllWarehouses() {
     },
     {
       key: "type",
-      header: "Type",
+      header: t('common:type'),
       sortable: true,
       className: "text-center",
       cell: (warehouse) => {
         const typeConfig = {
-          'main': { label: 'Main Facility', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800' },
-          'branch': { label: 'Branch', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800' },
-          'temporary': { label: 'Temporary', color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800' },
+          'main': { label: t('warehouse:type.main'), color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800' },
+          'branch': { label: t('warehouse:type.branch'), color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800' },
+          'temporary': { label: t('warehouse:type.temporary'), color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800' },
         };
         
         if (!warehouse.type || !typeConfig[warehouse.type as keyof typeof typeConfig]) {
@@ -250,7 +252,7 @@ export default function AllWarehouses() {
     },
     {
       key: "itemCount",
-      header: "Inventory",
+      header: t('common:inventory'),
       sortable: true,
       className: "text-right",
       cell: (warehouse) => (
@@ -263,7 +265,7 @@ export default function AllWarehouses() {
           </div>
           {warehouse.capacity && (
             <div className="text-xs text-slate-500">
-              of {warehouse.capacity.toLocaleString()} capacity
+              {t('common:of')} {warehouse.capacity.toLocaleString()} {t('warehouse:capacity')}
             </div>
           )}
         </div>
@@ -271,7 +273,7 @@ export default function AllWarehouses() {
     },
     {
       key: "floorArea",
-      header: "Floor Area",
+      header: t('warehouse:floorArea'),
       sortable: true,
       className: "text-right",
       cell: (warehouse) => (
@@ -286,7 +288,7 @@ export default function AllWarehouses() {
     },
     {
       key: "manager",
-      header: "Manager",
+      header: t('warehouse:warehouseManager'),
       sortable: true,
       className: "min-w-[120px]",
       cell: (warehouse) => (
@@ -306,7 +308,7 @@ export default function AllWarehouses() {
     },
     {
       key: "capacity",
-      header: "Max Capacity",
+      header: t('warehouse:warehouseCapacity'),
       sortable: true,
       className: "text-right",
       cell: (warehouse) => (
@@ -338,7 +340,7 @@ export default function AllWarehouses() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('common:delete'),
       variant: "destructive" as const,
       action: (warehouses: any[]) => {
         setSelectedWarehouses(warehouses);
@@ -347,11 +349,11 @@ export default function AllWarehouses() {
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('common:export'),
       action: (warehouses: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${warehouses.length} warehouses...`,
+          title: t('common:export'),
+          description: t('common:exportingItems', { count: warehouses.length, item: t('warehouse:warehouses') }),
         });
       },
     },
@@ -370,7 +372,7 @@ export default function AllWarehouses() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading warehouses...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('common:loading', { item: t('warehouse:warehouses') })}...</p>
         </div>
       </div>
     );
@@ -382,16 +384,16 @@ export default function AllWarehouses() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Warehouse Management
+            {t('warehouse:warehouseManagement')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Monitor and manage your warehouse facilities
+            {t('warehouse:monitorManageFacilities')}
           </p>
         </div>
         <Link href="/warehouses/add">
           <Button data-testid="button-add-warehouse">
             <Plus className="h-4 w-4 mr-2" />
-            Add Warehouse
+            {t('warehouse:addWarehouse')}
           </Button>
         </Link>
       </div>
@@ -404,7 +406,7 @@ export default function AllWarehouses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Facilities
+                  {t('warehouse:totalFacilities')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {warehouses?.length || 0}
@@ -423,7 +425,7 @@ export default function AllWarehouses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Active
+                  {t('common:active')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
                   {activeWarehouses}
@@ -442,7 +444,7 @@ export default function AllWarehouses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Inventory
+                  {t('warehouse:totalInventory')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -452,7 +454,7 @@ export default function AllWarehouses() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{totalItems.toLocaleString()} units</p>
+                      <p className="font-mono">{totalItems.toLocaleString()} {t('common:units')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -470,7 +472,7 @@ export default function AllWarehouses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Area
+                  {t('warehouse:totalArea')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -499,7 +501,7 @@ export default function AllWarehouses() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Utilization
+                  {t('warehouse:utilization')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 truncate">
                   {utilizationRate}%
@@ -518,7 +520,7 @@ export default function AllWarehouses() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">{t('common:filtersSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -528,7 +530,7 @@ export default function AllWarehouses() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search warehouses..."
+                  placeholder={t('warehouse:searchWarehouses')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
@@ -541,14 +543,14 @@ export default function AllWarehouses() {
             <div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('common:filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="rented">Rented</SelectItem>
+                  <SelectItem value="all">{t('common:allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('common:active')}</SelectItem>
+                  <SelectItem value="inactive">{t('common:inactive')}</SelectItem>
+                  <SelectItem value="maintenance">{t('common:maintenance')}</SelectItem>
+                  <SelectItem value="rented">{t('common:rented')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -557,13 +559,13 @@ export default function AllWarehouses() {
             <div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700">
-                  <SelectValue placeholder="Filter by type" />
+                  <SelectValue placeholder={t('common:filterByType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="main">Main Facility</SelectItem>
-                  <SelectItem value="branch">Branch</SelectItem>
-                  <SelectItem value="temporary">Temporary</SelectItem>
+                  <SelectItem value="all">{t('common:allTypes')}</SelectItem>
+                  <SelectItem value="main">{t('warehouse:type.main')}</SelectItem>
+                  <SelectItem value="branch">{t('warehouse:type.branch')}</SelectItem>
+                  <SelectItem value="temporary">{t('warehouse:type.temporary')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -572,20 +574,20 @@ export default function AllWarehouses() {
           {/* Active Filters Display */}
           {(searchQuery || statusFilter !== "all" || typeFilter !== "all") && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Active filters:</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t('common:activeFilters')}:</span>
               {searchQuery && (
                 <Badge variant="secondary" className="text-xs">
-                  Search: {searchQuery}
+                  {t('common:search')}: {searchQuery}
                 </Badge>
               )}
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
-                  Status: {statusFilter}
+                  {t('common:status')}: {statusFilter}
                 </Badge>
               )}
               {typeFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
-                  Type: {typeFilter}
+                  {t('common:type')}: {typeFilter}
                 </Badge>
               )}
               <Button
@@ -598,7 +600,7 @@ export default function AllWarehouses() {
                   setTypeFilter("all");
                 }}
               >
-                Clear all
+                {t('common:clearAll')}
               </Button>
             </div>
           )}
@@ -609,16 +611,16 @@ export default function AllWarehouses() {
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">All Warehouses ({filteredWarehouses?.length || 0})</CardTitle>
+            <CardTitle className="text-lg">{t('warehouse:allWarehouses')} ({filteredWarehouses?.length || 0})</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="border-slate-300 dark:border-slate-700" data-testid="button-column-settings">
                   <Settings className="h-4 w-4 mr-2" />
-                  Columns
+                  {t('common:columns')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('common:toggleColumns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns
                   .filter(col => col.key !== 'actions')
@@ -776,13 +778,13 @@ export default function AllWarehouses() {
                       <Link href={`/warehouses/${warehouse.id}`} className="flex-1">
                         <Button size="sm" variant="outline" className="w-full" data-testid={`button-view-${warehouse.id}`}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View
+                          {t('common:view')}
                         </Button>
                       </Link>
                       <Link href={`/warehouses/${warehouse.id}/edit`} className="flex-1">
                         <Button size="sm" variant="outline" className="w-full" data-testid={`button-edit-mobile-${warehouse.id}`}>
                           <Edit className="h-4 w-4 mr-2" />
-                          Edit
+                          {t('common:edit')}
                         </Button>
                       </Link>
                       <AlertDialog>
@@ -793,18 +795,18 @@ export default function AllWarehouses() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Warehouse</AlertDialogTitle>
+                            <AlertDialogTitle>{t('common:deleteItem', { item: t('warehouse:warehouse') })}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{warehouse.name}"? This action cannot be undone and may affect existing inventory records.
+                              {t('common:deleteConfirmation', { item: warehouse.name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => deleteWarehouseMutation.mutate([warehouse.id])}
                               className="bg-red-600 hover:bg-red-700 text-white"
                             >
-                              Delete
+                              {t('common:delete')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -830,7 +832,7 @@ export default function AllWarehouses() {
                   <div className="px-4 sm:px-0 pb-4">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700">
-                        {selectedRows.size} selected
+                        {t('common:itemsSelected', { count: selectedRows.size })}
                       </Badge>
                       {actions.map((action, index) => {
                         if (action.type === "button") {
@@ -862,18 +864,18 @@ export default function AllWarehouses() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Warehouses</AlertDialogTitle>
+            <AlertDialogTitle>{t('common:deleteItems', { item: t('warehouse:warehouses') })}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedWarehouses.length} warehouse(s)? This action cannot be undone and may affect existing inventory records.
+              {t('common:deleteBulkConfirmation', { count: selectedWarehouses.length, item: t('warehouse:warehouses').toLowerCase() })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteConfirm} 
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete Warehouses
+              {t('common:deleteItems', { item: t('warehouse:warehouses') })}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

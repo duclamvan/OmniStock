@@ -956,14 +956,14 @@ export default function EditOrder() {
         setSelectedShippingAddress(newAddress);
       }
       toast({
-        title: "Success",
-        description: "Shipping address created successfully",
+        title: t('common:success'),
+        description: t('shippingAddressCreatedSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to create shipping address",
+        title: t('common:error'),
+        description: t('failedToCreateShippingAddress'),
         variant: "destructive",
       });
     },
@@ -984,14 +984,14 @@ export default function EditOrder() {
         setSelectedShippingAddress(updatedAddress);
       }
       toast({
-        title: "Success",
-        description: "Shipping address updated successfully",
+        title: t('common:success'),
+        description: t('shippingAddressUpdatedSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update shipping address",
+        title: t('common:error'),
+        description: t('failedToUpdateShippingAddress'),
         variant: "destructive",
       });
     },
@@ -1009,14 +1009,14 @@ export default function EditOrder() {
       }
       setAddressToDelete(null);
       toast({
-        title: "Success",
-        description: "Shipping address deleted successfully",
+        title: t('common:success'),
+        description: t('shippingAddressDeletedSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to delete shipping address",
+        title: t('common:error'),
+        description: t('failedToDeleteShippingAddress'),
         variant: "destructive",
       });
     },
@@ -1029,14 +1029,14 @@ export default function EditOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
       toast({
-        title: "Success",
-        description: "Primary address set",
+        title: t('common:success'),
+        description: t('primaryAddressSet'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to set primary address",
+        title: t('common:error'),
+        description: t('failedToSetPrimaryAddress'),
         variant: "destructive",
       });
     },
@@ -1049,14 +1049,14 @@ export default function EditOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
       toast({
-        title: "Success",
-        description: "Primary address removed",
+        title: t('common:success'),
+        description: t('primaryAddressRemoved'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to remove primary address",
+        title: t('common:error'),
+        description: t('failedToRemovePrimaryAddress'),
         variant: "destructive",
       });
     },
@@ -1156,15 +1156,15 @@ export default function EditOrder() {
       }
       
       toast({
-        title: "Address Parsed",
-        description: `Successfully parsed address with ${data.confidence} confidence`,
+        title: t('addressParsed'),
+        description: t('addressParsedSuccess', { confidence: data.confidence }),
       });
       setRawNewCustomerAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: "Parse Failed",
-        description: error.message || "Failed to parse address",
+        title: t('parseFailed'),
+        description: error.message || t('failedToParseAddress'),
         variant: "destructive",
       });
     },
@@ -1291,8 +1291,11 @@ export default function EditOrder() {
       form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
       
       toast({
-        title: "Total Adjusted",
-        description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))} to reach ${formatCurrency(desiredTotal, form.watch('currency'))}`,
+        title: t('totalAdjusted'),
+        description: t('discountSetToReach', { 
+          discount: formatCurrency(Math.max(0, neededDiscount), form.watch('currency')), 
+          total: formatCurrency(desiredTotal, form.watch('currency')) 
+        }),
       });
     }
   };
@@ -1431,8 +1434,8 @@ export default function EditOrder() {
       
       // Show success message
       toast({
-        title: "Success",
-        description: "Order updated successfully",
+        title: t('common:success'),
+        description: t('orderUpdatedSuccess'),
       });
 
       // Force a full page reload to bypass all caching
@@ -1442,8 +1445,8 @@ export default function EditOrder() {
     onError: (error) => {
       console.error("Order update error:", error);
       toast({
-        title: "Error",
-        description: "Failed to update order",
+        title: t('common:error'),
+        description: t('failedToUpdateOrder'),
         variant: "destructive",
       });
     },
@@ -1471,8 +1474,8 @@ export default function EditOrder() {
     
     if (!orderId) {
       toast({
-        title: "Error",
-        description: "Please save the order first before adding cartons",
+        title: t('common:error'),
+        description: t('saveOrderBeforeCartons'),
         variant: "destructive",
       });
       return;
@@ -1502,8 +1505,8 @@ export default function EditOrder() {
     } catch (error) {
       console.error('Error adding manual carton:', error);
       toast({
-        title: "Error",
-        description: "Failed to add manual carton",
+        title: t('common:error'),
+        description: t('failedToAddCarton'),
         variant: "destructive",
       });
     }
@@ -2165,18 +2168,18 @@ export default function EditOrder() {
                 className="w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Back to Orders</span>
-                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">{t('backToOrders')}</span>
+                <span className="sm:hidden">{t('common:back')}</span>
               </Button>
               <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Edit Order</h1>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">Update products and configure details</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('editOrder')}</h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{t('updateOrderDescription')}</p>
               </div>
             </div>
             <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 w-fit">
               <Save className="h-3 w-3 mr-1" />
-              Edit Order
+              {t('editOrder')}
             </Badge>
           </div>
         </div>
@@ -2188,12 +2191,12 @@ export default function EditOrder() {
               <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  Order Location
+                  {t('orderLocation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3">
                 <Input
-                  placeholder="e.g., Prague Warehouse, Main Office, Customer Pickup"
+                  placeholder={t('orderLocationPlaceholder')}
                   value={form.watch('orderLocation') || ''}
                   onChange={(e) => form.setValue('orderLocation', e.target.value)}
                   data-testid="input-order-location"
@@ -2213,15 +2216,15 @@ export default function EditOrder() {
               <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  Customer Details
+                  {t('customerDetails')}
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1 text-gray-600 dark:text-gray-400">Search and select or create new</CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1 text-gray-600 dark:text-gray-400">{t('searchAndSelectOrCreate')}</CardDescription>
               </CardHeader>
               <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
             {!selectedCustomer && !quickCustomerType && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Quick Customer</Label>
+                <Label className="text-sm font-medium">{t('quickCustomer')}</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <Button
                     type="button"
@@ -2235,7 +2238,7 @@ export default function EditOrder() {
                     data-testid="button-quick-temp-customer"
                   >
                     <User className="h-3.5 w-3.5" />
-                    Quick
+                    {t('quickTemp')}
                   </Button>
                   <Button
                     type="button"
@@ -2251,7 +2254,7 @@ export default function EditOrder() {
                     data-testid="button-telephone-customer"
                   >
                     <Phone className="h-3.5 w-3.5" />
-                    Tel
+                    {t('telephoneCustomer')}
                   </Button>
                   <Button
                     type="button"
@@ -2267,7 +2270,7 @@ export default function EditOrder() {
                     data-testid="button-messaging-customer"
                   >
                     <MessageSquare className="h-3.5 w-3.5" />
-                    Msg
+                    {t('messagingCustomer')}
                   </Button>
                   <Button
                     type="button"
@@ -2281,7 +2284,7 @@ export default function EditOrder() {
                     data-testid="button-custom-customer"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Custom
+                    {t('customCustomer')}
                   </Button>
                 </div>
                 <Separator className="my-3" />
@@ -2293,10 +2296,10 @@ export default function EditOrder() {
               <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-blue-900 dark:text-blue-100">
-                    {quickCustomerType === 'quick' && 'Quick Customer (One-time)'}
-                    {quickCustomerType === 'tel' && 'Telephone Order'}
-                    {quickCustomerType === 'msg' && 'Social Media Customer'}
-                    {quickCustomerType === 'custom' && 'Custom Customer (One-time)'}
+                    {quickCustomerType === 'quick' && t('quickCustomerOneTime')}
+                    {quickCustomerType === 'tel' && t('telephoneOrder')}
+                    {quickCustomerType === 'msg' && t('socialMediaCustomer')}
+                    {quickCustomerType === 'custom' && t('customCustomerOneTime')}
                   </h4>
                   <Button
                     type="button"
@@ -2314,12 +2317,12 @@ export default function EditOrder() {
 
                 {/* Name field - shown for all types */}
                 <div>
-                  <Label htmlFor="quickCustomerName">Name *</Label>
+                  <Label htmlFor="quickCustomerName">{t('common:name')} *</Label>
                   <Input
                     id="quickCustomerName"
                     value={quickCustomerName}
                     onChange={(e) => setQuickCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
+                    placeholder={t('enterCustomerName')}
                     data-testid="input-quick-customer-name"
                   />
                 </div>
@@ -2328,7 +2331,7 @@ export default function EditOrder() {
                 {(quickCustomerType === 'tel' || quickCustomerType === 'msg') && (
                   <div>
                     <Label htmlFor="quickCustomerPhone">
-                      {quickCustomerType === 'msg' ? 'ID/Phone Number *' : 'Phone *'}
+                      {quickCustomerType === 'msg' ? t('idPhoneNumber') : t('phone') + ' *'}
                     </Label>
                     <Input
                       id="quickCustomerPhone"
@@ -2341,14 +2344,14 @@ export default function EditOrder() {
                       placeholder="+420776887045"
                       data-testid="input-quick-customer-phone"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Format without spaces (e.g. +420776887045)</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('formatWithoutSpaces')}</p>
                   </div>
                 )}
 
                 {/* Social Media App - shown for Msg only */}
                 {quickCustomerType === 'msg' && (
                   <div>
-                    <Label htmlFor="quickCustomerSocialApp">Social Media App *</Label>
+                    <Label htmlFor="quickCustomerSocialApp">{t('socialMediaApp')}</Label>
                     <Select 
                       value={quickCustomerSocialApp} 
                       onValueChange={(value: any) => setQuickCustomerSocialApp(value)}
@@ -2357,10 +2360,10 @@ export default function EditOrder() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="viber">Viber</SelectItem>
-                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                        <SelectItem value="zalo">Zalo</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
+                        <SelectItem value="viber">{t('viber')}</SelectItem>
+                        <SelectItem value="whatsapp">{t('whatsapp')}</SelectItem>
+                        <SelectItem value="zalo">{t('zalo')}</SelectItem>
+                        <SelectItem value="email">{t('common:email')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2373,8 +2376,8 @@ export default function EditOrder() {
                   onClick={() => {
                     if (!quickCustomerName.trim()) {
                       toast({
-                        title: "Name required",
-                        description: "Please enter a customer name",
+                        title: t('nameRequired'),
+                        description: t('nameRequiredDesc'),
                         variant: "destructive"
                       });
                       return;
@@ -2382,8 +2385,8 @@ export default function EditOrder() {
 
                     if ((quickCustomerType === 'tel' || quickCustomerType === 'msg') && !quickCustomerPhone.trim()) {
                       toast({
-                        title: "Phone required",
-                        description: "Please enter a phone number",
+                        title: t('phoneRequired'),
+                        description: t('phoneRequiredDesc'),
                         variant: "destructive"
                       });
                       return;
@@ -2407,18 +2410,18 @@ export default function EditOrder() {
                   data-testid="button-confirm-quick-customer"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Confirm
+                  {t('confirm')}
                 </Button>
               </div>
             )}
 
             <div className="relative customer-search-container">
-              <Label htmlFor="customer">Search Customer</Label>
+              <Label htmlFor="customer">{t('searchCustomer')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   ref={customerSearchRef}
-                  placeholder="Type to search customers (Vietnamese diacritics supported)..."
+                  placeholder={t('searchCustomerPlaceholder')}
                   value={customerSearch}
                   onChange={(e) => {
                     setCustomerSearch(e.target.value);
@@ -2478,7 +2481,7 @@ export default function EditOrder() {
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-96 overflow-y-auto z-50">
                   <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
-                    {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                    {t('customersFound', { count: filteredCustomers.length })}
                   </div>
                   {filteredCustomers.map((customer: any) => (
                     <div
@@ -2573,8 +2576,8 @@ export default function EditOrder() {
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
-                  <div>No customers found for "{customerSearch}"</div>
-                  <div className="text-xs mt-1">Try searching by name, email, or Facebook name</div>
+                  <div>{t('noCustomersFoundFor', { search: customerSearch })}</div>
+                  <div className="text-xs mt-1">{t('trySearchingBy')}</div>
                   <Button
                     type="button"
                     variant="outline"
@@ -2587,7 +2590,7 @@ export default function EditOrder() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add new customer
+                    {t('addNewCustomer')}
                   </Button>
                 </div>
               )}
@@ -2633,18 +2636,18 @@ export default function EditOrder() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {selectedCustomer.isTemporary && (
                               <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
-                                One-time
+                                {t('oneTime')}
                               </Badge>
                             )}
                             {selectedCustomer.needsSaving && (
                               <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
-                                New Customer
+                                {t('newCustomer')}
                               </Badge>
                             )}
                             {selectedCustomer.hasPayLaterBadge && (
                               <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
                                 <Clock className="h-3 w-3 mr-1" />
-                                Pay Later
+                                {t('payLater')}
                               </Badge>
                             )}
                             {selectedCustomer.preferredCurrency && (
@@ -2674,7 +2677,7 @@ export default function EditOrder() {
                           className="flex-shrink-0"
                         >
                           <X className="h-4 w-4 mr-1" />
-                          Change
+                          {t('change')}
                         </Button>
                       </div>
 
@@ -2731,13 +2734,13 @@ export default function EditOrder() {
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4" />
-                    Shipping Address
+                    {t('shippingAddress')}
                   </CardTitle>
-                  <CardDescription>Select or add a shipping address for this order</CardDescription>
+                  <CardDescription>{t('selectOrAddShippingAddress')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-3 space-y-3">
                   {isLoadingShippingAddresses ? (
-                    <div className="text-center py-4 text-slate-500 dark:text-slate-400">Loading addresses...</div>
+                    <div className="text-center py-4 text-slate-500 dark:text-slate-400">{t('loadingAddresses')}</div>
                   ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
                     <RadioGroup
                       value={selectedShippingAddress?.id || ""}
@@ -2915,7 +2918,7 @@ export default function EditOrder() {
                     </RadioGroup>
                   ) : (
                     <div className="text-center py-4 text-slate-500 dark:text-slate-400">
-                      No shipping addresses found. Add one below.
+                      {t('noShippingAddresses')}
                     </div>
                   )}
 
@@ -2930,7 +2933,7 @@ export default function EditOrder() {
                     data-testid="button-add-address"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add New Address
+                    {t('addNewAddress')}
                   </Button>
                 </CardContent>
               </Card>
@@ -2940,7 +2943,7 @@ export default function EditOrder() {
             {showNewCustomerForm && (
               <div className="space-y-4 border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-slate-900 dark:text-slate-100">New Customer Details</h4>
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100">{t('newCustomerDetails')}</h4>
                   <Button
                     type="button"
                     variant="ghost"
@@ -2973,7 +2976,7 @@ export default function EditOrder() {
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="customerName">Customer Name *</Label>
+                    <Label htmlFor="customerName">{t('customerName')} *</Label>
                     <Input
                       id="customerName"
                       value={newCustomer.name}
@@ -2987,12 +2990,12 @@ export default function EditOrder() {
                           facebookName: prev.facebookName === prev.name || prev.facebookName === "" ? newName : prev.facebookName
                         }));
                       }}
-                      placeholder="Type here"
+                      placeholder={t('typeHere')}
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="facebookName">Facebook Name</Label>
+                    <Label htmlFor="facebookName">{t('facebookName')}</Label>
                     <Input
                       id="facebookName"
                       value={newCustomer.facebookName || ""}
@@ -3000,16 +3003,16 @@ export default function EditOrder() {
                         console.log('Facebook Name changed to:', e.target.value);
                         setNewCustomer({ ...newCustomer, facebookName: e.target.value });
                       }}
-                      placeholder="Facebook display name"
+                      placeholder={t('facebookDisplayName')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="facebookUrl">Facebook URL</Label>
+                    <Label htmlFor="facebookUrl">{t('facebookUrl')}</Label>
                     <Input
                       id="facebookUrl"
                       value={newCustomer.facebookUrl}
                       onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
-                      placeholder="Place URL or Type"
+                      placeholder={t('placeUrlOrType')}
                     />
                   </div>
                 </div>
@@ -3017,7 +3020,7 @@ export default function EditOrder() {
                 {/* Contact Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="customerEmail">Email</Label>
+                    <Label htmlFor="customerEmail">{t('common:email')}</Label>
                     <Input
                       id="customerEmail"
                       type="email"

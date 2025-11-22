@@ -195,6 +195,39 @@ const inventory = {
   
   // Filters
   filtersSearch: 'Filters & Search',
+  searchProductsPlaceholder: 'Search products...',
+  
+  // Delete Dialog
+  deleteProductTitle: 'Delete Product',
+  deleteConfirmation: 'Are you sure you want to delete "{name}"?',
+  productWillBeInactive: 'ℹ️ Product will be marked as inactive and hidden from inventory.',
+  preservesOrderHistory: 'This preserves order history while removing the product from active use.',
+  cancel: 'Cancel',
+  delete: 'Delete',
+  restore: 'Restore',
+  
+  // Bulk Actions - Additional Messages
+  productsRestoredWithErrors: '{{succeeded}} products restored. {{failed}} products could not be restored.',
+  allProductsRestored: 'All {{succeeded}} products have been restored.',
+  exportingProducts: 'Exporting {{count}} products...',
+  exportingArchivedProducts: 'Exporting {{count}} archived products...',
+  updatingStock: 'Updating stock for {{count}} products...',
+  productsArchivedWithErrors: '{{succeeded}} products moved to archive. {{failed}} products could not be archived.',
+  allProductsArchived: 'All {{succeeded}} products have been moved to archive.',
+  productsDeletedWithErrors: '{{succeeded}} products marked as inactive. {{failed}} products could not be processed.',
+  allProductsDeleted: 'All {{succeeded}} products have been marked as inactive.',
+  
+  // Loading & Page
+  loadingInventory: 'Loading inventory...',
+  manageProductCatalog: 'Manage your product catalog and inventory levels',
+  inventoryReport: 'Inventory Report',
+  
+  // Additional
+  import: 'Import',
+  add: 'Add',
+  product: 'Product',
+  toggleColumnsLabel: 'Toggle Columns',
+  outOfStock: 'Out of Stock',
   
 } as const;
 

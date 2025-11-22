@@ -297,6 +297,39 @@ const inventory = {
   
   // Filters
   filtersSearch: 'Bộ lọc & Tìm kiếm',
+  searchProductsPlaceholder: 'Tìm kiếm sản phẩm...',
+  
+  // Delete Dialog
+  deleteProductTitle: 'Xóa sản phẩm',
+  deleteConfirmation: 'Bạn có chắc chắn muốn xóa "{name}"?',
+  productWillBeInactive: 'ℹ️ Sản phẩm sẽ được đánh dấu không hoạt động và ẩn khỏi tồn kho.',
+  preservesOrderHistory: 'Thao tác này giữ lại lịch sử đơn hàng trong khi xóa sản phẩm khỏi danh sách hoạt động.',
+  cancel: 'Hủy',
+  delete: 'Xóa',
+  restore: 'Khôi phục',
+  
+  // Bulk Actions - Additional Messages
+  productsRestoredWithErrors: 'Đã khôi phục {{succeeded}} sản phẩm. {{failed}} sản phẩm không thể khôi phục.',
+  allProductsRestored: 'Tất cả {{succeeded}} sản phẩm đã được khôi phục.',
+  exportingProducts: 'Đang xuất {{count}} sản phẩm...',
+  exportingArchivedProducts: 'Đang xuất {{count}} sản phẩm đã lưu trữ...',
+  updatingStock: 'Đang cập nhật tồn kho cho {{count}} sản phẩm...',
+  productsArchivedWithErrors: 'Đã chuyển {{succeeded}} sản phẩm vào lưu trữ. {{failed}} sản phẩm không thể lưu trữ.',
+  allProductsArchived: 'Tất cả {{succeeded}} sản phẩm đã được chuyển vào lưu trữ.',
+  productsDeletedWithErrors: 'Đã đánh dấu {{succeeded}} sản phẩm không hoạt động. {{failed}} sản phẩm không thể xử lý.',
+  allProductsDeleted: 'Tất cả {{succeeded}} sản phẩm đã được đánh dấu không hoạt động.',
+  
+  // Loading & Page
+  loadingInventory: 'Đang tải tồn kho...',
+  manageProductCatalog: 'Quản lý danh mục sản phẩm và mức tồn kho',
+  inventoryReport: 'Báo cáo tồn kho',
+  
+  // Additional
+  import: 'Nhập',
+  add: 'Thêm',
+  product: 'Sản phẩm',
+  toggleColumnsLabel: 'Chọn cột hiển thị',
+  outOfStock: 'Hết hàng',
   
 } as const;
 

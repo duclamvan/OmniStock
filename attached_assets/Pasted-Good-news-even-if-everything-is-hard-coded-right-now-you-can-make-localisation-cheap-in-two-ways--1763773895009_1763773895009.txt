@@ -1,0 +1,194 @@
+Good news: even if everything is hard-coded right now, you can make localisation cheap in two ways:
+	1.	Cheap in runtime cost → no extra Replit servers, just static objects.
+	2.	Cheap in developer time → don’t rewrite everything at once, only add a thin layer on top of your existing strings.
+
+I’ll walk you through a “minimum effort” migration plan.
+
+⸻
+
+1. Change the pattern, not all your text at once
+
+Right now you have things like:
+
+<h1>Inventory</h1>
+<button>Save</button>
+<span>No items found</span>
+
+Step 1: Introduce a tiny t() function
+
+Create a super simple i18n helper:
+
+// i18n.ts
+const en = {
+  "Inventory": "Inventory",
+  "Save": "Save",
+  "No items found": "No items found",
+} as const;
+
+type Locale = "en" | "cs" | "de";
+
+let currentLocale: Locale = "en";
+
+const dictionaries: Record<Locale, Record<string, string>> = {
+  en,
+  // later: cs: {...}, de: {...}
+};
+
+export function setLocale(locale: Locale) {
+  currentLocale = locale;
+}
+
+export function t(key: string): string {
+  const dict = dictionaries[currentLocale] || dictionaries.en;
+  return dict[key] ?? key; // fallback to key if missing
+}
+
+Then your UI becomes:
+
+import { t } from "./i18n";
+
+<h1>{t("Inventory")}</h1>
+<button>{t("Save")}</button>
+<span>{t("No items found")}</span>
+
+🧠 ELI5:
+You add a tiny translator robot t() between your code and the text. At the beginning the robot just repeats English. Later you can teach it Czech, German, etc. You don’t need to move text out of the code yet; you only add this one indirection.
+
+Cost impact:
+	•	Runtime: almost zero (just object lookup).
+	•	Infra: nothing new on Replit.
+	•	Dev work: simple find-and-replace over time.
+
+⸻
+
+2. Migrate gradually instead of “big bang”
+
+You don’t need to wrap every string today.
+
+Prioritise which text to localise first
+	1.	Screens that Vietnamese / CZ / DE staff actually see daily:
+	•	Picking, packing, carton selection, label printing.
+	2.	External or future B2B portal texts.
+	3.	Ignore for now:
+	•	Internal debug labels, admin-only dev tools, logs.
+
+So you can do:
+	•	When you edit a file anyway, wrap its strings with t().
+	•	New code → always use t("Some text") from day one.
+	•	Old code → slowly converted when you touch it.
+
+This keeps your dev time cheap.
+
+⸻
+
+3. Keep translations local and static (no extra Replit cost)
+
+Once a lot of text is behind t(), you can move dictionaries out of the code:
+
+// locales/en.json
+{
+  "Inventory": "Inventory",
+  "Save": "Save",
+  "No items found": "No items found"
+}
+
+// i18n.ts
+import en from "./locales/en.json";
+import cs from "./locales/cs.json";
+import de from "./locales/de.json";
+
+const dictionaries = { en, cs, de } as const;
+type Locale = keyof typeof dictionaries;
+
+let currentLocale: Locale = "en";
+
+export function setLocale(locale: Locale) {
+  currentLocale = locale;
+}
+
+export function t(key: string): string {
+  const dict = dictionaries[currentLocale] || dictionaries.en;
+  return dict[key] ?? key;
+}
+
+Where are these files hosted?
+	•	Just bundled by Vite into your existing frontend.
+	•	Or served as static JSON by your existing Express backend.
+
+🧠 ELI5:
+Instead of paying Replit for a new house (extra server), you just put your dictionaries in the same house you already rent (your main WMS app).
+
+Result:
+	•	No extra always-on Replit project.
+	•	No new hosting costs.
+	•	Translations are just static assets.
+
+⸻
+
+4. Make the migration itself cheap (automation)
+
+Instead of manually retyping every key:
+
+4.1. Simple search & replace pattern
+
+For many files you can do a quick pattern:
+	•	Find:
+"Inventory"
+	•	Replace with:
+{t("Inventory")} inside JSX
+or t("Inventory") in TS code.
+
+You can do this:
+	•	With IDE regex.
+	•	Or a small Node script (you can run it in Replit as a one-time job, not an always-on service).
+
+4.2. Use the English string as the key (for now)
+
+To avoid managing separate key IDs like inventory.title, you can:
+	•	Use the exact English text as the key in phase 1:
+	•	t("Inventory")
+	•	t("No items found")
+
+Later, if you want more structure, you can refactor keys. But for now it keeps things fast and cheap.
+
+⸻
+
+5. Cheap translation workflow (not at runtime)
+
+You love AI + automation, so we can make translations cheap too:
+	1.	Export all keys from en.json.
+	2.	Paste into ChatGPT/DeepL/etc. to produce cs.json, de.json.
+	3.	Save those files in /locales.
+
+This is a one-time batch cost whenever you add new strings.
+	•	No runtime AI calls inside WMS.
+	•	No per-request API bill.
+	•	You pay only when you update UI text (which is occasional).
+
+🧠 ELI5:
+You ask the translator once to translate the dictionary, not every time a worker opens the WMS page.
+
+⸻
+
+6. Concrete minimal plan for Davie WMS
+
+If you want a very pragmatic “tomorrow” plan:
+	1.	Create i18n.ts with t() exactly like above.
+	2.	In the most important 2–3 screens (pick list, packing, shipping label):
+	•	Wrap visible strings in t().
+	3.	Create a simple en.json with just those keys.
+	4.	Later, when you have time:
+	•	Add cs.json and de.json using batch AI translation.
+	5.	Over weeks/months:
+	•	Whenever you touch a file, convert its strings.
+
+This way:
+	•	Infra cost on Replit: almost zero (same project).
+	•	Dev cost: spread out, not a big painful migration.
+	•	You keep full control; no external localisation SaaS subscription.
+
+⸻
+
+If you paste one of your React/TSX components with hard-coded English, I can:
+	•	Show you exactly how I’d wrap it with t().
+	•	Give you a ready en.json snippet for that screen, so you can copy-paste into your repo.

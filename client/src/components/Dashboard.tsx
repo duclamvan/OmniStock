@@ -167,7 +167,7 @@ const ChartSkeleton = memo(() => (
 ChartSkeleton.displayName = 'ChartSkeleton';
 
 export function Dashboard() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   
   // Query all dashboard endpoints
   const { data: operationsPulse, isLoading: operationsLoading } = useQuery<OperationsPulseData>({
@@ -407,7 +407,7 @@ export function Dashboard() {
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-average-order-value">
                     {formatCurrency(financialControl?.averageOrderValue || 0, 'EUR')}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Per transaction</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{t('perTransaction')}</p>
                 </CardContent>
               </Card>
 
@@ -415,7 +415,7 @@ export function Dashboard() {
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-aged-receivables">Aged Receivables</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-aged-receivables">{t('agedReceivables')}</p>
                     <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div className="space-y-1">
@@ -445,8 +445,8 @@ export function Dashboard() {
             {/* Currency Breakdown */}
             <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid="heading-currency-breakdown">Currency Distribution</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">This month vs last month</CardDescription>
+                <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid="heading-currency-breakdown">{t('currencyDistribution')}</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">{t('thisMonthVsLastMonth')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -459,10 +459,10 @@ export function Dashboard() {
                         </Badge>
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Current: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-current-${currency.toLowerCase()}`}>{data.current.toFixed(0)}</span>
+                        {t('current')}: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-current-${currency.toLowerCase()}`}>{data.current.toFixed(0)}</span>
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Previous: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-previous-${currency.toLowerCase()}`}>{data.previous.toFixed(0)}</span>
+                        {t('previous')}: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-previous-${currency.toLowerCase()}`}>{data.previous.toFixed(0)}</span>
                       </div>
                     </div>
                   ))}
@@ -480,9 +480,9 @@ export function Dashboard() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-inventory-risk">
             <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            Inventory Risk Alerts
+            {t('inventoryRiskAlerts')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Stock issues requiring attention</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('stockIssuesRequiringAttention')}</p>
         </div>
 
         {inventoryLoading && !inventoryRisk ? (
@@ -499,11 +499,11 @@ export function Dashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className={`h-5 w-5 ${(inventoryRisk?.lowStockCount || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-low-stock">Low Stock Products</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-low-stock">{t('lowStockProducts')}</p>
                       </div>
                       <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-low-stock">{inventoryRisk?.lowStockCount || 0}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        View all <ArrowRight className="h-3 w-3" />
+                        {t('viewAll')} <ArrowRight className="h-3 w-3" />
                       </p>
                     </div>
                   </div>
@@ -519,11 +519,11 @@ export function Dashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <AlertCircle className={`h-5 w-5 ${(inventoryRisk?.overAllocatedSKUs || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-over-allocated">Over-Allocated SKUs</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-over-allocated">{t('overAllocatedSkus')}</p>
                       </div>
                       <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-over-allocated">{inventoryRisk?.overAllocatedSKUs || 0}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        Reconcile <ArrowRight className="h-3 w-3" />
+                        {t('reconcile')} <ArrowRight className="h-3 w-3" />
                       </p>
                     </div>
                   </div>
@@ -539,10 +539,10 @@ export function Dashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className={`h-5 w-5 ${(inventoryRisk?.agingInventoryCount || 0) > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-aging-inventory">Aging Inventory</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-aging-inventory">{t('agingInventory')}</p>
                       </div>
                       <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-aging-inventory">{inventoryRisk?.agingInventoryCount || 0}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">90+ days no movement</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('ninetyDaysNoMovement')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -557,11 +557,11 @@ export function Dashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Package className={`h-5 w-5 ${(inventoryRisk?.inboundBacklog || 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-inbound-backlog">Inbound Backlog</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-inbound-backlog">{t('inboundBacklog')}</p>
                       </div>
                       <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-inbound-backlog">{inventoryRisk?.inboundBacklog || 0}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        Process receipts <ArrowRight className="h-3 w-3" />
+                        {t('processReceipts')} <ArrowRight className="h-3 w-3" />
                       </p>
                     </div>
                   </div>
@@ -577,11 +577,11 @@ export function Dashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Truck className={`h-5 w-5 ${(inventoryRisk?.supplierDelayAlerts || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-supplier-delays">Supplier Delays</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-supplier-delays">{t('supplierDelays')}</p>
                       </div>
                       <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-supplier-delays">{inventoryRisk?.supplierDelayAlerts || 0}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        Review shipments <ArrowRight className="h-3 w-3" />
+                        {t('reviewShipments')} <ArrowRight className="h-3 w-3" />
                       </p>
                     </div>
                   </div>
@@ -601,9 +601,9 @@ export function Dashboard() {
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-fulfillment-efficiency">
               <Target className="h-5 w-5" />
-              Fulfillment Efficiency
+              {t('fulfillmentEfficiency')}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Pick/pack performance metrics</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('pickPackPerformanceMetrics')}</p>
           </div>
 
           {fulfillmentLoading && !fulfillmentEfficiency ? (
@@ -619,7 +619,7 @@ export function Dashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-pick-errors">Pick Errors (This Month)</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-pick-errors">{t('pickErrorsThisMonth')}</p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-pick-errors">
                         {fulfillmentEfficiency?.pickErrorsCount || 0}
                       </p>
@@ -634,12 +634,12 @@ export function Dashboard() {
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-ai-adoption">AI Carton Recommendations</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-ai-adoption">{t('aiCartonRecommendations')}</p>
                       <Badge variant="default" className="text-xs">{fulfillmentEfficiency?.aiAdoptionRatePercent.toFixed(1)}%</Badge>
                     </div>
                     <Progress value={fulfillmentEfficiency?.aiAdoptionRatePercent || 0} className="h-2" data-testid="progress-ai-adoption" />
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {fulfillmentEfficiency?.aiCartonRecommendationsUsed || 0} orders used AI suggestions
+                      {fulfillmentEfficiency?.aiCartonRecommendationsUsed || 0} {t('ordersUsedAiSuggestions')}
                     </p>
                   </div>
                 </CardContent>
@@ -650,13 +650,13 @@ export function Dashboard() {
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-otd">Carrier On-Time Delivery</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-otd">{t('carrierOnTimeDelivery')}</p>
                       <Badge variant={fulfillmentEfficiency && fulfillmentEfficiency.carrierOnTimeRatePercent >= 90 ? 'default' : 'destructive'} className="text-xs">
                         {fulfillmentEfficiency?.carrierOnTimeRatePercent.toFixed(1)}%
                       </Badge>
                     </div>
                     <Progress value={fulfillmentEfficiency?.carrierOnTimeRatePercent || 0} className="h-2" data-testid="progress-carrier-otd" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Target: &gt;95% delivery within 3 days</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('targetDeliveryRate')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -664,7 +664,7 @@ export function Dashboard() {
               {/* Order Stage Distribution */}
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-order-stages">Order Stage Distribution</CardTitle>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-order-stages">{t('orderStageDistribution')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {fulfillmentEfficiency && Object.entries(fulfillmentEfficiency.ordersByStage).map(([stage, count]) => (
@@ -684,9 +684,9 @@ export function Dashboard() {
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-customer-support">
               <Users className="h-5 w-5" />
-              Customer & Support
+              {t('customerAndSupport')}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Customer metrics and tickets</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('customerMetricsAndTickets')}</p>
           </div>
 
           {customerLoading && !customerSupport ? (
@@ -700,7 +700,7 @@ export function Dashboard() {
               {/* Top Customers */}
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-top-customers">Top 5 Customers (This Month)</CardTitle>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-top-customers">{t('topCustomersThisMonth')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {customerSupport?.top10CustomersByRevenue.slice(0, 5).map((customer, index) => (
@@ -721,31 +721,31 @@ export function Dashboard() {
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-support-tickets">Active Support Tickets</CardTitle>
+                    <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-support-tickets">{t('activeSupportTickets')}</CardTitle>
                     <Badge variant="outline" data-testid="value-total-tickets">{customerSupport?.totalActiveTickets || 0}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Low</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('low')}</span>
                     <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20" data-testid="value-tickets-low">
                       {customerSupport?.activeSupportTickets.low || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Medium</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('medium')}</span>
                     <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950/20" data-testid="value-tickets-medium">
                       {customerSupport?.activeSupportTickets.medium || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">High</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('high')}</span>
                     <Badge variant="warning" data-testid="value-tickets-high">
                       {customerSupport?.activeSupportTickets.high || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Urgent</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('urgent')}</span>
                     <Badge variant="destructive" data-testid="value-tickets-urgent">
                       {customerSupport?.activeSupportTickets.urgent || 0}
                     </Badge>
@@ -759,25 +759,25 @@ export function Dashboard() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-cod-status">
                       <CreditCard className="h-4 w-4" />
-                      COD Collection Status
+                      {t('codCollectionStatus')}
                     </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Pending</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('pending')}</span>
                     <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950/20" data-testid="value-cod-pending">
                       {customerSupport?.codPaymentStatus.pending || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Paid</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('paid')}</span>
                     <Badge variant="default" className="bg-green-600 dark:bg-green-700" data-testid="value-cod-paid">
                       {customerSupport?.codPaymentStatus.paid || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Failed</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('failed')}</span>
                     <Badge variant="destructive" data-testid="value-cod-failed">
                       {customerSupport?.codPaymentStatus.failed || 0}
                     </Badge>
@@ -790,11 +790,11 @@ export function Dashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-retention-rate">Customer Retention Rate</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-retention-rate">{t('customerRetentionRate')}</p>
                       <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-retention-rate">
                         {customerSupport?.retentionRatePercent.toFixed(1)}%
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">90-day cohort</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('ninetyDayCohort')}</p>
                     </div>
                     <Users className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                   </div>
@@ -812,9 +812,9 @@ export function Dashboard() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-system-alerts">
             <Bell className="h-5 w-5 text-red-600 dark:text-red-400" />
-            System Alerts & Activity
+            {t('systemAlertsAndActivity')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Critical alerts and recent activities</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('criticalAlertsAndActivities')}</p>
         </div>
 
         {alertsLoading && !systemAlerts ? (
@@ -830,22 +830,22 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-returns-spike">
                   <AlertCircle className={`h-4 w-4 ${systemAlerts?.returnsSpike.isAlert ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                  Returns Spike Detection
+                  {t('returnsSpikeDetection')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">This Week</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('thisWeek')}</span>
                   <Badge variant={systemAlerts?.returnsSpike.isAlert ? 'destructive' : 'outline'} data-testid="value-returns-this-week">
                     {systemAlerts?.returnsSpike.thisWeek || 0}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Last Week</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('lastWeek')}</span>
                   <Badge variant="outline" data-testid="value-returns-last-week">{systemAlerts?.returnsSpike.lastWeek || 0}</Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Trend</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('trend')}</span>
                   <span className={`font-semibold ${systemAlerts?.returnsSpike.spikePercent && systemAlerts.returnsSpike.spikePercent > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="value-returns-trend">
                     {(systemAlerts?.returnsSpike.spikePercent ?? 0) >= 0 ? '+' : ''}{(systemAlerts?.returnsSpike.spikePercent ?? 0).toFixed(1)}%
                   </span>
@@ -858,18 +858,18 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-integration-health">
                   <Activity className="h-4 w-4" />
-                  Integration Health
+                  {t('integrationHealth')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Order Processing</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('orderProcessing')}</span>
                   <Badge variant={systemAlerts?.integrationHealth.orderProcessing === 'healthy' ? 'default' : 'warning'} data-testid="value-order-processing-status">
-                    {systemAlerts?.integrationHealth.orderProcessing || 'unknown'}
+                    {systemAlerts?.integrationHealth.orderProcessing === 'healthy' ? t('healthy') : t('unknown')}
                   </Badge>
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                  Recent orders: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid="value-recent-order-count">{systemAlerts?.integrationHealth.recentOrderCount || 0}</span>
+                  {t('recentOrders')}: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid="value-recent-order-count">{systemAlerts?.integrationHealth.recentOrderCount || 0}</span>
                 </div>
               </CardContent>
             </Card>
@@ -879,7 +879,7 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-recent-audit">
                   <Info className="h-4 w-4" />
-                  Recent Activity Feed
+                  {t('recentActivityFeed')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -902,19 +902,19 @@ export function Dashboard() {
       <section>
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100" data-testid="heading-financial-analytics">
-            Financial Analytics
+            {t('financialAnalytics')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Historical performance trends</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('historicalPerformanceTrends')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">Revenue and Profit</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">{t('revenueAndProfit')}</CardTitle>
               <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>Year</option>
-                <option>Month</option>
-                <option>Week</option>
+                <option>{t('year')}</option>
+                <option>{t('month')}</option>
+                <option>{t('week')}</option>
               </select>
             </CardHeader>
             <CardContent>
@@ -926,10 +926,10 @@ export function Dashboard() {
 
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">Total Expenses</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">{t('totalExpenses')}</CardTitle>
               <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>This Year</option>
-                <option>Last Year</option>
+                <option>{t('thisYear')}</option>
+                <option>{t('lastYear')}</option>
               </select>
             </CardHeader>
             <CardContent>
@@ -942,15 +942,15 @@ export function Dashboard() {
 
         <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-gray-900 dark:text-gray-100">Yearly Report</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">{t('yearlyReport')}</CardTitle>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-800 dark:bg-blue-600 rounded"></div>
-                <span className="text-sm text-slate-600 dark:text-gray-400">Purchased</span>
+                <span className="text-sm text-slate-600 dark:text-gray-400">{t('purchased')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-400 dark:bg-blue-300 rounded"></div>
-                <span className="text-sm text-slate-600 dark:text-gray-400">Sold Amount</span>
+                <span className="text-sm text-slate-600 dark:text-gray-400">{t('soldAmount')}</span>
               </div>
             </div>
           </CardHeader>
