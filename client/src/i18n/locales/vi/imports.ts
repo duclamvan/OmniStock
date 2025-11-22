@@ -870,7 +870,6 @@ const imports = {
   byValue: 'Theo giá trị',
   hybrid: 'Kết hợp (60/40)',
   itemPricingAndLandingCost: 'Giá sản phẩm & Chi phí nhập hàng',
-  perUnit: 'Mỗi đơn vị',
   shippingPerUnit: 'Phí vận chuyển/đơn vị',
   landingCost: 'Chi phí nhập hàng',
   landingCostEUR: 'Chi phí nhập (EUR)',
@@ -1023,7 +1022,6 @@ const imports = {
   avgProcessingTime: 'Thời gian TB',
   linkToExistingProduct: 'Liên kết với sản phẩm có sẵn',
   alreadyLinked: 'Đã liên kết',
-  sellingPrice: 'Giá bán',
   enterCategory: 'Nhập danh mục',
   
   // ImportItemsTracking - Search & Filters

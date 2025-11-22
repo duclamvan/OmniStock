@@ -392,6 +392,7 @@ function StickyHeaderScanHeader({
   isScanning: boolean;
   barcodeScanner: ReturnType<typeof useBarcodeScanner>;
 }) {
+  const { t } = useTranslation(['receiving', 'common']);
   const { session, updateSession, undo } = useReceivingSession();
   const { toast } = useToast();
   const scanInputRef = useRef<HTMLInputElement>(null);
@@ -560,6 +561,7 @@ function StickyHeaderScanHeader({
 // ============================================================================
 
 function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
+  const { t } = useTranslation(['receiving', 'common']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -1069,6 +1071,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function ReceivingShipmentCard({ shipment }: { shipment: any }) {
+  const { t } = useTranslation(['receiving', 'common']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1169,6 +1172,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function StorageShipmentCard({ shipment }: { shipment: any }) {
+  const { t } = useTranslation(['receiving', 'common']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1253,6 +1257,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function CompletedShipmentCard({ shipment }: { shipment: any }) {
+  const { t } = useTranslation(['receiving', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -1525,9 +1530,9 @@ function EmptyState({ icon: Icon, title, description, action }: {
 // ============================================================================
 
 export default function ReceivingList() {
+  const { t } = useTranslation(['receiving', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
   const [activeTab, setActiveTab] = useState("to-receive");
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -1711,7 +1716,7 @@ export default function ReceivingList() {
           </div>
 
           {/* Tab Content */}
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-visible">
             <div className="p-4 space-y-3">
               {/* To Receive Tab */}
               {activeTab === 'to-receive' && (
@@ -1841,7 +1846,7 @@ export default function ReceivingList() {
                 </>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Session Footer */}

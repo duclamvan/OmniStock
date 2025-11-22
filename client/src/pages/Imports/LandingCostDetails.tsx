@@ -148,7 +148,8 @@ export default function LandingCostDetails() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            price: update.priceEUR.toString()
+            priceEur: update.priceEUR.toString(),
+            priceCzk: update.priceCZK.toString()
           })
         });
       });
