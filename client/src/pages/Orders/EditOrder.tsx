@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
@@ -295,6 +296,7 @@ const getCountryFlag = (country: string | null | undefined): string => {
 export default function EditOrder() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation(['orders', 'common']);
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);

@@ -257,6 +257,47 @@ const inventory = {
   noProductsDescription: 'Thêm sản phẩm đầu tiên để bắt đầu',
   noProductsInCategory: 'Không có sản phẩm trong danh mục này',
   
+  // Additional AllInventory Page
+  archivedProducts: 'Sản phẩm đã lưu trữ',
+  viewActiveProducts: 'Xem sản phẩm hoạt động',
+  viewArchive: 'Xem kho lưu trữ',
+  searchProducts: 'Tìm kiếm sản phẩm...',
+  exportFormat: 'Định dạng xuất',
+  exportAsXLSX: 'Xuất dạng XLSX',
+  exportAsPDF: 'Xuất dạng PDF',
+  importXLS: 'Nhập XLS',
+  toggleColumns: 'Cột',
+  basicInfo: 'Thông tin cơ bản',
+  stockInfo: 'Tồn kho',
+  pricingInfo: 'Giá cả',
+  otherInfo: 'Khác',
+  
+  // Bulk Actions
+  restoreSelected: 'Khôi phục đã chọn',
+  updateStock: 'Cập nhật tồn kho',
+  bulkUpdate: 'Cập nhật hàng loạt',
+  moveToArchive: 'Chuyển vào lưu trữ',
+  partialSuccess: 'Thành công một phần',
+  export: 'Xuất',
+  
+  // Over/Under Allocated
+  overAllocatedInventory: 'Tồn kho phân bổ vượt mức',
+  overAllocatedMessage: '{{count}} {{items}} có số lượng đặt hàng nhiều hơn số lượng khả dụng',
+  item: 'mục có',
+  items: 'mục có',
+  viewResolveIssues: 'Xem & Giải quyết vấn đề',
+  underAllocatedInventory: 'Tồn kho phân bổ thiếu',
+  underAllocatedMessage: '{{count}} {{items}} có số lượng trong hồ sơ nhiều hơn tại vị trí kho',
+  
+  // Stats Cards
+  totalProducts: 'Tổng sản phẩm',
+  totalValue: 'Tổng giá trị',
+  products: 'sản phẩm',
+  itemsCount: 'mục',
+  
+  // Filters
+  filtersSearch: 'Bộ lọc & Tìm kiếm',
+  
 } as const;
 
 export default inventory;

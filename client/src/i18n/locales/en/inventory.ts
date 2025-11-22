@@ -155,6 +155,47 @@ const inventory = {
   noProductsDescription: 'Add your first product to get started',
   noProductsInCategory: 'No products in this category',
   
+  // Additional AllInventory Page
+  archivedProducts: 'Archived Products',
+  viewActiveProducts: 'View Active Products',
+  viewArchive: 'View Archive',
+  searchProducts: 'Search products...',
+  exportFormat: 'Export Format',
+  exportAsXLSX: 'Export as XLSX',
+  exportAsPDF: 'Export as PDF',
+  importXLS: 'Import XLS',
+  toggleColumns: 'Columns',
+  basicInfo: 'Basic Info',
+  stockInfo: 'Stock',
+  pricingInfo: 'Pricing',
+  otherInfo: 'Other',
+  
+  // Bulk Actions
+  restoreSelected: 'Restore Selected',
+  updateStock: 'Update Stock',
+  bulkUpdate: 'Bulk Update',
+  moveToArchive: 'Move to Archive',
+  partialSuccess: 'Partial Success',
+  export: 'Export',
+  
+  // Over/Under Allocated
+  overAllocatedInventory: 'Over-Allocated Inventory',
+  overAllocatedMessage: '{{count}} {{items}} more quantity ordered than available in stock',
+  item: 'item has',
+  items: 'items have',
+  viewResolveIssues: 'View & Resolve Issues',
+  underAllocatedInventory: 'Under-Allocated Inventory',
+  underAllocatedMessage: '{{count}} {{items}} more quantity in record than in stock locations',
+  
+  // Stats Cards
+  totalProducts: 'Total Products',
+  totalValue: 'Total Value',
+  products: 'products',
+  itemsCount: 'items',
+  
+  // Filters
+  filtersSearch: 'Filters & Search',
+  
 } as const;
 
 export default inventory;

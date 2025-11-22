@@ -257,11 +257,11 @@ const getCountryFlag = (country: string | null | undefined): string => {
 
 export default function AddOrder() {
   const [, setLocation] = useLocation();
+  const { t } = useTranslation(['orders', 'common']);
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
-  const { t } = useTranslation();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
@@ -720,14 +720,14 @@ export default function AddOrder() {
       setShowShippingModal(false);
       setEditingAddress(null);
       toast({
-        title: "Success",
-        description: "Shipping address created successfully",
+        title: t('common:success'),
+        description: t('orders:shippingAddressCreatedSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to create shipping address",
+        title: t('common:error'),
+        description: t('orders:shippingAddressCreatedError'),
         variant: "destructive",
       });
     },
@@ -744,14 +744,14 @@ export default function AddOrder() {
       setShowShippingModal(false);
       setEditingAddress(null);
       toast({
-        title: "Success",
-        description: "Shipping address updated successfully",
+        title: t('common:success'),
+        description: t('orders:shippingAddressUpdatedSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update shipping address",
+        title: t('common:error'),
+        description: t('orders:shippingAddressUpdatedError'),
         variant: "destructive",
       });
     },
@@ -862,15 +862,15 @@ export default function AddOrder() {
       }
       
       toast({
-        title: "Address Parsed",
-        description: `Successfully parsed address with ${data.confidence} confidence`,
+        title: t('orders:addressParsed'),
+        description: t('orders:addressParsedSuccess', { confidence: data.confidence }),
       });
       setRawNewCustomerAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: "Parse Failed",
-        description: error.message || "Failed to parse address",
+        title: t('orders:parseFailed'),
+        description: error.message || t('orders:addressParseError'),
         variant: "destructive",
       });
     },
@@ -1140,17 +1140,17 @@ export default function AddOrder() {
       }
       
       toast({
-        title: "Success",
+        title: t('common:success'),
         description: packingPlan 
-          ? "Order created successfully. Packing plan saved."
-          : "Order created successfully. You can now run AI packing optimization.",
+          ? t('orders:orderCreatedWithPacking')
+          : t('orders:orderCreatedSuccess'),
       });
     },
     onError: (error) => {
       console.error("Order creation error:", error);
       toast({
-        title: "Error",
-        description: "Failed to create order",
+        title: t('common:error'),
+        description: t('orders:orderCreatedError'),
         variant: "destructive",
       });
     },
@@ -1164,8 +1164,8 @@ export default function AddOrder() {
 
     if (orderItems.length === 0) {
       toast({
-        title: "Error",
-        description: "Please add items to the order first",
+        title: t('common:error'),
+        description: t('orders:itemsRequired'),
         variant: "destructive",
       });
       return;
@@ -1281,8 +1281,8 @@ export default function AddOrder() {
   const handleAddManualCarton = async () => {
     if (!aiCartonPackingEnabled) {
       toast({
-        title: "AI Packing Disabled",
-        description: "AI Carton Packing is disabled in Settings",
+        title: t('orders:aiPackingDisabled'),
+        description: t('orders:aiPackingDisabledDesc'),
         variant: "destructive",
       });
       return;
@@ -1290,8 +1290,8 @@ export default function AddOrder() {
 
     if (!orderId) {
       toast({
-        title: "Error",
-        description: "Please save the order first before adding cartons",
+        title: t('common:error'),
+        description: t('orders:saveOrderBeforeCartons'),
         variant: "destructive",
       });
       return;
@@ -1321,8 +1321,8 @@ export default function AddOrder() {
     } catch (error) {
       console.error('Error adding manual carton:', error);
       toast({
-        title: "Error",
-        description: "Failed to add manual carton",
+        title: t('common:error'),
+        description: t('orders:addManualCartonError'),
         variant: "destructive",
       });
     }
@@ -1429,8 +1429,8 @@ export default function AddOrder() {
               if (applicablePrice) {
                 productPrice = parseFloat(applicablePrice.price);
                 toast({
-                  title: "Customer Price Applied",
-                  description: `Using customer-specific price: ${productPrice} ${selectedCurrency}`,
+                  title: t('orders:customerPriceApplied'),
+                  description: t('orders:customerPriceAppliedDesc', { price: productPrice, currency: selectedCurrency }),
                 });
               }
             }
@@ -1484,8 +1484,8 @@ export default function AddOrder() {
     
     if (variantsToAdd.length === 0) {
       toast({
-        title: "No variants selected",
-        description: "Please select at least one variant with quantity > 0",
+        title: t('orders:noVariantsSelected'),
+        description: t('orders:noVariantsSelectedDesc'),
         variant: "destructive",
       });
       return;
