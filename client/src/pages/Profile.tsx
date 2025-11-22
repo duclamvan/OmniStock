@@ -35,10 +35,11 @@ import { format, formatDistanceToNow } from "date-fns";
 import type { User } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 
+// Note: Validation messages will be overridden by form implementation
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -111,8 +112,8 @@ export default function Profile() {
       });
       
       toast({
-        title: t('common:success') || "Profile Updated",
-        description: "Your profile has been updated successfully.",
+        title: t('common:profileUpdated'),
+        description: t('common:yourProfileHasBeenUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
@@ -127,8 +128,8 @@ export default function Profile() {
         });
       } else {
         toast({
-          title: "Update Failed",
-          description: errorMessage || "Failed to update profile. Please try again.",
+          title: t('common:updateFailed'),
+          description: errorMessage || t('common:failedToUpdateProfile'),
           variant: "destructive",
         });
       }
@@ -265,19 +266,19 @@ export default function Profile() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              <CardTitle>Failed to Load Profile</CardTitle>
+              <CardTitle>{t('common:failedToLoadProfile')}</CardTitle>
             </div>
             <CardDescription>
-              Unable to load your profile information. Please try again.
+              {t('common:unableToLoadYourProfileInformation')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
-              {isError ? "There was an error loading your profile data." : "Profile data is unavailable."}
+              {isError ? t('common:thereWasAnErrorLoadingYourProfileData') : t('common:profileDataIsUnavailable')}
             </p>
             <Button onClick={() => refetch()} data-testid="button-retry">
               <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+              {t('common:retry')}
             </Button>
           </CardContent>
         </Card>
@@ -304,7 +305,7 @@ export default function Profile() {
           {/* User Info */}
           <div className="flex-1 text-white">
             <h1 className="text-3xl font-bold mb-2" data-testid="text-user-name">
-              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : 'User Profile'}
+              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : t('common:userProfile')}
             </h1>
             <p className="text-blue-100 dark:text-blue-200 mb-3 flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -321,7 +322,7 @@ export default function Profile() {
 
           {/* Member Since */}
           <div className="text-white/90 text-right">
-            <p className="text-sm text-blue-100 dark:text-blue-200 mb-1">Member Since</p>
+            <p className="text-sm text-blue-100 dark:text-blue-200 mb-1">{t('common:memberSince')}</p>
             <p className="text-lg font-semibold">
               {user.createdAt ? format(new Date(user.createdAt), 'MMM yyyy') : 'N/A'}
             </p>
@@ -336,7 +337,7 @@ export default function Profile() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Total Orders
+                  {t('common:totalOrders')}
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="stat-total-orders">
                   {totalOrders}
@@ -354,7 +355,7 @@ export default function Profile() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Pending Orders
+                  {t('common:pendingOrders')}
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="stat-pending-orders">
                   {pendingOrders}
@@ -372,7 +373,7 @@ export default function Profile() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Completed
+                  {t('common:completed')}
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="stat-completed-orders">
                   {completedOrders}
@@ -393,10 +394,10 @@ export default function Profile() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-primary" />
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle>{t('common:personalInformation')}</CardTitle>
             </div>
             <CardDescription>
-              Update your personal details
+              {t('common:updateYourPersonalDetails')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -408,10 +409,10 @@ export default function Profile() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>{t('common:firstName')}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="First name" 
+                            placeholder={t('common:firstName')} 
                             {...field} 
                             disabled={updateProfileMutation.isPending}
                             data-testid="input-firstName" 
@@ -426,10 +427,10 @@ export default function Profile() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>{t('common:lastName')}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Last name" 
+                            placeholder={t('common:lastName')} 
                             {...field} 
                             disabled={updateProfileMutation.isPending}
                             data-testid="input-lastName" 
@@ -446,7 +447,7 @@ export default function Profile() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel>{t('common:emailAddress')}</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -470,12 +471,12 @@ export default function Profile() {
                   {updateProfileMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
+                      {t('common:saving')}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Save Changes
+                      {t('common:saveChanges')}
                     </>
                   )}
                 </Button>
@@ -489,10 +490,10 @@ export default function Profile() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              <CardTitle>Account Details</CardTitle>
+              <CardTitle>{t('common:accountDetails')}</CardTitle>
             </div>
             <CardDescription>
-              Your account information
+              {t('common:yourAccountInformation')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -500,15 +501,15 @@ export default function Profile() {
               <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Account Role
+                    {t('common:accountRole')}
                   </p>
                   <Badge className={getRoleBadgeColor(user.role)}>
                     {formatRole(user.role)}
                   </Badge>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     {user.role === 'administrator' 
-                      ? 'Full system access and management capabilities'
-                      : 'Warehouse operations and order fulfillment'}
+                      ? t('common:fullSystemAccessAndManagement')
+                      : t('common:warehouseOperationsAndFulfillment')}
                   </p>
                 </div>
               </div>
@@ -517,7 +518,7 @@ export default function Profile() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Account Created
+                    {t('common:accountCreated')}
                   </p>
                   <p className="text-base font-semibold text-gray-900 dark:text-white" data-testid="text-createdAt">
                     {user.createdAt ? format(new Date(user.createdAt), 'PPP') : 'N/A'}
@@ -533,7 +534,7 @@ export default function Profile() {
               <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    User ID
+                    {t('common:userId')}
                   </p>
                   <p className="text-sm font-mono text-gray-900 dark:text-white">
                     {user.id}
@@ -551,23 +552,23 @@ export default function Profile() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              <CardTitle>Recent Activities</CardTitle>
+              <CardTitle>{t('common:recentActivities')}</CardTitle>
             </div>
             <Badge variant="secondary" className="font-normal">
-              Last 5 orders
+              {t('common:last5Orders')}
             </Badge>
           </div>
           <CardDescription>
-            Your most recent order activities
+            {t('common:yourMostRecentOrderActivities')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {latestOrders.length === 0 ? (
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 mb-1">No recent activities</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-1">{t('common:noRecentActivities')}</p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                Your order activities will appear here
+                {t('common:yourOrderActivitiesWillAppearHere')}
               </p>
             </div>
           ) : (
@@ -586,7 +587,7 @@ export default function Profile() {
                           </p>
                           {order.customerName && (
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Customer: {order.customerName}
+                              {t('common:customer')}: {order.customerName}
                             </p>
                           )}
                         </div>

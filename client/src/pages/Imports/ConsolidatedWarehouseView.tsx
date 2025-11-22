@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,7 @@ interface WarehouseData {
 }
 
 export default function ConsolidatedWarehouseView() {
+  const { t } = useTranslation();
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("usa");
   const [searchQuery, setSearchQuery] = useState("");
   const [timeRange, setTimeRange] = useState("30");
@@ -241,13 +243,13 @@ export default function ConsolidatedWarehouseView() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Imports
+                {t('imports:backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Warehouse Consolidated View</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('imports:warehouseConsolidatedView')}</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Manage inventory across global warehouses
+                {t('imports:manageInventoryGlobal')}
               </p>
             </div>
           </div>
@@ -257,19 +259,19 @@ export default function ConsolidatedWarehouseView() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-                <SelectItem value="365">Last year</SelectItem>
+                <SelectItem value="7">{t('imports:last7Days')}</SelectItem>
+                <SelectItem value="30">{t('imports:last30Days')}</SelectItem>
+                <SelectItem value="90">{t('imports:last90Days')}</SelectItem>
+                <SelectItem value="365">{t('imports:lastYear')}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Refresh</span>
+              <span className="hidden md:inline">{t('imports:refresh')}</span>
             </Button>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Export</span>
+              <span className="hidden md:inline">{t('imports:export')}</span>
             </Button>
           </div>
         </div>
@@ -298,17 +300,17 @@ export default function ConsolidatedWarehouseView() {
                     </div>
                   </div>
                   {selectedWarehouse === key && (
-                    <Badge variant="default" className="text-xs">Active</Badge>
+                    <Badge variant="default" className="text-xs">{t('imports:active')}</Badge>
                   )}
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-muted-foreground">Total Items</span>
+                    <span className="text-muted-foreground">{t('imports:totalItems')}</span>
                     <span className="font-medium">{warehouse.totalItems.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-muted-foreground">Value</span>
+                    <span className="text-muted-foreground">{t('imports:value')}</span>
                     <span className="font-medium">
                       {formatCurrency(warehouse.totalValue, warehouse.currency)}
                     </span>
@@ -318,7 +320,7 @@ export default function ConsolidatedWarehouseView() {
                     className="h-1.5"
                   />
                   <p className="text-xs text-muted-foreground text-center">
-                    {warehouse.performance.utilizationRate}% Utilization
+                    {warehouse.performance.utilizationRate}% {t('imports:utilization')}
                   </p>
                 </div>
               </CardContent>
@@ -333,7 +335,7 @@ export default function ConsolidatedWarehouseView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Pending Orders</p>
+                <p className="text-xs text-muted-foreground">{t('imports:pendingOrders')}</p>
                 <p className="text-xl md:text-2xl font-bold">{currentWarehouse.pendingOrders}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingUp className="h-3 w-3 text-green-600" />
@@ -349,7 +351,7 @@ export default function ConsolidatedWarehouseView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">In Transit</p>
+                <p className="text-xs text-muted-foreground">{t('imports:inTransit')}</p>
                 <p className="text-xl md:text-2xl font-bold">{currentWarehouse.inTransit}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingDown className="h-3 w-3 text-red-600" />
@@ -365,7 +367,7 @@ export default function ConsolidatedWarehouseView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Received</p>
+                <p className="text-xs text-muted-foreground">{t('imports:received')}</p>
                 <p className="text-xl md:text-2xl font-bold">{currentWarehouse.received}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingUp className="h-3 w-3 text-green-600" />
@@ -381,11 +383,11 @@ export default function ConsolidatedWarehouseView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Avg Lead Time</p>
+                <p className="text-xs text-muted-foreground">{t('imports:avgLeadTimeDays')}</p>
                 <p className="text-xl md:text-2xl font-bold">{currentWarehouse.avgLeadTime}d</p>
                 <div className="flex items-center gap-1 mt-1">
                   <Activity className="h-3 w-3 text-blue-600" />
-                  <span className="text-xs text-muted-foreground">days</span>
+                  <span className="text-xs text-muted-foreground">{t('imports:days')}</span>
                 </div>
               </div>
               <Timer className="h-8 w-8 text-purple-500 opacity-20" />
@@ -397,9 +399,9 @@ export default function ConsolidatedWarehouseView() {
       {/* Main Content Tabs */}
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="px-4 md:px-0">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="overview">{t('imports:overview')}</TabsTrigger>
+          <TabsTrigger value="inventory">{t('imports:inventory')}</TabsTrigger>
+          <TabsTrigger value="analytics">{t('imports:analytics')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -407,9 +409,9 @@ export default function ConsolidatedWarehouseView() {
             {/* Recent Activity */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Recent Activity</CardTitle>
+                <CardTitle className="text-base">{t('imports:recentActivity')}</CardTitle>
                 <CardDescription className="text-xs">
-                  Latest warehouse operations
+                  {t('imports:latestWarehouseOps')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -440,36 +442,36 @@ export default function ConsolidatedWarehouseView() {
             {/* Performance Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Performance Metrics</CardTitle>
+                <CardTitle className="text-base">{t('imports:performanceMetrics')}</CardTitle>
                 <CardDescription className="text-xs">
-                  Key warehouse indicators
+                  {t('imports:keyWarehouseIndicators')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>On-Time Delivery</span>
+                    <span>{t('imports:onTimeDelivery')}</span>
                     <span className="font-medium">{currentWarehouse.performance.onTimeDelivery}%</span>
                   </div>
                   <Progress value={currentWarehouse.performance.onTimeDelivery} className="h-2" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Accuracy Rate</span>
+                    <span>{t('imports:accuracyRate')}</span>
                     <span className="font-medium">{currentWarehouse.performance.accuracyRate}%</span>
                   </div>
                   <Progress value={currentWarehouse.performance.accuracyRate} className="h-2" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Utilization Rate</span>
+                    <span>{t('imports:utilizationRate')}</span>
                     <span className="font-medium">{currentWarehouse.performance.utilizationRate}%</span>
                   </div>
                   <Progress value={currentWarehouse.performance.utilizationRate} className="h-2" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Cost Efficiency</span>
+                    <span>{t('imports:costEfficiency')}</span>
                     <span className="font-medium">{currentWarehouse.performance.costEfficiency}%</span>
                   </div>
                   <Progress value={currentWarehouse.performance.costEfficiency} className="h-2" />
@@ -481,7 +483,7 @@ export default function ConsolidatedWarehouseView() {
           {/* Top Suppliers */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Top Suppliers</CardTitle>
+              <CardTitle className="text-base">{t('imports:topSuppliers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -503,7 +505,7 @@ export default function ConsolidatedWarehouseView() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search inventory..."
+                  placeholder={t('imports:searchInventory')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -516,10 +518,10 @@ export default function ConsolidatedWarehouseView() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Current Inventory</CardTitle>
+                <CardTitle className="text-base">{t('imports:currentInventory')}</CardTitle>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Item
+                  {t('imports:addItem')}
                 </Button>
               </div>
             </CardHeader>
@@ -541,18 +543,18 @@ export default function ConsolidatedWarehouseView() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-muted-foreground">Quantity:</span>
+                            <span className="text-muted-foreground">{t('imports:quantity')}:</span>
                             <p className="font-medium">{item.quantity}</p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Unit Cost:</span>
+                            <span className="text-muted-foreground">{t('imports:unitCost')}:</span>
                             <p className="font-medium">
                               {formatCurrency(item.unitCost, currentWarehouse.currency)}
                             </p>
                           </div>
                         </div>
                         <div className="text-xs">
-                          <span className="text-muted-foreground">Last Received:</span>
+                          <span className="text-muted-foreground">{t('imports:lastReceived')}:</span>
                           <p>{formatDate(item.lastReceived)}</p>
                         </div>
                       </div>
@@ -566,14 +568,14 @@ export default function ConsolidatedWarehouseView() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Unit Cost</TableHead>
-                      <TableHead className="text-right">Total Value</TableHead>
-                      <TableHead>Last Received</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('imports:product')}</TableHead>
+                      <TableHead>{t('imports:sku')}</TableHead>
+                      <TableHead className="text-right">{t('imports:quantity')}</TableHead>
+                      <TableHead className="text-right">{t('imports:unitCost')}</TableHead>
+                      <TableHead className="text-right">{t('imports:totalValue')}</TableHead>
+                      <TableHead>{t('imports:lastReceived')}</TableHead>
+                      <TableHead>{t('imports:status')}</TableHead>
+                      <TableHead className="text-right">{t('imports:actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

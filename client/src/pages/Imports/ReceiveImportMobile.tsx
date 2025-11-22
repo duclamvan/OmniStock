@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { 
   ArrowLeft,
@@ -54,6 +55,7 @@ interface ReceivingItem {
 }
 
 export default function ReceiveImportMobile() {
+  const { t } = useTranslation('imports');
   const { id } = useParams();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -68,7 +70,7 @@ export default function ReceiveImportMobile() {
     queryKey: ['/api/import-orders', id],
     queryFn: async () => {
       const response = await fetch(`/api/import-orders/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch import order');
+      if (!response.ok) throw new Error(t('failedToFetchImportOrder'));
       const data = await response.json();
       
       // Initialize receiving items
@@ -104,8 +106,8 @@ export default function ReceiveImportMobile() {
     },
     onSuccess: () => {
       toast({
-        title: "✓ Items Received",
-        description: "Selected items have been marked as received."
+        title: t('itemsReceivedSuccess'),
+        description: t('itemsMarkedReceived')
       });
       
       // Check if all items are received
@@ -134,8 +136,8 @@ export default function ReceiveImportMobile() {
     },
     onSuccess: () => {
       toast({
-        title: "✓ Added to Inventory",
-        description: "Items successfully added with updated costs."
+        title: t('addedToInventorySuccess'),
+        description: t('itemsAddedWithCosts')
       });
       navigate(`/imports/orders/${id}`);
     }
@@ -184,14 +186,14 @@ export default function ReceiveImportMobile() {
     if (item) {
       updateReceivedQuantity(item.id, 1);
       toast({
-        title: "Item Scanned",
-        description: `${item.productName} - Quantity updated`
+        title: t('itemScanned'),
+        description: `${item.productName} - ${t('quantityUpdated')}`
       });
       setScannedSku("");
     } else {
       toast({
-        title: "Item Not Found",
-        description: "This SKU is not in the current import order",
+        title: t('itemNotFound'),
+        description: t('skuNotInOrder'),
         variant: "destructive"
       });
     }
@@ -235,8 +237,8 @@ export default function ReceiveImportMobile() {
     return (
       <Alert variant="destructive" className="mx-4">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>Import order not found.</AlertDescription>
+        <AlertTitle>{t('error')}</AlertTitle>
+        <AlertDescription>{t('notFound')}</AlertDescription>
       </Alert>
     );
   }
@@ -253,7 +255,7 @@ export default function ReceiveImportMobile() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg font-semibold">Receive Import</h1>
+              <h1 className="text-lg font-semibold">{t('receiveImport')}</h1>
               <p className="text-xs text-muted-foreground">#{order.orderNumber}</p>
             </div>
           </div>
@@ -267,22 +269,22 @@ export default function ReceiveImportMobile() {
       <div className="bg-white p-4 border-b">
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Receiving Progress</span>
+            <span className="text-muted-foreground">{t('receivingProgress')}</span>
             <span className="font-medium">{Math.round(progressPercentage)}%</span>
           </div>
           <Progress value={progressPercentage} className="h-2" />
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2 bg-orange-50 rounded-lg">
               <p className="text-2xl font-bold text-orange-600">{pendingItems.length}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-xs text-muted-foreground">{t('pending')}</p>
             </div>
             <div className="p-2 bg-blue-50 rounded-lg">
               <p className="text-2xl font-bold text-blue-600">{receivedItems.length}</p>
-              <p className="text-xs text-muted-foreground">Partial</p>
+              <p className="text-xs text-muted-foreground">{t('partial')}</p>
             </div>
             <div className="p-2 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">{completedItems.length}</p>
-              <p className="text-xs text-muted-foreground">Complete</p>
+              <p className="text-xs text-muted-foreground">{t('complete')}</p>
             </div>
           </div>
         </div>
@@ -294,14 +296,14 @@ export default function ReceiveImportMobile() {
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Supplier</p>
+              <p className="text-xs text-muted-foreground">{t('supplier')}</p>
               <p className="font-medium">{order.supplier?.name || 'N/A'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Warehouse</p>
+              <p className="text-xs text-muted-foreground">{t('warehouse')}</p>
               <p className="font-medium">{order.warehouse?.name || 'N/A'}</p>
             </div>
           </div>
@@ -309,7 +311,7 @@ export default function ReceiveImportMobile() {
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Tracking</p>
+                <p className="text-xs text-muted-foreground">{t('tracking')}</p>
                 <p className="font-medium text-xs">{order.trackingNumber}</p>
               </div>
             </div>
@@ -318,7 +320,7 @@ export default function ReceiveImportMobile() {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">ETA</p>
+                <p className="text-xs text-muted-foreground">{t('eta')}</p>
                 <p className="font-medium">
                   {format(new Date(order.estimatedArrival), 'MMM d')}
                 </p>
@@ -338,7 +340,7 @@ export default function ReceiveImportMobile() {
             className="flex-1"
           >
             <ScanLine className="h-4 w-4 mr-2" />
-            {scanMode ? 'Scanning' : 'Scan Items'}
+            {scanMode ? t('scanning') : t('scanItems')}
           </Button>
           <Button
             onClick={toggleSelectAll}
@@ -347,7 +349,7 @@ export default function ReceiveImportMobile() {
             className="flex-1"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            {selectAll ? 'Unselect All' : 'Select All'}
+            {selectAll ? t('deselectAll') : t('selectAll')}
           </Button>
         </div>
       </div>
@@ -356,12 +358,12 @@ export default function ReceiveImportMobile() {
       {scanMode && (
         <div className="bg-yellow-50 p-4 mb-2">
           <div className="space-y-3">
-            <Label className="text-sm">Scan or Enter SKU</Label>
+            <Label className="text-sm">{t('scanOrEnterSku')}</Label>
             <div className="flex gap-2">
               <Input
                 value={scannedSku}
                 onChange={(e) => setScannedSku(e.target.value)}
-                placeholder="Enter SKU or scan barcode"
+                placeholder={t('enterSkuOrScan')}
                 className="flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && handleScan()}
               />
@@ -377,16 +379,16 @@ export default function ReceiveImportMobile() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
         <TabsList className="w-full grid grid-cols-4 h-12 bg-white rounded-none border-b">
           <TabsTrigger value="all" className="data-[state=active]:border-b-2">
-            All ({receivingItems.length})
+            {t('all')} ({receivingItems.length})
           </TabsTrigger>
           <TabsTrigger value="pending" className="data-[state=active]:border-b-2">
-            Pending ({pendingItems.length})
+            {t('pending')} ({pendingItems.length})
           </TabsTrigger>
           <TabsTrigger value="partial" className="data-[state=active]:border-b-2">
-            Partial ({receivedItems.length})
+            {t('partial')} ({receivedItems.length})
           </TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:border-b-2">
-            Done ({completedItems.length})
+            {t('done')} ({completedItems.length})
           </TabsTrigger>
         </TabsList>
 
@@ -395,7 +397,7 @@ export default function ReceiveImportMobile() {
             <Card className="p-8">
               <div className="text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No items in this category</p>
+                <p className="text-sm text-muted-foreground">{t('noItemsInCategory')}</p>
               </div>
             </Card>
           ) : (
@@ -422,7 +424,7 @@ export default function ReceiveImportMobile() {
                     {item.receivedQuantity >= item.quantity && (
                       <Badge variant="default" className="ml-2">
                         <Check className="h-3 w-3 mr-1" />
-                        Complete
+                        {t('complete')}
                       </Badge>
                     )}
                   </div>
@@ -431,7 +433,7 @@ export default function ReceiveImportMobile() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                       <div className="text-sm">
-                        <p className="text-muted-foreground">Received / Expected</p>
+                        <p className="text-muted-foreground">{t('receivedExpected')}</p>
                         <p className="font-semibold text-lg">
                           {item.receivedQuantity} / {item.quantity}
                         </p>
@@ -477,9 +479,9 @@ export default function ReceiveImportMobile() {
 
                     {/* Notes Field */}
                     <div>
-                      <Label className="text-xs">Notes (optional)</Label>
+                      <Label className="text-xs">{t('notesOptional')}</Label>
                       <Input
-                        placeholder="Add notes about this item..."
+                        placeholder={t('addNotesAboutItem')}
                         value={item.notes}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -505,10 +507,10 @@ export default function ReceiveImportMobile() {
         {/* Summary */}
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">
-            {receivingItems.filter(i => i.checked).length} items selected
+            {receivingItems.filter(i => i.checked).length} {t('itemsSelected')}
           </span>
           <span className="font-semibold">
-            {receivedQuantity} / {totalQuantity} units
+            {receivedQuantity} / {totalQuantity} {t('units')}
           </span>
         </div>
 
@@ -519,7 +521,7 @@ export default function ReceiveImportMobile() {
             className="flex-1"
             onClick={() => navigate(`/imports/orders/${id}`)}
           >
-            Cancel
+            {t('cancel')}
           </Button>
           <Button
             className="flex-1"
@@ -527,11 +529,11 @@ export default function ReceiveImportMobile() {
             onClick={() => receiveItemsMutation.mutate()}
           >
             {receiveItemsMutation.isPending ? (
-              <>Saving...</>
+              <>{t('savingChanges')}</>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Receive Items
+                {t('receiveItems')}
               </>
             )}
           </Button>
@@ -546,11 +548,11 @@ export default function ReceiveImportMobile() {
             disabled={addToInventoryMutation.isPending}
           >
             {addToInventoryMutation.isPending ? (
-              <>Adding to Inventory...</>
+              <>{t('addingToInventory')}</>
             ) : (
               <>
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Complete & Add to Inventory
+                {t('completeAddToInventory')}
               </>
             )}
           </Button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,7 @@ interface KanbanColumn {
 }
 
 export default function ImportKanbanView() {
+  const { t } = useTranslation('imports');
   const [searchQuery, setSearchQuery] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
@@ -580,10 +582,10 @@ export default function ImportKanbanView() {
 
   const getDaysUntilArrival = (arrivalDate: string) => {
     const days = differenceInDays(new Date(arrivalDate), new Date());
-    if (days < 0) return `${Math.abs(days)} days ago`;
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Tomorrow';
-    return `${days} days`;
+    if (days < 0) return `${Math.abs(days)} ${t('daysAgo')}`;
+    if (days === 0) return t('today');
+    if (days === 1) return t('tomorrow');
+    return `${days} ${t('days')}`;
   };
 
   const toggleGroupExpanded = (groupId: string) => {
@@ -838,13 +840,13 @@ export default function ImportKanbanView() {
               {order.localTrackingNumber && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
                   <Truck className="h-2.5 w-2.5 mr-0.5" />
-                  Local: {order.localTrackingNumber.slice(-6)}
+                  {t('local')}: {order.localTrackingNumber.slice(-6)}
                 </Badge>
               )}
               {order.internationalTrackingNumber && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
                   <Plane className="h-2.5 w-2.5 mr-0.5" />
-                  Int'l: {order.internationalTrackingNumber.slice(-6)}
+                  {t('intl')}: {order.internationalTrackingNumber.slice(-6)}
                 </Badge>
               )}
               {order.consolidationId && (
@@ -867,7 +869,7 @@ export default function ImportKanbanView() {
           {/* Items List */}
           <div className="bg-gray-50 dark:bg-gray-900/30 rounded p-1.5 space-y-0.5">
             <div className="text-[11px] font-medium mb-0.5">
-              {order.items.length} items ({order.totalItems} total)
+              {order.items.length} {t('items')} ({order.totalItems} total)
             </div>
             {displayItems.map((item) => (
               <div key={item.id} className="flex justify-between items-center text-[10px]">
@@ -889,7 +891,7 @@ export default function ImportKanbanView() {
                   className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                 />
                 <span className="text-[10px] text-muted-foreground ml-1">
-                  {isExpanded ? 'Show less' : `+${order.items.length - 5} more`}
+                  {isExpanded ? t('showLess') : `+${order.items.length - 5} ${t('more')}`}
                 </span>
               </button>
             )}
@@ -919,38 +921,38 @@ export default function ImportKanbanView() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Imports
+                {t('backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Import Order Workflow</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('importOrderWorkflow')}</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Track orders from supplier → warehouse → consolidation → delivery
+                {t('trackOrdersDesc')}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="kanban">Workflow</TabsTrigger>
-                <TabsTrigger value="table">Table</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="kanban">{t('workflow')}</TabsTrigger>
+                <TabsTrigger value="table">{t('table')}</TabsTrigger>
+                <TabsTrigger value="timeline">{t('timeline')}</TabsTrigger>
               </TabsList>
             </Tabs>
             <Button variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Refresh</span>
+              <span className="hidden md:inline">{t('refresh')}</span>
             </Button>
             <Link href="/imports/consolidate">
               <Button variant="outline" size="sm">
                 <Package className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Consolidate</span>
+                <span className="hidden md:inline">{t('consolidate')}</span>
               </Button>
             </Link>
             <Link href="/imports/orders/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">New Order</span>
+                <span className="hidden md:inline">{t('newOrder')}</span>
               </Button>
             </Link>
           </div>
@@ -964,7 +966,7 @@ export default function ImportKanbanView() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search orders..."
+                placeholder={t('searchOrders')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -972,24 +974,24 @@ export default function ImportKanbanView() {
             </div>
             <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
               <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="All Warehouses" />
+                <SelectValue placeholder={t('allWarehouses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Warehouses</SelectItem>
-                <SelectItem value="usa">USA Warehouse</SelectItem>
-                <SelectItem value="china">China Warehouse</SelectItem>
-                <SelectItem value="vietnam">Vietnam Warehouse</SelectItem>
+                <SelectItem value="all">{t('allWarehouses')}</SelectItem>
+                <SelectItem value="usa">{t('usaWarehouse')}</SelectItem>
+                <SelectItem value="china">{t('chinaWarehouse')}</SelectItem>
+                <SelectItem value="vietnam">{t('vietnamWarehouse')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterPriority} onValueChange={setFilterPriority}>
               <SelectTrigger className="w-full md:w-36">
-                <SelectValue placeholder="All Priorities" />
+                <SelectValue placeholder={t('allPriorities')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="all">{t('allPriorities')}</SelectItem>
+                <SelectItem value="high">{t('high')}</SelectItem>
+                <SelectItem value="medium">{t('medium')}</SelectItem>
+                <SelectItem value="low">{t('low')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1025,11 +1027,11 @@ export default function ImportKanbanView() {
                           {column.id === 'at_warehouse' && (
                             <Badge variant="outline" className="text-[8px] h-3 px-0.5 border-purple-400">
                               <Package className="h-2 w-2" />
-                              {Object.keys(consolidationGroups).length} groups
+                              {Object.keys(consolidationGroups).length} {t('groups')}
                             </Badge>
                           )}
                           <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                            {filteredItems.length} items
+                            {filteredItems.length} {t('items')}
                           </Badge>
                         </div>
                       </div>
@@ -1339,7 +1341,7 @@ export default function ImportKanbanView() {
                                                 
                                                 <div className="flex items-center gap-1">
                                                   <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                                                    {items.length} items
+                                                    {items.length} {t('items')}
                                                   </span>
                                                   <span className="text-[10px] text-gray-500 dark:text-gray-400">•</span>
                                                   <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">

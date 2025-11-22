@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function AllDiscounts() {
+  const { t } = useTranslation(['discounts', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -82,12 +84,12 @@ export default function AllDiscounts() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load discounts",
+        title: t('common:error'),
+        description: t('discounts:failedToLoad'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteSaleMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -96,18 +98,18 @@ export default function AllDiscounts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedSales.length} discount(s) successfully`,
+        title: t('common:success'),
+        description: t('discounts:deletedCount', { count: selectedSales.length }),
       });
       setSelectedSales([]);
     },
     onError: (error: any) => {
       console.error("Sale delete error:", error);
-      const errorMessage = error.message || "Failed to delete discounts";
+      const errorMessage = error.message || t('discounts:failedToDelete');
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete discount - it's being used in existing records" 
+          ? t('discounts:cannotDelete')
           : errorMessage,
         variant: "destructive",
       });
@@ -149,7 +151,7 @@ export default function AllDiscounts() {
   const allColumns: DataTableColumn<any>[] = [
     {
       key: "code",
-      header: "Code",
+      header: t('discounts:code'),
       sortable: true,
       className: "min-w-[100px]",
       cell: (sale) => (
@@ -162,7 +164,7 @@ export default function AllDiscounts() {
     },
     {
       key: "name",
-      header: "Discount",
+      header: t('discounts:discount'),
       sortable: true,
       className: "min-w-[120px]",
       cell: (sale) => (
@@ -178,14 +180,14 @@ export default function AllDiscounts() {
     },
     {
       key: "type",
-      header: "Type",
+      header: t('common:type'),
       sortable: true,
       className: "hidden md:table-cell",
       cell: (sale) => {
         const types: Record<string, { label: string; color: string }> = {
-          'percentage': { label: 'Percentage', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
-          'fixed': { label: 'Fixed Amount', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
-          'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
+          'percentage': { label: t('discounts:percentage'), color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
+          'fixed': { label: t('discounts:fixedAmount'), color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
+          'buy_x_get_y': { label: t('discounts:buyXGetY'), color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
         };
         const type = types[sale.type] || { label: sale.type || '-', color: 'bg-slate-50 text-slate-700 border-slate-200' };
         return (
@@ -197,7 +199,7 @@ export default function AllDiscounts() {
     },
     {
       key: "value",
-      header: "Value",
+      header: t('discounts:value'),
       sortable: true,
       className: "text-right",
       cell: (sale) => {
@@ -213,15 +215,15 @@ export default function AllDiscounts() {
     },
     {
       key: "scope",
-      header: "Scope",
+      header: t('discounts:scope'),
       sortable: true,
       className: "hidden md:table-cell",
       cell: (sale) => {
         const scopes: Record<string, { label: string; shortLabel: string; color: string }> = {
-          'specific_product': { label: 'Specific Product', shortLabel: 'Product', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-          'all_products': { label: 'All Products', shortLabel: 'All', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-          'specific_category': { label: 'Specific Category', shortLabel: 'Category', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
-          'selected_products': { label: 'Selected Products', shortLabel: 'Selected', color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' },
+          'specific_product': { label: t('discounts:specificProduct'), shortLabel: t('discounts:scopeProduct'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+          'all_products': { label: t('discounts:allProducts'), shortLabel: t('discounts:scopeAll'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+          'specific_category': { label: t('discounts:specificCategory'), shortLabel: t('discounts:scopeCategory'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
+          'selected_products': { label: t('discounts:selectedProducts'), shortLabel: t('discounts:scopeSelected'), color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' },
         };
         const scope = scopes[sale.applicationScope] || { label: sale.applicationScope, shortLabel: sale.applicationScope, color: 'bg-slate-100 text-slate-800' };
         return (
@@ -234,12 +236,12 @@ export default function AllDiscounts() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('common:status'),
       cell: (sale) => {
         const statusMap: Record<string, { label: string; color: string }> = {
-          'active': { label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-          'inactive': { label: 'Inactive', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
-          'finished': { label: 'Finished', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+          'active': { label: t('discounts:active'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+          'inactive': { label: t('discounts:inactive'), color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
+          'finished': { label: t('discounts:finished'), color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
         };
         const status = statusMap[sale.status] || { label: sale.status, color: 'bg-slate-100 text-slate-800' };
         return (
@@ -251,7 +253,7 @@ export default function AllDiscounts() {
     },
     {
       key: "validFrom",
-      header: "Valid From",
+      header: t('discounts:validFrom'),
       sortable: true,
       className: "hidden lg:table-cell",
       cell: (sale) => (
@@ -263,7 +265,7 @@ export default function AllDiscounts() {
     },
     {
       key: "validTo",
-      header: "Valid To",
+      header: t('discounts:validTo'),
       sortable: true,
       className: "hidden lg:table-cell",
       cell: (sale) => (
@@ -293,27 +295,27 @@ export default function AllDiscounts() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Activate",
+      label: t('discounts:activate'),
       action: (sales: any[]) => {
         toast({
-          title: "Activate Sales",
-          description: `Activating ${sales.length} sales...`,
+          title: t('discounts:activateSales'),
+          description: t('discounts:activatingCount', { count: sales.length }),
         });
       },
     },
     {
       type: "button" as const,
-      label: "Deactivate",
+      label: t('discounts:deactivate'),
       action: (sales: any[]) => {
         toast({
-          title: "Deactivate Sales",
-          description: `Deactivating ${sales.length} sales...`,
+          title: t('discounts:deactivateSales'),
+          description: t('discounts:deactivatingCount', { count: sales.length }),
         });
       },
     },
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('common:delete'),
       variant: "destructive" as const,
       action: (sales: any[]) => {
         setSelectedSales(sales);
@@ -322,11 +324,11 @@ export default function AllDiscounts() {
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('common:export'),
       action: (sales: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${sales.length} discounts...`,
+          title: t('common:export'),
+          description: t('discounts:exportingCount', { count: sales.length }),
         });
       },
     },
@@ -341,37 +343,37 @@ export default function AllDiscounts() {
   const handleExportXLSX = () => {
     try {
       const exportData = filteredSales.map(sale => ({
-        'Code': sale.discountId || '-',
-        'Description': sale.name || '-',
-        'Type': sale.type === 'percentage' ? 'Percentage' 
-          : sale.type === 'fixed' ? 'Fixed Amount' 
-          : sale.type === 'buy_x_get_y' ? 'Buy X Get Y' 
+        [t('discounts:exportCode')]: sale.discountId || '-',
+        [t('discounts:exportDescription')]: sale.name || '-',
+        [t('discounts:exportType')]: sale.type === 'percentage' ? t('discounts:percentage')
+          : sale.type === 'fixed' ? t('discounts:fixedAmount')
+          : sale.type === 'buy_x_get_y' ? t('discounts:buyXGetY')
           : sale.type || '-',
-        'Value': sale.type === 'percentage' ? `${sale.percentage}%`
+        [t('discounts:exportValue')]: sale.type === 'percentage' ? `${sale.percentage}%`
           : sale.type === 'fixed' ? `$${sale.value}`
           : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
           : '-',
-        'Min Purchase': sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
-        'Max Uses': sale.maxUses || 'Unlimited',
-        'Valid From': format(new Date(sale.startDate), 'dd/MM/yyyy'),
-        'Valid Until': format(new Date(sale.endDate), 'dd/MM/yyyy'),
-        'Status': sale.status === 'active' ? 'Active' 
-          : sale.status === 'inactive' ? 'Inactive' 
-          : sale.status === 'finished' ? 'Finished' 
+        [t('discounts:exportMinPurchase')]: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
+        [t('discounts:exportMaxUses')]: sale.maxUses || t('discounts:unlimited'),
+        [t('discounts:exportValidFrom')]: format(new Date(sale.startDate), 'dd/MM/yyyy'),
+        [t('discounts:exportValidUntil')]: format(new Date(sale.endDate), 'dd/MM/yyyy'),
+        [t('discounts:exportStatus')]: sale.status === 'active' ? t('discounts:active')
+          : sale.status === 'inactive' ? t('discounts:inactive')
+          : sale.status === 'finished' ? t('discounts:finished')
           : sale.status || '-',
       }));
 
-      exportToXLSX(exportData, `Discounts_${format(new Date(), 'yyyy-MM-dd')}`, 'Discounts');
+      exportToXLSX(exportData, t('discounts:exportFilename', { date: format(new Date(), 'yyyy-MM-dd') }), t('discounts:pageTitle'));
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} discount(s) to XLSX`,
+        title: t('common:exportSuccessful'),
+        description: t('discounts:exportedToXLSX', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export discounts to XLSX",
+        title: t('common:exportFailed'),
+        description: t('discounts:exportFailedXLSX'),
         variant: "destructive",
       });
     }
@@ -382,47 +384,47 @@ export default function AllDiscounts() {
       const exportData = filteredSales.map(sale => ({
         code: sale.discountId || '-',
         description: sale.name || '-',
-        type: sale.type === 'percentage' ? 'Percentage' 
-          : sale.type === 'fixed' ? 'Fixed Amount' 
-          : sale.type === 'buy_x_get_y' ? 'Buy X Get Y' 
+        type: sale.type === 'percentage' ? t('discounts:percentage')
+          : sale.type === 'fixed' ? t('discounts:fixedAmount')
+          : sale.type === 'buy_x_get_y' ? t('discounts:buyXGetY')
           : sale.type || '-',
         value: sale.type === 'percentage' ? `${sale.percentage}%`
           : sale.type === 'fixed' ? `$${sale.value}`
           : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
           : '-',
         minPurchase: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
-        maxUses: sale.maxUses || 'Unlimited',
+        maxUses: sale.maxUses || t('discounts:unlimited'),
         validFrom: format(new Date(sale.startDate), 'dd/MM/yyyy'),
         validUntil: format(new Date(sale.endDate), 'dd/MM/yyyy'),
-        status: sale.status === 'active' ? 'Active' 
-          : sale.status === 'inactive' ? 'Inactive' 
-          : sale.status === 'finished' ? 'Finished' 
+        status: sale.status === 'active' ? t('discounts:active')
+          : sale.status === 'inactive' ? t('discounts:inactive')
+          : sale.status === 'finished' ? t('discounts:finished')
           : sale.status || '-',
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'code', header: 'Code' },
-        { key: 'description', header: 'Description' },
-        { key: 'type', header: 'Type' },
-        { key: 'value', header: 'Value' },
-        { key: 'minPurchase', header: 'Min Purchase' },
-        { key: 'maxUses', header: 'Max Uses' },
-        { key: 'validFrom', header: 'Valid From' },
-        { key: 'validUntil', header: 'Valid Until' },
-        { key: 'status', header: 'Status' },
+        { key: 'code', header: t('discounts:exportCode') },
+        { key: 'description', header: t('discounts:exportDescription') },
+        { key: 'type', header: t('discounts:exportType') },
+        { key: 'value', header: t('discounts:exportValue') },
+        { key: 'minPurchase', header: t('discounts:exportMinPurchase') },
+        { key: 'maxUses', header: t('discounts:exportMaxUses') },
+        { key: 'validFrom', header: t('discounts:exportValidFrom') },
+        { key: 'validUntil', header: t('discounts:exportValidUntil') },
+        { key: 'status', header: t('discounts:exportStatus') },
       ];
 
-      exportToPDF('Discounts Report', exportData, columns, `Discounts_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('discounts:exportReport'), exportData, columns, t('discounts:exportFilename', { date: format(new Date(), 'yyyy-MM-dd') }));
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} discount(s) to PDF`,
+        title: t('common:exportSuccessful'),
+        description: t('discounts:exportedToPDF', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export discounts to PDF",
+        title: t('common:exportFailed'),
+        description: t('discounts:exportFailedPDF'),
         variant: "destructive",
       });
     }
@@ -436,7 +438,7 @@ export default function AllDiscounts() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading discounts...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('discounts:loadingDiscounts')}</p>
         </div>
       </div>
     );
@@ -448,10 +450,10 @@ export default function AllDiscounts() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Discount Management
+            {t('discounts:pageTitle')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Manage promotional discounts and special offers
+            {t('discounts:pageSubtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -459,26 +461,26 @@ export default function AllDiscounts() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('common:export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('common:exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export as XLSX
+                {t('common:exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t('common:exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/discounts/add">
             <Button data-testid="button-add-discount">
               <Plus className="h-4 w-4 mr-2" />
-              Add Discount
+              {t('discounts:addDiscount')}
             </Button>
           </Link>
         </div>
@@ -492,7 +494,7 @@ export default function AllDiscounts() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Discounts
+                  {t('discounts:totalDiscounts')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -502,7 +504,7 @@ export default function AllDiscounts() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{(sales?.length || 0).toLocaleString()} discounts</p>
+                      <p className="font-mono">{t('discounts:tooltipDiscounts', { count: sales?.length || 0 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -520,7 +522,7 @@ export default function AllDiscounts() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Active
+                  {t('discounts:activeDiscounts')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -530,7 +532,7 @@ export default function AllDiscounts() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{activeDiscounts.toLocaleString()} active discounts</p>
+                      <p className="font-mono">{t('discounts:tooltipActive', { count: activeDiscounts })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -548,7 +550,7 @@ export default function AllDiscounts() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Expired
+                  {t('discounts:expiredDiscounts')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -558,7 +560,7 @@ export default function AllDiscounts() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{expiredDiscounts.toLocaleString()} expired discounts</p>
+                      <p className="font-mono">{t('discounts:tooltipExpired', { count: expiredDiscounts })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -576,7 +578,7 @@ export default function AllDiscounts() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Wide-Scope Offers
+                  {t('discounts:wideScopeOffers')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -586,7 +588,7 @@ export default function AllDiscounts() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{totalSavings.toLocaleString()} discounts applying to multiple products</p>
+                      <p className="font-mono">{t('discounts:discountsApplyingToMultiple', { count: totalSavings })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -660,9 +662,9 @@ export default function AllDiscounts() {
               // Helper functions for mobile view
               const getTypeInfo = () => {
                 const types: Record<string, { label: string; color: string }> = {
-                  'percentage': { label: 'Percentage', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
-                  'fixed': { label: 'Fixed', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
-                  'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
+                  'percentage': { label: t('discounts:percentage'), color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
+                  'fixed': { label: t('discounts:fixed'), color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
+                  'buy_x_get_y': { label: t('discounts:buyXGetY'), color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
                 };
                 return types[sale.type] || { label: sale.type || '-', color: 'bg-slate-50 text-slate-700 border-slate-200' };
               };
@@ -673,22 +675,22 @@ export default function AllDiscounts() {
                 } else if (sale.type === 'fixed') {
                   return `$${sale.value}`;
                 } else if (sale.type === 'buy_x_get_y') {
-                  return `Buy ${sale.buyQuantity} Get ${sale.getQuantity}`;
+                  return t('discounts:buyXGetYValue', { buy: sale.buyQuantity, get: sale.getQuantity });
                 }
                 return '-';
               };
 
               const getStatusInfo = () => {
                 const statusMap: Record<string, { label: string; color: string }> = {
-                  'active': { label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-                  'inactive': { label: 'Inactive', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
-                  'finished': { label: 'Finished', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+                  'active': { label: t('discounts:active'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                  'inactive': { label: t('discounts:inactive'), color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
+                  'finished': { label: t('discounts:finished'), color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
                 };
                 const status = statusMap[sale.status] || { label: sale.status, color: 'bg-slate-100 text-slate-800' };
                 
                 // Check if expired
                 if (isSaleExpired(sale)) {
-                  return { label: 'Expired', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
+                  return { label: t('discounts:expired'), color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
                 }
                 
                 return status;
@@ -714,7 +716,7 @@ export default function AllDiscounts() {
                           </Badge>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                          {sale.discountId || 'No Code'}
+                          {sale.discountId || t('discounts:noCode')}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -731,7 +733,7 @@ export default function AllDiscounts() {
 
                     {/* Discount Value Display */}
                     <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg p-3 border border-cyan-100 dark:border-cyan-900">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Discount Value</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('discounts:discountValue')}</p>
                       <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
                         {getValueDisplay()}
                       </p>
@@ -740,7 +742,7 @@ export default function AllDiscounts() {
                     {/* Middle Row - Key Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Valid From</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">{t('discounts:validFrom')}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Calendar className="h-3 w-3 text-gray-400" />
                           <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">
@@ -749,7 +751,7 @@ export default function AllDiscounts() {
                         </div>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Valid To</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">{t('discounts:validTo')}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Calendar className="h-3 w-3 text-gray-400" />
                           <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">
@@ -762,15 +764,15 @@ export default function AllDiscounts() {
                     {/* Additional Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-slate-800">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Usage Limit</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">{t('discounts:usageLimit')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100 text-sm mt-1">
-                          {sale.maxUses ? `${sale.maxUses} uses` : 'Unlimited'}
+                          {sale.maxUses ? t('discounts:usesCount', { count: sale.maxUses }) : t('discounts:unlimited')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Min Purchase</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">{t('discounts:minPurchase')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100 text-sm mt-1">
-                          {sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : 'None'}
+                          {sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : t('discounts:none')}
                         </p>
                       </div>
                     </div>
@@ -781,19 +783,19 @@ export default function AllDiscounts() {
                         {sale.applicationScope && (
                           <div className="flex items-center gap-1">
                             <Tag className="h-3 w-3 text-slate-400" />
-                            <span className="text-gray-600 dark:text-gray-400">Scope:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('discounts:scope')}:</span>
                             <span className="font-medium text-gray-900 dark:text-gray-100">
-                              {sale.applicationScope === 'all_products' ? 'All Products' :
-                               sale.applicationScope === 'specific_product' ? 'Specific Product' :
-                               sale.applicationScope === 'specific_category' ? 'Specific Category' :
-                               sale.applicationScope === 'selected_products' ? 'Selected Products' :
+                              {sale.applicationScope === 'all_products' ? t('discounts:allProducts') :
+                               sale.applicationScope === 'specific_product' ? t('discounts:specificProduct') :
+                               sale.applicationScope === 'specific_category' ? t('discounts:specificCategory') :
+                               sale.applicationScope === 'selected_products' ? t('discounts:selectedProducts') :
                                sale.applicationScope}
                             </span>
                           </div>
                         )}
                         {sale.customerRestrictions && (
                           <div className="flex items-center gap-1 mt-1">
-                            <span className="text-gray-600 dark:text-gray-400">Restrictions:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('discounts:restrictions')}:</span>
                             <span className="font-medium text-gray-900 dark:text-gray-100">
                               {sale.customerRestrictions}
                             </span>
@@ -808,8 +810,8 @@ export default function AllDiscounts() {
             {filteredSales.length === 0 && (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <Tag className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No discounts found</p>
-                <p className="text-sm mt-1">Try adjusting your search criteria</p>
+                <p className="font-medium">{t('discounts:noDiscountsFound')}</p>
+                <p className="text-sm mt-1">{t('discounts:tryAdjustingSearch')}</p>
               </div>
             )}
           </div>
@@ -859,15 +861,15 @@ export default function AllDiscounts() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Discounts</AlertDialogTitle>
+            <AlertDialogTitle>{t('discounts:deleteDiscounts')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedSales.length} discount(s)? This action cannot be undone.
+              {t('discounts:confirmDelete', { count: selectedSales.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

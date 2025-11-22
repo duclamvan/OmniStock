@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
@@ -82,6 +83,7 @@ interface Product {
 }
 
 export default function CreatePurchase() {
+  const { t } = useTranslation('imports');
   const [, navigate] = useLocation();
   const params = useParams();
   const purchaseId = params.id ? parseInt(params.id) : null;
@@ -417,13 +419,13 @@ export default function CreatePurchase() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Purchase created successfully" });
+      toast({ title: t('success'), description: t('purchaseCreated') });
       navigate('/purchase-orders');
     },
     onError: () => {
       toast({ 
-        title: "Error", 
-        description: "Failed to create purchase order", 
+        title: t('error'), 
+        description: t('purchaseCreatedFailed'), 
         variant: "destructive" 
       });
     }
@@ -446,13 +448,13 @@ export default function CreatePurchase() {
         queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       }
       
-      toast({ title: "Success", description: "Purchase updated successfully" });
+      toast({ title: t('success'), description: t('purchaseUpdated') });
       navigate('/purchase-orders');
     },
     onError: () => {
       toast({ 
-        title: "Error", 
-        description: "Failed to update purchase order", 
+        title: t('error'), 
+        description: t('purchaseUpdatedFailed'), 
         variant: "destructive" 
       });
     }
@@ -489,8 +491,8 @@ export default function CreatePurchase() {
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "File too large",
-          description: "Please select an image smaller than 10MB",
+          title: t('fileTooLarge'),
+          description: t('fileTooLargeDesc'),
           variant: "destructive"
         });
         return;
@@ -534,8 +536,8 @@ export default function CreatePurchase() {
   const suggestStorageLocation = async () => {
     if (!currentItem.name) {
       toast({
-        title: "Product name required",
-        description: "Please enter a product name before getting location suggestion",
+        title: t('productNameRequired'),
+        description: t('productNameRequiredDesc'),
         variant: "destructive"
       });
       return;
@@ -561,14 +563,14 @@ export default function CreatePurchase() {
       });
       
       toast({
-        title: "Location suggested",
+        title: t('locationSuggested'),
         description: `${data.reasoning} (${data.accessibility} accessibility)`,
       });
     } catch (error) {
       console.error("Error suggesting location:", error);
       toast({
-        title: "Suggestion failed",
-        description: "Could not generate storage location suggestion",
+        title: t('suggestionFailed'),
+        description: t('suggestionFailedDesc'),
         variant: "destructive"
       });
     } finally {
@@ -664,8 +666,8 @@ export default function CreatePurchase() {
   const addItem = () => {
     if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
       toast({ 
-        title: "Validation Error", 
-        description: "Please fill in item name, quantity and unit price", 
+        title: t('validationError'), 
+        description: t('pleaseFillItemFields'), 
         variant: "destructive" 
       });
       return;
@@ -723,8 +725,8 @@ export default function CreatePurchase() {
   const saveNewCategory = async () => {
     if (!newCategoryName.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a category name",
+        title: t('error'),
+        description: t('enterCategoryNamePlaceholder'),
         variant: "destructive"
       });
       return;
@@ -756,16 +758,16 @@ export default function CreatePurchase() {
         setNewCategoryName("");
         setNewCategoryDialogOpen(false);
         toast({
-          title: "Success",
-          description: "Category added successfully"
+          title: t('success'),
+          description: t('categoryAddedSuccess')
         });
       } else {
         throw new Error('Failed to save category');
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save category",
+        title: t('error'),
+        description: t('categoryAddFailed'),
         variant: "destructive"
       });
     } finally {
@@ -792,8 +794,8 @@ export default function CreatePurchase() {
       });
       setVariantDialogOpen(false);
       toast({
-        title: "Success",
-        description: "Variant added successfully",
+        title: t('success'),
+        description: t('variantAddedSuccess'),
       });
     }
   };
@@ -802,8 +804,8 @@ export default function CreatePurchase() {
   const addVariantSeries = () => {
     if (!seriesInput.trim() || !currentItem.name) {
       toast({
-        title: "Error",
-        description: "Please enter a series pattern",
+        title: t('error'),
+        description: t('enterSeriesPattern'),
         variant: "destructive",
       });
       return;
@@ -818,8 +820,8 @@ export default function CreatePurchase() {
       
       if (end - start > 200) {
         toast({
-          title: "Error",
-          description: "Series range too large. Maximum 200 variants at once.",
+          title: t('error'),
+          description: t('seriesRangeTooLarge'),
           variant: "destructive",
         });
         return;
@@ -846,13 +848,13 @@ export default function CreatePurchase() {
       setSeriesWeight(currentItem.weight || 0);
       setSeriesDialogOpen(false);
       toast({
-        title: "Success",
+        title: t('success'),
         description: `Added ${newVariantsArray.length} variants`,
       });
     } else {
       toast({
-        title: "Error",
-        description: "Use format like 'Size <1-10>' to create series",
+        title: t('error'),
+        description: t('formatExample'),
         variant: "destructive",
       });
     }
@@ -882,8 +884,8 @@ export default function CreatePurchase() {
   const addVariantsAsItems = () => {
     if (!currentItem.name) {
       toast({
-        title: "Error",
-        description: "Please enter the main product name first",
+        title: t('error'),
+        description: t('enterMainProductName'),
         variant: "destructive",
       });
       return;
@@ -936,7 +938,7 @@ export default function CreatePurchase() {
     setProductImagePreview(null);
     
     toast({
-      title: "Success",
+      title: t('success'),
       description: `Added ${variantItems.length} items`,
     });
   };
@@ -962,8 +964,8 @@ export default function CreatePurchase() {
   const handleSubmit = async () => {
     if (!supplier) {
       toast({ 
-        title: "Validation Error", 
-        description: "Please select or add a supplier", 
+        title: t('validationError'), 
+        description: t('pleaseSelectSupplier'), 
         variant: "destructive" 
       });
       return;
@@ -971,8 +973,8 @@ export default function CreatePurchase() {
 
     if (items.length === 0) {
       toast({ 
-        title: "Validation Error", 
-        description: "Please add at least one item", 
+        title: t('validationError'), 
+        description: t('pleaseAddAtLeastOneItem'), 
         variant: "destructive" 
       });
       return;
@@ -1095,11 +1097,11 @@ export default function CreatePurchase() {
               className="hidden md:flex"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Purchase Orders
+              {t('backToPurchaseOrders')}
             </Button>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">{isEditMode ? 'Edit Purchase' : 'Create Purchase'}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{isEditMode ? 'Update purchase details' : 'Add supplier purchase with multiple items'}</p>
+              <h1 className="text-lg md:text-2xl font-semibold">{isEditMode ? t('editPurchase') : t('createPurchase')}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{isEditMode ? t('updateImportOrder') : t('basicDetailsSupplier')}</p>
             </div>
           </div>
           <div className="hidden md:flex gap-2">
@@ -1108,7 +1110,7 @@ export default function CreatePurchase() {
               onClick={() => navigate('/purchase-orders')}
               data-testid="button-cancel"
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               onClick={handleSubmit}
@@ -1116,7 +1118,7 @@ export default function CreatePurchase() {
               data-testid="button-save-purchase"
             >
               <Save className="h-4 w-4 mr-2" />
-              {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update" : "Create")}
+              {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? t('updating') : t('creating')) : (isEditMode ? t('update') : t('create'))}
             </Button>
           </div>
         </div>
@@ -1131,7 +1133,7 @@ export default function CreatePurchase() {
             data-testid="button-cancel-mobile"
             className="flex-1"
           >
-            Cancel
+            {t('cancel')}
           </Button>
           <Button 
             onClick={handleSubmit}
@@ -1140,7 +1142,7 @@ export default function CreatePurchase() {
             className="flex-1"
           >
             <Save className="h-4 w-4 mr-2" />
-            {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update" : "Create")}
+            {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? t('updating') : t('creating')) : (isEditMode ? t('update') : t('create'))}
           </Button>
         </div>
       </div>
@@ -1152,13 +1154,13 @@ export default function CreatePurchase() {
           {/* Supplier Information */}
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Supplier Information</CardTitle>
-              <CardDescription>Basic details about the supplier and order</CardDescription>
+              <CardTitle>{t('supplierInformation')}</CardTitle>
+              <CardDescription>{t('basicDetailsSupplier')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="purchase-currency">Purchase Currency *</Label>
+                  <Label htmlFor="purchase-currency">{t('currency')} *</Label>
                   <Select value={purchaseCurrency} onValueChange={(value) => {
                     if (value === "add-new") {
                       setAddingCurrency(true);
@@ -1170,25 +1172,25 @@ export default function CreatePurchase() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
-                      <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
-                      <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                      <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
+                      <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
+                      <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
+                      <SelectItem value="VND">{t('currencyVND')}</SelectItem>
+                      <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
                       {customCurrencies.map(currency => (
                         <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                       ))}
                       <div className="border-t">
                         <SelectItem value="add-new">
                           <Plus className="mr-2 h-4 w-4 inline" />
-                          Add New Currency
+                          {t('addNewCurrency')}
                         </SelectItem>
                       </div>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="payment-currency">Payment Currency *</Label>
+                  <Label htmlFor="payment-currency">{t('paymentCurrency')} *</Label>
                   <div className="flex gap-2">
                     <Select value={paymentCurrency} onValueChange={(value) => {
                       if (value === "add-new") {
@@ -1213,7 +1215,7 @@ export default function CreatePurchase() {
                         <div className="border-t">
                           <SelectItem value="add-new">
                             <Plus className="mr-2 h-4 w-4 inline" />
-                            Add New Currency
+                            {t('addNewCurrency')}
                           </SelectItem>
                         </div>
                       </SelectContent>
@@ -1223,7 +1225,7 @@ export default function CreatePurchase() {
                         type="number"
                         value={totalPaid}
                         onChange={(e) => setTotalPaid(parseFloat(e.target.value) || 0)}
-                        placeholder="Total Paid"
+                        placeholder={t('totalPaid')}
                         className="pl-8"
                         step="0.01"
                         min="0"
@@ -1236,14 +1238,14 @@ export default function CreatePurchase() {
                   </div>
                   {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      Grand total in {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
+                      {t('grandTotalIn')} {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
                     </div>
                   )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="supplier">Supplier Name *</Label>
+                  <Label htmlFor="supplier">{t('supplierName')} *</Label>
                   <div className="relative" ref={supplierDropdownRef}>
                     <Input
                       id="supplier"
@@ -1254,7 +1256,7 @@ export default function CreatePurchase() {
                         setSupplierDropdownOpen(true);
                       }}
                       onFocus={() => setSupplierDropdownOpen(true)}
-                      placeholder="Type to search suppliers..."
+                      placeholder={t('typeToSearchSuppliers')}
                       data-testid="input-supplier"
                     />
                     {supplierDropdownOpen && (
@@ -1263,7 +1265,7 @@ export default function CreatePurchase() {
                         {!supplier && enhancedFrequentSuppliers.length > 0 && (
                           <>
                             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
-                              Frequent Suppliers
+                              {t('frequentSuppliers')}
                             </div>
                             {enhancedFrequentSuppliers.slice(0, 5).map((s) => (
                               <button
@@ -1283,7 +1285,7 @@ export default function CreatePurchase() {
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                                  <span className="text-xs font-medium text-primary">{s.count} orders</span>
+                                  <span className="text-xs font-medium text-primary">{s.count} {t('orders')}</span>
                                   <span className="text-[10px] text-muted-foreground">
                                     {new Date(s.lastUsed).toLocaleDateString()}
                                   </span>
@@ -1324,7 +1326,7 @@ export default function CreatePurchase() {
                               ))
                             ) : (
                               <div className="p-3">
-                                <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
+                                <p className="text-sm text-muted-foreground mb-2">{t('noSupplierFound')}</p>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1334,7 +1336,7 @@ export default function CreatePurchase() {
                                   className="w-full"
                                 >
                                   <UserPlus className="mr-2 h-4 w-4" />
-                                  Go to Suppliers page to add "{supplier}"
+                                  {t('goToSuppliersPage')} "{supplier}"
                                 </Button>
                               </div>
                             )}
@@ -1347,7 +1349,7 @@ export default function CreatePurchase() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="purchase-date">Purchase Date *</Label>
+                  <Label htmlFor="purchase-date">{t('purchaseDate')} *</Label>
                   <Input
                     id="purchase-date"
                     type="datetime-local"
@@ -1357,7 +1359,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="processing">Processing Time</Label>
+                  <Label htmlFor="processing">{t('processingTime')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="processing"
@@ -1374,9 +1376,9 @@ export default function CreatePurchase() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="days">Days</SelectItem>
-                        <SelectItem value="weeks">Weeks</SelectItem>
-                        <SelectItem value="months">Months</SelectItem>
+                        <SelectItem value="days">{t('days')}</SelectItem>
+                        <SelectItem value="weeks">{t('weeks')}</SelectItem>
+                        <SelectItem value="months">{t('months')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1385,7 +1387,7 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="shipping-currency">Shipping Currency</Label>
+                    <Label htmlFor="shipping-currency">{t('shippingCurrency')}</Label>
                     <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
                       <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
                         <SelectValue />
@@ -1400,7 +1402,7 @@ export default function CreatePurchase() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="shipping">Shipping Cost</Label>
+                    <Label htmlFor="shipping">{t('shippingCost')}</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
                       <Input
@@ -1417,19 +1419,19 @@ export default function CreatePurchase() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tracking">Tracking Number</Label>
+                  <Label htmlFor="tracking">{t('trackingNumber')}</Label>
                   <Input
                     id="tracking"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder="Optional tracking number"
+                    placeholder={t('optionalTracking')}
                     data-testid="input-tracking"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="consolidation">Consolidation?</Label>
+                  <Label htmlFor="consolidation">{t('consolidation')}?</Label>
                   <Select 
                     value={consolidation} 
                     onValueChange={setConsolidation}
@@ -1438,23 +1440,23 @@ export default function CreatePurchase() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Yes">Yes</SelectItem>
-                      <SelectItem value="No">No</SelectItem>
+                      <SelectItem value="Yes">{t('yes')}</SelectItem>
+                      <SelectItem value="No">{t('no')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {purchaseCurrency === "EUR" && (
-                    <p className="text-xs text-muted-foreground">Auto-selected to "No" for EUR purchases (editable)</p>
+                    <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
                   )}
                 </div>
                 <div></div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t('notes')}</Label>
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional notes about this purchase..."
+                  placeholder={t('additionalNotes')}
                   rows={3}
                   data-testid="textarea-notes"
                 />
@@ -1465,8 +1467,8 @@ export default function CreatePurchase() {
           {/* Add Item Form */}
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Add Items</CardTitle>
-              <CardDescription>Add products to this purchase order</CardDescription>
+              <CardTitle>{t('addItems')}</CardTitle>
+              <CardDescription>{t('addProductsToPurchase')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Product Image Section */}
@@ -1483,7 +1485,7 @@ export default function CreatePurchase() {
                       <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="text-center text-white">
                           <ImageIcon className="h-6 w-6 mx-auto mb-1" />
-                          <p className="text-xs">Existing Product</p>
+                          <p className="text-xs">{t('existingProduct')}</p>
                         </div>
                       </div>
                     </div>
@@ -1492,7 +1494,7 @@ export default function CreatePurchase() {
                     <div className="relative">
                       <img
                         src={productImagePreview}
-                        alt="Product preview"
+                        alt={t('productPreview')}
                         className="w-32 h-32 object-contain rounded-lg border-2 border-primary bg-slate-50"
                       />
                       <Button
@@ -1510,7 +1512,7 @@ export default function CreatePurchase() {
                       <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="text-center text-white">
                           <Upload className="h-6 w-6 mx-auto mb-1" />
-                          <p className="text-xs">New Image</p>
+                          <p className="text-xs">{t('newImage')}</p>
                         </div>
                       </div>
                     </div>
@@ -1527,7 +1529,7 @@ export default function CreatePurchase() {
                       <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
                         <Upload className="h-8 w-8 text-gray-400 mb-2" />
                         <p className="text-xs text-gray-500 text-center">
-                          {currentItem.name ? "Upload Image" : "Select product first"}
+                          {currentItem.name ? t('uploadImage') : t('selectProductFirst')}
                         </p>
                       </div>
                     </label>
@@ -1546,14 +1548,14 @@ export default function CreatePurchase() {
                     className="text-xs"
                   >
                     <RotateCcw className="h-3 w-3 mr-1" />
-                    Clear Selection
+                    {t('clearSelection')}
                   </Button>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="itemName">Item Name *</Label>
+                  <Label htmlFor="itemName">{t('itemName')} *</Label>
                   <div className="relative" ref={productDropdownRef}>
                     <Input
                       id="itemName"
@@ -1564,7 +1566,7 @@ export default function CreatePurchase() {
                         setProductDropdownOpen(true);
                       }}
                       onFocus={() => setProductDropdownOpen(true)}
-                      placeholder="Type to search products..."
+                      placeholder={t('typeToSearchProducts')}
                       data-testid="input-item-name"
                     />
                     {productDropdownOpen && currentItem.name && (
@@ -1594,7 +1596,7 @@ export default function CreatePurchase() {
                           </div>
                         ) : (
                           <div className="p-2">
-                            <p className="text-sm text-muted-foreground mb-2">No product found</p>
+                            <p className="text-sm text-muted-foreground mb-2">{t('noProductFound')}</p>
                             <Button
                               size="sm"
                               variant="outline"
@@ -1605,7 +1607,7 @@ export default function CreatePurchase() {
                               data-testid="button-add-new-product"
                             >
                               <Plus className="mr-2 h-4 w-4" />
-                              Go to Products page to add "{currentItem.name}"
+                              {t('goToProductsPage')} "{currentItem.name}"
                             </Button>
                           </div>
                         )}
@@ -1614,19 +1616,19 @@ export default function CreatePurchase() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU/Code</Label>
+                  <Label htmlFor="sku">{t('sku')}</Label>
                   <Input
                     id="sku"
                     value={currentItem.sku}
                     onChange={(e) => setCurrentItem({...currentItem, sku: e.target.value})}
-                    placeholder="Auto-filled or enter manually"
+                    placeholder={t('autoFilledOrEnterManually')}
                     data-testid="input-sku"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Item Category</Label>
+                  <Label htmlFor="category">{t('category')}</Label>
                   <div className="relative" ref={categoryDropdownRef}>
                     <div 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1635,8 +1637,8 @@ export default function CreatePurchase() {
                     >
                       <span className={currentItem.categoryId ? "text-foreground" : "text-muted-foreground"}>
                         {currentItem.categoryId 
-                          ? categories.find(c => c.id === currentItem.categoryId)?.name || "Select a category"
-                          : "Select a category"
+                          ? categories.find(c => c.id === currentItem.categoryId)?.name || t('selectACategory')
+                          : t('selectACategory')
                         }
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -1669,7 +1671,7 @@ export default function CreatePurchase() {
                             }}
                           >
                             <Plus className="h-3 w-3 mr-2" />
-                            Add new category
+                            {t('addNewCategory')}
                           </div>
                         </div>
                       </div>
@@ -1677,19 +1679,19 @@ export default function CreatePurchase() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="barcode">Barcode (EAN-13)</Label>
+                  <Label htmlFor="barcode">{t('barcode')}</Label>
                   <Input
                     id="barcode"
                     value={currentItem.barcode}
                     onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
-                    placeholder="e.g., 1234567890123"
+                    placeholder={t('barcodeExample')}
                     data-testid="input-barcode"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Label htmlFor="quantity">{t('quantity')} *</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -1700,7 +1702,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unitPrice">Unit Price ({purchaseCurrency}) *</Label>
+                  <Label htmlFor="unitPrice">{t('unitPrice')} ({purchaseCurrency}) *</Label>
                   <Input
                     id="unitPrice"
                     type="number"
@@ -1711,7 +1713,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Label htmlFor="weight">{t('weight')} (kg)</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -1728,7 +1730,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dimensions">Dimensions</Label>
+                  <Label htmlFor="dimensions">{t('dimensions')}</Label>
                   <Input
                     id="dimensions"
                     value={currentItem.dimensions}
@@ -1747,25 +1749,25 @@ export default function CreatePurchase() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="itemNotes">Item Notes</Label>
+                <Label htmlFor="itemNotes">{t('itemNotes')}</Label>
                 <Input
                   id="itemNotes"
                   value={currentItem.notes}
                   onChange={(e) => setCurrentItem({...currentItem, notes: e.target.value})}
-                  placeholder="Optional notes for this item"
+                  placeholder={t('optionalNotes')}
                   data-testid="input-item-notes"
                 />
               </div>
               
               {/* AI Storage Location Suggestion */}
               <div className="space-y-2">
-                <Label htmlFor="binLocation">Storage Location</Label>
+                <Label htmlFor="binLocation">{t('storageLocation')}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="binLocation"
                     value={currentItem.binLocation || ""}
                     onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
-                    placeholder="e.g., WH1-A06-R04-L02-B3"
+                    placeholder={t('storageLocationExample')}
                     data-testid="input-bin-location"
                     className="flex-1"
                   />
@@ -1780,18 +1782,18 @@ export default function CreatePurchase() {
                     {suggestingLocation ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        AI Suggesting...
+                        {t('aiSuggesting')}...
                       </>
                     ) : (
                       <>
                         <Search className="h-4 w-4" />
-                        AI Suggest
+                        {t('aiSuggest')}
                       </>
                     )}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  AI analyzes sales frequency, inventory age, and category to suggest optimal location
+                  {t('aiStorageLocationDescription')}
                 </p>
               </div>
               
@@ -1804,7 +1806,7 @@ export default function CreatePurchase() {
                     onCheckedChange={(checked) => setShowVariants(!!checked)}
                   />
                   <Label htmlFor="show-variants" className="text-sm font-medium">
-                    Add as multiple variants (e.g., different sizes, colors)
+                    {t('addAsMultipleVariants')}
                   </Label>
                 </div>
               )}
@@ -1814,9 +1816,9 @@ export default function CreatePurchase() {
                 <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium">Product Variants</h4>
+                      <h4 className="text-sm font-medium">{t('productVariants')}</h4>
                       <p className="text-xs text-muted-foreground">
-                        Add variants of {currentItem.name}
+                        {t('addVariantsOf')} {currentItem.name}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1827,7 +1829,7 @@ export default function CreatePurchase() {
                         onClick={() => setVariantDialogOpen(true)}
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Add Variant
+                        {t('addVariant')}
                       </Button>
                       <Button
                         type="button"
@@ -1836,7 +1838,7 @@ export default function CreatePurchase() {
                         onClick={() => setSeriesDialogOpen(true)}
                       >
                         <ListPlus className="h-4 w-4 mr-1" />
-                        Add Series
+                        {t('addSeries')}
                       </Button>
                     </div>
                   </div>
@@ -1851,13 +1853,13 @@ export default function CreatePurchase() {
                             onCheckedChange={toggleSelectAllVariants}
                           />
                           <span className="text-sm text-muted-foreground">
-                            {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
+                            {selectedVariants.length > 0 ? `${selectedVariants.length} ${t('selected')}` : `${variants.length} ${t('variants')}`}
                           </span>
                         </div>
                         {selectedVariants.length > 0 && (
                           <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
                             <Trash2 className="h-4 w-4 mr-1" />
-                            Delete ({selectedVariants.length})
+                            {t('delete')} ({selectedVariants.length})
                           </Button>
                         )}
                       </div>
@@ -1873,11 +1875,11 @@ export default function CreatePurchase() {
                                   className="h-3 w-3"
                                 />
                               </TableHead>
-                              <TableHead className="w-24 p-2">Variant Name</TableHead>
-                              <TableHead className="w-16 p-2">SKU</TableHead>
-                              <TableHead className="text-center w-12 p-2">Qty</TableHead>
-                              <TableHead className="text-right w-16 p-2">Price</TableHead>
-                              <TableHead className="text-right w-16 p-2">Weight</TableHead>
+                              <TableHead className="w-24 p-2">{t('variantName')}</TableHead>
+                              <TableHead className="w-16 p-2">{t('sku')}</TableHead>
+                              <TableHead className="text-center w-12 p-2">{t('qty')}</TableHead>
+                              <TableHead className="text-right w-16 p-2">{t('price')}</TableHead>
+                              <TableHead className="text-right w-16 p-2">{t('weight')}</TableHead>
                               <TableHead className="w-8 p-2"></TableHead>
                             </TableRow>
                           </TableHeader>
@@ -1980,7 +1982,7 @@ export default function CreatePurchase() {
                   data-testid="button-add-item"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Item
+                  {t('addItem')}
                 </Button>
               ) : (
                 <Button 
@@ -1989,7 +1991,7 @@ export default function CreatePurchase() {
                   data-testid="button-add-variants"
                 >
                   <PackagePlus className="h-4 w-4 mr-2" />
-                  Add {variants.length} Variant{variants.length > 1 ? 's' : ''} as Items
+                  {t('addVariantsAsItems', { count: variants.length })}
                 </Button>
               )}
             </CardContent>
@@ -1999,8 +2001,8 @@ export default function CreatePurchase() {
           {items.length > 0 && (
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle>Order Items</CardTitle>
-                <CardDescription>Review and manage items in this purchase order</CardDescription>
+                <CardTitle>{t('orderItems')}</CardTitle>
+                <CardDescription>{t('reviewManageItems')}</CardDescription>
               </CardHeader>
               <CardContent className="p-0 lg:p-6">
                 {/* Mobile/Tablet View - Card Layout */}
@@ -2072,7 +2074,7 @@ export default function CreatePurchase() {
                                 }}
                               >
                                 <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input text-sm px-2">
-                                  <SelectValue placeholder="Category" />
+                                  <SelectValue placeholder={t('category')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {categories.map((category) => (
@@ -2083,7 +2085,7 @@ export default function CreatePurchase() {
                                   <SelectItem value="add-new" className="text-primary">
                                     <div className="flex items-center">
                                       <Plus className="h-3 w-3 mr-1" />
-                                      Add new category
+                                      {t('addNewCategory')}
                                     </div>
                                   </SelectItem>
                                 </SelectContent>
@@ -2093,7 +2095,7 @@ export default function CreatePurchase() {
                             {/* Quantity and Price Row */}
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
-                                <span className="text-sm text-muted-foreground">Qty:</span>
+                                <span className="text-sm text-muted-foreground">{t('qty')}:</span>
                                 <Input
                                   type="number"
                                   value={item.quantity}
@@ -2109,7 +2111,7 @@ export default function CreatePurchase() {
                               </div>
                               
                               <div className="flex items-center gap-1">
-                                <span className="text-sm text-muted-foreground">Price:</span>
+                                <span className="text-sm text-muted-foreground">{t('price')}:</span>
                                 <div className="flex items-center gap-1">
                                   <Input
                                     type="number"
@@ -2142,7 +2144,7 @@ export default function CreatePurchase() {
                             {(item.notes || item.dimensions) && (
                               <div className="text-xs text-muted-foreground space-y-0.5">
                                 {item.notes && <div>{item.notes}</div>}
-                                {item.dimensions && <div>Dimensions: {item.dimensions}</div>}
+                                {item.dimensions && <div>{t('dimensions')}: {item.dimensions}</div>}
                               </div>
                             )}
                           </div>
@@ -2154,20 +2156,20 @@ export default function CreatePurchase() {
                     <div className="p-4 bg-muted/30">
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Total Items:</span>
+                          <span>{t('totalItems')}:</span>
                           <span className="font-medium">{totalQuantity}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span>Subtotal:</span>
+                          <span>{t('subtotal')}:</span>
                           <span className="font-medium">{subtotal.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span>Shipping:</span>
+                          <span>{t('shipping')}:</span>
                           <span className="font-medium">{shippingCost.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                         <Separator className="my-2" />
                         <div className="flex justify-between">
-                          <span className="font-semibold">Total with Shipping:</span>
+                          <span className="font-semibold">{t('totalWithShipping')}:</span>
                           <span className="font-semibold text-green-600">{grandTotal.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                       </div>
@@ -2180,13 +2182,13 @@ export default function CreatePurchase() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-[48px]">Image</TableHead>
-                        <TableHead className="min-w-[200px]">Item Details</TableHead>
-                        <TableHead className="w-[180px]">Category</TableHead>
-                        <TableHead className="w-[80px] text-center">Qty</TableHead>
-                        <TableHead className="w-[120px] text-right">Unit Price</TableHead>
-                        <TableHead className="w-[120px] text-right">Total</TableHead>
-                        <TableHead className="w-[140px] text-right">Cost w/ Shipping</TableHead>
+                        <TableHead className="w-[48px]">{t('image')}</TableHead>
+                        <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
+                        <TableHead className="w-[180px]">{t('category')}</TableHead>
+                        <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
+                        <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
+                        <TableHead className="w-[120px] text-right">{t('total')}</TableHead>
+                        <TableHead className="w-[140px] text-right">{t('costWithShipping')}</TableHead>
                         <TableHead className="w-[48px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -2220,7 +2222,7 @@ export default function CreatePurchase() {
                                   setItems(updatedItems);
                                 }}
                                 className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input px-2"
-                                placeholder="Item name"
+                                placeholder={t('itemName')}
                               />
                               {item.sku && (
                                 <div className="text-xs text-muted-foreground px-2">SKU: {item.sku}</div>
@@ -2229,7 +2231,7 @@ export default function CreatePurchase() {
                                 <div className="text-xs text-muted-foreground px-2">{item.notes}</div>
                               )}
                               {item.dimensions && (
-                                <div className="text-xs text-muted-foreground px-2">Dimensions: {item.dimensions}</div>
+                                <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
                               )}
                             </div>
                           </TableCell>
@@ -2254,7 +2256,7 @@ export default function CreatePurchase() {
                               }}
                             >
                               <SelectTrigger className="h-7 border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input">
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('selectCategory')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {categories.map((category) => (
@@ -2265,7 +2267,7 @@ export default function CreatePurchase() {
                                 <SelectItem value="add-new" className="text-primary">
                                   <div className="flex items-center">
                                     <Plus className="h-3 w-3 mr-1" />
-                                    Add new category
+                                    {t('addNewCategory')}
                                   </div>
                                 </SelectItem>
                               </SelectContent>
@@ -2344,7 +2346,7 @@ export default function CreatePurchase() {
                                 <DropdownMenuSub>
                                   <DropdownMenuSubTrigger>
                                     <DollarSign className="mr-2 h-4 w-4" />
-                                    Show Cost in Currency
+                                    {t('showCostInCurrency')}
                                   </DropdownMenuSubTrigger>
                                   <DropdownMenuSubContent>
                                     <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "USD"}))}>
@@ -2376,7 +2378,7 @@ export default function CreatePurchase() {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: purchaseCurrency}))}>
                                       <RotateCcw className="mr-2 h-4 w-4" />
-                                      Reset to Original
+                                      {t('resetToOriginal')}
                                     </DropdownMenuItem>
                                   </DropdownMenuSubContent>
                                 </DropdownMenuSub>
@@ -2386,7 +2388,7 @@ export default function CreatePurchase() {
                                   className="text-destructive focus:text-destructive"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete Item
+                                  {t('deleteItem')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -2396,7 +2398,7 @@ export default function CreatePurchase() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={3} className="font-bold">Totals</TableCell>
+                        <TableCell colSpan={3} className="font-bold">{t('totals')}</TableCell>
                         <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold">
@@ -2420,42 +2422,42 @@ export default function CreatePurchase() {
           {/* Status Selection - Compact Dropdown */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Order Status</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('orderStatus')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-full" data-testid="select-status">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending" data-testid="status-pending">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                      Pending
+                      {t('pending')}
                     </span>
                   </SelectItem>
                   <SelectItem value="processing" data-testid="status-processing">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                      Processing
+                      {t('processing')}
                     </span>
                   </SelectItem>
                   <SelectItem value="at_warehouse" data-testid="status-at-warehouse">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-                      Consolidation
+                      {t('consolidation')}
                     </span>
                   </SelectItem>
                   <SelectItem value="shipped" data-testid="status-shipped">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
-                      Shipped
+                      {t('shipped')}
                     </span>
                   </SelectItem>
                   <SelectItem value="delivered" data-testid="status-delivered">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                      Delivered
+                      {t('delivered')}
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -2469,7 +2471,7 @@ export default function CreatePurchase() {
               <div className="space-y-2">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Calculator className="h-5 w-5 text-primary" />
-                  Order Summary
+                  {t('orderSummary')}
                 </CardTitle>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">{purchaseCurrency}</span>
@@ -2516,31 +2518,31 @@ export default function CreatePurchase() {
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Items Count</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('itemsCount')}</span>
                   <span className="font-semibold text-base">{items.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Total Quantity</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('totalQuantity')}</span>
                   <span className="font-semibold text-base">{totalQuantity}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Total Weight</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('totalWeight')}</span>
                   <span className="font-semibold text-base">{totalWeight.toFixed(2)} kg</span>
                 </div>
               </div>
               <Separator />
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('subtotal')}</span>
                   <span className="font-semibold text-base">{displayCurrencySymbol}{displaySubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Shipping</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('shipping')}</span>
                   <span className="font-semibold text-base">{displayCurrencySymbol}{displayShippingCost.toFixed(2)}</span>
                 </div>
                 {totalQuantity > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Per Item Shipping</span>
+                    <span className="text-xs text-muted-foreground">{t('perItemShipping')}</span>
                     <span className="text-sm">{displayCurrencySymbol}{(displayShippingCost / totalQuantity).toFixed(2)}</span>
                   </div>
                 )}
@@ -2548,12 +2550,12 @@ export default function CreatePurchase() {
               <Separator />
               <div className="pt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-base font-semibold">Grand Total</span>
+                  <span className="text-base font-semibold">{t('grandTotal')}</span>
                   <span className="text-2xl font-bold text-green-600">{displayCurrencySymbol}{displayGrandTotal.toFixed(2)}</span>
                 </div>
                 {displayCurrency !== purchaseCurrency && (
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-muted-foreground">Original ({purchaseCurrency})</span>
+                    <span className="text-xs text-muted-foreground">{t('original')} ({purchaseCurrency})</span>
                     <span className="text-xs text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
                   </div>
                 )}
@@ -2562,7 +2564,7 @@ export default function CreatePurchase() {
               {/* Payment Section */}
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Total Paid ({paymentCurrency})</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('totalPaid')} ({paymentCurrency})</span>
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                     {getCurrencySymbol(paymentCurrency)}
                     {totalPaid.toFixed(2)}
@@ -2570,7 +2572,7 @@ export default function CreatePurchase() {
                 </div>
                 {paymentCurrency !== purchaseCurrency && (
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-blue-700 dark:text-blue-300">Exchange Rate</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-300">{t('exchangeRate')}</span>
                     <span className="text-xs text-blue-700 dark:text-blue-300">
                       1 {purchaseCurrency} = {(exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(4)} {paymentCurrency}
                     </span>
@@ -2587,20 +2589,20 @@ export default function CreatePurchase() {
       <Dialog open={addingCurrency} onOpenChange={setAddingCurrency}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Custom Currency</DialogTitle>
+            <DialogTitle>{t('addCustomCurrency')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-currency-code">Currency Code *</Label>
+              <Label htmlFor="new-currency-code">{t('currencyCode')} *</Label>
               <Input
                 id="new-currency-code"
                 value={newCurrencyCode}
                 onChange={(e) => setNewCurrencyCode(e.target.value.toUpperCase())}
-                placeholder="e.g., GBP, JPY, AUD"
+                placeholder={t('currencyCodeExample')}
                 maxLength={3}
                 data-testid="input-new-currency-code"
               />
-              <p className="text-xs text-muted-foreground">Enter a 3-letter currency code</p>
+              <p className="text-xs text-muted-foreground">{t('currencyCodeHelp')}</p>
             </div>
           </div>
           <DialogFooter>
@@ -2608,7 +2610,7 @@ export default function CreatePurchase() {
               setNewCurrencyCode("");
               setAddingCurrency(false);
             }}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={async () => {
               if (newCurrencyCode.length === 3 && !customCurrencies.includes(newCurrencyCode)) {
@@ -2647,16 +2649,16 @@ export default function CreatePurchase() {
                 setPurchaseCurrency(newCurrencyCode);
                 setNewCurrencyCode("");
                 setAddingCurrency(false);
-                toast({ title: "Success", description: `Added ${newCurrencyCode} to currency list` });
+                toast({ title: t('success'), description: t('addedCurrencyToList', { currency: newCurrencyCode }) });
               } else {
                 toast({ 
-                  title: "Error", 
-                  description: "Please enter a valid 3-letter currency code",
+                  title: t('error'), 
+                  description: t('validCurrencyCode'),
                   variant: "destructive"
                 });
               }
             }}>
-              Add Currency
+              {t('addCurrency')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2666,31 +2668,31 @@ export default function CreatePurchase() {
       <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Product Variant</DialogTitle>
+            <DialogTitle>{t('addProductVariant')}</DialogTitle>
             <DialogDescription>
-              Add a variant for {currentItem.name}
+              {t('addVariantFor', { name: currentItem.name })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Variant Name *</Label>
+              <Label>{t('variantName')} *</Label>
               <Input
                 value={newVariant.name}
                 onChange={(e) => setNewVariant({...newVariant, name: e.target.value})}
-                placeholder="e.g., Size L, Color Red"
+                placeholder={t('variantNameExample')}
               />
             </div>
             <div className="space-y-2">
-              <Label>SKU</Label>
+              <Label>{t('sku')}</Label>
               <Input
                 value={newVariant.sku}
                 onChange={(e) => setNewVariant({...newVariant, sku: e.target.value})}
-                placeholder="Optional SKU"
+                placeholder={t('optionalSKU')}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Quantity</Label>
+                <Label>{t('quantity')}</Label>
                 <Input
                   type="number"
                   value={newVariant.quantity}
@@ -2699,7 +2701,7 @@ export default function CreatePurchase() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Unit Price</Label>
+                <Label>{t('unitPrice')}</Label>
                 <Input
                   type="number"
                   value={newVariant.unitPrice}
@@ -2711,7 +2713,7 @@ export default function CreatePurchase() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Weight (kg)</Label>
+                <Label>{t('weight')}</Label>
                 <Input
                   type="number"
                   value={newVariant.weight}
@@ -2721,7 +2723,7 @@ export default function CreatePurchase() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Dimensions</Label>
+                <Label>{t('dimensions')}</Label>
                 <Input
                   value={newVariant.dimensions}
                   onChange={(e) => setNewVariant({...newVariant, dimensions: e.target.value})}
@@ -2732,10 +2734,10 @@ export default function CreatePurchase() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setVariantDialogOpen(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={addVariant}>
-              Add Variant
+              {t('addVariant')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2745,26 +2747,26 @@ export default function CreatePurchase() {
       <Dialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Variant Series</DialogTitle>
+            <DialogTitle>{t('addVariantSeries')}</DialogTitle>
             <DialogDescription>
-              Create multiple variants for {currentItem.name} using a pattern
+              {t('createMultipleVariants', { name: currentItem.name })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Series Pattern *</Label>
+              <Label>{t('seriesPattern')} *</Label>
               <Input
                 value={seriesInput}
                 onChange={(e) => setSeriesInput(e.target.value)}
-                placeholder="e.g., Size <1-10> or Color <1-5>"
+                placeholder={t('seriesPatternExample')}
               />
               <p className="text-xs text-muted-foreground">
-                Use &lt;start-end&gt; to generate a numbered series
+                {t('seriesPatternHelp')}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Quantity per Variant</Label>
+                <Label>{t('quantityPerVariant')}</Label>
                 <Input
                   type="number"
                   value={seriesQuantity}
@@ -2773,7 +2775,7 @@ export default function CreatePurchase() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Unit Price</Label>
+                <Label>{t('unitPrice')}</Label>
                 <Input
                   type="number"
                   value={seriesUnitPrice}
@@ -2784,7 +2786,7 @@ export default function CreatePurchase() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Weight per Variant (kg)</Label>
+              <Label>{t('weightPerVariant')}</Label>
               <Input
                 type="number"
                 value={seriesWeight}
@@ -2796,10 +2798,10 @@ export default function CreatePurchase() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSeriesDialogOpen(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={addVariantSeries}>
-              Create Series
+              {t('createSeries')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2809,19 +2811,19 @@ export default function CreatePurchase() {
       <Dialog open={newCategoryDialogOpen} onOpenChange={setNewCategoryDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
+            <DialogTitle>{t('addNewCategory')}</DialogTitle>
             <DialogDescription>
-              Create a new category for your products
+              {t('createNewCategory')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="category-name">Category Name</Label>
+              <Label htmlFor="category-name">{t('categoryName')}</Label>
               <Input
                 id="category-name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Enter category name"
+                placeholder={t('enterCategoryName')}
                 autoFocus
               />
             </div>
@@ -2834,7 +2836,7 @@ export default function CreatePurchase() {
                 setNewCategoryName("");
               }}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               onClick={saveNewCategory}
@@ -2843,10 +2845,10 @@ export default function CreatePurchase() {
               {savingCategory ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('saving')}
                 </>
               ) : (
-                "Save Category"
+                t('saveCategory')
               )}
             </Button>
           </DialogFooter>

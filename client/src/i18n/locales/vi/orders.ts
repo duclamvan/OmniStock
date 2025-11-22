@@ -718,6 +718,184 @@ const orders = {
   itemsOrdered: 'Sản phẩm đã đặt',
   notSet: 'Chưa đặt',
   
+  // Pick & Pack Workflow
+  orderFulfillment: 'Xử lý đơn hàng',
+  fulfillmentWorkflow: 'Quy trình xử lý',
+  pickItems: 'Lấy hàng',
+  packItems: 'Đóng gói',
+  generateLabel: 'Tạo nhãn',
+  complete: 'Hoàn thành',
+  
+  // Scanning
+  scanProduct: 'Quét sản phẩm',
+  scanBarcode: 'Quét mã vạch',
+  manualEntry: 'Nhập thủ công',
+  barcodeScanner: 'Máy quét mã vạch',
+  scanBarcodeToVerifyItems: 'Quét mã vạch để xác minh sản phẩm...',
+  hideBarcodeScanner: 'Ẩn máy quét mã vạch',
+  showBarcodeScanner: 'Hiện máy quét mã vạch',
+  
+  // Product Info
+  productName: 'Tên sản phẩm',
+  location: 'Vị trí',
+  pickStatus: 'Trạng thái lấy hàng',
+  barcode: 'Mã vạch',
+  
+  // Pick Status
+  notStarted: 'Chưa bắt đầu',
+  inProgress: 'Đang thực hiện',
+  completed: 'Đã hoàn thành',
+  picked: 'Đã lấy',
+  partiallyPicked: 'Lấy một phần',
+  notFound: 'Không tìm thấy',
+  
+  // Actions
+  markAsPicked: 'Đánh dấu đã lấy',
+  cannotFind: 'Không tìm thấy',
+  skip: 'Bỏ qua',
+  printLabel: 'In nhãn',
+  completeOrder: 'Hoàn thành đơn',
+  next: 'Tiếp theo',
+  previous: 'Trước',
+  cancel: 'Hủy',
+  print: 'In',
+  save: 'Lưu',
+  view: 'Xem',
+  printed: 'Đã in',
+  
+  // Carton & Packing
+  addToCarton: 'Thêm vào thùng',
+  cartonNumber: 'Thùng #{{number}}',
+  cartonType: 'Loại thùng',
+  packageWeight: 'Trọng lượng kiện',
+  dimensions: 'Kích thước',
+  packingMaterials: 'Vật liệu đóng gói',
+  weight: 'Trọng lượng',
+  weightKg: 'Trọng lượng (kg)',
+  weightOptional: 'Trọng lượng (kg) <span className="text-xs text-gray-500 font-normal">(tùy chọn, tối đa 40kg)</span>',
+  
+  // Validation Messages
+  scanAllItems: 'Quét tất cả sản phẩm',
+  wrongProductScanned: 'Quét sai sản phẩm',
+  quantityMismatch: 'Số lượng không khớp',
+  itemAlreadyPicked: 'Sản phẩm đã được lấy',
+  weightLimitExceeded: 'Vượt quá giới hạn trọng lượng',
+  weightLimitExceededDesc: 'Lô hàng GLS không được vượt quá 40kg mỗi thùng. Vui lòng giảm trọng lượng hoặc chia thành nhiều thùng.',
+  
+  // Instructions
+  scanEachProductToPick: 'Quét từng sản phẩm để lấy hàng',
+  packItemsIntoCarton: 'Đóng gói sản phẩm vào thùng',
+  verifyQuantities: 'Xác minh số lượng',
+  clickToMinimize: 'Nhấp để thu nhỏ',
+  clickToUnverifyAllItems: 'Nhấp để bỏ xác minh tất cả',
+  clickToMarkAllItemsAsVerified: 'Nhấp để đánh dấu tất cả đã xác minh',
+  
+  // Progress
+  itemsPicked: 'Đã lấy {{picked}} / {{total}} sản phẩm',
+  percentComplete: 'Hoàn thành {{percent}}%',
+  remainingItems: 'Còn {{count}} sản phẩm',
+  
+  // Alerts
+  itemNotFoundInWarehouse: 'Không tìm thấy sản phẩm trong kho',
+  lowStockAlert: 'Cảnh báo tồn kho thấp',
+  locationMismatch: 'Vị trí không khớp',
+  errorNoPacking: 'Không có sản phẩm để đóng gói trong đơn hiện tại',
+  
+  // Loading States
+  loadingOrder: 'Đang tải đơn hàng...',
+  processing: 'Đang xử lý...',
+  generatingLabel: 'Đang tạo nhãn...',
+  loadingDocuments: 'Đang tải tài liệu...',
+  loadingFiles: 'Đang tải tệp...',
+  
+  // Empty States
+  noItemsToPick: 'Không có sản phẩm để lấy',
+  orderComplete: 'Đơn hàng đã hoàn thành',
+  noFilesAttachedToOrder: 'Không có tệp đính kèm trong đơn hàng này',
+  
+  // Documents & Labels
+  packingList: 'Phiếu đóng gói',
+  filesSent: 'Tệp đã gửi',
+  productDocuments: 'Tài liệu sản phẩm',
+  orderFiles: 'Tệp đơn hàng',
+  documentsCount: 'Tài liệu sản phẩm ({{count}})',
+  documentsSentToPrinter: 'Tài liệu đã gửi đến máy in',
+  printError: 'Lỗi in',
+  
+  // Service Items
+  service: 'Dịch vụ',
+  serviceItemNoLocation: 'Lấy cuối cùng - Không có vị trí vật lý',
+  note: 'Ghi chú',
+  
+  // Packing Checklist
+  itemsVerified: 'Đã xác minh sản phẩm',
+  packingSlipIncluded: 'Đã bao gồm phiếu đóng gói',
+  boxSealed: 'Đã niêm phong thùng',
+  weightRecorded: 'Đã ghi trọng lượng',
+  fragileProtected: 'Đã bảo vệ hàng dễ vỡ',
+  promotionalMaterials: 'Vật liệu quảng cáo',
+  
+  // Error Messages
+  error: 'Lỗi',
+  failedToCreateCartons: 'Không thể tạo thùng đề xuất bởi AI',
+  errorCreatingCarton: 'Lỗi tạo thùng',
+  failedToCreateCarton: 'Không thể tạo thùng',
+  failedToSave: 'Lưu thất bại',
+  failedToUpdateTrackingNumber: 'Không thể cập nhật mã vận đơn',
+  failedToCreateLabels: 'Không thể tạo nhãn PPL',
+  failedToCancelLabels: 'Không thể hủy nhãn PPL',
+  failedToDeleteLabels: 'Không thể xóa nhãn PPL',
+  failedToRetrieveLabel: 'Không thể lấy nhãn PPL',
+  labelRetrievalFailed: 'Lấy nhãn thất bại',
+  failedToRecalculateCartons: 'Không thể tính lại thùng',
+  failedToInitiateRepacking: 'Không thể bắt đầu đóng gói lại',
+  failedToSaveTrackingNumbers: 'Không thể lưu mã vận đơn. Vui lòng thử lại.',
+  cannotCompletePacking: 'Không thể hoàn thành đóng gói',
+  failedToShipOrder: 'Không thể giao hàng',
+  failedToShipSomeOrders: 'Không thể giao một số đơn hàng',
+  failedToUndoShipment: 'Không thể hoàn tác giao hàng',
+  
+  // Success Messages
+  shippingLabelsCancelled: 'Đã hủy nhãn vận chuyển với PPL',
+  labelDataRemoved: 'Đã xóa dữ liệu nhãn khỏi đơn hàng',
+  orderReset: 'Đã đặt lại đơn hàng',
+  allPickedQuantitiesCleared: 'Đã xóa tất cả số lượng đã lấy.',
+  ordersShipped: 'Đơn hàng đã giao vận',
+  shipmentUndone: 'Đã hoàn tác giao hàng',
+  ordersReturnedToReady: 'Đơn hàng đã được trả về trạng thái sẵn sàng',
+  copiedToClipboard: 'Đã sao chép vào clipboard',
+  copyFailed: 'Sao chép thất bại',
+  pleaseTryAgain: 'Vui lòng thử lại',
+  
+  // Repacking
+  repackingOrder: 'Đóng gói lại đơn hàng',
+  orderSentForRepacking: 'Đơn hàng đã được gửi để đóng gói lại',
+  recalculateCartonsBasedOnCurrentItems: 'Tính lại thùng dựa trên sản phẩm hiện tại',
+  
+  // Tracking Numbers
+  enterTrackingNumber: 'Nhập mã vận đơn...',
+  enterDHLTrackingNumber: 'Nhập mã vận đơn DHL...',
+  enterGLSTrackingNumber: 'Nhập mã vận đơn GLS...',
+  
+  // Copy Fields
+  copied: 'Đã sao chép!',
+  country: 'Quốc gia',
+  paketSize: 'Kích thước gói',
+  firstName: 'Tên',
+  lastName: 'Họ',
+  fullAddress: 'Địa chỉ đầy đủ',
+  
+  // Mute/Unmute
+  muteSounds: 'Tắt tiếng',
+  unmuteSounds: 'Bật tiếng',
+  
+  // Bundle Items
+  hideBundleItems: 'Ẩn sản phẩm combo',
+  showBundleItems: 'Hiện sản phẩm combo',
+  
+  // Packing Instructions
+  packingInstructions: 'Hướng dẫn đóng gói',
+  
 } as const;
 
 export default orders;

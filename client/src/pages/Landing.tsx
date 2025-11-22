@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package, BarChart3, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Landing() {
+  const { t } = useTranslation('common');
+  
   const handleLogin = () => {
     window.location.href = "/api/login";
   };
@@ -16,14 +19,14 @@ export default function Landing() {
             <span className="text-primary">Davie</span> Supply
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-6 sm:mb-8 px-4">
-            Complete Warehouse & Order Management System
+            {t('landing.subtitle')}
           </p>
           <Button 
             onClick={handleLogin}
             size="lg"
             className="bg-primary hover:bg-primary/90 text-white px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg w-full sm:w-auto"
           >
-            Login to Get Started
+            {t('landing.loginButton')}
           </Button>
         </div>
 
@@ -34,11 +37,11 @@ export default function Landing() {
               <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
                 <ShoppingCart className="h-6 w-6 text-emerald-600" />
               </div>
-              <CardTitle className="text-lg">Order Management</CardTitle>
+              <CardTitle className="text-lg">{t('landing.features.orderManagement.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-600">
-                Complete order lifecycle management from creation to fulfillment with multi-currency support.
+                {t('landing.features.orderManagement.description')}
               </p>
             </CardContent>
           </Card>
@@ -48,11 +51,11 @@ export default function Landing() {
               <div className="mx-auto w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <Package className="h-6 w-6 text-blue-600" />
               </div>
-              <CardTitle className="text-lg">Inventory Control</CardTitle>
+              <CardTitle className="text-lg">{t('landing.features.inventoryControl.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-600">
-                Advanced inventory tracking with variants, SKU management, and low stock alerts.
+                {t('landing.features.inventoryControl.description')}
               </p>
             </CardContent>
           </Card>
@@ -62,11 +65,11 @@ export default function Landing() {
               <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
                 <BarChart3 className="h-6 w-6 text-yellow-600" />
               </div>
-              <CardTitle className="text-lg">Analytics & Reports</CardTitle>
+              <CardTitle className="text-lg">{t('landing.features.analytics.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-600">
-                Comprehensive dashboards with profit tracking, revenue analysis, and financial reports.
+                {t('landing.features.analytics.description')}
               </p>
             </CardContent>
           </Card>
@@ -76,11 +79,11 @@ export default function Landing() {
               <div className="mx-auto w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-purple-600" />
               </div>
-              <CardTitle className="text-lg">Customer Management</CardTitle>
+              <CardTitle className="text-lg">{t('landing.features.customerManagement.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-600">
-                Manage customer information with Vietnamese search support and order history tracking.
+                {t('landing.features.customerManagement.description')}
               </p>
             </CardContent>
           </Card>
@@ -88,48 +91,48 @@ export default function Landing() {
 
         {/* Key Features */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Key Features</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">{t('landing.keyFeaturesTitle')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Vietnamese Diacritics Support</h3>
-                <p className="text-slate-600 text-sm">Search functionality that handles Vietnamese characters seamlessly.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.vietnameseSupport.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.vietnameseSupport.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Multi-Currency Support</h3>
-                <p className="text-slate-600 text-sm">Handle transactions in CZK, EUR, USD, VND, and CNY with automatic conversion.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.multiCurrency.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.multiCurrency.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Real-time Notifications</h3>
-                <p className="text-slate-600 text-sm">Stay updated with instant notifications for new orders and stock alerts.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.notifications.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.notifications.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Barcode Integration</h3>
-                <p className="text-slate-600 text-sm">EAN-13 barcode scanning for quick product identification and order processing.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.barcode.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.barcode.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Comprehensive Reports</h3>
-                <p className="text-slate-600 text-sm">Detailed financial reports with profit/revenue calculations and export capabilities.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.reports.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.reports.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
-                <h3 className="font-semibold">Secure Authentication</h3>
-                <p className="text-slate-600 text-sm">Enterprise-grade security with role-based access control.</p>
+                <h3 className="font-semibold">{t('landing.keyFeatures.security.title')}</h3>
+                <p className="text-slate-600 text-sm">{t('landing.keyFeatures.security.description')}</p>
               </div>
             </div>
           </div>
@@ -137,7 +140,7 @@ export default function Landing() {
 
         {/* Footer */}
         <div className="text-center mt-8 sm:mt-16 text-slate-500 text-sm sm:text-base px-4">
-          <p>&copy; 2024 Davie Supply Management System. All rights reserved.</p>
+          <p>{t('landing.footer.copyright')}</p>
         </div>
       </div>
     </div>

@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">("email");
   const [name, setName] = useState("");
@@ -34,21 +36,21 @@ export default function Register() {
       if (response.ok) {
         setIsCodeSent(true);
         toast({
-          title: "Success",
-          description: "Verification code sent to your phone",
+          title: t('success'),
+          description: t('auth.verificationCodeSent'),
         });
       } else {
         const data = await response.json();
         toast({
-          title: "Error",
-          description: data.message || "Failed to send code",
+          title: t('error'),
+          description: data.message || t('auth.failedToSendCode'),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "An error occurred",
+        title: t('error'),
+        description: t('auth.errorOccurred'),
         variant: "destructive",
       });
     } finally {
@@ -69,22 +71,22 @@ export default function Register() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Account created successfully",
+          title: t('success'),
+          description: t('auth.accountCreatedSuccessfully'),
         });
         navigate("/");
       } else {
         const data = await response.json();
         toast({
-          title: "Error",
-          description: data.message || "Registration failed",
+          title: t('error'),
+          description: data.message || t('auth.registrationFailed'),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "An error occurred during registration",
+        title: t('error'),
+        description: t('auth.errorOccurredDuringRegistration'),
         variant: "destructive",
       });
     } finally {
@@ -106,8 +108,8 @@ export default function Register() {
 
     if (password !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match",
+        title: t('error'),
+        description: t('auth.passwordsDoNotMatch'),
         variant: "destructive",
       });
       return;
@@ -124,22 +126,22 @@ export default function Register() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Account created successfully",
+          title: t('success'),
+          description: t('auth.accountCreatedSuccessfully'),
         });
         navigate("/login");
       } else {
         const data = await response.json();
         toast({
-          title: "Error",
-          description: data.message || "Registration failed",
+          title: t('error'),
+          description: data.message || t('auth.registrationFailed'),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "An error occurred during registration",
+        title: t('error'),
+        description: t('auth.errorOccurredDuringRegistration'),
         variant: "destructive",
       });
     } finally {
@@ -156,9 +158,9 @@ export default function Register() {
               <UserPlus className="h-6 w-6 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.createAccount')}</CardTitle>
           <CardDescription className="text-center">
-            Enter your details to create a new account
+            {t('auth.enterDetailsToCreateAccount')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,7 +174,7 @@ export default function Register() {
                 setIsCodeSent(false);
               }}
             >
-              Email
+              {t('auth.email')}
             </Button>
             <Button
               type="button"
@@ -183,17 +185,17 @@ export default function Register() {
                 setIsCodeSent(false);
               }}
             >
-              Phone
+              {t('phone')}
             </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t('auth.name')}</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder={t('auth.namePlaceholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -204,11 +206,11 @@ export default function Register() {
             {registerMethod === "email" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('auth.email')}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder={t('auth.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -217,7 +219,7 @@ export default function Register() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t('auth.password')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -231,7 +233,7 @@ export default function Register() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -248,11 +250,11 @@ export default function Register() {
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('auth.phoneNumber')}</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+420 123 456 789"
+                    placeholder={t('auth.phonePlaceholder')}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
@@ -263,11 +265,11 @@ export default function Register() {
                 </div>
                 {isCodeSent && (
                   <div className="space-y-2">
-                    <Label htmlFor="code">Verification Code</Label>
+                    <Label htmlFor="code">{t('auth.verificationCode')}</Label>
                     <Input
                       id="code"
                       type="text"
-                      placeholder="Enter 6-digit code"
+                      placeholder={t('auth.enter6DigitCode')}
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value)}
                       required
@@ -286,12 +288,12 @@ export default function Register() {
               data-testid="button-register"
             >
               {isLoading 
-                ? "Processing..." 
+                ? t('auth.processing')
                 : registerMethod === "phone" && !isCodeSent 
-                  ? "Send Code" 
+                  ? t('auth.sendCode')
                   : registerMethod === "phone" 
-                    ? "Verify & Sign Up"
-                    : "Sign Up"}
+                    ? t('auth.verifyAndSignUp')
+                    : t('auth.signUp')}
             </Button>
             {registerMethod === "phone" && isCodeSent && (
               <Button
@@ -300,7 +302,7 @@ export default function Register() {
                 className="w-full"
                 onClick={() => setIsCodeSent(false)}
               >
-                Change Phone Number
+                {t('auth.changePhoneNumber')}
               </Button>
             )}
           </form>
@@ -310,7 +312,7 @@ export default function Register() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-500">Or continue with</span>
+              <span className="bg-white px-2 text-slate-500">{t('auth.orContinueWith')}</span>
             </div>
           </div>
 
@@ -326,18 +328,18 @@ export default function Register() {
             <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
-            Continue with Facebook
+            {t('auth.continueWithFacebook')}
           </Button>
 
           <div className="mt-4 text-center text-sm">
-            <span className="text-slate-600">Already have an account? </span>
+            <span className="text-slate-600">{t('auth.alreadyHaveAccount')} </span>
             <button
               type="button"
               onClick={() => navigate("/login")}
               className="text-blue-600 hover:underline font-medium"
               data-testid="link-login"
             >
-              Log in
+              {t('auth.logIn')}
             </button>
           </div>
         </CardContent>

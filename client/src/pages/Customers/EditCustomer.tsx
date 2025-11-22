@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,8 +57,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const editCustomerSchema = z.object({
-  name: z.string().min(1, "Customer name is required"),
+const editCustomerSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t('customers.nameRequired')),
   country: z.string().optional().nullable(),
   
   // Facebook & Profile fields
@@ -67,7 +68,7 @@ const editCustomerSchema = z.object({
   profilePictureUrl: z.string().optional().nullable(),
   
   // Contact fields
-  email: z.string().email().optional().or(z.literal("")).nullable(),
+  email: z.string().email(t('customers.emailInvalid')).optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
   
   // Shipping Address fields (legacy)
@@ -83,7 +84,7 @@ const editCustomerSchema = z.object({
   billingCompany: z.string().optional().nullable(),
   billingFirstName: z.string().optional().nullable(),
   billingLastName: z.string().optional().nullable(),
-  billingEmail: z.string().email().optional().or(z.literal("")).nullable(),
+  billingEmail: z.string().email(t('customers.emailInvalid')).optional().or(z.literal("")).nullable(),
   billingTel: z.string().optional().nullable(),
   billingStreet: z.string().optional().nullable(),
   billingStreetNumber: z.string().optional().nullable(),
@@ -106,9 +107,10 @@ const editCustomerSchema = z.object({
   preferredCurrency: z.enum(['CZK', 'EUR']).default('EUR'),
 });
 
-type EditCustomerForm = z.infer<typeof editCustomerSchema>;
+type EditCustomerForm = z.infer<ReturnType<typeof editCustomerSchema>>;
 
 export default function EditCustomer() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -137,7 +139,7 @@ export default function EditCustomer() {
   }, [addressesData]);
 
   const form = useForm<EditCustomerForm>({
-    resolver: zodResolver(editCustomerSchema),
+    resolver: zodResolver(editCustomerSchema(t)),
     defaultValues: {
       name: "",
       country: "",
@@ -228,16 +230,16 @@ export default function EditCustomer() {
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}`] });
       toast({
-        title: "Success",
-        description: "Customer updated successfully",
+        title: t("customers.success"),
+        description: t("customers.customerUpdated"),
       });
       navigate("/customers");
     },
     onError: (error: any) => {
       console.error("Customer update error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to update customer",
+        title: t("customers.error"),
+        description: error.message || t("customers.failedToUpdateCustomer"),
         variant: "destructive",
       });
     },
@@ -251,14 +253,14 @@ export default function EditCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
       toast({
-        title: "Success",
-        description: "Shipping address added successfully",
+        title: t("customers.success"),
+        description: t("customers.shippingAddressAdded"),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add shipping address",
+        title: t("customers.error"),
+        description: error.message || t("customers.failedToAddShippingAddress"),
         variant: "destructive",
       });
     },
@@ -271,14 +273,14 @@ export default function EditCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
       toast({
-        title: "Success",
-        description: "Shipping address updated successfully",
+        title: t("customers.success"),
+        description: t("customers.shippingAddressUpdated"),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update shipping address",
+        title: t("customers.error"),
+        description: error.message || t("customers.failedToUpdateShippingAddress"),
         variant: "destructive",
       });
     },
@@ -291,14 +293,14 @@ export default function EditCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
       toast({
-        title: "Success",
-        description: "Shipping address deleted successfully",
+        title: t("customers.success"),
+        description: t("customers.shippingAddressDeleted"),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete shipping address",
+        title: t("customers.error"),
+        description: error.message || t("customers.failedToDeleteShippingAddress"),
         variant: "destructive",
       });
     },
@@ -358,7 +360,7 @@ export default function EditCustomer() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading customer data...</p>
+          <p className="text-slate-600">{t('customers.loadingCustomerData')}</p>
         </div>
       </div>
     );
@@ -367,7 +369,7 @@ export default function EditCustomer() {
   if (!customer) {
     return (
       <div className="text-center py-8">
-        <p className="text-slate-600">Customer not found</p>
+        <p className="text-slate-600">{t('customers.customerNotFound')}</p>
         <Button
           variant="outline"
           onClick={() => window.history.back()}
@@ -392,7 +394,7 @@ export default function EditCustomer() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Customer</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('customers.editCustomer')}</h1>
         </div>
       </div>
 
@@ -400,7 +402,7 @@ export default function EditCustomer() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>{t('customers.basicInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -409,10 +411,10 @@ export default function EditCustomer() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Customer Name *</FormLabel>
+                      <FormLabel>{t('customers.customerName')} *</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Enter customer name" 
+                          placeholder={t("customers.enterCustomerName")} 
                           {...field} 
                           data-testid="input-name"
                         />
@@ -427,7 +429,7 @@ export default function EditCustomer() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Customer Type</FormLabel>
+                      <FormLabel>{t('customers.customerType')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
@@ -435,9 +437,9 @@ export default function EditCustomer() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="regular">Regular</SelectItem>
-                          <SelectItem value="vip">VIP</SelectItem>
-                          <SelectItem value="wholesale">Wholesale</SelectItem>
+                          <SelectItem value="regular">{t('customers.regular')}</SelectItem>
+                          <SelectItem value="vip">{t('customers.vip')}</SelectItem>
+                          <SelectItem value="wholesale">{t('customers.wholesale')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -452,10 +454,10 @@ export default function EditCustomer() {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>{t('customers.country')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Country" 
+                          placeholder={t("customers.country")} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-country"
@@ -482,9 +484,9 @@ export default function EditCustomer() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="cs">Czech (Čeština)</SelectItem>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="vn">Vietnamese (Tiếng Việt)</SelectItem>
+                          <SelectItem value="cs">{t('customers.czechLanguage')}</SelectItem>
+                          <SelectItem value="en">{t('customers.englishLanguage')}</SelectItem>
+                          <SelectItem value="vn">{t('customers.vietnameseLanguage')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -513,8 +515,8 @@ export default function EditCustomer() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                          <SelectItem value="CZK">CZK (Czech Koruna)</SelectItem>
+                          <SelectItem value="EUR">{t('customers.eurCurrency')}</SelectItem>
+                          <SelectItem value="CZK">{t('customers.czkCurrency')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -536,7 +538,7 @@ export default function EditCustomer() {
                   name="facebookName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Facebook Name</FormLabel>
+                      <FormLabel>{t('customers.facebookName')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Facebook display name" 
@@ -578,7 +580,7 @@ export default function EditCustomer() {
                     <FormLabel>Facebook Profile URL</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="https://facebook.com/username" 
+                        placeholder={t("customers.facebookUrlPlaceholder")} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-facebook-url"
@@ -594,7 +596,7 @@ export default function EditCustomer() {
                 name="profilePictureUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Profile Picture URL</FormLabel>
+                    <FormLabel>{t('customers.profilePictureUrl')}</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="URL to profile picture" 
@@ -615,7 +617,7 @@ export default function EditCustomer() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle>{t('customers.contactInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -624,7 +626,7 @@ export default function EditCustomer() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('customers.email')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="email" 
@@ -644,7 +646,7 @@ export default function EditCustomer() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel>{t('customers.phone')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="+1 234 567 8900" 
@@ -778,7 +780,7 @@ export default function EditCustomer() {
                 name="billingCompany"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company Name</FormLabel>
+                    <FormLabel>{t('customers.companyName')}</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Company name" 
@@ -798,7 +800,7 @@ export default function EditCustomer() {
                   name="billingFirstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>{t('customers.firstName')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="First name" 
@@ -817,7 +819,7 @@ export default function EditCustomer() {
                   name="billingLastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>{t('customers.lastName')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Last name" 
@@ -838,7 +840,7 @@ export default function EditCustomer() {
                   name="billingEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('customers.email')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="email" 
@@ -858,7 +860,7 @@ export default function EditCustomer() {
                   name="billingTel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel>{t('customers.phone')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="+420 123 456 789" 
@@ -879,7 +881,7 @@ export default function EditCustomer() {
                   name="billingStreet"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Street</FormLabel>
+                      <FormLabel>{t('customers.street')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Street name" 
@@ -898,7 +900,7 @@ export default function EditCustomer() {
                   name="billingStreetNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Street Number</FormLabel>
+                      <FormLabel>{t('customers.streetNumber')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="No." 
@@ -919,7 +921,7 @@ export default function EditCustomer() {
                   name="billingCity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>{t('customers.city')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="City" 
@@ -957,10 +959,10 @@ export default function EditCustomer() {
                   name="billingCountry"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>{t('customers.country')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Country" 
+                          placeholder={t("customers.country")} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-country"
@@ -1026,7 +1028,7 @@ export default function EditCustomer() {
                   name="vatNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>VAT Number (EU)</FormLabel>
+                      <FormLabel>{t('customers.vatNumber')}</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="CZ12345678" 
@@ -1068,7 +1070,7 @@ export default function EditCustomer() {
                 name="vatCompanyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>VAT Company Name</FormLabel>
+                    <FormLabel>{t('customers.vatCompanyName')}</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Company name from VAT validation" 
@@ -1090,7 +1092,7 @@ export default function EditCustomer() {
                 name="vatCompanyAddress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>VAT Company Address</FormLabel>
+                    <FormLabel>{t('customers.vatCompanyAddress')}</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Company address from VAT validation" 
@@ -1120,7 +1122,7 @@ export default function EditCustomer() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t('customers.notes')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Additional notes about the customer..."
@@ -1184,7 +1186,7 @@ export default function EditCustomer() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('customers.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => addressToDelete && handleDeleteShippingAddress(addressToDelete.id)}
               className="bg-red-600 hover:bg-red-700"

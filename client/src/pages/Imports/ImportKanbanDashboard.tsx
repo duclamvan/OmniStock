@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,7 @@ function PurchaseCard({
   purchase: Purchase; 
   onDragStart: (e: React.DragEvent, item: any, type: string) => void;
 }) {
+  const { t } = useTranslation('imports');
   const [expanded, setExpanded] = useState(false);
   const displayItems = expanded ? purchase.items : purchase.items.slice(0, 3);
   const hasMore = purchase.items.length > 3;
@@ -153,9 +155,9 @@ function PurchaseCard({
             className="w-full h-6 text-xs"
           >
             {expanded ? (
-              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
+              <><ChevronUp className="h-3 w-3 mr-1" />{t('showLess')}</>
             ) : (
-              <><ChevronDown className="h-3 w-3 mr-1" />+{purchase.items.length - 3} More</>
+              <><ChevronDown className="h-3 w-3 mr-1" />+{purchase.items.length - 3} {t('more')}</>
             )}
           </Button>
         )}
@@ -221,6 +223,7 @@ function ConsolidationCard({
   consolidation: Consolidation; 
   onDragStart: (e: React.DragEvent, item: any, type: string) => void;
 }) {
+  const { t } = useTranslation('imports');
   const [expanded, setExpanded] = useState(false);
   const displayItems = expanded ? consolidation.items : consolidation.items.slice(0, 3);
   const hasMore = consolidation.items.length > 3;
@@ -273,9 +276,9 @@ function ConsolidationCard({
             className="w-full h-6 text-xs"
           >
             {expanded ? (
-              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
+              <><ChevronUp className="h-3 w-3 mr-1" />{t('showLess')}</>
             ) : (
-              <><ChevronDown className="h-3 w-3 mr-1" />+{consolidation.items.length - 3} More</>
+              <><ChevronDown className="h-3 w-3 mr-1" />+{consolidation.items.length - 3} {t('more')}</>
             )}
           </Button>
         )}
@@ -296,6 +299,7 @@ function ShipmentCard({
   isDelivered?: boolean;
   onDragStart?: (e: React.DragEvent, item: any, type: string) => void;
 }) {
+  const { t } = useTranslation('imports');
   const [, navigate] = useLocation();
   const [expanded, setExpanded] = useState(false);
   const items = consolidation?.items || [];
@@ -313,9 +317,9 @@ function ShipmentCard({
   const getDaysUntil = (date: string | null) => {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
-    if (days < 0) return `${Math.abs(days)}d ago`;
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Tomorrow';
+    if (days < 0) return `${Math.abs(days)}d ${t('daysAgo')}`;
+    if (days === 0) return t('today');
+    if (days === 1) return t('tomorrow');
     return `${days}d`;
   };
 
@@ -353,7 +357,7 @@ function ShipmentCard({
       <CardContent className="p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <Badge className={`text-xs ${getShipmentStatusColor()}`}>
-            {isDelivered ? 'Delivered' : shipment.status}
+            {isDelivered ? t('delivered') : shipment.status}
           </Badge>
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
             {shipment.carrier}
@@ -379,7 +383,7 @@ function ShipmentCard({
         {items.length > 0 && (
           <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
             <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Contents ({items.length} items)
+              {t('contents')} ({items.length} {t('items')})
             </div>
             {displayItems.map((item, idx) => (
               <div key={item.id} className="flex items-center justify-between text-xs">
@@ -403,9 +407,9 @@ function ShipmentCard({
             className="w-full h-6 text-xs"
           >
             {expanded ? (
-              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
+              <><ChevronUp className="h-3 w-3 mr-1" />{t('showLess')}</>
             ) : (
-              <><ChevronDown className="h-3 w-3 mr-1" />+{items.length - 3} More</>
+              <><ChevronDown className="h-3 w-3 mr-1" />+{items.length - 3} {t('more')}</>
             )}
           </Button>
         )}
@@ -434,6 +438,7 @@ function ShipmentCard({
 }
 
 export default function ImportKanbanDashboard() {
+  const { t } = useTranslation('imports');
   const [searchQuery, setSearchQuery] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("all");
   const [draggedItem, setDraggedItem] = useState<any>(null);
@@ -465,7 +470,7 @@ export default function ImportKanbanDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Purchase status updated" });
+      toast({ title: t('success'), description: t('purchaseStatusUpdated') });
     }
   });
 
@@ -629,7 +634,7 @@ export default function ImportKanbanDashboard() {
   const columns = [
     {
       id: 'processing',
-      title: 'Purchase Orders',
+      title: t('purchaseOrders'),
       icon: <Package className="h-4 w-4" />,
       count: filteredPurchases.length,
       gradient: 'from-yellow-500 to-orange-500',
@@ -638,7 +643,7 @@ export default function ImportKanbanDashboard() {
     },
     {
       id: 'at_warehouse',
-      title: 'Consolidation',
+      title: t('consolidation'),
       icon: <Warehouse className="h-4 w-4" />,
       count: filteredCustomItems.length + filteredConsolidations.length,
       gradient: 'from-purple-500 to-pink-500',
@@ -647,7 +652,7 @@ export default function ImportKanbanDashboard() {
     },
     {
       id: 'international',
-      title: 'International Transit',
+      title: t('internationalTransit'),
       icon: <Globe className="h-4 w-4" />,
       count: activeShipments.length,
       gradient: 'from-blue-500 to-cyan-500',
@@ -656,7 +661,7 @@ export default function ImportKanbanDashboard() {
     },
     {
       id: 'delivered',
-      title: 'Delivered',
+      title: t('delivered'),
       icon: <CheckCircle className="h-4 w-4" />,
       count: deliveredShipments.length,
       gradient: 'from-emerald-500 to-green-500',
@@ -670,22 +675,22 @@ export default function ImportKanbanDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Import Kanban</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('importKanban')}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Drag and drop to manage import workflow
+            {t('dragAndDropManage')}
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/purchase-orders">
             <Button variant="outline" size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              New Purchase
+              {t('newPurchase')}
             </Button>
           </Link>
           <Link href="/consolidation">
             <Button size="sm">
               <BoxSelect className="h-4 w-4 mr-2" />
-              Consolidate
+              {t('consolidate')}
             </Button>
           </Link>
         </div>
@@ -698,7 +703,7 @@ export default function ImportKanbanDashboard() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search supplier, tracking, items, location... (Vietnamese supported)"
+                placeholder={t('searchSupplierTracking')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -707,13 +712,13 @@ export default function ImportKanbanDashboard() {
             </div>
             <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
               <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All Warehouses" />
+                <SelectValue placeholder={t('allWarehouses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Warehouses</SelectItem>
-                <SelectItem value="china">China</SelectItem>
-                <SelectItem value="vietnam">Vietnam</SelectItem>
-                <SelectItem value="usa">USA</SelectItem>
+                <SelectItem value="all">{t('allWarehouses')}</SelectItem>
+                <SelectItem value="china">{t('china')}</SelectItem>
+                <SelectItem value="vietnam">{t('vietnam')}</SelectItem>
+                <SelectItem value="usa">{t('usa')}</SelectItem>
               </SelectContent>
             </Select>
             <Button 
@@ -721,7 +726,7 @@ export default function ImportKanbanDashboard() {
               size="icon"
               onClick={() => {
                 queryClient.invalidateQueries();
-                toast({ title: "Refreshed", description: "Data updated" });
+                toast({ title: t('refreshed'), description: t('dataUpdated') });
               }}
               data-testid="button-refresh"
             >
@@ -818,7 +823,7 @@ export default function ImportKanbanDashboard() {
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     {column.icon}
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                      No items
+                      {t('noItems')}
                     </p>
                   </div>
                 )}

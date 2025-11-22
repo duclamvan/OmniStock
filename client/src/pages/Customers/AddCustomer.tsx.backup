@@ -769,8 +769,8 @@ export default function AddCustomer() {
       if (!response.ok) {
         if (response.status === 404) {
           toast({
-            title: t('customers.error'),
-            description: t('customers.failedToParseAddress'),
+            title: "Not Found",
+            description: "Company not found in ARES registry",
             variant: "destructive",
           });
         }
@@ -785,8 +785,8 @@ export default function AddCustomer() {
       form.setValue('billingCountry', data.country);
       form.setValue('dic', data.dic);
       toast({
-        title: t('customers.success'),
-        description: t('customers.autoFilledFromAres'),
+        title: "Success",
+        description: "Company data loaded from ARES",
       });
     } catch (error) {
       console.error('Error fetching ARES data:', error);
@@ -971,15 +971,15 @@ export default function AddCustomer() {
           const addressId = shippingAddresses[editingShippingIndex].id;
           await apiRequest('PATCH', `/api/shipping-addresses/${addressId}`, shippingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.shippingAddressUpdatedSuccessfully'),
+            title: "Success",
+            description: "Shipping address updated successfully",
           });
         } else {
           // Create new address
           await apiRequest('POST', `/api/customers/${customerId}/shipping-addresses`, shippingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.shippingAddressAddedSuccessfully'),
+            title: "Success",
+            description: "Shipping address added successfully",
           });
         }
         
@@ -993,7 +993,7 @@ export default function AddCustomer() {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || t('customers.failedToSaveShippingAddress'),
+          description: error.message || "Failed to save shipping address",
           variant: "destructive",
         });
       }
@@ -1102,15 +1102,15 @@ export default function AddCustomer() {
           const addressId = billingAddresses[editingBillingIndex].id;
           await apiRequest('PATCH', `/api/billing-addresses/${addressId}`, billingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.billingAddressUpdatedSuccessfully'),
+            title: "Success",
+            description: "Billing address updated successfully",
           });
         } else {
           // Create new address
           await apiRequest('POST', `/api/customers/${customerId}/billing-addresses`, billingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.billingAddressAddedSuccessfully'),
+            title: "Success",
+            description: "Billing address added successfully",
           });
         }
         
@@ -1124,7 +1124,7 @@ export default function AddCustomer() {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || t('customers.failedToSaveBillingAddress'),
+          description: error.message || "Failed to save billing address",
           variant: "destructive",
         });
       }
@@ -1368,15 +1368,15 @@ export default function AddCustomer() {
       setShippingFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
+        title: "Address Parsed",
         description: `Successfully parsed address with ${data.confidence} confidence`,
       });
       setRawShippingAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
         variant: "destructive",
       });
     },
@@ -1545,15 +1545,15 @@ export default function AddCustomer() {
       setBillingFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
+        title: "Address Parsed",
         description: `Successfully parsed address with ${data.confidence} confidence`,
       });
       setRawBillingAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
         variant: "destructive",
       });
     },
@@ -1649,15 +1649,15 @@ export default function AddCustomer() {
       setBillingAddressFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
+        title: "Address Parsed",
         description: `Successfully parsed address with ${data.confidence} confidence`,
       });
       setRawBillingAddressForm("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
         variant: "destructive",
       });
     },
@@ -1700,8 +1700,8 @@ export default function AddCustomer() {
       
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: t('customers.success'),
-        description: isEditMode ? t('customers.customerUpdated') : t('customers.customerCreated'),
+        title: "Success",
+        description: isEditMode ? "Customer updated successfully" : "Customer created successfully",
       });
       navigate('/customers');
     },
@@ -1787,7 +1787,7 @@ export default function AddCustomer() {
               <CardContent>
             <div className="space-y-4">
                 <div>
-                  <Label htmlFor="facebookUrl" className="text-base font-semibold">{t('customers.facebookUrl')}</Label>
+                  <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
                   <Input
                     id="facebookUrl"
                     {...form.register('facebookUrl')}
@@ -1897,7 +1897,7 @@ export default function AddCustomer() {
                 </div>
 
                 <div>
-                  <Label htmlFor="facebookName" className="text-base font-semibold">{t('customers.facebookName')}</Label>
+                  <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
                   <Input
                     id="facebookName"
                     {...form.register('facebookName')}
@@ -2126,7 +2126,7 @@ export default function AddCustomer() {
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
                     {addr.isPrimary && (
-                      <Badge variant="default" data-testid={`badge-primary-${index}`}>{t('customers.primary')}</Badge>
+                      <Badge variant="default" data-testid={`badge-primary-${index}`}>Primary</Badge>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -2180,13 +2180,13 @@ export default function AddCustomer() {
                 </h4>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="shippingLabel">{t('customers.label')}</Label>
+                    <Label htmlFor="shippingLabel">Label</Label>
                     <Input
                       id="shippingLabel"
                       {...shippingForm.register('label', {
                         onChange: () => setIsLabelManuallyEdited(true)
                       })}
-                      placeholder={t('customers.autoGeneratedFromAddress')}
+                      placeholder="Auto-generated from address..."
                       data-testid="input-shippingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -2195,7 +2195,7 @@ export default function AddCustomer() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawShippingAddress">{t('customers.smartPaste')}</Label>
+                    <Label htmlFor="rawShippingAddress">Smart Paste</Label>
                     <p className="text-sm text-muted-foreground">
                       Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
                     </p>
@@ -2232,7 +2232,7 @@ export default function AddCustomer() {
                       <span className="w-full border-t-2 border-slate-300" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">Address Details</span>
                     </div>
                   </div>
 
@@ -2276,7 +2276,7 @@ export default function AddCustomer() {
                   </div>
 
                   <div>
-                    <Label htmlFor="shippingCompany">{t('customers.company')}</Label>
+                    <Label htmlFor="shippingCompany">Company</Label>
                     <Input
                       id="shippingCompany"
                       {...shippingForm.register('company')}
@@ -2290,7 +2290,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="shippingEmail">{t('customers.email')}</Label>
+                      <Label htmlFor="shippingEmail">Email</Label>
                       <Input
                         id="shippingEmail"
                         type="email"
@@ -2301,7 +2301,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingTel">{t('customers.tel')}</Label>
+                      <Label htmlFor="shippingTel">Phone</Label>
                       <Input
                         id="shippingTel"
                         {...shippingForm.register('tel', {
@@ -2333,7 +2333,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
-                      <Label htmlFor="shippingStreet">{t('customers.street')}</Label>
+                      <Label htmlFor="shippingStreet">Street</Label>
                       <Input
                         id="shippingStreet"
                         {...shippingForm.register('street')}
@@ -2343,7 +2343,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingStreetNumber">{t('customers.number')}</Label>
+                      <Label htmlFor="shippingStreetNumber">Number</Label>
                       <Input
                         id="shippingStreetNumber"
                         {...shippingForm.register('streetNumber')}
@@ -2356,7 +2356,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="shippingZipCode">{t('customers.zipCode')}</Label>
+                      <Label htmlFor="shippingZipCode">Postal Code</Label>
                       <Input
                         id="shippingZipCode"
                         {...shippingForm.register('zipCode')}
@@ -2366,7 +2366,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingCity">{t('customers.city')}</Label>
+                      <Label htmlFor="shippingCity">City</Label>
                       <Input
                         id="shippingCity"
                         {...shippingForm.register('city')}
@@ -2376,7 +2376,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingCountry">{t('customers.country')}</Label>
+                      <Label htmlFor="shippingCountry">Country</Label>
                       <div className="relative" ref={shippingCountryDropdownRef}>
                         <Input
                           id="shippingCountry"
@@ -2390,7 +2390,7 @@ export default function AddCustomer() {
                             }
                           }}
                           onFocus={() => setShowShippingCountryDropdown(true)}
-                          placeholder={t('customers.typeToSearchCountries')}
+                          placeholder="Type to search countries..."
                           className={cn(getConfidenceClass('country', shippingFieldConfidence))}
                           data-testid="input-shippingCountry"
                         />
@@ -2529,7 +2529,7 @@ export default function AddCustomer() {
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
                     {addr.isPrimary && (
-                      <Badge variant="default" data-testid={`badge-billingPrimary-${index}`}>{t('customers.primary')}</Badge>
+                      <Badge variant="default" data-testid={`badge-billingPrimary-${index}`}>Primary</Badge>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -2617,13 +2617,13 @@ export default function AddCustomer() {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="billingLabel">{t('customers.label')}</Label>
+                    <Label htmlFor="billingLabel">Label</Label>
                     <Input
                       id="billingLabel"
                       {...billingAddressForm.register('label', {
                         onChange: () => setIsBillingLabelManuallyEdited(true)
                       })}
-                      placeholder={t('customers.autoGeneratedFromAddress')}
+                      placeholder="Auto-generated from address..."
                       data-testid="input-billingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -2632,7 +2632,7 @@ export default function AddCustomer() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawBillingAddressForm">{t('customers.smartPaste')}</Label>
+                    <Label htmlFor="rawBillingAddressForm">Smart Paste</Label>
                     <p className="text-sm text-muted-foreground">
                       Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
                     </p>
@@ -2669,13 +2669,13 @@ export default function AddCustomer() {
                       <span className="w-full border-t-2 border-slate-300" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">Address Details</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingFirstName">{t('customers.firstName')}</Label>
+                      <Label htmlFor="billingFirstName">First Name</Label>
                       <Input
                         id="billingFirstName"
                         {...billingAddressForm.register('firstName')}
@@ -2685,7 +2685,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingLastName">{t('customers.lastName')}</Label>
+                      <Label htmlFor="billingLastName">Last Name</Label>
                       <Input
                         id="billingLastName"
                         {...billingAddressForm.register('lastName')}
@@ -2697,7 +2697,7 @@ export default function AddCustomer() {
                   </div>
 
                   <div>
-                    <Label htmlFor="billingCompany">{t('customers.company')}</Label>
+                    <Label htmlFor="billingCompany">Company</Label>
                     <Input
                       id="billingCompany"
                       {...billingAddressForm.register('company')}
@@ -2711,7 +2711,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingEmail">{t('customers.email')}</Label>
+                      <Label htmlFor="billingEmail">Email</Label>
                       <Input
                         id="billingEmail"
                         type="email"
@@ -2722,7 +2722,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingTel">{t('customers.tel')}</Label>
+                      <Label htmlFor="billingTel">Phone</Label>
                       <Input
                         id="billingTel"
                         {...billingAddressForm.register('tel', {
@@ -2758,7 +2758,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
-                      <Label htmlFor="billingStreet">{t('customers.street')}</Label>
+                      <Label htmlFor="billingStreet">Street</Label>
                       <Input
                         id="billingStreet"
                         {...billingAddressForm.register('street')}
@@ -2768,7 +2768,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingStreetNumber">{t('customers.number')}</Label>
+                      <Label htmlFor="billingStreetNumber">Number</Label>
                       <Input
                         id="billingStreetNumber"
                         {...billingAddressForm.register('streetNumber')}
@@ -2781,7 +2781,7 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="billingZipCode">{t('customers.zipCode')}</Label>
+                      <Label htmlFor="billingZipCode">Postal Code</Label>
                       <Input
                         id="billingZipCode"
                         {...billingAddressForm.register('zipCode')}
@@ -2791,7 +2791,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingCity">{t('customers.city')}</Label>
+                      <Label htmlFor="billingCity">City</Label>
                       <Input
                         id="billingCity"
                         {...billingAddressForm.register('city')}
@@ -2801,7 +2801,7 @@ export default function AddCustomer() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingCountry">{t('customers.country')}</Label>
+                      <Label htmlFor="billingCountry">Country</Label>
                       <div className="relative" ref={billingCountryDropdownRef}>
                         <Input
                           id="billingCountry"
@@ -2815,7 +2815,7 @@ export default function AddCustomer() {
                             }
                           }}
                           onFocus={() => setShowBillingCountryDropdown(true)}
-                          placeholder={t('customers.typeToSearchCountries')}
+                          placeholder="Type to search countries..."
                           className={cn(getConfidenceClass('country', billingAddressFieldConfidence))}
                           data-testid="input-billingCountry"
                         />
@@ -2872,7 +2872,7 @@ export default function AddCustomer() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {billingAddressForm.watch('country') === 'Czech Republic' && (
                       <div>
-                        <Label htmlFor="billingIco">{t('customers.ico')}</Label>
+                        <Label htmlFor="billingIco">IČO (Company ID)</Label>
                         <Input
                           id="billingIco"
                           {...billingAddressForm.register('ico')}
@@ -2967,7 +2967,7 @@ export default function AddCustomer() {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="ico">{t('customers.ico')}</Label>
+                      <Label htmlFor="ico">IČO (Company ID)</Label>
                       <div className="flex gap-2">
                         <Input
                           id="ico"
@@ -2981,7 +2981,7 @@ export default function AddCustomer() {
                       <p className="text-xs text-slate-500 mt-1">Enter IČO to auto-fill company details from ARES</p>
                     </div>
                     <div>
-                      <Label htmlFor="dic">{t('customers.dic')}</Label>
+                      <Label htmlFor="dic">DIČ (Tax ID)</Label>
                       <Input
                         id="dic"
                         {...form.register('dic')}
@@ -3003,13 +3003,13 @@ export default function AddCustomer() {
                     VAT Information
                   </h4>
                   <div>
-                    <Label htmlFor="vatNumber">{t('customers.vatNumber')}</Label>
+                    <Label htmlFor="vatNumber">VAT Number</Label>
                     <div className="flex gap-2 items-start">
                       <div className="flex-1">
                         <Input
                           id="vatNumber"
                           {...form.register('vatNumber')}
-                          placeholder={t('customers.enterVatNumber')}
+                          placeholder="Enter VAT number"
                           onBlur={(e) => {
                             const vatNumber = e.target.value;
                             const country = selectedCountry;
@@ -3029,12 +3029,12 @@ export default function AddCustomer() {
                           {vatValidationResult.valid ? (
                             <>
                               <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
-                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">{t('customers.valid')}</Badge>
+                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">Valid</Badge>
                             </>
                           ) : (
                             <>
                               <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
-                              <Badge variant="destructive" data-testid="badge-vatInvalid">{t('customers.invalid')}</Badge>
+                              <Badge variant="destructive" data-testid="badge-vatInvalid">Invalid</Badge>
                             </>
                           )}
                         </div>
@@ -3064,7 +3064,7 @@ export default function AddCustomer() {
             onClick={() => navigate('/customers')}
             data-testid="button-cancel"
           >
-            {t('customers.cancel')}
+            Cancel
           </Button>
           <Button
             type="submit"
@@ -3074,10 +3074,10 @@ export default function AddCustomer() {
             {createOrUpdateCustomerMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isEditMode ? t('customers.updating') : t('customers.creating')}
+                {isEditMode ? 'Updating...' : 'Creating...'}
               </>
             ) : (
-              isEditMode ? t('customers.updateCustomer') : t('customers.createCustomer')
+              isEditMode ? 'Update Customer' : 'Create Customer'
             )}
           </Button>
         </div>
@@ -3086,19 +3086,19 @@ export default function AddCustomer() {
       <AlertDialog open={deleteBillingIndex !== null} onOpenChange={() => setDeleteBillingIndex(null)}>
         <AlertDialogContent data-testid="dialog-deleteBillingConfirm">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('customers.deleteBillingAddress')}</AlertDialogTitle>
+            <AlertDialogTitle>Delete Billing Address</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('customers.confirmDeleteBillingAddress')}
+              Are you sure you want to delete this billing address? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancelDeleteBilling">{t('customers.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancelDeleteBilling">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBillingAddress}
               className="bg-red-500 hover:bg-red-600"
               data-testid="button-confirmDeleteBilling"
             >
-              {t('customers.delete')}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

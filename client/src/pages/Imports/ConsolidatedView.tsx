@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ interface ConsolidatedItem {
 }
 
 export default function ConsolidatedView() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
 
@@ -119,19 +121,19 @@ export default function ConsolidatedView() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Imports
+                {t('imports:backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Consolidated View</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('imports:consolidatedViewTitle')}</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Aggregated import data across all orders
+                {t('imports:aggregatedImportData')}
               </p>
             </div>
           </div>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Export</span>
+            <span className="hidden md:inline">{t('imports:export')}</span>
           </Button>
         </div>
       </div>
@@ -142,7 +144,7 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Products</p>
+                <p className="text-xs text-muted-foreground">{t('imports:products')}</p>
                 <p className="text-lg md:text-xl font-bold">{stats.totalProducts}</p>
               </div>
               <Package className="h-6 w-6 text-muted-foreground opacity-20" />
@@ -154,7 +156,7 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Quantity</p>
+                <p className="text-xs text-muted-foreground">{t('imports:totalQuantity')}</p>
                 <p className="text-lg md:text-xl font-bold">{stats.totalQuantity}</p>
               </div>
               <Layers className="h-6 w-6 text-muted-foreground opacity-20" />
@@ -166,7 +168,7 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Value</p>
+                <p className="text-xs text-muted-foreground">{t('imports:totalValue')}</p>
                 <p className="text-lg md:text-xl font-bold">
                   {formatCurrency(stats.totalValue, 'USD')}
                 </p>
@@ -180,7 +182,7 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Avg Lead Time</p>
+                <p className="text-xs text-muted-foreground">{t('imports:avgLeadTime')}</p>
                 <p className="text-lg md:text-xl font-bold">{stats.avgLeadTime}d</p>
               </div>
               <Activity className="h-6 w-6 text-muted-foreground opacity-20" />
@@ -192,8 +194,8 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Top Supplier</p>
-                <p className="text-sm font-medium truncate">{stats.topSupplier || 'N/A'}</p>
+                <p className="text-xs text-muted-foreground">{t('imports:topSupplier')}</p>
+                <p className="text-sm font-medium truncate">{stats.topSupplier || t('imports:notAvailable')}</p>
               </div>
               <Building2 className="h-6 w-6 text-muted-foreground opacity-20" />
             </div>
@@ -204,8 +206,8 @@ export default function ConsolidatedView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Top Category</p>
-                <p className="text-sm font-medium truncate">{stats.topCategory || 'N/A'}</p>
+                <p className="text-xs text-muted-foreground">{t('imports:topCategory')}</p>
+                <p className="text-sm font-medium truncate">{stats.topCategory || t('imports:notAvailable')}</p>
               </div>
               <PieChart className="h-6 w-6 text-muted-foreground opacity-20" />
             </div>
@@ -216,9 +218,9 @@ export default function ConsolidatedView() {
       {/* Analysis Tabs */}
       <Tabs defaultValue="products" className="px-4 md:px-0">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="products">{t('imports:products')}</TabsTrigger>
+          <TabsTrigger value="suppliers">{t('imports:supplier')}</TabsTrigger>
+          <TabsTrigger value="trends">{t('imports:importTrends')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="space-y-4">
@@ -230,7 +232,7 @@ export default function ConsolidatedView() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search products..."
+                      placeholder={t('imports:searchProducts')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
@@ -243,14 +245,14 @@ export default function ConsolidatedView() {
                     size="sm"
                     onClick={() => setViewType("grid")}
                   >
-                    Grid
+                    {t('imports:grid')}
                   </Button>
                   <Button
                     variant={viewType === "list" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewType("list")}
                   >
-                    List
+                    {t('imports:list')}
                   </Button>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export default function ConsolidatedView() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No consolidated data available</p>
+                <p className="text-muted-foreground">{t('imports:noConsolidatedData')}</p>
               </CardContent>
             </Card>
           ) : viewType === "grid" ? (
@@ -284,15 +286,15 @@ export default function ConsolidatedView() {
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Orders</span>
+                        <span className="text-muted-foreground">{t('imports:totalOrders')}</span>
                         <span className="font-medium">{item.totalOrders}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Quantity</span>
+                        <span className="text-muted-foreground">{t('imports:totalQuantity')}</span>
                         <span className="font-medium">{item.totalQuantity}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Value</span>
+                        <span className="text-muted-foreground">{t('imports:totalValue')}</span>
                         <span className="font-medium">
                           {formatCurrency(item.totalValue, 'USD')}
                         </span>
@@ -300,44 +302,44 @@ export default function ConsolidatedView() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="text-xs text-muted-foreground">Quantity Status</div>
+                      <div className="text-xs text-muted-foreground">{t('imports:quantityStatus')}</div>
                       <Progress 
                         value={(item.receivedQuantity / item.totalQuantity) * 100} 
                         className="h-2"
                       />
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
-                          <span className="text-muted-foreground">Pending</span>
+                          <span className="text-muted-foreground">{t('imports:pending')}</span>
                           <p className="font-medium">{item.pendingQuantity}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Transit</span>
+                          <span className="text-muted-foreground">{t('imports:transit')}</span>
                           <p className="font-medium">{item.inTransitQuantity}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Received</span>
+                          <span className="text-muted-foreground">{t('imports:received')}</span>
                           <p className="font-medium">{item.receivedQuantity}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="pt-2 border-t">
-                      <div className="text-xs text-muted-foreground mb-2">Price Analysis</div>
+                      <div className="text-xs text-muted-foreground mb-2">{t('imports:priceAnalysis')}</div>
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
-                          <span className="text-muted-foreground">Min</span>
+                          <span className="text-muted-foreground">{t('imports:min')}</span>
                           <p className="font-medium">
                             {formatCurrency(item.minUnitCost, 'USD')}
                           </p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Avg</span>
+                          <span className="text-muted-foreground">{t('imports:avg')}</span>
                           <p className="font-medium">
                             {formatCurrency(item.avgUnitCost, 'USD')}
                           </p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Max</span>
+                          <span className="text-muted-foreground">{t('imports:max')}</span>
                           <p className="font-medium">
                             {formatCurrency(item.maxUnitCost, 'USD')}
                           </p>
@@ -346,7 +348,7 @@ export default function ConsolidatedView() {
                     </div>
 
                     <div className="pt-2 border-t">
-                      <div className="text-xs text-muted-foreground mb-1">Suppliers</div>
+                      <div className="text-xs text-muted-foreground mb-1">{t('imports:supplier')}</div>
                       <div className="flex flex-wrap gap-1">
                         {item.suppliers.slice(0, 3).map((supplier, idx) => (
                           <Badge key={idx} variant="secondary" className="text-xs">
@@ -370,13 +372,13 @@ export default function ConsolidatedView() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-4">Product</th>
-                      <th className="text-right p-4">Orders</th>
-                      <th className="text-right p-4">Total Qty</th>
-                      <th className="text-right p-4">Received</th>
-                      <th className="text-right p-4">Avg Cost</th>
-                      <th className="text-right p-4">Total Value</th>
-                      <th className="text-left p-4">Suppliers</th>
+                      <th className="text-left p-4">{t('imports:product')}</th>
+                      <th className="text-right p-4">{t('imports:totalOrders')}</th>
+                      <th className="text-right p-4">{t('imports:totalQty')}</th>
+                      <th className="text-right p-4">{t('imports:received')}</th>
+                      <th className="text-right p-4">{t('imports:avg')} {t('imports:unitCost')}</th>
+                      <th className="text-right p-4">{t('imports:totalValue')}</th>
+                      <th className="text-left p-4">{t('imports:supplier')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -431,20 +433,20 @@ export default function ConsolidatedView() {
             {/* Supplier Performance */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Supplier Performance</CardTitle>
+                <CardTitle className="text-base">{t('imports:supplierPerformance')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {['Supplier A', 'Supplier B', 'Supplier C'].map((supplier) => (
                   <div key={supplier} className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>{supplier}</span>
-                      <span className="text-muted-foreground">45 orders</span>
+                      <span className="text-muted-foreground">45 {t('imports:totalOrders')}</span>
                     </div>
                     <Progress value={Math.random() * 100} className="h-2" />
                     <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                      <span>Lead: 7d</span>
-                      <span>Quality: 98%</span>
-                      <span>Value: $45K</span>
+                      <span>{t('imports:lead')}: 7{t('imports:days')}</span>
+                      <span>{t('imports:quality')}: 98%</span>
+                      <span>{t('imports:value')}: $45K</span>
                     </div>
                   </div>
                 ))}
@@ -454,7 +456,7 @@ export default function ConsolidatedView() {
             {/* Category Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Category Distribution</CardTitle>
+                <CardTitle className="text-base">{t('imports:categoryDistribution')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {Object.entries(byCategory).map(([category, data]: [string, any]) => (
@@ -467,7 +469,7 @@ export default function ConsolidatedView() {
                     </div>
                     <Progress value={(data.value / stats.totalValue) * 100} className="h-2" />
                     <div className="text-xs text-muted-foreground">
-                      {data.items} items • {data.quantity} units
+                      {data.items} {t('imports:items')} • {data.quantity} {t('imports:units')}
                     </div>
                   </div>
                 ))}
@@ -479,9 +481,9 @@ export default function ConsolidatedView() {
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Import Trends</CardTitle>
+              <CardTitle className="text-base">{t('imports:importTrends')}</CardTitle>
               <CardDescription className="text-xs">
-                Volume and cost trends over time
+                {t('imports:volumeAndCostTrends')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -489,7 +491,7 @@ export default function ConsolidatedView() {
                 <div className="text-center">
                   <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Trend charts would be displayed here
+                    {t('imports:trendChartsPlaceholder')}
                   </p>
                 </div>
               </div>

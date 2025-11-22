@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,7 @@ interface Category {
 }
 
 export default function Categories() {
+  const { t } = useTranslation('inventory');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,8 +89,8 @@ export default function Categories() {
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: 'Category deleted successfully'
+        title: t('success'),
+        description: t('categoryDeletedSuccess')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       setCategoryToDelete(null);
@@ -96,8 +98,8 @@ export default function Categories() {
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete category',
+        title: t('error'),
+        description: error.message || t('categoryDeleteFailed'),
         variant: 'destructive'
       });
     }
@@ -122,7 +124,7 @@ export default function Categories() {
   const columns: DataTableColumn<Category>[] = [
     {
       key: "name",
-      header: "Category Name",
+      header: t('categoryName'),
       sortable: true,
       cell: (item) => (
         <div className="flex items-center gap-2">
@@ -135,16 +137,16 @@ export default function Categories() {
     },
     {
       key: "description",
-      header: "Description",
+      header: t('description'),
       cell: (item) => (
         <span className="text-muted-foreground">
-          {item.description || 'No description'}
+          {item.description || t('noDescription')}
         </span>
       ),
     },
     {
       key: "productCount",
-      header: "Products",
+      header: t('products'),
       sortable: true,
       cell: (item) => {
         const count = item.productCount || 0;
@@ -155,7 +157,7 @@ export default function Categories() {
               {count}
             </span>
             <span className="text-sm text-muted-foreground">
-              {count === 1 ? 'product' : 'products'}
+              {count === 1 ? t('product') : t('products')}
             </span>
           </div>
         );
@@ -163,7 +165,7 @@ export default function Categories() {
     },
     {
       key: "created_at",
-      header: "Created",
+      header: t('created'),
       sortable: true,
       cell: (item) => (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -176,7 +178,7 @@ export default function Categories() {
     },
     {
       key: "actions",
-      header: "Actions",
+      header: t('actions'),
       cell: (item) => (
         <div className="flex items-center gap-2">
           <Link href={`/inventory/categories/${item.id}/edit`}>
@@ -240,22 +242,22 @@ export default function Categories() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Categories</h1>
-            <p className="text-muted-foreground">Manage product categories</p>
+            <h1 className="text-2xl font-bold">{t('categories')}</h1>
+            <p className="text-muted-foreground">{t('manageProductCategories')}</p>
           </div>
           <Link href="/inventory/categories/add">
             <Button data-testid="button-add-category">
               <Plus className="mr-2 h-4 w-4" />
-              Add Category
+              {t('addCategory')}
             </Button>
           </Link>
         </div>
         
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading categories</AlertTitle>
+          <AlertTitle>{t('errorLoadingCategories')}</AlertTitle>
           <AlertDescription>
-            Unable to load categories. Please try refreshing the page.
+            {t('unableToLoadCategories')}
           </AlertDescription>
         </Alert>
       </div>
@@ -267,13 +269,13 @@ export default function Categories() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage product categories</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('categories')}</h1>
+          <p className="text-gray-500 dark:text-gray-400">{t('manageProductCategories')}</p>
         </div>
         <Link href="/inventory/categories/add">
           <Button data-testid="button-add-category">
             <Plus className="mr-2 h-4 w-4" />
-            Add Category
+            {t('addCategory')}
           </Button>
         </Link>
       </div>
@@ -285,7 +287,7 @@ export default function Categories() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Total Categories
+                  {t('totalCategories')}
                 </p>
                 <p className="text-3xl font-bold mt-2">{categories.length}</p>
               </div>
@@ -300,7 +302,7 @@ export default function Categories() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  With Products
+                  {t('withProducts')}
                 </p>
                 <p className="text-3xl font-bold mt-2">
                   {categoriesWithCount.filter(c => (c.productCount ?? 0) > 0).length}
@@ -317,7 +319,7 @@ export default function Categories() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Total Products
+                  {t('totalProducts')}
                 </p>
                 <p className="text-3xl font-bold mt-2">{products.length}</p>
               </div>
@@ -333,11 +335,11 @@ export default function Categories() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>All Categories</CardTitle>
+            <CardTitle>{t('allCategories')}</CardTitle>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search categories..."
+                placeholder={t('searchCategories')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -350,17 +352,17 @@ export default function Categories() {
           {filteredCategories.length === 0 ? (
             <div className="text-center py-12 px-4">
               <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No categories found</h3>
+              <h3 className="text-lg font-medium mb-2">{t('noCategoriesFound')}</h3>
               <p className="text-muted-foreground mb-4">
                 {searchQuery 
-                  ? "No categories match your search criteria."
-                  : "Get started by creating your first category."}
+                  ? t('noCategoriesMatchSearch')
+                  : t('createFirstCategory')}
               </p>
               {!searchQuery && (
                 <Link href="/inventory/categories/add">
                   <Button data-testid="button-create-first-category">
                     <Plus className="mr-2 h-4 w-4" />
-                    Create Category
+                    {t('createCategory')}
                   </Button>
                 </Link>
               )}
@@ -394,18 +396,18 @@ export default function Categories() {
                                 {category.name}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                                {category.description || 'No description'}
+                                {category.description || t('noDescription')}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
                             {hasProducts ? (
                               <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 text-xs">
-                                Active
+                                {t('active')}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="text-gray-500 text-xs">
-                                Empty
+                                {t('empty')}
                               </Badge>
                             )}
                           </div>
@@ -414,7 +416,7 @@ export default function Categories() {
                         {/* Middle Row - Key Details */}
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Products</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">{t('products')}</p>
                             <div className="flex items-center gap-1.5 mt-1">
                               <Package className={`h-4 w-4 ${hasProducts ? 'text-green-500' : 'text-gray-400'}`} />
                               <span className={`font-semibold ${hasProducts ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
@@ -423,7 +425,7 @@ export default function Categories() {
                             </div>
                           </div>
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Created</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">{t('created')}</p>
                             <div className="flex items-center gap-1.5 mt-1">
                               <Calendar className="h-4 w-4 text-gray-500" />
                               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -436,7 +438,7 @@ export default function Categories() {
                         {/* Bottom Row - Actions */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Updated: {format(new Date(category.updated_at), 'MMM dd, yyyy')}
+                            {t('updated')}: {format(new Date(category.updated_at), 'MMM dd, yyyy')}
                           </div>
                           <div className="flex items-center gap-1">
                             <Link href={`/inventory/categories/${category.id}/edit`}>
@@ -489,15 +491,15 @@ export default function Categories() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this category? This action cannot be undone.
+              {t('deleteCategoryConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

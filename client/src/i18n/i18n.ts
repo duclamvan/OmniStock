@@ -13,6 +13,8 @@ import warehouseEN from './locales/en/warehouse';
 import financialEN from './locales/en/financial';
 import reportsEN from './locales/en/reports';
 import systemEN from './locales/en/system';
+import discountsEN from './locales/en/discounts';
+import importsEN from './locales/en/imports';
 
 import commonVI from './locales/vi/common';
 import ordersVI from './locales/vi/orders';
@@ -25,6 +27,8 @@ import warehouseVI from './locales/vi/warehouse';
 import financialVI from './locales/vi/financial';
 import reportsVI from './locales/vi/reports';
 import systemVI from './locales/vi/system';
+import discountsVI from './locales/vi/discounts';
+import importsVI from './locales/vi/imports';
 
 export const defaultNS = 'common';
 
@@ -41,6 +45,8 @@ export const resources = {
     financial: financialEN,
     reports: reportsEN,
     system: systemEN,
+    discounts: discountsEN,
+    imports: importsEN,
   },
   vi: {
     common: commonVI,
@@ -54,6 +60,8 @@ export const resources = {
     financial: financialVI,
     reports: reportsVI,
     system: systemVI,
+    discounts: discountsVI,
+    imports: importsVI,
   },
 } as const;
 

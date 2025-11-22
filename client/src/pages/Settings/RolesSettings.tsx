@@ -21,6 +21,7 @@ import { Shield, Users, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface User {
   id: string;
@@ -32,6 +33,7 @@ interface User {
 }
 
 export default function RolesSettings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   // Fetch all users
@@ -49,14 +51,14 @@ export default function RolesSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       toast({
-        title: "Success",
-        description: "User role updated successfully",
+        title: t('common:success'),
+        description: t('settings:userRoleUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update user role",
+        title: t('common:error'),
+        description: error.message || t('settings:failedToUpdateUserRole'),
         variant: "destructive",
       });
     },
@@ -76,7 +78,7 @@ export default function RolesSettings() {
           data-testid={`badge-role-administrator`}
         >
           <Shield className="h-3 w-3 mr-1" />
-          Administrator
+          {t('settings:administrator')}
         </Badge>
       );
     }
@@ -86,7 +88,7 @@ export default function RolesSettings() {
         data-testid={`badge-role-warehouse-operator`}
       >
         <Users className="h-3 w-3 mr-1" />
-        Warehouse Operator
+        {t('settings:warehouseOperator')}
         </Badge>
     );
   };
@@ -111,13 +113,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
-              Total Users
+              {t('settings:totalUsers')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{users.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Active in system
+              {t('settings:activeInSystem')}
             </p>
           </CardContent>
         </Card>
@@ -126,13 +128,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Shield className="h-4 w-4 text-green-600" />
-              Administrators
+              {t('settings:administrators')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{adminCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Full system access
+              {t('settings:fullSystemAccess')}
             </p>
           </CardContent>
         </Card>
@@ -141,13 +143,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
-              Warehouse Operators
+              {t('settings:warehouseOperators')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{operatorCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Standard access
+              {t('settings:standardAccess')}
             </p>
           </CardContent>
         </Card>
@@ -159,28 +161,28 @@ export default function RolesSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-green-600" />
-              Administrator Permissions
+              {t('settings:administratorPermissions')}
             </CardTitle>
             <CardDescription>
-              Full access to all system features
+              {t('settings:fullAccessToAllSystemFeatures')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">User management and role assignment</span>
+              <span className="text-sm">{t('settings:userManagementAndRoleAssignment')}</span>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">System settings configuration</span>
+              <span className="text-sm">{t('settings:systemSettingsConfiguration')}</span>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">Financial data access</span>
+              <span className="text-sm">{t('settings:financialDataAccess')}</span>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">All warehouse operations</span>
+              <span className="text-sm">{t('settings:allWarehouseOperations')}</span>
             </div>
           </CardContent>
         </Card>
@@ -189,28 +191,28 @@ export default function RolesSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-blue-600" />
-              Warehouse Operator Permissions
+              {t('settings:warehouseOperatorPermissions')}
             </CardTitle>
             <CardDescription>
-              Limited access to operational features
+              {t('settings:limitedAccessToOperationalFeatures')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">Order management and fulfillment</span>
+              <span className="text-sm">{t('settings:orderManagementAndFulfillment')}</span>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">Inventory and stock management</span>
+              <span className="text-sm">{t('settings:inventoryAndStockManagement')}</span>
             </div>
             <div className="flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">Limited financial data visibility</span>
+              <span className="text-sm">{t('settings:limitedFinancialDataVisibility')}</span>
             </div>
             <div className="flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm">No user or system management access</span>
+              <span className="text-sm">{t('settings:noUserOrSystemManagementAccess')}</span>
             </div>
           </CardContent>
         </Card>
@@ -221,10 +223,10 @@ export default function RolesSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            User Roles Management
+            {t('settings:userRolesManagement')}
           </CardTitle>
           <CardDescription>
-            Assign roles to control system access and permissions
+            {t('settings:assignRolesToControlSystemAccess')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -236,18 +238,18 @@ export default function RolesSettings() {
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No users found
+              {t('settings:noUsersFound')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead>Current Role</TableHead>
-                    <TableHead>Assign Role</TableHead>
-                    <TableHead className="hidden lg:table-cell">Member Since</TableHead>
+                    <TableHead>{t('common:name')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('common:email')}</TableHead>
+                    <TableHead>{t('settings:currentRole')}</TableHead>
+                    <TableHead>{t('settings:assignRole')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('settings:memberSince')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -275,13 +277,13 @@ export default function RolesSettings() {
                             <SelectItem value="administrator">
                               <div className="flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-green-600" />
-                                Administrator
+                                {t('settings:administrator')}
                               </div>
                             </SelectItem>
                             <SelectItem value="warehouse_operator">
                               <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4 text-blue-600" />
-                                Warehouse Operator
+                                {t('settings:warehouseOperator')}
                               </div>
                             </SelectItem>
                           </SelectContent>

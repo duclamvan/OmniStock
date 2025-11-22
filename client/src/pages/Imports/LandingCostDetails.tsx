@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ interface Shipment {
 }
 
 export default function LandingCostDetails() {
+  const { t } = useTranslation('imports');
   const { id } = useParams();
 
   // Fetch shipment details
@@ -79,7 +81,7 @@ export default function LandingCostDetails() {
         <Link href="/imports/landing-costs">
           <Button variant="ghost" size="sm" className="mb-2 h-8" data-testid="button-back-to-list">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-            Back to Landing Costs
+            {t('backToLandingCosts')}
           </Button>
         </Link>
         
@@ -87,10 +89,10 @@ export default function LandingCostDetails() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl md:text-2xl font-bold">
-              {shipment.shipmentName || `Shipment #${shipment.id}`}
+              {shipment.shipmentName || `${t('shipment')} #${shipment.id}`}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Calculate and review landed costs for this shipment
+              {t('calculateAndReviewLandedCosts')}
             </p>
           </div>
           <Badge className={`${getStatusColor(shipment.status)} px-2.5 py-0.5 text-sm`}>
@@ -102,35 +104,35 @@ export default function LandingCostDetails() {
         <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border rounded-lg p-3 mb-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
             <div>
-              <p className="text-muted-foreground mb-0.5">Carrier</p>
+              <p className="text-muted-foreground mb-0.5">{t('carrier')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Truck className="h-3 w-3" />
                 {shipment.carrier}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Tracking Number</p>
+              <p className="text-muted-foreground mb-0.5">{t('trackingNumber')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Hash className="h-3 w-3" />
                 {shipment.trackingNumber}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Items</p>
+              <p className="text-muted-foreground mb-0.5">{t('items')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Package className="h-3 w-3" />
-                {shipment.itemCount} items
+                {shipment.itemCount} {t('items')}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Origin → Destination</p>
+              <p className="text-muted-foreground mb-0.5">{t('originDestination')}</p>
               <p className="font-medium flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {shipment.origin} → {shipment.destination}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-0.5">Created</p>
+              <p className="text-muted-foreground mb-0.5">{t('created')}</p>
               <p className="font-medium flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 {format(new Date(shipment.createdAt), 'MMM dd, yyyy')}
@@ -159,7 +161,7 @@ export default function LandingCostDetails() {
 
           {shipment.notes && (
             <div className="mt-2 pt-2 border-t">
-              <p className="text-xs text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">{t('notes')}</p>
               <p className="text-xs mt-1">{shipment.notes}</p>
             </div>
           )}
@@ -172,10 +174,10 @@ export default function LandingCostDetails() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Shipment Items ({shipment.itemCount})
+              {t('shipmentItems')} ({shipment.itemCount})
             </CardTitle>
             <CardDescription className="text-xs">
-              Products included in this shipment
+              {t('productsIncludedInShipment')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,16 +188,16 @@ export default function LandingCostDetails() {
                   className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{item.name || item.productName || 'Unknown Product'}</p>
+                    <p className="font-medium truncate">{item.name || item.productName || t('unknownProduct')}</p>
                     {item.sku && (
-                      <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                      <p className="text-xs text-muted-foreground">{t('sku')}: {item.sku}</p>
                     )}
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    <p className="font-semibold">Qty: {item.quantity || 0}</p>
+                    <p className="font-semibold">{t('qty')}: {item.quantity || 0}</p>
                     {item.unitPrice && (
                       <p className="text-xs text-muted-foreground">
-                        ${parseFloat(item.unitPrice).toFixed(2)} / unit
+                        ${parseFloat(item.unitPrice).toFixed(2)} / {t('unit')}
                       </p>
                     )}
                   </div>

@@ -9,10 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import { LogIn, Shield, Smartphone, ArrowLeft } from "lucide-react";
 import { SiReplit, SiGoogle, SiGithub, SiX, SiApple } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 
 export default function Login() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [show2FA, setShow2FA] = useState(false);
   const [authTab, setAuthTab] = useState<"replit" | "sms">("replit");
@@ -38,8 +40,8 @@ export default function Login() {
     
     if (error === 'auth_failed') {
       toast({
-        title: "Authentication Failed",
-        description: "Unable to log in. Please try again.",
+        title: t('auth.authenticationFailed'),
+        description: t('auth.unableToLogin'),
         variant: "destructive",
       });
     }
@@ -48,8 +50,8 @@ export default function Login() {
       setShow2FA(true);
       setPhoneNumber(phone);
       toast({
-        title: "Two-Factor Authentication Required",
-        description: "Please verify your identity with the code sent to your phone.",
+        title: t('auth.twoFactorAuthRequired'),
+        description: t('auth.verifyIdentityWithCode'),
       });
     }
   }, [toast]);
@@ -75,8 +77,8 @@ export default function Login() {
   const handleSendCode = async () => {
     if (!phoneNumber) {
       toast({
-        title: "Error",
-        description: "Phone number is required",
+        title: t('error'),
+        description: t('auth.phoneNumberRequired'),
         variant: "destructive",
       });
       return;
@@ -91,21 +93,21 @@ export default function Login() {
         setIsCodeSent(true);
         setResendCountdown(60);
         toast({
-          title: "Code Sent",
-          description: "Verification code sent to your phone",
+          title: t('auth.codeSent'),
+          description: t('auth.verificationCodeSent'),
         });
       } else {
         const data = await response.json();
         toast({
-          title: "Error",
-          description: data.message || "Failed to send code",
+          title: t('error'),
+          description: data.message || t('auth.failedToSendCode'),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to send verification code",
+        title: t('error'),
+        description: t('auth.failedToSendVerificationCode'),
         variant: "destructive",
       });
     } finally {
@@ -118,8 +120,8 @@ export default function Login() {
     
     if (!verificationCode || verificationCode.length !== 6) {
       toast({
-        title: "Error",
-        description: "Please enter a valid 6-digit code",
+        title: t('error'),
+        description: t('auth.pleaseEnterValid6DigitCode'),
         variant: "destructive",
       });
       return;
@@ -132,23 +134,23 @@ export default function Login() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Authentication successful!",
+          title: t('success'),
+          description: t('auth.authenticationSuccessful'),
         });
         navigate("/");
       } else {
         const data = await response.json();
         toast({
-          title: "Verification Failed",
-          description: data.message || "Invalid code. Please try again.",
+          title: t('auth.verificationFailed'),
+          description: data.message || t('auth.invalidCode'),
           variant: "destructive",
         });
         setVerificationCode("");
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to verify code",
+        title: t('error'),
+        description: t('auth.failedToVerifyCode'),
         variant: "destructive",
       });
     } finally {
@@ -160,8 +162,8 @@ export default function Login() {
   const handleSmsSendCode = async () => {
     if (!smsPhoneNumber) {
       toast({
-        title: "Error",
-        description: "Phone number is required",
+        title: t('error'),
+        description: t('auth.phoneNumberRequired'),
         variant: "destructive",
       });
       return;
@@ -178,21 +180,21 @@ export default function Login() {
         setSmsCodeSent(true);
         setSmsResendCountdown(60);
         toast({
-          title: "Code Sent",
-          description: "Verification code sent to your phone",
+          title: t('auth.codeSent'),
+          description: t('auth.verificationCodeSent'),
         });
       } else {
         const data = await response.json();
         toast({
-          title: "Error",
-          description: data.message || "Failed to send code",
+          title: t('error'),
+          description: data.message || t('auth.failedToSendCode'),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to send verification code",
+        title: t('error'),
+        description: t('auth.failedToSendVerificationCode'),
         variant: "destructive",
       });
     } finally {
@@ -205,8 +207,8 @@ export default function Login() {
     
     if (!smsVerificationCode || smsVerificationCode.length !== 6) {
       toast({
-        title: "Error",
-        description: "Please enter a valid 6-digit code",
+        title: t('error'),
+        description: t('auth.pleaseEnterValid6DigitCode'),
         variant: "destructive",
       });
       return;
@@ -225,23 +227,23 @@ export default function Login() {
         await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
         
         toast({
-          title: "Success",
-          description: "Login successful!",
+          title: t('success'),
+          description: t('auth.loginSuccessful'),
         });
         navigate("/");
       } else {
         const data = await response.json();
         toast({
-          title: "Verification Failed",
-          description: data.message || "Invalid code. Please try again.",
+          title: t('auth.verificationFailed'),
+          description: data.message || t('auth.invalidCode'),
           variant: "destructive",
         });
         setSmsVerificationCode("");
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to verify code",
+        title: t('error'),
+        description: t('auth.failedToVerifyCode'),
         variant: "destructive",
       });
     } finally {
@@ -260,10 +262,10 @@ export default function Login() {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              Two-Factor Authentication
+              {t('auth.twoFactorAuth')}
             </CardTitle>
             <CardDescription className="text-center text-base text-gray-600 dark:text-gray-400">
-              Enter the 6-digit code sent to<br />
+              {t('auth.enterCodeSentTo')}<br />
               <span className="font-semibold text-gray-900 dark:text-white">{phoneNumber}</span>
             </CardDescription>
           </CardHeader>
@@ -271,13 +273,13 @@ export default function Login() {
             <form onSubmit={handleVerifyCode} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="code" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Verification Code
+                  {t('auth.verificationCode')}
                 </Label>
                 <Input
                   id="code"
                   type="text"
                   inputMode="numeric"
-                  placeholder="000000"
+                  placeholder={t('auth.codePlaceholder')}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
@@ -294,7 +296,7 @@ export default function Login() {
                 disabled={isLoading || verificationCode.length !== 6}
                 data-testid="button-verify-2fa"
               >
-                {isLoading ? "Verifying..." : "Verify Code"}
+                {isLoading ? t('auth.verifying') : t('auth.verifyCode')}
               </Button>
             </form>
 
@@ -308,7 +310,7 @@ export default function Login() {
                 data-testid="button-resend-code"
               >
                 <Smartphone className="mr-2 h-4 w-4" />
-                {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Resend Code"}
+                {resendCountdown > 0 ? t('auth.resendCodeIn', { seconds: resendCountdown }) : t('auth.resendCode')}
               </Button>
 
               <Button
@@ -323,7 +325,7 @@ export default function Login() {
                 data-testid="button-back-to-login"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
+                {t('auth.backToLogin')}
               </Button>
             </div>
           </CardContent>
@@ -342,10 +344,10 @@ export default function Login() {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Welcome Back
+            {t('auth.welcomeBack')}
           </CardTitle>
           <CardDescription className="text-center text-base text-gray-600 dark:text-gray-400">
-            Sign in to Davie Supply
+            {t('auth.signInToDavieSupply')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -353,11 +355,11 @@ export default function Login() {
             <TabsList className="grid w-full grid-cols-2 mb-6" data-testid="tabs-auth-method">
               <TabsTrigger value="replit" data-testid="tab-replit-auth">
                 <SiReplit className="mr-2 h-4 w-4" />
-                Replit Auth
+                {t('auth.replitAuth')}
               </TabsTrigger>
               <TabsTrigger value="sms" data-testid="tab-sms-auth">
                 <Smartphone className="mr-2 h-4 w-4" />
-                SMS Login
+                {t('auth.smsLogin')}
               </TabsTrigger>
             </TabsList>
 
@@ -370,7 +372,7 @@ export default function Login() {
                 data-testid="button-replit-login"
               >
                 <SiReplit className="mr-2 h-5 w-5" />
-                Continue with Replit
+                {t('auth.continueWithReplit')}
               </Button>
 
               <div className="relative my-6">
@@ -379,7 +381,7 @@ export default function Login() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-white dark:bg-slate-900 px-3 text-gray-500 dark:text-gray-400 font-medium">
-                    Or sign in with
+                    {t('auth.orSignInWith')}
                   </span>
                 </div>
               </div>
@@ -429,12 +431,12 @@ export default function Login() {
                 <form onSubmit={(e) => { e.preventDefault(); handleSmsSendCode(); }} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="sms-phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Phone Number
+                      {t('auth.phoneNumber')}
                     </Label>
                     <Input
                       id="sms-phone"
                       type="tel"
-                      placeholder="+420123456789"
+                      placeholder={t('auth.phonePlaceholder')}
                       value={smsPhoneNumber}
                       onChange={(e) => setSmsPhoneNumber(e.target.value)}
                       required
@@ -443,7 +445,7 @@ export default function Login() {
                       autoFocus
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Enter phone number in E.164 format (e.g., +420123456789)
+                      {t('auth.enterPhoneE164Format')}
                     </p>
                   </div>
 
@@ -454,20 +456,20 @@ export default function Login() {
                     data-testid="button-send-sms-code"
                   >
                     <Smartphone className="mr-2 h-5 w-5" />
-                    {isSmsLoading ? "Sending..." : "Send Code"}
+                    {isSmsLoading ? t('auth.sending') : t('auth.sendCode')}
                   </Button>
                 </form>
               ) : (
                 <form onSubmit={handleSmsVerifyCode} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="sms-code" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Verification Code
+                      {t('auth.verificationCode')}
                     </Label>
                     <Input
                       id="sms-code"
                       type="text"
                       inputMode="numeric"
-                      placeholder="000000"
+                      placeholder={t('auth.codePlaceholder')}
                       value={smsVerificationCode}
                       onChange={(e) => setSmsVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       required
@@ -477,7 +479,7 @@ export default function Login() {
                       autoFocus
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      Code sent to {smsPhoneNumber}
+                      {t('auth.codeSentTo', { phone: smsPhoneNumber })}
                     </p>
                   </div>
 
@@ -487,7 +489,7 @@ export default function Login() {
                     disabled={isSmsLoading || smsVerificationCode.length !== 6}
                     data-testid="button-verify-sms-code"
                   >
-                    {isSmsLoading ? "Verifying..." : "Verify & Login"}
+                    {isSmsLoading ? t('auth.verifying') : t('auth.verifyAndLogin')}
                   </Button>
 
                   <div className="space-y-2">
@@ -500,7 +502,7 @@ export default function Login() {
                       data-testid="button-resend-sms-code"
                     >
                       <Smartphone className="mr-2 h-4 w-4" />
-                      {smsResendCountdown > 0 ? `Resend code in ${smsResendCountdown}s` : "Resend Code"}
+                      {smsResendCountdown > 0 ? t('auth.resendCodeIn', { seconds: smsResendCountdown }) : t('auth.resendCode')}
                     </Button>
 
                     <Button
@@ -514,7 +516,7 @@ export default function Login() {
                       data-testid="button-back-to-phone"
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back to Phone Input
+                      {t('auth.backToPhoneInput')}
                     </Button>
                   </div>
                 </form>
@@ -524,13 +526,13 @@ export default function Login() {
 
           <div className="pt-4 text-center text-sm border-t border-gray-200 dark:border-gray-800">
             <p className="text-gray-600 dark:text-gray-400">
-              By continuing, you agree to our{" "}
+              {t('auth.byContinuingYouAgree')}{" "}
               <a href="#" className="text-blue-600 hover:underline font-medium">
-                Terms of Service
+                {t('auth.termsOfService')}
               </a>{" "}
-              and{" "}
+              {t('auth.and')}{" "}
               <a href="#" className="text-blue-600 hover:underline font-medium">
-                Privacy Policy
+                {t('auth.privacyPolicy')}
               </a>
             </p>
           </div>

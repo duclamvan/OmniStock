@@ -394,6 +394,12 @@ const system = {
   
   // Edit Ticket specific
   ticketNotFound: 'Không tìm thấy phiếu',
+  
+  // 404 Not Found Page
+  notFound: {
+    title: '404 Không tìm thấy trang',
+    message: 'Bạn có quên thêm trang vào router không?',
+  },
 } as const;
 
 export default system;

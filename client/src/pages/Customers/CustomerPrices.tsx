@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -41,12 +42,12 @@ interface CustomerPrice {
   variant?: ProductVariant | null;
 }
 
-const createCustomerPriceSchema = z.object({
-  productId: z.string().min(1, 'Product is required'),
+const createCustomerPriceSchema = (t: (key: string) => string) => z.object({
+  productId: z.string().min(1, t('customers.productRequired')),
   variantId: z.string().optional(),
-  price: z.coerce.number().positive('Price must be positive'),
+  price: z.coerce.number().positive(t('customers.pricePositive')),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
-  validFrom: z.string().min(1, 'Valid from date is required'),
+  validFrom: z.string().min(1, t('customers.validFromRequired')),
   validTo: z.string().optional(),
   isActive: z.boolean().default(true),
   notes: z.string().optional(),
@@ -59,6 +60,7 @@ interface CustomerPricesProps {
 }
 
 export function CustomerPrices({ customerId }: CustomerPricesProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
@@ -86,7 +88,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   );
 
   const form = useForm<CreateCustomerPriceInput>({
-    resolver: zodResolver(createCustomerPriceSchema),
+    resolver: zodResolver(createCustomerPriceSchema(t)),
     defaultValues: {
       productId: '',
       variantId: '',
@@ -110,14 +112,14 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       setSelectedProduct("");
       setShowProductDropdown(false);
       toast({
-        title: 'Success',
-        description: 'Customer price created successfully',
+        title: t('customers.success'),
+        description: t('customers.customerPriceCreated'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to create customer price',
+        title: t('customers.error'),
+        description: error?.message || t('customers.failedToCreateCustomerPrice'),
         variant: 'destructive',
       });
     },
@@ -129,14 +131,14 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/prices`] });
       toast({
-        title: 'Success',
-        description: 'Customer price deleted successfully',
+        title: t('customers.success'),
+        description: t('customers.customerPriceDeleted'),
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete customer price',
+        title: t('customers.error'),
+        description: t('customers.failedToDeleteCustomerPrice'),
         variant: 'destructive',
       });
     },
@@ -150,14 +152,14 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       setIsBulkDialogOpen(false);
       setCsvContent('');
       toast({
-        title: 'Success',
-        description: 'Prices imported successfully',
+        title: t('customers.success'),
+        description: t('customers.pricesImportedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to import prices',
+        title: t('customers.error'),
+        description: t('customers.failedToImportPrices'),
         variant: 'destructive',
       });
     },
@@ -192,8 +194,8 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       bulkImportMutation.mutate(prices);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Invalid CSV format',
+        title: t('customers.error'),
+        description: t('customers.invalidCsvFormat'),
         variant: 'destructive',
       });
     }
@@ -226,7 +228,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     },
     {
       key: 'variantId',
-      header: <span className="hidden sm:inline">Variant</span>,
+      header: <span className="hidden sm:inline">{t('customers.variant')}</span>,
       accessorKey: 'variantId',
       className: 'hidden sm:table-cell',
       cell: (row: any) => {
@@ -247,7 +249,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     },
     {
       key: 'validFrom',
-      header: <span className="hidden sm:inline">Valid From</span>,
+      header: <span className="hidden sm:inline">{t('customers.validFrom')}</span>,
       accessorKey: 'validFrom',
       className: 'hidden sm:table-cell',
       cell: (row: any) => (
@@ -256,7 +258,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     },
     {
       key: 'validTo',
-      header: <span className="hidden lg:inline">Valid To</span>,
+      header: <span className="hidden lg:inline">{t('customers.validTo')}</span>,
       accessorKey: 'validTo',
       className: 'hidden lg:table-cell',
       cell: (row: any) => (
@@ -301,7 +303,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h3 className="text-base sm:text-lg font-semibold">Custom Prices</h3>
+        <h3 className="text-base sm:text-lg font-semibold">{t('customers.customPrices')}</h3>
         <TooltipProvider>
           <div className="flex gap-1 self-end">
             <Tooltip>
@@ -316,7 +318,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p>Download Template</p>
+                <p>{t('customers.downloadTemplate')}</p>
               </TooltipContent>
             </Tooltip>
             
@@ -330,16 +332,16 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                   </DialogTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Bulk Import</p>
+                  <p>{t('customers.bulkImportPrices')}</p>
                 </TooltipContent>
               </Tooltip>
             <DialogContent className="max-w-2xl bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Bulk Import Customer Prices</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">{t('customers.bulkImportCustomerPrices')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="csv" className="text-gray-900 dark:text-gray-100">Paste CSV Content</Label>
+                  <Label htmlFor="csv" className="text-gray-900 dark:text-gray-100">{t('customers.pasteCsvContent')}</Label>
                   <textarea
                     id="csv"
                     className="w-full h-48 p-2 border rounded-md font-mono text-sm bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
@@ -384,12 +386,12 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 </DialogTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add Price</p>
+                <p>{t('customers.addPrice')}</p>
               </TooltipContent>
             </Tooltip>
             <DialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Add Custom Price</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">{t('customers.addCustomPrice')}</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -398,11 +400,11 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     name="productId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Product</FormLabel>
+                        <FormLabel>{t('customers.product')}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
-                              placeholder="Type to search products..."
+                              placeholder={t('customers.typeToSearchProducts')}
                               value={productSearch}
                               onChange={(e) => {
                                 setProductSearch(e.target.value);
@@ -463,15 +465,15 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       name="variantId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Variant (Optional)</FormLabel>
+                          <FormLabel>{t('customers.variantOptional')}</FormLabel>
                           <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a variant" />
+                                <SelectValue placeholder={t('customers.selectVariant')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="NONE">No variant</SelectItem>
+                              <SelectItem value="NONE">{t('customers.noVariant')}</SelectItem>
                               {variants.map((variant) => (
                                 <SelectItem key={variant.id} value={variant.id}>
                                   {variant.name}
@@ -491,7 +493,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       name="price"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Price</FormLabel>
+                          <FormLabel>{t('customers.price')}</FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" {...field} />
                           </FormControl>
@@ -505,7 +507,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       name="currency"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Currency</FormLabel>
+                          <FormLabel>{t('customers.currency')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -532,7 +534,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       name="validFrom"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Valid From</FormLabel>
+                          <FormLabel>{t('customers.validFrom')}</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
@@ -546,7 +548,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       name="validTo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Valid To (Optional)</FormLabel>
+                          <FormLabel>{t('customers.validToOptional')}</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
@@ -561,9 +563,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notes (Optional)</FormLabel>
+                        <FormLabel>{t('customers.notesOptional')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Special discount for bulk purchase" />
+                          <Input {...field} placeholder={t('customers.notesOptional')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -676,13 +678,13 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       {/* Bottom Row - Valid Dates */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Valid From</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customers.validFrom')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
                             {format(new Date(price.validFrom), 'dd/MM/yyyy')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Valid To</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customers.validTo')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
                             {price.validTo ? format(new Date(price.validTo), 'dd/MM/yyyy') : 'No expiry'}
                           </p>

@@ -37,6 +37,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { ProductBundle, Product, ProductVariant } from '@shared/schema';
+import { useTranslation } from 'react-i18next';
 
 interface BundleItem {
   productId?: string;
@@ -60,6 +61,7 @@ interface BundleFormData {
 }
 
 export default function Bundles() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -131,14 +133,14 @@ export default function Bundles() {
       setIsCreateDialogOpen(false);
       resetForm();
       toast({
-        title: 'Success',
-        description: 'Bundle created successfully'
+        title: t('inventory:success'),
+        description: t('inventory:bundleCreated')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to create bundle',
+        title: t('inventory:error'),
+        description: t('inventory:failedToCreateBundle'),
         variant: 'destructive'
       });
     }
@@ -153,14 +155,14 @@ export default function Bundles() {
       setEditingBundle(null);
       resetForm();
       toast({
-        title: 'Success',
-        description: 'Bundle updated successfully'
+        title: t('inventory:success'),
+        description: t('inventory:bundleUpdated')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to update bundle',
+        title: t('inventory:error'),
+        description: t('inventory:failedToUpdateBundle'),
         variant: 'destructive'
       });
     }
@@ -173,14 +175,14 @@ export default function Bundles() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({
-        title: 'Success',
-        description: 'Bundle deleted successfully'
+        title: t('inventory:success'),
+        description: t('inventory:bundleDeleted')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete bundle',
+        title: t('inventory:error'),
+        description: t('inventory:failedToDeleteBundle'),
         variant: 'destructive'
       });
     }
@@ -251,8 +253,8 @@ export default function Bundles() {
   const handleSubmit = () => {
     if (!formData.name || formData.items.length === 0) {
       toast({
-        title: 'Error',
-        description: 'Please provide a name and at least one item',
+        title: t('inventory:error'),
+        description: t('inventory:provideNameAndItem'),
         variant: 'destructive'
       });
       return;
@@ -315,93 +317,93 @@ export default function Bundles() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Product Bundles</h1>
+        <h1 className="text-3xl font-bold">{t('inventory:productBundles')}</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Bundle
+              {t('inventory:createBundle')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingBundle ? 'Edit Bundle' : 'Create New Bundle'}</DialogTitle>
+              <DialogTitle>{editingBundle ? t('inventory:editBundle') : t('inventory:createNewBundle')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Bundle Name</Label>
+                  <Label htmlFor="name">{t('inventory:bundleName')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Big Carton Pack"
+                    placeholder={t('inventory:bundleNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sku">SKU (Optional)</Label>
+                  <Label htmlFor="sku">{t('inventory:skuOptional')}</Label>
                   <Input
                     id="sku"
                     value={formData.sku}
                     onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                    placeholder="e.g., BDL-001"
+                    placeholder={t('inventory:skuPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('inventory:description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe what this bundle contains"
+                  placeholder={t('inventory:descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="priceCzk">Price (CZK)</Label>
+                  <Label htmlFor="priceCzk">{t('inventory:priceCzk')}</Label>
                   <Input
                     id="priceCzk"
                     type="number"
                     step="0.01"
                     value={formData.priceCzk}
                     onChange={(e) => setFormData(prev => ({ ...prev, priceCzk: e.target.value }))}
-                    placeholder="0.00"
+                    placeholder={t('inventory:discountPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="priceEur">Price (EUR)</Label>
+                  <Label htmlFor="priceEur">{t('inventory:priceEur')}</Label>
                   <Input
                     id="priceEur"
                     type="number"
                     step="0.01"
                     value={formData.priceEur}
                     onChange={(e) => setFormData(prev => ({ ...prev, priceEur: e.target.value }))}
-                    placeholder="0.00"
+                    placeholder={t('inventory:discountPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="discount">Discount %</Label>
+                  <Label htmlFor="discount">{t('inventory:discountPercentage')}</Label>
                   <Input
                     id="discount"
                     type="number"
                     step="0.01"
                     value={formData.discountPercentage}
                     onChange={(e) => setFormData(prev => ({ ...prev, discountPercentage: e.target.value }))}
-                    placeholder="0"
+                    placeholder={t('inventory:discountPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Label>Bundle Items</Label>
+                  <Label>{t('inventory:bundleItems')}</Label>
                   <Button type="button" size="sm" variant="outline" onClick={handleAddItem}>
                     <Plus className="mr-1 h-3 w-3" />
-                    Add Item
+                    {t('inventory:addItem')}
                   </Button>
                 </div>
                 <div className="space-y-3">
@@ -410,13 +412,13 @@ export default function Bundles() {
                       <div className="space-y-3">
                         <div className="flex gap-2">
                           <div className="flex-1 space-y-2">
-                            <Label className="text-xs">Product</Label>
+                            <Label className="text-xs">{t('inventory:product')}</Label>
                             <Select
                               value={item.productId}
                               onValueChange={(value) => handleItemChange(index, 'productId', value)}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select product" />
+                                <SelectValue placeholder={t('inventory:selectProduct')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {products.map(product => (
@@ -433,16 +435,16 @@ export default function Bundles() {
                           
                           {item.productId && selectedProductVariants[item.productId]?.length > 0 && (
                             <div className="flex-1 space-y-2">
-                              <Label className="text-xs">Variant (Optional)</Label>
+                              <Label className="text-xs">{t('inventory:variant')} ({t('inventory:optional')})</Label>
                               <Select
                                 value={item.variantId || "NONE"}
                                 onValueChange={(value) => handleItemChange(index, 'variantId', value === "NONE" ? null : value)}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select variant" />
+                                  <SelectValue placeholder={t('inventory:selectVariant')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="NONE">No variant</SelectItem>
+                                  <SelectItem value="NONE">{t('inventory:noVariant')}</SelectItem>
                                   {selectedProductVariants[item.productId].map(variant => (
                                     <SelectItem key={variant.id} value={variant.id}>
                                       {variant.name}
@@ -454,13 +456,13 @@ export default function Bundles() {
                           )}
                           
                           <div className="w-24 space-y-2">
-                            <Label className="text-xs">Quantity</Label>
+                            <Label className="text-xs">{t('inventory:quantity')}</Label>
                             <Input
                               type="number"
                               min="1"
                               value={item.quantity}
                               onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                              placeholder="Qty"
+                              placeholder={t('inventory:qty')}
                             />
                           </div>
                           
@@ -492,7 +494,7 @@ export default function Bundles() {
                   ))}
                   {formData.items.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      No items added. Click "Add Item" to include products in this bundle.
+                      {t('inventory:noItemsAdded')}
                     </p>
                   )}
                 </div>
@@ -502,7 +504,7 @@ export default function Bundles() {
                 <Card className="p-4 bg-muted/50">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Component Total:</span>
+                      <span className="text-sm font-medium">{t('inventory:componentTotal')}:</span>
                       <div className="text-right">
                         <div className="text-sm font-medium">CZK {calculateTotalPrice(formData.items).totalCzk.toFixed(2)}</div>
                         <div className="text-sm text-muted-foreground">EUR {calculateTotalPrice(formData.items).totalEur.toFixed(2)}</div>
@@ -512,7 +514,7 @@ export default function Bundles() {
                     {formData.discountPercentage && parseFloat(formData.discountPercentage) > 0 && (
                       <>
                         <div className="border-t pt-2 flex justify-between items-center">
-                          <span className="text-sm">Bundle Discount ({formData.discountPercentage}%):</span>
+                          <span className="text-sm">{t('inventory:bundleDiscount')} ({formData.discountPercentage}%):</span>
                           <div className="text-right">
                             <div className="text-sm text-red-600">
                               -CZK {(calculateTotalPrice(formData.items).totalCzk * parseFloat(formData.discountPercentage) / 100).toFixed(2)}
@@ -524,7 +526,7 @@ export default function Bundles() {
                         </div>
                         
                         <div className="border-t pt-2 flex justify-between items-center">
-                          <span className="text-sm font-medium">Suggested Price:</span>
+                          <span className="text-sm font-medium">{t('inventory:suggestedPrice')}:</span>
                           <div className="text-right">
                             <div className="text-sm font-bold text-green-600">
                               CZK {calculateDiscountedPrice(calculateTotalPrice(formData.items).totalCzk, formData.discountPercentage).toFixed(2)}
@@ -539,7 +541,7 @@ export default function Bundles() {
                     
                     {(formData.priceCzk || formData.priceEur) && (
                       <div className="border-t pt-2 flex justify-between items-center">
-                        <span className="text-sm font-medium">Manual Bundle Price:</span>
+                        <span className="text-sm font-medium">{t('inventory:manualBundlePrice')}:</span>
                         <div className="text-right">
                           {formData.priceCzk && <div className="text-sm font-bold">CZK {parseFloat(formData.priceCzk).toFixed(2)}</div>}
                           {formData.priceEur && <div className="text-sm font-bold">EUR {parseFloat(formData.priceEur).toFixed(2)}</div>}
@@ -551,12 +553,12 @@ export default function Bundles() {
               )}
 
               <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes">{t('inventory:notesOptional')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Additional notes about this bundle"
+                  placeholder={t('inventory:additionalNotesPlaceholder')}
                   rows={2}
                 />
               </div>
@@ -570,13 +572,13 @@ export default function Bundles() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t('inventory:cancel')}
                 </Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={createBundleMutation.isPending || updateBundleMutation.isPending}
                 >
-                  {editingBundle ? 'Update' : 'Create'} Bundle
+                  {editingBundle ? t('inventory:updateBundle') : t('inventory:createBundle')}
                 </Button>
               </div>
             </div>
@@ -587,7 +589,7 @@ export default function Bundles() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
-          placeholder="Search bundles..."
+          placeholder={t('inventory:searchBundles')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -613,7 +615,7 @@ export default function Bundles() {
                 </div>
                 <Badge variant="secondary" className="ml-2">
                   <Layers className="mr-1 h-3 w-3" />
-                  Bundle
+                  {t('inventory:bundle')}
                 </Badge>
               </div>
             </CardHeader>
@@ -625,7 +627,7 @@ export default function Bundles() {
                 
                 <div className="space-y-2 py-2 border-t border-b">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Bundle Price:</span>
+                    <span className="text-sm text-muted-foreground">{t('inventory:bundlePrice')}:</span>
                     <div className="text-right">
                       {bundle.priceCzk && (
                         <p className="text-sm font-semibold">CZK {parseFloat(bundle.priceCzk).toFixed(2)}</p>
@@ -640,7 +642,7 @@ export default function Bundles() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         <DollarSign className="mr-1 h-3 w-3" />
-                        {parseFloat(bundle.discountPercentage).toFixed(0)}% Bundle Savings
+                        {parseFloat(bundle.discountPercentage).toFixed(0)}% {t('inventory:bundleSavings')}
                       </Badge>
                     </div>
                   )}
@@ -654,20 +656,20 @@ export default function Bundles() {
                     onClick={() => handleEdit(bundle)}
                   >
                     <Edit className="mr-1 h-3 w-3" />
-                    Edit
+                    {t('inventory:edit')}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="flex-1"
                     onClick={() => {
-                      if (confirm(`Are you sure you want to delete "${bundle.name}"?`)) {
+                      if (confirm(t('inventory:areYouSureDeleteBundle', { name: bundle.name }))) {
                         deleteBundleMutation.mutate(bundle.id);
                       }
                     }}
                   >
                     <Trash2 className="mr-1 h-3 w-3" />
-                    Delete
+                    {t('inventory:delete')}
                   </Button>
                 </div>
               </div>
@@ -679,9 +681,9 @@ export default function Bundles() {
       {filteredBundles.length === 0 && (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-2 text-sm font-semibold">No bundles found</h3>
+          <h3 className="mt-2 text-sm font-semibold">{t('inventory:noBundlesFound')}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {searchQuery ? 'Try adjusting your search.' : 'Get started by creating a new bundle.'}
+            {searchQuery ? t('inventory:tryAdjustingSearchCriteria') : t('inventory:createYourFirstBundle')}
           </p>
         </div>
       )}

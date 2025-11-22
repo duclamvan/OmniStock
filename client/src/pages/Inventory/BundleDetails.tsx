@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,6 +57,7 @@ interface BundleWithItems extends ProductBundle {
 export default function BundleDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (itemId: string) => {
@@ -92,15 +94,15 @@ export default function BundleDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({
-        title: 'Bundle deleted',
-        description: 'The bundle has been successfully deleted.'
+        title: t('inventory:bundleDeleted'),
+        description: t('inventory:bundleDeleted')
       });
       // @ts-ignore
       navigate('/inventory/bundles');
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('inventory:error'),
         description: error.message,
         variant: 'destructive'
       });
@@ -115,15 +117,15 @@ export default function BundleDetails() {
     onSuccess: (newBundle) => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({
-        title: 'Bundle duplicated',
-        description: 'The bundle has been successfully duplicated.'
+        title: t('inventory:bundleDuplicated'),
+        description: t('inventory:bundleDuplicated')
       });
       // @ts-ignore
       navigate(`/inventory/bundles/${newBundle.id}`);
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('inventory:error'),
         description: error.message,
         variant: 'destructive'
       });
@@ -140,13 +142,13 @@ export default function BundleDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles', id] });
       toast({
-        title: bundle?.isActive ? 'Bundle deactivated' : 'Bundle activated',
-        description: `The bundle has been ${bundle?.isActive ? 'deactivated' : 'activated'}.`
+        title: bundle?.isActive ? t('inventory:bundleDeactivated') : t('inventory:bundleActivated'),
+        description: bundle?.isActive ? t('inventory:bundleDeactivated') : t('inventory:bundleActivated')
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('inventory:error'),
         description: error.message,
         variant: 'destructive'
       });
@@ -198,9 +200,9 @@ export default function BundleDetails() {
                 className="text-xs"
               >
                 {bundle.isActive ? (
-                  <><CheckCircle className="mr-1 h-3 w-3" />Active</>
+                  <><CheckCircle className="mr-1 h-3 w-3" />{t('inventory:active')}</>
                 ) : (
-                  <><XCircle className="mr-1 h-3 w-3" />Inactive</>
+                  <><XCircle className="mr-1 h-3 w-3" />{t('inventory:inactive')}</>
                 )}
               </Badge>
               {bundle.sku && (
@@ -218,13 +220,13 @@ export default function BundleDetails() {
             disabled={duplicateMutation.isPending}
           >
             <Copy className="h-4 w-4 mr-2" />
-            Duplicate
+            {t('inventory:duplicateBundle')}
           </Button>
           
           <Link href={`/inventory/bundles/${id}/edit`}>
             <Button variant="outline" size="sm">
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('inventory:edit')}
             </Button>
           </Link>
           
@@ -234,7 +236,7 @@ export default function BundleDetails() {
             onClick={() => toggleActiveMutation.mutate()}
             disabled={toggleActiveMutation.isPending}
           >
-            {bundle.isActive ? 'Deactivate' : 'Activate'}
+            {bundle.isActive ? t('inventory:deactivateBundle') : t('inventory:activateBundle')}
           </Button>
           
           <AlertDialog>
@@ -245,18 +247,18 @@ export default function BundleDetails() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Bundle</AlertDialogTitle>
+                <AlertDialogTitle>{t('inventory:deleteBundle')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this bundle? This action cannot be undone.
+                  {t('inventory:deleteBundleConfirmation')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteMutation.mutate()}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete
+                  {t('inventory:delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -272,7 +274,7 @@ export default function BundleDetails() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Box className="h-5 w-5" />
-                Bundle Items ({bundle.items.length})
+                {t('inventory:bundleItems')} ({bundle.items.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -306,7 +308,7 @@ export default function BundleDetails() {
                                 </p>
                               </Link>
                               <Badge variant="outline" className="text-xs">
-                                Qty: {totalQuantity}
+                                {t('inventory:qty')}: {totalQuantity}
                               </Badge>
                               {!hasMultipleVariants && group.items[0].variant && (
                                 <Badge variant="secondary" className="text-xs">
@@ -315,17 +317,17 @@ export default function BundleDetails() {
                               )}
                               {hasMultipleVariants && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {group.items.length} variants
+                                  {group.items.length} {t('inventory:variants')}
                                 </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3 mt-1">
                               <p className="text-xs text-muted-foreground">
-                                SKU: {group.product.sku}
+                                {t('inventory:sku')}: {group.product.sku}
                               </p>
                               <span className="text-xs text-muted-foreground">•</span>
                               <p className="text-xs text-muted-foreground">
-                                Stock: {group.items.reduce((sum: number, item: any) => 
+                                {t('inventory:stock')}: {group.items.reduce((sum: number, item: any) => 
                                   sum + (item.variant?.quantity ?? item.product.quantity ?? 0), 0
                                 )}
                               </p>
@@ -377,16 +379,16 @@ export default function BundleDetails() {
                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                         {item.variant?.barcode && (
                                           <>
-                                            <span>Barcode: {item.variant.barcode}</span>
+                                            <span>{t('inventory:barcode')}: {item.variant.barcode}</span>
                                             <span>•</span>
                                           </>
                                         )}
-                                        <span>Stock: {item.variant?.quantity ?? 0}</span>
+                                        <span>{t('inventory:stock')}: {item.variant?.quantity ?? 0}</span>
                                       </div>
                                     </div>
                                   </div>
                                   <Badge variant="outline" className="text-xs">
-                                    Qty: {item.quantity}
+                                    {t('inventory:qty')}: {item.quantity}
                                   </Badge>
                                 </div>
                               ))}
@@ -405,7 +407,7 @@ export default function BundleDetails() {
           {bundle.description && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Description</CardTitle>
+                <CardTitle className="text-lg">{t('inventory:description')}</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-sm text-muted-foreground">{bundle.description}</p>
@@ -418,7 +420,7 @@ export default function BundleDetails() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
-                Order History
+                {t('inventory:orderHistory')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -430,7 +432,7 @@ export default function BundleDetails() {
                 if (bundleOrders.length === 0) {
                   return (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                      No orders found for this bundle
+                      {t('inventory:noOrdersFoundForBundle')}
                     </div>
                   );
                 }
@@ -471,12 +473,12 @@ export default function BundleDetails() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Pricing
+                {t('inventory:pricing')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground">Base Price</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:basePrice')}</p>
                 <p className="text-lg font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
                 <p className="text-xs text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
               </div>
@@ -484,7 +486,7 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-xs text-muted-foreground">Bundle Price</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:bundlePrice')}</p>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400">
                   {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
                 </p>
@@ -496,12 +498,12 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-xs text-muted-foreground">Customer Savings</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:customerSavings')}</p>
                 <Badge variant="default" className="bg-green-500 mt-1">
                   {savingsPercentage}% OFF
                 </Badge>
                 <p className="text-xs mt-2">
-                  Save {savings.czk.toFixed(2)} Kč (€{savings.eur.toFixed(2)})
+                  {t('inventory:savings')}: {savings.czk.toFixed(2)} Kč (€{savings.eur.toFixed(2)})
                 </p>
               </div>
             </CardContent>
@@ -510,11 +512,11 @@ export default function BundleDetails() {
           {/* Statistics */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Statistics</CardTitle>
+              <CardTitle className="text-lg">{t('inventory:statistics')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground">Available Bundle Stock</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:availableBundleStock')}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {(() => {
                     // Calculate how many complete bundles can be made
@@ -532,27 +534,27 @@ export default function BundleDetails() {
                           variant="outline" 
                           className={isInStock ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}
                         >
-                          {isInStock ? 'In Stock' : 'Out of Stock'}
+                          {isInStock ? t('inventory:inStock') : t('inventory:outOfStock')}
                         </Badge>
                       </>
                     );
                   })()}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Complete bundles available</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('inventory:completeBundlesAvailable')}</p>
               </div>
               
               <Separator />
               
               <div>
-                <p className="text-xs text-muted-foreground">Total Items</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:totalItems')}</p>
                 <p className="text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
-                <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
+                <p className="text-xs text-muted-foreground">{bundle.items.length} {t('inventory:uniqueProducts')}</p>
               </div>
               
               <Separator />
               
               <div>
-                <p className="text-xs text-muted-foreground">Profit Margin</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:profitMargin')}</p>
                 <p className="text-2xl font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
@@ -570,7 +572,7 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-xs text-muted-foreground">Net Profit</p>
+                <p className="text-xs text-muted-foreground">{t('inventory:netProfit')}</p>
                 <p className="text-lg font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
@@ -597,7 +599,7 @@ export default function BundleDetails() {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs text-muted-foreground">Created</p>
+                    <p className="text-xs text-muted-foreground">{t('common:created')}</p>
                     <p className="text-sm">{format(new Date(bundle.createdAt), 'MMM dd, yyyy')}</p>
                   </div>
                 </>
@@ -608,7 +610,7 @@ export default function BundleDetails() {
           {bundle.notes && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Notes</CardTitle>
+                <CardTitle className="text-lg">{t('common:notes')}</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-sm text-muted-foreground">{bundle.notes}</p>

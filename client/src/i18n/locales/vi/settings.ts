@@ -370,6 +370,29 @@ const settings = {
   // Select placeholders
   selectCountry: 'Chọn quốc gia',
   selectOption: 'Chọn tùy chọn',
+  
+  // Roles & Permissions Page
+  rolesAndPermissions: 'Vai trò & Quyền hạn',
+  userRolesManagement: 'Quản lý vai trò người dùng',
+  assignRolesToControlAccess: 'Gán vai trò để kiểm soát quyền truy cập và quyền hạn hệ thống',
+  totalUsers: 'Tổng số người dùng',
+  administrators: 'Quản trị viên',
+  fullSystemAccess: 'Toàn quyền truy cập hệ thống',
+  warehouseOperators: 'Nhân viên kho',
+  standardAccess: 'Quyền truy cập tiêu chuẩn',
+  administratorPermissions: 'Quyền hạn quản trị viên',
+  fullAccessToAllSystemFeatures: 'Toàn quyền truy cập tất cả tính năng hệ thống',
+  warehouseOperatorPermissions: 'Quyền hạn nhân viên kho',
+  limitedAccessToOperationalFeatures: 'Quyền truy cập hạn chế vào các tính năng vận hành',
+  currentRole: 'Vai trò hiện tại',
+  assignRole: 'Gán vai trò',
+  noUsersFound: 'Không tìm thấy người dùng',
+  userRoleUpdatedSuccessfully: 'Cập nhật vai trò người dùng thành công',
+  failedToUpdateUserRole: 'Cập nhật vai trò người dùng thất bại',
+  administrator: 'Quản trị viên',
+  warehouseOperator: 'Nhân viên kho',
+  selectRole: 'Chọn vai trò',
+  users: 'Người dùng',
 } as const;
 
 export default settings;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp, Image as ImageIcon, Upload, Trash2, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -107,6 +108,7 @@ function BundleItemRow({
   onItemChange: (id: string, field: string, value: any) => void;
   onRemoveItem: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   
   const selectedProduct = products.find(p => p.id === item.productId);
@@ -130,7 +132,7 @@ function BundleItemRow({
           <div className="flex gap-3 pr-10">
             {/* Product Selector - Combobox Pattern */}
             <div className="flex-1 space-y-2">
-              <Label className="text-sm font-medium">Product *</Label>
+              <Label className="text-sm font-medium">{t('inventory:product')} *</Label>
               <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -143,7 +145,7 @@ function BundleItemRow({
                     data-testid={`button-select-product-${index}`}
                   >
                     <span className="truncate">
-                      {selectedProduct ? selectedProduct.name : 'Select product...'}
+                      {selectedProduct ? selectedProduct.name : t('inventory:selectProduct')}
                     </span>
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -151,10 +153,10 @@ function BundleItemRow({
                 <PopoverContent className="w-[400px] p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Search products..." 
+                      placeholder={t('inventory:searchProducts')} 
                       className="h-9"
                     />
-                    <CommandEmpty>No products found.</CommandEmpty>
+                    <CommandEmpty>{t('inventory:noProductsFound')}</CommandEmpty>
                     <CommandGroup className="max-h-64 overflow-auto">
                       {products.map((product) => (
                         <CommandItem
@@ -192,7 +194,7 @@ function BundleItemRow({
 
             {/* Quantity Input - Inline */}
             <div className="w-28 space-y-2">
-              <Label className="text-sm font-medium">Quantity</Label>
+              <Label className="text-sm font-medium">{t('inventory:quantity')}</Label>
               <Input
                 type="number"
                 min="1"
@@ -221,7 +223,7 @@ function BundleItemRow({
               </span>
               {item.variantIds && item.variantIds.length > 0 && (
                 <Badge variant="secondary" className="ml-auto text-xs">
-                  {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''}
+                  {item.variantIds.length} {t('inventory:variantCount', { count: item.variantIds.length })}
                 </Badge>
               )}
             </div>
@@ -231,7 +233,7 @@ function BundleItemRow({
           {item.productId && variantsCache[item.productId]?.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium text-muted-foreground">
-                Variants (Optional)
+                {t('inventory:variantsOptional')}
               </Label>
               <VariantSelector
                 variants={variantsCache[item.productId]}
@@ -254,6 +256,7 @@ interface VariantSelectorProps {
 }
 
 function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState<'individual' | 'range' | 'custom'>('individual');
@@ -328,32 +331,32 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
         <Button variant="outline" className="w-full justify-between">
           <span className="truncate">
             {selectedIds.length === 0 
-              ? 'Select variants' 
+              ? t('inventory:selectVariants') 
               : selectedIds.length === 1
               ? selectedNames
-              : `${selectedIds.length} variants selected`}
+              : t('inventory:variantsSelected', { count: selectedIds.length })}
           </span>
           <Search className="ml-2 h-4 w-4 shrink-0" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Select Variants</DialogTitle>
+          <DialogTitle>{t('inventory:selectVariants')}</DialogTitle>
           <DialogDescription>
-            Choose which variants to include in this bundle item
+            {t('inventory:chooseVariantsToInclude')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Selection Mode Tabs */}
           <div className="text-xs text-muted-foreground mb-2">
-            Choose one selection method:
+            {t('inventory:chooseSelectionMethod')}
           </div>
           <Tabs value={selectionMode} onValueChange={(v) => setSelectionMode(v as any)}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="individual">Individual</TabsTrigger>
-              <TabsTrigger value="range">Range</TabsTrigger>
-              <TabsTrigger value="custom">Custom</TabsTrigger>
+              <TabsTrigger value="individual">{t('inventory:individual')}</TabsTrigger>
+              <TabsTrigger value="range">{t('inventory:range')}</TabsTrigger>
+              <TabsTrigger value="custom">{t('inventory:custom')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="individual" className="space-y-4">
@@ -362,7 +365,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search variants..."
+                    placeholder={t('inventory:searchVariants')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -374,7 +377,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                   onClick={handleSelectAll}
                 >
                   <CheckSquare className="mr-1 h-4 w-4" />
-                  All
+                  {t('inventory:all')}
                 </Button>
                 <Button
                   variant="outline"
@@ -382,7 +385,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                   onClick={handleClearAll}
                 >
                   <Square className="mr-1 h-4 w-4" />
-                  None
+                  {t('inventory:none')}
                 </Button>
               </div>
 
@@ -390,7 +393,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
               <div className="max-h-[300px] overflow-y-auto space-y-2 border rounded-lg p-2">
                 {filteredVariants.length === 0 ? (
                   <p className="text-center text-muted-foreground py-4">
-                    No variants found
+                    {t('inventory:noVariantsFound')}
                   </p>
                 ) : (
                   filteredVariants.map(variant => (
@@ -418,11 +421,11 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
             <TabsContent value="range" className="space-y-4">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Select variants by number range (e.g., variants with numbers 1-10)
+                  {t('inventory:selectVariantsByRange')}
                 </p>
                 <div className="flex gap-2 items-center">
                   <div className="flex-1">
-                    <Label htmlFor="range-from">From</Label>
+                    <Label htmlFor="range-from">{t('inventory:from')}</Label>
                     <Input
                       id="range-from"
                       type="number"
@@ -432,7 +435,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                     />
                   </div>
                   <div className="flex-1">
-                    <Label htmlFor="range-to">To</Label>
+                    <Label htmlFor="range-to">{t('inventory:to')}</Label>
                     <Input
                       id="range-to"
                       type="number"
@@ -445,7 +448,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                     onClick={handleRangeSelection}
                     className="mt-6"
                   >
-                    Apply Range
+                    {t('inventory:applyRange')}
                   </Button>
                 </div>
               </div>
@@ -454,10 +457,10 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
             <TabsContent value="custom" className="space-y-4">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Enter variant numbers separated by commas (e.g., 1, 3, 5, 7)
+                  {t('inventory:enterVariantNumbers')}
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor="custom-numbers">Variant Numbers</Label>
+                  <Label htmlFor="custom-numbers">{t('inventory:variantNumbers')}</Label>
                   <Input
                     id="custom-numbers"
                     placeholder="1, 3, 5, 7, 10"
@@ -469,7 +472,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                     className="w-full"
                   >
                     <Hash className="mr-2 h-4 w-4" />
-                    Apply Custom Selection
+                    {t('inventory:applyCustomSelection')}
                   </Button>
                 </div>
               </div>
@@ -479,10 +482,10 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
           {/* Selected Count */}
           <div className="flex justify-between items-center pt-2 border-t">
             <p className="text-sm text-muted-foreground">
-              {selectedIds.length} of {variants.length} variants selected
+              {t('inventory:variantsSelectedCount', { selected: selectedIds.length, total: variants.length })}
             </p>
             <Button onClick={() => setIsOpen(false)}>
-              Done
+              {t('inventory:done')}
             </Button>
           </div>
         </div>
@@ -492,6 +495,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
 }
 
 export default function CreateBundle() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [expandedSections, setExpandedSections] = useState<string[]>(['details', 'items', 'pricing']);
@@ -538,8 +542,8 @@ export default function CreateBundle() {
     setFormData(prev => ({ ...prev, sku }));
     
     toast({
-      title: "SKU Generated",
-      description: `Bundle SKU: ${sku}`,
+      title: t('inventory:skuGenerated'),
+      description: t('inventory:bundleSkuValue', { sku }),
     });
   };
 
@@ -645,15 +649,15 @@ export default function CreateBundle() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({
-        title: 'Success',
-        description: 'Bundle created successfully',
+        title: t('inventory:success'),
+        description: t('inventory:bundleCreated'),
       });
       setLocation('/inventory/bundles');
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create bundle',
+        title: t('inventory:error'),
+        description: error.message || t('inventory:failedToCreateBundle'),
         variant: 'destructive',
       });
     }
@@ -663,19 +667,19 @@ export default function CreateBundle() {
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Bundle name is required';
+      newErrors.name = t('inventory:bundleNameRequired');
     }
     
     if (formData.items.length === 0) {
-      newErrors.items = 'At least one product is required';
+      newErrors.items = t('inventory:atLeastOneProductRequired');
     }
     
     formData.items.forEach((item, index) => {
       if (!item.productId) {
-        newErrors[`item_${index}`] = 'Product selection is required';
+        newErrors[`item_${index}`] = t('inventory:productSelectionRequired');
       }
       if (item.quantity <= 0) {
-        newErrors[`quantity_${index}`] = 'Quantity must be greater than 0';
+        newErrors[`quantity_${index}`] = t('inventory:quantityMustBeGreaterThanZero');
       }
     });
     
@@ -686,8 +690,8 @@ export default function CreateBundle() {
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fix the errors before submitting',
+        title: t('inventory:validationError'),
+        description: t('inventory:pleaseFixErrors'),
         variant: 'destructive',
       });
       return;
@@ -971,13 +975,13 @@ export default function CreateBundle() {
             <div className="space-y-4 pt-2">
               {/* Bundle Image Upload - First and Most Important */}
               <div>
-                <Label>Bundle Image (Optional)</Label>
+                <Label>{t('inventory:bundleImageOptional')}</Label>
                 <div className="mt-2">
                   {imagePreview ? (
                     <div className="relative w-48 h-48 rounded-lg border bg-slate-50 overflow-hidden group flex items-center justify-center">
                       <img
                         src={imagePreview}
-                        alt="Bundle preview"
+                        alt={t('inventory:bundlePreview')}
                         className="w-full h-full object-contain"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -1029,8 +1033,8 @@ export default function CreateBundle() {
                       />
                       <div className="text-center">
                         <ImageIcon className="h-12 w-12 mx-auto text-slate-400 mb-2" />
-                        <p className="text-sm text-slate-600 font-medium">Upload Image</p>
-                        <p className="text-xs text-slate-500 mt-1">Click to browse</p>
+                        <p className="text-sm text-slate-600 font-medium">{t('inventory:uploadImage')}</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('inventory:clickToBrowse')}</p>
                       </div>
                     </label>
                   )}
@@ -1039,7 +1043,7 @@ export default function CreateBundle() {
 
               <div>
                 <Label htmlFor="name">
-                  Bundle Name <span className="text-destructive">*</span>
+                  {t('inventory:bundleName')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -1055,7 +1059,7 @@ export default function CreateBundle() {
                       generateSKU();
                     }
                   }}
-                  placeholder="e.g., Starter Beauty Kit"
+                  placeholder={t('inventory:bundleNamePlaceholder')}
                   className={errors.name ? 'border-destructive' : ''}
                 />
                 {errors.name && (
@@ -1064,13 +1068,13 @@ export default function CreateBundle() {
               </div>
 
               <div>
-                <Label htmlFor="sku">SKU (Optional)</Label>
+                <Label htmlFor="sku">{t('inventory:skuOptional')}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="sku"
                     value={formData.sku}
                     onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                    placeholder="e.g., BDL-BEAUTY-123"
+                    placeholder={t('inventory:bundleSkuPlaceholder')}
                     data-testid="input-bundle-sku"
                   />
                   <Button 
@@ -1081,32 +1085,32 @@ export default function CreateBundle() {
                     data-testid="button-generate-sku"
                   >
                     <Hash className="h-4 w-4 mr-2" />
-                    Generate
+                    {t('inventory:generate')}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Format: BDL-[NAME]-[NUMBER] (e.g., BDL-STARTERKIT-456)
+                  {t('inventory:bundleSkuFormat')}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('inventory:description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe what this bundle includes and its benefits"
+                  placeholder={t('inventory:bundleDescriptionPlaceholder')}
                   rows={4}
                 />
               </div>
 
               <div>
-                <Label htmlFor="notes">Internal Notes (Optional)</Label>
+                <Label htmlFor="notes">{t('inventory:internalNotesOptional')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notes for internal use only"
+                  placeholder={t('inventory:internalNotesPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -1123,9 +1127,9 @@ export default function CreateBundle() {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">
-                  Bundle Products ({formData.items.length})
+                  {t('inventory:bundleProducts')} ({formData.items.length})
                 </h3>
-                <p className="text-xs text-slate-500">Select products and quantities to include</p>
+                <p className="text-xs text-slate-500">{t('inventory:selectProductsAndQuantities')}</p>
               </div>
               {errors.items && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -1135,7 +1139,7 @@ export default function CreateBundle() {
               <div className="flex justify-end">
                 <Button onClick={handleAddItem} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Product
+                  {t('inventory:addProduct')}
                 </Button>
               </div>
               {errors.items && (
@@ -1148,13 +1152,13 @@ export default function CreateBundle() {
               {formData.items.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                   <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No products added</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('inventory:noProductsAdded')}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Add products to create your bundle
+                    {t('inventory:addProductsToBundle')}
                   </p>
                   <Button onClick={handleAddItem}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add First Product
+                    {t('inventory:addFirstProduct')}
                   </Button>
                 </div>
               ) : (
@@ -1185,8 +1189,8 @@ export default function CreateBundle() {
                 <DollarSign className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Bundle Pricing</h3>
-                <p className="text-xs text-slate-500">Set the bundle price and discount</p>
+                <h3 className="font-semibold text-slate-900">{t('inventory:bundlePricing')}</h3>
+                <p className="text-xs text-slate-500">{t('inventory:setBundlePriceAndDiscount')}</p>
               </div>
               {(errors.priceCzk || errors.priceEur) && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -1197,7 +1201,7 @@ export default function CreateBundle() {
               {formData.items.length > 0 && (
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-3">Component Breakdown</h4>
+                    <h4 className="font-semibold mb-3">{t('inventory:componentBreakdown')}</h4>
                     <div className="space-y-2">
                       {formData.items.filter(item => item.productId).map((item) => (
                         <div key={item.id} className="flex justify-between text-sm">
@@ -1220,7 +1224,7 @@ export default function CreateBundle() {
                   <Separator />
 
                   <div className="flex justify-between font-semibold">
-                    <span>Total Component Value</span>
+                    <span>{t('inventory:totalComponentValue')}</span>
                     <div className="text-right">
                       <div>CZK {totals.totalCzk.toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground">
@@ -1235,7 +1239,7 @@ export default function CreateBundle() {
 
               {/* Pricing Mode Selection */}
               <div>
-                <Label>Pricing Mode</Label>
+                <Label>{t('inventory:pricingMode')}</Label>
                 <Select
                   value={formData.pricingMode}
                   onValueChange={(value: 'percentage' | 'fixed' | 'per_item' | 'set_per_item' | 'manual') => 
@@ -1246,11 +1250,11 @@ export default function CreateBundle() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage Discount</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount Discount</SelectItem>
-                    <SelectItem value="per_item">Discount Per Item</SelectItem>
-                    <SelectItem value="set_per_item">Set Price Per Item</SelectItem>
-                    <SelectItem value="manual">Set Manual Price</SelectItem>
+                    <SelectItem value="percentage">{t('inventory:percentageDiscount')}</SelectItem>
+                    <SelectItem value="fixed">{t('inventory:fixedAmountDiscount')}</SelectItem>
+                    <SelectItem value="per_item">{t('inventory:discountPerItem')}</SelectItem>
+                    <SelectItem value="set_per_item">{t('inventory:setPricePerItem')}</SelectItem>
+                    <SelectItem value="manual">{t('inventory:setManualPrice')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1258,7 +1262,7 @@ export default function CreateBundle() {
               {/* Dynamic Pricing Fields Based on Mode */}
               {formData.pricingMode === 'percentage' && (
                 <div>
-                  <Label htmlFor="discount">Bundle Discount (%)</Label>
+                  <Label htmlFor="discount">{t('inventory:bundleDiscountPercentage')}</Label>
                   <Input
                     id="discount"
                     type="number"
@@ -1270,7 +1274,7 @@ export default function CreateBundle() {
                     placeholder="0"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Percentage discount applied to the total component value
+                    {t('inventory:percentageDiscountAppliedToTotal')}
                   </p>
                 </div>
               )}
@@ -1278,7 +1282,7 @@ export default function CreateBundle() {
               {formData.pricingMode === 'fixed' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="fixedCzk">Fixed Discount CZK</Label>
+                    <Label htmlFor="fixedCzk">{t('inventory:fixedDiscountCzk')}</Label>
                     <Input
                       id="fixedCzk"
                       type="number"
@@ -1290,7 +1294,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="fixedEur">Fixed Discount EUR</Label>
+                    <Label htmlFor="fixedEur">{t('inventory:fixedDiscountEur')}</Label>
                     <Input
                       id="fixedEur"
                       type="number"
@@ -1302,7 +1306,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 col-span-2">
-                    Fixed amount to subtract from the total component value
+                    {t('inventory:fixedAmountSubtractFromTotal')}
                   </p>
                 </div>
               )}
@@ -1310,7 +1314,7 @@ export default function CreateBundle() {
               {formData.pricingMode === 'per_item' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="perItemCzk">Discount Per Item CZK</Label>
+                    <Label htmlFor="perItemCzk">{t('inventory:discountPerItemCzk')}</Label>
                     <Input
                       id="perItemCzk"
                       type="number"
@@ -1322,7 +1326,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="perItemEur">Discount Per Item EUR</Label>
+                    <Label htmlFor="perItemEur">{t('inventory:discountPerItemEur')}</Label>
                     <Input
                       id="perItemEur"
                       type="number"
@@ -1334,7 +1338,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 col-span-2">
-                    Discount applied for each item unit (quantity × variants)
+                    {t('inventory:discountAppliedPerItemUnit')}
                   </p>
                 </div>
               )}
@@ -1342,7 +1346,7 @@ export default function CreateBundle() {
               {formData.pricingMode === 'set_per_item' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="setPriceCzk">Price Per Item CZK</Label>
+                    <Label htmlFor="setPriceCzk">{t('inventory:pricePerItemCzk')}</Label>
                     <Input
                       id="setPriceCzk"
                       type="number"
@@ -1354,7 +1358,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="setPriceEur">Price Per Item EUR</Label>
+                    <Label htmlFor="setPriceEur">{t('inventory:pricePerItemEur')}</Label>
                     <Input
                       id="setPriceEur"
                       type="number"
@@ -1367,14 +1371,14 @@ export default function CreateBundle() {
                   </div>
                   <div className="col-span-2 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Set a fixed price for each item unit (quantity × variants)
+                      {t('inventory:setFixedPricePerItemUnit')}
                     </p>
                     {formData.items.length > 0 && (
                       <p className="text-xs text-green-600 dark:text-green-400">
-                        Total items: {formData.items.reduce((sum, item) => {
+                        {t('inventory:totalItems')}: {formData.items.reduce((sum, item) => {
                           const variantCount = item.variantIds?.length || 1;
                           return sum + (item.quantity * variantCount);
-                        }, 0)} units
+                        }, 0)} {t('inventory:units')}
                       </p>
                     )}
                   </div>
@@ -1384,7 +1388,7 @@ export default function CreateBundle() {
               {formData.pricingMode === 'manual' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="manualCzk">Bundle Price CZK</Label>
+                    <Label htmlFor="manualCzk">{t('inventory:bundlePriceCzk')}</Label>
                     <Input
                       id="manualCzk"
                       type="number"
@@ -1396,7 +1400,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="manualEur">Bundle Price EUR</Label>
+                    <Label htmlFor="manualEur">{t('inventory:bundlePriceEur')}</Label>
                     <Input
                       id="manualEur"
                       type="number"
@@ -1408,7 +1412,7 @@ export default function CreateBundle() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 col-span-2">
-                    Set a custom price for the bundle
+                    {t('inventory:setCustomPriceForBundle')}
                   </p>
                 </div>
               )}
@@ -1419,14 +1423,14 @@ export default function CreateBundle() {
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-semibold text-green-900 dark:text-green-100">
-                        Calculated Bundle Price
+                        {t('inventory:calculatedBundlePrice')}
                       </p>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        {formData.pricingMode === 'percentage' && `After ${formData.discountPercentage}% discount`}
-                        {formData.pricingMode === 'fixed' && `After fixed discount`}
-                        {formData.pricingMode === 'per_item' && `With per-item discount`}
-                        {formData.pricingMode === 'set_per_item' && `Fixed price per item`}
-                        {formData.pricingMode === 'manual' && `Manual pricing`}
+                        {formData.pricingMode === 'percentage' && t('inventory:afterPercentageDiscount', { percentage: formData.discountPercentage })}
+                        {formData.pricingMode === 'fixed' && t('inventory:afterFixedDiscount')}
+                        {formData.pricingMode === 'per_item' && t('inventory:withPerItemDiscount')}
+                        {formData.pricingMode === 'set_per_item' && t('inventory:fixedPricePerItem')}
+                        {formData.pricingMode === 'manual' && t('inventory:manualPricing')}
                       </p>
                     </div>
                     <div className="text-right">

@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -35,10 +36,10 @@ function formatSupplierName(url: string): string {
   }
 }
 
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  code: z.string().min(1, "Code is required"),
-  category: z.string().min(1, "Category is required"),
+const createFormSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t("nameIsRequired")),
+  code: z.string().min(1, t("codeIsRequired")),
+  category: z.string().min(1, t("categoryIsRequired")),
   size: z.string().optional(),
   // Separate dimension fields
   length: z.string().optional(),
@@ -63,23 +64,26 @@ const formSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
-// Material Categories with icons
-const MATERIAL_CATEGORIES = [
-  { value: "cartons", label: "Cartons & Boxes", icon: Box },
-  { value: "filling", label: "Filling Materials", icon: Layers },
-  { value: "protective", label: "Protective Materials", icon: Shield },
-  { value: "supplies", label: "General Supplies", icon: Package },
-  { value: "packaging", label: "Product Packaging", icon: FlaskConical },
-];
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 export default function AddPackingMaterial() {
+  const { t } = useTranslation('warehouse');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageUploading, setImageUploading] = useState(false);
+
+  const formSchema = createFormSchema(t);
+
+  // Material Categories with icons
+  const MATERIAL_CATEGORIES = [
+    { value: "cartons", label: t("categoryCartons"), icon: Box },
+    { value: "filling", label: t("categoryFilling"), icon: Layers },
+    { value: "protective", label: t("categoryProtective"), icon: Shield },
+    { value: "supplies", label: t("categorySupplies"), icon: Package },
+    { value: "packaging", label: t("categoryPackaging"), icon: FlaskConical },
+  ];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -116,8 +120,8 @@ export default function AddPackingMaterial() {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "Invalid file",
-        description: "Please select an image file",
+        title: t('invalidFile'),
+        description: t('pleaseSelectImageFile'),
         variant: "destructive",
       });
       return;
@@ -126,8 +130,8 @@ export default function AddPackingMaterial() {
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "File too large",
-        description: "Please select an image smaller than 5MB",
+        title: t('fileTooLarge'),
+        description: t('pleaseSelectImageSmaller'),
         variant: "destructive",
       });
       return;
@@ -194,8 +198,8 @@ export default function AddPackingMaterial() {
         } catch (error) {
           console.error('Image upload error:', error);
           toast({
-            title: "Image upload failed",
-            description: "The material will be created without an image",
+            title: t('imageUploadFailed'),
+            description: t('materialWillBeCreatedWithoutImage'),
             variant: "destructive",
           });
         } finally {
@@ -208,15 +212,15 @@ export default function AddPackingMaterial() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/packing-materials"] });
       toast({
-        title: "Success",
-        description: "Packing material created successfully",
+        title: t('success'),
+        description: t('packingMaterialCreatedSuccess'),
       });
       navigate("/packing-materials");
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create packing material",
+        title: t('error'),
+        description: error.message || t('failedToCreatePackingMaterial'),
         variant: "destructive",
       });
     },
@@ -231,15 +235,15 @@ export default function AddPackingMaterial() {
       <div className="mb-6">
         <Button variant="ghost" size="sm" data-testid="button-back" onClick={() => window.history.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Packing Materials
+          {t('backToPackingMaterials')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Add Packing Material</CardTitle>
+          <CardTitle>{t('addPackingMaterial')}</CardTitle>
           <CardDescription>
-            Add packing materials and supplies to your warehouse inventory
+            {t('manageMaterialsInventory')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -251,9 +255,9 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    Material Classification
+                    {t('materialClassification')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Select the category of packing material</p>
+                  <p className="text-sm text-muted-foreground">{t('selectCategoryOfPackingMaterial')}</p>
                 </div>
                 <Separator />
                 
@@ -262,11 +266,11 @@ export default function AddPackingMaterial() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category *</FormLabel>
+                      <FormLabel>{t('category')} *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-category">
-                            <SelectValue placeholder="Select category" />
+                            <SelectValue placeholder={t('selectCategory')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -294,9 +298,9 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    Basic Information
+                    {t('basicInformation')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Material identification and naming</p>
+                  <p className="text-sm text-muted-foreground">{t('materialIdentificationNaming')}</p>
                 </div>
                 <Separator />
                 
@@ -306,9 +310,9 @@ export default function AddPackingMaterial() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Material Name *</FormLabel>
+                        <FormLabel>{t('materialNameLabel')} *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Large Shipping Carton" {...field} data-testid="input-name" />
+                          <Input placeholder={t('materialNamePlaceholder')} {...field} data-testid="input-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -320,11 +324,11 @@ export default function AddPackingMaterial() {
                     name="code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Material Code *</FormLabel>
+                        <FormLabel>{t('materialCodeLabel')} *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., CART-L-001" {...field} data-testid="input-code" />
+                          <Input placeholder={t('materialCodePlaceholder')} {...field} data-testid="input-code" />
                         </FormControl>
-                        <FormDescription>Unique identifier for tracking</FormDescription>
+                        <FormDescription>{t('materialCodeDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -337,23 +341,23 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                    Dimensions & Specifications
+                    {t('dimensionsSpecifications')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Physical measurements and weight</p>
+                  <p className="text-sm text-muted-foreground">{t('physicalMeasurementsWeight')}</p>
                 </div>
                 <Separator />
                 
                 <div className="space-y-4">
                   {/* Dimensions */}
                   <div>
-                    <FormLabel className="text-base mb-3 block">Dimensions</FormLabel>
+                    <FormLabel className="text-base mb-3 block">{t('dimensions')}</FormLabel>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <FormField
                         control={form.control}
                         name="length"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">Length</FormLabel>
+                            <FormLabel className="text-xs text-muted-foreground">{t('length')}</FormLabel>
                             <FormControl>
                               <Input placeholder="0" {...field} value={field.value || ""} data-testid="input-length" />
                             </FormControl>
@@ -367,7 +371,7 @@ export default function AddPackingMaterial() {
                         name="width"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">Width</FormLabel>
+                            <FormLabel className="text-xs text-muted-foreground">{t('width')}</FormLabel>
                             <FormControl>
                               <Input placeholder="0" {...field} value={field.value || ""} data-testid="input-width" />
                             </FormControl>
@@ -381,7 +385,7 @@ export default function AddPackingMaterial() {
                         name="height"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">Height</FormLabel>
+                            <FormLabel className="text-xs text-muted-foreground">{t('height')}</FormLabel>
                             <FormControl>
                               <Input placeholder="0" {...field} value={field.value || ""} data-testid="input-height" />
                             </FormControl>
@@ -395,7 +399,7 @@ export default function AddPackingMaterial() {
                         name="dimensionUnit"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">Unit</FormLabel>
+                            <FormLabel className="text-xs text-muted-foreground">{t('unit')}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-dimension-unit">
@@ -418,7 +422,7 @@ export default function AddPackingMaterial() {
 
                   {/* Weight */}
                   <div>
-                    <FormLabel className="text-base mb-3 block">Weight</FormLabel>
+                    <FormLabel className="text-base mb-3 block">{t('weight')}</FormLabel>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="col-span-1 md:col-span-1">
                         <FormField
@@ -426,7 +430,7 @@ export default function AddPackingMaterial() {
                           name="weightValue"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs text-muted-foreground">Value</FormLabel>
+                              <FormLabel className="text-xs text-muted-foreground">{t('value')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="0.001" placeholder="0.0" {...field} value={field.value || ""} data-testid="input-weight-value" />
                               </FormControl>
@@ -442,7 +446,7 @@ export default function AddPackingMaterial() {
                           name="weightUnit"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs text-muted-foreground">Unit</FormLabel>
+                              <FormLabel className="text-xs text-muted-foreground">{t('unit')}</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger data-testid="select-weight-unit">
@@ -471,9 +475,9 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    Cost & Inventory
+                    {t('costInventory')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Pricing and stock management</p>
+                  <p className="text-sm text-muted-foreground">{t('pricingStockManagement')}</p>
                 </div>
                 <Separator />
                 
@@ -483,7 +487,7 @@ export default function AddPackingMaterial() {
                     name="cost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Unit Cost</FormLabel>
+                        <FormLabel>{t('unitCost')}</FormLabel>
                         <FormControl>
                           <Input type="number" step="0.01" placeholder="0.00" {...field} data-testid="input-cost" />
                         </FormControl>
@@ -497,7 +501,7 @@ export default function AddPackingMaterial() {
                     name="currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Currency</FormLabel>
+                        <FormLabel>{t('currency')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-currency">
@@ -522,11 +526,11 @@ export default function AddPackingMaterial() {
                     name="stockQuantity"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Current Stock</FormLabel>
+                        <FormLabel>{t('currentStock')}</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" {...field} data-testid="input-stock" />
                         </FormControl>
-                        <FormDescription>Units currently in stock</FormDescription>
+                        <FormDescription>{t('currentStockDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -537,11 +541,11 @@ export default function AddPackingMaterial() {
                     name="minStockLevel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Min Stock Alert</FormLabel>
+                        <FormLabel>{t('minStockAlert')}</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" {...field} data-testid="input-min-stock" />
                         </FormControl>
-                        <FormDescription>Alert when stock falls below this level</FormDescription>
+                        <FormDescription>{t('minStockAlertDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -554,9 +558,9 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                    Supplier Information
+                    {t('supplierInformation')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Supplier details and purchase link</p>
+                  <p className="text-sm text-muted-foreground">{t('supplierDetailsPurchaseLink')}</p>
                 </div>
                 <Separator />
                 
@@ -566,33 +570,31 @@ export default function AddPackingMaterial() {
                     name="supplier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Purchase Link</FormLabel>
+                        <FormLabel>{t('purchaseLink')}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="https://top-obaly.cz" 
+                            placeholder={t('purchaseLinkPlaceholder')} 
                             {...field} 
                             value={field.value || ""} 
                             data-testid="input-supplier"
                           />
                         </FormControl>
-                        <FormDescription>Enter the supplier's website URL</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   <FormItem>
-                    <FormLabel>Supplier Name</FormLabel>
+                    <FormLabel>{t('supplierName')}</FormLabel>
                     <FormControl>
                       <Input 
                         value={formatSupplierName(form.watch('supplier') || '')}
                         readOnly
                         className="bg-muted"
-                        placeholder="Auto-generated from link"
+                        placeholder={t('supplierNamePlaceholder')}
                         data-testid="input-supplier-name"
                       />
                     </FormControl>
-                    <FormDescription>Automatically formatted from purchase link</FormDescription>
                   </FormItem>
                 </div>
               </div>
@@ -602,9 +604,9 @@ export default function AddPackingMaterial() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                    Additional Details
+                    {t('materialProperties')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Description and properties</p>
+                  <p className="text-sm text-muted-foreground">{t('materialCharacteristics')}</p>
                 </div>
                 <Separator />
                 
@@ -613,10 +615,10 @@ export default function AddPackingMaterial() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t('description')}</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Enter material description, specifications, or usage notes..." 
+                          placeholder={t('descriptionPlaceholder')} 
                           rows={4}
                           {...field} 
                           value={field.value || ""}
@@ -630,8 +632,8 @@ export default function AddPackingMaterial() {
 
                 {/* Image Upload */}
                 <div>
-                  <FormLabel>Material Image</FormLabel>
-                  <FormDescription className="mb-3">Upload a photo for visual reference (max 5MB)</FormDescription>
+                  <FormLabel>{t('imageUpload')}</FormLabel>
+                  <FormDescription className="mb-3">{t('uploadMaterialPhoto')} ({t('supportedFormats')})</FormDescription>
                   
                   {!imagePreview ? (
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
@@ -649,10 +651,10 @@ export default function AddPackingMaterial() {
                       >
                         <Upload className="h-10 w-10 text-gray-400" />
                         <div className="text-sm text-gray-600">
-                          <span className="text-blue-600 font-medium">Click to upload</span> or drag and drop
+                          {t('clickOrDragImage')}
                         </div>
                         <div className="text-xs text-gray-500">
-                          PNG, JPG, WEBP up to 5MB
+                          {t('supportedFormats')}
                         </div>
                       </label>
                     </div>
@@ -698,8 +700,8 @@ export default function AddPackingMaterial() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Reusable Material</FormLabel>
-                          <FormDescription>Can be reused multiple times</FormDescription>
+                          <FormLabel className="text-base">{t('reusable')}</FormLabel>
+                          <FormDescription>{t('reusableDescription')}</FormDescription>
                         </div>
                         <FormControl>
                           <Switch
@@ -718,8 +720,8 @@ export default function AddPackingMaterial() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Fragile / Delicate</FormLabel>
-                          <FormDescription>Requires careful handling</FormDescription>
+                          <FormLabel className="text-base">{t('fragile')}</FormLabel>
+                          <FormDescription>{t('fragileDescription')}</FormDescription>
                         </div>
                         <FormControl>
                           <Switch
@@ -738,12 +740,12 @@ export default function AddPackingMaterial() {
               <div className="flex justify-end gap-3 pt-6 border-t">
                 <Link href="/packing-materials">
                   <Button type="button" variant="outline" data-testid="button-cancel">
-                    Cancel
+                    {t('cancel')}
                   </Button>
                 </Link>
                 <Button type="submit" disabled={createMutation.isPending || imageUploading} data-testid="button-submit">
                   <Save className="mr-2 h-4 w-4" />
-                  {imageUploading ? "Uploading image..." : createMutation.isPending ? "Creating..." : "Create Material"}
+                  {imageUploading ? t('imageUploadSuccess') + '...' : createMutation.isPending ? t('addMaterial') + '...' : t('addMaterial')}
                 </Button>
               </div>
             </form>

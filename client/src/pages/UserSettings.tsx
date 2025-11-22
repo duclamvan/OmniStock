@@ -39,24 +39,24 @@ import { applyThemePreference, getCurrentTheme } from "@/lib/theme-utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
-// Form Schemas
+// Form Schemas - validation messages handled in UI
 const personalInfoSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
 });
 
 const contactInfoSchema = z.object({
   phoneNumber: z.string()
-    .regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format (e.g., +420123456789)")
+    .regex(/^\+[1-9]\d{1,14}$/)
     .optional()
     .or(z.literal('')),
 });
 
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+  confirmPassword: z.string().min(1),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -152,14 +152,14 @@ export default function UserSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
-        title: 'Success',
-        description: 'Personal information updated successfully',
+        title: t('common:success'),
+        description: t('settings:personalInformationUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update personal information',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToUpdatePersonalInformation'),
         variant: 'destructive',
       });
     },
@@ -173,14 +173,14 @@ export default function UserSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       toast({
-        title: 'Success',
-        description: 'Contact information updated successfully',
+        title: t('common:success'),
+        description: t('settings:contactInformationUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update contact information',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToUpdateContactInformation'),
         variant: 'destructive',
       });
     },
@@ -195,14 +195,14 @@ export default function UserSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
-        title: 'Success',
-        description: 'Profile image updated successfully',
+        title: t('common:success'),
+        description: t('settings:profileImageUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update profile image',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToUpdateProfileImage'),
         variant: 'destructive',
       });
     },
@@ -219,14 +219,14 @@ export default function UserSettings() {
     onSuccess: () => {
       passwordForm.reset();
       toast({
-        title: 'Success',
-        description: 'Password changed successfully',
+        title: t('common:success'),
+        description: t('settings:passwordChangedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to change password',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToChangePassword'),
         variant: 'destructive',
       });
     },
@@ -241,14 +241,14 @@ export default function UserSettings() {
       setCodeSent(true);
       setResendCountdown(60);
       toast({
-        title: 'Code Sent',
-        description: 'Verification code sent to your phone number',
+        title: t('settings:codeSent'),
+        description: t('settings:verificationCodeSentToYourPhoneNumber'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to send verification code',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToSendVerificationCode'),
         variant: 'destructive',
       });
     },
@@ -270,8 +270,8 @@ export default function UserSettings() {
     },
     onError: (error: any) => {
       toast({
-        title: 'Verification Failed',
-        description: error.message || 'Invalid verification code',
+        title: t('settings:verificationFailed'),
+        description: error.message || t('settings:invalidVerificationCode'),
         variant: 'destructive',
       });
     },
@@ -292,16 +292,16 @@ export default function UserSettings() {
       setVerificationCode('');
       setPhoneNumber('');
       toast({
-        title: 'Success',
+        title: t('common:success'),
         description: user?.twoFactorEnabled 
-          ? '2FA has been disabled' 
-          : '2FA has been enabled successfully',
+          ? t('settings:twoFAHasBeenDisabled')
+          : t('settings:twoFAHasBeenEnabledSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update 2FA settings',
+        title: t('common:error'),
+        description: error.message || t('settings:failedToUpdate2FASettings'),
         variant: 'destructive',
       });
     },
@@ -329,8 +329,8 @@ export default function UserSettings() {
     applyThemePreference(theme);
 
     toast({
-      title: "Theme Updated",
-      description: `Switched to ${theme} mode`,
+      title: t('settings:themeUpdated'),
+      description: t('settings:switchedToThemeMode', { theme }),
     });
   };
 
@@ -339,8 +339,8 @@ export default function UserSettings() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: 'File Too Large',
-          description: 'Please select an image under 5MB',
+          title: t('settings:fileTooLarge'),
+          description: t('settings:pleaseSelectAnImageUnder5MB'),
           variant: 'destructive',
         });
         return;
@@ -424,19 +424,19 @@ export default function UserSettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              <CardTitle>Failed to Load Settings</CardTitle>
+              <CardTitle>{t('settings:failedToLoadSettings')}</CardTitle>
             </div>
             <CardDescription>
-              Unable to load your account information. Please try again.
+              {t('settings:unableToLoadYourAccountInformation')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
-              {isError ? "There was an error loading your account data." : "Account data is unavailable."}
+              {isError ? t('settings:thereWasAnErrorLoadingYourAccountData') : t('settings:accountDataIsUnavailable')}
             </p>
             <Button onClick={() => refetch()} data-testid="button-retry-user-data">
               <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+              {t('common:retry')}
             </Button>
           </CardContent>
         </Card>
@@ -451,10 +451,10 @@ export default function UserSettings() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-            User Settings
+            {t('settings:userSettings')}
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
-            Manage your account preferences and personal information
+            {t('settings:manageYourAccountPreferences')}
           </p>
         </div>
       </div>
@@ -464,10 +464,10 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" />
-            <CardTitle>Profile Picture</CardTitle>
+            <CardTitle>{t('settings:profilePicture')}</CardTitle>
           </div>
           <CardDescription>
-            Upload a profile picture to personalize your account
+            {t('settings:uploadProfilePictureToPersonalize')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -493,7 +493,7 @@ export default function UserSettings() {
                 data-testid="label-upload-image"
               >
                 <Camera className="h-4 w-4 mr-2" />
-                {updateProfileImageMutation.isPending ? 'Uploading...' : 'Upload Photo'}
+                {updateProfileImageMutation.isPending ? t('settings:uploading') : t('settings:uploadPhoto')}
               </Label>
               <Input
                 id="profile-image"
@@ -505,7 +505,7 @@ export default function UserSettings() {
                 data-testid="input-profile-image"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Max 5MB. JPG, PNG, GIF
+                {t('settings:maxFileSize')}
               </p>
             </div>
           </div>
@@ -517,10 +517,10 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserIcon className="h-5 w-5 text-primary" />
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>{t('common:personalInformation')}</CardTitle>
           </div>
           <CardDescription>
-            Update your personal details
+            {t('common:updateYourPersonalDetails')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -532,10 +532,10 @@ export default function UserSettings() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>{t('common:firstName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="John" 
+                          placeholder={t('common:firstName')} 
                           {...field} 
                           data-testid="input-first-name"
                         />
@@ -549,10 +549,10 @@ export default function UserSettings() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>{t('common:lastName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Doe" 
+                          placeholder={t('common:lastName')} 
                           {...field} 
                           data-testid="input-last-name"
                         />
@@ -568,7 +568,7 @@ export default function UserSettings() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>{t('common:emailAddress')}</FormLabel>
                     <FormControl>
                       <Input 
                         type="email"
@@ -578,7 +578,7 @@ export default function UserSettings() {
                       />
                     </FormControl>
                     <FormDescription>
-                      This email will be used for account recovery and notifications
+                      {t('settings:thisEmailWillBeUsedForAccountRecovery')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -594,12 +594,12 @@ export default function UserSettings() {
                 {updatePersonalInfoMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('common:saving')}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Save Changes
+                    {t('common:saveChanges')}
                   </>
                 )}
               </Button>
@@ -613,10 +613,10 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-primary" />
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle>{t('settings:contactInformation')}</CardTitle>
           </div>
           <CardDescription>
-            Manage your contact details
+            {t('settings:manageYourContactDetails')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -627,7 +627,7 @@ export default function UserSettings() {
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('settings:phoneNumber')}</FormLabel>
                     <FormControl>
                       <Input 
                         type="tel"
@@ -637,7 +637,7 @@ export default function UserSettings() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Enter your phone number in E.164 format (e.g., +420123456789)
+                      {t('settings:enterYourPhoneNumberInE164Format')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -653,12 +653,12 @@ export default function UserSettings() {
                 {updateContactInfoMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('common:saving')}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Save Changes
+                    {t('common:saveChanges')}
                   </>
                 )}
               </Button>
@@ -672,10 +672,10 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            <CardTitle>Two-Factor Authentication (2FA)</CardTitle>
+            <CardTitle>{t('settings:twoFactorAuthentication')}</CardTitle>
           </div>
           <CardDescription>
-            Add an extra layer of security to your account with SMS verification
+            {t('settings:addExtraLayerOfSecurityWithSMS')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -683,20 +683,20 @@ export default function UserSettings() {
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="space-y-1 flex-1">
               <Label className="text-base font-medium">
-                Status: {user?.twoFactorEnabled ? (
+                {t('settings:status')}: {user?.twoFactorEnabled ? (
                   <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    Enabled
+                    {t('settings:enabled')}
                   </Badge>
                 ) : (
                   <Badge className="ml-2 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                    Disabled
+                    {t('settings:disabled')}
                   </Badge>
                 )}
               </Label>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {user?.twoFactorEnabled 
-                  ? `Active on ${user.phoneNumber || 'your phone'}` 
-                  : 'Enable 2FA to secure your account with SMS verification'}
+                  ? t('settings:activeOnPhone', { phone: user.phoneNumber || t('settings:yourPhone') })
+                  : t('settings:enable2FAToSecureYourAccount')}
               </p>
             </div>
             <Switch
@@ -715,9 +715,9 @@ export default function UserSettings() {
           {!user?.twoFactorEnabled && (
             <div className="space-y-4 pt-4 border-t dark:border-gray-700">
               <div className="space-y-2">
-                <Label htmlFor="phone-number-2fa">Phone Number for 2FA</Label>
+                <Label htmlFor="phone-number-2fa">{t('settings:phoneNumberFor2FA')}</Label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Enter your phone number in E.164 format (e.g., +420123456789)
+                  {t('settings:enterYourPhoneNumberInE164Format')}
                 </p>
                 <Input
                   id="phone-number-2fa"
@@ -735,8 +735,8 @@ export default function UserSettings() {
                   onClick={() => {
                     if (!phoneNumber || !phoneNumber.startsWith('+')) {
                       toast({
-                        title: 'Invalid Phone Number',
-                        description: 'Please enter a valid phone number in E.164 format (e.g., +420123456789)',
+                        title: t('settings:invalidPhoneNumber'),
+                        description: t('settings:pleaseEnterValidPhoneNumberInE164'),
                         variant: 'destructive',
                       });
                       return;
@@ -750,12 +750,12 @@ export default function UserSettings() {
                   {sendCodeMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
+                      {t('settings:sending')}
                     </>
                   ) : (
                     <>
                       <Smartphone className="mr-2 h-4 w-4" />
-                      Send Verification Code
+                      {t('settings:sendVerificationCode')}
                     </>
                   )}
                 </Button>
@@ -763,13 +763,13 @@ export default function UserSettings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
                     <Check className="h-4 w-4" />
-                    Code sent to {phoneNumber}
+                    {t('settings:codeSentToPhone', { phone: phoneNumber })}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="verification-code-2fa">Verification Code</Label>
+                    <Label htmlFor="verification-code-2fa">{t('settings:verificationCode')}</Label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Enter the 6-digit code sent to your phone
+                      {t('settings:enterThe6DigitCodeSentToYourPhone')}
                     </p>
                     <Input
                       id="verification-code-2fa"
@@ -788,8 +788,8 @@ export default function UserSettings() {
                       onClick={() => {
                         if (verificationCode.length !== 6) {
                           toast({
-                            title: 'Invalid Code',
-                            description: 'Please enter a 6-digit verification code',
+                            title: t('settings:invalidCode'),
+                            description: t('settings:pleaseEnterA6DigitVerificationCode'),
                             variant: 'destructive',
                           });
                           return;
@@ -806,19 +806,19 @@ export default function UserSettings() {
                       {verifyCodeMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Verifying...
+                          {t('settings:verifying')}
                         </>
                       ) : (
                         <>
                           <Check className="mr-2 h-4 w-4" />
-                          Verify & Enable 2FA
+                          {t('settings:verifyAndEnable2FA')}
                         </>
                       )}
                     </Button>
 
                     {resendCountdown > 0 ? (
                       <p className="text-sm text-gray-600 dark:text-gray-400 text-center md:text-left" data-testid="text-resend-countdown">
-                        Resend code in {resendCountdown}s
+                        {t('settings:resendCodeIn', { seconds: resendCountdown })}
                       </p>
                     ) : (
                       <Button
@@ -831,10 +831,10 @@ export default function UserSettings() {
                         {sendCodeMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Sending...
+                            {t('settings:sending')}
                           </>
                         ) : (
-                          'Resend Code'
+                          t('settings:resendCode')
                         )}
                       </Button>
                     )}
@@ -849,7 +849,7 @@ export default function UserSettings() {
             <div className="space-y-4 pt-4 border-t dark:border-gray-700">
               <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                 <p className="text-sm text-amber-900 dark:text-amber-200">
-                  <strong>Warning:</strong> Disabling 2FA will remove the extra security layer from your account. You can re-enable it at any time.
+                  <strong>{t('settings:warning')}:</strong> {t('settings:disabling2FAWarning')}
                 </p>
               </div>
               <Button
@@ -862,10 +862,10 @@ export default function UserSettings() {
                 {setupTwoFactorMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Disabling...
+                    {t('settings:disabling')}
                   </>
                 ) : (
-                  'Disable 2FA'
+                  t('settings:disable2FA')
                 )}
               </Button>
             </div>
@@ -879,10 +879,10 @@ export default function UserSettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5 text-primary" />
-              <CardTitle>Change Password</CardTitle>
+              <CardTitle>{t('settings:changePassword')}</CardTitle>
             </div>
             <CardDescription>
-              Update your account password
+              {t('settings:updateYourAccountPassword')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -893,11 +893,11 @@ export default function UserSettings() {
                   name="currentPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Password</FormLabel>
+                      <FormLabel>{t('settings:currentPassword')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
-                          placeholder="Enter current password" 
+                          placeholder={t('settings:enterCurrentPassword')} 
                           {...field} 
                           data-testid="input-current-password"
                         />
@@ -912,17 +912,17 @@ export default function UserSettings() {
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Password</FormLabel>
+                      <FormLabel>{t('settings:newPassword')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
-                          placeholder="Enter new password" 
+                          placeholder={t('settings:enterNewPassword')} 
                           {...field} 
                           data-testid="input-new-password"
                         />
                       </FormControl>
                       <FormDescription>
-                        Password must be at least 8 characters long
+                        {t('settings:passwordMustBeAtLeast8Characters')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -934,11 +934,11 @@ export default function UserSettings() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormLabel>{t('settings:confirmNewPassword')}</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
-                          placeholder="Confirm new password" 
+                          placeholder={t('settings:confirmNewPassword')} 
                           {...field} 
                           data-testid="input-confirm-password"
                         />
@@ -957,12 +957,12 @@ export default function UserSettings() {
                   {updatePasswordMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Changing Password...
+                      {t('settings:changingPassword')}
                     </>
                   ) : (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
-                      Change Password
+                      {t('settings:changePassword')}
                     </>
                   )}
                 </Button>
@@ -977,16 +977,16 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
-            <CardTitle>Language & Display</CardTitle>
+            <CardTitle>{t('settings:languageAndDisplay')}</CardTitle>
           </div>
           <CardDescription>
-            Customize your interface preferences
+            {t('settings:customizeYourInterfacePreferences')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Language Selector */}
           <div className="space-y-3">
-            <Label className="text-base font-medium">Language</Label>
+            <Label className="text-base font-medium">{t('settings:language')}</Label>
             <RadioGroup 
               value={i18n.language} 
               onValueChange={(value) => handleLanguageChange(value as 'en' | 'vi')}
@@ -1011,7 +1011,7 @@ export default function UserSettings() {
 
           {/* Theme Selector */}
           <div className="space-y-3">
-            <Label className="text-base font-medium">Theme</Label>
+            <Label className="text-base font-medium">{t('settings:theme')}</Label>
             <RadioGroup 
               value={isDarkMode ? 'dark' : 'light'} 
               onValueChange={(value) => handleThemeChange(value as 'light' | 'dark')}
@@ -1021,14 +1021,14 @@ export default function UserSettings() {
                 <RadioGroupItem value="light" id="theme-light" data-testid="radio-theme-light" />
                 <Label htmlFor="theme-light" className="font-normal cursor-pointer flex items-center gap-2">
                   <Sun className="h-4 w-4" />
-                  Light Mode
+                  {t('settings:lightMode')}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="dark" id="theme-dark" data-testid="radio-theme-dark" />
                 <Label htmlFor="theme-dark" className="font-normal cursor-pointer flex items-center gap-2">
                   <Moon className="h-4 w-4" />
-                  Dark Mode
+                  {t('settings:darkMode')}
                 </Label>
               </div>
             </RadioGroup>
@@ -1041,10 +1041,10 @@ export default function UserSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserIcon className="h-5 w-5 text-primary" />
-            <CardTitle>Account Details</CardTitle>
+            <CardTitle>{t('common:accountDetails')}</CardTitle>
           </div>
           <CardDescription>
-            Read-only information about your account
+            {t('settings:readOnlyInformationAboutYourAccount')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -1053,7 +1053,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <UserIcon className="h-4 w-4" />
-                User ID
+                {t('common:userId')}
               </div>
               <p className="text-gray-900 dark:text-white font-mono text-sm break-all" data-testid="text-user-id">
                 {user.id}
@@ -1064,7 +1064,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <Mail className="h-4 w-4" />
-                Email Address
+                {t('common:emailAddress')}
               </div>
               <p className="text-gray-900 dark:text-white font-medium break-all" data-testid="text-account-email">
                 {user.email || 'N/A'}
@@ -1075,7 +1075,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <Shield className="h-4 w-4" />
-                Account Role
+                {t('common:accountRole')}
               </div>
               <Badge 
                 className={getRoleBadgeColor(user.role)} 
@@ -1089,7 +1089,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <Key className="h-4 w-4" />
-                Authentication Method
+                {t('settings:authenticationMethod')}
               </div>
               <Badge 
                 className={getAuthProviderBadgeColor(user.authProvider)} 
@@ -1103,7 +1103,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <Calendar className="h-4 w-4" />
-                Account Created
+                {t('common:accountCreated')}
               </div>
               <p className="text-gray-900 dark:text-white" data-testid="text-account-created">
                 {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) 
@@ -1121,7 +1121,7 @@ export default function UserSettings() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <RefreshCw className="h-4 w-4" />
-                Last Updated
+                {t('settings:lastUpdated')}
               </div>
               <p className="text-gray-900 dark:text-white" data-testid="text-account-updated">
                 {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime())

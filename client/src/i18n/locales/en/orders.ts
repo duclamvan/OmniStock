@@ -719,6 +719,184 @@ const orders = {
   item: 'item',
   notSet: 'Not set',
   
+  // Pick & Pack Workflow
+  orderFulfillment: 'Order Fulfillment',
+  fulfillmentWorkflow: 'Fulfillment Workflow',
+  pickItems: 'Pick Items',
+  packItems: 'Pack Items',
+  generateLabel: 'Generate Label',
+  complete: 'Complete',
+  
+  // Scanning
+  scanProduct: 'Scan Product',
+  scanBarcode: 'Scan Barcode',
+  manualEntry: 'Manual Entry',
+  barcodeScanner: 'Barcode Scanner',
+  scanBarcodeToVerifyItems: 'Scan barcode to verify items...',
+  hideBarcodeScanner: 'Hide barcode scanner',
+  showBarcodeScanner: 'Show barcode scanner',
+  
+  // Product Info
+  productName: 'Product Name',
+  location: 'Location',
+  pickStatus: 'Pick Status',
+  barcode: 'Barcode',
+  
+  // Pick Status
+  notStarted: 'Not Started',
+  inProgress: 'In Progress',
+  completed: 'Completed',
+  picked: 'Picked',
+  partiallyPicked: 'Partially Picked',
+  notFound: 'Not Found',
+  
+  // Actions
+  markAsPicked: 'Mark as Picked',
+  cannotFind: 'Cannot Find',
+  skip: 'Skip',
+  printLabel: 'Print Label',
+  completeOrder: 'Complete Order',
+  next: 'Next',
+  previous: 'Previous',
+  cancel: 'Cancel',
+  print: 'Print',
+  save: 'Save',
+  view: 'View',
+  printed: 'Printed',
+  
+  // Carton & Packing
+  addToCarton: 'Add to Carton',
+  cartonNumber: 'Carton #{{number}}',
+  cartonType: 'Carton Type',
+  packageWeight: 'Package Weight',
+  dimensions: 'Dimensions',
+  packingMaterials: 'Packing Materials',
+  weight: 'Weight',
+  weightKg: 'Weight (kg)',
+  weightOptional: 'Weight (kg) <span className="text-xs text-gray-500 font-normal">(optional, max 40kg)</span>',
+  
+  // Validation Messages
+  scanAllItems: 'Scan all items',
+  wrongProductScanned: 'Wrong product scanned',
+  quantityMismatch: 'Quantity mismatch',
+  itemAlreadyPicked: 'Item already picked',
+  weightLimitExceeded: 'Weight Limit Exceeded',
+  weightLimitExceededDesc: 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.',
+  
+  // Instructions
+  scanEachProductToPick: 'Scan each product to pick',
+  packItemsIntoCarton: 'Pack items into carton',
+  verifyQuantities: 'Verify quantities',
+  clickToMinimize: 'Click to minimize',
+  clickToUnverifyAllItems: 'Click to unverify all items',
+  clickToMarkAllItemsAsVerified: 'Click to mark all items as verified',
+  
+  // Progress
+  itemsPicked: '{{picked}} of {{total}} items picked',
+  percentComplete: '{{percent}}% complete',
+  remainingItems: '{{count}} remaining items',
+  
+  // Alerts
+  itemNotFoundInWarehouse: 'Item not found in warehouse',
+  lowStockAlert: 'Low stock alert',
+  locationMismatch: 'Location mismatch',
+  errorNoPacking: 'No items to pack in the current order',
+  
+  // Loading States
+  loadingOrder: 'Loading order...',
+  processing: 'Processing...',
+  generatingLabel: 'Generating label...',
+  loadingDocuments: 'Loading documents...',
+  loadingFiles: 'Loading files...',
+  
+  // Empty States
+  noItemsToPick: 'No items to pick',
+  orderComplete: 'Order complete',
+  noFilesAttachedToOrder: 'No files attached to this order',
+  
+  // Documents & Labels
+  packingList: 'Packing List',
+  filesSent: 'Files Sent',
+  productDocuments: 'Product Documents',
+  orderFiles: 'Order Files',
+  documentsCount: 'Product Documents ({{count}})',
+  documentsSentToPrinter: 'Documents Sent to Printer',
+  printError: 'Print Error',
+  
+  // Service Items
+  service: 'Service',
+  serviceItemNoLocation: 'Pick last - No physical location',
+  note: 'Note',
+  
+  // Packing Checklist
+  itemsVerified: 'Items Verified',
+  packingSlipIncluded: 'Packing Slip Included',
+  boxSealed: 'Box Sealed',
+  weightRecorded: 'Weight Recorded',
+  fragileProtected: 'Fragile Protected',
+  promotionalMaterials: 'Promotional Materials',
+  
+  // Error Messages
+  error: 'Error',
+  failedToCreateCartons: 'Failed to create AI-suggested cartons',
+  errorCreatingCarton: 'Error Creating Carton',
+  failedToCreateCarton: 'Failed to create carton',
+  failedToSave: 'Failed to Save',
+  failedToUpdateTrackingNumber: 'Failed to update tracking number',
+  failedToCreateLabels: 'Failed to create PPL labels',
+  failedToCancelLabels: 'Failed to cancel PPL labels',
+  failedToDeleteLabels: 'Failed to delete PPL labels',
+  failedToRetrieveLabel: 'Failed to retrieve PPL label',
+  labelRetrievalFailed: 'Label Retrieval Failed',
+  failedToRecalculateCartons: 'Failed to recalculate cartons',
+  failedToInitiateRepacking: 'Failed to initiate repacking',
+  failedToSaveTrackingNumbers: 'Failed to save tracking numbers. Please try again.',
+  cannotCompletePacking: 'Cannot Complete Packing',
+  failedToShipOrder: 'Failed to ship order',
+  failedToShipSomeOrders: 'Failed to ship some orders',
+  failedToUndoShipment: 'Failed to undo shipment',
+  
+  // Success Messages
+  shippingLabelsCancelled: 'Shipping labels have been cancelled with PPL',
+  labelDataRemoved: 'Label data has been removed from the order',
+  orderReset: 'Order Reset',
+  allPickedQuantitiesCleared: 'All picked quantities have been cleared.',
+  ordersShipped: 'Orders Shipped',
+  shipmentUndone: 'Shipment Undone',
+  ordersReturnedToReady: 'Orders returned to ready status',
+  copiedToClipboard: 'Copied to clipboard',
+  copyFailed: 'Copy failed',
+  pleaseTryAgain: 'Please try again',
+  
+  // Repacking
+  repackingOrder: 'Repacking Order',
+  orderSentForRepacking: 'Order has been sent for repacking',
+  recalculateCartonsBasedOnCurrentItems: 'Recalculate cartons based on current items',
+  
+  // Tracking Numbers
+  enterTrackingNumber: 'Enter tracking number...',
+  enterDHLTrackingNumber: 'Enter DHL tracking number...',
+  enterGLSTrackingNumber: 'Enter GLS tracking number...',
+  
+  // Copy Fields
+  copied: 'Copied!',
+  country: 'Country',
+  paketSize: 'Paket size',
+  firstName: 'First Name',
+  lastName: 'Last Name',
+  fullAddress: 'Full Address',
+  
+  // Mute/Unmute
+  muteSounds: 'Mute sounds',
+  unmuteSounds: 'Unmute sounds',
+  
+  // Bundle Items
+  hideBundleItems: 'Hide bundle items',
+  showBundleItems: 'Show bundle items',
+  
+  // Packing Instructions
+  packingInstructions: 'Packing instructions',
+  
 } as const;
 
 export default orders;

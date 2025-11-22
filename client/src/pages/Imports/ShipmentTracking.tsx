@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ interface Shipment {
 }
 
 export default function ShipmentTracking() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
@@ -159,13 +161,13 @@ export default function ShipmentTracking() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Imports
+                {t('imports:backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Shipment Tracking</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('imports:shipmentTracking')}</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Track all import shipments in real-time
+                {t('imports:trackAllShipments')}
               </p>
             </div>
           </div>
@@ -178,7 +180,7 @@ export default function ShipmentTracking() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">In Transit</p>
+                <p className="text-xs text-muted-foreground">{t('imports:inTransit')}</p>
                 <p className="text-xl font-bold">{inTransit.length}</p>
               </div>
               <Truck className="h-6 w-6 text-blue-500" />
@@ -190,7 +192,7 @@ export default function ShipmentTracking() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Delivered</p>
+                <p className="text-xs text-muted-foreground">{t('imports:delivered')}</p>
                 <p className="text-xl font-bold">{delivered.length}</p>
               </div>
               <CheckCircle className="h-6 w-6 text-green-500" />
@@ -202,7 +204,7 @@ export default function ShipmentTracking() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-xs text-muted-foreground">{t('imports:pending')}</p>
                 <p className="text-xl font-bold">{pending.length}</p>
               </div>
               <Clock className="h-6 w-6 text-orange-500" />
@@ -214,7 +216,7 @@ export default function ShipmentTracking() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Delayed</p>
+                <p className="text-xs text-muted-foreground">{t('imports:delayed')}</p>
                 <p className="text-xl font-bold">{delayed.length}</p>
               </div>
               <AlertCircle className="h-6 w-6 text-red-500" />
@@ -229,7 +231,7 @@ export default function ShipmentTracking() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by tracking number or carrier..."
+              placeholder={t('imports:searchByTracking')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -254,7 +256,7 @@ export default function ShipmentTracking() {
                     </Badge>
                   </div>
                   <CardDescription className="text-xs">
-                    {shipment.carrier} • Shipped {format(new Date(shipment.shippedDate), 'MMM d, yyyy')}
+                    {shipment.carrier} • {t('imports:shipped')} {format(new Date(shipment.shippedDate), 'MMM d, yyyy')}
                   </CardDescription>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -264,7 +266,7 @@ export default function ShipmentTracking() {
               {/* Route */}
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">From:</span>
+                <span className="text-muted-foreground">{t('imports:from')}</span>
                 <span className="font-medium">{shipment.origin}</span>
                 <span className="text-muted-foreground">→</span>
                 <span className="font-medium">{shipment.destination}</span>
@@ -274,7 +276,7 @@ export default function ShipmentTracking() {
               {shipment.currentLocation && (
                 <div className="flex items-center gap-2 text-sm">
                   <Navigation className="h-4 w-4 text-blue-500" />
-                  <span className="text-muted-foreground">Current:</span>
+                  <span className="text-muted-foreground">{t('imports:current')}</span>
                   <span className="font-medium">{shipment.currentLocation}</span>
                 </div>
               )}
@@ -282,7 +284,7 @@ export default function ShipmentTracking() {
               {/* Progress */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Progress</span>
+                  <span className="text-muted-foreground">{t('imports:progress')}</span>
                   <span className="font-medium">{shipment.progress}%</span>
                 </div>
                 <Progress value={shipment.progress} className="h-2" />
@@ -292,25 +294,25 @@ export default function ShipmentTracking() {
               <div className="flex items-center justify-between pt-2 border-t">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">ETA:</span>
+                  <span className="text-muted-foreground">{t('imports:eta')}:</span>
                   <span className="font-medium">
                     {format(new Date(shipment.estimatedArrival), 'MMM d, yyyy')}
                   </span>
                 </div>
                 {shipment.actualArrival ? (
                   <Badge variant="outline" className="text-xs">
-                    Delivered {format(new Date(shipment.actualArrival), 'MMM d')}
+                    {t('imports:delivered')} {format(new Date(shipment.actualArrival), 'MMM d')}
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-xs">
-                    {differenceInDays(new Date(shipment.estimatedArrival), new Date())} days
+                    {differenceInDays(new Date(shipment.estimatedArrival), new Date())} {t('imports:days')}
                   </Badge>
                 )}
               </div>
 
               {/* Import Orders */}
               <div className="pt-2 border-t">
-                <div className="text-xs text-muted-foreground mb-2">Import Orders</div>
+                <div className="text-xs text-muted-foreground mb-2">{t('imports:importOrders')}</div>
                 <div className="space-y-1">
                   {shipment.importOrders.map((order) => (
                     <div key={order.id} className="flex items-center justify-between text-sm">
@@ -320,7 +322,7 @@ export default function ShipmentTracking() {
                         </Button>
                       </Link>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{order.itemCount} items</span>
+                        <span>{order.itemCount} {t('imports:items')}</span>
                         <span>{formatCurrency(order.totalValue, 'USD')}</span>
                       </div>
                     </div>
@@ -331,7 +333,7 @@ export default function ShipmentTracking() {
               {/* Timeline Preview */}
               {shipment.events.length > 0 && (
                 <div className="pt-2 border-t">
-                  <div className="text-xs text-muted-foreground mb-2">Latest Update</div>
+                  <div className="text-xs text-muted-foreground mb-2">{t('imports:latestUpdate')}</div>
                   <div className="flex items-start gap-2">
                     <Activity className="h-4 w-4 text-blue-500 mt-0.5" />
                     <div className="flex-1">
@@ -352,7 +354,7 @@ export default function ShipmentTracking() {
           <Card>
             <CardContent className="p-8 text-center">
               <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No shipments to track</p>
+              <p className="text-muted-foreground">{t('imports:noShipmentsToTrack')}</p>
             </CardContent>
           </Card>
         )}
@@ -365,7 +367,7 @@ export default function ShipmentTracking() {
           <div className="bg-background w-full md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6"
                onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Shipment Details</h3>
+              <h3 className="text-lg font-semibold">{t('imports:shipmentDetails')}</h3>
               <Button variant="ghost" size="icon" onClick={() => setSelectedShipment(null)}>
                 <X className="h-5 w-5" />
               </Button>
@@ -385,7 +387,7 @@ export default function ShipmentTracking() {
 
               {/* Timeline */}
               <div className="space-y-2">
-                <h5 className="font-medium text-sm">Tracking Timeline</h5>
+                <h5 className="font-medium text-sm">{t('imports:trackingTimeline')}</h5>
                 <div className="space-y-3 relative before:absolute before:left-2 before:top-3 before:bottom-3 before:w-0.5 before:bg-border">
                   {selectedShipment.events.map((event, index) => (
                     <div key={index} className="flex gap-3 relative">

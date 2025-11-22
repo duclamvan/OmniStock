@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ interface LandingCostSummary {
 }
 
 export default function LandingCostList() {
+  const { t } = useTranslation('imports');
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [expandedShipments, setExpandedShipments] = useState<number[]>([]);
@@ -110,7 +112,7 @@ export default function LandingCostList() {
       return (
         <Badge variant="secondary" className="flex items-center gap-1">
           <AlertCircle className="h-3 w-3" />
-          No Costs
+          {t('noCosts')}
         </Badge>
       );
     }
@@ -119,7 +121,7 @@ export default function LandingCostList() {
       return (
         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex items-center gap-1">
           <CheckCircle className="h-3 w-3" />
-          Costed ✓
+          {t('costed')} ✓
         </Badge>
       );
     }
@@ -127,7 +129,7 @@ export default function LandingCostList() {
     return (
       <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 flex items-center gap-1">
         <AlertTriangle className="h-3 w-3" />
-        Pending ⚠️
+        {t('pending')} ⚠️
       </Badge>
     );
   };
@@ -163,10 +165,10 @@ export default function LandingCostList() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
               <Calculator className="h-7 w-7 text-cyan-600" />
-              Landing Costs
+              {t('landingCosts')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Calculate and track landed costs for international shipments
+              {t('landingCostsDescription')}
             </p>
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function LandingCostList() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Total Shipments</p>
+                <p className="text-xs text-muted-foreground">{t('totalShipments')}</p>
               </div>
               <p className="text-2xl font-bold">{shipments.length}</p>
             </CardContent>
@@ -187,7 +189,7 @@ export default function LandingCostList() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <p className="text-xs text-muted-foreground">Costed</p>
+                <p className="text-xs text-muted-foreground">{t('costed')}</p>
               </div>
               <p className="text-2xl font-bold text-green-600">
                 {shipmentsWithCosts.filter(s => s.landingCost?.status === 'calculated').length}
@@ -199,7 +201,7 @@ export default function LandingCostList() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-xs text-muted-foreground">{t('pending')}</p>
               </div>
               <p className="text-2xl font-bold text-yellow-600">
                 {shipmentsWithCosts.filter(s => s.landingCost?.status === 'pending').length}
@@ -211,7 +213,7 @@ export default function LandingCostList() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
                 <AlertCircle className="h-4 w-4 text-gray-600" />
-                <p className="text-xs text-muted-foreground">No Costs</p>
+                <p className="text-xs text-muted-foreground">{t('noCosts')}</p>
               </div>
               <p className="text-2xl font-bold text-gray-600">
                 {shipmentsWithCosts.filter(s => !s.landingCost).length}
@@ -225,7 +227,7 @@ export default function LandingCostList() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by shipment name, tracking, or carrier..."
+              placeholder={t('searchShipmentPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -239,7 +241,7 @@ export default function LandingCostList() {
               onClick={() => setFilterStatus('all')}
               data-testid="filter-all"
             >
-              All
+              {t('all')}
             </Button>
             <Button
               variant={filterStatus === 'costed' ? 'default' : 'outline'}
@@ -247,7 +249,7 @@ export default function LandingCostList() {
               onClick={() => setFilterStatus('costed')}
               data-testid="filter-costed"
             >
-              Costed
+              {t('costed')}
             </Button>
             <Button
               variant={filterStatus === 'pending' ? 'default' : 'outline'}
@@ -255,7 +257,7 @@ export default function LandingCostList() {
               onClick={() => setFilterStatus('pending')}
               data-testid="filter-pending"
             >
-              Pending
+              {t('pending')}
             </Button>
             <Button
               variant={filterStatus === 'not-costed' ? 'default' : 'outline'}
@@ -263,7 +265,7 @@ export default function LandingCostList() {
               onClick={() => setFilterStatus('not-costed')}
               data-testid="filter-not-costed"
             >
-              No Costs
+              {t('noCosts')}
             </Button>
           </div>
         </div>
@@ -274,11 +276,11 @@ export default function LandingCostList() {
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Shipments Found</h3>
+            <h3 className="text-lg font-medium mb-2">{t('noShipmentsFound')}</h3>
             <p className="text-sm text-muted-foreground">
               {searchQuery || filterStatus !== 'all' 
-                ? 'Try adjusting your search or filters' 
-                : 'Create your first shipment to start tracking landing costs'}
+                ? t('tryAdjustingFilters') 
+                : t('createFirstShipment')}
             </p>
           </CardContent>
         </Card>
@@ -308,7 +310,7 @@ export default function LandingCostList() {
                           </span>
                           <span className="flex items-center gap-1">
                             <Package className="h-3 w-3" />
-                            {shipment.itemCount} items
+                            {shipment.itemCount} {t('items')}
                           </span>
                           {shipment.createdAt && (
                             <span className="flex items-center gap-1">
@@ -323,24 +325,24 @@ export default function LandingCostList() {
                     {/* Cost Details Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-muted/30 rounded-lg p-3">
                       <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">Shipping Cost</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">{t('shippingCost')}</p>
                         <p className="font-semibold">{getShippingCostDisplay(shipment)}</p>
                       </div>
                       {shipment.landingCost && (
                         <>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Total Landed Cost</p>
+                            <p className="text-xs text-muted-foreground mb-0.5">{t('totalLandedCost')}</p>
                             <p className="font-semibold text-green-600">
                               {formatCurrency(shipment.landingCost.totalCost || 0, shipment.landingCost.baseCurrency || 'EUR')}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Items Allocated</p>
+                            <p className="text-xs text-muted-foreground mb-0.5">{t('itemsAllocated')}</p>
                             <p className="font-semibold">{shipment.landingCost.itemCount || 0}</p>
                           </div>
                           {shipment.landingCost.lastCalculated && (
                             <div>
-                              <p className="text-xs text-muted-foreground mb-0.5">Last Calculated</p>
+                              <p className="text-xs text-muted-foreground mb-0.5">{t('lastCalculated')}</p>
                               <p className="text-sm">{format(new Date(shipment.landingCost.lastCalculated), 'MMM dd, HH:mm')}</p>
                             </div>
                           )}
@@ -376,7 +378,7 @@ export default function LandingCostList() {
                             <span className="flex items-center gap-2">
                               <Box className="h-4 w-4" />
                               <span className="font-medium">
-                                {expandedShipments.includes(shipment.id) ? 'Hide' : 'Show'} Items ({shipment.items.length})
+                                {expandedShipments.includes(shipment.id) ? t('hide') : t('show')} {t('items')} ({shipment.items.length})
                               </span>
                             </span>
                             {expandedShipments.includes(shipment.id) ? (
@@ -425,7 +427,7 @@ export default function LandingCostList() {
                     <Link href={`/imports/landing-costs/${shipment.id}`}>
                       <Button size="sm" className="w-full" data-testid={`button-view-costs-${shipment.id}`}>
                         <Calculator className="h-4 w-4 mr-2" />
-                        View Costs
+                        {t('viewCosts')}
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag, MoreVertical, Check, FileDown, FileText } from "lucide-react";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { format } from "date-fns";
@@ -53,6 +54,7 @@ function getDisplayUrl(url: string | null): { display: string; href: string } | 
 }
 
 export default function PackingMaterials() {
+  const { t } = useTranslation('warehouse');
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
@@ -127,20 +129,20 @@ export default function PackingMaterials() {
     try {
       await navigator.clipboard.writeText(names);
       toast({
-        title: "Copied to clipboard",
-        description: `Copied ${selectedMaterials.length} material name(s)`,
+        title: t('copiedToClipboard'),
+        description: t('copiedMaterialNames', { count: selectedMaterials.length }),
       });
     } catch (error) {
       toast({
-        title: "Failed to copy",
-        description: "Could not copy to clipboard",
+        title: t('failedToCopy'),
+        description: t('couldNotCopyToClipboard'),
         variant: "destructive",
       });
     }
   };
 
   const handleBulkDelete = async (selectedMaterials: PackingMaterial[]) => {
-    if (!confirm(`Are you sure you want to delete ${selectedMaterials.length} material(s)?`)) {
+    if (!confirm(t('deleteMaterialsConfirm', { count: selectedMaterials.length }))) {
       return;
     }
 
@@ -149,15 +151,15 @@ export default function PackingMaterials() {
       await apiRequest('POST', '/api/packing-materials/bulk-delete', { ids });
 
       toast({
-        title: "Materials deleted",
-        description: `Successfully deleted ${selectedMaterials.length} material(s)`,
+        title: t('materialsDeleted'),
+        description: t('deletedMaterialsSuccess', { count: selectedMaterials.length }),
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/packing-materials'] });
     } catch (error) {
       toast({
-        title: "Failed to delete",
-        description: "Could not delete materials",
+        title: t('failedToDelete'),
+        description: t('couldNotDeleteMaterials'),
         variant: "destructive",
       });
     }
@@ -168,24 +170,27 @@ export default function PackingMaterials() {
       const ids = selectedMaterials.map(m => m.id);
       await apiRequest('POST', '/api/packing-materials/bulk-update-category', { ids, category });
 
-      const categoryLabels: Record<string, string> = {
-        cartons: "Cartons & Boxes",
-        filling: "Filling Materials",
-        protective: "Protective Materials",
-        supplies: "General Supplies",
-        packaging: "Product Packaging"
+      const getCategoryLabel = (cat: string) => {
+        const categoryKeys: Record<string, string> = {
+          cartons: 'categoryCartons',
+          filling: 'categoryFilling',
+          protective: 'categoryProtective',
+          supplies: 'categorySupplies',
+          packaging: 'categoryPackaging'
+        };
+        return t(categoryKeys[cat] || cat);
       };
 
       toast({
-        title: "Category updated",
-        description: `Updated ${selectedMaterials.length} material(s) to ${categoryLabels[category]}`,
+        title: t('categoryUpdated'),
+        description: t('updatedMaterialsCategory', { count: selectedMaterials.length, category: getCategoryLabel(category) }),
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/packing-materials'] });
     } catch (error) {
       toast({
-        title: "Failed to update",
-        description: "Could not update category",
+        title: t('failedToUpdate'),
+        description: t('couldNotUpdateCategory'),
         variant: "destructive",
       });
     }
@@ -194,38 +199,49 @@ export default function PackingMaterials() {
   const bulkActions: BulkAction<PackingMaterial>[] = [
     {
       type: "button",
-      label: "Copy Names",
+      label: t('copyNames'),
       icon: Copy,
       variant: "ghost",
       action: handleCopyNames,
     },
     {
       type: "button",
-      label: "Delete",
+      label: t('delete'),
       icon: Trash2,
       variant: "ghost",
       action: handleBulkDelete,
     },
     {
       type: "select",
-      label: "Change Category",
+      label: t('changeCategory'),
       icon: Tag,
-      placeholder: "Change category...",
+      placeholder: t('changeCategory') + '...',
       options: [
-        { value: "cartons", label: "Cartons & Boxes" },
-        { value: "filling", label: "Filling Materials" },
-        { value: "protective", label: "Protective Materials" },
-        { value: "supplies", label: "General Supplies" },
-        { value: "packaging", label: "Product Packaging" },
+        { value: "cartons", label: t('categoryCartons') },
+        { value: "filling", label: t('categoryFilling') },
+        { value: "protective", label: t('categoryProtective') },
+        { value: "supplies", label: t('categorySupplies') },
+        { value: "packaging", label: t('categoryPackaging') },
       ],
       action: handleBulkUpdateCategory,
     },
   ];
 
+  const getCategoryLabel = (category: string) => {
+    const categoryKeys: Record<string, string> = {
+      cartons: 'categoryCartons',
+      filling: 'categoryFilling',
+      protective: 'categoryProtective',
+      supplies: 'categorySupplies',
+      packaging: 'categoryPackaging'
+    };
+    return t(categoryKeys[category] || category);
+  };
+
   const allColumns: DataTableColumn<PackingMaterial>[] = [
     {
       key: "imageUrl",
-      header: "Image",
+      header: t('image'),
       className: "w-24",
       cell: (material) => (
         <div className="w-16 h-16 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden">
@@ -243,34 +259,26 @@ export default function PackingMaterials() {
     },
     {
       key: "name",
-      header: "Name",
+      header: t('materialName'),
       sortable: true,
       cell: (material) => (
         <div className="min-w-[200px]">
           <div className="font-semibold text-base">{material.name}</div>
           {material.code && (
-            <div className="text-sm text-muted-foreground mt-0.5">Code: {material.code}</div>
+            <div className="text-sm text-muted-foreground mt-0.5">{t('materialCode')}: {material.code}</div>
           )}
         </div>
       ),
     },
     {
       key: "category",
-      header: "Category",
+      header: t('category'),
       sortable: true,
       className: "min-w-[140px]",
       cell: (material) => {
-        const categoryLabels: Record<string, string> = {
-          cartons: "Cartons & Boxes",
-          filling: "Filling Materials",
-          protective: "Protective Materials",
-          supplies: "General Supplies",
-          packaging: "Product Packaging"
-        };
-        
         return material.category ? (
           <Badge variant="outline" className="text-xs">
-            {categoryLabels[material.category] || material.category}
+            {getCategoryLabel(material.category)}
           </Badge>
         ) : (
           <span className="text-muted-foreground text-sm">-</span>
@@ -279,7 +287,7 @@ export default function PackingMaterials() {
     },
     {
       key: "quantity",
-      header: "Stock Qty",
+      header: t('stockQty'),
       sortable: true,
       className: "text-right",
       cell: (material) => (
@@ -290,7 +298,7 @@ export default function PackingMaterials() {
     },
     {
       key: "cost",
-      header: "Unit Cost",
+      header: t('unitCost'),
       sortable: true,
       className: "text-right",
       cell: (material) => (
@@ -301,7 +309,7 @@ export default function PackingMaterials() {
     },
     {
       key: "supplier",
-      header: "Supplier",
+      header: t('supplier'),
       sortable: true,
       className: "min-w-[150px]",
       cell: (material) => {
@@ -319,13 +327,13 @@ export default function PackingMaterials() {
             <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
           </a>
         ) : (
-          <span className="text-muted-foreground text-sm">No supplier</span>
+          <span className="text-muted-foreground text-sm">{t('noSupplier')}</span>
         );
       },
     },
     {
       key: "status",
-      header: "Status",
+      header: t('status'),
       sortable: true,
       className: "text-center",
       cell: (material) => {
@@ -335,18 +343,18 @@ export default function PackingMaterials() {
         
         return isLowStock ? (
           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
-            Low Stock
+            {t('lowStock')}
           </Badge>
         ) : (
           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
-            In Stock
+            {t('inStock')}
           </Badge>
         );
       },
     },
     {
       key: "actions",
-      header: "Actions",
+      header: t('actions'),
       className: "text-right",
       cell: (material) => {
         const urlInfo = getDisplayUrl(material.supplier);
@@ -362,14 +370,14 @@ export default function PackingMaterials() {
               >
                 <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
                   <ShoppingCart className="h-4 w-4 mr-1" />
-                  Purchase
+                  {t('purchase')}
                 </Button>
               </a>
             )}
             <Link href={`/packing-materials/edit/${material.id}`}>
               <Button variant="outline" size="sm">
                 <Edit className="h-4 w-4 mr-1" />
-                Edit
+                {t('edit')}
               </Button>
             </Link>
           </div>
@@ -393,32 +401,27 @@ export default function PackingMaterials() {
   const handleExportXLSX = () => {
     try {
       const exportData = materials.map(material => ({
-        'Name': material.name || '-',
-        'Category': material.category === 'cartons' ? 'Cartons & Boxes'
-          : material.category === 'filling' ? 'Filling Materials'
-          : material.category === 'protective' ? 'Protective Materials'
-          : material.category === 'supplies' ? 'General Supplies'
-          : material.category === 'packaging' ? 'Product Packaging'
-          : material.category || '-',
-        'Dimensions': material.dimensions || '-',
-        'Weight': material.weight ? `${material.weight} kg` : '-',
-        'Unit Price': material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-',
-        'Stock': material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
-        'Supplier': material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
-        'Status': (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',
+        [t('materialName')]: material.name || '-',
+        [t('category')]: material.category ? getCategoryLabel(material.category) : '-',
+        [t('dimensions')]: material.dimensions || '-',
+        [t('weight')]: material.weight ? `${material.weight} kg` : '-',
+        [t('unitCost')]: material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-',
+        [t('quantity')]: material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
+        [t('supplier')]: material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
+        [t('status')]: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? t('lowStock') : t('inStock'),
       }));
 
-      exportToXLSX(exportData, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`, 'Packing Materials');
+      exportToXLSX(exportData, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`, t('packingMaterials'));
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} material(s) to XLSX`,
+        title: t('exportSuccessful'),
+        description: t('exportedMaterials', { count: exportData.length, format: 'XLSX' }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export packing materials to XLSX",
+        title: t('exportFailed'),
+        description: t('failedToExportMaterials', { format: 'XLSX' }),
         variant: "destructive",
       });
     }
@@ -428,42 +431,37 @@ export default function PackingMaterials() {
     try {
       const exportData = materials.map(material => ({
         name: material.name || '-',
-        category: material.category === 'cartons' ? 'Cartons & Boxes'
-          : material.category === 'filling' ? 'Filling Materials'
-          : material.category === 'protective' ? 'Protective Materials'
-          : material.category === 'supplies' ? 'General Supplies'
-          : material.category === 'packaging' ? 'Product Packaging'
-          : material.category || '-',
+        category: material.category ? getCategoryLabel(material.category) : '-',
         dimensions: material.dimensions || '-',
         weight: material.weight ? `${material.weight} kg` : '-',
         unitPrice: material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-',
         stock: material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
         supplier: material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
-        status: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',
+        status: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? t('lowStock') : t('inStock'),
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'name', header: 'Name' },
-        { key: 'category', header: 'Category' },
-        { key: 'dimensions', header: 'Dimensions' },
-        { key: 'weight', header: 'Weight' },
-        { key: 'unitPrice', header: 'Unit Price' },
-        { key: 'stock', header: 'Stock' },
-        { key: 'supplier', header: 'Supplier' },
-        { key: 'status', header: 'Status' },
+        { key: 'name', header: t('materialName') },
+        { key: 'category', header: t('category') },
+        { key: 'dimensions', header: t('dimensions') },
+        { key: 'weight', header: t('weight') },
+        { key: 'unitPrice', header: t('unitCost') },
+        { key: 'stock', header: t('quantity') },
+        { key: 'supplier', header: t('supplier') },
+        { key: 'status', header: t('status') },
       ];
 
-      exportToPDF('Packing Materials Report', exportData, columns, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('packingMaterials'), exportData, columns, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} material(s) to PDF`,
+        title: t('exportSuccessful'),
+        description: t('exportedMaterials', { count: exportData.length, format: 'PDF' }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export packing materials to PDF",
+        title: t('exportFailed'),
+        description: t('failedToExportMaterials', { format: 'PDF' }),
         variant: "destructive",
       });
     }
@@ -477,7 +475,7 @@ export default function PackingMaterials() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading packing materials...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('loadingPackingMaterials')}</p>
         </div>
       </div>
     );
@@ -488,10 +486,10 @@ export default function PackingMaterials() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Packing Materials
+            {t('packingMaterials')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Manage packing materials inventory and suppliers
+            {t('manageMaterialsInventory')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -499,26 +497,26 @@ export default function PackingMaterials() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export as XLSX
+                {t('exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t('exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/packing-materials/add">
             <Button data-testid="button-add-material">
               <Plus className="h-4 w-4 mr-2" />
-              Add Material
+              {t('addMaterial')}
             </Button>
           </Link>
         </div>
@@ -530,7 +528,7 @@ export default function PackingMaterials() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Materials
+                  {t('totalMaterials')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -540,7 +538,7 @@ export default function PackingMaterials() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{stats.total.toLocaleString()} materials</p>
+                      <p className="font-mono">{stats.total.toLocaleString()} {t('materials')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -557,7 +555,7 @@ export default function PackingMaterials() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Low Stock
+                  {t('lowStock')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -567,7 +565,7 @@ export default function PackingMaterials() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{stats.lowStock.toLocaleString()} items need restocking</p>
+                      <p className="font-mono">{stats.lowStock.toLocaleString()} {t('needsRestocking')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -584,7 +582,7 @@ export default function PackingMaterials() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Categories
+                  {t('category')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -594,7 +592,7 @@ export default function PackingMaterials() {
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">{stats.categories.toLocaleString()} unique categories</p>
+                      <p className="font-mono">{stats.categories.toLocaleString()} {t('uniqueCategories')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -611,7 +609,7 @@ export default function PackingMaterials() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Value
+                  {t('totalValue')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -639,7 +637,7 @@ export default function PackingMaterials() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-              <CardTitle className="text-lg">Filters & Search</CardTitle>
+              <CardTitle className="text-lg">{t('searchMaterials')}</CardTitle>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -648,7 +646,7 @@ export default function PackingMaterials() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Column Visibility</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('columnSettings')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {allColumns
                   .filter(col => col.key !== 'imageUrl' && col.key !== 'actions')
@@ -673,7 +671,7 @@ export default function PackingMaterials() {
             <div className="relative md:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search materials..."
+                placeholder={t('searchMaterials')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 focus:border-cyan-500"
@@ -682,23 +680,23 @@ export default function PackingMaterials() {
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-category">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t('filterByCategory')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="cartons">Cartons & Boxes</SelectItem>
-                <SelectItem value="filling">Filling Materials</SelectItem>
-                <SelectItem value="protective">Protective Materials</SelectItem>
-                <SelectItem value="supplies">General Supplies</SelectItem>
-                <SelectItem value="packaging">Product Packaging</SelectItem>
+                <SelectItem value="all">{t('allCategories')}</SelectItem>
+                <SelectItem value="cartons">{t('categoryCartons')}</SelectItem>
+                <SelectItem value="filling">{t('categoryFilling')}</SelectItem>
+                <SelectItem value="protective">{t('categoryProtective')}</SelectItem>
+                <SelectItem value="supplies">{t('categorySupplies')}</SelectItem>
+                <SelectItem value="packaging">{t('categoryPackaging')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
               <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-supplier">
-                <SelectValue placeholder="Supplier" />
+                <SelectValue placeholder={t('filterBySupplier')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Suppliers</SelectItem>
+                <SelectItem value="all">{t('allSuppliers')}</SelectItem>
                 {uniqueSuppliers.map((supplier) => (
                   <SelectItem key={supplier} value={supplier}>
                     {supplier}
@@ -719,13 +717,6 @@ export default function PackingMaterials() {
               const minStock = material.minStockLevel || 10;
               const isLowStock = stockQty <= minStock;
               const urlInfo = getDisplayUrl(material.supplier);
-              const categoryLabels: Record<string, string> = {
-                cartons: "Cartons & Boxes",
-                filling: "Filling Materials",
-                protective: "Protective Materials",
-                supplies: "General Supplies",
-                packaging: "Product Packaging"
-              };
 
               return (
                 <div key={material.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
@@ -750,7 +741,7 @@ export default function PackingMaterials() {
                           </p>
                           {material.code && (
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Code: {material.code}
+                              {t('materialCode')}: {material.code}
                             </p>
                           )}
                         </div>
@@ -758,11 +749,11 @@ export default function PackingMaterials() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {isLowStock ? (
                           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
-                            Low Stock
+                            {t('lowStock')}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
-                            In Stock
+                            {t('inStock')}
                           </Badge>
                         )}
                       </div>
@@ -771,25 +762,25 @@ export default function PackingMaterials() {
                     {/* Middle Row - Key Details (grid-cols-2) */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Category</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('category')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {material.category ? categoryLabels[material.category] || material.category : 'N/A'}
+                          {material.category ? getCategoryLabel(material.category) : 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Stock</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('quantity')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {stockQty.toLocaleString()} units
+                          {stockQty.toLocaleString()} {t('unit')}s
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Unit Cost</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('unitCost')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Dimensions</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('dimensions')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {material.dimensions || 'N/A'}
                         </p>
@@ -799,7 +790,7 @@ export default function PackingMaterials() {
                     {/* Bottom Row - Supplier & Actions */}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('supplier')}</p>
                         {urlInfo ? (
                           <a 
                             href={urlInfo.href}
@@ -812,7 +803,7 @@ export default function PackingMaterials() {
                             <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         ) : (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">No supplier</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noSupplier')}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -825,14 +816,14 @@ export default function PackingMaterials() {
                           >
                             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-8">
                               <ShoppingCart className="h-3 w-3 mr-1" />
-                              Buy
+                              {t('purchase')}
                             </Button>
                           </a>
                         )}
                         <Link href={`/packing-materials/edit/${material.id}`}>
                           <Button size="sm" variant="outline" className="h-8">
                             <Edit className="h-3 w-3 mr-1" />
-                            Edit
+                            {t('edit')}
                           </Button>
                         </Link>
                       </div>

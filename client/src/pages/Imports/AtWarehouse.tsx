@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -274,7 +275,7 @@ const ItemCard = memo(({
                   <div 
                     data-drag-handle
                     className="hover:bg-muted/50 rounded p-0.5 transition-colors"
-                    title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
+                    title={itemSortBy === 'custom' ? t('dragToReorder') : t('dragToConsolidation')}
                   >
                     <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
                   </div>
@@ -286,8 +287,8 @@ const ItemCard = memo(({
                   </div>
                   
                   <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
-                    <span>Qty: {item.quantity}</span>
-                    {item.weight && <span>• {item.weight} kg</span>}
+                    <span>{t('qty')}: {item.quantity}</span>
+                    {item.weight && <span>• {item.weight} {t('kg')}</span>}
                     {item.source && (
                       <>
                         <span>•</span>
@@ -311,10 +312,10 @@ const ItemCard = memo(({
                             e.stopPropagation();
                             toggleItemExpanded(item.id);
                           }}
-                          title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
+                          title={expandedItems.has(item.id) ? t('hideItems') : t('showItems')}
                         >
                           <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
-                          <span className="ml-1">{item.orderItems.length} items</span>
+                          <span className="ml-1">{item.orderItems.length} {t('items')}</span>
                         </Button>
                       </>
                     )}
@@ -330,7 +331,7 @@ const ItemCard = memo(({
                               <span className="text-gray-600 dark:text-gray-400">({orderItem.sku})</span>
                             )}
                           </div>
-                          <span className="text-gray-700 dark:text-gray-300">Qty: {orderItem.quantity}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{t('qty')}: {orderItem.quantity}</span>
                         </div>
                       ))}
                     </div>
@@ -360,7 +361,7 @@ const ItemCard = memo(({
                       className="text-primary"
                     >
                       <Package2 className="h-4 w-4 mr-2" />
-                      Unpack All Items
+                      {t('unpackAllItems')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -370,7 +371,7 @@ const ItemCard = memo(({
                       }}
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
-                      Edit Package
+                      {t('editPackage')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -380,7 +381,7 @@ const ItemCard = memo(({
                       className="text-red-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Package
+                      {t('deletePackage')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -404,7 +405,7 @@ const ItemCard = memo(({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Set Classification</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('setClassification')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -416,7 +417,7 @@ const ItemCard = memo(({
                     }}
                   >
                     <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
-                    None
+                    {t('none')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -428,7 +429,7 @@ const ItemCard = memo(({
                     }}
                   >
                     <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                    General Goods
+                    {t('generalGoods')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -440,7 +441,7 @@ const ItemCard = memo(({
                     }}
                   >
                     <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                    Sensitive Goods
+                    {t('sensitiveGoods')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -453,7 +454,7 @@ const ItemCard = memo(({
                   setMoveToConsolidationItem({ id: item.id, name: item.name });
                 }}
                 className="h-8 px-2"
-                title="Move to consolidation"
+                title={t('moveToConsolidation')}
               >
                 <ArrowRightToLine className="h-4 w-4" />
               </Button>
@@ -490,7 +491,7 @@ const ItemCard = memo(({
                     }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {t('delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -504,6 +505,7 @@ const ItemCard = memo(({
 ItemCard.displayName = 'ItemCard';
 
 export default function AtWarehouse() {
+  const { t } = useTranslation('imports');
   const [isAddCustomItemOpen, setIsAddCustomItemOpen] = useState(false);
   const [isEditCustomItemOpen, setIsEditCustomItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CustomItem | null>(null);
@@ -867,8 +869,8 @@ export default function AtWarehouse() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "AI Classification Complete",
-        description: data?.message || "Items have been automatically classified",
+        title: t('aiClassificationComplete'),
+        description: data?.message || t('itemsAutoClassified'),
       });
       setSelectedItemsForAI(new Set());
       setIsAIProcessing(false);
@@ -877,8 +879,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to auto-classify items",
+        title: t('error'),
+        description: error.message || t('autoClassifyFailed'),
         variant: "destructive",
       });
       setIsAIProcessing(false);
@@ -893,10 +895,10 @@ export default function AtWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       setIsAddCustomItemOpen(false);
-      toast({ title: "Success", description: "Custom item added successfully" });
+      toast({ title: t('success'), description: t('customItemAdded') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to add custom item", variant: "destructive" });
+      toast({ title: t('error'), description: t('customItemAddFailed'), variant: "destructive" });
     }
   });
 
@@ -910,10 +912,10 @@ export default function AtWarehouse() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
       setIsEditCustomItemOpen(false);
       setEditingItem(null);
-      toast({ title: "Success", description: "Item updated successfully" });
+      toast({ title: t('success'), description: t('itemUpdated') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
+      toast({ title: t('error'), description: t('itemUpdateFailed'), variant: "destructive" });
     }
   });
 
@@ -925,11 +927,11 @@ export default function AtWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
-      toast({ title: "Success", description: "Item deleted successfully" });
+      toast({ title: t('success'), description: t('itemDeleted') });
       setDeleteTarget(null);
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+      toast({ title: t('error'), description: t('itemDeleteFailed'), variant: "destructive" });
     }
   });
 
@@ -941,8 +943,8 @@ export default function AtWarehouse() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Success",
-        description: `Unpacked ${data.unpackedItems?.length || 0} items successfully`,
+        title: t('success'),
+        description: t('itemsUnpacked', { count: data.unpackedItems?.length || 0 }),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       
@@ -957,8 +959,8 @@ export default function AtWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to unpack item",
+        title: t('error'),
+        description: error.message || t('unpackFailed'),
         variant: "destructive",
       });
     }
@@ -1032,7 +1034,7 @@ export default function AtWarehouse() {
   // Generate smart consolidation name
   const generateConsolidationName = () => {
     if (!consolidationShippingMethod || !consolidationLocation) {
-      return "New Consolidation";
+      return t('newConsolidation');
     }
 
     // Get shipping method prefix
@@ -1100,7 +1102,7 @@ export default function AtWarehouse() {
       if (context?.previousConsolidations) {
         queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
       }
-      toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
+      toast({ title: t('error'), description: t('itemAddFailed'), variant: "destructive" });
     },
     onSettled: (_, __, { consolidationId }) => {
       // Refetch to ensure consistency but with a small delay to prevent flicker
@@ -1115,7 +1117,7 @@ export default function AtWarehouse() {
       }, 500);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Item added to consolidation" });
+      toast({ title: t('success'), description: t('itemAddedToConsolidation') });
     }
   });
 
@@ -1127,10 +1129,10 @@ export default function AtWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       setIsCreateConsolidationOpen(false);
-      toast({ title: "Success", description: "Consolidation created successfully" });
+      toast({ title: t('success'), description: t('consolidationCreated') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create consolidation", variant: "destructive" });
+      toast({ title: t('error'), description: t('consolidationCreateFailed'), variant: "destructive" });
     }
   });
 
@@ -1141,11 +1143,11 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
-      toast({ title: "Success", description: "Consolidation deleted successfully" });
+      toast({ title: t('success'), description: t('consolidationDeleted') });
       setDeleteTarget(null);
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to delete consolidation", variant: "destructive" });
+      toast({ title: t('error'), description: t('consolidationDeleteFailed'), variant: "destructive" });
     }
   });
   
@@ -1183,7 +1185,7 @@ export default function AtWarehouse() {
       if (context?.previousConsolidations) {
         queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
       }
-      toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
+      toast({ title: t('error'), description: t('itemRemoveFailed'), variant: "destructive" });
     },
     onSettled: (_, __, { consolidationId, itemId }) => {
       // Always refetch after error or success
@@ -1214,7 +1216,7 @@ export default function AtWarehouse() {
       }, 100);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Item removed from consolidation" });
+      toast({ title: t('success'), description: t('itemRemovedFromConsolidation') });
     }
   });
   
@@ -1228,10 +1230,10 @@ export default function AtWarehouse() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
-      toast({ title: "Success", description: "Consolidation shipped successfully" });
+      toast({ title: t('success'), description: t('consolidationShipped') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to ship consolidation", variant: "destructive" });
+      toast({ title: t('error'), description: t('consolidationShipFailed'), variant: "destructive" });
     }
   });
   
@@ -1242,11 +1244,11 @@ export default function AtWarehouse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
-      toast({ title: "Success", description: "Consolidation updated" });
+      toast({ title: t('success'), description: t('consolidationUpdated') });
       setEditingConsolidation(null);
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update consolidation", variant: "destructive" });
+      toast({ title: t('error'), description: t('consolidationUpdateFailed'), variant: "destructive" });
     }
   });
 
@@ -1410,13 +1412,13 @@ export default function AtWarehouse() {
       const { items } = await response.json();
       setExtractedItems(items);
       toast({
-        title: "Success",
-        description: `Extracted ${items.length} item(s) from screenshot`,
+        title: t('success'),
+        description: `${t('extractedFromScreenshot', { count: items.length })}`,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to process screenshot. Please add items manually.",
+        title: t('error'),
+        description: t('screenshotProcessFailed'),
         variant: "destructive",
       });
     } finally {
@@ -1542,21 +1544,21 @@ export default function AtWarehouse() {
       return (
         <div className="flex items-center gap-1">
           <Flag className="h-4 w-4 text-red-500 fill-red-500" />
-          <span className="text-xs font-medium text-red-600">Sensitive</span>
+          <span className="text-xs font-medium text-red-600">{t('sensitive')}</span>
         </div>
       );
     } else if (classification === 'general') {
       return (
         <div className="flex items-center gap-1">
           <Flag className="h-4 w-4 text-green-500 fill-green-500" />
-          <span className="text-xs font-medium text-green-600">General</span>
+          <span className="text-xs font-medium text-green-600">{t('general')}</span>
         </div>
       );
     }
     return (
       <div className="flex items-center gap-1">
         <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded" />
-        <span className="text-xs font-medium text-gray-500">Unclassified</span>
+        <span className="text-xs font-medium text-gray-500">{t('unclassified')}</span>
       </div>
     );
   };
@@ -1566,14 +1568,14 @@ export default function AtWarehouse() {
       return (
         <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
           <Shield className="h-3 w-3 mr-1" />
-          Sensitive
+          {t('sensitive')}
         </Badge>
       );
     }
     return (
       <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
         <Flag className="h-3 w-3 mr-1" />
-        General
+        {t('general')}
       </Badge>
     );
   };
@@ -1597,17 +1599,17 @@ export default function AtWarehouse() {
         <div className="p-4 md:p-6 space-y-3 md:space-y-0">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
             <div>
-              <h1 className="text-xl md:text-3xl font-bold">Consolidation</h1>
-              <p className="text-xs md:text-sm text-muted-foreground">Process incoming orders and manage warehouse items</p>
+              <h1 className="text-xl md:text-3xl font-bold">{t('consolidation')}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">{t('processIncomingOrders')}</p>
             </div>
             <div className="flex items-center gap-2 md:gap-4 flex-wrap">
               {/* Location Filter */}
               <Select value={locationFilter} onValueChange={setLocationFilter}>
                 <SelectTrigger className="w-[140px] md:w-[150px] h-9" data-testid="select-location-filter">
-                  <SelectValue placeholder="All Locations" />
+                  <SelectValue placeholder={t('allLocations')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="all">{t('allLocations')}</SelectItem>
                   <SelectItem value="China">🇨🇳 China</SelectItem>
                   <SelectItem value="USA">🇺🇸 USA</SelectItem>
                   <SelectItem value="Vietnam">🇻🇳 Vietnam</SelectItem>
@@ -1620,14 +1622,14 @@ export default function AtWarehouse() {
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" data-testid="button-add-custom-item" className="h-9">
                 <ShoppingCart className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Add Custom Item</span>
+                <span className="hidden md:inline">{t('addCustomItem')}</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add Custom Item</DialogTitle>
+                <DialogTitle>{t('addCustomItem')}</DialogTitle>
                 <DialogDescription>
-                  Add items from external sources like Taobao, Pinduoduo, etc.
+                  {t('addItemsFromExternal')}
                 </DialogDescription>
               </DialogHeader>
               {/* AI Screenshot Upload Section */}
@@ -1635,14 +1637,14 @@ export default function AtWarehouse() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <Camera className="h-5 w-5 text-primary" />
-                    <Label className="text-base font-semibold">AI Screenshot Reader</Label>
+                    <Label className="text-base font-semibold">{t('aiScreenshotReader')}</Label>
                   </div>
                   <Badge variant="outline" className="text-xs">
                     Pinduoduo / Taobao
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Upload a screenshot from Pinduoduo or Taobao to auto-extract order details
+                  {t('uploadScreenshotTaobao')}
                 </p>
                 <div className="flex items-center space-x-2">
                   <Input
@@ -1668,17 +1670,17 @@ export default function AtWarehouse() {
                 {/* Extracted Items Table */}
                 {extractedItems.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-base font-semibold">Extracted Items ({extractedItems.length})</Label>
+                    <Label className="text-base font-semibold">{t('extractedItems', { count: extractedItems.length })}</Label>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Item Name</TableHead>
-                            <TableHead>Platform</TableHead>
-                            <TableHead>Order #</TableHead>
-                            <TableHead>Qty</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead>Classification</TableHead>
+                            <TableHead>{t('itemName')}</TableHead>
+                            <TableHead>{t('platform')}</TableHead>
+                            <TableHead>{t('orderNumber')}</TableHead>
+                            <TableHead>{t('qty')}</TableHead>
+                            <TableHead>{t('price')}</TableHead>
+                            <TableHead>{t('classification')}</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1701,10 +1703,10 @@ export default function AtWarehouse() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="taobao">Taobao</SelectItem>
-                                    <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                                    <SelectItem value="taobao">{t('taobao')}</SelectItem>
+                                    <SelectItem value="pinduoduo">{t('pinduoduo')}</SelectItem>
                                     <SelectItem value="1688">1688</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
+                                    <SelectItem value="other">{t('other')}</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </TableCell>
@@ -1741,8 +1743,8 @@ export default function AtWarehouse() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="general">General</SelectItem>
-                                    <SelectItem value="sensitive">Sensitive</SelectItem>
+                                    <SelectItem value="general">{t('general')}</SelectItem>
+                                    <SelectItem value="sensitive">{t('sensitive')}</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </TableCell>
@@ -1986,14 +1988,14 @@ export default function AtWarehouse() {
                         >
                           {selectedWarehouse
                             ? warehouses.find((warehouse) => warehouse.id === selectedWarehouse)?.name
-                            : "Select warehouse"}
+                            : t('selectWarehouse')}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Search warehouse..." />
-                          <CommandEmpty>No warehouse found.</CommandEmpty>
+                          <CommandInput placeholder={t('searchWarehouse')} />
+                          <CommandEmpty>{t('noWarehouseFound')}</CommandEmpty>
                           <CommandGroup>
                             <ScrollArea className="h-72">
                               {warehouses.map((warehouse) => (
@@ -2023,12 +2025,12 @@ export default function AtWarehouse() {
                 {/* Auto-generated name preview */}
                 {consolidationShippingMethod && consolidationLocation && (
                   <div className="space-y-2">
-                    <Label>Auto-Generated Name</Label>
+                    <Label>{t('autoGeneratedName')}</Label>
                     <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-md border text-sm font-mono text-slate-700 dark:text-slate-300">
                       {generateConsolidationName()}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      This name will be automatically generated based on your selections
+                      {t('thisNameAutomaticallyGenerated')}
                     </p>
                   </div>
                 )}
@@ -2040,43 +2042,43 @@ export default function AtWarehouse() {
                       variant="ghost"
                       className="w-full justify-between p-0 hover:bg-transparent"
                     >
-                      <span className="text-sm font-medium">Additional Details</span>
+                      <span className="text-sm font-medium">{t('additionalDetails')}</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isAdditionalDetailsOpen ? 'rotate-180' : ''}`} />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-4 mt-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="targetWeight">Target Weight (kg)</Label>
+                        <Label htmlFor="targetWeight">{t('targetWeightKg')}</Label>
                         <Input 
                           id="targetWeight" 
                           name="targetWeight" 
                           type="number" 
                           step="0.1" 
                           data-testid="input-target-weight"
-                          placeholder="Max weight limit"
+                          placeholder={t('maxWeight')}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="maxItems">Max Items</Label>
+                        <Label htmlFor="maxItems">{t('maxItems')}</Label>
                         <Input 
                           id="maxItems" 
                           name="maxItems" 
                           type="number" 
                           min="1" 
                           data-testid="input-max-items"
-                          placeholder="Max item count"
+                          placeholder={t('maxItems')}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Notes</Label>
+                      <Label htmlFor="notes">{t('notes')}</Label>
                       <Textarea 
                         id="notes" 
                         name="notes" 
                         data-testid="textarea-consolidation-notes"
-                        placeholder="Additional notes about this consolidation..."
+                        placeholder={t('consolidationNotes')}
                       />
                     </div>
                   </CollapsibleContent>
@@ -2084,10 +2086,10 @@ export default function AtWarehouse() {
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsCreateConsolidationOpen(false)}>
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button type="submit" disabled={createConsolidationMutation.isPending} data-testid="button-submit-consolidation">
-                    {createConsolidationMutation.isPending ? "Creating..." : "Create Consolidation"}
+                    {createConsolidationMutation.isPending ? t('creating') : t('createConsolidation')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -2112,7 +2114,7 @@ export default function AtWarehouse() {
           <>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Incoming Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('incomingOrders')}</CardTitle>
             <Package2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -2123,7 +2125,7 @@ export default function AtWarehouse() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalItems')}</CardTitle>
             <PackageOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -2134,7 +2136,7 @@ export default function AtWarehouse() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sensitive Goods</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('sensitiveGoods')}</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -2145,7 +2147,7 @@ export default function AtWarehouse() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Consolidations</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('consolidations')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -2162,10 +2164,10 @@ export default function AtWarehouse() {
       <Tabs defaultValue="incoming" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="incoming">
-            Incoming Orders ({filteredOrders.length})
+            {t('incomingOrders')} ({filteredOrders.length})
           </TabsTrigger>
           <TabsTrigger value="items">
-            All Items ({allItems.length})
+            {t('allItems')} ({allItems.length})
           </TabsTrigger>
         </TabsList>
 
@@ -2181,9 +2183,9 @@ export default function AtWarehouse() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No incoming orders at warehouse</p>
+                <p className="text-muted-foreground">{t('noIncomingOrdersAtWarehouse')}</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Orders with "Consolidation" status will appear here
+                  {t('ordersWithConsolidationStatusHere')}
                 </p>
               </CardContent>
             </Card>
@@ -2208,37 +2210,37 @@ export default function AtWarehouse() {
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <div className="text-muted-foreground">Items</div>
+                            <div className="text-muted-foreground">{t('items')}</div>
                             <div className="font-medium">{order.items?.length || 0}</div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Total Value</div>
+                            <div className="text-muted-foreground">{t('totalValue')}</div>
                             <div className="font-medium">
                               {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
                             </div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Tracking</div>
-                            <div className="font-mono text-xs">{order.trackingNumber || 'N/A'}</div>
+                            <div className="text-muted-foreground">{t('trackingNumber')}</div>
+                            <div className="font-mono text-xs">{order.trackingNumber || t('na')}</div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Arrived</div>
+                            <div className="text-muted-foreground">{t('arrived')}</div>
                             <div className="text-sm">
-                              {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : 'N/A'}
+                              {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : t('na')}
                             </div>
                           </div>
                         </div>
 
                         {order.items && order.items.length > 0 && (
                           <div className="border rounded-lg p-3 bg-muted/30">
-                            <div className="text-sm font-medium mb-2">Order Items:</div>
+                            <div className="text-sm font-medium mb-2">{t('orderItems')}:</div>
                             <div className="space-y-1">
                               {(expandedOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, index: number) => (
                                 <div key={index} className="text-sm flex justify-between">
                                   <span className="text-muted-foreground">
                                     {item.name} {item.sku && `(${item.sku})`}
                                   </span>
-                                  <span className="font-medium">Qty: {item.quantity}</span>
+                                  <span className="font-medium">{t('qty')}: {item.quantity}</span>
                                 </div>
                               ))}
                               {!expandedOrders.has(order.id) && order.items.length > 5 && (
@@ -2246,7 +2248,7 @@ export default function AtWarehouse() {
                                   className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer pt-1"
                                   onClick={() => toggleOrderExpanded(order.id)}
                                 >
-                                  ... and {order.items.length - 5} more items
+                                  {t('andMoreItems', { count: order.items.length - 5 })}
                                 </button>
                               )}
                               {expandedOrders.has(order.id) && order.items.length > 5 && (
@@ -2254,7 +2256,7 @@ export default function AtWarehouse() {
                                   className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer pt-1"
                                   onClick={() => toggleOrderExpanded(order.id)}
                                 >
-                                  Show less
+                                  {t('showLess')}
                                 </button>
                               )}
                             </div>
@@ -2278,7 +2280,7 @@ export default function AtWarehouse() {
                           data-testid={`button-receive-order-${order.id}`}
                         >
                           <Box className="h-4 w-4 mr-1" />
-                          Receive
+                          {t('receive')}
                         </Button>
                         <Button 
                           size="sm"
@@ -2286,7 +2288,7 @@ export default function AtWarehouse() {
                           data-testid={`button-unpack-order-${order.id}`}
                         >
                           <PackageOpen className="h-4 w-4 mr-1" />
-                          Unpack
+                          {t('unpack')}
                         </Button>
                       </div>
                     </div>
@@ -2305,13 +2307,13 @@ export default function AtWarehouse() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">AI Goods Classification</h3>
+                  <h3 className="font-semibold text-gray-900">{t('aiGoodsClassification')}</h3>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Automatically classify items as sensitive or general goods based on product names, categories, and historical data.
+                  {t('autoClassifyDescription')}
                   {selectedItemsForAI.size > 0 && (
                     <span className="ml-2 font-medium text-purple-600">
-                      {selectedItemsForAI.size} item{selectedItemsForAI.size > 1 ? 's' : ''} selected
+                      {t('itemsSelected', { count: selectedItemsForAI.size })}
                     </span>
                   )}
                 </p>
@@ -2323,7 +2325,7 @@ export default function AtWarehouse() {
                     size="sm"
                     onClick={() => setSelectedItemsForAI(new Set())}
                   >
-                    Clear Selection
+                    {t('clearSelection')}
                   </Button>
                 )}
                 <Button
@@ -2334,8 +2336,8 @@ export default function AtWarehouse() {
                     
                     if (itemsToClassify.length === 0) {
                       toast({
-                        title: "No items to classify",
-                        description: "All items are already consolidated or no items available",
+                        title: t('noItemsToClassify'),
+                        description: t('allItemsAlreadyClassified'),
                         variant: "destructive",
                       });
                       return;
@@ -2350,12 +2352,12 @@ export default function AtWarehouse() {
                   {aiClassifyMutation.isPending ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
+                      {t('processing')}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      {selectedItemsForAI.size > 0 ? `Classify Selected` : 'Auto-Classify All'}
+                      {selectedItemsForAI.size > 0 ? t('classifySelected') : t('autoClassifyAll')}
                     </>
                   )}
                 </Button>
@@ -2372,11 +2374,11 @@ export default function AtWarehouse() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle className="text-lg">Available Items</CardTitle>
-                          <CardDescription>Drag items to consolidations or select for AI classification</CardDescription>
+                          <CardTitle className="text-lg">{t('availableItems')}</CardTitle>
+                          <CardDescription>{t('dragItemsToConsolidations')}</CardDescription>
                         </div>
                         <Badge variant="secondary" className="font-medium">
-                          {sortedAndFilteredItems.length} items
+                          {sortedAndFilteredItems.length} {t('items')}
                         </Badge>
                       </div>
                       
@@ -2385,7 +2387,7 @@ export default function AtWarehouse() {
                         <div className="relative flex-1 min-w-[200px]">
                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder="Search items by name, order number, source..."
+                            placeholder={t('searchItemsByName')}
                             value={itemSearchTerm}
                             onChange={(e) => setItemSearchTerm(e.target.value)}
                             className="pl-9"
@@ -2395,7 +2397,7 @@ export default function AtWarehouse() {
                         <Select value={itemSortBy} onValueChange={setItemSortBy}>
                           <SelectTrigger className="w-[200px]">
                             <SortAsc className="h-4 w-4 mr-2" />
-                            <SelectValue placeholder="Sort by..." />
+                            <SelectValue placeholder={t('sortBy')} />
                           </SelectTrigger>
                           <SelectContent>
                             {itemSortBy === 'custom' && (
@@ -2403,7 +2405,7 @@ export default function AtWarehouse() {
                                 <SelectItem value="custom">
                                   <div className="flex items-center">
                                     <Grip className="h-4 w-4 mr-2" />
-                                    Custom Order
+                                    {t('customOrder')}
                                   </div>
                                 </SelectItem>
                                 <DropdownMenuSeparator />
@@ -2412,65 +2414,65 @@ export default function AtWarehouse() {
                             <SelectItem value="newest">
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-2" />
-                                Newest First
+                                {t('newestFirst')}
                               </div>
                             </SelectItem>
                             <SelectItem value="oldest">
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-2" />
-                                Oldest First
+                                {t('oldestFirst')}
                               </div>
                             </SelectItem>
                             <DropdownMenuSeparator />
                             <SelectItem value="sensitive-first">
                               <div className="flex items-center">
                                 <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                                Sensitive First
+                                {t('sensitiveFirst')}
                               </div>
                             </SelectItem>
                             <SelectItem value="general-first">
                               <div className="flex items-center">
                                 <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                                General First
+                                {t('generalFirst')}
                               </div>
                             </SelectItem>
                             <DropdownMenuSeparator />
                             <SelectItem value="name-asc">
                               <div className="flex items-center">
                                 <ArrowUp className="h-4 w-4 mr-2" />
-                                Name (A-Z)
+                                {t('nameAZ')}
                               </div>
                             </SelectItem>
                             <SelectItem value="name-desc">
                               <div className="flex items-center">
                                 <ArrowDown className="h-4 w-4 mr-2" />
-                                Name (Z-A)
+                                {t('nameZA')}
                               </div>
                             </SelectItem>
                             <DropdownMenuSeparator />
                             <SelectItem value="quantity-high">
                               <div className="flex items-center">
                                 <Hash className="h-4 w-4 mr-2" />
-                                Quantity (High-Low)
+                                {t('quantityHighLow')}
                               </div>
                             </SelectItem>
                             <SelectItem value="quantity-low">
                               <div className="flex items-center">
                                 <Hash className="h-4 w-4 mr-2" />
-                                Quantity (Low-High)
+                                {t('quantityLowHigh')}
                               </div>
                             </SelectItem>
                             <DropdownMenuSeparator />
                             <SelectItem value="weight-high">
                               <div className="flex items-center">
                                 <Weight className="h-4 w-4 mr-2" />
-                                Weight (Heavy-Light)
+                                {t('weightHeavyLight')}
                               </div>
                             </SelectItem>
                             <SelectItem value="weight-low">
                               <div className="flex items-center">
                                 <Weight className="h-4 w-4 mr-2" />
-                                Weight (Light-Heavy)
+                                {t('weightLightHeavy')}
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -2482,29 +2484,29 @@ export default function AtWarehouse() {
                         <Select value={itemSourceFilter} onValueChange={setItemSourceFilter}>
                           <SelectTrigger className="w-[140px]">
                             <Filter className="h-3 w-3 mr-2" />
-                            <SelectValue placeholder="Source" />
+                            <SelectValue placeholder={t('source')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Sources</SelectItem>
-                            <SelectItem value="taobao">Taobao</SelectItem>
-                            <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                            <SelectItem value="all">{t('allSources')}</SelectItem>
+                            <SelectItem value="taobao">{t('taobao')}</SelectItem>
+                            <SelectItem value="pinduoduo">{t('pinduoduo')}</SelectItem>
                             <SelectItem value="1688">1688</SelectItem>
-                            <SelectItem value="alibaba">Alibaba</SelectItem>
+                            <SelectItem value="alibaba">{t('alibaba')}</SelectItem>
                             <SelectItem value="jd.com">JD.com</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="other">{t('other')}</SelectItem>
                           </SelectContent>
                         </Select>
                         
                         <Select value={itemClassificationFilter} onValueChange={setItemClassificationFilter}>
                           <SelectTrigger className="w-[150px]">
                             <Flag className="h-3 w-3 mr-2" />
-                            <SelectValue placeholder="Classification" />
+                            <SelectValue placeholder={t('classification')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Items</SelectItem>
-                            <SelectItem value="general">General</SelectItem>
-                            <SelectItem value="sensitive">Sensitive</SelectItem>
-                            <SelectItem value="unclassified">Unclassified</SelectItem>
+                            <SelectItem value="all">{t('allItems')}</SelectItem>
+                            <SelectItem value="general">{t('general')}</SelectItem>
+                            <SelectItem value="sensitive">{t('sensitive')}</SelectItem>
+                            <SelectItem value="unclassified">{t('unclassified')}</SelectItem>
                           </SelectContent>
                         </Select>
                         
@@ -2519,7 +2521,7 @@ export default function AtWarehouse() {
                             className="h-9"
                           >
                             <X className="h-3 w-3 mr-1" />
-                            Clear Filters
+                            {t('clearFilters')}
                           </Button>
                         )}
                       </div>
@@ -2530,19 +2532,19 @@ export default function AtWarehouse() {
                           <div className="flex items-center gap-1">
                             <Flag className="h-4 w-4 text-red-500 fill-red-500" />
                             <span className="text-muted-foreground">
-                              {sortedAndFilteredItems.filter(i => i.classification === 'sensitive').length} Sensitive
+                              {sortedAndFilteredItems.filter(i => i.classification === 'sensitive').length} {t('sensitive')}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Flag className="h-4 w-4 text-green-500 fill-green-500" />
                             <span className="text-muted-foreground">
-                              {sortedAndFilteredItems.filter(i => i.classification === 'general').length} General
+                              {sortedAndFilteredItems.filter(i => i.classification === 'general').length} {t('general')}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded" />
                             <span className="text-muted-foreground">
-                              {sortedAndFilteredItems.filter(i => !i.classification).length} Unclassified
+                              {sortedAndFilteredItems.filter(i => !i.classification).length} {t('unclassified')}
                             </span>
                           </div>
                         </div>
@@ -2573,14 +2575,14 @@ export default function AtWarehouse() {
                                 return (
                                   <>
                                     <Square className="h-3 w-3 mr-1" />
-                                    Deselect All ({selectedItemsForAI.size})
+                                    {t('deselectAll', { count: selectedItemsForAI.size })}
                                   </>
                                 );
                               } else {
                                 return (
                                   <>
                                     <CheckSquare className="h-3 w-3 mr-1" />
-                                    Select All ({sortedAndFilteredItems.length})
+                                    {t('selectAll', { count: sortedAndFilteredItems.length })}
                                   </>
                                 );
                               }
@@ -2592,19 +2594,19 @@ export default function AtWarehouse() {
                                 variant="outline"
                                 size="sm"
                                 onClick={expandAllItems}
-                                title="Expand all items with sub-items"
+                                title={t('expandAllItemsWithSubItems')}
                               >
                                 <ChevronsDown className={selectedItemsForAI.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
-                                {selectedItemsForAI.size === 0 && "Expand All"}
+                                {selectedItemsForAI.size === 0 && t('expandAll')}
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={collapseAllItems}
-                                title="Collapse all items"
+                                title={t('collapseAllItems')}
                               >
                                 <ChevronsUp className={selectedItemsForAI.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
-                                {selectedItemsForAI.size === 0 && "Collapse All"}
+                                {selectedItemsForAI.size === 0 && t('collapseAll')}
                               </Button>
                             </>
                           )}
@@ -2612,12 +2614,12 @@ export default function AtWarehouse() {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
-                                  Bulk Actions ({selectedItemsForAI.size})
+                                  {t('bulkActions', { count: selectedItemsForAI.size })}
                                   <ChevronDown className="h-4 w-4 ml-1" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Classification</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t('classification')}</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     selectedItemsForAI.forEach(id => {
@@ -2627,7 +2629,7 @@ export default function AtWarehouse() {
                                   }}
                                 >
                                   <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                                  Mark as General
+                                  {t('markAsGeneral')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -2638,7 +2640,7 @@ export default function AtWarehouse() {
                                   }}
                                 >
                                   <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                                  Mark as Sensitive
+                                  {t('markAsSensitive')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -2649,10 +2651,10 @@ export default function AtWarehouse() {
                                   }}
                                 >
                                   <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
-                                  Clear Classification
+                                  {t('clearClassification')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuLabel>AI Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t('aiActions')}</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setIsAIProcessing(true);
@@ -2660,10 +2662,10 @@ export default function AtWarehouse() {
                                   }}
                                 >
                                   <Sparkles className="h-4 w-4 mr-2" />
-                                  AI Classify Selected
+                                  {t('aiClassifySelected')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuLabel>Move Items</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t('moveItems')}</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setBulkMoveItems(new Set(selectedItemsForAI));
@@ -2671,7 +2673,7 @@ export default function AtWarehouse() {
                                   }}
                                 >
                                   <ArrowRightToLine className="h-4 w-4 mr-2" />
-                                  Move to Consolidation
+                                  {t('moveToConsolidation')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -2825,7 +2827,7 @@ export default function AtWarehouse() {
                                                       <span className="text-gray-600 dark:text-gray-400">({orderItem.sku})</span>
                                                     )}
                                                   </div>
-                                                  <span className="text-gray-700 dark:text-gray-300">Qty: {orderItem.quantity}</span>
+                                                  <span className="text-gray-700 dark:text-gray-300">{t('qty')}: {orderItem.quantity}</span>
                                                 </div>
                                               ))}
                                             </div>
@@ -2856,7 +2858,7 @@ export default function AtWarehouse() {
                                               className="text-primary"
                                             >
                                               <Package2 className="h-4 w-4 mr-2" />
-                                              Unpack All Items
+                                              {t('unpackAllItems')}
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
@@ -2866,7 +2868,7 @@ export default function AtWarehouse() {
                                               }}
                                             >
                                               <Edit2 className="h-4 w-4 mr-2" />
-                                              Edit Package
+                                              {t('editPackage')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                               onClick={(e) => {
@@ -2876,7 +2878,7 @@ export default function AtWarehouse() {
                                               className="text-red-600"
                                             >
                                               <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete Package
+                                              {t('deletePackage')}
                                             </DropdownMenuItem>
                                           </DropdownMenuContent>
                                         </DropdownMenu>
@@ -2901,7 +2903,7 @@ export default function AtWarehouse() {
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>Set Classification</DropdownMenuLabel>
+                                          <DropdownMenuLabel>{t('setClassification')}</DropdownMenuLabel>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
                                             onClick={(e) => {
@@ -2913,7 +2915,7 @@ export default function AtWarehouse() {
                                             }}
                                           >
                                             <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
-                                            None
+                                            {t('none')}
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={(e) => {
@@ -2925,7 +2927,7 @@ export default function AtWarehouse() {
                                             }}
                                           >
                                             <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                                            General Goods
+                                            {t('generalGoods')}
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={(e) => {
@@ -2937,7 +2939,7 @@ export default function AtWarehouse() {
                                             }}
                                           >
                                             <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                                            Sensitive Goods
+                                            {t('sensitiveGoods')}
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>
@@ -2987,7 +2989,7 @@ export default function AtWarehouse() {
                                             }}
                                           >
                                             <Trash2 className="h-4 w-4 mr-2" />
-                                            Delete
+                                            {t('delete')}
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>
@@ -3009,9 +3011,9 @@ export default function AtWarehouse() {
               <div>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Active Consolidations</CardTitle>
+                    <CardTitle className="text-lg">{t('activeConsolidations')}</CardTitle>
                     <CardDescription>
-                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} ready for items
+                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} {t('readyForItems')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -3051,23 +3053,23 @@ export default function AtWarehouse() {
                                             'secondary'
                                           }
                                         >
-                                          {consolidation.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'NOT SET'}
+                                          {consolidation.shippingMethod?.replace(/_/g, ' ').toUpperCase() || t('notSet')}
                                         </Badge>
                                       </div>
                                     </div>
                                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2 mb-1">
                                       <MapPin className="h-3 w-3" />
-                                      {consolidation.location || consolidation.warehouse?.replace('_', ', ') || 'No location'}
+                                      {consolidation.location || consolidation.warehouse?.replace('_', ', ') || t('noLocation')}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {consolidation.itemCount || 0} items • Total: {(() => {
+                                      {consolidation.itemCount || 0} {t('items')} • {t('totalWeight')}: {(() => {
                                         const items = consolidationItems[consolidation.id] || [];
                                         const totalWeight = items.reduce((sum: number, item: any) => {
                                           const fullItem = allItems.find((i: any) => i.id === item.id);
                                           return sum + (parseFloat(fullItem?.weight || '0') || 0);
                                         }, 0);
                                         return totalWeight.toFixed(2);
-                                      })()} kg
+                                      })()} {t('kg')}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-1">
@@ -3137,7 +3139,7 @@ export default function AtWarehouse() {
                                           }}
                                         >
                                           <Package className="h-3 w-3 mr-2" />
-                                          Export Tracking Numbers
+                                          {t('exportTrackingNumbers')}
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
@@ -3145,7 +3147,7 @@ export default function AtWarehouse() {
                                           disabled={quickShipMutation.isPending || consolidation.itemCount === 0}
                                         >
                                           <ArrowRightToLine className="h-3 w-3 mr-2 text-green-600" />
-                                          Quick Ship: Move to Pending
+                                          {t('quickShipMoveToPending')}
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
@@ -3153,7 +3155,7 @@ export default function AtWarehouse() {
                                           className="text-destructive"
                                         >
                                           <Trash2 className="h-3 w-3 mr-2" />
-                                          Delete
+                                          {t('delete')}
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
@@ -3188,13 +3190,13 @@ export default function AtWarehouse() {
                                           {snapshot.isDraggingOver ? '✨' : '📦'}
                                         </div>
                                         <div className="text-sm">
-                                          {snapshot.isDraggingOver ? 'Release to add' : 'Drop items here'}
+                                          {snapshot.isDraggingOver ? t('releaseToAdd') : t('dropItemsHere')}
                                         </div>
                                       </div>
                                     ) : (
                                       <div>
                                         <div className="flex justify-between items-center mb-2">
-                                          <div className="text-sm font-medium">{consolidation.itemCount} items</div>
+                                          <div className="text-sm font-medium">{consolidation.itemCount} {t('items')}</div>
                                           <Button
                                             variant="ghost"
                                             size="sm"
@@ -3220,7 +3222,7 @@ export default function AtWarehouse() {
                                                 <div className="flex-1">
                                                   <div className="font-medium">{item.name}</div>
                                                   <div className="text-muted-foreground">
-                                                    Qty: {item.quantity} • {item.source}
+                                                    {t('qty')}: {item.quantity} • {item.source}
                                                   </div>
                                                 </div>
                                                 <Button
@@ -3257,7 +3259,7 @@ export default function AtWarehouse() {
                                       data-testid={`button-ship-consolidation-${consolidation.id}`}
                                     >
                                       <Ship className="h-4 w-4 mr-2" />
-                                      Ship Consolidation
+                                      {t('shipConsolidation')}
                                     </Button>
                                   </div>
                             </div>
@@ -3277,16 +3279,16 @@ export default function AtWarehouse() {
       <Dialog open={isEditCustomItemOpen} onOpenChange={setIsEditCustomItemOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
+            <DialogTitle>{t('editItem')}</DialogTitle>
             <DialogDescription>
-              Update item details and status
+              {t('updateItemDetails')}
             </DialogDescription>
           </DialogHeader>
           {editingItem && (
             <form onSubmit={handleUpdateCustomItem} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-name">Item Name *</Label>
+                  <Label htmlFor="edit-name">{t('itemName')} *</Label>
                   <Input 
                     id="edit-name" 
                     name="name" 
@@ -3296,17 +3298,17 @@ export default function AtWarehouse() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-source">Source Platform *</Label>
+                  <Label htmlFor="edit-source">{t('sourcePlatform')} *</Label>
                   <Select name="source" defaultValue={editingItem.source} required>
                     <SelectTrigger data-testid="select-edit-source">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="taobao">Taobao</SelectItem>
-                      <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                      <SelectItem value="taobao">{t('taobao')}</SelectItem>
+                      <SelectItem value="pinduoduo">{t('pinduoduo')}</SelectItem>
                       <SelectItem value="1688">1688</SelectItem>
-                      <SelectItem value="alibaba">Alibaba</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="alibaba">{t('alibaba')}</SelectItem>
+                      <SelectItem value="other">{t('other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -3314,21 +3316,21 @@ export default function AtWarehouse() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-status">Status</Label>
+                  <Label htmlFor="edit-status">{t('status')}</Label>
                   <Select name="status" defaultValue={editingItem.status}>
                     <SelectTrigger data-testid="select-edit-status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
-                      <SelectItem value="consolidated">Consolidated</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="available">{t('available')}</SelectItem>
+                      <SelectItem value="assigned">{t('assigned')}</SelectItem>
+                      <SelectItem value="consolidated">{t('consolidated')}</SelectItem>
+                      <SelectItem value="shipped">{t('shipped')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-classification">Goods Classification</Label>
+                  <Label htmlFor="edit-classification">{t('goodsClassification')}</Label>
                   <Select name="classification" defaultValue={editingItem.classification || 'general'}>
                     <SelectTrigger data-testid="select-edit-classification">
                       <SelectValue />
@@ -3337,13 +3339,13 @@ export default function AtWarehouse() {
                       <SelectItem value="general">
                         <div className="flex items-center">
                           <Flag className="h-4 w-4 mr-2 text-green-500" />
-                          General Goods
+                          {t('generalGoods')}
                         </div>
                       </SelectItem>
                       <SelectItem value="sensitive">
                         <div className="flex items-center">
                           <Shield className="h-4 w-4 mr-2 text-red-500" />
-                          Sensitive Goods
+                          {t('sensitiveGoods')}
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -3353,7 +3355,7 @@ export default function AtWarehouse() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-quantity">Quantity *</Label>
+                  <Label htmlFor="edit-quantity">{t('quantity')} *</Label>
                   <Input 
                     id="edit-quantity" 
                     name="quantity" 
@@ -3365,7 +3367,7 @@ export default function AtWarehouse() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-unitPrice">Unit Price ($)</Label>
+                  <Label htmlFor="edit-unitPrice">{t('unitPrice')}</Label>
                   <Input 
                     id="edit-unitPrice" 
                     name="unitPrice" 
@@ -3376,7 +3378,7 @@ export default function AtWarehouse() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-weight">Weight (kg)</Label>
+                  <Label htmlFor="edit-weight">{t('weight')} ({t('kg')})</Label>
                   <Input 
                     id="edit-weight" 
                     name="weight" 
@@ -3389,7 +3391,7 @@ export default function AtWarehouse() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-dimensions">Dimensions</Label>
+                <Label htmlFor="edit-dimensions">{t('dimensions')}</Label>
                 <Input 
                   id="edit-dimensions" 
                   name="dimensions" 
@@ -3400,7 +3402,7 @@ export default function AtWarehouse() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-customerName">Customer Name</Label>
+                  <Label htmlFor="edit-customerName">{t('customerName')}</Label>
                   <Input 
                     id="edit-customerName" 
                     name="customerName" 
@@ -3409,7 +3411,7 @@ export default function AtWarehouse() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-customerEmail">Customer Email</Label>
+                  <Label htmlFor="edit-customerEmail">{t('customerEmail')}</Label>
                   <Input 
                     id="edit-customerEmail" 
                     name="customerEmail" 
@@ -3421,7 +3423,7 @@ export default function AtWarehouse() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-notes">Notes</Label>
+                <Label htmlFor="edit-notes">{t('notes')}</Label>
                 <Textarea 
                   id="edit-notes" 
                   name="notes" 
@@ -3435,10 +3437,10 @@ export default function AtWarehouse() {
                   setIsEditCustomItemOpen(false);
                   setEditingItem(null);
                 }}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button type="submit" disabled={updateCustomItemMutation.isPending} data-testid="button-update-item">
-                  {updateCustomItemMutation.isPending ? "Updating..." : "Update Item"}
+                  {updateCustomItemMutation.isPending ? t('updating') : t('updateItem')}
                 </Button>
               </DialogFooter>
             </form>
@@ -3450,24 +3452,24 @@ export default function AtWarehouse() {
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Status</DialogTitle>
+            <DialogTitle>{t('changeStatus')}</DialogTitle>
             <DialogDescription>
-              Select a new status for this {statusTarget?.type === 'order' ? 'incoming order' : 'item'}
+              {t('selectNewStatus')}
             </DialogDescription>
           </DialogHeader>
           
           {statusTarget && (
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-4">
-                <div className="text-sm text-muted-foreground">Current Status</div>
+                <div className="text-sm text-muted-foreground">{t('currentStatus')}</div>
                 <div className="mt-1">{getStatusBadge(statusTarget.currentStatus)}</div>
               </div>
 
               <div className="space-y-2">
-                <Label>New Status</Label>
+                <Label>{t('newStatus')}</Label>
                 <Select onValueChange={confirmStatusChange}>
                   <SelectTrigger data-testid="select-new-status">
-                    <SelectValue placeholder="Select new status" />
+                    <SelectValue placeholder={t('selectNewStatus')} />
                   </SelectTrigger>
                   <SelectContent>
                     {statusTarget.type === 'order' ? (
@@ -3500,7 +3502,7 @@ export default function AtWarehouse() {
                 setStatusTarget(null);
               }}
             >
-              Cancel
+              {t('cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3510,9 +3512,9 @@ export default function AtWarehouse() {
       <Dialog open={showReceiveDialog} onOpenChange={setShowReceiveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Receive Purchase Order as Package</DialogTitle>
+            <DialogTitle>{t('receivePurchaseOrderPackage')}</DialogTitle>
             <DialogDescription>
-              This will move the entire order as a single package to the All Items section without unpacking.
+              {t('willMoveEntireOrder')}
             </DialogDescription>
           </DialogHeader>
           
@@ -3528,8 +3530,8 @@ export default function AtWarehouse() {
               <div className="flex items-start gap-2">
                 <Box className="h-4 w-4 text-blue-500 mt-0.5" />
                 <div className="text-sm text-muted-foreground">
-                  The entire purchase order will be treated as a single package. 
-                  You can view the individual items inside the package in the All Items tab.
+                  {t('entireOrderTreatedAsPackage')} 
+                  {t('canViewItemsInPackage')}
                 </div>
               </div>
             </div>
@@ -3541,7 +3543,7 @@ export default function AtWarehouse() {
               onClick={() => setShowReceiveDialog(false)}
               disabled={receiveMutation.isPending}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               onClick={confirmReceive}
@@ -3549,11 +3551,11 @@ export default function AtWarehouse() {
               className="gap-2"
             >
               {receiveMutation.isPending ? (
-                <>Processing...</>
+                <>{t('processing')}</>
               ) : (
                 <>
                   <Box className="h-4 w-4" />
-                  Confirm Receive
+                  {t('confirmReceive')}
                 </>
               )}
             </Button>
@@ -3565,9 +3567,9 @@ export default function AtWarehouse() {
       <Dialog open={showUnpackDialog} onOpenChange={setShowUnpackDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Unpack Purchase Order</DialogTitle>
+            <DialogTitle>{t('unpackPurchaseOrder')}</DialogTitle>
             <DialogDescription>
-              This will unpack the purchase order into individual items for consolidation.
+              {t('willUnpackToIndividualItems')}
             </DialogDescription>
           </DialogHeader>
           
@@ -3582,18 +3584,18 @@ export default function AtWarehouse() {
 
               {/* Item List */}
               <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Items to be unpacked:</div>
+                <div className="text-sm font-medium text-muted-foreground">{t('itemsToBeUnpacked')}</div>
                 <div className="max-h-[200px] overflow-y-auto space-y-2 border rounded-lg p-2">
                   {selectedOrder.items?.map((item: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-1 px-2 hover:bg-muted/50 rounded">
                       <div className="flex-1">
                         <div className="text-sm font-medium">{item.name}</div>
                         {item.sku && (
-                          <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>
+                          <div className="text-xs text-muted-foreground">{t('sku')}: {item.sku}</div>
                         )}
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium">Qty: {item.quantity}</div>
+                        <div className="text-sm font-medium">{t('qty')}: {item.quantity}</div>
                         {item.unitPrice && (
                           <div className="text-xs text-muted-foreground">¥{item.unitPrice}</div>
                         )}
@@ -3606,8 +3608,7 @@ export default function AtWarehouse() {
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
                 <div className="text-sm text-muted-foreground">
-                  Each item in this purchase order will become an individual item ready for consolidation. 
-                  The items will retain all supplier and order information.
+                  {t('eachItemWillBecome')}
                 </div>
               </div>
             </div>
@@ -3619,7 +3620,7 @@ export default function AtWarehouse() {
               onClick={() => setShowUnpackDialog(false)}
               disabled={unpackMutation.isPending}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               onClick={confirmUnpack}
@@ -3627,11 +3628,11 @@ export default function AtWarehouse() {
               className="gap-2"
             >
               {unpackMutation.isPending ? (
-                <>Processing...</>
+                <>{t('processing')}</>
               ) : (
                 <>
                   <PackageOpen className="h-4 w-4" />
-                  Confirm Unpack
+                  {t('confirmUnpack')}
                 </>
               )}
             </Button>
@@ -3643,15 +3644,15 @@ export default function AtWarehouse() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{deleteTarget?.name}". This action cannot be undone.
+              {t('deleteItemConfirmation', { name: deleteTarget?.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -3669,11 +3670,11 @@ export default function AtWarehouse() {
       >
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Move to Active Consolidation</DialogTitle>
+            <DialogTitle>{t('moveToActiveConsolidation')}</DialogTitle>
             <DialogDescription>
               {bulkMoveItems.size > 0 
-                ? `Select an active consolidation to move ${bulkMoveItems.size} item${bulkMoveItems.size > 1 ? 's' : ''}. Shipped consolidations cannot accept new items.`
-                : `Select an active consolidation to move "${moveToConsolidationItem?.name}". Shipped consolidations cannot accept new items.`
+                ? t('selectConsolidationToMoveBulk', { count: bulkMoveItems.size })
+                : t('selectConsolidationToMove', { name: moveToConsolidationItem?.name })
               }
             </DialogDescription>
           </DialogHeader>
@@ -3683,8 +3684,8 @@ export default function AtWarehouse() {
               {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No active consolidations available</p>
-                  <p className="text-sm text-muted-foreground mt-1">All consolidations are either shipped or delivered</p>
+                  <p className="text-muted-foreground">{t('noActiveConsolidations')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{t('allConsolidationsShipped')}</p>
                   <Button 
                     variant="outline" 
                     className="mt-4"
@@ -3695,7 +3696,7 @@ export default function AtWarehouse() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Create New Consolidation
+                    {t('createNewConsolidation')}
                   </Button>
                 </div>
               ) : (
@@ -3716,8 +3717,8 @@ export default function AtWarehouse() {
                             setMoveToConsolidationItem(null);
                             setBulkMoveItems(new Set());
                             toast({
-                              title: "Success",
-                              description: `${itemIds.length} item${itemIds.length > 1 ? 's' : ''} moved to ${consolidation.name}`,
+                              title: t('success'),
+                              description: t('itemsMovedToConsolidation', { count: itemIds.length, name: consolidation.name }),
                             });
                           }
                         });
@@ -3742,12 +3743,12 @@ export default function AtWarehouse() {
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Package className="h-4 w-4" />
                         <span className="font-medium">{consolidation.itemCount || 0}</span>
-                        <span>items</span>
+                        <span>{t('items')}</span>
                       </div>
                       {consolidation.targetWeight && (
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <Weight className="h-4 w-4" />
-                          <span>Max:</span>
+                          <span>{t('max')}:</span>
                           <span className="font-medium">{consolidation.targetWeight} kg</span>
                         </div>
                       )}
@@ -3773,7 +3774,7 @@ export default function AtWarehouse() {
               onClick={() => setMoveToConsolidationItem(null)}
               disabled={addItemsToConsolidationMutation.isPending}
             >
-              Cancel
+              {t('cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3783,15 +3784,15 @@ export default function AtWarehouse() {
       <Dialog open={!!editingConsolidation} onOpenChange={(open) => !open && setEditingConsolidation(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Consolidation</DialogTitle>
+            <DialogTitle>{t('editConsolidation')}</DialogTitle>
             <DialogDescription>
-              Update consolidation details and shipment settings
+              {t('updateConsolidationDetails')}
             </DialogDescription>
           </DialogHeader>
           {editingConsolidation && (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="consolidation-name">Consolidation Name</Label>
+                <Label htmlFor="consolidation-name">{t('consolidationName')}</Label>
                 <Input
                   id="consolidation-name"
                   value={editingConsolidation.name}
@@ -3799,12 +3800,12 @@ export default function AtWarehouse() {
                     ...editingConsolidation,
                     name: e.target.value
                   })}
-                  placeholder="Enter consolidation name"
+                  placeholder={t('enterConsolidationName')}
                 />
               </div>
               
               <div>
-                <Label htmlFor="shipment-type">Shipment Type</Label>
+                <Label htmlFor="shipment-type">{t('shipmentType')}</Label>
                 <Select 
                   value={editingConsolidation.shippingMethod || "not_set"}
                   onValueChange={(value) => setEditingConsolidation({
@@ -3816,53 +3817,53 @@ export default function AtWarehouse() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="not_set">Not Set</SelectItem>
+                    <SelectItem value="not_set">{t('notSet')}</SelectItem>
                     <SelectItem value="general_air_ddp">
                       <div className="flex items-center gap-2">
                         <Plane className="h-4 w-4" />
-                        General Air (DDP)
+                        {t('generalAirDdp')}
                       </div>
                     </SelectItem>
                     <SelectItem value="sensitive_air_ddp">
                       <div className="flex items-center gap-2">
                         <Plane className="h-4 w-4 text-orange-500" />
-                        Sensitive Air (DDP)
+                        {t('sensitiveAirDdp')}
                       </div>
                     </SelectItem>
                     <SelectItem value="express_general">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4" />
-                        Express General
+                        {t('expressGeneral')}
                       </div>
                     </SelectItem>
                     <SelectItem value="express_sensitive">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-orange-500" />
-                        Express Sensitive
+                        {t('expressSensitive')}
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_general">
                       <div className="flex items-center gap-2">
                         <Train className="h-4 w-4" />
-                        Railway General
+                        {t('railwayGeneral')}
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_sensitive">
                       <div className="flex items-center gap-2">
                         <Train className="h-4 w-4 text-orange-500" />
-                        Railway Sensitive
+                        {t('railwaySensitive')}
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_general">
                       <div className="flex items-center gap-2">
                         <Ship className="h-4 w-4" />
-                        Sea General
+                        {t('seaGeneral')}
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_sensitive">
                       <div className="flex items-center gap-2">
                         <Ship className="h-4 w-4 text-orange-500" />
-                        Sea Sensitive
+                        {t('seaSensitive')}
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -3870,7 +3871,7 @@ export default function AtWarehouse() {
               </div>
               
               <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes">{t('notesOptional')}</Label>
                 <Textarea
                   id="notes"
                   value={editingConsolidation.notes || ""}
@@ -3878,7 +3879,7 @@ export default function AtWarehouse() {
                     ...editingConsolidation,
                     notes: e.target.value
                   })}
-                  placeholder="Add any special instructions or notes..."
+                  placeholder={t('addSpecialInstructions')}
                   rows={3}
                 />
               </div>
@@ -3890,7 +3891,7 @@ export default function AtWarehouse() {
               onClick={() => setEditingConsolidation(null)}
               disabled={updateConsolidationMutation.isPending}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               onClick={() => {
@@ -3907,7 +3908,7 @@ export default function AtWarehouse() {
               }}
               disabled={updateConsolidationMutation.isPending || !editingConsolidation?.name}
             >
-              {updateConsolidationMutation.isPending ? "Saving..." : "Save Changes"}
+              {updateConsolidationMutation.isPending ? t('saving') : t('saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3917,9 +3918,9 @@ export default function AtWarehouse() {
       <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Export Tracking Numbers</DialogTitle>
+            <DialogTitle>{t('trackingNumbersList')}</DialogTitle>
             <DialogDescription>
-              Copy tracking numbers for {selectedConsolidationTracking?.name}
+              {t('copyAll')} {selectedConsolidationTracking?.name}
             </DialogDescription>
           </DialogHeader>
           
@@ -3927,13 +3928,13 @@ export default function AtWarehouse() {
             {selectedConsolidationTracking?.trackingNumbers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No tracking numbers found</p>
-                <p className="text-sm mt-2">Items in this consolidation don't have tracking numbers yet.</p>
+                <p>{t('noTrackingNumbersFound')}</p>
+                <p className="text-sm mt-2">{t('noTrackingNumbersYet')}</p>
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label>Tracking Numbers ({selectedConsolidationTracking?.trackingNumbers.length} total)</Label>
+                  <Label>{t('trackingNumbersCount', { count: selectedConsolidationTracking?.trackingNumbers.length })}</Label>
                   <Textarea 
                     readOnly
                     value={selectedConsolidationTracking?.trackingNumbers.join('\n') || ''}
@@ -3941,7 +3942,7 @@ export default function AtWarehouse() {
                     onClick={(e) => e.currentTarget.select()}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Click the text area to select all tracking numbers
+                    {t('clickToSelectAll')}
                   </p>
                 </div>
                 
@@ -3953,14 +3954,14 @@ export default function AtWarehouse() {
                       if (selectedConsolidationTracking?.trackingNumbers) {
                         navigator.clipboard.writeText(selectedConsolidationTracking.trackingNumbers.join('\n'));
                         toast({
-                          title: "Copied!",
+                          title: t('copied'),
                           description: `${selectedConsolidationTracking.trackingNumbers.length} tracking number(s) copied to clipboard`,
                         });
                       }
                     }}
                   >
                     <Package className="h-4 w-4 mr-2" />
-                    Copy to Clipboard
+                    {t('copyToClipboard')}
                   </Button>
                   
                   <Button
@@ -3971,13 +3972,13 @@ export default function AtWarehouse() {
                         // Copy with comma separation for easy paste into shipping forms
                         navigator.clipboard.writeText(selectedConsolidationTracking.trackingNumbers.join(', '));
                         toast({
-                          title: "Copied!",
-                          description: "Tracking numbers copied with comma separation",
+                          title: t('copied'),
+                          description: t('trackingNumbersCopied'),
                         });
                       }
                     }}
                   >
-                    Copy with Commas
+                    {t('copyWithCommas')}
                   </Button>
                 </div>
               </>
@@ -3992,7 +3993,7 @@ export default function AtWarehouse() {
                 setSelectedConsolidationTracking(null);
               }}
             >
-              Close
+              {t('close')}
             </Button>
           </DialogFooter>
         </DialogContent>

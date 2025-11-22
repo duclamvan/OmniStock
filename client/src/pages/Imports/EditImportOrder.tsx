@@ -3,6 +3,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,20 +38,17 @@ import {
   Loader2
 } from "lucide-react";
 
-// Form schema
-const importOrderSchema = z.object({
-  supplierId: z.string().min(1, "Supplier is required"),
-  warehouseId: z.string().min(1, "Warehouse is required"),
-  currency: z.enum(["CZK", "EUR", "USD", "VND", "CNY"]),
-  region: z.string().optional(),
-  trackingNumber: z.string().optional(),
-  estimatedArrival: z.string().optional(),
-  actualArrival: z.string().optional(),
-  status: z.enum(["pending", "ordered", "shipped", "delivered", "received", "cancelled"]),
-  notes: z.string().optional(),
-});
-
-type ImportOrderForm = z.infer<typeof importOrderSchema>;
+type ImportOrderForm = {
+  supplierId: string;
+  warehouseId: string;
+  currency: "CZK" | "EUR" | "USD" | "VND" | "CNY";
+  region?: string;
+  trackingNumber?: string;
+  estimatedArrival?: string;
+  actualArrival?: string;
+  status: "pending" | "ordered" | "shipped" | "delivered" | "received" | "cancelled";
+  notes?: string;
+};
 
 interface OrderItem {
   id: string;
@@ -65,6 +63,7 @@ interface OrderItem {
 }
 
 export default function EditImportOrder() {
+  const { t } = useTranslation('imports');
   const { id } = useParams();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -99,6 +98,19 @@ export default function EditImportOrder() {
   // Fetch warehouses
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
+  });
+
+  // Form schema with translations
+  const importOrderSchema = z.object({
+    supplierId: z.string().min(1, t('supplierRequired')),
+    warehouseId: z.string().min(1, t('warehouseRequired')),
+    currency: z.enum(["CZK", "EUR", "USD", "VND", "CNY"]),
+    region: z.string().optional(),
+    trackingNumber: z.string().optional(),
+    estimatedArrival: z.string().optional(),
+    actualArrival: z.string().optional(),
+    status: z.enum(["pending", "ordered", "shipped", "delivered", "received", "cancelled"]),
+    notes: z.string().optional(),
   });
 
   // Form setup
@@ -156,16 +168,16 @@ export default function EditImportOrder() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Import Order Updated",
-        description: `Order #${data.orderNumber} has been updated successfully.`,
+        title: t('importUpdated'),
+        description: t('importUpdatedDesc', { orderNumber: data.orderNumber }),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/import-orders'] });
       navigate(`/imports/orders/${id}`);
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update import order. Please try again.",
+        title: t('updateFailed'),
+        description: t('updateFailedDesc'),
         variant: "destructive",
       });
     },
@@ -175,8 +187,8 @@ export default function EditImportOrder() {
   const saveItem = () => {
     if (!newItem.productName || !newItem.sku || !newItem.quantity || !newItem.unitCost) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required item fields.",
+        title: t('missingInformation'),
+        description: t('fillRequiredFields'),
         variant: "destructive",
       });
       return;
@@ -250,8 +262,8 @@ export default function EditImportOrder() {
   const onSubmit = (data: ImportOrderForm) => {
     if (items.length === 0) {
       toast({
-        title: "No Items",
-        description: "Please add at least one item to the import order.",
+        title: t('noItems'),
+        description: t('atLeastOneProduct'),
         variant: "destructive",
       });
       return;
@@ -289,7 +301,7 @@ export default function EditImportOrder() {
     return (
       <Alert variant="destructive" className="mx-4 md:mx-0">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>Import order not found.</AlertDescription>
+        <AlertDescription>{t('importOrderNotFound')}</AlertDescription>
       </Alert>
     );
   }
@@ -306,15 +318,15 @@ export default function EditImportOrder() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Order
+                {t('backToOrder')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Edit Import Order</h1>
-              <p className="text-xs md:text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('editImportOrder')}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">{t('orderNumber')}: #{order.orderNumber}</p>
             </div>
           </div>
-          <Badge className="text-xs md:text-sm">{order.status}</Badge>
+          <Badge className="text-xs md:text-sm">{t(`status.${order.status}`)}</Badge>
         </div>
       </div>
 
@@ -322,8 +334,8 @@ export default function EditImportOrder() {
         {/* Order Details - Mobile Optimized */}
         <Card>
           <CardHeader className="pb-3 md:pb-6">
-            <CardTitle className="text-base md:text-lg">Order Details</CardTitle>
-            <CardDescription className="text-xs md:text-sm">Update order information</CardDescription>
+            <CardTitle className="text-base md:text-lg">{t('orderDetails')}</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{t('updateOrderInfo')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -332,11 +344,11 @@ export default function EditImportOrder() {
                 name="supplierId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Supplier *</FormLabel>
+                    <FormLabel className="text-sm">{t('supplier')} *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Select supplier" />
+                          <SelectValue placeholder={t('selectSupplier')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -357,11 +369,11 @@ export default function EditImportOrder() {
                 name="warehouseId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Warehouse *</FormLabel>
+                    <FormLabel className="text-sm">{t('warehouse')} *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Select warehouse" />
+                          <SelectValue placeholder={t('selectWarehouse')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -382,7 +394,7 @@ export default function EditImportOrder() {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Status *</FormLabel>
+                    <FormLabel className="text-sm">{t('status.label')} *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10">
@@ -390,12 +402,12 @@ export default function EditImportOrder() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="ordered">Ordered</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="received">Received</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="pending">{t('status.pending')}</SelectItem>
+                        <SelectItem value="ordered">{t('status.ordered')}</SelectItem>
+                        <SelectItem value="shipped">{t('status.shipped')}</SelectItem>
+                        <SelectItem value="delivered">{t('status.delivered')}</SelectItem>
+                        <SelectItem value="received">{t('status.received')}</SelectItem>
+                        <SelectItem value="cancelled">{t('status.cancelled')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs" />
@@ -408,7 +420,7 @@ export default function EditImportOrder() {
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Currency *</FormLabel>
+                    <FormLabel className="text-sm">{t('currency')} *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10">
@@ -416,11 +428,11 @@ export default function EditImportOrder() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
-                        <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                        <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
+                        <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
+                        <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
+                        <SelectItem value="VND">{t('currencyVND')}</SelectItem>
+                        <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs" />
@@ -435,10 +447,10 @@ export default function EditImportOrder() {
                   <FormItem>
                     <FormLabel className="text-sm">
                       <Globe className="h-3 w-3 inline mr-1" />
-                      Region
+                      {t('region')}
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="e.g., Asia, Europe" className="h-10" />
+                      <Input {...field} placeholder={t('enterRegion')} className="h-10" />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -450,9 +462,9 @@ export default function EditImportOrder() {
                 name="trackingNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Tracking Number</FormLabel>
+                    <FormLabel className="text-sm">{t('trackingNumber')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Shipment tracking #" className="h-10" />
+                      <Input {...field} placeholder={t('enterTracking')} className="h-10" />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -466,7 +478,7 @@ export default function EditImportOrder() {
                   <FormItem>
                     <FormLabel className="text-sm">
                       <Calendar className="h-3 w-3 inline mr-1" />
-                      Estimated Arrival
+                      {t('estimatedArrival')}
                     </FormLabel>
                     <FormControl>
                       <Input {...field} type="date" className="h-10" />
@@ -483,7 +495,7 @@ export default function EditImportOrder() {
                   <FormItem>
                     <FormLabel className="text-sm">
                       <Calendar className="h-3 w-3 inline mr-1" />
-                      Actual Arrival
+                      {t('actualArrival')}
                     </FormLabel>
                     <FormControl>
                       <Input {...field} type="date" className="h-10" />
@@ -499,11 +511,11 @@ export default function EditImportOrder() {
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm">Notes</FormLabel>
+                  <FormLabel className="text-sm">{t('notesLabel')}</FormLabel>
                   <FormControl>
                     <Textarea 
                       {...field} 
-                      placeholder="Additional notes about this import order..." 
+                      placeholder={t('enterNotes')} 
                       className="min-h-[60px] md:min-h-[80px] resize-none"
                     />
                   </FormControl>
@@ -519,9 +531,9 @@ export default function EditImportOrder() {
           <CardHeader className="pb-3 md:pb-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base md:text-lg">Order Items</CardTitle>
+                <CardTitle className="text-base md:text-lg">{t('orderItems')}</CardTitle>
                 <CardDescription className="text-xs md:text-sm">
-                  {items.length} {items.length === 1 ? 'item' : 'items'} • {totalQuantity} units
+                  {items.length} {items.length === 1 ? t('item') : t('items')} • {totalQuantity} {t('common:units', 'units')}
                 </CardDescription>
               </div>
               <Button
@@ -541,7 +553,7 @@ export default function EditImportOrder() {
                 className="h-8 md:h-9"
               >
                 <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Add Item</span>
+                <span className="hidden md:inline">{t('addItem')}</span>
               </Button>
             </div>
           </CardHeader>
@@ -549,7 +561,7 @@ export default function EditImportOrder() {
             {items.length === 0 ? (
               <div className="text-center py-8 md:py-12">
                 <Package className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm md:text-base text-muted-foreground">No items in this order</p>
+                <p className="text-sm md:text-base text-muted-foreground">{t('noItemsInOrder')}</p>
               </div>
             ) : (
               <>
@@ -585,28 +597,28 @@ export default function EditImportOrder() {
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
-                          <p className="text-muted-foreground">Qty</p>
+                          <p className="text-muted-foreground">{t('qty')}</p>
                           <p className="font-medium">{item.quantity}</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Unit Cost</p>
+                          <p className="text-muted-foreground">{t('unitCost')}</p>
                           <p className="font-medium">{formatCurrency(parseFloat(item.unitCost), form.watch('currency'))}</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Total</p>
+                          <p className="text-muted-foreground">{t('totalCost')}</p>
                           <p className="font-medium">{formatCurrency(parseFloat(item.totalCost), form.watch('currency'))}</p>
                         </div>
                       </div>
                       {item.receivedQuantity !== undefined && (
                         <div className="text-xs">
                           <Badge variant={item.receivedQuantity === item.quantity ? "default" : "secondary"}>
-                            {item.receivedQuantity}/{item.quantity} received
+                            {item.receivedQuantity}/{item.quantity} {t('receivedQty')}
                           </Badge>
                         </div>
                       )}
                       {item.weight && (
                         <div className="text-xs">
-                          <span className="text-muted-foreground">Weight:</span> {item.weight} kg
+                          <span className="text-muted-foreground">{t('weight')}:</span> {item.weight} kg
                         </div>
                       )}
                     </div>
@@ -618,13 +630,13 @@ export default function EditImportOrder() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Received</TableHead>
-                        <TableHead className="text-right">Unit Cost</TableHead>
-                        <TableHead className="text-right">Weight (kg)</TableHead>
-                        <TableHead className="text-right">Total Cost</TableHead>
+                        <TableHead>{t('product')}</TableHead>
+                        <TableHead>{t('sku')}</TableHead>
+                        <TableHead className="text-right">{t('quantity')}</TableHead>
+                        <TableHead className="text-right">{t('receivedQty')}</TableHead>
+                        <TableHead className="text-right">{t('unitCost')}</TableHead>
+                        <TableHead className="text-right">{t('weight')} (kg)</TableHead>
+                        <TableHead className="text-right">{t('totalCost')}</TableHead>
                         <TableHead className="w-20"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -677,21 +689,21 @@ export default function EditImportOrder() {
                 {/* Totals Summary */}
                 <div className="mt-4 pt-4 border-t space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Items</span>
+                    <span className="text-muted-foreground">{t('totalItems')}</span>
                     <span className="font-medium">{items.length}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Quantity</span>
+                    <span className="text-muted-foreground">{t('totalQuantity')}</span>
                     <span className="font-medium">{totalQuantity}</span>
                   </div>
                   {totalWeight > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total Weight</span>
+                      <span className="text-muted-foreground">{t('totalWeight')}</span>
                       <span className="font-medium">{totalWeight.toFixed(2)} kg</span>
                     </div>
                   )}
                   <div className="flex justify-between text-base md:text-lg font-semibold pt-2">
-                    <span>Total Value</span>
+                    <span>{t('totalValue')}</span>
                     <span className="text-green-600">
                       {formatCurrency(totalValue, form.watch('currency'))}
                     </span>
@@ -706,19 +718,19 @@ export default function EditImportOrder() {
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-2 md:hidden">
           <Link href={`/imports/orders/${id}`} className="flex-1">
             <Button type="button" variant="outline" className="w-full">
-              Cancel
+              {t('common:cancel', 'Cancel')}
             </Button>
           </Link>
           <Button type="submit" className="flex-1" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                {t('common:loading', 'Saving...')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save
+                {t('common:save', 'Save')}
               </>
             )}
           </Button>
@@ -728,19 +740,19 @@ export default function EditImportOrder() {
         <div className="hidden md:flex justify-end gap-3">
           <Link href={`/imports/orders/${id}`}>
             <Button type="button" variant="outline">
-              Cancel
+              {t('common:cancel', 'Cancel')}
             </Button>
           </Link>
           <Button type="submit" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving Changes...
+                {t('common:loading', 'Saving...')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {t('saveChanges')}
               </>
             )}
           </Button>
@@ -753,7 +765,7 @@ export default function EditImportOrder() {
           <div className="bg-background w-full md:max-w-md rounded-t-xl md:rounded-xl p-4 md:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingItem ? 'Edit Item' : 'Add Item'}
+                {editingItem ? t('editItem') : t('addItem')}
               </h3>
               <Button
                 type="button"
@@ -769,26 +781,26 @@ export default function EditImportOrder() {
             </div>
             <div className="space-y-4">
               <div>
-                <Label className="text-sm">Product Name *</Label>
+                <Label className="text-sm">{t('productName')} *</Label>
                 <Input
                   value={newItem.productName}
                   onChange={(e) => setNewItem({ ...newItem, productName: e.target.value })}
-                  placeholder="Enter product name"
+                  placeholder={t('enterProductName')}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label className="text-sm">SKU *</Label>
+                <Label className="text-sm">{t('sku')} *</Label>
                 <Input
                   value={newItem.sku}
                   onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
-                  placeholder="Product SKU"
+                  placeholder={t('enterSKU')}
                   className="mt-1"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm">Quantity *</Label>
+                  <Label className="text-sm">{t('quantity')} *</Label>
                   <Input
                     type="number"
                     value={newItem.quantity}
@@ -798,7 +810,7 @@ export default function EditImportOrder() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm">Unit Cost *</Label>
+                  <Label className="text-sm">{t('unitCost')} *</Label>
                   <Input
                     type="number"
                     value={newItem.unitCost}
@@ -810,14 +822,14 @@ export default function EditImportOrder() {
                 </div>
               </div>
               <div>
-                <Label className="text-sm">Weight per Unit (kg)</Label>
+                <Label className="text-sm">{t('weight')} (kg)</Label>
                 <Input
                   type="number"
                   value={newItem.weight}
                   onChange={(e) => setNewItem({ ...newItem, weight: e.target.value })}
                   step="0.01"
                   min="0"
-                  placeholder="Optional"
+                  placeholder={t('optionalField')}
                   className="mt-1"
                 />
               </div>
@@ -831,14 +843,14 @@ export default function EditImportOrder() {
                   }}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('common:cancel', 'Cancel')}
                 </Button>
                 <Button
                   type="button"
                   onClick={saveItem}
                   className="flex-1"
                 >
-                  {editingItem ? 'Update Item' : 'Add Item'}
+                  {editingItem ? t('updateItem') : t('addItem')}
                 </Button>
               </div>
             </div>

@@ -369,6 +369,167 @@ const warehouse = {
   shelves: 'Shelves',
   pallets: 'Pallets',
   bulk: 'Bulk',
+  
+  // Packing Materials
+  packingMaterials: 'Packing Materials',
+  packingMaterial: 'Packing Material',
+  addPackingMaterial: 'Add Packing Material',
+  editPackingMaterial: 'Edit Packing Material',
+  manageMaterialsInventory: 'Manage packing materials inventory and suppliers',
+  backToPackingMaterials: 'Back to Packing Materials',
+  loadingPackingMaterials: 'Loading packing materials...',
+  
+  // Stats & Summary
+  totalMaterials: 'Total Materials',
+  totalValue: 'Total Value',
+  materials: 'materials',
+  needsRestocking: 'items need restocking',
+  uniqueCategories: 'unique categories',
+  
+  // Material Categories
+  materialClassification: 'Material Classification',
+  selectCategoryOfPackingMaterial: 'Select the category of packing material',
+  categoryCartons: 'Cartons & Boxes',
+  categoryFilling: 'Filling Materials',
+  categoryProtective: 'Protective Materials',
+  categorySupplies: 'General Supplies',
+  categoryPackaging: 'Product Packaging',
+  
+  // Table Headers
+  image: 'Image',
+  materialName: 'Name',
+  materialCode: 'Code',
+  stockQty: 'Stock Qty',
+  unitCost: 'Unit Cost',
+  supplier: 'Supplier',
+  noSupplier: 'No supplier',
+  
+  // Actions & Buttons
+  purchase: 'Purchase',
+  copyNames: 'Copy Names',
+  changeCategory: 'Change Category',
+  export: 'Export',
+  exportOptions: 'Export Options',
+  exportAsXLSX: 'Export as XLSX',
+  exportAsPDF: 'Export as PDF',
+  addMaterial: 'Add Material',
+  updateMaterial: 'Update Material',
+  deleteMaterial: 'Delete Material',
+  saveChanges: 'Save Changes',
+  cancel: 'Cancel',
+  
+  // Form Sections
+  materialInformation: 'Material Information',
+  basicInformation: 'Basic Information',
+  materialIdentificationNaming: 'Material identification and naming',
+  dimensionsSpecifications: 'Dimensions & Specifications',
+  physicalMeasurementsWeight: 'Physical measurements and weight',
+  costInventory: 'Cost & Inventory',
+  pricingStockManagement: 'Pricing and stock management',
+  supplierInformation: 'Supplier Information',
+  supplierDetailsPurchaseLink: 'Supplier details and purchase link',
+  imageUpload: 'Image Upload',
+  uploadMaterialPhoto: 'Upload a photo of the material',
+  materialProperties: 'Material Properties',
+  materialCharacteristics: 'Material characteristics',
+  status: 'Status',
+  
+  // Form Fields
+  materialNameLabel: 'Material Name',
+  materialCodeLabel: 'Material Code',
+  materialNamePlaceholder: 'e.g., Large Shipping Carton',
+  materialCodePlaceholder: 'e.g., CART-L-001',
+  materialCodeDescription: 'Unique identifier for tracking',
+  selectCategory: 'Select category',
+  dimensions: 'Dimensions',
+  length: 'Length',
+  width: 'Width',
+  height: 'Height',
+  unit: 'Unit',
+  weight: 'Weight',
+  value: 'Value',
+  currentStock: 'Current Stock',
+  minStockAlert: 'Min Stock Alert',
+  currentStockDescription: 'Units currently in stock',
+  minStockAlertDescription: 'Alert when stock falls below this level',
+  currency: 'Currency',
+  purchaseLink: 'Purchase Link',
+  purchaseLinkPlaceholder: 'https://top-obaly.cz',
+  supplierName: 'Supplier Name',
+  supplierNamePlaceholder: 'Auto-generated from link',
+  description: 'Description',
+  descriptionPlaceholder: 'Add material notes or specifications...',
+  fragile: 'Fragile',
+  fragileDescription: 'Handle with care, requires special packaging',
+  reusable: 'Reusable',
+  reusableDescription: 'Can be used multiple times',
+  active: 'Active',
+  
+  // Image Upload
+  currentImage: 'Current Image',
+  uploadImage: 'Upload Image',
+  removeImage: 'Remove Image',
+  changeImage: 'Change Image',
+  clickOrDragImage: 'Click or drag an image file',
+  supportedFormats: 'Supported: JPG, PNG (max 5MB)',
+  
+  // Validation Messages
+  nameIsRequired: 'Name is required',
+  codeIsRequired: 'Code is required',
+  categoryIsRequired: 'Category is required',
+  invalidFile: 'Invalid file',
+  pleaseSelectImageFile: 'Please select an image file',
+  fileTooLarge: 'File too large',
+  pleaseSelectImageSmaller: 'Please select an image smaller than 5MB',
+  
+  // Toast Messages - Success
+  copiedToClipboard: 'Copied to clipboard',
+  copiedMaterialNames: 'Copied {{count}} material name(s)',
+  materialsDeleted: 'Materials deleted',
+  deletedMaterialsSuccess: 'Successfully deleted {{count}} material(s)',
+  categoryUpdated: 'Category updated',
+  updatedMaterialsCategory: 'Updated {{count}} material(s) to {{category}}',
+  exportSuccessful: 'Export Successful',
+  exportedMaterials: 'Exported {{count}} material(s) to {{format}}',
+  packingMaterialCreatedSuccess: 'Packing material created successfully',
+  packingMaterialUpdatedSuccess: 'Packing material updated successfully',
+  imageUploadSuccess: 'Image uploaded successfully',
+  
+  // Toast Messages - Errors
+  failedToCopy: 'Failed to copy',
+  couldNotCopyToClipboard: 'Could not copy to clipboard',
+  failedToDelete: 'Failed to delete',
+  couldNotDeleteMaterials: 'Could not delete materials',
+  failedToUpdate: 'Failed to update',
+  couldNotUpdateCategory: 'Could not update category',
+  exportFailed: 'Export Failed',
+  failedToExportMaterials: 'Failed to export packing materials to {{format}}',
+  failedToCreatePackingMaterial: 'Failed to create packing material',
+  failedToUpdatePackingMaterial: 'Failed to update packing material',
+  imageUploadFailed: 'Image upload failed',
+  materialWillBeCreatedWithoutImage: 'The material will be created without an image',
+  materialWillBeUpdatedWithoutChangingImage: 'The material will be updated without changing the image',
+  
+  // Status Badges
+  lowStock: 'Low Stock',
+  inStock: 'In Stock',
+  outOfStock: 'Out of Stock',
+  
+  // Filters & Search
+  allCategories: 'All Categories',
+  allSuppliers: 'All Suppliers',
+  filterByCategory: 'Category',
+  filterBySupplier: 'Supplier',
+  searchMaterials: 'Search materials...',
+  
+  // Confirmation
+  deleteMaterialsConfirm: 'Are you sure you want to delete {{count}} material(s)?',
+  
+  // Column Settings
+  columnSettings: 'Column Settings',
+  category: 'Category',
+  quantity: 'Quantity',
+  cost: 'Cost',
 } as const;
 
 export default warehouse;

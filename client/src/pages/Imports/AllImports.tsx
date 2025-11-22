@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 
 export default function AllImports() {
+  const { t } = useTranslation('imports');
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,7 +116,7 @@ export default function AllImports() {
     return (
       <Badge className={`${statusColors[order.status]} flex items-center gap-1`}>
         <Icon className="h-3 w-3" />
-        {order.status}
+        {t(order.status)}
       </Badge>
     );
   };
@@ -123,7 +125,7 @@ export default function AllImports() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "orderNumber",
-      header: "Order #",
+      header: t('orderNumber'),
       sortable: true,
       cell: (order) => (
         <Link href={`/imports/orders/${order.id}`}>
@@ -135,18 +137,18 @@ export default function AllImports() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('status'),
       sortable: true,
       cell: (order) => getStatusBadge(order),
     },
     {
       key: "supplier",
-      header: "Supplier",
+      header: t('supplier'),
       cell: (order) => order.supplier?.name || '-',
     },
     {
       key: "region",
-      header: "Region",
+      header: t('region'),
       cell: (order) => (
         <div className="flex items-center gap-1">
           <Globe className="h-3 w-3 text-gray-400" />
@@ -156,7 +158,7 @@ export default function AllImports() {
     },
     {
       key: "productValue",
-      header: "Product Value",
+      header: t('productValue'),
       sortable: true,
       cell: (order) => formatCurrency(
         parseFloat(order.productValue || '0'),
@@ -166,7 +168,7 @@ export default function AllImports() {
     },
     {
       key: "shippingCost",
-      header: "Shipping",
+      header: t('shipping'),
       sortable: true,
       cell: (order) => formatCurrency(
         parseFloat(order.shippingCost || '0'),
@@ -176,7 +178,7 @@ export default function AllImports() {
     },
     {
       key: "totalLandedCost",
-      header: "Landed Cost",
+      header: t('landedCost'),
       sortable: true,
       cell: (order) => (
         <div className="text-right">
@@ -196,7 +198,7 @@ export default function AllImports() {
     },
     {
       key: "estimatedArrival",
-      header: "ETA",
+      header: t('eta'),
       sortable: true,
       cell: (order) => order.estimatedArrival ? (
         <div>
@@ -213,7 +215,7 @@ export default function AllImports() {
             <Link href={`/imports/orders/${order.id}/receive`}>
               <Button size="sm" variant="outline">
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Receive
+                {t('receive')}
               </Button>
             </Link>
           )}
@@ -231,11 +233,11 @@ export default function AllImports() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Import Orders</h1>
+        <h1 className="text-2xl font-semibold">{t('importOrders')}</h1>
         <Link href="/imports/orders/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            New Import Order
+            {t('newImportOrder')}
           </Button>
         </Link>
       </div>
@@ -245,25 +247,25 @@ export default function AllImports() {
         <Link href="/imports/kanban">
           <Button variant="outline" size="sm">
             <Columns className="h-4 w-4 mr-2" />
-            Kanban View
+            {t('kanbanView')}
           </Button>
         </Link>
         <Link href="/imports/items">
           <Button variant="outline" size="sm">
             <Package className="h-4 w-4 mr-2" />
-            Track Items
+            {t('trackItems')}
           </Button>
         </Link>
         <Link href="/imports/consolidated">
           <Button variant="outline" size="sm">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Warehouse View
+            {t('warehouseView')}
           </Button>
         </Link>
         <Link href="/imports/shipments">
           <Button variant="outline" size="sm">
             <Truck className="h-4 w-4 mr-2" />
-            Track Shipments
+            {t('trackShipments')}
           </Button>
         </Link>
       </div>
@@ -274,7 +276,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Orders</p>
+                <p className="text-sm text-gray-500">{t('totalOrders')}</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <Package className="h-8 w-8 text-gray-400" />
@@ -286,7 +288,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Pending</p>
+                <p className="text-sm text-gray-500">{t('pending')}</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-500" />
@@ -298,7 +300,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">In Transit</p>
+                <p className="text-sm text-gray-500">{t('inTransit')}</p>
                 <p className="text-2xl font-bold">{stats.inTransit}</p>
               </div>
               <Ship className="h-8 w-8 text-purple-500" />
@@ -310,7 +312,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Delivered</p>
+                <p className="text-sm text-gray-500">{t('delivered')}</p>
                 <p className="text-2xl font-bold">{stats.delivered}</p>
               </div>
               <Truck className="h-8 w-8 text-green-500" />
@@ -322,7 +324,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Received</p>
+                <p className="text-sm text-gray-500">{t('received')}</p>
                 <p className="text-2xl font-bold">{stats.received}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-teal-500" />
@@ -334,7 +336,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Value</p>
+                <p className="text-sm text-gray-500">{t('totalValue')}</p>
                 <p className="text-xl font-bold">
                   ${stats.totalValue.toLocaleString()}
                 </p>
@@ -348,7 +350,7 @@ export default function AllImports() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -356,7 +358,7 @@ export default function AllImports() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search by order #, tracking #, or region..."
+                  placeholder={t('searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -365,16 +367,16 @@ export default function AllImports() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="All statuses" />
+                <SelectValue placeholder={t('allStatuses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="ordered">Ordered</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="received">Received</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                <SelectItem value="pending">{t('pending')}</SelectItem>
+                <SelectItem value="ordered">{t('ordered')}</SelectItem>
+                <SelectItem value="shipped">{t('shipped')}</SelectItem>
+                <SelectItem value="delivered">{t('delivered')}</SelectItem>
+                <SelectItem value="received">{t('received')}</SelectItem>
+                <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -384,7 +386,7 @@ export default function AllImports() {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Import Orders</CardTitle>
+          <CardTitle>{t('importOrders')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
@@ -401,7 +403,7 @@ export default function AllImports() {
                         </p>
                       </Link>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {order.supplier?.name || 'No supplier'}
+                        {order.supplier?.name || '-'}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -412,20 +414,20 @@ export default function AllImports() {
                   {/* Middle Row - Key Details (2 columns) */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Import Date</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('common:date', 'Date')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         {order.orderDate ? formatDate(order.orderDate) : formatDate(order.createdAt)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('items')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                         <Package className="h-3.5 w-3.5" />
                         {itemCountByOrder[order.id] || 0}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Total Cost</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('totalCost')}</p>
                       <p className="font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(
                           parseFloat(order.totalLandedCost || order.productValue || '0'),
@@ -434,7 +436,7 @@ export default function AllImports() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Region</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('region')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                         <Globe className="h-3.5 w-3.5" />
                         {order.region || '-'}
@@ -447,7 +449,7 @@ export default function AllImports() {
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-slate-700">
                       {order.estimatedArrival && (
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Expected Arrival</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('estimatedArrival')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
                             {formatDate(order.estimatedArrival)}
@@ -456,7 +458,7 @@ export default function AllImports() {
                       )}
                       {order.trackingNumber && (
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Tracking</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('trackingNo')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 text-xs truncate">
                             {order.trackingNumber}
                           </p>
@@ -470,20 +472,20 @@ export default function AllImports() {
                     <Link href={`/imports/orders/${order.id}`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full">
                         <Eye className="h-4 w-4 mr-1" />
-                        View
+                        {t('common:view', 'View')}
                       </Button>
                     </Link>
                     <Link href={`/imports/orders/${order.id}/edit`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full">
                         <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        {t('common:edit', 'Edit')}
                       </Button>
                     </Link>
                     {order.status === 'delivered' && (
                       <Link href={`/imports/orders/${order.id}/receive`} className="flex-1">
                         <Button size="sm" variant="default" className="w-full bg-green-600 hover:bg-green-700">
                           <CheckCircle className="h-4 w-4 mr-1" />
-                          Process
+                          {t('receive')}
                         </Button>
                       </Link>
                     )}

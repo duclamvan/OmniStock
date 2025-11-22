@@ -369,6 +369,167 @@ const warehouse = {
   shelves: 'Kệ',
   pallets: 'Pallet',
   bulk: 'Hàng rời',
+  
+  // Packing Materials
+  packingMaterials: 'Vật liệu đóng gói',
+  packingMaterial: 'Vật liệu đóng gói',
+  addPackingMaterial: 'Thêm vật liệu đóng gói',
+  editPackingMaterial: 'Sửa vật liệu đóng gói',
+  manageMaterialsInventory: 'Quản lý tồn kho vật liệu đóng gói và nhà cung cấp',
+  backToPackingMaterials: 'Quay lại vật liệu đóng gói',
+  loadingPackingMaterials: 'Đang tải vật liệu đóng gói...',
+  
+  // Stats & Summary
+  totalMaterials: 'Tổng vật liệu',
+  totalValue: 'Tổng giá trị',
+  materials: 'vật liệu',
+  needsRestocking: 'mục cần nhập thêm',
+  uniqueCategories: 'danh mục riêng biệt',
+  
+  // Material Categories
+  materialClassification: 'Phân loại vật liệu',
+  selectCategoryOfPackingMaterial: 'Chọn danh mục vật liệu đóng gói',
+  categoryCartons: 'Thùng carton & Hộp',
+  categoryFilling: 'Vật liệu độn',
+  categoryProtective: 'Vật liệu bảo vệ',
+  categorySupplies: 'Vật tư chung',
+  categoryPackaging: 'Bao bì sản phẩm',
+  
+  // Table Headers
+  image: 'Hình ảnh',
+  materialName: 'Tên',
+  materialCode: 'Mã',
+  stockQty: 'SL tồn',
+  unitCost: 'Giá đơn vị',
+  supplier: 'Nhà cung cấp',
+  noSupplier: 'Chưa có nhà cung cấp',
+  
+  // Actions & Buttons
+  purchase: 'Mua hàng',
+  copyNames: 'Sao chép tên',
+  changeCategory: 'Đổi danh mục',
+  export: 'Xuất',
+  exportOptions: 'Tùy chọn xuất',
+  exportAsXLSX: 'Xuất dạng XLSX',
+  exportAsPDF: 'Xuất dạng PDF',
+  addMaterial: 'Thêm vật liệu',
+  updateMaterial: 'Cập nhật vật liệu',
+  deleteMaterial: 'Xóa vật liệu',
+  saveChanges: 'Lưu thay đổi',
+  cancel: 'Hủy',
+  
+  // Form Sections
+  materialInformation: 'Thông tin vật liệu',
+  basicInformation: 'Thông tin cơ bản',
+  materialIdentificationNaming: 'Nhận diện và đặt tên vật liệu',
+  dimensionsSpecifications: 'Kích thước & Thông số',
+  physicalMeasurementsWeight: 'Kích thước vật lý và trọng lượng',
+  costInventory: 'Giá & Tồn kho',
+  pricingStockManagement: 'Quản lý giá và tồn kho',
+  supplierInformation: 'Thông tin nhà cung cấp',
+  supplierDetailsPurchaseLink: 'Chi tiết nhà cung cấp và liên kết mua hàng',
+  imageUpload: 'Tải ảnh lên',
+  uploadMaterialPhoto: 'Tải ảnh vật liệu lên',
+  materialProperties: 'Thuộc tính vật liệu',
+  materialCharacteristics: 'Đặc tính vật liệu',
+  status: 'Trạng thái',
+  
+  // Form Fields
+  materialNameLabel: 'Tên vật liệu',
+  materialCodeLabel: 'Mã vật liệu',
+  materialNamePlaceholder: 'VD: Thùng carton vận chuyển lớn',
+  materialCodePlaceholder: 'VD: CART-L-001',
+  materialCodeDescription: 'Mã định danh duy nhất để theo dõi',
+  selectCategory: 'Chọn danh mục',
+  dimensions: 'Kích thước',
+  length: 'Dài',
+  width: 'Rộng',
+  height: 'Cao',
+  unit: 'Đơn vị',
+  weight: 'Trọng lượng',
+  value: 'Giá trị',
+  currentStock: 'Tồn kho hiện tại',
+  minStockAlert: 'Cảnh báo tồn tối thiểu',
+  currentStockDescription: 'Số lượng hiện có trong kho',
+  minStockAlertDescription: 'Cảnh báo khi tồn kho xuống dưới mức này',
+  currency: 'Tiền tệ',
+  purchaseLink: 'Liên kết mua hàng',
+  purchaseLinkPlaceholder: 'https://top-obaly.cz',
+  supplierName: 'Tên nhà cung cấp',
+  supplierNamePlaceholder: 'Tự động tạo từ liên kết',
+  description: 'Mô tả',
+  descriptionPlaceholder: 'Thêm ghi chú hoặc thông số vật liệu...',
+  fragile: 'Dễ vỡ',
+  fragileDescription: 'Xử lý cẩn thận, cần đóng gói đặc biệt',
+  reusable: 'Có thể tái sử dụng',
+  reusableDescription: 'Có thể sử dụng nhiều lần',
+  active: 'Đang hoạt động',
+  
+  // Image Upload
+  currentImage: 'Ảnh hiện tại',
+  uploadImage: 'Tải ảnh lên',
+  removeImage: 'Xóa ảnh',
+  changeImage: 'Đổi ảnh',
+  clickOrDragImage: 'Nhấp hoặc kéo thả tệp ảnh',
+  supportedFormats: 'Hỗ trợ: JPG, PNG (tối đa 5MB)',
+  
+  // Validation Messages
+  nameIsRequired: 'Tên là bắt buộc',
+  codeIsRequired: 'Mã là bắt buộc',
+  categoryIsRequired: 'Danh mục là bắt buộc',
+  invalidFile: 'Tệp không hợp lệ',
+  pleaseSelectImageFile: 'Vui lòng chọn tệp hình ảnh',
+  fileTooLarge: 'Tệp quá lớn',
+  pleaseSelectImageSmaller: 'Vui lòng chọn ảnh nhỏ hơn 5MB',
+  
+  // Toast Messages - Success
+  copiedToClipboard: 'Đã sao chép vào clipboard',
+  copiedMaterialNames: 'Đã sao chép {{count}} tên vật liệu',
+  materialsDeleted: 'Đã xóa vật liệu',
+  deletedMaterialsSuccess: 'Đã xóa thành công {{count}} vật liệu',
+  categoryUpdated: 'Đã cập nhật danh mục',
+  updatedMaterialsCategory: 'Đã cập nhật {{count}} vật liệu sang {{category}}',
+  exportSuccessful: 'Xuất thành công',
+  exportedMaterials: 'Đã xuất {{count}} vật liệu sang {{format}}',
+  packingMaterialCreatedSuccess: 'Tạo vật liệu đóng gói thành công',
+  packingMaterialUpdatedSuccess: 'Cập nhật vật liệu đóng gói thành công',
+  imageUploadSuccess: 'Tải ảnh lên thành công',
+  
+  // Toast Messages - Errors
+  failedToCopy: 'Không thể sao chép',
+  couldNotCopyToClipboard: 'Không thể sao chép vào clipboard',
+  failedToDelete: 'Không thể xóa',
+  couldNotDeleteMaterials: 'Không thể xóa vật liệu',
+  failedToUpdate: 'Không thể cập nhật',
+  couldNotUpdateCategory: 'Không thể cập nhật danh mục',
+  exportFailed: 'Xuất thất bại',
+  failedToExportMaterials: 'Không thể xuất vật liệu đóng gói sang {{format}}',
+  failedToCreatePackingMaterial: 'Không thể tạo vật liệu đóng gói',
+  failedToUpdatePackingMaterial: 'Không thể cập nhật vật liệu đóng gói',
+  imageUploadFailed: 'Tải ảnh lên thất bại',
+  materialWillBeCreatedWithoutImage: 'Vật liệu sẽ được tạo mà không có ảnh',
+  materialWillBeUpdatedWithoutChangingImage: 'Vật liệu sẽ được cập nhật mà không thay đổi ảnh',
+  
+  // Status Badges
+  lowStock: 'Tồn kho thấp',
+  inStock: 'Còn hàng',
+  outOfStock: 'Hết hàng',
+  
+  // Filters & Search
+  allCategories: 'Tất cả danh mục',
+  allSuppliers: 'Tất cả nhà cung cấp',
+  filterByCategory: 'Danh mục',
+  filterBySupplier: 'Nhà cung cấp',
+  searchMaterials: 'Tìm kiếm vật liệu...',
+  
+  // Confirmation
+  deleteMaterialsConfirm: 'Bạn có chắc chắn muốn xóa {{count}} vật liệu?',
+  
+  // Column Settings
+  columnSettings: 'Cài đặt cột',
+  category: 'Danh mục',
+  quantity: 'Số lượng',
+  cost: 'Giá',
 } as const;
 
 export default warehouse;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation, useParams, Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ interface Product {
 }
 
 export default function CategoryDetails() {
+  const { t } = useTranslation('inventory');
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { id } = useParams<{ id: string }>();
@@ -107,8 +109,8 @@ export default function CategoryDetails() {
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: `${selectedProducts.length} products moved to this category`,
+        title: t('success'),
+        description: t('productsMovedSuccess', { count: selectedProducts.length }),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       setShowMoveDialog(false);
@@ -117,8 +119,8 @@ export default function CategoryDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to move products',
+        title: t('error'),
+        description: error.message || t('productsMoveFailed'),
         variant: 'destructive',
       });
     },
@@ -131,16 +133,16 @@ export default function CategoryDetails() {
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: 'Category deleted successfully',
+        title: t('success'),
+        description: t('categoryDeletedSuccess'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       navigate('/inventory/categories');
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete category',
+        title: t('error'),
+        description: error.message || t('categoryDeleteFailed'),
         variant: 'destructive',
       });
     },
@@ -149,8 +151,8 @@ export default function CategoryDetails() {
   const handleDelete = () => {
     if (categoryProducts.length > 0) {
       toast({
-        title: 'Cannot Delete',
-        description: 'Category has products. Please remove all products first.',
+        title: t('cannotDeleteCategory'),
+        description: t('categoryHasProducts'),
         variant: 'destructive',
       });
       return;
@@ -166,8 +168,8 @@ export default function CategoryDetails() {
   const handleMoveProducts = () => {
     if (selectedProducts.length === 0) {
       toast({
-        title: 'No products selected',
-        description: 'Please select at least one product to move',
+        title: t('noProductsSelected'),
+        description: t('pleaseSelectProducts'),
         variant: 'destructive',
       });
       return;
@@ -206,7 +208,7 @@ export default function CategoryDetails() {
       return (
         <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">
           <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-          New
+          {t('new')}
         </Badge>
       );
     }
@@ -216,7 +218,7 @@ export default function CategoryDetails() {
       return (
         <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0 h-4">
           <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
-          Restocked
+          {t('restocked')}
         </Badge>
       );
     }
@@ -227,7 +229,7 @@ export default function CategoryDetails() {
   const productColumns: DataTableColumn<Product>[] = [
     {
       key: "name",
-      header: "Product Name",
+      header: t('productName'),
       sortable: true,
       cell: (item) => (
         <div className="flex items-center gap-2">
@@ -242,26 +244,26 @@ export default function CategoryDetails() {
     },
     {
       key: "sku",
-      header: "SKU",
+      header: t('sku'),
       cell: (item) => (
         <span className="text-gray-500 dark:text-gray-400">
-          {item.sku || 'N/A'}
+          {item.sku || t('na')}
         </span>
       ),
     },
     {
       key: "quantity",
-      header: "Stock",
+      header: t('stock'),
       sortable: true,
       cell: (item) => (
         <Badge variant={item.quantity > 0 ? 'default' : 'destructive'}>
-          {item.quantity} units
+          {item.quantity} {t('units')}
         </Badge>
       ),
     },
     {
       key: "priceEur",
-      header: "Price (EUR)",
+      header: t('priceEur'),
       sortable: true,
       cell: (item) => (
         <span>€{parseFloat(item.priceEur).toFixed(2)}</span>
@@ -269,7 +271,7 @@ export default function CategoryDetails() {
     },
     {
       key: "priceCzk",
-      header: "Price (CZK)",
+      header: t('priceCzk'),
       sortable: true,
       cell: (item) => (
         <span>CZK {parseFloat(item.priceCzk).toFixed(2)}</span>
@@ -277,7 +279,7 @@ export default function CategoryDetails() {
     },
     {
       key: "actions",
-      header: "Actions",
+      header: t('actions'),
       cell: (item) => (
         <div className="flex items-center gap-2">
           <Link href={`/inventory/products/${item.id}`}>
@@ -300,9 +302,9 @@ export default function CategoryDetails() {
   if (!category) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Category not found</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('categoryNotFound')}</h2>
         <Button className="mt-4" onClick={() => window.history.back()}>
-          Back to Categories
+          {t('backToCategories')}
         </Button>
       </div>
     );
@@ -338,12 +340,12 @@ export default function CategoryDetails() {
             disabled={otherProducts.length === 0}
           >
             <MoveRight className="mr-2 h-4 w-4" />
-            Move Products Here
+            {t('moveProductsHere')}
           </Button>
           <Link href={`/inventory/categories/${id}/edit`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
-              Edit
+              {t('edit')}
             </Button>
           </Link>
           <Button 
@@ -352,7 +354,7 @@ export default function CategoryDetails() {
             disabled={categoryProducts.length > 0}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            {t('delete')}
           </Button>
         </div>
       </div>
@@ -362,7 +364,7 @@ export default function CategoryDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Products
+              {t('totalProducts')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -376,7 +378,7 @@ export default function CategoryDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Stock Value
+              {t('totalStockValue')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -391,7 +393,7 @@ export default function CategoryDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Created
+              {t('created')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -409,11 +411,11 @@ export default function CategoryDetails() {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Products in this Category</CardTitle>
+            <CardTitle>{t('productsInCategory')}</CardTitle>
             <Link href={`/inventory/add?categoryId=${id}`}>
               <Button size="sm">
                 <Package className="mr-2 h-4 w-4" />
-                Add Product
+                {t('addProduct')}
               </Button>
             </Link>
           </div>
@@ -422,10 +424,10 @@ export default function CategoryDetails() {
           {categoryProducts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Package className="mx-auto h-12 w-12 mb-2" />
-              <p>No products in this category yet</p>
+              <p>{t('noProductsInCategoryYet')}</p>
               <Link href={`/inventory/add?categoryId=${id}`}>
                 <Button className="mt-4" variant="outline">
-                  Add First Product
+                  {t('addFirstProduct')}
                 </Button>
               </Link>
             </div>
@@ -443,15 +445,15 @@ export default function CategoryDetails() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{category.name}"? This action cannot be undone.
+              {t('deleteCategoryWithName', { name: category.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -461,9 +463,9 @@ export default function CategoryDetails() {
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-0">
           <div className="px-6 py-4 border-b">
-            <DialogTitle>Move Products to {category?.name}</DialogTitle>
+            <DialogTitle>{t('moveProductsToCategory', { categoryName: category?.name })}</DialogTitle>
             <DialogDescription>
-              Select products from other categories to move to this category.
+              {t('selectProductsToMove')}
             </DialogDescription>
           </div>
           
@@ -471,7 +473,7 @@ export default function CategoryDetails() {
             {/* Search Input */}
             <div className="py-4">
               <Input
-                placeholder="Search products..."
+                placeholder={t('searchProducts')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full"
@@ -487,7 +489,7 @@ export default function CategoryDetails() {
                   onCheckedChange={selectAllProducts}
                 />
                 <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
-                  Select All ({filteredOtherProducts.length} products)
+                  {t('selectAll', { count: filteredOtherProducts.length })}
                 </label>
               </div>
             )}
@@ -496,7 +498,7 @@ export default function CategoryDetails() {
             <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: 'calc(100% - 120px)' }}>
               {filteredOtherProducts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
+                  {searchQuery ? t('noProductsFoundSearch') : t('noProductsToMove')}
                 </div>
               ) : (
                 <div className="space-y-2 pr-2">
@@ -516,7 +518,7 @@ export default function CategoryDetails() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{product.name}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
+                          {t('sku')}: {product.sku || t('na')} | {t('stock')}: {product.quantity}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
@@ -534,7 +536,7 @@ export default function CategoryDetails() {
           
           <div className="border-t px-6 py-4 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleMoveProducts}
@@ -543,12 +545,12 @@ export default function CategoryDetails() {
               {moveProductsMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Moving...
+                  {t('moving')}
                 </>
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Move {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''}
+                  {t('moveProducts', { count: selectedProducts.length, s: selectedProducts.length !== 1 ? 's' : '' })}
                 </>
               )}
             </Button>

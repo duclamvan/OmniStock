@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import type { ProductBundle } from '@shared/schema';
 import {
   Table,
@@ -22,6 +23,7 @@ import {
 export default function SimpleBundles() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     return (localStorage.getItem('bundlesViewMode') as 'grid' | 'list') || 'grid';
@@ -44,14 +46,14 @@ export default function SimpleBundles() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({
-        title: 'Success',
-        description: 'Bundle deleted successfully'
+        title: t('inventory:success'),
+        description: t('inventory:bundleDeleted')
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete bundle',
+        title: t('inventory:error'),
+        description: error.message || t('inventory:failedToDeleteBundle'),
         variant: 'destructive'
       });
     }
@@ -76,14 +78,14 @@ export default function SimpleBundles() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Product Bundles</h1>
+          <h1 className="text-3xl font-bold">{t('inventory:productBundles')}</h1>
           <p className="text-muted-foreground">
-            Manage bundled product offerings
+            {t('inventory:manageBundledProductOfferings')}
           </p>
         </div>
         <Button onClick={() => setLocation('/inventory/bundles/create')}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Bundle
+          {t('inventory:createBundle')}
         </Button>
       </div>
 
@@ -92,17 +94,17 @@ export default function SimpleBundles() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search bundles by name, ID, or SKU..."
+            placeholder={t('inventory:searchBundlesByName')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
         <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list')}>
-          <ToggleGroupItem value="grid" aria-label="Grid view">
+          <ToggleGroupItem value="grid" aria-label={t('inventory:gridView')}>
             <Grid className="h-4 w-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem value="list" aria-label="List view">
+          <ToggleGroupItem value="list" aria-label={t('inventory:listView')}>
             <List className="h-4 w-4" />
           </ToggleGroupItem>
         </ToggleGroup>
@@ -114,17 +116,17 @@ export default function SimpleBundles() {
           <CardContent className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? 'No bundles found' : 'No bundles created yet'}
+              {searchQuery ? t('inventory:noBundlesFound') : t('inventory:noBundlesCreatedYet')}
             </h3>
             <p className="text-muted-foreground mb-4">
               {searchQuery 
-                ? 'Try adjusting your search criteria' 
-                : 'Create your first bundle to group products together'}
+                ? t('inventory:tryAdjustingSearchCriteria')
+                : t('inventory:createYourFirstBundle')}
             </p>
             {!searchQuery && (
               <Button onClick={() => setLocation('/inventory/bundles/create')}>
                 <Plus className="mr-2 h-4 w-4" />
-                Create First Bundle
+                {t('inventory:createFirstBundle')}
               </Button>
             )}
           </CardContent>
@@ -157,7 +159,7 @@ export default function SimpleBundles() {
                       {bundle.sku && (
                         <>
                           <span className="text-xs text-muted-foreground">•</span>
-                          <p className="text-xs text-muted-foreground">SKU: {bundle.sku}</p>
+                          <p className="text-xs text-muted-foreground">{t('inventory:sku')}: {bundle.sku}</p>
                         </>
                       )}
                     </div>
@@ -172,13 +174,13 @@ export default function SimpleBundles() {
                         {bundle.description}
                       </p>
                     ) : (
-                      <p className="text-sm text-muted-foreground italic">No description</p>
+                      <p className="text-sm text-muted-foreground italic">{t('inventory:noDescription')}</p>
                     )}
                   </div>
                   
                   <div className="space-y-2 py-2 border-t">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Bundle Price:</span>
+                      <span className="text-sm text-muted-foreground">{t('inventory:bundlePrice')}:</span>
                       <div className="text-right">
                         {bundle.priceCzk && (
                           <p className="text-sm font-semibold">
@@ -196,13 +198,13 @@ export default function SimpleBundles() {
                     <div className="min-h-[1.5rem]">
                       {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
                         <Badge variant="outline" className="text-xs">
-                          {parseFloat(bundle.discountPercentage).toFixed(0)}% Bundle Savings
+                          {parseFloat(bundle.discountPercentage).toFixed(0)}% {t('inventory:bundleSavings')}
                         </Badge>
                       )}
                     </div>
                     
                     <div className="flex justify-between items-center pt-2 border-t">
-                      <span className="text-sm text-muted-foreground">Available Stock:</span>
+                      <span className="text-sm text-muted-foreground">{t('inventory:availableStock')}:</span>
                       <Badge 
                         variant="outline" 
                         className={(bundle as any).availableStock > 0 ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}
@@ -221,7 +223,7 @@ export default function SimpleBundles() {
                     onClick={() => setLocation(`/inventory/bundles/${bundle.id}`)}
                   >
                     <Eye className="mr-1 h-3 w-3" />
-                    View
+                    {t('inventory:view')}
                   </Button>
                   <Button
                     size="sm"
@@ -230,13 +232,13 @@ export default function SimpleBundles() {
                     onClick={() => setLocation(`/inventory/bundles/${bundle.id}/edit`)}
                   >
                     <Edit className="mr-1 h-3 w-3" />
-                    Edit
+                    {t('inventory:edit')}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      if (confirm(`Are you sure you want to delete "${bundle.name}"?`)) {
+                      if (confirm(t('inventory:areYouSureDeleteBundle', { name: bundle.name }))) {
                         deleteBundleMutation.mutate(bundle.id);
                       }
                     }}
@@ -253,14 +255,14 @@ export default function SimpleBundles() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Bundle ID / SKU</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead className="text-center">Stock</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-20">{t('inventory:image')}</TableHead>
+                <TableHead>{t('inventory:name')}</TableHead>
+                <TableHead>{t('inventory:bundleId')} / {t('inventory:sku')}</TableHead>
+                <TableHead>{t('inventory:description')}</TableHead>
+                <TableHead>{t('inventory:price')}</TableHead>
+                <TableHead>{t('inventory:discount')}</TableHead>
+                <TableHead className="text-center">{t('inventory:stock')}</TableHead>
+                <TableHead className="text-right">{t('inventory:actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -286,7 +288,7 @@ export default function SimpleBundles() {
                     <div>
                       <p className="text-sm">{bundle.bundleId}</p>
                       {bundle.sku && (
-                        <p className="text-xs text-muted-foreground">SKU: {bundle.sku}</p>
+                        <p className="text-xs text-muted-foreground">{t('inventory:sku')}: {bundle.sku}</p>
                       )}
                     </div>
                   </TableCell>
@@ -346,7 +348,7 @@ export default function SimpleBundles() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          if (confirm(`Are you sure you want to delete "${bundle.name}"?`)) {
+                          if (confirm(t('inventory:areYouSureDeleteBundle', { name: bundle.name }))) {
                             deleteBundleMutation.mutate(bundle.id);
                           }
                         }}

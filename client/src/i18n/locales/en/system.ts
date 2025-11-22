@@ -397,6 +397,12 @@ const system = {
   
   // Edit Ticket specific
   ticketNotFound: 'Ticket not found',
+  
+  // 404 Not Found Page
+  notFound: {
+    title: '404 Page Not Found',
+    message: 'Did you forget to add the page to the router?',
+  },
 } as const;
 
 export default system;

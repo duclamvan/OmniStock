@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -32,8 +33,9 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Product, Category } from "@/shared/schema";
 
-const discountSchema = z.object({
-  name: z.string().min(1, "Discount name is required"),
+// Schema will be created inside the component to access t() function
+const createDiscountSchema = (t: any) => z.object({
+  name: z.string().min(1, t('discounts:nameRequired')),
   description: z.string().optional(),
   discountType: z.enum(['percentage', 'fixed_amount', 'buy_x_get_y']),
   percentage: z.coerce.number().min(1).max(100).optional(),
@@ -44,13 +46,13 @@ const discountSchema = z.object({
   getProductType: z.enum(['same_product', 'different_product']).optional(),
   getProductId: z.string().optional(),
   status: z.enum(['active', 'inactive', 'finished']),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
+  startDate: z.string().min(1, t('discounts:startDateRequired')),
+  endDate: z.string().min(1, t('discounts:endDateRequired')),
   applicationScope: z.enum(['specific_product', 'all_products', 'specific_category', 'selected_products']),
   productId: z.string().optional(),
   categoryId: z.string().optional(),
   selectedProductIds: z.array(z.object({
-    productId: z.string().min(1, "Product is required")
+    productId: z.string().min(1, t('discounts:productRequired'))
   })).optional(),
 }).refine((data) => {
   // Validate discount type specific fields
@@ -81,13 +83,14 @@ const discountSchema = z.object({
   }
   return true;
 }, {
-  message: "Please fill in all required fields for the selected discount type and scope",
+  message: t('discounts:fillRequiredFields'),
   path: ["discountType"],
 });
 
-type DiscountFormData = z.infer<typeof discountSchema>;
-
 export default function EditDiscount() {
+  const { t } = useTranslation(['discounts', 'common']);
+  const discountSchema = useMemo(() => createDiscountSchema(t), [t]);
+  type DiscountFormData = z.infer<typeof discountSchema>;
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const id = location.split('/').pop();
@@ -198,15 +201,15 @@ export default function EditDiscount() {
       queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       queryClient.invalidateQueries({ queryKey: [`/api/discounts/${id}`] });
       toast({
-        title: "Success",
-        description: "Discount updated successfully",
+        title: t('common:success'),
+        description: t('discounts:discountUpdated'),
       });
       navigate("/discounts");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update discount",
+        title: t('common:error'),
+        description: error.message || t('discounts:failedToUpdate'),
         variant: "destructive",
       });
     },
@@ -217,15 +220,15 @@ export default function EditDiscount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       toast({
-        title: "Success",
-        description: "Discount deleted successfully",
+        title: t('common:success'),
+        description: t('discounts:discountDeleted'),
       });
       navigate("/discounts");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete discount",
+        title: t('common:error'),
+        description: error.message || t('discounts:failedToDelete'),
         variant: "destructive",
       });
     },
@@ -292,9 +295,9 @@ export default function EditDiscount() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Discounts
+          {t('common:back')}
         </Button>
-        <h1 className="text-2xl font-bold">Edit Discount</h1>
+        <h1 className="text-2xl font-bold">{t('discounts:editDiscount')}</h1>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -306,21 +309,21 @@ export default function EditDiscount() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Info className="h-5 w-5" />
-                  Basic Information
+                  {t('discounts:basicInfo')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Discount ID</Label>
-                    <Input value={discountId || "Auto-generated"} disabled className="bg-gray-50" />
-                    <p className="text-xs text-gray-500 mt-1">Generated from name and date</p>
+                    <Label>{t('discounts:discountId')}</Label>
+                    <Input value={discountId || t('discounts:autoGenerated')} disabled className="bg-gray-50" />
+                    <p className="text-xs text-gray-500 mt-1">{t('discounts:idGeneratedFromName')}</p>
                   </div>
                   <div>
-                    <Label>Discount Name *</Label>
+                    <Label>{t('discounts:discountName')} {t('discounts:required')}</Label>
                     <Input 
                       {...form.register("name")}
-                      placeholder="e.g., Summer Sale"
+                      placeholder={t('discounts:placeholderName')}
                       onBlur={(e) => setDisplayName(e.target.value)}
                     />
                     {form.formState.errors.name && (
@@ -330,17 +333,17 @@ export default function EditDiscount() {
                 </div>
 
                 <div>
-                  <Label>Description</Label>
+                  <Label>{t('discounts:description')}</Label>
                   <Textarea 
                     {...form.register("description")}
-                    placeholder="Describe the discount..."
+                    placeholder={t('discounts:placeholderDescription')}
                     rows={3}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Start Date *</Label>
+                    <Label>{t('discounts:startDate')} {t('discounts:required')}</Label>
                     <Input 
                       type="datetime-local"
                       {...form.register("startDate")}
@@ -350,7 +353,7 @@ export default function EditDiscount() {
                     )}
                   </div>
                   <div>
-                    <Label>End Date *</Label>
+                    <Label>{t('discounts:endDate')} {t('discounts:required')}</Label>
                     <Input 
                       type="datetime-local"
                       {...form.register("endDate")}
@@ -362,7 +365,7 @@ export default function EditDiscount() {
                 </div>
 
                 <div>
-                  <Label>Status</Label>
+                  <Label>{t('common:status')}</Label>
                   <Select value={form.watch('status')} onValueChange={(value) => form.setValue('status', value as any)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -371,19 +374,19 @@ export default function EditDiscount() {
                       <SelectItem value="active">
                         <div className="flex items-center gap-2">
                           <div className="h-2 w-2 bg-green-500 rounded-full" />
-                          Active
+                          {t('common:active')}
                         </div>
                       </SelectItem>
                       <SelectItem value="inactive">
                         <div className="flex items-center gap-2">
                           <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                          Inactive
+                          {t('common:inactive')}
                         </div>
                       </SelectItem>
                       <SelectItem value="finished">
                         <div className="flex items-center gap-2">
                           <div className="h-2 w-2 bg-red-500 rounded-full" />
-                          Finished
+                          {t('common:finished')}
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -397,7 +400,7 @@ export default function EditDiscount() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="h-5 w-5" />
-                  Discount Type
+                  {t('discounts:discountType')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -416,9 +419,9 @@ export default function EditDiscount() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <Percent className="h-4 w-4" />
-                              Percentage
+                              {t('discounts:percentage')}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">Discount by percentage</p>
+                            <p className="text-sm text-gray-600 mt-1">{t('discounts:discountByPercentage')}</p>
                           </div>
                         </div>
                       </label>
@@ -434,9 +437,9 @@ export default function EditDiscount() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <Banknote className="h-4 w-4" />
-                              Fixed Amount
+                              {t('discounts:fixedAmount')}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">Fixed discount amount</p>
+                            <p className="text-sm text-gray-600 mt-1">{t('discounts:fixedDiscountAmount')}</p>
                           </div>
                         </div>
                       </label>
@@ -452,9 +455,9 @@ export default function EditDiscount() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <Gift className="h-4 w-4" />
-                              Buy X Get Y
+                              {t('discounts:buyXGetY')}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">Buy X items, get Y free</p>
+                            <p className="text-sm text-gray-600 mt-1">{t('discounts:buyXItemsGetYFree')}</p>
                           </div>
                         </div>
                       </label>
@@ -467,14 +470,14 @@ export default function EditDiscount() {
                 {/* Discount Type Specific Fields */}
                 {watchDiscountType === 'percentage' && (
                   <div>
-                    <Label>Discount Percentage *</Label>
+                    <Label>{t('discounts:discountPercentage')} {t('discounts:required')}</Label>
                     <div className="flex items-center gap-2">
                       <Input 
                         type="number"
                         min="1"
                         max="100"
                         {...form.register("percentage", { valueAsNumber: true })}
-                        placeholder="10"
+                        placeholder={t('discounts:placeholderPercentage')}
                         className="max-w-[100px]"
                       />
                       <span className="text-gray-600">%</span>
@@ -487,7 +490,7 @@ export default function EditDiscount() {
 
                 {watchDiscountType === 'fixed_amount' && (
                   <div className="space-y-3">
-                    <Label>Discount Amount *</Label>
+                    <Label>{t('discounts:discountAmount')} {t('discounts:required')}</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm text-gray-600">CZK</Label>
@@ -519,10 +522,12 @@ export default function EditDiscount() {
                                 }
                               }
                             }}
-                            placeholder="120.00"
+                            placeholder={t('discounts:placeholderFixedAmountCzk')}
                             className="max-w-[150px]"
                           />
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">{t('discounts:autoConversion')}</p>
+                        <p className="text-xs text-muted-foreground">{t('discounts:approxRate')}</p>
                       </div>
                       <div>
                         <Label className="text-sm text-gray-600">EUR</Label>
@@ -554,7 +559,7 @@ export default function EditDiscount() {
                                 }
                               }
                             }}
-                            placeholder="4.80"
+                            placeholder={t('discounts:placeholderFixedAmountEur')}
                             className="max-w-[150px]"
                           />
                         </div>
@@ -570,24 +575,24 @@ export default function EditDiscount() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Buy Quantity *</Label>
+                        <Label>{t('discounts:buyQuantity')} {t('discounts:required')}</Label>
                         <Input 
                           type="number"
                           min="1"
                           {...form.register("buyQuantity", { valueAsNumber: true })}
-                          placeholder="10"
+                          placeholder={t('discounts:placeholderBuyQuantity')}
                         />
                         {form.formState.errors.buyQuantity && (
                           <p className="text-sm text-red-500 mt-1">{form.formState.errors.buyQuantity.message}</p>
                         )}
                       </div>
                       <div>
-                        <Label>Get Free Quantity *</Label>
+                        <Label>{t('discounts:getQuantity')} {t('discounts:required')}</Label>
                         <Input 
                           type="number"
                           min="1"
                           {...form.register("getQuantity", { valueAsNumber: true })}
-                          placeholder="1"
+                          placeholder={t('discounts:placeholderGetQuantity')}
                         />
                         {form.formState.errors.getQuantity && (
                           <p className="text-sm text-red-500 mt-1">{form.formState.errors.getQuantity.message}</p>
@@ -596,25 +601,25 @@ export default function EditDiscount() {
                     </div>
 
                     <div>
-                      <Label>Free Product Type *</Label>
+                      <Label>{t('discounts:customerGets')} {t('discounts:required')}</Label>
                       <RadioGroup 
                         value={watchGetProductType} 
                         onValueChange={(value) => form.setValue('getProductType', value as any)}
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="same_product" id="same_product" />
-                          <label htmlFor="same_product" className="cursor-pointer">Same Product</label>
+                          <label htmlFor="same_product" className="cursor-pointer">{t('discounts:sameProduct')}</label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="different_product" id="different_product" />
-                          <label htmlFor="different_product" className="cursor-pointer">Different Product</label>
+                          <label htmlFor="different_product" className="cursor-pointer">{t('discounts:differentProduct')}</label>
                         </div>
                       </RadioGroup>
                     </div>
 
                     {watchGetProductType === 'different_product' && (
                       <div>
-                        <Label>Select Free Product *</Label>
+                        <Label>{t('discounts:getFreeProduct')} {t('discounts:required')}</Label>
                         <Popover open={getProductSearchOpen} onOpenChange={setGetProductSearchOpen}>
                           <PopoverTrigger asChild>
                             <Button
@@ -625,14 +630,14 @@ export default function EditDiscount() {
                             >
                               {form.watch('getProductId')
                                 ? products.find((product) => product.id === form.watch('getProductId'))?.name
-                                : "Select product..."}
+                                : t('discounts:searchProducts')}
                               <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Search products..." />
-                              <CommandEmpty>No product found.</CommandEmpty>
+                              <CommandInput placeholder={t('discounts:searchProducts')} />
+                              <CommandEmpty>{t('discounts:noProducts')}</CommandEmpty>
                               <CommandGroup className="max-h-60 overflow-auto">
                                 {products.map((product) => (
                                   <CommandItem
@@ -667,12 +672,12 @@ export default function EditDiscount() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingBag className="h-5 w-5" />
-                  Application Scope
+                  {t('discounts:applicationScope')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Apply Discount To</Label>
+                  <Label>{t('discounts:appliesTo')} {t('discounts:required')}</Label>
                   <Select 
                     value={watchApplicationScope} 
                     onValueChange={(value) => form.setValue('applicationScope', value as any)}
@@ -681,17 +686,17 @@ export default function EditDiscount() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all_products">All Products</SelectItem>
-                      <SelectItem value="specific_product">Specific Product</SelectItem>
-                      <SelectItem value="specific_category">Specific Category</SelectItem>
-                      <SelectItem value="selected_products">Selected Products</SelectItem>
+                      <SelectItem value="all_products">{t('discounts:allProducts')}</SelectItem>
+                      <SelectItem value="specific_product">{t('discounts:specificProduct')}</SelectItem>
+                      <SelectItem value="specific_category">{t('discounts:specificCategory')}</SelectItem>
+                      <SelectItem value="selected_products">{t('discounts:selectedProducts')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {watchApplicationScope === 'specific_product' && (
                   <div>
-                    <Label>Select Product</Label>
+                    <Label>{t('discounts:selectProduct')} {t('discounts:required')}</Label>
                     <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -702,14 +707,14 @@ export default function EditDiscount() {
                         >
                           {form.watch('productId')
                             ? products.find((product) => product.id === form.watch('productId'))?.name
-                            : "Select product..."}
+                            : t('discounts:searchProducts')}
                           <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Search products..." />
-                          <CommandEmpty>No product found.</CommandEmpty>
+                          <CommandInput placeholder={t('discounts:searchProducts')} />
+                          <CommandEmpty>{t('discounts:noProducts')}</CommandEmpty>
                           <CommandGroup className="max-h-60 overflow-auto">
                             {products.map((product) => (
                               <CommandItem
@@ -737,7 +742,7 @@ export default function EditDiscount() {
 
                 {watchApplicationScope === 'specific_category' && (
                   <div>
-                    <Label>Select Category</Label>
+                    <Label>{t('discounts:selectCategory')} {t('discounts:required')}</Label>
                     <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -748,14 +753,14 @@ export default function EditDiscount() {
                         >
                           {form.watch('categoryId')
                             ? categories.find((category) => category.id === form.watch('categoryId'))?.name
-                            : "Select category..."}
+                            : t('discounts:searchCategories')}
                           <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Search categories..." />
-                          <CommandEmpty>No category found.</CommandEmpty>
+                          <CommandInput placeholder={t('discounts:searchCategories')} />
+                          <CommandEmpty>{t('discounts:noCategories')}</CommandEmpty>
                           <CommandGroup className="max-h-60 overflow-auto">
                             {categories.map((category) => (
                               <CommandItem
@@ -783,7 +788,7 @@ export default function EditDiscount() {
 
                 {watchApplicationScope === 'selected_products' && (
                   <div className="space-y-2">
-                    <Label>Selected Products</Label>
+                    <Label>{t('discounts:selectedProducts')} {t('discounts:required')}</Label>
                     {fields.map((field, index) => (
                       <div key={field.id} className="flex gap-2">
                         <Select
@@ -791,7 +796,7 @@ export default function EditDiscount() {
                           onValueChange={(value) => form.setValue(`selectedProductIds.${index}.productId`, value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select product..." />
+                            <SelectValue placeholder={t('discounts:searchProducts')} />
                           </SelectTrigger>
                           <SelectContent>
                             {products.map((product) => (
@@ -818,7 +823,7 @@ export default function EditDiscount() {
                       onClick={() => append({ productId: "" })}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Product
+                      {t('discounts:addProduct')}
                     </Button>
                   </div>
                 )}
@@ -830,12 +835,12 @@ export default function EditDiscount() {
           <div className="lg:col-span-1">
             <Card className="sticky top-20">
               <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                <CardTitle className="text-xl">Discount Summary</CardTitle>
+                <CardTitle className="text-xl">{t('discounts:discountSummary')}</CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600">Discount Name</p>
-                  <p className="font-semibold">{displayName || "Enter name..."}</p>
+                  <p className="text-sm text-gray-600">{t('discounts:discountName')}</p>
+                  <p className="font-semibold">{displayName || t('discounts:enterName')}</p>
                 </div>
 
                 {!(watchApplicationScope === 'specific_product' && form.watch('productId')) && (
@@ -843,9 +848,9 @@ export default function EditDiscount() {
                     <Separator />
 
                     <div>
-                      <p className="text-sm text-gray-600">Discount Type</p>
+                      <p className="text-sm text-gray-600">{t('discounts:discountType')}</p>
                       <p className="font-semibold capitalize">
-                        {watchDiscountType === 'buy_x_get_y' ? 'Buy X Get Y' : watchDiscountType.replace('_', ' ')}
+                        {watchDiscountType === 'buy_x_get_y' ? t('discounts:buyXGetY') : watchDiscountType.replace('_', ' ')}
                       </p>
                     </div>
                   </>
@@ -854,8 +859,8 @@ export default function EditDiscount() {
                 {watchDiscountType === 'percentage' && form.watch('percentage') > 0 && (
                   <>
                     <div>
-                      <p className="text-sm text-gray-600">Discount Value</p>
-                      <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% OFF</p>
+                      <p className="text-sm text-gray-600">{t('discounts:discountValue')}</p>
+                      <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% {t('common:off')}</p>
                     </div>
                     {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
                       const selectedProduct = products.find(p => p.id === form.watch('productId'));
@@ -866,12 +871,12 @@ export default function EditDiscount() {
                       return selectedProduct ? (
                         <div className="bg-gray-50 rounded-lg p-3">
                           <p className="text-sm font-medium">{selectedProduct.name}</p>
-                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
+                          <p className="text-sm mt-1">{t('discounts:itemPrice')}: Kč {productPrice.toFixed(0)}</p>
                           <p className="text-sm text-green-600 font-semibold">
-                            Discount: Kč {discountAmount.toFixed(0)}
+                            {t('discounts:discount')}: Kč {discountAmount.toFixed(0)}
                           </p>
                           <p className="text-sm font-semibold">
-                            Final Price: Kč {finalPrice.toFixed(0)}
+                            {t('discounts:finalPrice')}: Kč {finalPrice.toFixed(0)}
                           </p>
                         </div>
                       ) : null;
@@ -882,9 +887,9 @@ export default function EditDiscount() {
                 {watchDiscountType === 'fixed_amount' && form.watch('fixedAmount') > 0 && (
                   <>
                     <div>
-                      <p className="text-sm text-gray-600">Discount Value</p>
+                      <p className="text-sm text-gray-600">{t('discounts:discountValue')}</p>
                       <div className="space-y-1">
-                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')} OFF</p>
+                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')} {t('common:off')}</p>
                         <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
                       </div>
                     </div>
@@ -897,12 +902,12 @@ export default function EditDiscount() {
                       return selectedProduct ? (
                         <div className="bg-gray-50 rounded-lg p-3">
                           <p className="text-sm font-medium">{selectedProduct.name}</p>
-                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
+                          <p className="text-sm mt-1">{t('discounts:itemPrice')}: Kč {productPrice.toFixed(0)}</p>
                           <p className="text-sm text-green-600 font-semibold">
-                            Discount: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
+                            {t('discounts:discount')}: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
                           </p>
                           <p className="text-sm font-semibold">
-                            Final Price: Kč {finalPrice.toFixed(0)}
+                            {t('discounts:finalPrice')}: Kč {finalPrice.toFixed(0)}
                           </p>
                         </div>
                       ) : null;
@@ -913,19 +918,19 @@ export default function EditDiscount() {
                 {watchDiscountType === 'buy_x_get_y' && (
                   <>
                     <div>
-                      <p className="text-sm text-gray-600">Promotion</p>
+                      <p className="text-sm text-gray-600">{t('discounts:promotion')}</p>
                       <p className="font-semibold text-green-600 text-lg">
-                        Buy {form.watch('buyQuantity') || 0} Get {form.watch('getQuantity') || 0} Free
+                        {t('discounts:buyGetFree', { buy: form.watch('buyQuantity') || 0, get: form.watch('getQuantity') || 0 })}
                       </p>
                     </div>
                     {form.watch('buyQuantity') > 0 && form.watch('getQuantity') > 0 && (
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600">Effective Discount</p>
+                        <p className="text-xs text-gray-600">{t('discounts:effectiveDiscount')}</p>
                         <p className="text-sm font-semibold text-green-600">
-                          {((form.watch('getQuantity') / (form.watch('buyQuantity') + form.watch('getQuantity'))) * 100).toFixed(1)}% OFF
+                          {((form.watch('getQuantity') / (form.watch('buyQuantity') + form.watch('getQuantity'))) * 100).toFixed(1)}% {t('common:off')}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          on total {form.watch('buyQuantity') + form.watch('getQuantity')} items
+                          {t('discounts:onTotalItems', { total: form.watch('buyQuantity') + form.watch('getQuantity') })}
                         </p>
                       </div>
                     )}
@@ -937,13 +942,13 @@ export default function EditDiscount() {
                     <Separator />
 
                     <div>
-                      <p className="text-sm text-gray-600">Application Scope</p>
+                      <p className="text-sm text-gray-600">{t('discounts:applicationScope')}</p>
                       <p className="font-semibold">
-                        {watchApplicationScope === 'all_products' && 'All Products'}
-                        {watchApplicationScope === 'specific_product' && 'Specific Product (Not Selected)'}
+                        {watchApplicationScope === 'all_products' && t('discounts:allProducts')}
+                        {watchApplicationScope === 'specific_product' && t('discounts:specificProductNotSelected')}
                         {watchApplicationScope === 'specific_category' && (
                           <>
-                            Specific Category
+                            {t('discounts:specificCategory')}
                             {form.watch('categoryId') && (
                               <span className="block text-sm text-gray-600 font-normal mt-1">
                                 {categories.find(c => c.id === form.watch('categoryId'))?.name}
@@ -953,10 +958,10 @@ export default function EditDiscount() {
                         )}
                         {watchApplicationScope === 'selected_products' && (
                           <>
-                            Selected Products
+                            {t('discounts:selectedProducts')}
                             {form.watch('selectedProductIds')?.filter(item => item.productId).length > 0 && (
                               <span className="block text-sm text-gray-600 font-normal mt-1">
-                                {form.watch('selectedProductIds').filter(item => item.productId).length} products selected
+                                {t('discounts:productsSelected', { count: form.watch('selectedProductIds').filter(item => item.productId).length })}
                               </span>
                             )}
                           </>
@@ -967,7 +972,7 @@ export default function EditDiscount() {
                 )}
 
                 <div>
-                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="text-sm text-gray-600">{t('common:status')}</p>
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "h-2 w-2 rounded-full",
@@ -986,7 +991,7 @@ export default function EditDiscount() {
                   disabled={updateDiscountMutation.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {updateDiscountMutation.isPending ? "Updating..." : "Update Discount"}
+                  {updateDiscountMutation.isPending ? t('common:updating') + "..." : t('discounts:updateDiscount')}
                 </Button>
 
                 <Separator />
@@ -996,14 +1001,14 @@ export default function EditDiscount() {
                   variant="ghost"
                   className="w-full text-[#6e6e6e] hover:text-red-700 hover:bg-red-50"
                   onClick={() => {
-                    if (confirm("Are you sure you want to delete this discount?")) {
+                    if (confirm(t('discounts:confirmDelete'))) {
                       deleteDiscountMutation.mutate();
                     }
                   }}
                   disabled={deleteDiscountMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {deleteDiscountMutation.isPending ? "Deleting..." : "Delete Discount"}
+                  {deleteDiscountMutation.isPending ? t('common:deleting') + "..." : t('discounts:deleteDiscount')}
                 </Button>
               </CardContent>
             </Card>

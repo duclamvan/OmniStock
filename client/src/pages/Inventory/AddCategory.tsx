@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,20 +14,21 @@ import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-const categorySchema = z.object({
-  nameEn: z.string().min(1, 'English name is required').max(255),
-  nameCz: z.string().optional(),
-  nameVn: z.string().optional(),
-  description: z.string().optional(),
-});
-
-type CategoryFormData = z.infer<typeof categorySchema>;
-
 export default function AddCategory() {
+  const { t } = useTranslation('inventory');
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isTranslating, setIsTranslating] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const categorySchema = z.object({
+    nameEn: z.string().min(1, t('englishNameRequired')).max(255),
+    nameCz: z.string().optional(),
+    nameVn: z.string().optional(),
+    description: z.string().optional(),
+  });
+
+  type CategoryFormData = z.infer<typeof categorySchema>;
 
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -49,8 +51,8 @@ export default function AddCategory() {
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: 'Category created successfully',
+        title: t('success'),
+        description: t('categoryCreatedSuccess'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       navigate('/inventory/categories');
@@ -58,8 +60,8 @@ export default function AddCategory() {
     onError: (error: any) => {
       console.error('Category creation error:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create category',
+        title: t('error'),
+        description: error.message || t('categoryCreateFailed'),
         variant: 'destructive',
       });
     },
@@ -124,8 +126,8 @@ export default function AddCategory() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Add Category</h1>
-          <p className="text-muted-foreground">Create a new product category with AI-powered translation</p>
+          <h1 className="text-2xl font-bold">{t('addCategory')}</h1>
+          <p className="text-muted-foreground">{t('createNewCategoryAI')}</p>
         </div>
       </div>
 
@@ -133,11 +135,11 @@ export default function AddCategory() {
       <Card className="max-w-4xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Category Information
+            {t('categoryInformation')}
             {isTranslating && (
               <span className="flex items-center gap-1.5 text-sm font-normal text-blue-600">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                AI translating...
+                {t('aiTranslating')}
               </span>
             )}
           </CardTitle>
@@ -152,19 +154,19 @@ export default function AddCategory() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      Category Name (EN) *
+                      {t('categoryNameEn')}
                       <Sparkles className="h-4 w-4 text-blue-500" />
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="e.g., Electronics, Clothing, Beauty"
+                        placeholder={t('categoryPlaceholderEn')}
                         data-testid="input-category-name-en"
                         className="text-base"
                       />
                     </FormControl>
                     <FormDescription>
-                      Type in English and AI will auto-translate to Czech and Vietnamese
+                      {t('typeInEnglishAutoTranslate')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -178,17 +180,17 @@ export default function AddCategory() {
                   name="nameCz"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category Name (CZ)</FormLabel>
+                      <FormLabel>{t('categoryNameCz')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="e.g., Elektronika, Oblečení, Krása"
+                          placeholder={t('categoryPlaceholderCz')}
                           data-testid="input-category-name-cz"
                           className="text-base"
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
-                        Auto-filled by AI, editable
+                        {t('autoFilledByAI')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -200,17 +202,17 @@ export default function AddCategory() {
                   name="nameVn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category Name (VN)</FormLabel>
+                      <FormLabel>{t('categoryNameVn')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="e.g., Điện tử, Quần áo, Làm đẹp"
+                          placeholder={t('categoryPlaceholderVn')}
                           data-testid="input-category-name-vn"
                           className="text-base"
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
-                        Auto-filled by AI, editable
+                        {t('autoFilledByAI')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -224,11 +226,11 @@ export default function AddCategory() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel>{t('descriptionOptional')}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Optional description of the category"
+                        placeholder={t('descriptionPlaceholder')}
                         rows={4}
                         data-testid="input-category-description"
                         className="resize-none"
@@ -247,7 +249,7 @@ export default function AddCategory() {
                   onClick={() => navigate('/inventory/categories')}
                   data-testid="button-cancel"
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -257,12 +259,12 @@ export default function AddCategory() {
                   {createMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
+                      {t('creating')}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Create Category
+                      {t('createCategory')}
                     </>
                   )}
                 </Button>

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,7 @@ const statusColors: Record<string, string> = {
 const locations = ["Europe", "USA", "China", "Vietnam"];
 
 export default function SupplierProcessing() {
+  const { t } = useTranslation('imports');
   const [, setLocation] = useLocation();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
@@ -262,12 +264,12 @@ export default function SupplierProcessing() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       setIsAddItemModalOpen(false);
       setSelectedPurchase(null);
-      toast({ title: "Success", description: "Item added successfully" });
+      toast({ title: t('success'), description: t('itemAddedSuccessfully') });
     },
     onError: () => {
       toast({ 
-        title: "Error", 
-        description: "Failed to add item", 
+        title: t('error'), 
+        description: t('failedToAddItem'), 
         variant: "destructive" 
       });
     }
@@ -307,22 +309,22 @@ export default function SupplierProcessing() {
       const purchase = purchases.find(p => p.id === variables.purchaseId);
       if (variables.status === 'delivered' && purchase) {
         if (purchase.consolidation === 'Yes') {
-          toast({ title: "Success", description: "Items moved to Consolidation - Incoming Orders" });
+          toast({ title: t('success'), description: t('movedToConsolidation') });
           setLocation('/consolidation');
         } else {
-          toast({ title: "Success", description: "Shipment auto-created and moved to Receiving" });
+          toast({ title: t('success'), description: t('shipmentAutoCreated') });
           setLocation('/receiving');
         }
       } else if (variables.status === 'at_warehouse') {
-        toast({ title: "Success", description: "Status updated - moved to Consolidation" });
+        toast({ title: t('success'), description: t('movedToConsolidationWarehouse') });
       } else {
-        toast({ title: "Success", description: "Status updated successfully" });
+        toast({ title: t('success'), description: t('statusUpdatedSuccessfully') });
       }
     },
     onError: () => {
       toast({ 
-        title: "Error", 
-        description: "Failed to update status", 
+        title: t('error'), 
+        description: t('failedToUpdateStatus'), 
         variant: "destructive" 
       });
     }
@@ -336,14 +338,14 @@ export default function SupplierProcessing() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Purchase deleted successfully" });
+      toast({ title: t('success'), description: t('purchaseDeletedSuccessfully') });
       setDeleteDialogOpen(false);
       setPurchaseToDelete(null);
     },
     onError: () => {
       toast({ 
-        title: "Error", 
-        description: "Failed to delete purchase", 
+        title: t('error'), 
+        description: t('failedToDeletePurchase'), 
         variant: "destructive" 
       });
       setDeleteDialogOpen(false);
@@ -365,7 +367,7 @@ export default function SupplierProcessing() {
   // Variant functions
   const addVariant = () => {
     if (!newVariant.name.trim()) {
-      toast({ title: "Error", description: "Variant name is required", variant: "destructive" });
+      toast({ title: t('error'), description: t('variantNameRequired'), variant: "destructive" });
       return;
     }
     
@@ -391,7 +393,7 @@ export default function SupplierProcessing() {
 
   const addVariantSeries = () => {
     if (!seriesInput.trim()) {
-      toast({ title: "Error", description: "Series input is required", variant: "destructive" });
+      toast({ title: t('error'), description: t('seriesInputRequired'), variant: "destructive" });
       return;
     }
 
@@ -416,7 +418,7 @@ export default function SupplierProcessing() {
 
   const bulkUpdateVariants = (field: string, value: number) => {
     if (selectedVariants.length === 0) {
-      toast({ title: "Error", description: "Please select variants to update", variant: "destructive" });
+      toast({ title: t('error'), description: t('selectVariantsToUpdate'), variant: "destructive" });
       return;
     }
 
@@ -429,7 +431,7 @@ export default function SupplierProcessing() {
 
   const removeSelectedVariants = () => {
     if (selectedVariants.length === 0) {
-      toast({ title: "Error", description: "Please select variants to remove", variant: "destructive" });
+      toast({ title: t('error'), description: t('selectVariantsToRemove'), variant: "destructive" });
       return;
     }
 
@@ -545,7 +547,7 @@ export default function SupplierProcessing() {
     const baseColumns: DataTableColumn<PurchaseItem>[] = [
       {
         key: "name",
-        header: "Item",
+        header: t('item'),
         sortable: true,
         cell: (item) => (
           <div>
@@ -557,7 +559,7 @@ export default function SupplierProcessing() {
       },
       {
         key: "quantity",
-        header: "Qty",
+        header: t('qty'),
         sortable: true,
         cell: (item) => (
           <span className="font-medium text-sm">{item.quantity}</span>
@@ -566,7 +568,7 @@ export default function SupplierProcessing() {
       },
       {
         key: "unitPrice",
-        header: "Price",
+        header: t('price'),
         sortable: true,
         cell: (item) => (
           <span className="text-sm">${item.unitPrice}</span>
@@ -581,7 +583,7 @@ export default function SupplierProcessing() {
       baseColumns.push(
         {
           key: "weight",
-          header: "Weight",
+          header: t('weight'),
           sortable: true,
           cell: (item) => (
             <span className="text-sm">{item.weight}kg</span>
@@ -590,7 +592,7 @@ export default function SupplierProcessing() {
         },
         {
           key: "dimensions",
-          header: "Dimensions",
+          header: t('dimensions'),
           cell: (item) => {
             const formatDimensions = (dim: any) => {
               if (!dim) return '-';
@@ -614,7 +616,7 @@ export default function SupplierProcessing() {
         },
         {
           key: "notes",
-          header: "Notes",
+          header: t('notes'),
           cell: (item) => (
             <span className="text-xs text-muted-foreground truncate max-w-[150px] block">
               {item.notes || '-'}
@@ -637,7 +639,7 @@ export default function SupplierProcessing() {
         },
         {
           key: "total",
-          header: "Total",
+          header: t('total'),
           sortable: true,
           cell: (item) => (
             <span className="text-sm font-medium">
@@ -652,7 +654,7 @@ export default function SupplierProcessing() {
       baseColumns.push(
         {
           key: "total",
-          header: "Total",
+          header: t('total'),
           sortable: true,
           cell: (item) => (
             <span className="text-sm font-medium">
@@ -698,13 +700,13 @@ export default function SupplierProcessing() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Purchase Orders</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Manage import purchases from suppliers</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('purchaseOrders')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground">{t('manageImportPurchases')}</p>
         </div>
         <Link href="/purchase-orders/create" className="w-full sm:w-auto">
           <Button data-testid="button-create-purchase" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Create Purchase
+            {t('createPurchase')}
           </Button>
         </Link>
       </div>
@@ -713,7 +715,7 @@ export default function SupplierProcessing() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Purchases</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">{t('totalPurchases')}</CardTitle>
             <Package2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -722,7 +724,7 @@ export default function SupplierProcessing() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">{t('pending')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -733,7 +735,7 @@ export default function SupplierProcessing() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Consolidation</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">{t('consolidation')}</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -744,7 +746,7 @@ export default function SupplierProcessing() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Items</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">{t('totalItems')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -760,16 +762,16 @@ export default function SupplierProcessing() {
         <CardHeader>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <CardTitle className="text-lg md:text-xl">Purchase Orders</CardTitle>
+              <CardTitle className="text-lg md:text-xl">{t('purchaseOrders')}</CardTitle>
               <CardDescription className="text-sm">
-                Manage your supplier purchases and their items
+                {t('manageSupplierPurchases')}
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row flex-wrap gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search orders..."
+                  placeholder={t('searchOrders')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9 w-full sm:w-[200px]"
@@ -779,28 +781,28 @@ export default function SupplierProcessing() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-status-filter">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="at_warehouse">Consolidation</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="all">{t('allStatus')}</SelectItem>
+                  <SelectItem value="pending">{t('pending')}</SelectItem>
+                  <SelectItem value="processing">{t('processing')}</SelectItem>
+                  <SelectItem value="at_warehouse">{t('consolidation')}</SelectItem>
+                  <SelectItem value="shipped">{t('shipped')}</SelectItem>
+                  <SelectItem value="delivered">{t('delivered')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={locationFilter} onValueChange={setLocationFilter}>
                 <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-location-filter">
                   <MapPin className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by location" />
+                  <SelectValue placeholder={t('filterByLocation')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  <SelectItem value="Europe">Europe</SelectItem>
-                  <SelectItem value="USA">USA</SelectItem>
-                  <SelectItem value="China">China</SelectItem>
-                  <SelectItem value="Vietnam">Vietnam</SelectItem>
+                  <SelectItem value="all">{t('allLocations')}</SelectItem>
+                  <SelectItem value="Europe">{t('europe')}</SelectItem>
+                  <SelectItem value="USA">{t('usa')}</SelectItem>
+                  <SelectItem value="China">{t('china')}</SelectItem>
+                  <SelectItem value="Vietnam">{t('vietnam')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -813,12 +815,12 @@ export default function SupplierProcessing() {
                 {expandedPurchases.size === filteredPurchases.length ? (
                   <>
                     <ChevronUp className="h-4 w-4 mr-2" />
-                    Collapse All
+                    {t('collapseAll')}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-4 w-4 mr-2" />
-                    Expand All
+                    {t('expandAll')}
                   </>
                 )}
               </Button>
@@ -830,19 +832,19 @@ export default function SupplierProcessing() {
             <div className="text-center py-8">
               <Package2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {purchases.length === 0 ? "No purchases found" : "No matching purchases"}
+                {purchases.length === 0 ? t('noPurchasesFound') : t('noMatchingPurchases')}
               </h3>
               <p className="text-muted-foreground mb-4">
                 {purchases.length === 0 
-                  ? "Create your first purchase order to get started"
-                  : "Try adjusting your filters or search term"
+                  ? t('createFirstPurchaseOrder')
+                  : t('tryAdjustingFilters')
                 }
               </p>
               {purchases.length === 0 && (
                 <Link href="/purchase-orders/create">
                   <Button data-testid="button-create-first-purchase">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Purchase
+                    {t('createPurchase')}
                   </Button>
                 </Link>
               )}
@@ -880,30 +882,30 @@ export default function SupplierProcessing() {
                       {/* Middle Row - Key Details (grid-cols-2) */}
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('items')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                             <Package2 className="h-3.5 w-3.5" />
-                            {purchase.itemCount} items
+                            {purchase.itemCount} {t('items')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Date Initiated</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('dateInitiated')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
                             {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Expected Arrival</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('expectedArrival')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
                             {purchase.estimatedArrival 
                               ? format(new Date(purchase.estimatedArrival), 'MMM dd, yyyy')
-                              : 'TBD'
+                              : t('tbd')
                             }
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Total Cost</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('totalCost')}</p>
                           <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                             {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
                           </p>
@@ -914,7 +916,7 @@ export default function SupplierProcessing() {
                       {purchase.notes && (
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded p-2">
                           <p className="text-xs text-amber-800 dark:text-amber-200">
-                            <span className="font-medium">Note:</span> {purchase.notes}
+                            <span className="font-medium">{t('note')}:</span> {purchase.notes}
                           </p>
                         </div>
                       )}
@@ -929,17 +931,17 @@ export default function SupplierProcessing() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="at_warehouse">Consolidation</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="pending">{t('pending')}</SelectItem>
+                            <SelectItem value="processing">{t('processing')}</SelectItem>
+                            <SelectItem value="at_warehouse">{t('consolidation')}</SelectItem>
+                            <SelectItem value="shipped">{t('shipped')}</SelectItem>
+                            <SelectItem value="delivered">{t('delivered')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Link href={`/purchase-orders/edit/${purchase.id}`}>
                           <Button size="sm" variant="outline" className="h-8">
                             <Edit className="h-3.5 w-3.5 mr-1" />
-                            Edit
+                            {t('edit')}
                           </Button>
                         </Link>
                         <Button
@@ -952,7 +954,7 @@ export default function SupplierProcessing() {
                           }}
                         >
                           <Plus className="h-3.5 w-3.5 mr-1" />
-                          Add
+                          {t('add')}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -966,7 +968,7 @@ export default function SupplierProcessing() {
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Purchase
+                              {t('deletePurchase')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -992,12 +994,12 @@ export default function SupplierProcessing() {
                             {expandedPurchases.has(purchase.id) ? (
                               <>
                                 <ChevronUp className="h-3.5 w-3.5 mr-1" />
-                                Hide Items ({purchase.items.length})
+                                {t('hideItems')} ({purchase.items.length})
                               </>
                             ) : (
                               <>
                                 <ChevronDown className="h-3.5 w-3.5 mr-1" />
-                                View Items ({purchase.items.length})
+                                {t('viewItems')} ({purchase.items.length})
                               </>
                             )}
                           </Button>
@@ -1008,7 +1010,7 @@ export default function SupplierProcessing() {
                                   <p className="font-medium text-gray-900 dark:text-gray-100">{item.name}</p>
                                   {item.sku && <p className="text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>}
                                   <div className="flex justify-between mt-1">
-                                    <span className="text-gray-600 dark:text-gray-300">Qty: {item.quantity}</span>
+                                    <span className="text-gray-600 dark:text-gray-300">{t('qty')}: {item.quantity}</span>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">${item.unitPrice}</span>
                                   </div>
                                 </div>
@@ -1122,11 +1124,11 @@ export default function SupplierProcessing() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="at_warehouse">Consolidation</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="pending">{t('pending')}</SelectItem>
+                              <SelectItem value="processing">{t('processing')}</SelectItem>
+                              <SelectItem value="at_warehouse">{t('consolidation')}</SelectItem>
+                              <SelectItem value="shipped">{t('shipped')}</SelectItem>
+                              <SelectItem value="delivered">{t('delivered')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Link href={`/purchase-orders/edit/${purchase.id}`}>
@@ -1181,7 +1183,7 @@ export default function SupplierProcessing() {
                         <div className="pl-8 mt-2">
                           {purchase.items.length === 0 ? (
                             <div className="text-center py-4 bg-muted/30 rounded border border-dashed">
-                              <p className="text-muted-foreground text-xs">No items added yet</p>
+                              <p className="text-muted-foreground text-xs">{t('noItemsAddedYet')}</p>
                             </div>
                           ) : (
                             <div className={cn(
@@ -1206,7 +1208,7 @@ export default function SupplierProcessing() {
                       {purchase.notes && isExpanded && (
                         <div className="mt-2 pl-8">
                           <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded text-xs">
-                            <span className="font-medium text-amber-900 dark:text-amber-300">Note: </span>
+                            <span className="font-medium text-amber-900 dark:text-amber-300">{t('note')}: </span>
                             <span className="text-amber-800 dark:text-amber-400">{purchase.notes}</span>
                           </div>
                         </div>
@@ -1225,33 +1227,33 @@ export default function SupplierProcessing() {
       <Dialog open={isAddItemModalOpen} onOpenChange={setIsAddItemModalOpen}>
         <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Item to Purchase</DialogTitle>
+            <DialogTitle>{t('addItemToPurchase')}</DialogTitle>
             <DialogDescription>
-              Add a new item to "{selectedPurchase?.supplier}" purchase
+              {t('addNewItemToPurchase', { supplier: selectedPurchase?.supplier })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddItem} className="space-y-4">
             {/* First row: Item Name and SKU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Item Name *</Label>
+                <Label htmlFor="name">{t('itemName')} *</Label>
                 <Input 
                   id="name" 
                   name="name" 
                   required 
                   data-testid="input-item-name"
-                  placeholder="Enter item name"
+                  placeholder={t('enterItemName')}
                   value={currentItem.name}
                   onChange={(e) => setCurrentItem(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sku">SKU/Product Code</Label>
+                <Label htmlFor="sku">{t('skuProductCode')}</Label>
                 <Input 
                   id="sku" 
                   name="sku" 
                   data-testid="input-item-sku"
-                  placeholder="Optional SKU"
+                  placeholder={t('optionalSku')}
                   value={currentItem.sku}
                   onChange={(e) => setCurrentItem(prev => ({ ...prev, sku: e.target.value }))}
                 />
@@ -1261,23 +1263,23 @@ export default function SupplierProcessing() {
             {/* Second row: Category and Barcode */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Item Category</Label>
+                <Label htmlFor="category">{t('itemCategory')}</Label>
                 <Input 
                   id="category" 
                   name="category" 
                   data-testid="input-item-category"
-                  placeholder="e.g., Electronics, Clothing"
+                  placeholder={t('categoryPlaceholder')}
                   value={currentItem.category}
                   onChange={(e) => setCurrentItem(prev => ({ ...prev, category: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="barcode">Barcode (EAN-13)</Label>
+                <Label htmlFor="barcode">{t('barcodeEan13')}</Label>
                 <Input 
                   id="barcode" 
                   name="barcode" 
                   data-testid="input-item-barcode"
-                  placeholder="e.g., 1234567890123"
+                  placeholder={t('barcodePlaceholder')}
                   maxLength={13}
                   value={currentItem.barcode}
                   onChange={(e) => setCurrentItem(prev => ({ ...prev, barcode: e.target.value }))}
@@ -1300,7 +1302,7 @@ export default function SupplierProcessing() {
                   data-testid="checkbox-has-variants"
                 />
                 <Label htmlFor="hasVariants" className="text-sm font-medium">
-                  This item has variants (sizes, colors, etc.)
+                  {t('itemHasVariants')}
                 </Label>
               </div>
 
@@ -1316,7 +1318,7 @@ export default function SupplierProcessing() {
                       data-testid="button-add-variant"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Add Variant
+                      {t('addVariant')}
                     </Button>
                     <Button
                       type="button"
@@ -1326,7 +1328,7 @@ export default function SupplierProcessing() {
                       data-testid="button-add-series"
                     >
                       <ListPlus className="h-4 w-4 mr-1" />
-                      Add Series
+                      {t('addSeries')}
                     </Button>
                   </div>
 
@@ -1351,11 +1353,11 @@ export default function SupplierProcessing() {
                                     data-testid="checkbox-select-all-variants"
                                   />
                                 </TableHead>
-                                <TableHead className="p-2 min-w-32">Variant Name</TableHead>
-                                <TableHead className="p-2 min-w-24">SKU</TableHead>
-                                <TableHead className="p-2 w-16">Qty</TableHead>
-                                <TableHead className="p-2 w-20">Price</TableHead>
-                                <TableHead className="p-2 w-16">Weight</TableHead>
+                                <TableHead className="p-2 min-w-32">{t('variantName')}</TableHead>
+                                <TableHead className="p-2 min-w-24">{t('sku')}</TableHead>
+                                <TableHead className="p-2 w-16">{t('qty')}</TableHead>
+                                <TableHead className="p-2 w-20">{t('price')}</TableHead>
+                                <TableHead className="p-2 w-16">{t('weight')}</TableHead>
                                 <TableHead className="p-2 w-10"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -1453,10 +1455,10 @@ export default function SupplierProcessing() {
                       {selectedVariants.length > 0 && (
                         <div className="flex flex-wrap gap-2 text-xs">
                           <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground">Bulk update:</span>
+                            <span className="text-muted-foreground">{t('bulkUpdate')}:</span>
                             <Input
                               type="number"
-                              placeholder="Qty"
+                              placeholder={t('qty')}
                               className="h-7 w-16 text-xs"
                               onChange={(e) => {
                                 const value = parseInt(e.target.value);
@@ -1467,7 +1469,7 @@ export default function SupplierProcessing() {
                             />
                             <Input
                               type="number"
-                              placeholder="Price"
+                              placeholder={t('price')}
                               className="h-7 w-16 text-xs"
                               step="0.01"
                               onChange={(e) => {
@@ -1479,7 +1481,7 @@ export default function SupplierProcessing() {
                             />
                             <Input
                               type="number"
-                              placeholder="Weight"
+                              placeholder={t('weight')}
                               className="h-7 w-16 text-xs"
                               step="0.01"
                               onChange={(e) => {
@@ -1496,7 +1498,7 @@ export default function SupplierProcessing() {
                               onClick={removeSelectedVariants}
                               className="h-7 px-2 text-xs"
                             >
-                              Remove Selected
+                              {t('removeSelected')}
                             </Button>
                           </div>
                         </div>
@@ -1512,7 +1514,7 @@ export default function SupplierProcessing() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity *</Label>
+                    <Label htmlFor="quantity">{t('quantity')} *</Label>
                     <Input 
                       id="quantity" 
                       name="quantity" 
@@ -1524,7 +1526,7 @@ export default function SupplierProcessing() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                    <Label htmlFor="unitPrice">{t('unitPrice')} ($)</Label>
                     <Input 
                       id="unitPrice" 
                       name="unitPrice" 
@@ -1535,7 +1537,7 @@ export default function SupplierProcessing() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Label htmlFor="weight">{t('weight')} (kg)</Label>
                     <Input 
                       id="weight" 
                       name="weight" 
@@ -1547,24 +1549,24 @@ export default function SupplierProcessing() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dimensions">Dimensions (L×W×H cm)</Label>
+                  <Label htmlFor="dimensions">{t('dimensionsLWH')}</Label>
                   <Input 
                     id="dimensions" 
                     name="dimensions" 
                     data-testid="input-item-dimensions"
-                    placeholder="e.g., 20×15×10"
+                    placeholder={t('dimensionsPlaceholder')}
                   />
                 </div>
               </>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea 
                 id="notes" 
                 name="notes" 
                 data-testid="textarea-item-notes"
-                placeholder="Additional notes about this item..."
+                placeholder={t('additionalItemNotes')}
                 value={currentItem.notes}
                 onChange={(e) => setCurrentItem(prev => ({ ...prev, notes: e.target.value }))}
               />
@@ -1586,14 +1588,14 @@ export default function SupplierProcessing() {
                   notes: ""
                 });
               }}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 type="submit" 
                 disabled={addItemMutation.isPending || (showVariants && variants.length === 0)} 
                 data-testid="button-submit-item"
               >
-                {addItemMutation.isPending ? "Adding..." : "Add Item"}
+                {addItemMutation.isPending ? t('adding') : t('addItem')}
               </Button>
             </DialogFooter>
           </form>
@@ -1602,17 +1604,17 @@ export default function SupplierProcessing() {
           <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
             <DialogContent className="w-[95vw] max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Add Variant</DialogTitle>
+                <DialogTitle>{t('addVariant')}</DialogTitle>
                 <DialogDescription>
-                  Add a new variant for this item
+                  {t('addNewVariantForItem')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="variantName">Variant Name *</Label>
+                  <Label htmlFor="variantName">{t('variantName')} *</Label>
                   <Input
                     id="variantName"
-                    placeholder="e.g., Red - Large, 128GB, etc."
+                    placeholder={t('variantNamePlaceholder')}
                     value={newVariant.name}
                     onChange={(e) => setNewVariant(prev => ({ ...prev, name: e.target.value }))}
                     data-testid="input-variant-name"
@@ -1620,17 +1622,17 @@ export default function SupplierProcessing() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="variantSku">SKU</Label>
+                    <Label htmlFor="variantSku">{t('sku')}</Label>
                     <Input
                       id="variantSku"
-                      placeholder="Optional"
+                      placeholder={t('optional')}
                       value={newVariant.sku}
                       onChange={(e) => setNewVariant(prev => ({ ...prev, sku: e.target.value }))}
                       data-testid="input-variant-sku"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="variantQuantity">Quantity</Label>
+                    <Label htmlFor="variantQuantity">{t('quantity')}</Label>
                     <Input
                       id="variantQuantity"
                       type="number"
@@ -1643,7 +1645,7 @@ export default function SupplierProcessing() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="variantPrice">Unit Price</Label>
+                    <Label htmlFor="variantPrice">{t('unitPrice')}</Label>
                     <Input
                       id="variantPrice"
                       type="number"
@@ -1655,7 +1657,7 @@ export default function SupplierProcessing() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="variantWeight">Weight (kg)</Label>
+                    <Label htmlFor="variantWeight">{t('weight')} (kg)</Label>
                     <Input
                       id="variantWeight"
                       type="number"
@@ -1668,10 +1670,10 @@ export default function SupplierProcessing() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="variantDimensions">Dimensions (L×W×H cm)</Label>
+                  <Label htmlFor="variantDimensions">{t('dimensionsLWH')}</Label>
                   <Input
                     id="variantDimensions"
-                    placeholder="e.g., 20×15×10"
+                    placeholder={t('dimensionsPlaceholder')}
                     value={newVariant.dimensions}
                     onChange={(e) => setNewVariant(prev => ({ ...prev, dimensions: e.target.value }))}
                     data-testid="input-variant-dimensions"
@@ -1680,10 +1682,10 @@ export default function SupplierProcessing() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setVariantDialogOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button onClick={addVariant} data-testid="button-confirm-variant">
-                  Add Variant
+                  {t('addVariant')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1693,27 +1695,27 @@ export default function SupplierProcessing() {
           <Dialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen}>
             <DialogContent className="w-[95vw] max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Add Variant Series</DialogTitle>
+                <DialogTitle>{t('addVariantSeries')}</DialogTitle>
                 <DialogDescription>
-                  Add multiple variants at once (one per line)
+                  {t('addMultipleVariantsAtOnce')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="seriesInput">Variant Names *</Label>
+                  <Label htmlFor="seriesInput">{t('variantNames')} *</Label>
                   <Textarea
                     id="seriesInput"
-                    placeholder="Red - Small&#10;Red - Medium&#10;Red - Large&#10;Blue - Small&#10;Blue - Medium"
+                    placeholder={t('variantSeriesPlaceholder')}
                     value={seriesInput}
                     onChange={(e) => setSeriesInput(e.target.value)}
                     className="min-h-24"
                     data-testid="textarea-series-input"
                   />
-                  <p className="text-xs text-muted-foreground">Enter one variant name per line</p>
+                  <p className="text-xs text-muted-foreground">{t('oneVariantPerLine')}</p>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="seriesQuantity">Quantity (each)</Label>
+                    <Label htmlFor="seriesQuantity">{t('quantityEach')}</Label>
                     <Input
                       id="seriesQuantity"
                       type="number"
@@ -1724,7 +1726,7 @@ export default function SupplierProcessing() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="seriesPrice">Unit Price (each)</Label>
+                    <Label htmlFor="seriesPrice">{t('unitPriceEach')}</Label>
                     <Input
                       id="seriesPrice"
                       type="number"
@@ -1736,7 +1738,7 @@ export default function SupplierProcessing() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="seriesWeight">Weight (each)</Label>
+                    <Label htmlFor="seriesWeight">{t('weightEach')}</Label>
                     <Input
                       id="seriesWeight"
                       type="number"
@@ -1751,10 +1753,10 @@ export default function SupplierProcessing() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setSeriesDialogOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button onClick={addVariantSeries} data-testid="button-confirm-series">
-                  Add Series
+                  {t('addSeries')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1766,9 +1768,9 @@ export default function SupplierProcessing() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Purchase</AlertDialogTitle>
+            <AlertDialogTitle>{t('deletePurchase')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the purchase from "{purchaseToDelete?.supplier}"? This action cannot be undone and will also delete all associated items.
+              {t('confirmDeletePurchase', { supplier: purchaseToDelete?.supplier })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1776,7 +1778,7 @@ export default function SupplierProcessing() {
               setDeleteDialogOpen(false);
               setPurchaseToDelete(null);
             }}>
-              Cancel
+              {t('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
@@ -1784,7 +1786,7 @@ export default function SupplierProcessing() {
               disabled={deletePurchaseMutation.isPending}
               data-testid="confirm-delete-purchase"
             >
-              {deletePurchaseMutation.isPending ? "Deleting..." : "Delete Purchase"}
+              {deletePurchaseMutation.isPending ? t('deleting') : t('deletePurchase')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -370,6 +370,29 @@ const settings = {
   // Select placeholders
   selectCountry: 'Select a country',
   selectOption: 'Select an option',
+  
+  // Roles & Permissions Page
+  rolesAndPermissions: 'Roles & Permissions',
+  userRolesManagement: 'User Roles Management',
+  assignRolesToControlAccess: 'Assign roles to control system access and permissions',
+  totalUsers: 'Total Users',
+  administrators: 'Administrators',
+  fullSystemAccess: 'Full system access',
+  warehouseOperators: 'Warehouse Operators',
+  standardAccess: 'Standard access',
+  administratorPermissions: 'Administrator Permissions',
+  fullAccessToAllSystemFeatures: 'Full access to all system features',
+  warehouseOperatorPermissions: 'Warehouse Operator Permissions',
+  limitedAccessToOperationalFeatures: 'Limited access to operational features',
+  currentRole: 'Current Role',
+  assignRole: 'Assign Role',
+  noUsersFound: 'No users found',
+  userRoleUpdatedSuccessfully: 'User role updated successfully',
+  failedToUpdateUserRole: 'Failed to update user role',
+  administrator: 'Administrator',
+  warehouseOperator: 'Warehouse Operator',
+  selectRole: 'Select role',
+  users: 'Users',
 } as const;
 
 export default settings;

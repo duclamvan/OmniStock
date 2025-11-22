@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ interface ImportItem {
 }
 
 export default function ImportItemsTracking() {
+  const { t } = useTranslation('imports');
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -102,8 +104,8 @@ export default function ImportItemsTracking() {
     },
     onSuccess: () => {
       toast({
-        title: "Product Linked",
-        description: "Import item has been linked to inventory product."
+        title: t('productLinked'),
+        description: t('productLinkedDesc')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/import-items'] });
       setLinkDialogOpen(false);
@@ -120,8 +122,8 @@ export default function ImportItemsTracking() {
     },
     onSuccess: () => {
       toast({
-        title: "Product Created & Linked",
-        description: "New product created and linked to import item."
+        title: t('productCreatedAndLinked'),
+        description: t('productCreatedAndLinkedDesc')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/import-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
@@ -189,13 +191,13 @@ export default function ImportItemsTracking() {
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Imports
+                {t('backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Import Items Tracking</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">{t('importItemsTracking')}</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Track all import items across orders
+                {t('trackingItemsAcrossImports')}
               </p>
             </div>
           </div>
@@ -208,7 +210,7 @@ export default function ImportItemsTracking() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Total Items</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t('totalItems')}</p>
                 <p className="text-xl md:text-2xl font-bold">{totalItems}</p>
               </div>
               <Package className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground opacity-20" />
@@ -220,7 +222,7 @@ export default function ImportItemsTracking() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Total Value</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t('totalValue')}</p>
                 <p className="text-xl md:text-2xl font-bold">
                   {formatCurrency(totalValue, 'USD')}
                 </p>
@@ -234,8 +236,8 @@ export default function ImportItemsTracking() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Avg Processing</p>
-                <p className="text-xl md:text-2xl font-bold">{avgProcessingTime} days</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t('avgProcessingTime')}</p>
+                <p className="text-xl md:text-2xl font-bold">{avgProcessingTime} {t('days')}</p>
               </div>
               <Clock className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground opacity-20" />
             </div>
@@ -246,7 +248,7 @@ export default function ImportItemsTracking() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Linked Items</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t('linkedItems')}</p>
                 <p className="text-xl md:text-2xl font-bold">{linkedPercentage.toFixed(0)}%</p>
               </div>
               <Link2 className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground opacity-20" />
@@ -263,7 +265,7 @@ export default function ImportItemsTracking() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by product, SKU, or order..."
+                  placeholder={t('searchItemsPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -272,21 +274,21 @@ export default function ImportItemsTracking() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="All Statuses" />
+                <SelectValue placeholder={t('allStatuses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="received">Received</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
+                <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                <SelectItem value="pending">{t('pending')}</SelectItem>
+                <SelectItem value="received">{t('received')}</SelectItem>
+                <SelectItem value="partial">{t('partial')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="All Suppliers" />
+                <SelectValue placeholder={t('allSuppliers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Suppliers</SelectItem>
+                <SelectItem value="all">{t('allSuppliers')}</SelectItem>
                 {/* Add dynamic suppliers */}
               </SelectContent>
             </Select>
@@ -298,16 +300,16 @@ export default function ImportItemsTracking() {
       <Tabs defaultValue="all" className="px-4 md:px-0">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">
-            All ({filteredItems.length})
+            {t('all')} ({filteredItems.length})
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending ({pendingItems.length})
+            {t('pending')} ({pendingItems.length})
           </TabsTrigger>
           <TabsTrigger value="received">
-            Received ({receivedItems.length})
+            {t('received')} ({receivedItems.length})
           </TabsTrigger>
           <TabsTrigger value="linked">
-            Linked ({linkedItems.length})
+            {t('linkedToInventory')} ({linkedItems.length})
           </TabsTrigger>
         </TabsList>
 
@@ -322,7 +324,7 @@ export default function ImportItemsTracking() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No import items found</p>
+                <p className="text-muted-foreground">{t('noItemsToTrack')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -337,8 +339,8 @@ export default function ImportItemsTracking() {
                           <div className="flex-1">
                             <p className="font-medium text-sm line-clamp-2">{item.productName}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {item.sku && `SKU: ${item.sku} • `}
-                              Order: {item.orderNumber}
+                              {item.sku && `${t('sku')}: ${item.sku} • `}
+                              {t('orderNumber')}: {item.orderNumber}
                             </p>
                           </div>
                           <Badge variant={item.status === 'received' ? 'default' : 'secondary'}>
@@ -348,33 +350,33 @@ export default function ImportItemsTracking() {
 
                         <div className="grid grid-cols-2 gap-3 text-xs">
                           <div>
-                            <p className="text-muted-foreground">Quantity</p>
+                            <p className="text-muted-foreground">{t('quantity')}</p>
                             <p className="font-medium">
                               {item.receivedQuantity}/{item.quantity}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">Unit Cost</p>
+                            <p className="text-muted-foreground">{t('unitCost')}</p>
                             <p className="font-medium">
                               {formatCurrency(item.calculatedUnitCost || item.unitCost, 'USD')}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">Total Cost</p>
+                            <p className="text-muted-foreground">{t('totalCost')}</p>
                             <p className="font-medium">
                               {formatCurrency(item.totalCost, 'USD')}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">Inventory</p>
+                            <p className="text-muted-foreground">{t('inventory')}</p>
                             <p className="font-medium">
                               {item.productId ? (
                                 <Badge variant="outline" className="text-xs">
                                   <Link2 className="h-3 w-3 mr-1" />
-                                  Linked
+                                  {t('linkedToInventory')}
                                 </Badge>
                               ) : (
-                                <span className="text-muted-foreground">Not linked</span>
+                                <span className="text-muted-foreground">{t('notLinked')}</span>
                               )}
                             </p>
                           </div>
@@ -398,7 +400,7 @@ export default function ImportItemsTracking() {
                             }}
                             disabled={!!item.productId}
                           >
-                            {item.productId ? 'Already Linked' : 'Link to Product'}
+                            {item.productId ? t('alreadyLinked') : t('linkToProduct')}
                           </Button>
                           <Link href={`/imports/orders/${item.importOrderId}`}>
                             <Button size="sm" variant="ghost">
@@ -418,15 +420,15 @@ export default function ImportItemsTracking() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Order #</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Cost</TableHead>
-                        <TableHead className="text-right">Total Cost</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Inventory</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('product')}</TableHead>
+                        <TableHead>{t('orderNumber')}</TableHead>
+                        <TableHead>{t('supplier')}</TableHead>
+                        <TableHead className="text-right">{t('quantity')}</TableHead>
+                        <TableHead className="text-right">{t('unitCost')}</TableHead>
+                        <TableHead className="text-right">{t('totalCost')}</TableHead>
+                        <TableHead>{t('status')}</TableHead>
+                        <TableHead>{t('inventory')}</TableHead>
+                        <TableHead className="text-right">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -466,7 +468,7 @@ export default function ImportItemsTracking() {
                             {item.productId ? (
                               <Badge variant="outline">
                                 <Link2 className="h-3 w-3 mr-1" />
-                                Linked
+                                {t('linkedToInventory')}
                               </Badge>
                             ) : (
                               <Button
@@ -478,7 +480,7 @@ export default function ImportItemsTracking() {
                                 }}
                               >
                                 <Plus className="h-4 w-4 mr-1" />
-                                Link
+                                {t('link')}
                               </Button>
                             )}
                           </TableCell>
@@ -516,9 +518,9 @@ export default function ImportItemsTracking() {
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Link to Inventory Product</DialogTitle>
+            <DialogTitle>{t('productLinking')}</DialogTitle>
             <DialogDescription>
-              Link this import item to an existing product or create a new one
+              {t('linkToExistingProduct')} {t('or')} {t('createNewProduct').toLowerCase()}
             </DialogDescription>
           </DialogHeader>
 
@@ -539,13 +541,13 @@ export default function ImportItemsTracking() {
                     checked={!createNewProduct}
                     onChange={() => setCreateNewProduct(false)}
                   />
-                  <Label htmlFor="existing">Link to existing product</Label>
+                  <Label htmlFor="existing">{t('linkToExistingProduct')}</Label>
                 </div>
 
                 {!createNewProduct && (
                   <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a product" />
+                      <SelectValue placeholder={t('selectProduct')} />
                     </SelectTrigger>
                     <SelectContent>
                       {products.map((product: any) => (
@@ -564,13 +566,13 @@ export default function ImportItemsTracking() {
                     checked={createNewProduct}
                     onChange={() => setCreateNewProduct(true)}
                   />
-                  <Label htmlFor="new">Create new product</Label>
+                  <Label htmlFor="new">{t('createNewProduct')}</Label>
                 </div>
 
                 {createNewProduct && (
                   <div className="space-y-3 pl-6">
                     <div>
-                      <Label className="text-xs">Product Name</Label>
+                      <Label className="text-xs">{t('productName')}</Label>
                       <Input
                         value={newProductData.name}
                         onChange={(e) => setNewProductData({...newProductData, name: e.target.value})}
@@ -578,23 +580,23 @@ export default function ImportItemsTracking() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">SKU</Label>
+                      <Label className="text-xs">{t('sku')}</Label>
                       <Input
                         value={newProductData.sku}
                         onChange={(e) => setNewProductData({...newProductData, sku: e.target.value})}
-                        placeholder={selectedItem.sku || 'Enter SKU'}
+                        placeholder={selectedItem.sku || t('enterSKU')}
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Category</Label>
+                      <Label className="text-xs">{t('category')}</Label>
                       <Input
                         value={newProductData.category}
                         onChange={(e) => setNewProductData({...newProductData, category: e.target.value})}
-                        placeholder="Enter category"
+                        placeholder={t('enterCategory')}
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Selling Price</Label>
+                      <Label className="text-xs">{t('sellingPrice')}</Label>
                       <Input
                         type="number"
                         value={newProductData.price}
@@ -612,7 +614,7 @@ export default function ImportItemsTracking() {
                   onClick={() => setLinkDialogOpen(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button
                   onClick={handleLinkProduct}
@@ -621,7 +623,7 @@ export default function ImportItemsTracking() {
                     createAndLinkMutation.isPending}
                   className="flex-1"
                 >
-                  {createNewProduct ? 'Create & Link' : 'Link Product'}
+                  {createNewProduct ? t('createAndLink') : t('linkProduct')}
                 </Button>
               </div>
             </div>

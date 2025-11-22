@@ -46,6 +46,7 @@ import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
+import { useTranslation } from 'react-i18next';
 import { 
   Dialog, 
   DialogContent, 
@@ -420,11 +421,11 @@ const ProductImage = memo(({
           {item.serviceId && (
             <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded p-2">
               <div className="flex items-center gap-1.5 mb-1">
-                <Badge className="bg-purple-600 text-white dark:bg-purple-700 text-xs">SERVICE</Badge>
-                <span className="text-xs font-medium text-purple-700 dark:text-purple-200">Pick last - No physical location</span>
+                <Badge className="bg-purple-600 text-white dark:bg-purple-700 text-xs">{t('service')}</Badge>
+                <span className="text-xs font-medium text-purple-700 dark:text-purple-200">{t('serviceItemNoLocation')}</span>
               </div>
               {item.notes && (
-                <p className="text-xs text-purple-900 font-medium mt-1">Note: {item.notes}</p>
+                <p className="text-xs text-purple-900 font-medium mt-1">{t('note')}: {item.notes}</p>
               )}
             </div>
           )}
@@ -441,7 +442,7 @@ const ProductImage = memo(({
         </div>
         
         <div className="flex justify-between items-center px-2">
-          <span className="text-sm font-medium text-gray-500">Click to minimize</span>
+          <span className="text-sm font-medium text-gray-500">{t('clickToMinimize')}</span>
           <Badge className="bg-gradient-to-r from-orange-50 dark:from-orange-900/300 to-red-500 text-white">
             {item.quantity}x
           </Badge>
@@ -654,8 +655,8 @@ const CartonCard = memo(({
                       
                       if (isGLS && newWeight && parseFloat(newWeight) > 40) {
                         toast({
-                          title: "Weight Limit Exceeded",
-                          description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                          title: t('weightLimitExceeded'),
+                          description: t('weightLimitExceededDesc'),
                           variant: "destructive"
                         });
                         return;
@@ -886,6 +887,8 @@ function UnifiedDocumentsList({
   onOrderFilePrinted: (fileId: string) => void;
   onGetDocumentCount?: (count: number, urls: string[]) => void;
 }) {
+  const { t } = useTranslation('orders');
+  
   // Fetch product documents
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
@@ -976,7 +979,7 @@ function UnifiedDocumentsList({
   if (isLoadingProductDocs || isLoadingOrderFiles) {
     return (
       <div className="text-sm text-gray-500 p-2 text-center">
-        Loading documents...
+        {t('loadingDocuments')}
       </div>
     );
   }
@@ -1039,7 +1042,7 @@ function UnifiedDocumentsList({
           data-testid={`${testId}-view`}
         >
           <Eye className="h-3.5 w-3.5 mr-1" />
-          View
+          {t('view')}
         </Button>
 
         {/* Print Button */}
@@ -1057,12 +1060,12 @@ function UnifiedDocumentsList({
           {isPrinted ? (
             <>
               <CheckCircle className="h-3.5 w-3.5 mr-1" />
-              Printed
+              {t('printed')}
             </>
           ) : (
             <>
               <Printer className="h-3.5 w-3.5 mr-1" />
-              Print
+              {t('print')}
             </>
           )}
         </Button>
@@ -1075,7 +1078,7 @@ function UnifiedDocumentsList({
       {/* Packing List */}
       <DocumentRow
         icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 'text-emerald-600'}`} />}
-        name="Packing List"
+        name={t('packingList')}
         isPrinted={printedDocuments.packingList}
         onPrint={onPackingListPrinted}
         onView={() => window.open(`/api/orders/${orderId}/packing-list.pdf`, '_blank')}
@@ -1150,6 +1153,7 @@ function ProductDocumentsSelector({
   printedFiles: Set<string>;
   onFilePrinted: (fileId: string) => void;
 }) {
+  const { t } = useTranslation('orders');
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
     [orderItems]
@@ -1182,7 +1186,7 @@ function ProductDocumentsSelector({
   if (isLoading) {
     return (
       <div className="text-sm text-gray-500 dark:text-gray-400 p-2 text-center" data-testid="loading-product-docs">
-        Loading documents...
+        {t('loadingDocuments')}
       </div>
     );
   }
@@ -1213,9 +1217,9 @@ function ProductDocumentsSelector({
       <div className="border border-blue-200 dark:border-blue-700 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/30/50 dark:bg-blue-950/30">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:text-blue-400" />
-          <div className="text-sm font-semibold text-blue-900 dark:text-blue-300">Files Sent</div>
+          <div className="text-sm font-semibold text-blue-900 dark:text-blue-300">{t('filesSent')}</div>
         </div>
-        <div className="text-xs font-medium text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-400 mb-2">Product Documents ({productFiles.length})</div>
+        <div className="text-xs font-medium text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-400 mb-2">{t('documentsCount', { count: productFiles.length })}</div>
         <div className="space-y-1.5">
           {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
@@ -1270,12 +1274,12 @@ function ProductDocumentsSelector({
                 {isPrinted ? (
                   <>
                     <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                    Printed
+                    {t('printed')}
                   </>
                 ) : (
                   <>
                     <Printer className="h-3.5 w-3.5 mr-1.5" />
-                    Print
+                    {t('print')}
                   </>
                 )}
               </Button>
@@ -1299,6 +1303,7 @@ function OrderFilesDisplay({
   printedFiles: Set<string>;
   onFilePrinted: (fileId: string) => void;
 }) {
+  const { t } = useTranslation('orders');
   const { data: orderFilesData, isLoading } = useQuery({
     queryKey: ['/api/orders', orderId, 'files'],
     queryFn: async () => {
@@ -1316,7 +1321,7 @@ function OrderFilesDisplay({
   if (isLoading) {
     return (
       <div className="text-sm text-gray-500 dark:text-gray-400 p-2 text-center" data-testid="loading-order-files">
-        Loading files...
+        {t('loadingFiles')}
       </div>
     );
   }
@@ -1326,9 +1331,9 @@ function OrderFilesDisplay({
   if (files.length === 0) {
     return (
       <div className="mt-3">
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Order Files</div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('orderFiles')}</div>
         <div className="text-sm text-gray-500 dark:text-gray-400 italic p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700" data-testid="no-order-files">
-          No files attached to this order
+          {t('noFilesAttachedToOrder')}
         </div>
       </div>
     );
@@ -1336,7 +1341,7 @@ function OrderFilesDisplay({
 
   return (
     <div className="space-y-2 mt-3">
-      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Order Files</div>
+      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('orderFiles')}</div>
       {files.map((file: any, index: number) => {
         const fileId = file.id || `file-${index}`;
         const isPrinted = printedFiles.has(fileId);
@@ -1393,12 +1398,12 @@ function OrderFilesDisplay({
                 {isPrinted ? (
                   <>
                     <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                    Printed
+                    {t('printed')}
                   </>
                 ) : (
                   <>
                     <Printer className="h-3.5 w-3.5 mr-1.5" />
-                    Print
+                    {t('print')}
                   </>
                 )}
               </Button>
@@ -1411,6 +1416,7 @@ function OrderFilesDisplay({
 }
 
 export default function PickPack() {
+  const { t } = useTranslation('orders');
   const { toast } = useToast();
   const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
@@ -6507,7 +6513,7 @@ export default function PickPack() {
                           <Input
                             ref={barcodeInputRef}
                             type="text"
-                            placeholder="Scan barcode to verify items..."
+                            placeholder={t('scanBarcodeToVerifyItems')}
                             value={barcodeInput || ""}
                             onChange={(e) => setBarcodeInput(e.target.value)}
                             onKeyPress={(e) => {

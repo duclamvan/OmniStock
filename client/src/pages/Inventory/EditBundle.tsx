@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/select';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import type { Product, ProductBundle } from '@shared/schema';
 
 interface ProductVariant {
@@ -271,6 +272,7 @@ export default function EditBundle() {
   const [, setLocation] = useLocation();
   const { id } = useParams() as { id: string };
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState<string[]>(['details', 'items', 'pricing']);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoadingVariants, setIsLoadingVariants] = useState<Record<string, boolean>>({});
@@ -767,9 +769,9 @@ export default function EditBundle() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Edit Bundle</h1>
+            <h1 className="text-3xl font-bold">{t('inventory:editBundle')}</h1>
             <p className="text-muted-foreground">
-              Update bundle configuration and pricing
+              {t('inventory:updateBundleConfigurationAndPricing')}
             </p>
           </div>
         </div>
@@ -778,7 +780,7 @@ export default function EditBundle() {
             variant="outline"
             onClick={() => setLocation('/inventory/bundles')}
           >
-            Cancel
+            {t('inventory:cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -787,12 +789,12 @@ export default function EditBundle() {
             {updateBundleMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                {t('inventory:updating')}...
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Update Bundle
+                {t('inventory:updateBundle')}
               </>
             )}
           </Button>
@@ -809,8 +811,8 @@ export default function EditBundle() {
                 <Package className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Bundle Details</h3>
-                <p className="text-xs text-slate-500">Name, description, SKU, and image</p>
+                <h3 className="font-semibold text-slate-900">{t('inventory:bundleDetails')}</h3>
+                <p className="text-xs text-slate-500">{t('inventory:nameDescriptionSkuAndImage')}</p>
               </div>
               {errors.name && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -819,7 +821,7 @@ export default function EditBundle() {
             <div className="space-y-4 pt-2">
               {/* Bundle Image Upload - First and Most Important */}
               <div>
-                <Label>Bundle Image (Optional)</Label>
+                <Label>{t('inventory:bundleImageOptional')}</Label>
                 <div className="mt-2">
                   {(imagePreview || existingImageUrl) ? (
                     <div className="relative w-48 h-48 rounded-lg border bg-slate-50 overflow-hidden group flex items-center justify-center">
@@ -878,8 +880,8 @@ export default function EditBundle() {
                       />
                       <div className="text-center">
                         <ImageIcon className="h-12 w-12 mx-auto text-slate-400 mb-2" />
-                        <p className="text-sm text-slate-600 font-medium">Upload Image</p>
-                        <p className="text-xs text-slate-500 mt-1">Click to browse</p>
+                        <p className="text-sm text-slate-600 font-medium">{t('inventory:uploadImage')}</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('inventory:clickToBrowse')}</p>
                       </div>
                     </label>
                   )}
@@ -888,7 +890,7 @@ export default function EditBundle() {
 
               <div>
                 <Label htmlFor="name">
-                  Bundle Name <span className="text-destructive">*</span>
+                  {t('inventory:bundleName')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -899,7 +901,7 @@ export default function EditBundle() {
                       setErrors(prev => ({ ...prev, name: '' }));
                     }
                   }}
-                  placeholder="e.g., Starter Beauty Kit"
+                  placeholder={t('inventory:bundleNamePlaceholder')}
                   className={errors.name ? 'border-destructive' : ''}
                 />
                 {errors.name && (
@@ -908,33 +910,33 @@ export default function EditBundle() {
               </div>
 
               <div>
-                <Label htmlFor="sku">SKU (Optional)</Label>
+                <Label htmlFor="sku">{t('inventory:skuOptional')}</Label>
                 <Input
                   id="sku"
                   value={formData.sku}
                   onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                  placeholder="e.g., BDL-001"
+                  placeholder={t('inventory:bundleSkuPlaceholderSimple')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('inventory:description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe what this bundle includes and its benefits"
+                  placeholder={t('inventory:bundleDescriptionPlaceholder')}
                   rows={4}
                 />
               </div>
 
               <div>
-                <Label htmlFor="notes">Internal Notes (Optional)</Label>
+                <Label htmlFor="notes">{t('inventory:internalNotesOptional')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notes for internal use only"
+                  placeholder={t('inventory:internalNotesPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -951,9 +953,9 @@ export default function EditBundle() {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">
-                  Bundle Products ({formData.items.length})
+                  {t('inventory:bundleProducts')} ({formData.items.length})
                 </h3>
-                <p className="text-xs text-slate-500">Select products and quantities to include</p>
+                <p className="text-xs text-slate-500">{t('inventory:selectProductsAndQuantities')}</p>
               </div>
               {errors.items && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -963,7 +965,7 @@ export default function EditBundle() {
               <div className="flex justify-end">
                 <Button onClick={handleAddItem} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Product
+                  {t('inventory:addProduct')}
                 </Button>
               </div>
               {errors.items && (
@@ -976,13 +978,13 @@ export default function EditBundle() {
               {formData.items.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                   <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No products added</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('inventory:noProductsAdded')}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Add products to create your bundle
+                    {t('inventory:addProductsToBundle')}
                   </p>
                   <Button onClick={handleAddItem}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add First Product
+                    {t('inventory:addFirstProduct')}
                   </Button>
                 </div>
               ) : (
@@ -995,7 +997,7 @@ export default function EditBundle() {
                             <div className="flex-1 space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <Label>Product</Label>
+                                  <Label>{t('inventory:product')}</Label>
                                   <div className="relative">
                                     <Input
                                       value={searchQueries[item.id] || item.productName || ''}
@@ -1008,7 +1010,7 @@ export default function EditBundle() {
                                         // Delay closing to allow click on dropdown
                                         setTimeout(() => setOpenPopovers(prev => ({ ...prev, [item.id]: false })), 200);
                                       }}
-                                      placeholder="Type to search products..."
+                                      placeholder={t('inventory:typeToSearchProducts')}
                                       className={errors[`item_${item.id}`] ? 'border-destructive' : ''}
                                       data-testid={`input-search-product-${index}`}
                                     />
@@ -1028,7 +1030,7 @@ export default function EditBundle() {
                                           if (filteredProducts.length === 0) {
                                             return (
                                               <div className="p-4 text-center text-sm text-muted-foreground">
-                                                No products found
+                                                {t('inventory:noProductsFound')}
                                               </div>
                                             );
                                           }
@@ -1068,7 +1070,7 @@ export default function EditBundle() {
                                 </div>
 
                                 <div>
-                                  <Label>Quantity</Label>
+                                  <Label>{t('inventory:quantity')}</Label>
                                   <Input
                                     type="number"
                                     min="1"
@@ -1086,7 +1088,7 @@ export default function EditBundle() {
                               {/* Variant Selector */}
                               {item.productId && variantsCache[item.productId]?.length > 0 && (
                                 <div>
-                                  <Label>Variants (Optional)</Label>
+                                  <Label>{t('inventory:variantsOptional')}</Label>
                                   <VariantSelector
                                     variants={variantsCache[item.productId]}
                                     selectedIds={item.variantIds || []}
@@ -1098,11 +1100,11 @@ export default function EditBundle() {
                               {/* Price Display */}
                               {item.productName && (
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span>Price: {item.priceCzk.toFixed(2)} CZK / {item.priceEur.toFixed(2)} EUR</span>
+                                  <span>{t('inventory:price')}: {item.priceCzk.toFixed(2)} CZK / {item.priceEur.toFixed(2)} EUR</span>
                                   {item.variantIds && item.variantIds.length > 0 && (
-                                    <span>× {item.variantIds.length} variants</span>
+                                    <span>× {item.variantIds.length} {t('inventory:variants')}</span>
                                   )}
-                                  <span>× {item.quantity} qty</span>
+                                  <span>× {item.quantity} {t('inventory:qty')}</span>
                                   <span className="font-medium text-foreground">
                                     = {(item.priceCzk * item.quantity * (item.variantIds?.length || 1)).toFixed(2)} CZK
                                   </span>
@@ -1130,7 +1132,7 @@ export default function EditBundle() {
                 <Card className="bg-muted/50">
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Component Value:</span>
+                      <span className="text-sm text-muted-foreground">{t('inventory:totalComponentValue')}:</span>
                       <div className="text-right">
                         <p className="font-semibold">{totals.totalCzk.toFixed(2)} CZK</p>
                         <p className="text-sm text-muted-foreground">{totals.totalEur.toFixed(2)} EUR</p>
@@ -1151,8 +1153,8 @@ export default function EditBundle() {
                 <DollarSign className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Bundle Pricing</h3>
-                <p className="text-xs text-slate-500">Configure how the bundle should be priced</p>
+                <h3 className="font-semibold text-slate-900">{t('inventory:bundlePricing')}</h3>
+                <p className="text-xs text-slate-500">{t('inventory:configureHowBundlePriced')}</p>
               </div>
               {(errors.priceCzk || errors.priceEur) && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -1160,7 +1162,7 @@ export default function EditBundle() {
           <AccordionContent className="px-4 pb-4">
             <div className="space-y-4 pt-2">
               <div>
-                <Label>Pricing Mode</Label>
+                <Label>{t('inventory:pricingMode')}</Label>
                 <Select
                   value={formData.pricingMode}
                   onValueChange={(value: any) => setFormData(prev => ({ ...prev, pricingMode: value }))}
@@ -1169,11 +1171,11 @@ export default function EditBundle() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage Discount</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount Discount</SelectItem>
-                    <SelectItem value="per_item">Per Item Discount</SelectItem>
-                    <SelectItem value="set_per_item">Set Price Per Item</SelectItem>
-                    <SelectItem value="manual">Manual Pricing</SelectItem>
+                    <SelectItem value="percentage">{t('inventory:percentageDiscount')}</SelectItem>
+                    <SelectItem value="fixed">{t('inventory:fixedAmountDiscount')}</SelectItem>
+                    <SelectItem value="per_item">{t('inventory:perItemDiscount')}</SelectItem>
+                    <SelectItem value="set_per_item">{t('inventory:setPricePerItem')}</SelectItem>
+                    <SelectItem value="manual">{t('inventory:manualPricing')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1181,7 +1183,7 @@ export default function EditBundle() {
               {/* Dynamic pricing inputs based on mode */}
               {formData.pricingMode === 'percentage' && (
                 <div>
-                  <Label>Discount Percentage</Label>
+                  <Label>{t('inventory:discountPercentage')}</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
@@ -1198,7 +1200,7 @@ export default function EditBundle() {
               {formData.pricingMode === 'fixed' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Discount Amount (CZK)</Label>
+                    <Label>{t('inventory:discountAmountCzk')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1207,7 +1209,7 @@ export default function EditBundle() {
                     />
                   </div>
                   <div>
-                    <Label>Discount Amount (EUR)</Label>
+                    <Label>{t('inventory:discountAmountEur')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1221,7 +1223,7 @@ export default function EditBundle() {
               {formData.pricingMode === 'per_item' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Discount Per Item (CZK)</Label>
+                    <Label>{t('inventory:discountPerItemCzk')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1230,7 +1232,7 @@ export default function EditBundle() {
                     />
                   </div>
                   <div>
-                    <Label>Discount Per Item (EUR)</Label>
+                    <Label>{t('inventory:discountPerItemEur')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1244,7 +1246,7 @@ export default function EditBundle() {
               {formData.pricingMode === 'set_per_item' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Price Per Item (CZK)</Label>
+                    <Label>{t('inventory:pricePerItemCzk')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1253,7 +1255,7 @@ export default function EditBundle() {
                     />
                   </div>
                   <div>
-                    <Label>Price Per Item (EUR)</Label>
+                    <Label>{t('inventory:pricePerItemEur')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1267,7 +1269,7 @@ export default function EditBundle() {
               {formData.pricingMode === 'manual' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Bundle Price (CZK)</Label>
+                    <Label>{t('inventory:bundlePriceCzk')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1285,7 +1287,7 @@ export default function EditBundle() {
                     )}
                   </div>
                   <div>
-                    <Label>Bundle Price (EUR)</Label>
+                    <Label>{t('inventory:bundlePriceEur')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -1308,7 +1310,7 @@ export default function EditBundle() {
               {/* Price Preview */}
               <Separator />
               <div className="space-y-4">
-                <h4 className="font-medium">Price Preview</h4>
+                <h4 className="font-medium">{t('inventory:pricePreview')}</h4>
                 {(() => {
                   const discounted = calculateDiscountedPrice(totals.totalCzk, totals.totalEur);
                   const savingsCzk = totals.totalCzk - discounted.czk;
@@ -1320,16 +1322,16 @@ export default function EditBundle() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Component Total:</span>
+                            <span className="text-muted-foreground">{t('inventory:componentTotal')}:</span>
                             <span>{totals.totalCzk.toFixed(2)} CZK</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Bundle Price:</span>
+                            <span className="text-muted-foreground">{t('inventory:bundlePrice')}:</span>
                             <span className="font-semibold">{discounted.czk.toFixed(2)} CZK</span>
                           </div>
                           {savingsCzk > 0 && (
                             <div className="flex justify-between text-sm text-green-600">
-                              <span>Customer Saves:</span>
+                              <span>{t('inventory:customerSaves')}:</span>
                               <span>{savingsCzk.toFixed(2)} CZK</span>
                             </div>
                           )}
@@ -1337,16 +1339,16 @@ export default function EditBundle() {
 
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Component Total:</span>
+                            <span className="text-muted-foreground">{t('inventory:componentTotal')}:</span>
                             <span>{totals.totalEur.toFixed(2)} EUR</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Bundle Price:</span>
+                            <span className="text-muted-foreground">{t('inventory:bundlePrice')}:</span>
                             <span className="font-semibold">{discounted.eur.toFixed(2)} EUR</span>
                           </div>
                           {savingsEur > 0 && (
                             <div className="flex justify-between text-sm text-green-600">
-                              <span>Customer Saves:</span>
+                              <span>{t('inventory:customerSaves')}:</span>
                               <span>{savingsEur.toFixed(2)} EUR</span>
                             </div>
                           )}
@@ -1357,7 +1359,7 @@ export default function EditBundle() {
                         <Alert>
                           <Check className="h-4 w-4" />
                           <AlertDescription>
-                            Customers save {savingsPercent.toFixed(1)}% by purchasing this bundle
+                            {t('inventory:customersSaveByPurchasingBundle', { percentage: savingsPercent.toFixed(1) })}
                           </AlertDescription>
                         </Alert>
                       )}

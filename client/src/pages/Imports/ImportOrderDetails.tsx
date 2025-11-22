@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ interface ImportOrderDetails {
 }
 
 export default function ImportOrderDetails() {
+  const { t } = useTranslation('imports');
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
@@ -145,7 +147,7 @@ export default function ImportOrderDetails() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Activity className="h-8 w-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Loading order details...</p>
+          <p className="text-sm text-muted-foreground">{t('loadingOrderDetails')}</p>
         </div>
       </div>
     );
@@ -172,7 +174,7 @@ export default function ImportOrderDetails() {
               className="hidden md:flex"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Kanban
+              {t('backToKanban')}
             </Button>
             <div>
               <div className="flex items-center gap-2">
@@ -185,22 +187,22 @@ export default function ImportOrderDetails() {
                 </Badge>
               </div>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Last updated {formatDate(order.lastUpdated)}
+                {t('lastUpdated')} {formatDate(order.lastUpdated)}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Export</span>
+              <span className="hidden md:inline">{t('export')}</span>
             </Button>
             <Button variant="outline" size="sm">
               <Printer className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Print</span>
+              <span className="hidden md:inline">{t('print')}</span>
             </Button>
             <Button size="sm">
               <Edit className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Edit Order</span>
+              <span className="hidden md:inline">{t('editOrder')}</span>
             </Button>
           </div>
         </div>
@@ -211,13 +213,13 @@ export default function ImportOrderDetails() {
         <CardContent className="p-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Order Progress</span>
+              <span className="text-muted-foreground">{t('orderProgress')}</span>
               <span className="font-medium">{order.progress}%</span>
             </div>
             <Progress value={order.progress} className="h-2" />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Created {formatDate(order.createdDate)}</span>
-              <span>ETA {formatDate(order.estimatedArrival)}</span>
+              <span>{t('created')} {formatDate(order.createdDate)}</span>
+              <span>{t('eta')} {formatDate(order.estimatedArrival)}</span>
             </div>
           </div>
         </CardContent>
@@ -229,7 +231,7 @@ export default function ImportOrderDetails() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total Items</span>
+              <span className="text-sm text-muted-foreground">{t('totalItems')}</span>
             </div>
             <p className="text-2xl font-bold">{order.totalItems.toLocaleString()}</p>
           </CardContent>
@@ -238,7 +240,7 @@ export default function ImportOrderDetails() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Order Value</span>
+              <span className="text-sm text-muted-foreground">{t('orderValue')}</span>
             </div>
             <p className="text-2xl font-bold">{formatCurrency(order.totalValue, order.currency)}</p>
           </CardContent>
@@ -247,7 +249,7 @@ export default function ImportOrderDetails() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Truck className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Shipping Cost</span>
+              <span className="text-sm text-muted-foreground">{t('shippingCost')}</span>
             </div>
             <p className="text-2xl font-bold">{formatCurrency(order.shippingCost || 0, order.currency)}</p>
           </CardContent>
@@ -256,7 +258,7 @@ export default function ImportOrderDetails() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total Landed</span>
+              <span className="text-sm text-muted-foreground">{t('totalLanded')}</span>
             </div>
             <p className="text-2xl font-bold">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</p>
           </CardContent>
@@ -266,68 +268,68 @@ export default function ImportOrderDetails() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-4 md:mx-0">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="items">Items ({order.items.length})</TabsTrigger>
-          <TabsTrigger value="costs">Costs</TabsTrigger>
+          <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+          <TabsTrigger value="items">{t('items')} ({order.items.length})</TabsTrigger>
+          <TabsTrigger value="costs">{t('costs')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Order Information</CardTitle>
+              <CardTitle className="text-base">{t('orderInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Supplier:</span>
+                    <span className="text-muted-foreground">{t('supplier')}:</span>
                     <span className="font-medium">
                       {getCountryFlag(order.supplierCountry)} {order.supplier}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Destination:</span>
+                    <span className="text-muted-foreground">{t('destination')}:</span>
                     <span className="font-medium">{order.destination}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Truck className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Shipping:</span>
-                    <span className="font-medium">{order.shippingMethod || 'Not specified'}</span>
+                    <span className="text-muted-foreground">{t('shipping')}:</span>
+                    <span className="font-medium">{order.shippingMethod || t('notSpecified')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Hash className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tracking:</span>
-                    <span className="font-medium">{order.trackingNumber || 'Not available'}</span>
+                    <span className="text-muted-foreground">{t('tracking')}:</span>
+                    <span className="font-medium">{order.trackingNumber || t('notAvailable')}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Created:</span>
+                    <span className="text-muted-foreground">{t('created')}:</span>
                     <span className="font-medium">{formatDate(order.createdDate)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">ETA:</span>
+                    <span className="text-muted-foreground">{t('eta')}:</span>
                     <span className="font-medium">{formatDate(order.estimatedArrival)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Assignee:</span>
-                    <span className="font-medium">{order.assignee || 'Unassigned'}</span>
+                    <span className="text-muted-foreground">{t('assignee')}:</span>
+                    <span className="font-medium">{order.assignee || t('unassigned')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Documents:</span>
-                    <span className="font-medium">{order.documents} files</span>
+                    <span className="text-muted-foreground">{t('documents')}:</span>
+                    <span className="font-medium">{order.documents} {t('files')}</span>
                   </div>
                 </div>
               </div>
               {order.tags.length > 0 && (
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">Tags:</span>
+                  <span className="text-sm text-muted-foreground">{t('tags')}:</span>
                   <div className="flex flex-wrap gap-1">
                     {order.tags.map((tag, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
@@ -344,7 +346,7 @@ export default function ImportOrderDetails() {
         <TabsContent value="items" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Order Items</CardTitle>
+              <CardTitle className="text-base">{t('orderItems')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -352,10 +354,10 @@ export default function ImportOrderDetails() {
                   <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
+                      <p className="text-xs text-muted-foreground">SKU: {item.sku || t('notAvailable')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-sm">{item.quantity} units</p>
+                      <p className="font-medium text-sm">{item.quantity} {t('units')}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatCurrency(item.totalPrice || item.quantity * (item.unitPrice || 0), order.currency)}
                       </p>
@@ -370,28 +372,28 @@ export default function ImportOrderDetails() {
         <TabsContent value="costs" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Cost Breakdown</CardTitle>
+              <CardTitle className="text-base">{t('costBreakdown')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Product Value</span>
+                  <span className="text-sm text-muted-foreground">{t('productValue')}</span>
                   <span className="font-medium">{formatCurrency(order.totalValue, order.currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Shipping Cost</span>
+                  <span className="text-sm text-muted-foreground">{t('shippingCost')}</span>
                   <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Customs Duty</span>
+                  <span className="text-sm text-muted-foreground">{t('customsDuty')}</span>
                   <span className="font-medium">{formatCurrency(order.customsDuty || 0, order.currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Taxes</span>
+                  <span className="text-sm text-muted-foreground">{t('taxes')}</span>
                   <span className="font-medium">{formatCurrency(order.taxes || 0, order.currency)}</span>
                 </div>
                 <div className="flex justify-between pt-3 border-t">
-                  <span className="font-medium">Total Landed Cost</span>
+                  <span className="font-medium">{t('totalLandedCost')}</span>
                   <span className="font-bold text-lg">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</span>
                 </div>
               </div>
