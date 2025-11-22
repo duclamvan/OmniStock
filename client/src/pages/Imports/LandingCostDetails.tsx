@@ -1,9 +1,13 @@
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, 
   Package, 
@@ -11,10 +15,22 @@ import {
   Calendar,
   MapPin,
   Hash,
-  Box
+  Box,
+  DollarSign,
+  Save,
+  TrendingUp,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import CostsPanel from "@/components/receiving/CostsPanel";
+import { convertCurrency, formatCurrency } from "@/lib/currencyUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 interface Shipment {
   id: number;
@@ -40,15 +56,165 @@ interface Shipment {
   notes?: string;
 }
 
+interface LandingCostItem {
+  purchaseItemId: number;
+  sku: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  landingCostPerUnit: number;
+  totalAllocated: number;
+  freightAllocated: number;
+  dutyAllocated: number;
+  brokerageAllocated: number;
+  insuranceAllocated: number;
+  packagingAllocated: number;
+  otherAllocated: number;
+}
+
+interface LandingCostPreview {
+  shipmentId: number;
+  items: LandingCostItem[];
+  baseCurrency: string;
+  totalCosts: {
+    freight: number;
+    duty: number;
+    brokerage: number;
+    insurance: number;
+    packaging: number;
+    other: number;
+    total: number;
+  };
+}
+
+interface Product {
+  id: number;
+  sku: string;
+  name: string;
+  price: string;
+  purchasePrice: string;
+}
+
+interface PriceUpdate {
+  productId: number;
+  sku: string;
+  priceEUR: number;
+  priceCZK: number;
+}
+
 export default function LandingCostDetails() {
   const { t } = useTranslation('imports');
   const { id } = useParams();
+  const { toast } = useToast();
+  const [priceUpdates, setPriceUpdates] = useState<Record<string, PriceUpdate>>({});
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery<Shipment>({
     queryKey: [`/api/imports/shipments/${id}`],
     enabled: !!id
   });
+
+  // Fetch landing cost preview
+  const { data: landingCostPreview, isLoading: isLoadingPreview } = useQuery<LandingCostPreview>({
+    queryKey: [`/api/imports/shipments/${id}/landing-cost-preview`],
+    enabled: !!id
+  });
+
+  // Fetch all products to auto-fill prices
+  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    enabled: !!id
+  });
+
+  // Create a map of SKU -> Product for quick lookup
+  const productsBySKU = useMemo(() => {
+    if (!products) return {};
+    return products.reduce((acc, product) => {
+      acc[product.sku] = product;
+      return acc;
+    }, {} as Record<string, Product>);
+  }, [products]);
+
+  // Save prices mutation
+  const savePricesMutation = useMutation({
+    mutationFn: async (updates: PriceUpdate[]) => {
+      const promises = updates.map(update => {
+        const product = productsBySKU[update.sku];
+        if (!product) return Promise.resolve();
+        
+        return fetch(`/api/products/${product.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            price: update.priceEUR.toString()
+          })
+        });
+      });
+      
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      setPriceUpdates({});
+      toast({
+        title: "Prices Updated",
+        description: "Selling prices have been successfully saved."
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving prices:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save prices. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Handle price change
+  const handlePriceChange = (sku: string, productId: number, currency: 'EUR' | 'CZK', value: string) => {
+    const numValue = parseFloat(value) || 0;
+    
+    setPriceUpdates(prev => {
+      const existing = prev[sku] || { productId, sku, priceEUR: 0, priceCZK: 0 };
+      
+      if (currency === 'EUR') {
+        return {
+          ...prev,
+          [sku]: {
+            ...existing,
+            priceEUR: numValue,
+            priceCZK: convertCurrency(numValue, 'EUR', 'CZK')
+          }
+        };
+      } else {
+        return {
+          ...prev,
+          [sku]: {
+            ...existing,
+            priceCZK: numValue,
+            priceEUR: convertCurrency(numValue, 'CZK', 'EUR')
+          }
+        };
+      }
+    });
+  };
+
+  // Handle save prices
+  const handleSavePrices = () => {
+    const updates = Object.values(priceUpdates);
+    if (updates.length === 0) {
+      toast({
+        title: "No Changes",
+        description: "No price changes to save.",
+        variant: "default"
+      });
+      return;
+    }
+    savePricesMutation.mutate(updates);
+  };
 
   if (isLoading || !shipment) {
     return (
@@ -168,41 +334,221 @@ export default function LandingCostDetails() {
         </div>
       </div>
 
-      {/* Items Summary */}
-      {shipment.items && shipment.items.length > 0 && (
+      {/* Landed Cost Per Item with Selling Prices */}
+      {landingCostPreview && landingCostPreview.items && landingCostPreview.items.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              {t('shipmentItems')} ({shipment.itemCount})
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {t('productsIncludedInShipment')}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  {t('landedCostPerItem')} ({landingCostPreview.items.length})
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  View landed costs and set selling prices for each product
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSavePrices}
+                disabled={Object.keys(priceUpdates).length === 0 || savePricesMutation.isPending}
+                data-testid="button-save-prices"
+              >
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+                {savePricesMutation.isPending ? 'Saving...' : 'Save Prices'}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {shipment.items.map((item: any, index: number) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{item.name || item.productName || t('unknownProduct')}</p>
-                    {item.sku && (
-                      <p className="text-xs text-muted-foreground">{t('sku')}: {item.sku}</p>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0 ml-4">
-                    <p className="font-semibold">{t('qty')}: {item.quantity || 0}</p>
-                    {item.unitPrice && (
-                      <p className="text-xs text-muted-foreground">
-                        ${parseFloat(item.unitPrice).toFixed(2)} / {t('unit')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+            {isLoadingPreview || isLoadingProducts ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {landingCostPreview.items.map((item, index) => {
+                  const product = productsBySKU[item.sku];
+                  const currentPriceEUR = product ? parseFloat(product.price || '0') : 0;
+                  const currentPriceCZK = convertCurrency(currentPriceEUR, 'EUR', 'CZK');
+                  
+                  const displayPriceEUR = priceUpdates[item.sku]?.priceEUR ?? currentPriceEUR;
+                  const displayPriceCZK = priceUpdates[item.sku]?.priceCZK ?? currentPriceCZK;
+                  
+                  const landingCostCZK = convertCurrency(item.landingCostPerUnit, 'EUR', 'CZK');
+                  const purchasePriceCZK = convertCurrency(item.unitPrice, 'EUR', 'CZK');
+
+                  return (
+                    <div 
+                      key={index}
+                      className="border rounded-lg p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950"
+                      data-testid={`item-${item.sku}`}
+                    >
+                      {/* Product Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm">{item.name}</h4>
+                          <div className="flex items-center gap-3 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              SKU: {item.sku}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              Qty: <strong>{item.quantity}</strong>
+                            </span>
+                            {!product && (
+                              <Badge variant="secondary" className="text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Not in inventory
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cost Breakdown Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                        {/* Purchase Price */}
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2">
+                          <Label className="text-xs text-muted-foreground">Purchase Price</Label>
+                          <div className="mt-1">
+                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                              {formatCurrency(item.unitPrice, 'EUR')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(purchasePriceCZK, 'CZK')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Landed Cost EUR */}
+                        <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2">
+                          <Label className="text-xs text-muted-foreground">Landed Cost (EUR)</Label>
+                          <div className="mt-1">
+                            <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                              {formatCurrency(item.landingCostPerUnit, 'EUR')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              +{formatCurrency(item.totalAllocated / item.quantity, 'EUR')} costs
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Landed Cost CZK */}
+                        <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2">
+                          <Label className="text-xs text-muted-foreground">Landed Cost (CZK)</Label>
+                          <div className="mt-1">
+                            <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                              {formatCurrency(landingCostCZK, 'CZK')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              @25 CZK/EUR
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Margin Indicator */}
+                        <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
+                          <Label className="text-xs text-muted-foreground">
+                            {displayPriceEUR > 0 ? 'Profit Margin' : 'Set Price'}
+                          </Label>
+                          <div className="mt-1">
+                            {displayPriceEUR > 0 ? (
+                              <>
+                                <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                                  {((displayPriceEUR - item.landingCostPerUnit) / displayPriceEUR * 100).toFixed(1)}%
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  +{formatCurrency(displayPriceEUR - item.landingCostPerUnit, 'EUR')}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-xs text-amber-600 dark:text-amber-400">
+                                No price set
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Selling Price Inputs */}
+                      <div className="border-t pt-3">
+                        <Label className="text-xs font-semibold mb-2 block">
+                          <DollarSign className="h-3 w-3 inline mr-1" />
+                          Set Selling Price
+                        </Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* EUR Price Input */}
+                          <div>
+                            <Label htmlFor={`price-eur-${item.sku}`} className="text-xs text-muted-foreground">
+                              Selling Price (EUR)
+                            </Label>
+                            <Input
+                              id={`price-eur-${item.sku}`}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={displayPriceEUR}
+                              onChange={(e) => handlePriceChange(item.sku, product?.id || 0, 'EUR', e.target.value)}
+                              className="mt-1"
+                              placeholder="0.00"
+                              data-testid={`input-price-eur-${item.sku}`}
+                            />
+                          </div>
+
+                          {/* CZK Price Input */}
+                          <div>
+                            <Label htmlFor={`price-czk-${item.sku}`} className="text-xs text-muted-foreground">
+                              Selling Price (CZK)
+                            </Label>
+                            <Input
+                              id={`price-czk-${item.sku}`}
+                              type="number"
+                              step="1"
+                              min="0"
+                              value={displayPriceCZK.toFixed(0)}
+                              onChange={(e) => handlePriceChange(item.sku, product?.id || 0, 'CZK', e.target.value)}
+                              className="mt-1"
+                              placeholder="0"
+                              data-testid={`input-price-czk-${item.sku}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Info Alert */}
+            {landingCostPreview && landingCostPreview.items.length > 0 && (
+              <Alert className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Pricing Information</AlertTitle>
+                <AlertDescription className="text-xs">
+                  Landed cost includes purchase price plus allocated freight, duty, customs, insurance, and other costs.
+                  Set selling prices above to update product prices in your inventory.
+                  {Object.keys(priceUpdates).length > 0 && (
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {' '}({Object.keys(priceUpdates).length} unsaved changes)
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Show loading state if preview is still loading */}
+      {isLoadingPreview && !landingCostPreview && (
+        <Card className="mb-4">
+          <CardContent className="py-8">
+            <div className="text-center">
+              <Skeleton className="h-32 w-full mb-3" />
+              <Skeleton className="h-32 w-full mb-3" />
+              <Skeleton className="h-32 w-full" />
             </div>
           </CardContent>
         </Card>
