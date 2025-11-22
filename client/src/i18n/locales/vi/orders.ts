@@ -716,7 +716,6 @@ const orders = {
   noPreOrdersMatchFilters: 'Không có đơn đặt trước nào phù hợp với bộ lọc',
   noPreOrdersYetClickAdd: 'Chưa có đơn đặt trước. Nhấn "Thêm đơn đặt trước" để tạo mới.',
   itemsOrdered: 'Sản phẩm đã đặt',
-  item: 'sản phẩm',
   notSet: 'Chưa đặt',
   
 } as const;
