@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, MoreHorizontal, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/currencyUtils";
 import {
@@ -45,6 +46,7 @@ interface ProductVariantsProps {
 
 export default function ProductVariants({ productId }: ProductVariantsProps) {
   const { toast } = useToast();
+  const { t } = useTranslation('common');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [seriesInput, setSeriesInput] = useState("");
@@ -74,8 +76,8 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
-        title: "Success",
-        description: "Product variant created successfully",
+        title: t('common:success'),
+        description: t('common:variantCreatedSuccessfully'),
       });
       setIsAddDialogOpen(false);
       setNewVariant({
@@ -89,8 +91,8 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create product variant",
+        title: t('common:error'),
+        description: t('common:failedToCreateVariant'),
         variant: "destructive",
       });
     },
@@ -104,14 +106,14 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
-        title: "Success",
-        description: "Product variant updated successfully",
+        title: t('common:success'),
+        description: t('common:variantUpdatedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update product variant",
+        title: t('common:error'),
+        description: t('common:failedToUpdateVariant'),
         variant: "destructive",
       });
     },
@@ -125,14 +127,14 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
-        title: "Success",
-        description: "Product variant deleted successfully",
+        title: t('common:success'),
+        description: t('common:variantDeletedSuccessfully'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete product variant",
+        title: t('common:error'),
+        description: t('common:failedToDeleteVariant'),
         variant: "destructive",
       });
     },
@@ -162,14 +164,14 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
       
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedVariants.length} product variants`,
+        title: t('common:success'),
+        description: t('common:deletedVariants', { count: selectedVariants.length }),
       });
       setSelectedVariants([]);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete selected variants",
+        title: t('common:error'),
+        description: t('common:failedToDeleteVariants'),
         variant: "destructive",
       });
     }
@@ -185,8 +187,8 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     
     if (!seriesMatch) {
       toast({
-        title: "Invalid Format",
-        description: 'Please use format like "Gel Polish <1-100>"',
+        title: t('common:invalidFormat'),
+        description: t('common:seriesFormatExample'),
         variant: "destructive",
       });
       return;
@@ -198,8 +200,8 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
 
     if (start > end || end - start > 1000) {
       toast({
-        title: "Invalid Range",
-        description: "Range must be valid and not exceed 1000 items",
+        title: t('common:invalidRange'),
+        description: t('common:rangeMustBeValid'),
         variant: "destructive",
       });
       return;
@@ -225,28 +227,28 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
 
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
-        title: "Success",
-        description: `Created ${variants.length} product variants`,
+        title: t('common:success'),
+        description: t('common:createdVariants', { count: variants.length }),
       });
       setSeriesInput("");
       setIsAddDialogOpen(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create series",
+        title: t('common:error'),
+        description: t('common:failedToCreateSeries'),
         variant: "destructive",
       });
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading variants...</div>;
+    return <div className="text-center py-4">{t('common:loadingVariants')}</div>;
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Product Variants</CardTitle>
+        <CardTitle>{t('common:productVariants')}</CardTitle>
         <div className="flex gap-2">
           {selectedVariants.length > 0 && (
             <Button
@@ -255,28 +257,28 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
               onClick={handleDeleteSelected}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete Selected ({selectedVariants.length})
+              {t('common:deleteSelected')} ({selectedVariants.length})
             </Button>
           )}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Variant
+                {t('common:addVariant')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Add Product Variants</DialogTitle>
+                <DialogTitle>{t('common:addProductVariants')}</DialogTitle>
                 <DialogDescription>
-                  Add a single variant or create a series of variants
+                  {t('common:addVariantOrSeries')}
                 </DialogDescription>
               </DialogHeader>
               
               {/* Series Creation Section */}
               <div className="space-y-4 border-b pb-4">
                 <div className="space-y-2">
-                  <Label htmlFor="series-input">Create Series</Label>
+                  <Label htmlFor="series-input">{t('common:createSeries')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="series-input"
@@ -290,7 +292,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                       disabled={!seriesInput}
                       type="button"
                     >
-                      Add Series
+                      {t('common:addSeries')}
                     </Button>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -301,10 +303,10 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
 
               {/* Single Variant Section */}
               <div className="space-y-4 pt-4">
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Or add a single variant:</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('common:orAddSingleVariant')}</div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="variant-name">Variant Name</Label>
+                    <Label htmlFor="variant-name">{t('common:variantName')}</Label>
                     <Input
                       id="variant-name"
                       value={newVariant.name}
@@ -315,7 +317,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="variant-barcode">Barcode</Label>
+                    <Label htmlFor="variant-barcode">{t('common:barcode')}</Label>
                     <Input
                       id="variant-barcode"
                       value={newVariant.barcode}
@@ -327,7 +329,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="variant-quantity">Quantity</Label>
+                  <Label htmlFor="variant-quantity">{t('common:quantity')}</Label>
                   <Input
                     id="variant-quantity"
                     type="number"
@@ -340,7 +342,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="variant-import-usd">Import Cost (USD)</Label>
+                    <Label htmlFor="variant-import-usd">{t('common:importCostUSD')}</Label>
                     <Input
                       id="variant-import-usd"
                       type="number"
@@ -353,7 +355,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="variant-import-czk">Import Cost (CZK)</Label>
+                    <Label htmlFor="variant-import-czk">{t('common:importCostCZK')}</Label>
                     <Input
                       id="variant-import-czk"
                       type="number"
@@ -366,7 +368,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="variant-import-eur">Import Cost (EUR)</Label>
+                    <Label htmlFor="variant-import-eur">{t('common:importCostEUR')}</Label>
                     <Input
                       id="variant-import-eur"
                       type="number"
@@ -386,7 +388,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                   onClick={handleCreateVariant}
                   disabled={!newVariant.name}
                 >
-                  Add Variant
+                  {t('common:addVariant')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -396,7 +398,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
       <CardContent>
         {variants.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p>No variants yet. Click "Add Variant" to create one.</p>
+            <p>{t('common:noVariantsYet')}</p>
           </div>
         ) : (
           <Table>
@@ -408,12 +410,12 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                     onCheckedChange={handleToggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Barcode</TableHead>
-                <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Import Cost (USD)</TableHead>
-                <TableHead className="text-right">Import Cost (CZK)</TableHead>
-                <TableHead className="text-right">Import Cost (EUR)</TableHead>
+                <TableHead>{t('common:productName')}</TableHead>
+                <TableHead>{t('common:barcode')}</TableHead>
+                <TableHead className="text-right">{t('common:quantity')}</TableHead>
+                <TableHead className="text-right">{t('common:importCostUSD')}</TableHead>
+                <TableHead className="text-right">{t('common:importCostCZK')}</TableHead>
+                <TableHead className="text-right">{t('common:importCostEUR')}</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -466,7 +468,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
+                          {t('common:delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

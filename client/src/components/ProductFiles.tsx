@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -135,6 +136,7 @@ function decodeFileName(fileName: string): string {
 }
 
 export default function ProductFiles({ productId }: ProductFilesProps) {
+  const { t } = useTranslation(['common']);
   const { toast } = useToast();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<ProductFile | null>(null);
@@ -187,8 +189,8 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
       toast({
-        title: 'Success',
-        description: 'File uploaded successfully',
+        title: t('common:success'),
+        description: t('common:uploadSuccess'),
       });
       setIsUploadOpen(false);
       setUploadData({
@@ -200,7 +202,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('common:error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -215,8 +217,8 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
       toast({
-        title: 'Success',
-        description: 'File updated successfully',
+        title: t('common:success'),
+        description: t('common:updateSuccess'),
       });
       setEditingFile(null);
       setIsUploadOpen(false);
@@ -229,7 +231,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('common:error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -244,13 +246,13 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
       toast({
-        title: 'Success',
-        description: 'File deleted successfully',
+        title: t('common:success'),
+        description: t('common:deleteSuccess', { item: 'file', count: 1 }),
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: t('common:error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -347,8 +349,8 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Product Documents</CardTitle>
-          <CardDescription>Manage product documentation and certificates</CardDescription>
+          <CardTitle>{t('common:productDocuments')}</CardTitle>
+          <CardDescription>{t('common:manageDocumentation')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -367,32 +369,32 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>
-              Product Documents 
+              {t('common:productDocuments')}
               {files.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {files.length} {files.length === 1 ? 'file' : 'files'}
+                  {files.length} {files.length === 1 ? t('common:file') : t('common:files')}
                 </Badge>
               )}
             </CardTitle>
-            <CardDescription>Manage product documentation and certificates</CardDescription>
+            <CardDescription>{t('common:manageDocumentation')}</CardDescription>
           </div>
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
               <Button type="button" data-testid="button-upload-document">
                 <Plus className="h-4 w-4 mr-2" />
-                Upload Document
+                {t('common:upload')} {t('common:document')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>{editingFile ? 'Edit Document' : 'Upload Product Document'}</DialogTitle>
+                <DialogTitle>{editingFile ? `${t('common:edit')} ${t('common:document')}` : `${t('common:upload')} ${t('common:document')}`}</DialogTitle>
                 <DialogDescription>
-                  {editingFile ? 'Update document metadata' : 'Add a new document or certificate for this product'}
+                  {editingFile ? t('common:updateDocumentMetadata') : t('common:addNewDocument')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fileType">Document Type</Label>
+                  <Label htmlFor="fileType">{t('common:documentType')}</Label>
                   <Select
                     value={uploadData.fileType}
                     onValueChange={(value) => setUploadData(prev => ({ ...prev, fileType: value }))}
@@ -417,24 +419,24 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
+                  <Label htmlFor="description">{t('common:description')} ({t('common:optional')})</Label>
                   <Input
                     id="description"
                     data-testid="input-description"
                     value={uploadData.description}
                     onChange={(e) => setUploadData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Enter a description for this document"
+                    placeholder={t('common:enterDescription')}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="language">Language (optional)</Label>
+                  <Label htmlFor="language">{t('common:language')} ({t('common:optional')})</Label>
                   <Select
                     value={uploadData.language}
                     onValueChange={(value) => setUploadData(prev => ({ ...prev, language: value }))}
                   >
                     <SelectTrigger data-testid="select-language">
-                      <SelectValue placeholder="Select language" />
+                      <SelectValue placeholder={t('common:selectLanguage')} />
                     </SelectTrigger>
                     <SelectContent>
                       {LANGUAGES.map(lang => (
@@ -451,7 +453,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
 
                 {!editingFile && (
                   <div className="space-y-2">
-                    <Label>File</Label>
+                    <Label>{t('common:file')}</Label>
                     <div
                       className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                         isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
@@ -482,7 +484,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                       <>
                         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground mb-2">
-                          Drag and drop a file here, or click to browse
+                          {t('common:dragDropFile')}
                         </p>
                         <Input
                           type="file"
@@ -494,11 +496,11 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                         />
                         <label htmlFor="file-upload">
                           <Button variant="secondary" size="sm" asChild>
-                            <span>Choose File</span>
+                            <span>{t('common:chooseFile')}</span>
                           </Button>
                         </label>
                         <p className="text-xs text-muted-foreground mt-2">
-                          PDF, DOC, DOCX, JPG, PNG (max 10MB)
+                          {t('common:fileTypesAllowed')}
                         </p>
                       </>
                       )}
@@ -508,7 +510,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                 
                 {editingFile && (
                   <div className="space-y-2">
-                    <Label>Current File</Label>
+                    <Label>{t('common:currentFile')}</Label>
                     <div className="flex items-center p-3 bg-muted rounded-lg">
                       <FileText className="h-4 w-4 mr-2" />
                       <span className="text-sm flex-1">{editingFile.fileName}</span>
@@ -517,7 +519,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Note: File cannot be changed. Upload a new document to replace it.
+                      {t('common:fileCannotBeChanged')}
                     </p>
                   </div>
                 )}
@@ -529,7 +531,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                   onClick={handleCloseDialog}
                   disabled={uploadMutation.isPending || updateMutation.isPending}
                 >
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -538,8 +540,8 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                   data-testid="button-upload"
                 >
                   {uploadMutation.isPending || updateMutation.isPending 
-                    ? (editingFile ? 'Updating...' : 'Uploading...') 
-                    : (editingFile ? 'Update' : 'Upload')}
+                    ? (editingFile ? t('common:updating') : t('common:uploading')) 
+                    : (editingFile ? t('common:update') : t('common:upload'))}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -550,9 +552,9 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
         {files.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">No documents uploaded yet</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('common:noDocumentsUploaded')}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Upload documents to make them available for orders
+              {t('common:uploadDocumentsForOrders')}
             </p>
           </div>
         ) : (
@@ -569,11 +571,11 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Language</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Uploaded</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('common:name')}</TableHead>
+                        <TableHead>{t('common:language')}</TableHead>
+                        <TableHead>{t('common:size')}</TableHead>
+                        <TableHead>{t('common:uploaded')}</TableHead>
+                        <TableHead className="text-right">{t('common:actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -637,18 +639,18 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('common:deleteItem', { item: t('common:document') })}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{file.description || file.fileName}"? This action cannot be undone.
+                                      {t('common:deleteConfirmation', { item: file.description || file.fileName })}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => deleteMutation.mutate(file.id)}
                                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
-                                      Delete
+                                      {t('common:delete')}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

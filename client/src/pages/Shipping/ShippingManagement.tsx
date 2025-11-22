@@ -810,7 +810,7 @@ export default function ShippingManagement() {
                             id="dhl-firstName"
                             value={dhlAddress.firstName}
                             onChange={(e) => setDhlAddress({ ...dhlAddress, firstName: e.target.value })}
-                            placeholder="Max"
+                            placeholder={t('common:firstName')}
                             data-testid="input-dhl-firstname"
                           />
                         </div>
@@ -820,7 +820,7 @@ export default function ShippingManagement() {
                             id="dhl-lastName"
                             value={dhlAddress.lastName}
                             onChange={(e) => setDhlAddress({ ...dhlAddress, lastName: e.target.value })}
-                            placeholder="Mustermann"
+                            placeholder={t('common:lastName')}
                             data-testid="input-dhl-lastname"
                           />
                         </div>
@@ -842,7 +842,7 @@ export default function ShippingManagement() {
                             id="dhl-street"
                             value={dhlAddress.street}
                             onChange={(e) => setDhlAddress({ ...dhlAddress, street: e.target.value })}
-                            placeholder="Musterstraße"
+                            placeholder={t('common:streetName')}
                             data-testid="input-dhl-street"
                           />
                         </div>
@@ -1121,7 +1121,7 @@ export default function ShippingManagement() {
                             id="gls-company"
                             value={glsAddress.company}
                             onChange={(e) => setGlsAddress({ ...glsAddress, company: e.target.value })}
-                            placeholder="Davie Supply GmbH"
+                            placeholder={t('common:companyName')}
                             data-testid="input-gls-company"
                           />
                         </div>

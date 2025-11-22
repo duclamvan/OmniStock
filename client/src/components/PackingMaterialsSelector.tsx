@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { 
   Plus, 
@@ -35,6 +36,7 @@ export default function PackingMaterialsSelector({
   availableMaterials = []
 }: PackingMaterialsSelectorProps) {
   const { toast } = useToast();
+  const { t } = useTranslation('common');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [materialSearch, setMaterialSearch] = useState("");
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>("");
@@ -43,8 +45,8 @@ export default function PackingMaterialsSelector({
   const handleAddMaterial = () => {
     if (!selectedMaterialId) {
       toast({
-        title: "No material selected",
-        description: "Please select a packing material",
+        title: t('common:noMaterialSelected'),
+        description: t('common:pleaseSelectMaterial'),
         variant: "destructive"
       });
       return;
@@ -56,8 +58,8 @@ export default function PackingMaterialsSelector({
     const materialExists = packingMaterials.some(m => m.id === selectedMaterialId);
     if (materialExists) {
       toast({
-        title: "Material already added",
-        description: "This packing material is already in the list",
+        title: t('common:materialAlreadyAdded'),
+        description: t('common:materialAlreadyInList'),
         variant: "destructive"
       });
       return;
@@ -72,8 +74,8 @@ export default function PackingMaterialsSelector({
     onPackingMaterialsChange([...packingMaterials, newMaterial]);
     
     toast({
-      title: "Material added",
-      description: `${selectedMaterial.name} has been added to packing materials`,
+      title: t('common:materialAdded'),
+      description: t('common:materialAddedToList', { name: selectedMaterial.name }),
     });
 
     setIsDialogOpen(false);
@@ -87,8 +89,8 @@ export default function PackingMaterialsSelector({
     onPackingMaterialsChange(updatedMaterials);
     
     toast({
-      title: "Material removed",
-      description: "Packing material has been removed",
+      title: t('common:materialRemoved'),
+      description: t('common:materialRemovedFromList'),
     });
   };
 
@@ -182,7 +184,7 @@ export default function PackingMaterialsSelector({
                     {/* Quantity Input */}
                     <div className="flex items-center gap-2 mt-2">
                       <Label htmlFor={`quantity-${material.id}`} className="text-xs text-slate-600 dark:text-slate-400">
-                        Quantity:
+                        {t('common:quantity')}:
                       </Label>
                       <Input
                         id={`quantity-${material.id}`}
@@ -204,8 +206,8 @@ export default function PackingMaterialsSelector({
       ) : (
         <div className="text-center py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
           <Package className="h-10 w-10 mx-auto mb-2 text-slate-400" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">No packing materials added yet</p>
-          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Click "Add Material" to add packing materials</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{t('common:noPackingMaterialsAdded')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('common:clickAddMaterialToAdd')}</p>
         </div>
       )}
 
@@ -218,32 +220,32 @@ export default function PackingMaterialsSelector({
         data-testid="button-add-material"
       >
         <Plus className="h-4 w-4 mr-2" />
-        Add Material
+        {t('common:addMaterial')}
       </Button>
 
       {/* Add Material Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Add Packing Material</DialogTitle>
+            <DialogTitle>{t('common:addPackingMaterial')}</DialogTitle>
             <DialogDescription>
-              Search and select a packing material to add to this product
+              {t('common:searchAndSelectMaterial')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             {/* Material Search */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">Select Material</Label>
+              <Label className="text-sm font-medium mb-2 block">{t('common:selectMaterial')}</Label>
               <Command shouldFilter={false} className="border rounded-lg">
                 <CommandInput
-                  placeholder="Search packing materials..."
+                  placeholder={t('common:searchPackingMaterials')}
                   value={materialSearch}
                   onValueChange={setMaterialSearch}
                   data-testid="input-search-material-dialog"
                 />
                 <CommandList className="max-h-[300px]">
-                  <CommandEmpty>No packing materials found.</CommandEmpty>
+                  <CommandEmpty>{t('common:noPackingMaterialsFound')}</CommandEmpty>
                   <CommandGroup>
                     {availableMaterials
                       ?.filter((material: any) =>
@@ -328,7 +330,7 @@ export default function PackingMaterialsSelector({
             {/* Quantity Input */}
             <div>
               <Label htmlFor="dialog-quantity" className="text-sm font-medium">
-                Quantity
+                {t('common:quantity')}
               </Label>
               <Input
                 id="dialog-quantity"
@@ -341,7 +343,7 @@ export default function PackingMaterialsSelector({
                 data-testid="input-dialog-quantity"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Number of units of this packing material needed
+                {t('common:numberOfUnitsNeeded')}
               </p>
             </div>
           </div>
@@ -358,7 +360,7 @@ export default function PackingMaterialsSelector({
               }}
               data-testid="button-cancel-dialog"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               type="button"
@@ -366,7 +368,7 @@ export default function PackingMaterialsSelector({
               disabled={!selectedMaterialId}
               data-testid="button-confirm-add-material"
             >
-              Add Material
+              {t('common:addMaterial')}
             </Button>
           </DialogFooter>
         </DialogContent>

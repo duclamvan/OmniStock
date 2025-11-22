@@ -614,7 +614,7 @@ export default function AllDiscounts() {
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search discounts..."
+                placeholder={t('common:searchDiscounts')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800"

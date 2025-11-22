@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, ChevronsUpDown, Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface PopularCarton {
@@ -48,6 +49,7 @@ export function CartonTypeAutocomplete({
   className,
   allowFreeText = true,
 }: CartonTypeAutocompleteProps) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [displayValue, setDisplayValue] = useState(value);
@@ -59,7 +61,7 @@ export function CartonTypeAutocomplete({
   useEffect(() => {
     // Handle null (non-company carton)
     if (!value || value === "non-company") {
-      setDisplayValue("Non-Company Carton");
+      setDisplayValue(t('common:nonCompanyCarton'));
       return;
     }
     
@@ -154,7 +156,7 @@ export function CartonTypeAutocomplete({
         <PopoverContent className="w-full p-0" align="start" data-testid="popover-carton-list">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search cartons..."
+              placeholder={t('common:searchCartons')}
               value={searchValue}
               onValueChange={handleFreeTextInput}
               onKeyDown={handleKeyDown}
@@ -163,7 +165,7 @@ export function CartonTypeAutocomplete({
             <CommandList>
               {isLoading ? (
                 <div className="py-6 text-center text-sm" data-testid="text-loading">
-                  Loading cartons...
+                  {t('common:loadingCartons')}
                 </div>
               ) : (
                 <>
@@ -172,7 +174,7 @@ export function CartonTypeAutocomplete({
                     <CommandItem
                       value="non-company"
                       onSelect={() => {
-                        setDisplayValue("Non-Company Carton");
+                        setDisplayValue(t('common:nonCompanyCarton'));
                         onValueChange(null, undefined); // Pass null for non-company cartons
                         setOpen(false);
                         setSearchValue("");
@@ -187,7 +189,7 @@ export function CartonTypeAutocomplete({
                       />
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-gray-600">Non-Company Carton</span>
+                        <span className="font-medium text-gray-600">{t('common:nonCompanyCarton')}</span>
                       </div>
                     </CommandItem>
                   </CommandGroup>
@@ -199,7 +201,7 @@ export function CartonTypeAutocomplete({
                       {allowFreeText ? (
                         <div className="py-2">
                           <p className="text-sm text-muted-foreground mb-2">
-                            No cartons found.
+                            {t('common:noCartonsFound')}
                           </p>
                           {searchValue && (
                             <p className="text-sm">
@@ -208,13 +210,13 @@ export function CartonTypeAutocomplete({
                           )}
                         </div>
                       ) : (
-                        "No cartons found."
+                        t('common:noCartonsFound')
                       )}
                     </CommandEmpty>
                   ) : (
                     <>
                       {filteredMostUsed.length > 0 && (
-                        <CommandGroup heading="Most Used" data-testid="group-most-used">
+                        <CommandGroup heading={t('common:mostUsed')} data-testid="group-most-used">
                           {filteredMostUsed.map((carton) => (
                             <CommandItem
                               key={carton.id}
@@ -250,7 +252,7 @@ export function CartonTypeAutocomplete({
                       )}
 
                       {filteredAllCartons.length > 0 && (
-                        <CommandGroup heading="All Cartons" data-testid="group-all-cartons">
+                        <CommandGroup heading={t('common:allCartons')} data-testid="group-all-cartons">
                           {filteredAllCartons
                             .filter((carton) => !mostUsed.some((mu) => mu.id === carton.id))
                             .map((carton) => (
@@ -288,7 +290,7 @@ export function CartonTypeAutocomplete({
                       {allowFreeText && searchValue && (
                         <>
                           <CommandSeparator />
-                          <CommandGroup heading="Custom" data-testid="group-custom">
+                          <CommandGroup heading={t('common:custom')} data-testid="group-custom">
                             <CommandItem
                               value="custom"
                               onSelect={() => {

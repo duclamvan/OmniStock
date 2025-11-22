@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Plus,
@@ -98,6 +99,7 @@ export default function ProductLocations({
   embedded = false,
 }: ProductLocationsProps) {
   const { toast } = useToast();
+  const { t } = useTranslation('common');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editLocation, setEditLocation] = useState<ProductLocation | null>(null);
   const [deleteLocation, setDeleteLocation] = useState<ProductLocation | null>(null);
@@ -135,16 +137,16 @@ export default function ProductLocations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
-        title: "Success",
-        description: "Location added successfully",
+        title: t('common:success'),
+        description: t('common:locationAddedSuccessfully'),
       });
       setAddDialogOpen(false);
       resetForm();
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to add location",
+        title: t('common:error'),
+        description: t('common:failedToAddLocation'),
         variant: "destructive",
       });
     },
@@ -158,16 +160,16 @@ export default function ProductLocations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
-        title: "Success",
-        description: "Location updated successfully",
+        title: t('common:success'),
+        description: t('common:locationUpdatedSuccessfully'),
       });
       setEditLocation(null);
       resetForm();
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update location",
+        title: t('common:error'),
+        description: t('common:failedToUpdateLocation'),
         variant: "destructive",
       });
     },
@@ -181,15 +183,15 @@ export default function ProductLocations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
-        title: "Success",
-        description: "Location deleted successfully",
+        title: t('common:success'),
+        description: t('common:locationDeletedSuccessfully'),
       });
       setDeleteLocation(null);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete location",
+        title: t('common:error'),
+        description: t('common:failedToDeleteLocation'),
         variant: "destructive",
       });
     },
@@ -203,14 +205,14 @@ export default function ProductLocations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
-        title: "Success",
-        description: "Primary location updated",
+        title: t('common:success'),
+        description: t('common:primaryLocationUpdated'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to set primary location",
+        title: t('common:error'),
+        description: t('common:failedToSetPrimaryLocation'),
         variant: "destructive",
       });
     },
@@ -224,8 +226,8 @@ export default function ProductLocations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
-        title: "Success",
-        description: "Inventory moved successfully",
+        title: t('common:success'),
+        description: t('common:inventoryMovedSuccessfully'),
       });
       setMoveDialogOpen(false);
       setMoveFromLocation(null);
@@ -234,8 +236,8 @@ export default function ProductLocations({
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to move inventory",
+        title: t('common:error'),
+        description: t('common:failedToMoveInventory'),
         variant: "destructive",
       });
     },
@@ -252,8 +254,8 @@ export default function ProductLocations({
   const handleAddLocation = () => {
     if (!locationCode || quantity < 0) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: t('common:error'),
+        description: t('common:fillRequiredFields'),
         variant: "destructive",
       });
       return;
@@ -287,8 +289,8 @@ export default function ProductLocations({
   const handleMoveInventory = () => {
     if (!moveFromLocation || !moveToLocation || moveQuantity <= 0) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: t('common:error'),
+        description: t('common:fillRequiredFields'),
         variant: "destructive",
       });
       return;
@@ -296,8 +298,8 @@ export default function ProductLocations({
 
     if (moveQuantity > moveFromLocation.quantity) {
       toast({
-        title: "Error",
-        description: "Cannot move more than available quantity",
+        title: t('common:error'),
+        description: t('common:cannotMoveMoreThanAvailable'),
         variant: "destructive",
       });
       return;
@@ -339,9 +341,9 @@ export default function ProductLocations({
                 <MapPin className="h-5 w-5 text-slate-400 dark:text-slate-500" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Warehouse Locations</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('common:warehouseLocations')}</h4>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Save the product first to manage warehouse locations and stock distribution
+                  {t('common:saveProductFirstToManageLocations')}
                 </p>
               </div>
             </div>
@@ -354,7 +356,7 @@ export default function ProductLocations({
         <CardContent className="p-6">
           <div className="text-center text-slate-500 dark:text-slate-400">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p>Save the product first to manage warehouse locations</p>
+            <p>{t('common:saveProductFirstToManageLocations')}</p>
           </div>
         </CardContent>
       </Card>
@@ -366,7 +368,7 @@ export default function ProductLocations({
       return (
         <div className="pt-6">
           <div className="border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 p-6">
-            <div className="text-center text-slate-500 dark:text-slate-400">Loading locations...</div>
+            <div className="text-center text-slate-500 dark:text-slate-400">{t('common:loadingLocations')}</div>
           </div>
         </div>
       );
@@ -384,8 +386,8 @@ export default function ProductLocations({
   const headerSection = (
     <div className="flex items-center justify-between mb-4">
       <div>
-        {!embedded && <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">Warehouse Locations</h4>}
-        {embedded && <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Warehouse Locations</h4>}
+        {!embedded && <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('common:warehouseLocations')}</h4>}
+        {embedded && <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('common:warehouseLocations')}</h4>}
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{locationSummary}</p>
       </div>
       {!readOnly && (
@@ -393,14 +395,14 @@ export default function ProductLocations({
           <DialogTrigger asChild>
             <Button size="sm" data-testid="button-add-location">
               <Plus className="h-4 w-4 mr-2" />
-              Add Location
+              {t('common:addLocation')}
             </Button>
           </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Add Product Location</DialogTitle>
+                  <DialogTitle>{t('common:addProductLocation')}</DialogTitle>
                   <DialogDescription>
-                    Add a new storage location for {productName}
+                    {t('common:addStorageLocationFor', { productName })}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -414,7 +416,7 @@ export default function ProductLocations({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="quantity">Quantity at Location</Label>
+                      <Label htmlFor="quantity">{t('common:quantityAtLocation')}</Label>
                       <Input
                         id="quantity"
                         type="number"
@@ -437,19 +439,19 @@ export default function ProductLocations({
                           data-testid="checkbox-primary"
                         />
                         <Label htmlFor="isPrimary" className="cursor-pointer">
-                          Set as Primary Location
+                          {t('common:setAsPrimaryLocation')}
                         </Label>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="notes">Notes</Label>
+                    <Label htmlFor="notes">{t('common:notes')}</Label>
                     <Textarea
                       id="notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Optional notes about this location"
+                      placeholder={t('common:optionalNotesAboutLocation')}
                       rows={2}
                       data-testid="textarea-notes"
                     />
@@ -463,7 +465,7 @@ export default function ProductLocations({
                     onClick={() => setAddDialogOpen(false)}
                     data-testid="button-cancel"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button
                     type="button"
@@ -471,7 +473,7 @@ export default function ProductLocations({
                     disabled={addLocationMutation.isPending}
                     data-testid="button-save-location"
                   >
-                    Add Location
+                    {t('common:addLocation')}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -488,7 +490,7 @@ export default function ProductLocations({
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
             <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 mb-1">
               <Package className="h-4 w-4" />
-              <span className="text-xs font-medium">Total Stock</span>
+              <span className="text-xs font-medium">{t('common:totalStock')}</span>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-total-stock">{totalQuantity}</p>
           </div>
@@ -496,7 +498,7 @@ export default function ProductLocations({
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
             <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 mb-1">
               <MapPin className="h-4 w-4" />
-              <span className="text-xs font-medium">Locations</span>
+              <span className="text-xs font-medium">{t('common:locations')}</span>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-location-count">{locations.length}</p>
           </div>
@@ -516,7 +518,7 @@ export default function ProductLocations({
                 : 'text-red-700 dark:text-red-400'
             }`}>
               <ArrowUpDown className="h-4 w-4" />
-              <span className="text-xs font-medium">Stock Difference</span>
+              <span className="text-xs font-medium">{t('common:stockDifference')}</span>
             </div>
             <div className="flex items-baseline space-x-2">
               <p className={`text-2xl font-bold ${
@@ -547,7 +549,7 @@ export default function ProductLocations({
             <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3">
               <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-1">
                 <Star className="h-4 w-4" />
-                <span className="text-xs font-medium">Primary Location</span>
+                <span className="text-xs font-medium">{t('common:primaryLocation')}</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-gray-100" data-testid="text-primary-location">
                 {formatLocationCode(primaryLocation.locationCode)}
@@ -565,12 +567,12 @@ export default function ProductLocations({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Location Code</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
-                  {!readOnly && <TableHead className="w-[100px]">Actions</TableHead>}
+                  <TableHead>{t('common:locationCode')}</TableHead>
+                  <TableHead>{t('common:type')}</TableHead>
+                  <TableHead>{t('common:quantity')}</TableHead>
+                  <TableHead>{t('common:status')}</TableHead>
+                  <TableHead>{t('common:notes')}</TableHead>
+                  {!readOnly && <TableHead className="w-[100px]">{t('common:actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -604,7 +606,7 @@ export default function ProductLocations({
                         {location.isPrimary && (
                           <Badge variant="default" className="bg-blue-600">
                             <Star className="h-3 w-3 mr-1" />
-                            Primary
+                            {t('common:primary')}
                           </Badge>
                         )}
                       </TableCell>
@@ -629,7 +631,7 @@ export default function ProductLocations({
                                 data-testid={`menu-edit-${location.id}`}
                               >
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit Location
+                                {t('common:editLocation')}
                               </DropdownMenuItem>
                               
                               {!location.isPrimary && (
@@ -638,7 +640,7 @@ export default function ProductLocations({
                                   data-testid={`menu-primary-${location.id}`}
                                 >
                                   <Star className="h-4 w-4 mr-2" />
-                                  Set as Primary
+                                  {t('common:setAsPrimary')}
                                 </DropdownMenuItem>
                               )}
 

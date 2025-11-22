@@ -1061,7 +1061,7 @@ export default function EditWarehouse() {
                   onValueChange={(value) => contractForm.setValue("contractType", value as any)}
                 >
                   <SelectTrigger className="mt-1" data-testid="select-contract-type">
-                    <SelectValue placeholder="Select contract type" />
+                    <SelectValue placeholder={t('common:selectContractType')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="rental">Rental</SelectItem>
@@ -1115,7 +1115,7 @@ export default function EditWarehouse() {
                   onValueChange={(value) => contractForm.setValue("currency", value as any)}
                 >
                   <SelectTrigger className="mt-1" data-testid="select-contract-currency">
-                    <SelectValue placeholder="Select currency" />
+                    <SelectValue placeholder={t('common:selectCurrency')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CZK">CZK</SelectItem>
@@ -1134,7 +1134,7 @@ export default function EditWarehouse() {
                   onValueChange={(value) => contractForm.setValue("billingPeriod", value as any)}
                 >
                   <SelectTrigger className="mt-1" data-testid="select-billing-period">
-                    <SelectValue placeholder="Select billing period" />
+                    <SelectValue placeholder={t('common:selectBillingPeriod')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Monthly</SelectItem>

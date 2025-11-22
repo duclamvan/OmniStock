@@ -490,7 +490,7 @@ export default function Employees() {
                     <FormItem>
                       <FormLabel>{t('system:employeeId')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="EMP001" {...field} data-testid="input-employee-id" />
+                        <Input placeholder="EMP-001" {...field} data-testid="input-employee-id" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -583,7 +583,7 @@ export default function Employees() {
                     <FormItem>
                       <FormLabel>{t('system:position')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Warehouse Manager" {...field} data-testid="input-position" />
+                        <Input placeholder={t('common:warehouseManagerPlaceholder')} {...field} data-testid="input-position" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -597,7 +597,7 @@ export default function Employees() {
                     <FormItem>
                       <FormLabel>{t('system:department')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Warehouse" {...field} data-testid="input-department" />
+                        <Input placeholder={t('common:warehousePlaceholder')} {...field} data-testid="input-department" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
