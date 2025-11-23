@@ -7972,37 +7972,120 @@ Important:
     }
   });
 
-  // Notifications endpoints
-  app.get('/api/notifications', async (req: any, res) => {
+  // Middleware to re-validate user identity from database
+  const validateUserFromDatabase = async (req: any, res: any, next: any) => {
     try {
-      const userId = req.user?.id || "test-user";
+      const sessionUserId = req.user?.id;
+      
+      if (!sessionUserId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      // Re-fetch user from database to ensure session is valid
+      const userFromDb = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, sessionUserId))
+        .limit(1);
+      
+      if (!userFromDb || userFromDb.length === 0) {
+        console.warn(`[Security] Session with invalid user ID: ${sessionUserId}`);
+        return res.status(401).json({ message: 'Invalid session' });
+      }
+      
+      // Store verified user in request object
+      req.verifiedUser = {
+        id: userFromDb[0].id,
+        role: userFromDb[0].role,
+        email: userFromDb[0].email,
+        firstName: userFromDb[0].firstName,
+        lastName: userFromDb[0].lastName,
+      };
+      
+      next();
+    } catch (error) {
+      console.error('[Security] Error validating user from database:', error);
+      return res.status(500).json({ message: 'Authentication validation failed' });
+    }
+  };
+
+  // Notifications endpoints
+  app.get('/api/notifications', validateUserFromDatabase, async (req: any, res) => {
+    try {
+      const userId = req.verifiedUser.id;
+      const userRole = req.verifiedUser.role;
       const status = req.query.status as string | undefined;
+      const majorOnly = req.query.majorOnly === 'true';
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
 
-      let query = db
-        .select()
-        .from(notifications)
-        .where(eq(notifications.userId, userId))
-        .orderBy(desc(notifications.createdAt))
-        .limit(limit)
-        .offset(offset);
+      const isAdmin = userRole === 'administrator';
+      
+      // SECURITY: Only admins can use majorOnly parameter
+      if (majorOnly && !isAdmin) {
+        console.warn(`Security: Non-admin user ${userId} attempted to access majorOnly notifications`);
+        return res.status(403).json({ message: 'Only administrators can view major notifications' });
+      }
+      
+      const majorNotificationTypes = ['order_created', 'order_shipped', 'inventory_alert', 'receipt_approved', 'shipment_arrived'];
 
-      // Apply status filter
-      if (status === 'unread') {
-        query = db
+      let result;
+
+      if (isAdmin) {
+        // Admin view: return notifications from ALL users with user information
+        const conditions = [];
+        
+        if (status === 'unread') {
+          conditions.push(eq(notifications.isRead, false));
+        }
+        
+        if (majorOnly) {
+          conditions.push(inArray(notifications.type, majorNotificationTypes));
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        result = await db
+          .select({
+            id: notifications.id,
+            userId: notifications.userId,
+            title: notifications.title,
+            description: notifications.description,
+            type: notifications.type,
+            isRead: notifications.isRead,
+            actionUrl: notifications.actionUrl,
+            actionLabel: notifications.actionLabel,
+            metadata: notifications.metadata,
+            createdAt: notifications.createdAt,
+            userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`.as('userName'),
+          })
+          .from(notifications)
+          .leftJoin(users, eq(notifications.userId, users.id))
+          .where(whereClause)
+          .orderBy(desc(notifications.createdAt))
+          .limit(limit)
+          .offset(offset);
+      } else {
+        // Non-admin view: return only user's own notifications
+        const conditions = [eq(notifications.userId, userId)];
+        
+        if (status === 'unread') {
+          conditions.push(eq(notifications.isRead, false));
+        }
+        
+        if (majorOnly) {
+          conditions.push(inArray(notifications.type, majorNotificationTypes));
+        }
+
+        result = await db
           .select()
           .from(notifications)
-          .where(and(
-            eq(notifications.userId, userId),
-            eq(notifications.isRead, false)
-          ))
+          .where(and(...conditions))
           .orderBy(desc(notifications.createdAt))
           .limit(limit)
           .offset(offset);
       }
 
-      const result = await query;
       res.json(result);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -8010,17 +8093,30 @@ Important:
     }
   });
 
-  app.get('/api/notifications/unread-count', async (req: any, res) => {
+  app.get('/api/notifications/unread-count', validateUserFromDatabase, async (req: any, res) => {
     try {
-      const userId = req.user?.id || "test-user";
+      const userId = req.verifiedUser.id;
+      const userRole = req.verifiedUser.role;
+      const isAdmin = userRole === 'administrator';
 
-      const result = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(notifications)
-        .where(and(
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false)
-        ));
+      let result;
+
+      if (isAdmin) {
+        // Admin view: count all unread notifications from all users
+        result = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(notifications)
+          .where(eq(notifications.isRead, false));
+      } else {
+        // Non-admin view: count only user's own unread notifications
+        result = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(notifications)
+          .where(and(
+            eq(notifications.userId, userId),
+            eq(notifications.isRead, false)
+          ));
+      }
 
       res.json({ count: result[0]?.count || 0 });
     } catch (error) {
@@ -8029,9 +8125,9 @@ Important:
     }
   });
 
-  app.post('/api/notifications', async (req: any, res) => {
+  app.post('/api/notifications', validateUserFromDatabase, async (req: any, res) => {
     try {
-      const userId = req.user?.id || "test-user";
+      const userId = req.verifiedUser.id;
       const data = insertNotificationSchema.parse({
         ...req.body,
         userId
@@ -8052,30 +8148,34 @@ Important:
     }
   });
 
-  app.patch('/api/notifications/:id/read', async (req: any, res) => {
+  app.patch('/api/notifications/:id/read', validateUserFromDatabase, async (req: any, res) => {
     try {
-      const userId = req.user?.id || "test-user";
+      const userId = req.verifiedUser.id;
+      const userRole = req.verifiedUser.role;
       const notificationId = parseInt(req.params.id);
+      const isAdmin = userRole === 'administrator';
 
-      // Verify notification belongs to user
-      const existing = await db
-        .select()
-        .from(notifications)
-        .where(and(
-          eq(notifications.id, notificationId),
-          eq(notifications.userId, userId)
-        ))
-        .limit(1);
-
-      if (!existing || existing.length === 0) {
-        return res.status(404).json({ message: "Notification not found" });
-      }
-
+      // SECURITY: Enforce ownership at database level using WHERE clause
+      // For admins: update any notification by ID only
+      // For non-admins: update ONLY if ID matches AND userId matches
       const result = await db
         .update(notifications)
         .set({ isRead: true })
-        .where(eq(notifications.id, notificationId))
+        .where(
+          isAdmin
+            ? eq(notifications.id, notificationId)
+            : and(
+                eq(notifications.id, notificationId),
+                eq(notifications.userId, userId)
+              )
+        )
         .returning();
+
+      // If no rows updated, notification doesn't exist OR user doesn't own it
+      if (!result || result.length === 0) {
+        console.warn(`[Security] User ${userId} attempted to mark non-existent or unauthorized notification ${notificationId} as read`);
+        return res.status(403).json({ message: 'Notification not found or you do not have permission to modify it' });
+      }
 
       res.json(result[0]);
     } catch (error) {
@@ -8084,11 +8184,13 @@ Important:
     }
   });
 
-  app.post('/api/notifications/mark-all-read', async (req: any, res) => {
+  app.post('/api/notifications/mark-all-read', validateUserFromDatabase, async (req: any, res) => {
     try {
-      const userId = req.user?.id || "test-user";
+      const userId = req.verifiedUser.id;
 
-      // Mark all unread notifications as read for this user
+      // SECURITY: Mark all unread notifications as read for THIS USER ONLY
+      // This endpoint is scoped to the current user and does NOT allow
+      // non-admins to mark other users' notifications as read
       const result = await db
         .update(notifications)
         .set({ isRead: true })

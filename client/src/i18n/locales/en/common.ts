@@ -280,6 +280,8 @@ const common = {
   activeSupportTickets: 'Active Support Tickets',
   pendingCod: 'Pending COD',
   customerRetention: 'Customer Retention',
+  recentMajorActivities: 'Recent Major Activities',
+  majorActivitiesFromAllUsers: 'Major activities from all users',
   
   // Home Dashboard Specific
   warehouseManagementDashboard: 'Warehouse Management Dashboard',

@@ -256,6 +256,8 @@ const common = {
   activeSupportTickets: 'Ticket hỗ trợ',
   pendingCod: 'COD chờ thu',
   customerRetention: 'Giữ chân khách hàng',
+  recentMajorActivities: 'Hoạt động quan trọng gần đây',
+  majorActivitiesFromAllUsers: 'Hoạt động quan trọng từ tất cả người dùng',
   
   // Home Dashboard Specific
   warehouseManagementDashboard: 'Bảng điều khiển Quản lý Kho',

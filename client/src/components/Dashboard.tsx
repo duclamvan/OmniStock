@@ -23,11 +23,14 @@ import {
   Bell,
   Info,
   ArrowRight,
-  Activity
+  Activity,
+  ShoppingCart
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import { formatDistanceToNow } from "date-fns";
 
 // Lazy load chart components
 const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
@@ -202,6 +205,16 @@ export function Dashboard() {
 
   const { data: systemAlerts, isLoading: alertsLoading } = useQuery<SystemAlertsData>({
     queryKey: ['/api/dashboard/system-alerts'],
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+  });
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'administrator';
+  
+  const { data: majorNotifications, isLoading: notificationsLoading } = useQuery<any[]>({
+    queryKey: ['/api/notifications?majorOnly=true&limit=10'],
+    enabled: isAdmin,
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
   });
@@ -825,6 +838,72 @@ export function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Recent Major Activities - Admin Only */}
+            {isAdmin && majorNotifications && majorNotifications.length > 0 && (
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    {t('recentMajorActivities')}
+                  </CardTitle>
+                  <CardDescription className="text-xs text-gray-600 dark:text-gray-400">
+                    {t('majorActivitiesFromAllUsers')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {majorNotifications.map((notif: any) => {
+                      const getNotificationIcon = (type: string) => {
+                        switch (type) {
+                          case 'order_created':
+                          case 'order_shipped':
+                            return <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
+                          case 'shipment_arrived':
+                            return <Package className="h-5 w-5 text-green-600 dark:text-green-400" />;
+                          case 'inventory_alert':
+                            return <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
+                          case 'receipt_approved':
+                            return <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />;
+                          default:
+                            return <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />;
+                        }
+                      };
+
+                      return (
+                        <div 
+                          key={notif.id} 
+                          className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                        >
+                          <div className="flex-shrink-0 mt-0.5">
+                            {getNotificationIcon(notif.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              {notif.description}
+                            </p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              {notif.userName && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {notif.userName}
+                                </span>
+                              )}
+                              <span>
+                                {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Returns Spike Alert */}
             <Card className={`${systemAlerts?.returnsSpike.isAlert ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
               <CardHeader>
