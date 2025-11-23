@@ -55,6 +55,8 @@ const warehouse = {
   floorAreaPlaceholder: 'e.g., 2500',
   locationAddress: 'Location & Address',
   locationDesc: 'Physical location and contact information',
+  searchAddress: 'Search Address',
+  searchAddressPlaceholder: 'Search for an address...',
   streetAddress: 'Street Address',
   addressPlaceholder: 'e.g., 123 Industrial Park Road',
   city: 'City',

@@ -55,6 +55,8 @@ const warehouse = {
   floorAreaPlaceholder: 'VD: 2500',
   locationAddress: 'Vị trí & Địa chỉ',
   locationDesc: 'Vị trí thực tế và thông tin liên hệ',
+  searchAddress: 'Tìm kiếm địa chỉ',
+  searchAddressPlaceholder: 'Tìm kiếm địa chỉ...',
   streetAddress: 'Địa chỉ đường',
   addressPlaceholder: 'VD: 123 Đường Khu Công Nghiệp',
   city: 'Thành phố',

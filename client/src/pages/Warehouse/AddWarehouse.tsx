@@ -28,7 +28,9 @@ import {
   FileText,
   Hash,
   Ruler,
-  Plus
+  Plus,
+  Search,
+  Loader2
 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +61,12 @@ export default function AddWarehouse() {
   const { t } = useTranslation(['warehouse', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Address autocomplete state
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const [isLoadingAddressSearch, setIsLoadingAddressSearch] = useState(false);
 
   const warehouseSchema = z.object({
     name: z.string().min(1, t('warehouse:warehouseNameRequired')),
@@ -144,6 +152,61 @@ export default function AddWarehouse() {
 
   const onSubmit = (data: WarehouseFormData) => {
     createWarehouseMutation.mutate(data);
+  };
+
+  // Address autocomplete search
+  const searchAddresses = async (query: string) => {
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setShowAddressDropdown(false);
+      return;
+    }
+
+    setIsLoadingAddressSearch(true);
+    setShowAddressDropdown(true);
+
+    try {
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch addresses');
+      }
+      const data = await response.json();
+
+      const suggestions = data.map((item: any) => ({
+        formatted: item.formatted,
+        street: item.street,
+        houseNumber: item.houseNumber,
+        city: item.city,
+        state: item.state,
+        zipCode: item.zipCode,
+        country: item.country,
+      }));
+
+      setAddressSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error searching addresses:', error);
+      setAddressSuggestions([]);
+    } finally {
+      setIsLoadingAddressSearch(false);
+    }
+  };
+
+  // Select address from autocomplete
+  const selectAddress = (suggestion: any) => {
+    // Build full address string
+    const fullAddress = [suggestion.street, suggestion.houseNumber]
+      .filter(Boolean)
+      .join(' ');
+    
+    // Update form fields
+    form.setValue('address', fullAddress);
+    form.setValue('city', suggestion.city || '');
+    form.setValue('zipCode', suggestion.zipCode || '');
+    form.setValue('country', suggestion.country || '');
+
+    setAddressSearch(suggestion.formatted);
+    setShowAddressDropdown(false);
+    setAddressSuggestions([]);
   };
 
   return (
@@ -320,6 +383,51 @@ export default function AddWarehouse() {
                 <CardDescription className="text-xs md:text-sm">{t('warehouse:locationDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
+                {/* Address Autocomplete Search */}
+                <div className="relative">
+                  <Label htmlFor="addressSearch">{t('warehouse:searchAddress')}</Label>
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="addressSearch"
+                      value={addressSearch}
+                      onChange={(e) => {
+                        setAddressSearch(e.target.value);
+                        searchAddresses(e.target.value);
+                      }}
+                      placeholder={t('warehouse:searchAddressPlaceholder')}
+                      className="pl-10 pr-10"
+                      data-testid="input-address-search"
+                    />
+                    {isLoadingAddressSearch && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500 animate-spin" />
+                    )}
+                  </div>
+                  
+                  {/* Address Suggestions Dropdown */}
+                  {showAddressDropdown && addressSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {addressSuggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => selectAddress(suggestion)}
+                          className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm border-b border-slate-100 dark:border-slate-700 last:border-0"
+                        >
+                          <div className="font-medium text-slate-900 dark:text-white">
+                            {suggestion.formatted}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {[suggestion.city, suggestion.zipCode, suggestion.country].filter(Boolean).join(', ')}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
                 <div>
                   <Label htmlFor="address">{t('common:address')}</Label>
                   <Input
