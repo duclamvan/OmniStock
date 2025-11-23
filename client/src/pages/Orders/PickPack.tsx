@@ -1858,8 +1858,11 @@ export default function PickPack() {
   
   // Save view preference to both localStorage and database
   const saveViewPreference = useMutation({
-    mutationFn: async (mode: 'card' | 'list') => {
-      if (!userId) return;
+    mutationFn: async (mode: 'card' | 'list' | null) => {
+      // Guard against null mode and missing userId
+      if (!userId || mode === null) {
+        return;
+      }
       
       // Save to localStorage immediately for instant access
       localStorage.setItem(`picking_view_mode_${userId}`, mode);
