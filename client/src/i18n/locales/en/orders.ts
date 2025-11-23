@@ -278,6 +278,7 @@ const orders = {
   itemsWeight: 'Items Weight',
   dimensions: 'Dimensions (L×W×H)',
   totalShipmentWeight: 'Total Shipment Weight',
+  standard: 'Standard',
   
   // Shipping Categories
   czechiaSlovakia: 'Czechia & Slovakia',
@@ -1420,11 +1421,14 @@ const orders = {
   startPicking: 'Start Picking',
   startPacking: 'Start Packing',
   resumePicking: 'Resume Picking',
+  start: 'Start',
   complete: 'Complete',
   confirmShipment: 'Confirm Shipment',
   resetOrder: 'Reset Order',
   putOrderOnHold: 'Put Order On Hold',
+  putOnHold: 'Put On Hold',
   cancelOrder: 'Cancel Order',
+  sendBackToPick: 'Send back to Pick',
   ship: 'Ship',
   shipAll: 'Ship All',
   markAsShipped: 'Mark as Shipped',
@@ -1432,6 +1436,8 @@ const orders = {
   shipOrders: 'Ship {{count}}',
   
   // PickPack.tsx - Order States/Messages
+  ordersBeingPicked: 'Orders Being Picked',
+  readyForPacking: 'Ready for Packing',
   noOrdersCurrentlyBeingPicked: 'No orders currently being picked',
   noOrdersReadyForPacking: 'No orders ready for packing',
   noOrdersReadyToShip: 'No orders ready to ship',

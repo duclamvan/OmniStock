@@ -270,6 +270,7 @@ const orders = {
   itemsWeight: 'Trọng lượng hàng',
   dimensions: 'Kích thước (D×R×C)',
   totalShipmentWeight: 'Tổng trọng lượng lô hàng',
+  standard: 'Tiêu chuẩn',
   
   // Order Items Table
   landingCost: 'Giá nhập',
@@ -1341,11 +1342,14 @@ const orders = {
   startPicking: 'Bắt đầu lấy hàng',
   startPacking: 'Bắt đầu đóng gói',
   resumePicking: 'Tiếp tục lấy hàng',
+  start: 'Bắt đầu',
   complete: 'Hoàn thành',
   confirmShipment: 'Xác nhận giao vận',
   resetOrder: 'Đặt lại đơn hàng',
   putOrderOnHold: 'Tạm giữ đơn hàng',
+  putOnHold: 'Tạm giữ',
   cancelOrder: 'Hủy đơn hàng',
+  sendBackToPick: 'Trả về lấy hàng',
   ship: 'Giao vận',
   shipAll: 'Giao vận tất cả',
   markAsShipped: 'Đánh dấu đã giao vận',
@@ -1353,6 +1357,8 @@ const orders = {
   shipOrders: 'Giao vận {{count}}',
   
   // PickPack.tsx - Order States/Messages
+  ordersBeingPicked: 'Đơn hàng đang lấy',
+  readyForPacking: 'Sẵn sàng đóng gói',
   noOrdersCurrentlyBeingPicked: 'Không có đơn hàng đang được lấy',
   noOrdersReadyForPacking: 'Không có đơn hàng sẵn sàng đóng gói',
   noOrdersReadyToShip: 'Không có đơn hàng sẵn sàng giao vận',
