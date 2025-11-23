@@ -1141,12 +1141,10 @@ const imports = {
   searchProducts: 'Search products...',
   
   // ReceivingList - Actions
-  removeItem: 'Remove item',
   decreaseQuantity: 'Decrease quantity',
   increaseQuantity: 'Increase quantity',
   batchUpdate: 'Batch Update',
   allItemsMarkedAsComplete: 'All items marked as complete',
-  statusUpdated: 'Status Updated',
   receiptSentBackToReceiveStatus: 'Receipt sent back to Receive status',
   failedToUpdateReceiptStatus: 'Failed to update receipt status',
   failedToProcessBarcode: 'Failed to process barcode',
@@ -1158,16 +1156,13 @@ const imports = {
   
   // ReceivingList - Labels & Display
   shipmentNumber: 'Shipment #{{number}}',
-  barcode: 'Barcode',
   quantityLabel: 'Quantity',
   unknownCarrier: 'Unknown Carrier',
-  units: 'units',
   noScannedItems: 'No scanned items yet',
   startScanningBarcodes: 'Start scanning barcodes to add items',
   partialStatus: 'Partial',
   completeStatus: 'Complete',
   damagedStatus: 'Damaged',
-  cancel: 'Cancel',
   archived: 'Archived',
   
   // ReceivingList - Empty States
