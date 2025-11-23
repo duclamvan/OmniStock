@@ -129,7 +129,7 @@ export default function LandingCostList() {
       return (
         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex items-center gap-1">
           <CheckCircle className="h-3 w-3" />
-          {t('costed')} ✓
+          {t('costed')}
         </Badge>
       );
     }
@@ -137,7 +137,7 @@ export default function LandingCostList() {
     return (
       <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 flex items-center gap-1">
         <AlertTriangle className="h-3 w-3" />
-        {t('pending')} ⚠️
+        {t('pending')}
       </Badge>
     );
   };

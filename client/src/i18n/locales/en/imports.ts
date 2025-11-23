@@ -1809,7 +1809,6 @@ const imports = {
   warning: 'Warning',
   costDeletedButFailed: 'Cost deleted but calculation failed: {{error}}. Please try refreshing the page.',
   landingCosts: 'Landing Costs',
-  costed: 'Costed ✓',
   pendingStatus: 'Pending ⚠️',
   noCosts: 'No Costs',
   displayCurrency: 'Display Currency',

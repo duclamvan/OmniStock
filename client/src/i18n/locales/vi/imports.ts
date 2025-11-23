@@ -1630,7 +1630,6 @@ const imports = {
   warning: 'Cảnh báo',
   costDeletedButFailed: 'Đã xóa chi phí nhưng tính toán thất bại: {{error}}. Vui lòng làm mới trang.',
   landingCosts: 'Chi phí nhập hàng',
-  costed: 'Đã tính ✓',
   pendingStatus: 'Chờ xử lý ⚠️',
   noCosts: 'Không có chi phí',
   displayCurrency: 'Đơn vị hiển thị',
