@@ -1150,6 +1150,25 @@ const imports = {
   receiptSentBackToReceiveStatus: 'Receipt sent back to Receive status',
   failedToUpdateReceiptStatus: 'Failed to update receipt status',
   failedToProcessBarcode: 'Failed to process barcode',
+  markAllComplete: 'Mark All Complete',
+  completeReceipt: 'Complete Receipt',
+  closeCamera: 'Close Camera',
+  startReceiving: 'Start Receiving',
+  continueReceiving: 'Continue Receiving',
+  
+  // ReceivingList - Labels & Display
+  shipmentNumber: 'Shipment #{{number}}',
+  barcode: 'Barcode',
+  quantityLabel: 'Quantity',
+  unknownCarrier: 'Unknown Carrier',
+  units: 'units',
+  noScannedItems: 'No scanned items yet',
+  startScanningBarcodes: 'Start scanning barcodes to add items',
+  partialStatus: 'Partial',
+  completeStatus: 'Complete',
+  damagedStatus: 'Damaged',
+  cancel: 'Cancel',
+  archived: 'Archived',
   
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'No shipments ready to receive',

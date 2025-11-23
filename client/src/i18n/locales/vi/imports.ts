@@ -1154,13 +1154,34 @@ const imports = {
   receipt: 'Phiếu nhận',
   
   // ReceivingList - Actions
+  removeItem: 'Xóa sản phẩm',
   decreaseQuantity: 'Giảm số lượng',
   increaseQuantity: 'Tăng số lượng',
   batchUpdate: 'Cập nhật hàng loạt',
   allItemsMarkedAsComplete: 'Tất cả sản phẩm đã đánh dấu hoàn thành',
+  statusUpdated: 'Đã cập nhật trạng thái',
   receiptSentBackToReceiveStatus: 'Phiếu nhận đã chuyển về trạng thái Nhận hàng',
   failedToUpdateReceiptStatus: 'Không thể cập nhật trạng thái phiếu nhận',
   failedToProcessBarcode: 'Không thể xử lý mã vạch',
+  markAllComplete: 'Đánh dấu tất cả hoàn thành',
+  completeReceipt: 'Hoàn tất phiếu nhận',
+  closeCamera: 'Tắt Camera',
+  startReceiving: 'Bắt đầu nhận hàng',
+  continueReceiving: 'Tiếp tục nhận hàng',
+  
+  // ReceivingList - Labels & Display
+  shipmentNumber: 'Lô hàng #{{number}}',
+  barcode: 'Mã vạch',
+  quantityLabel: 'Số lượng',
+  unknownCarrier: 'Nhà vận chuyển không xác định',
+  units: 'đơn vị',
+  noScannedItems: 'Chưa có sản phẩm đã quét',
+  startScanningBarcodes: 'Bắt đầu quét mã vạch để thêm sản phẩm',
+  partialStatus: 'Một phần',
+  completeStatus: 'Hoàn tất',
+  damagedStatus: 'Hư hỏng',
+  cancel: 'Hủy',
+  archived: 'Đã lưu trữ',
   
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'Không có lô hàng sẵn sàng nhận',

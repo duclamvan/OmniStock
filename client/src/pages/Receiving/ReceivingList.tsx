@@ -628,10 +628,10 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg mb-1.5 truncate font-bold">
-                        Receipt #{receipt.id}
+                        {t('receiptNumber', { number: receipt.id })}
                       </CardTitle>
                       <CardDescription className="text-sm truncate font-medium">
-                        {receipt.shipment?.shipmentName || `Shipment #${receipt.shipmentId}`}
+                        {receipt.shipment?.shipmentName || t('shipmentNumber', { number: receipt.shipmentId })}
                       </CardDescription>
                     </div>
                     <Badge className={`${getStatusColor(receipt.status)} text-xs shrink-0`}>
@@ -703,8 +703,8 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Package className="h-12 w-12 text-muted-foreground mb-3" />
-        <p className="text-sm font-medium text-muted-foreground">No scanned items yet</p>
-        <p className="text-xs text-muted-foreground mt-1">Start scanning barcodes to add items</p>
+        <p className="text-sm font-medium text-muted-foreground">{t('noScannedItems')}</p>
+        <p className="text-xs text-muted-foreground mt-1">{t('startScanningBarcodes')}</p>
       </div>
     );
   }
@@ -725,9 +725,9 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                     </Badge>
                   </div>
                   {item.sku && (
-                    <p className="text-xs text-muted-foreground font-mono">SKU: {item.sku}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{t('sku')}: {item.sku}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">Barcode: {item.barcode}</p>
+                  <p className="text-xs text-muted-foreground">{t('barcode')}: {item.barcode}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -743,7 +743,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
 
               {/* Quantity Stepper - Large touch targets */}
               <div className="flex items-center justify-between px-4 pb-3">
-                <span className="text-sm font-medium">Quantity:</span>
+                <span className="text-sm font-medium">{t('quantityLabel')}:</span>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -787,7 +787,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                   data-testid={`button-status-complete-${item.id}`}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Complete
+                  {t('completeStatus')}
                 </Button>
                 <Button
                   size="sm"
@@ -797,7 +797,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                   data-testid={`button-status-partial-${item.id}`}
                 >
                   <AlertCircle className="h-4 w-4 mr-2" />
-                  Partial
+                  {t('partialStatus')}
                 </Button>
                 <Button
                   size="sm"
@@ -807,7 +807,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
                   data-testid={`button-status-damaged-${item.id}`}
                 >
                   <AlertTriangle className="h-4 w-4 mr-2" />
-                  Damaged
+                  {t('damagedStatus')}
                 </Button>
               </div>
             </CardContent>
@@ -939,12 +939,12 @@ function CameraViewOverlay({ videoRef, onClose, error }: {
       <Button
         size="lg"
         variant="outline"
-        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 h-14 px-8 bg-white/90 hover:bg-white pointer-events-auto"
+        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 h-14 px-8 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 pointer-events-auto"
         onClick={onClose}
         data-testid="button-close-camera"
       >
         <X className="h-5 w-5 mr-2" />
-        Close Camera
+        {t('closeCamera')}
       </Button>
     </div>
   );
@@ -955,6 +955,7 @@ function CameraViewOverlay({ videoRef, onClose, error }: {
 // ============================================================================
 
 function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) {
+  const { t } = useTranslation(['imports']);
   const { session } = useReceivingSession();
   const hasItems = session.scannedItems.length > 0;
 
@@ -969,17 +970,17 @@ function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCan
           data-testid="button-cancel"
         >
           <X className="h-5 w-5 mr-2" />
-          Cancel
+          {t('cancel')}
         </Button>
         <Button
           size="lg"
-          className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700"
+          className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
           onClick={onComplete}
           disabled={!hasItems}
           data-testid="button-complete"
         >
           <CheckCircle className="h-5 w-5 mr-2" />
-          Complete Receipt
+          {t('completeReceipt')}
         </Button>
       </div>
     </div>
@@ -991,6 +992,7 @@ function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCan
 // ============================================================================
 
 function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1008,13 +1010,13 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
             <div className="flex items-center gap-2 mb-2">
               {getShipmentTypeIcon(shipment.shipmentType, "h-5 w-5")}
               <CardTitle className="text-base truncate">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Truck className="h-4 w-4" />
-                <span className="truncate">{shipment.carrier || 'Unknown Carrier'}</span>
+                <span className="truncate">{shipment.carrier || t('unknownCarrier')}</span>
               </div>
               {shipment.trackingNumber && (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -1024,7 +1026,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
               )}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>{itemCount} items ({totalQuantity} units)</span>
+                <span>{itemCount} {t('items')} ({totalQuantity} {t('units')})</span>
               </div>
             </div>
           </div>
@@ -1046,13 +1048,13 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
           <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                        <span className="text-foreground font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
@@ -1070,7 +1072,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
               data-testid={`button-start-receiving-${shipment.id}`}
             >
               <ScanLine className="h-5 w-5 mr-2" />
-              Start Receiving
+              {t('startReceiving')}
             </Button>
           </div>
         </CardContent>
@@ -1099,9 +1101,9 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-5 w-5 text-cyan-600" />
+              <Clock className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               <CardTitle className="text-base truncate">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
             </div>
             <div className="space-y-2 text-sm">
@@ -1171,7 +1173,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
               data-testid={`button-continue-receiving-${shipment.id}`}
             >
               <ChevronRight className="h-5 w-5 mr-2" />
-              Continue Receiving
+              {t('continueReceiving')}
             </Button>
           </div>
         </CardContent>
@@ -1196,9 +1198,9 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <Warehouse className="h-5 w-5 text-amber-600" />
+              <Warehouse className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <CardTitle className="text-base truncate">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
             </div>
             <div className="space-y-1 text-sm">
@@ -1232,13 +1234,13 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
           <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                        <span className="text-foreground font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
@@ -1314,9 +1316,9 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
               <CardTitle className="text-base truncate">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
             </div>
             <div className="space-y-1 text-sm">
@@ -1334,7 +1336,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge className={getStatusColor('complete')}>
-              Complete
+              {t('completeStatus')}
             </Badge>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -1350,13 +1352,13 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
           <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                        <span className="text-foreground font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
@@ -1409,6 +1411,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
 }
 
 function ArchivedShipmentCard({ shipment }: { shipment: any }) {
+  const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1423,27 +1426,27 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <Archive className="h-5 w-5 text-gray-600" />
+              <Archive className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <CardTitle className="text-base truncate">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>{itemCount} items</span>
+                <span>{itemCount} {t('items')}</span>
               </div>
               {shipment.archivedAt && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Archived {format(new Date(shipment.archivedAt), 'MMM dd, yyyy')}</span>
+                  <span>{t('archived')} {format(new Date(shipment.archivedAt), 'MMM dd, yyyy')}</span>
                 </div>
               )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-              Archived
+              {t('archived')}
             </Badge>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -1459,13 +1462,13 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
           <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                        <span className="text-foreground font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
