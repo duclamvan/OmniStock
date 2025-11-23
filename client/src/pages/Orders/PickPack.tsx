@@ -4364,6 +4364,86 @@ export default function PickPack() {
     }
   };
 
+  // Handle sending order back to wait (pending)
+  const sendBackToWait = async (order: PickPackOrder) => {
+    try {
+      // Immediately add order to the sent back set (instant UI update)
+      setOrdersSentBack(prev => new Set(prev).add(order.id));
+      
+      // Show immediate feedback if not in active mode
+      if (!activePickingOrder && !activePackingOrder) {
+        toast({
+          title: t('success'),
+          description: t('orderSentBackToWait', { orderId: order.orderId })
+        });
+      }
+      
+      // Create all API promises at once (parallel execution)
+      const promises = [];
+      
+      // Reset order status to pending (not_started for picking)
+      promises.push(
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
+          fulfillmentStage: null,
+          pickStatus: 'not_started',
+          packStatus: 'not_started',
+          pickStartTime: null,
+          pickEndTime: null,
+          packStartTime: null,
+          packEndTime: null,
+          pickedBy: null,
+          packedBy: null
+        })
+      );
+      
+      // Reset all item quantities in parallel (non-blocking)
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            promises.push(
+              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
+                pickedQuantity: 0,
+                packedQuantity: 0
+              })
+            );
+          }
+        }
+      }
+      
+      // Execute all API calls in parallel
+      Promise.all(promises)
+        .then(() => {
+          // Just refresh the data - the useEffect will handle cleanup
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+        })
+        .catch(error => {
+          console.error('Error sending order back to wait:', error);
+          // Remove from sent back set on error
+          setOrdersSentBack(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(order.id);
+            return newSet;
+          });
+          if (!activePickingOrder && !activePackingOrder) {
+            toast({
+              title: t('error'),
+              description: t('failedToSendBackToWait'),
+              variant: 'destructive'
+            });
+          }
+        });
+      
+    } catch (error) {
+      console.error('Error initiating send back to wait:', error);
+      // Remove from sent back set on error
+      setOrdersSentBack(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(order.id);
+        return newSet;
+      });
+    }
+  };
+
   // Handle putting order on hold
   const handlePutOnHold = async (order: PickPackOrder) => {
     try {
@@ -12954,6 +13034,15 @@ export default function PickPack() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      sendBackToWait(order);
+                                    }}
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                                    {t('sendBackToWait')}
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
                                       e.stopPropagation();
