@@ -427,8 +427,8 @@ export default function POS() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
-      {/* Left Panel: Products (Mobile: full screen, Desktop: 70% width) */}
-      <div className="flex flex-col flex-1 lg:w-[70%] overflow-hidden">
+      {/* Left Panel: Products (Mobile: full screen, Desktop: 2/3 width) */}
+      <div className="flex flex-col flex-1 lg:flex-[2] overflow-hidden">
         {/* Header */}
         <div className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
           <div className="p-4 space-y-3">
@@ -478,8 +478,8 @@ export default function POS() {
 
         {/* Products Grid */}
         <ScrollArea className="flex-1">
-          <div className="p-3 pb-28 lg:pb-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+          <div className="p-3 pb-28 lg:pb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
             {displayProducts.map((product: any) => {
               const cartItem = cart.find(item => item.id === product.id);
               const isInCart = !!cartItem;
@@ -552,7 +552,7 @@ export default function POS() {
       </div>
 
       {/* Right Panel: Desktop Cart (Hidden on Mobile, Visible on lg+) */}
-      <div className="hidden lg:flex lg:flex-col lg:w-[30%] border-l bg-card">
+      <div className="hidden lg:flex lg:flex-col lg:flex-1 border-l bg-card">
         <div className="p-4 border-b bg-primary text-primary-foreground">
           <h2 className="text-xl font-bold">{t('financial:cart')}</h2>
         </div>
