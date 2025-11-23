@@ -10,6 +10,7 @@ const warehouse = {
   searchWarehouses: 'Tìm kiếm kho...',
   warehouseName: 'Tên kho',
   warehouseCode: 'Mã kho',
+  warehouseCodePlaceholder: 'vd: WH1, WH2, WHPRG, v.v.',
   warehouseLocation: 'Vị trí kho',
   warehouseType: 'Loại kho',
   warehouseCapacity: 'Sức chứa tối đa',

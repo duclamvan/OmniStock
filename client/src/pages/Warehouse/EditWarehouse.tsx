@@ -67,6 +67,7 @@ import {
 
 type WarehouseFormData = {
   name: string;
+  code?: string;
   location?: string;
   status: "active" | "inactive" | "maintenance" | "rented";
   rentedFromDate?: string;
@@ -101,6 +102,7 @@ export default function EditWarehouse() {
 
   const warehouseSchema = z.object({
     name: z.string().min(1, t('warehouse:warehouseNameRequired')),
+    code: z.string().optional(),
     location: z.string().optional(),
     status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
     rentedFromDate: z.string().optional(),
@@ -581,6 +583,19 @@ export default function EditWarehouse() {
                     )}
                   </div>
 
+                  <div>
+                    <Label htmlFor="code">{t('warehouse:warehouseCode')}</Label>
+                    <Input
+                      id="code"
+                      {...form.register("code")}
+                      placeholder={t('warehouse:warehouseCodePlaceholder')}
+                      className="mt-1"
+                      data-testid="input-warehouse-code"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="type">{t('warehouse:warehouseType')}</Label>
                     <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>

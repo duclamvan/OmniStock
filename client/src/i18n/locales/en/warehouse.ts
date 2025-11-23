@@ -10,6 +10,7 @@ const warehouse = {
   searchWarehouses: 'Search warehouses...',
   warehouseName: 'Warehouse Name',
   warehouseCode: 'Warehouse Code',
+  warehouseCodePlaceholder: 'e.g., WH1, WH2, WHPRG, etc.',
   warehouseLocation: 'Warehouse Location',
   warehouseType: 'Warehouse Type',
   warehouseCapacity: 'Max Capacity',
