@@ -58,8 +58,10 @@ export default function WarehouseMap() {
   const [selectedLocation, setSelectedLocation] = useState<LocationStats | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [savingAisles, setSavingAisles] = useState<Set<string>>(new Set());
+  const [savingGlobalConfig, setSavingGlobalConfig] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const aisleSaveTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const globalConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch warehouses
   const { data: warehouses, isLoading: warehousesLoading } = useQuery<any[]>({
@@ -80,6 +82,34 @@ export default function WarehouseMap() {
       const response = await fetch(`/api/product-locations?warehouseId=${selectedWarehouseId}`);
       if (!response.ok) throw new Error('Failed to fetch product locations');
       return response.json();
+    },
+  });
+
+  // Update warehouse-level configuration mutation
+  const updateWarehouseConfigMutation = useMutation({
+    mutationFn: async (config: { totalAisles: number; maxRacks: number; maxLevels: number; maxBins: number }) => {
+      const response = await fetch(`/api/warehouses/${selectedWarehouseId}/map-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save warehouse configuration');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setSavingGlobalConfig(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', selectedWarehouseId, 'map-config'] });
+    },
+    onError: (error) => {
+      console.error('Error saving warehouse configuration:', error);
+      setSavingGlobalConfig(false);
+      toast({
+        title: t('common:error'),
+        description: t('warehouse:failedToSaveWarehouseConfig'),
+        variant: "destructive",
+      });
     },
   });
 
@@ -132,6 +162,10 @@ export default function WarehouseMap() {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
+    if (globalConfigTimeoutRef.current) {
+      clearTimeout(globalConfigTimeoutRef.current);
+      globalConfigTimeoutRef.current = null;
+    }
   }, [selectedWarehouseId]);
 
   // Update local state when config is fetched
@@ -144,6 +178,23 @@ export default function WarehouseMap() {
       setAisleConfigs(warehouseConfig.aisleConfigs || {});
     }
   }, [warehouseConfig]);
+
+  // Debounced save function for warehouse-level configuration
+  const debouncedGlobalConfigSave = useCallback((config: { totalAisles: number; maxRacks: number; maxLevels: number; maxBins: number }) => {
+    // Clear existing timeout
+    if (globalConfigTimeoutRef.current) {
+      clearTimeout(globalConfigTimeoutRef.current);
+    }
+
+    // Mark as saving
+    setSavingGlobalConfig(true);
+
+    // Set new timeout
+    globalConfigTimeoutRef.current = setTimeout(() => {
+      updateWarehouseConfigMutation.mutate(config);
+      globalConfigTimeoutRef.current = null;
+    }, 800);
+  }, [updateWarehouseConfigMutation]);
 
   // Debounced save function for per-aisle configuration
   const debouncedAisleSave = useCallback((aisleId: string, config: AisleConfig) => {
@@ -163,6 +214,12 @@ export default function WarehouseMap() {
 
     aisleSaveTimeouts.current[aisleId] = timeout;
   }, [updateAisleConfigMutation]);
+
+  // Handle warehouse-level configuration changes
+  const handleTotalAislesChange = useCallback((value: number) => {
+    setTotalAisles(value);
+    debouncedGlobalConfigSave({ totalAisles: value, maxRacks, maxLevels, maxBins });
+  }, [maxRacks, maxLevels, maxBins, debouncedGlobalConfigSave]);
 
   // Handle aisle configuration changes
   const handleAisleConfigChange = useCallback((aisleId: string, field: keyof AisleConfig, value: number) => {
@@ -411,9 +468,16 @@ export default function WarehouseMap() {
       {selectedWarehouseId && (
         <Card className="border-amber-200 dark:border-amber-800">
           <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base flex items-center gap-2">
-              <Layers className="h-4 w-4 text-amber-600" />
-              {t('warehouse:aisleConfiguration')}
+            <CardTitle className="text-sm md:text-base flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-amber-600" />
+                {t('warehouse:aisleConfiguration')}
+              </div>
+              {savingGlobalConfig && (
+                <Badge variant="outline" className="text-xs">
+                  {t('warehouse:saving')}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 md:p-6 pt-0">
@@ -425,7 +489,37 @@ export default function WarehouseMap() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Generate list of aisles to configure */}
+                {/* Global Configuration: Total Aisles */}
+                <div className="border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 md:p-4 bg-amber-50 dark:bg-amber-950/30">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex-1">
+                      <Label htmlFor="total-aisles" className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                        {t('warehouse:totalAisles')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t('warehouse:totalAislesDescription')}
+                      </p>
+                    </div>
+                    <div className="w-24">
+                      <Select 
+                        value={totalAisles.toString()} 
+                        onValueChange={(v) => handleTotalAislesChange(parseInt(v))}
+                        data-testid="select-total-aisles"
+                      >
+                        <SelectTrigger id="total-aisles" className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30].map(n => (
+                            <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Per-Aisle Configuration */}
                 {Array.from({ length: totalAisles }, (_, i) => {
                   const aisleId = `A${String(i + 1).padStart(2, '0')}`;
                   const config = aisleConfigs[aisleId] || { maxRacks, maxLevels, maxBins };
