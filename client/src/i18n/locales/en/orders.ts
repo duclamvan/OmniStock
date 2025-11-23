@@ -327,7 +327,7 @@ const orders = {
   
   // Customer Selection & Creation
   searchCustomer: 'Search Customer',
-  searchCustomerPlaceholder: 'Type to search customers (Vietnamese diacritics supported)...',
+  searchCustomerPlaceholder: 'Search by name, email, phone, or paste Facebook URL...',
   customersFound: '{{count}} customer(s) found',
   quickCustomer: 'Quick Customer',
   newCustomer: 'New',

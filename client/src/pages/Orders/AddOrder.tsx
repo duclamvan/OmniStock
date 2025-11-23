@@ -99,6 +99,38 @@ const normalizeCarrier = (value: string): string => {
   return map[value] || value;
 };
 
+// Helper function to extract Facebook ID or username from URL
+const extractFacebookId = (input: string): string | null => {
+  if (!input) return null;
+  
+  // Check if input looks like a Facebook URL
+  const facebookUrlPattern = /(?:https?:\/\/)?(?:www\.|m\.)?facebook\.com\//i;
+  if (!facebookUrlPattern.test(input)) return null;
+  
+  try {
+    // Pattern 1: profile.php?id=12345
+    const numericIdMatch = input.match(/profile\.php\?id=(\d+)/);
+    if (numericIdMatch) {
+      return numericIdMatch[1];
+    }
+    
+    // Pattern 2: facebook.com/username or facebook.com/pages/name/id
+    const usernameMatch = input.match(/facebook\.com\/([^/?&#]+)/);
+    if (usernameMatch && usernameMatch[1]) {
+      const username = usernameMatch[1];
+      // Exclude common paths that aren't usernames
+      const excludedPaths = ['profile.php', 'pages', 'groups', 'events', 'marketplace', 'watch', 'gaming'];
+      if (!excludedPaths.includes(username.toLowerCase())) {
+        return username;
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting Facebook ID:', error);
+  }
+  
+  return null;
+};
+
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
   orderType: z.enum(['pos', 'ord', 'web', 'tel']).default('ord'),
@@ -1744,8 +1776,24 @@ export default function AddOrder() {
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
 
+    // Check if the search query is a Facebook URL
+    const extractedFbId = extractFacebookId(debouncedCustomerSearch);
+    
+    if (extractedFbId) {
+      // Search by facebookId or facebookName directly
+      const exactMatches = allCustomers.filter((customer: any) => 
+        customer.facebookId === extractedFbId || 
+        customer.facebookName?.toLowerCase() === extractedFbId.toLowerCase() ||
+        customer.facebookUrl?.includes(extractedFbId)
+      );
+      
+      if (exactMatches.length > 0) {
+        return exactMatches;
+      }
+    }
+
     const results = fuzzySearch(allCustomers, debouncedCustomerSearch, {
-      fields: ['name', 'facebookName', 'email', 'phone', 'company'],
+      fields: ['name', 'facebookName', 'email', 'phone', 'company', 'facebookId'],
       threshold: 0.2, // Lower threshold for more results
       fuzzy: true,
       vietnameseNormalization: true,
@@ -2364,7 +2412,7 @@ export default function AddOrder() {
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
                   <div>No customers found for "{customerSearch}"</div>
-                  <div className="text-xs mt-1">Try searching by name, email, or Facebook name</div>
+                  <div className="text-xs mt-1">Try searching by name, email, phone, Facebook name, or paste a Facebook URL</div>
                   <Button
                     type="button"
                     variant="outline"

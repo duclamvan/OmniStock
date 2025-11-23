@@ -312,7 +312,7 @@ const orders = {
   
   // Customer Selection & Creation
   searchCustomer: 'Tìm khách hàng',
-  searchCustomerPlaceholder: 'Nhập để tìm kiếm khách hàng (hỗ trợ tiếng Việt có dấu)...',
+  searchCustomerPlaceholder: 'Tìm theo tên, email, SĐT, hoặc dán link Facebook...',
   customersFound: 'Tìm thấy {{count}} khách hàng',
   quickCustomer: 'Khách nhanh',
   newCustomer: 'Mới',
