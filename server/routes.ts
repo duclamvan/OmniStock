@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
+import rateLimit from 'express-rate-limit';
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
@@ -305,10 +306,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test-only endpoint for seeding user roles (RBAC testing)
   // This endpoint bypasses OIDC limitations and allows direct role assignment for automated tests
+  // SECURITY: Protected by shared secret to prevent unauthorized role escalation
   app.post('/api/test/seed-role', async (req, res) => {
     // Only available in non-production environments
     if (process.env.NODE_ENV === 'production') {
       return res.status(404).json({ message: 'Not found' });
+    }
+
+    // Verify shared secret authorization header
+    const authHeader = req.headers['x-test-secret'];
+    const expectedSecret = process.env.TEST_SECRET || 'replit-agent-test-secret-change-in-production';
+    
+    if (authHeader !== expectedSecret) {
+      console.warn(`[SECURITY] Unauthorized test endpoint access attempt from IP: ${req.ip}`);
+      return res.status(403).json({ message: 'Forbidden' });
     }
 
     try {
@@ -349,8 +360,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Phone verification storage (in production, use Redis or database)
   const phoneVerificationCodes = new Map<string, { code: string; expires: number; attempts: number }>();
 
+  // Rate limiting for authentication endpoints
+  const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const smsRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // Limit each IP to 3 SMS sends per hour
+    message: 'Too many SMS requests, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const twoFactorRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 2FA attempts per 15 minutes
+    message: 'Too many 2FA attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Send phone verification code
-  app.post('/api/auth/send-phone-code', async (req, res) => {
+  app.post('/api/auth/send-phone-code', smsRateLimiter, async (req, res) => {
     try {
       const { phone } = req.body;
 
@@ -381,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Verify phone code and login
-  app.post('/api/auth/verify-phone-code', async (req, res) => {
+  app.post('/api/auth/verify-phone-code', authRateLimiter, async (req, res) => {
     try {
       const { phone, code } = req.body;
 
@@ -434,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Register with phone number
-  app.post('/api/auth/register-with-phone', async (req, res) => {
+  app.post('/api/auth/register-with-phone', authRateLimiter, async (req, res) => {
     try {
       const { name, phone, code } = req.body;
 
@@ -619,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/users/me - Get current user info (authenticated users)
-  app.get('/api/users/me', async (req: any, res) => {
+  app.get('/api/users/me', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
@@ -662,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/users/me - Update current user profile
-  app.patch('/api/users/me', async (req: any, res) => {
+  app.patch('/api/users/me', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
@@ -805,7 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/2fa/setup - Enable/disable 2FA
-  app.post('/api/2fa/setup', async (req: any, res) => {
+  app.post('/api/2fa/setup', twoFactorRateLimiter, async (req: any, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
@@ -839,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/2fa/send-code - Send verification code
-  app.post('/api/2fa/send-code', async (req: any, res) => {
+  app.post('/api/2fa/send-code', smsRateLimiter, async (req: any, res) => {
     try {
       const { phoneNumber } = req.body;
 
@@ -864,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/2fa/verify - Verify SMS code
-  app.post('/api/2fa/verify', async (req: any, res) => {
+  app.post('/api/2fa/verify', twoFactorRateLimiter, async (req: any, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
@@ -904,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/auth/sms/start - Send SMS verification code for primary authentication
-  app.post('/api/auth/sms/start', async (req: any, res) => {
+  app.post('/api/auth/sms/start', smsRateLimiter, async (req: any, res) => {
     try {
       const { phoneNumber } = req.body;
 
@@ -937,7 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/auth/sms/verify - Verify SMS code and create session for primary authentication
-  app.post('/api/auth/sms/verify', async (req: any, res) => {
+  app.post('/api/auth/sms/verify', authRateLimiter, async (req: any, res) => {
     try {
       const { phoneNumber, code } = req.body;
 
@@ -1817,7 +1853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image upload endpoint
-  app.post('/api/upload', upload.single('image'), async (req, res) => {
+  app.post('/api/upload', isAuthenticated, upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1935,7 +1971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Global Search endpoint - PostgreSQL-native accent-insensitive search
-  app.get('/api/search', async (req, res) => {
+  app.get('/api/search', isAuthenticated, async (req, res) => {
     try {
       const query = req.query.q as string || '';
 
@@ -2134,7 +2170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Categories endpoints
-  app.get('/api/categories', async (req, res) => {
+  app.get('/api/categories', isAuthenticated, async (req, res) => {
     try {
       const categories = await storage.getCategories();
       res.json(categories);
@@ -2144,7 +2180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/categories', async (req: any, res) => {
+  app.post('/api/categories', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertCategorySchema.parse(req.body);
       const category = await storage.createCategory(data);
@@ -2165,7 +2201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/categories/:id', async (req, res) => {
+  app.get('/api/categories/:id', isAuthenticated, async (req, res) => {
     try {
       // Validate ID is a number
       const id = parseInt(req.params.id);
@@ -2184,7 +2220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/categories/:id', async (req: any, res) => {
+  app.patch('/api/categories/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const category = await storage.updateCategory(req.params.id, updates);
@@ -2204,7 +2240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/categories/:id', async (req: any, res) => {
+  app.delete('/api/categories/:id', isAuthenticated, async (req: any, res) => {
     try {
       const category = await storage.getCategoryById(req.params.id);
       if (!category) {
@@ -2239,7 +2275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI translation for category names
-  app.post('/api/categories/translate', async (req, res) => {
+  app.post('/api/categories/translate', isAuthenticated, async (req, res) => {
     try {
       const { categoryName } = req.body;
 
@@ -2308,7 +2344,7 @@ Important:
   });
 
   // Warehouses endpoints
-  app.get('/api/warehouses', async (req, res) => {
+  app.get('/api/warehouses', isAuthenticated, async (req, res) => {
     try {
       const warehouses = await storage.getWarehouses();
       const products = await storage.getProducts();
@@ -2329,7 +2365,7 @@ Important:
     }
   });
 
-  app.post('/api/warehouses', async (req: any, res) => {
+  app.post('/api/warehouses', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertWarehouseSchema.parse(req.body);
       const warehouse = await storage.createWarehouse(data);
@@ -2350,7 +2386,7 @@ Important:
   });
 
   // Add warehouse map files route (must be before :id route)
-  app.get('/api/warehouses/map/files', async (req, res) => {
+  app.get('/api/warehouses/map/files', isAuthenticated, async (req, res) => {
     try {
       // Return empty array for now as warehouse maps are stored elsewhere
       res.json([]);
@@ -2360,7 +2396,7 @@ Important:
     }
   });
 
-  app.get('/api/warehouses/:id', async (req, res) => {
+  app.get('/api/warehouses/:id', isAuthenticated, async (req, res) => {
     try {
       const warehouse = await storage.getWarehouse(req.params.id);
       if (!warehouse) {
@@ -2373,7 +2409,7 @@ Important:
     }
   });
 
-  app.patch('/api/warehouses/:id', async (req: any, res) => {
+  app.patch('/api/warehouses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const warehouse = await storage.updateWarehouse(req.params.id, updates);
@@ -2393,7 +2429,7 @@ Important:
     }
   });
 
-  app.delete('/api/warehouses/:id', async (req: any, res) => {
+  app.delete('/api/warehouses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const warehouse = await storage.getWarehouse(req.params.id);
       if (!warehouse) {
@@ -2426,7 +2462,7 @@ Important:
   });
 
   // Get warehouse map configuration
-  app.get('/api/warehouses/:id/map-config', async (req, res) => {
+  app.get('/api/warehouses/:id/map-config', isAuthenticated, async (req, res) => {
     try {
       const warehouse = await storage.getWarehouse(req.params.id);
       if (!warehouse) {
@@ -2446,7 +2482,7 @@ Important:
   });
 
   // Update warehouse map configuration
-  app.put('/api/warehouses/:id/map-config', async (req: any, res) => {
+  app.put('/api/warehouses/:id/map-config', isAuthenticated, async (req: any, res) => {
     try {
       const warehouseConfigSchema = z.object({
         totalAisles: z.number().int().min(1).max(50),
@@ -2501,7 +2537,7 @@ Important:
   });
 
   // Update per-aisle configuration
-  app.put('/api/warehouses/:id/aisle-config/:aisleId', async (req: any, res) => {
+  app.put('/api/warehouses/:id/aisle-config/:aisleId', isAuthenticated, async (req: any, res) => {
     try {
       const aisleConfigSchema = z.object({
         maxRacks: z.number().int().min(1).max(100),
@@ -2563,7 +2599,7 @@ Important:
   });
 
   // Get product locations for a warehouse with product details
-  app.get('/api/product-locations', async (req, res) => {
+  app.get('/api/product-locations', isAuthenticated, async (req, res) => {
     try {
       const { warehouseId } = req.query;
 
@@ -2621,7 +2657,7 @@ Important:
   });
 
   // Get products in a warehouse
-  app.get('/api/warehouses/:id/products', async (req, res) => {
+  app.get('/api/warehouses/:id/products', isAuthenticated, async (req, res) => {
     try {
       const warehouseId = req.params.id;
       const allProducts = await storage.getProducts();
@@ -2659,7 +2695,7 @@ Important:
   });
 
   // Warehouse file management endpoints
-  app.get('/api/warehouses/:id/files', async (req, res) => {
+  app.get('/api/warehouses/:id/files', isAuthenticated, async (req, res) => {
     try {
       const files = await storage.getWarehouseFiles(req.params.id);
       res.json(files);
@@ -2669,7 +2705,7 @@ Important:
     }
   });
 
-  app.post('/api/warehouses/:id/files', async (req: any, res) => {
+  app.post('/api/warehouses/:id/files', isAuthenticated, async (req: any, res) => {
     try {
       const { fileName, fileType, fileUrl, fileSize } = req.body;
 
@@ -2700,7 +2736,7 @@ Important:
     }
   });
 
-  app.delete('/api/warehouse-files/:id', async (req: any, res) => {
+  app.delete('/api/warehouse-files/:id', isAuthenticated, async (req: any, res) => {
     try {
       const file = await storage.getWarehouseFileById(req.params.id);
       if (!file) {
@@ -2820,7 +2856,7 @@ Important:
   });
 
   // Warehouse Layout endpoints
-  app.get('/api/warehouses/:id/layout', async (req, res) => {
+  app.get('/api/warehouses/:id/layout', isAuthenticated, async (req, res) => {
     try {
       const layout = await storage.getWarehouseLayout(req.params.id);
       if (!layout) {
@@ -2833,7 +2869,7 @@ Important:
     }
   });
 
-  app.post('/api/warehouses/:id/layout/generate', async (req: any, res) => {
+  app.post('/api/warehouses/:id/layout/generate', isAuthenticated, async (req: any, res) => {
     try {
       const config = req.body;
       const layout = await storage.generateBinLayout(req.params.id, config);
@@ -2853,7 +2889,7 @@ Important:
     }
   });
 
-  app.get('/api/warehouses/:id/layout/bins', async (req, res) => {
+  app.get('/api/warehouses/:id/layout/bins', isAuthenticated, async (req, res) => {
     try {
       const layout = await storage.getWarehouseLayout(req.params.id);
       if (!layout) {
@@ -2868,7 +2904,7 @@ Important:
     }
   });
 
-  app.get('/api/warehouses/:id/layout/stats', async (req, res) => {
+  app.get('/api/warehouses/:id/layout/stats', isAuthenticated, async (req, res) => {
     try {
       const layout = await storage.getWarehouseLayout(req.params.id);
       if (!layout) {
@@ -2883,7 +2919,7 @@ Important:
     }
   });
 
-  app.patch('/api/bins/:id', async (req: any, res) => {
+  app.patch('/api/bins/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const bin = await storage.updateLayoutBin(req.params.id, updates);
@@ -2908,7 +2944,7 @@ Important:
   });
 
   // Suppliers endpoints
-  app.get('/api/suppliers', async (req, res) => {
+  app.get('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
       const suppliers = await storage.getSuppliers();
       res.json(suppliers);
@@ -2918,7 +2954,7 @@ Important:
     }
   });
 
-  app.get('/api/suppliers/:id', async (req, res) => {
+  app.get('/api/suppliers/:id', isAuthenticated, async (req, res) => {
     try {
       const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
@@ -2931,7 +2967,7 @@ Important:
     }
   });
 
-  app.post('/api/suppliers', async (req: any, res) => {
+  app.post('/api/suppliers', isAuthenticated, async (req: any, res) => {
     try {
       // Define supplier schema inline since we're not using a separate suppliers table
       const supplierSchema = z.object({
@@ -2960,7 +2996,7 @@ Important:
     }
   });
 
-  app.patch('/api/suppliers/:id', async (req: any, res) => {
+  app.patch('/api/suppliers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const supplier = await storage.updateSupplier(req.params.id, req.body);
 
@@ -2979,7 +3015,7 @@ Important:
     }
   });
 
-  app.delete('/api/suppliers/:id', async (req: any, res) => {
+  app.delete('/api/suppliers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
@@ -3012,7 +3048,7 @@ Important:
   });
 
   // Supplier Files endpoints
-  app.get('/api/suppliers/:supplierId/files', async (req, res) => {
+  app.get('/api/suppliers/:supplierId/files', isAuthenticated, async (req, res) => {
     try {
       const files = await storage.getSupplierFiles(req.params.supplierId);
       res.json(files);
@@ -3023,7 +3059,7 @@ Important:
   });
 
   // Generic object upload endpoint
-  app.post('/api/objects/upload', async (req: any, res) => {
+  app.post('/api/objects/upload', isAuthenticated, async (req: any, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -3034,7 +3070,7 @@ Important:
     }
   });
 
-  app.post('/api/suppliers/:id/files/upload', async (req: any, res) => {
+  app.post('/api/suppliers/:id/files/upload', isAuthenticated, async (req: any, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -3045,7 +3081,7 @@ Important:
     }
   });
 
-  app.post('/api/suppliers/:supplierId/files', async (req: any, res) => {
+  app.post('/api/suppliers/:supplierId/files', isAuthenticated, async (req: any, res) => {
     try {
       const { fileName, fileType, fileUrl, fileSize, mimeType } = req.body;
 
@@ -3077,7 +3113,7 @@ Important:
   });
 
   // Delete supplier file - using the standard pattern /api/supplier-files/:fileId
-  app.delete('/api/supplier-files/:fileId', async (req: any, res) => {
+  app.delete('/api/supplier-files/:fileId', isAuthenticated, async (req: any, res) => {
     try {
       const deleted = await storage.deleteSupplierFile(req.params.fileId);
       if (!deleted) {
@@ -3091,7 +3127,7 @@ Important:
   });
 
   // Keep backward compatibility with old route pattern
-  app.delete('/api/suppliers/:id/files/:fileId', async (req: any, res) => {
+  app.delete('/api/suppliers/:id/files/:fileId', isAuthenticated, async (req: any, res) => {
     try {
       const deleted = await storage.deleteSupplierFile(req.params.fileId);
       if (!deleted) {
@@ -3130,7 +3166,7 @@ Important:
   });
 
   // Product Bundles endpoints
-  app.get('/api/bundles', async (req, res) => {
+  app.get('/api/bundles', isAuthenticated, async (req, res) => {
     try {
       const bundles = await storage.getBundles();
 
@@ -3177,7 +3213,7 @@ Important:
     }
   });
 
-  app.get('/api/bundles/:id', async (req, res) => {
+  app.get('/api/bundles/:id', isAuthenticated, async (req, res) => {
     try {
       const bundle = await storage.getBundleById(req.params.id);
       if (!bundle) {
@@ -3215,7 +3251,7 @@ Important:
     }
   });
 
-  app.get('/api/bundles/:id/items', async (req, res) => {
+  app.get('/api/bundles/:id/items', isAuthenticated, async (req, res) => {
     try {
       const items = await storage.getBundleItems(req.params.id);
       // Filter financial data based on user role
@@ -3228,7 +3264,7 @@ Important:
     }
   });
 
-  app.post('/api/bundles', async (req: any, res) => {
+  app.post('/api/bundles', isAuthenticated, async (req: any, res) => {
     try {
       const { items, ...bundleData } = req.body;
       const bundle = await storage.createBundle(bundleData);
@@ -3253,7 +3289,7 @@ Important:
     }
   });
 
-  app.put('/api/bundles/:id', async (req: any, res) => {
+  app.put('/api/bundles/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { items, ...bundleData } = req.body;
       const updatedBundle = await storage.updateBundle(req.params.id, bundleData);
@@ -3282,7 +3318,7 @@ Important:
     }
   });
 
-  app.delete('/api/bundles/:id', async (req, res) => {
+  app.delete('/api/bundles/:id', isAuthenticated, async (req, res) => {
     try {
       await storage.deleteBundle(req.params.id);
       res.status(204).send();
@@ -3293,7 +3329,7 @@ Important:
   });
 
   // Add bundle items endpoint
-  app.post('/api/bundles/:id/items', async (req: any, res) => {
+  app.post('/api/bundles/:id/items', isAuthenticated, async (req: any, res) => {
     try {
       const items = req.body;
       const bundleId = req.params.id;
@@ -3320,7 +3356,7 @@ Important:
   });
 
   // Duplicate bundle endpoint
-  app.post('/api/bundles/:id/duplicate', async (req, res) => {
+  app.post('/api/bundles/:id/duplicate', isAuthenticated, async (req, res) => {
     try {
       const originalBundle = await storage.getBundleById(req.params.id);
       if (!originalBundle) {
@@ -3360,7 +3396,7 @@ Important:
   });
 
   // Update bundle status endpoint
-  app.patch('/api/bundles/:id', async (req: any, res) => {
+  app.patch('/api/bundles/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updatedBundle = await storage.updateBundle(req.params.id, req.body);
       res.json(updatedBundle);
@@ -3371,7 +3407,7 @@ Important:
   });
 
   // Products endpoints
-  app.get('/api/products', async (req: any, res) => {
+  app.get('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const search = req.query.search as string;
       const includeInactive = req.query.includeInactive === 'true';
@@ -3415,7 +3451,7 @@ Important:
     }
   });
 
-  app.get('/api/products/low-stock', async (req, res) => {
+  app.get('/api/products/low-stock', isAuthenticated, async (req, res) => {
     try {
       const products = await storage.getLowStockProducts();
       // Filter financial data based on user role
@@ -3428,7 +3464,7 @@ Important:
     }
   });
 
-  app.get('/api/products/:id', async (req: any, res) => {
+  app.get('/api/products/:id', isAuthenticated, async (req: any, res) => {
     try {
       const product = await storage.getProductById(req.params.id);
       if (!product) {
@@ -3458,7 +3494,7 @@ Important:
   });
 
   // Product Locations endpoint
-  app.get('/api/products/:id/locations', async (req, res) => {
+  app.get('/api/products/:id/locations', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
 
@@ -3498,7 +3534,7 @@ Important:
   });
 
   // Product Files endpoints
-  app.get('/api/products/:id/files', async (req, res) => {
+  app.get('/api/products/:id/files', isAuthenticated, async (req, res) => {
     try {
       const files = await storage.getProductFiles(req.params.id);
       // Filter financial data based on user role
@@ -3527,7 +3563,7 @@ Important:
     }
   });
 
-  app.post('/api/products/:id/files', productFileUpload.single('file'), async (req: any, res) => {
+  app.post('/api/products/:id/files', isAuthenticated, productFileUpload.single('file'), async (req: any, res) => {
     try {
       const productId = req.params.id;
 
@@ -3575,7 +3611,7 @@ Important:
     }
   });
 
-  app.patch('/api/product-files/:fileId', async (req, res) => {
+  app.patch('/api/product-files/:fileId', isAuthenticated, async (req, res) => {
     try {
       const fileId = req.params.fileId;
       const { fileType, description, language } = req.body;
@@ -3599,7 +3635,7 @@ Important:
     }
   });
 
-  app.delete('/api/product-files/:fileId', async (req, res) => {
+  app.delete('/api/product-files/:fileId', isAuthenticated, async (req, res) => {
     try {
       const file = await storage.getProductFile(req.params.fileId);
 
@@ -3633,7 +3669,7 @@ Important:
     }
   });
 
-  app.get('/api/product-files/:fileId/download', async (req, res) => {
+  app.get('/api/product-files/:fileId/download', isAuthenticated, async (req, res) => {
     try {
       const file = await storage.getProductFile(req.params.fileId);
 
@@ -3681,7 +3717,7 @@ Important:
     }
   });
 
-  app.post('/api/orders/:orderId/files', orderFileUpload.single('file'), async (req: any, res) => {
+  app.post('/api/orders/:orderId/files', isAuthenticated, orderFileUpload.single('file'), async (req: any, res) => {
     try {
       const orderId = req.params.orderId;
 
@@ -3727,7 +3763,7 @@ Important:
     }
   });
 
-  app.delete('/api/order-files/:fileId', async (req, res) => {
+  app.delete('/api/order-files/:fileId', isAuthenticated, async (req, res) => {
     try {
       const file = await storage.getOrderFile(req.params.fileId);
 
@@ -3759,7 +3795,7 @@ Important:
     }
   });
 
-  app.get('/api/products/:id/tiered-pricing', async (req, res) => {
+  app.get('/api/products/:id/tiered-pricing', isAuthenticated, async (req, res) => {
     try {
       const pricing = await storage.getProductTieredPricing(req.params.id);
       res.json(pricing);
@@ -3769,7 +3805,7 @@ Important:
     }
   });
 
-  app.post('/api/products/:id/tiered-pricing', async (req, res) => {
+  app.post('/api/products/:id/tiered-pricing', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
       const validationResult = insertProductTieredPricingSchema.safeParse({
@@ -3792,7 +3828,7 @@ Important:
     }
   });
 
-  app.patch('/api/products/tiered-pricing/:id', async (req, res) => {
+  app.patch('/api/products/tiered-pricing/:id', isAuthenticated, async (req, res) => {
     try {
       const validationResult = insertProductTieredPricingSchema.partial().safeParse(req.body);
 
@@ -3819,7 +3855,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/tiered-pricing/:id', async (req, res) => {
+  app.delete('/api/products/tiered-pricing/:id', isAuthenticated, async (req, res) => {
     try {
       const deleted = await storage.deleteProductTieredPricing(req.params.id);
 
@@ -3834,7 +3870,7 @@ Important:
     }
   });
 
-  app.post('/api/products/order-counts', async (req, res) => {
+  app.post('/api/products/order-counts', isAuthenticated, async (req, res) => {
     try {
       const { productIds } = req.body;
       if (!Array.isArray(productIds)) {
@@ -3850,7 +3886,7 @@ Important:
   });
 
   // Product Cost History endpoint
-  app.get('/api/products/:id/cost-history', async (req, res) => {
+  app.get('/api/products/:id/cost-history', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
 
@@ -3901,7 +3937,7 @@ Important:
   });
 
   // Product Reorder Rate endpoints
-  app.get('/api/products/:id/reorder-rate', async (req, res) => {
+  app.get('/api/products/:id/reorder-rate', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
 
@@ -3924,7 +3960,7 @@ Important:
     }
   });
 
-  app.post('/api/products/calculate-reorder-rates', async (req, res) => {
+  app.post('/api/products/calculate-reorder-rates', isAuthenticated, async (req, res) => {
     try {
       // Get all products
       const allProducts = await storage.getProducts();
@@ -3962,7 +3998,7 @@ Important:
   });
 
   // Product Order History endpoint
-  app.get('/api/products/:id/order-history', async (req, res) => {
+  app.get('/api/products/:id/order-history', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
 
@@ -4070,7 +4106,7 @@ Important:
     }
   });
 
-  app.post('/api/products', async (req: any, res) => {
+  app.post('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertProductSchema.parse(req.body);
 
@@ -4126,7 +4162,7 @@ Important:
     }
   });
 
-  app.patch('/api/products/:id', async (req: any, res) => {
+  app.patch('/api/products/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = { ...req.body };
       const productId = req.params.id;
@@ -4199,7 +4235,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/:id', async (req: any, res) => {
+  app.delete('/api/products/:id', isAuthenticated, async (req: any, res) => {
     try {
       const product = await storage.getProductById(req.params.id);
       if (!product) {
@@ -4232,7 +4268,7 @@ Important:
   });
 
   // Move product to another warehouse
-  app.post('/api/products/:id/move-warehouse', async (req: any, res) => {
+  app.post('/api/products/:id/move-warehouse', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId } = req.params;
       const { targetWarehouseId } = req.body;
@@ -4282,7 +4318,7 @@ Important:
   });
 
   // Product Variants
-  app.get('/api/products/:productId/variants', async (req: any, res) => {
+  app.get('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
       const variants = await storage.getProductVariants(req.params.productId);
       // Filter financial data based on user role
@@ -4295,7 +4331,7 @@ Important:
     }
   });
 
-  app.post('/api/products/:productId/variants', async (req: any, res) => {
+  app.post('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertProductVariantSchema.parse({
         ...req.body,
@@ -4322,7 +4358,7 @@ Important:
     }
   });
 
-  app.patch('/api/products/:productId/variants/:id', async (req: any, res) => {
+  app.patch('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const variant = await storage.updateProductVariant(req.params.id, updates);
@@ -4342,7 +4378,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/:productId/variants/:id', async (req: any, res) => {
+  app.delete('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
     try {
       await storage.deleteProductVariant(req.params.id);
 
@@ -4362,7 +4398,7 @@ Important:
   });
 
   // Bulk create product variants
-  app.post('/api/products/:productId/variants/bulk', async (req: any, res) => {
+  app.post('/api/products/:productId/variants/bulk', isAuthenticated, async (req: any, res) => {
     try {
       const { variants } = req.body;
       if (!Array.isArray(variants)) {
@@ -4399,7 +4435,7 @@ Important:
   });
 
   // Move products to another warehouse
-  app.post('/api/products/move-warehouse', async (req: any, res) => {
+  app.post('/api/products/move-warehouse', isAuthenticated, async (req: any, res) => {
     try {
       const { productIds, targetWarehouseId } = req.body;
 
@@ -4436,7 +4472,7 @@ Important:
   });
 
   // Bulk delete product variants
-  app.post('/api/products/:productId/variants/bulk-delete', async (req: any, res) => {
+  app.post('/api/products/:productId/variants/bulk-delete', isAuthenticated, async (req: any, res) => {
     try {
       console.log("Bulk delete request body:", req.body);
       const { variantIds } = req.body;
@@ -4471,7 +4507,7 @@ Important:
   });
 
   // Product Locations endpoints
-  app.get('/api/products/:id/locations', async (req, res) => {
+  app.get('/api/products/:id/locations', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
       const locations = await storage.getProductLocations(productId);
@@ -4482,7 +4518,7 @@ Important:
     }
   });
 
-  app.post('/api/products/:id/locations', async (req: any, res) => {
+  app.post('/api/products/:id/locations', isAuthenticated, async (req: any, res) => {
     try {
       const productId = req.params.id;
 
@@ -4524,7 +4560,7 @@ Important:
     }
   });
 
-  app.patch('/api/products/:id/locations/:locationId', async (req: any, res) => {
+  app.patch('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
 
@@ -4591,7 +4627,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/:id/locations/:locationId', async (req: any, res) => {
+  app.delete('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
 
@@ -4633,7 +4669,7 @@ Important:
     }
   });
 
-  app.post('/api/products/:id/locations/move', async (req: any, res) => {
+  app.post('/api/products/:id/locations/move', isAuthenticated, async (req: any, res) => {
     try {
       const { fromLocationId, toLocationId, quantity } = req.body;
 
@@ -4676,7 +4712,7 @@ Important:
   });
 
   // Stock Adjustment Request endpoints
-  app.get('/api/stock-adjustment-requests', async (req: any, res) => {
+  app.get('/api/stock-adjustment-requests', isAuthenticated, async (req: any, res) => {
     try {
       const requests = await storage.getStockAdjustmentRequests();
       // Filter financial data based on user role
@@ -4689,7 +4725,7 @@ Important:
     }
   });
 
-  app.get('/api/over-allocated-items', async (req: any, res) => {
+  app.get('/api/over-allocated-items', isAuthenticated, async (req: any, res) => {
     try {
       const items = await storage.getOverAllocatedItems();
       // Filter financial data based on user role
@@ -4702,7 +4738,7 @@ Important:
     }
   });
 
-  app.get('/api/under-allocated-items', async (req: any, res) => {
+  app.get('/api/under-allocated-items', isAuthenticated, async (req: any, res) => {
     try {
       const items = await storage.getUnderAllocatedItems();
       // Filter financial data based on user role
@@ -4715,7 +4751,7 @@ Important:
     }
   });
 
-  app.post('/api/stock-adjustment-requests', async (req: any, res) => {
+  app.post('/api/stock-adjustment-requests', isAuthenticated, async (req: any, res) => {
     try {
       // Get user ID (fallback to test-user if auth is disabled)
       const userId = req.user?.id || "test-user";
@@ -4751,7 +4787,7 @@ Important:
   });
 
   // Direct stock adjustment (bypasses approval if setting allows)
-  app.post('/api/stock/direct-adjustment', async (req: any, res) => {
+  app.post('/api/stock/direct-adjustment', isAuthenticated, async (req: any, res) => {
     try {
       // Get user ID (fallback to test-user if auth is disabled)
       const userId = req.user?.id || "test-user";
@@ -4826,7 +4862,7 @@ Important:
     }
   });
 
-  app.patch('/api/stock-adjustment-requests/:id/approve', async (req: any, res) => {
+  app.patch('/api/stock-adjustment-requests/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const approvedBy = req.body.approvedBy || "test-user";
@@ -4854,7 +4890,7 @@ Important:
     }
   });
 
-  app.patch('/api/stock-adjustment-requests/:id/reject', async (req: any, res) => {
+  app.patch('/api/stock-adjustment-requests/:id/reject', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { approvedBy = "test-user", reason } = req.body;
@@ -4887,7 +4923,7 @@ Important:
   });
 
   // Packing Materials endpoints
-  app.get('/api/packing-materials', async (req, res) => {
+  app.get('/api/packing-materials', isAuthenticated, async (req, res) => {
     try {
       const search = req.query.search as string;
       let materials;
@@ -4905,7 +4941,7 @@ Important:
     }
   });
 
-  app.get('/api/packing-materials/:id', async (req, res) => {
+  app.get('/api/packing-materials/:id', isAuthenticated, async (req, res) => {
     try {
       const material = await storage.getPackingMaterial(req.params.id);
       if (material) {
@@ -4919,7 +4955,7 @@ Important:
     }
   });
 
-  app.post('/api/packing-materials', async (req: any, res) => {
+  app.post('/api/packing-materials', isAuthenticated, async (req: any, res) => {
     try {
       const materialData = req.body;
       const material = await storage.createPackingMaterial(materialData);
@@ -4939,7 +4975,7 @@ Important:
     }
   });
 
-  app.patch('/api/packing-materials/:id', async (req: any, res) => {
+  app.patch('/api/packing-materials/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const material = await storage.updatePackingMaterial(req.params.id, updates);
@@ -4959,7 +4995,7 @@ Important:
     }
   });
 
-  app.delete('/api/packing-materials/:id', async (req: any, res) => {
+  app.delete('/api/packing-materials/:id', isAuthenticated, async (req: any, res) => {
     try {
       await storage.deletePackingMaterial(req.params.id);
 
@@ -4979,7 +5015,7 @@ Important:
   });
 
   // Bulk delete packing materials
-  app.post('/api/packing-materials/bulk-delete', async (req: any, res) => {
+  app.post('/api/packing-materials/bulk-delete', isAuthenticated, async (req: any, res) => {
     try {
       const { ids } = req.body;
 
@@ -5006,7 +5042,7 @@ Important:
   });
 
   // Bulk update category
-  app.post('/api/packing-materials/bulk-update-category', async (req: any, res) => {
+  app.post('/api/packing-materials/bulk-update-category', isAuthenticated, async (req: any, res) => {
     try {
       const { ids, category } = req.body;
 
@@ -5039,7 +5075,7 @@ Important:
   });
 
   // PM Suppliers endpoints
-  app.get('/api/pm-suppliers', async (req, res) => {
+  app.get('/api/pm-suppliers', isAuthenticated, async (req, res) => {
     try {
       const search = req.query.search as string;
       let suppliers;
@@ -5057,7 +5093,7 @@ Important:
     }
   });
 
-  app.get('/api/pm-suppliers/:id', async (req, res) => {
+  app.get('/api/pm-suppliers/:id', isAuthenticated, async (req, res) => {
     try {
       const supplier = await storage.getPmSupplier(req.params.id);
       if (supplier) {
@@ -5071,7 +5107,7 @@ Important:
     }
   });
 
-  app.post('/api/pm-suppliers', async (req: any, res) => {
+  app.post('/api/pm-suppliers', isAuthenticated, async (req: any, res) => {
     try {
       const supplierData = req.body;
       const supplier = await storage.createPmSupplier(supplierData);
@@ -5091,7 +5127,7 @@ Important:
     }
   });
 
-  app.patch('/api/pm-suppliers/:id', async (req: any, res) => {
+  app.patch('/api/pm-suppliers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const supplier = await storage.updatePmSupplier(req.params.id, updates);
@@ -5115,7 +5151,7 @@ Important:
     }
   });
 
-  app.delete('/api/pm-suppliers/:id', async (req: any, res) => {
+  app.delete('/api/pm-suppliers/:id', isAuthenticated, async (req: any, res) => {
     try {
       await storage.deletePmSupplier(req.params.id);
 
@@ -5135,7 +5171,7 @@ Important:
   });
 
   // Batch compress existing images endpoint
-  app.post('/api/compress-images', async (req, res) => {
+  app.post('/api/compress-images', isAuthenticated, async (req, res) => {
     try {
       const { paths, format = 'webp', lossless = true, quality = 95 } = req.body;
 
@@ -5185,7 +5221,7 @@ Important:
   });
 
   // Get image compression info endpoint
-  app.post('/api/image-info', upload.single('image'), async (req, res) => {
+  app.post('/api/image-info', isAuthenticated, upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -5221,7 +5257,7 @@ Important:
   });
 
   // Customers endpoints
-  app.get('/api/customers', async (req, res) => {
+  app.get('/api/customers', isAuthenticated, async (req, res) => {
     try {
       const search = req.query.search as string;
       const includeBadges = req.query.includeBadges === 'true';
@@ -5276,7 +5312,7 @@ Important:
     }
   });
 
-  app.get('/api/customers/check-duplicate/:facebookId', async (req, res) => {
+  app.get('/api/customers/check-duplicate/:facebookId', isAuthenticated, async (req, res) => {
     try {
       const facebookId = req.params.facebookId;
 
@@ -5303,7 +5339,7 @@ Important:
   });
 
   // Get customer order count
-  app.get('/api/customers/:id/order-count', async (req, res) => {
+  app.get('/api/customers/:id/order-count', isAuthenticated, async (req, res) => {
     try {
       const customerId = req.params.id;
 
@@ -5322,7 +5358,7 @@ Important:
     }
   });
 
-  app.post('/api/customers', async (req: any, res) => {
+  app.post('/api/customers', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer(data);
@@ -5342,7 +5378,7 @@ Important:
     }
   });
 
-  app.get('/api/customers/:id', async (req, res) => {
+  app.get('/api/customers/:id', isAuthenticated, async (req, res) => {
     try {
       const customer = await storage.getCustomerById(req.params.id);
       if (!customer) {
@@ -5382,7 +5418,7 @@ Important:
     }
   });
 
-  app.patch('/api/customers/:id', async (req: any, res) => {
+  app.patch('/api/customers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const customer = await storage.updateCustomer(req.params.id, updates);
@@ -5406,7 +5442,7 @@ Important:
     }
   });
 
-  app.delete('/api/customers/:id', async (req: any, res) => {
+  app.delete('/api/customers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const customer = await storage.getCustomerById(req.params.id);
       if (!customer) {
@@ -5439,7 +5475,7 @@ Important:
   });
 
   // Customer Badge endpoints
-  app.get('/api/customers/:id/badges', async(req, res) => {
+  app.get('/api/customers/:id/badges', isAuthenticated, async(req, res) => {
     try {
       const badges = await storage.getCustomerBadges(req.params.id);
       res.json(badges);
@@ -5449,7 +5485,7 @@ Important:
     }
   });
 
-  app.post('/api/customers/:id/badges/refresh', async (req, res) => {
+  app.post('/api/customers/:id/badges/refresh', isAuthenticated, async (req, res) => {
     try {
       await storage.refreshCustomerBadges(req.params.id);
       res.json({ success: true, message: 'Badges refreshed' });
@@ -5460,7 +5496,7 @@ Important:
   });
 
   // Customer Shipping Addresses endpoints
-  app.get('/api/customers/:customerId/shipping-addresses', async (req, res) => {
+  app.get('/api/customers/:customerId/shipping-addresses', isAuthenticated, async (req, res) => {
     try {
       const { customerId } = req.params;
       const addresses = await storage.getCustomerShippingAddresses(customerId);
@@ -5471,7 +5507,7 @@ Important:
     }
   });
 
-  app.get('/api/shipping-addresses/:id', async (req, res) => {
+  app.get('/api/shipping-addresses/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const address = await storage.getCustomerShippingAddress(id);
@@ -5486,7 +5522,7 @@ Important:
   });
 
   // Get customer order history
-  app.get('/api/customers/:customerId/orders', async (req, res) => {
+  app.get('/api/customers/:customerId/orders', isAuthenticated, async (req, res) => {
     try {
       const { customerId } = req.params;
       const allOrders = await storage.getOrders();
@@ -5498,7 +5534,7 @@ Important:
     }
   });
 
-  app.post('/api/customers/:customerId/shipping-addresses', async (req: any, res) => {
+  app.post('/api/customers/:customerId/shipping-addresses', isAuthenticated, async (req: any, res) => {
     try {
       const { customerId } = req.params;
 
@@ -5533,7 +5569,7 @@ Important:
     }
   });
 
-  app.patch('/api/customers/:customerId/shipping-addresses/:addressId', async (req: any, res) => {
+  app.patch('/api/customers/:customerId/shipping-addresses/:addressId', isAuthenticated, async (req: any, res) => {
     try {
       const { customerId, addressId } = req.params;
 
@@ -5575,7 +5611,7 @@ Important:
     }
   });
 
-  app.patch('/api/shipping-addresses/:id', async (req: any, res) => {
+  app.patch('/api/shipping-addresses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
 
@@ -5613,7 +5649,7 @@ Important:
     }
   });
 
-  app.delete('/api/shipping-addresses/:id', async (req: any, res) => {
+  app.delete('/api/shipping-addresses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteCustomerShippingAddress(id);
@@ -5636,7 +5672,7 @@ Important:
     }
   });
 
-  app.post('/api/customers/:customerId/shipping-addresses/:addressId/set-primary', async (req: any, res) => {
+  app.post('/api/customers/:customerId/shipping-addresses/:addressId/set-primary', isAuthenticated, async (req: any, res) => {
     try {
       const { customerId, addressId } = req.params;
       await storage.setPrimaryShippingAddress(customerId, addressId);
@@ -5656,7 +5692,7 @@ Important:
     }
   });
 
-  app.delete('/api/customers/:customerId/shipping-addresses/:addressId/remove-primary', async (req: any, res) => {
+  app.delete('/api/customers/:customerId/shipping-addresses/:addressId/remove-primary', isAuthenticated, async (req: any, res) => {
     try {
       const { customerId, addressId } = req.params;
 
@@ -5679,7 +5715,7 @@ Important:
   });
 
   // Customer Billing Addresses endpoints
-  app.get('/api/customers/:customerId/billing-addresses', async (req, res) => {
+  app.get('/api/customers/:customerId/billing-addresses', isAuthenticated, async (req, res) => {
     try {
       const { customerId } = req.params;
       const addresses = await storage.getCustomerBillingAddresses(customerId);
@@ -5690,7 +5726,7 @@ Important:
     }
   });
 
-  app.get('/api/billing-addresses/:id', async (req, res) => {
+  app.get('/api/billing-addresses/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const address = await storage.getCustomerBillingAddress(id);
@@ -5704,7 +5740,7 @@ Important:
     }
   });
 
-  app.post('/api/customers/:customerId/billing-addresses', async (req: any, res) => {
+  app.post('/api/customers/:customerId/billing-addresses', isAuthenticated, async (req: any, res) => {
     try {
       const { customerId } = req.params;
 
@@ -5735,7 +5771,7 @@ Important:
     }
   });
 
-  app.patch('/api/billing-addresses/:id', async (req: any, res) => {
+  app.patch('/api/billing-addresses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
 
@@ -5765,7 +5801,7 @@ Important:
     }
   });
 
-  app.delete('/api/billing-addresses/:id', async (req: any, res) => {
+  app.delete('/api/billing-addresses/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteCustomerBillingAddress(id);
@@ -5788,7 +5824,7 @@ Important:
     }
   });
 
-  app.patch('/api/billing-addresses/:id/set-primary', async (req: any, res) => {
+  app.patch('/api/billing-addresses/:id/set-primary', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const address = await storage.getCustomerBillingAddress(id);
@@ -5814,7 +5850,7 @@ Important:
   });
 
   // Customer Prices endpoints
-  app.get('/api/customers/:customerId/prices', async (req, res) => {
+  app.get('/api/customers/:customerId/prices', isAuthenticated, async (req, res) => {
     try {
       const prices = await storage.getCustomerPrices(req.params.customerId);
       res.json(prices);
@@ -5824,7 +5860,7 @@ Important:
     }
   });
 
-  app.post('/api/customers/:customerId/prices', async (req: any, res) => {
+  app.post('/api/customers/:customerId/prices', isAuthenticated, async (req: any, res) => {
     try {
       // Convert date strings to Date objects and handle empty variant_id
       const priceData = {
@@ -5857,7 +5893,7 @@ Important:
     }
   });
 
-  app.patch('/api/customer-prices/:id', async (req: any, res) => {
+  app.patch('/api/customer-prices/:id', isAuthenticated, async (req: any, res) => {
     try {
       // Convert date strings to Date objects if present
       const updates = {
@@ -5888,7 +5924,7 @@ Important:
     }
   });
 
-  app.delete('/api/customer-prices/:id', async (req: any, res) => {
+  app.delete('/api/customer-prices/:id', isAuthenticated, async (req: any, res) => {
     try {
       await storage.deleteCustomerPrice(req.params.id);
 
@@ -5908,7 +5944,7 @@ Important:
   });
 
   // Bulk import customer prices
-  app.post('/api/customers/:customerId/prices/bulk', async (req: any, res) => {
+  app.post('/api/customers/:customerId/prices/bulk', isAuthenticated, async (req: any, res) => {
     try {
       const { prices } = req.body;
       if (!Array.isArray(prices)) {
@@ -5947,7 +5983,7 @@ Important:
   });
 
   // Get active customer price for a specific product
-  app.get('/api/customers/:customerId/active-price', async (req, res) => {
+  app.get('/api/customers/:customerId/active-price', isAuthenticated, async (req, res) => {
     try {
       const { productId, variantId, currency } = req.query as { 
         productId?: string; 
@@ -5974,7 +6010,7 @@ Important:
   });
 
   // Orders endpoints
-  app.get('/api/orders', async (req: any, res) => {
+  app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
       const status = req.query.status as string;
       const paymentStatus = req.query.paymentStatus as string;
@@ -6106,7 +6142,7 @@ Important:
     }
   });
 
-  app.get('/api/orders/unpaid', async (req, res) => {
+  app.get('/api/orders/unpaid', isAuthenticated, async (req, res) => {
     try {
       const orders = await storage.getUnpaidOrders();
       // Filter financial data based on user role
@@ -6120,7 +6156,7 @@ Important:
   });
 
   // Fetch all order items for analytics (e.g., units sold calculation)
-  app.get('/api/order-items/all', async (req, res) => {
+  app.get('/api/order-items/all', isAuthenticated, async (req, res) => {
     try {
       const items = await storage.getAllOrderItems();
       // Filter financial data based on user role
@@ -6134,7 +6170,7 @@ Important:
   });
 
   // Pick & Pack endpoints (OPTIMIZED - eliminates N+1 queries)
-  app.get('/api/orders/pick-pack', async (req, res) => {
+  app.get('/api/orders/pick-pack', isAuthenticated, async (req, res) => {
     try {
       // Disable HTTP caching to ensure fresh data is always sent
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -6313,7 +6349,7 @@ Important:
   });
 
   // Get pick/pack performance predictions for current user
-  app.get('/api/orders/pick-pack/predictions', async (req: any, res) => {
+  app.get('/api/orders/pick-pack/predictions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.id || "test-user"; // Use authenticated user ID
       const predictions = await storage.getPickPackPredictions(userId);
@@ -6325,7 +6361,7 @@ Important:
   });
 
   // Start picking an order
-  app.post('/api/orders/:id/pick/start', async (req: any, res) => {
+  app.post('/api/orders/:id/pick/start', isAuthenticated, async (req: any, res) => {
     try {
       const { employeeId } = req.body;
 
@@ -6362,7 +6398,7 @@ Important:
   });
 
   // Complete picking an order
-  app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
+  app.post('/api/orders/:id/pick/complete', isAuthenticated, async (req: any, res) => {
     try {
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
@@ -6396,7 +6432,7 @@ Important:
   });
 
   // Start packing an order
-  app.post('/api/orders/:id/pack/start', async (req: any, res) => {
+  app.post('/api/orders/:id/pack/start', isAuthenticated, async (req: any, res) => {
     try {
       const { employeeId } = req.body;
 
@@ -6433,7 +6469,7 @@ Important:
   });
 
   // Complete packing an order
-  app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
+  app.post('/api/orders/:id/pack/complete', isAuthenticated, async (req: any, res) => {
     try {
       const { cartons, packageWeight, printedDocuments, packingChecklist, packingMaterialsApplied, selectedDocumentIds } = req.body;
 
@@ -6526,7 +6562,7 @@ Important:
   });
 
   // Create packing session
-  app.post('/api/packing/sessions', async (req, res) => {
+  app.post('/api/packing/sessions', isAuthenticated, async (req, res) => {
     try {
       const { orderId, packerId } = req.body;
 
@@ -6563,7 +6599,7 @@ Important:
   });
 
   // Update packing session
-  app.patch('/api/packing/sessions/:sessionId', async (req, res) => {
+  app.patch('/api/packing/sessions/:sessionId', isAuthenticated, async (req, res) => {
     try {
       const { sessionId } = req.params;
       const updates = req.body;
@@ -6583,7 +6619,7 @@ Important:
   });
 
   // Get packing session
-  app.get('/api/packing/sessions/:sessionId', async (req, res) => {
+  app.get('/api/packing/sessions/:sessionId', isAuthenticated, async (req, res) => {
     try {
       const { sessionId } = req.params;
 
@@ -6609,7 +6645,7 @@ Important:
   });
 
   // Save packing details with multi-carton support
-  app.post('/api/orders/:id/packing-details', async (req: any, res) => {
+  app.post('/api/orders/:id/packing-details', isAuthenticated, async (req: any, res) => {
     try {
       const { 
         cartons, // Array of selected cartons
@@ -6675,7 +6711,7 @@ Important:
   });
 
   // Update picked quantity for an order item
-  app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
+  app.patch('/api/orders/:id/items/:itemId/pick', isAuthenticated, async (req: any, res) => {
     try {
       const { pickedQuantity } = req.body;
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
@@ -6687,7 +6723,7 @@ Important:
   });
 
   // Update packed quantity for an order item
-  app.patch('/api/orders/:id/items/:itemId/pack', async (req: any, res) => {
+  app.patch('/api/orders/:id/items/:itemId/pack', isAuthenticated, async (req: any, res) => {
     try {
       const { packedQuantity } = req.body;
       const orderItem = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
@@ -6699,7 +6735,7 @@ Important:
   });
 
   // Get pick/pack logs for an order
-  app.get('/api/orders/:id/pick-pack-logs', async (req: any, res) => {
+  app.get('/api/orders/:id/pick-pack-logs', isAuthenticated, async (req: any, res) => {
     try {
       const logs = await storage.getPickPackLogs(req.params.id);
       res.json(logs);
@@ -6710,7 +6746,7 @@ Important:
   });
 
   // Get shipment labels for an order
-  app.get('/api/orders/:id/shipment-labels', async (req: any, res) => {
+  app.get('/api/orders/:id/shipment-labels', isAuthenticated, async (req: any, res) => {
     try {
       const labels = await storage.getShipmentLabelsByOrderId(req.params.id);
       res.json(labels);
@@ -6721,7 +6757,7 @@ Important:
   });
 
   // Get tracking for an order
-  app.get('/api/orders/:id/tracking', async (req, res) => {
+  app.get('/api/orders/:id/tracking', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const force = req.query.force === 'true';
@@ -6762,7 +6798,7 @@ Important:
   });
 
   // Refresh specific tracking
-  app.patch('/api/tracking/:id/refresh', async (req, res) => {
+  app.patch('/api/tracking/:id/refresh', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -6787,7 +6823,7 @@ Important:
   });
 
   // Bulk refresh all active tracking
-  app.post('/api/tracking/bulk-refresh', async (req, res) => {
+  app.post('/api/tracking/bulk-refresh', isAuthenticated, async (req, res) => {
     try {
       // Load shipping settings
       const shippingSettings = await getSettingsByCategory('shipping');
@@ -6834,7 +6870,7 @@ Important:
     }
   });
 
-  app.get('/api/orders/:id', async (req: any, res) => {
+  app.get('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       // Prevent all caching for order details to ensure fresh data
       res.set({
@@ -6924,7 +6960,7 @@ Important:
   });
 
   // Order Badge endpoints
-  app.post('/api/orders/:id/badges/refresh', async (req, res) => {
+  app.post('/api/orders/:id/badges/refresh', isAuthenticated, async (req, res) => {
     try {
       await storage.refreshOrderBadges(req.params.id);
       res.json({ success: true, message: 'Badges refreshed' });
@@ -6934,7 +6970,7 @@ Important:
     }
   });
 
-  app.post('/api/orders', async (req: any, res) => {
+  app.post('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
       const { items, selectedDocumentIds, ...orderData } = req.body;
 
@@ -7113,7 +7149,7 @@ Important:
     }
   });
 
-  app.patch('/api/orders/:id', async (req: any, res) => {
+  app.patch('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       console.log('PATCH /api/orders/:id - Received body:', req.body);
       const { items, selectedDocumentIds, ...orderUpdates } = req.body;
@@ -7209,7 +7245,7 @@ Important:
   });
 
   // Update individual order item
-  app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
+  app.patch('/api/orders/:orderId/items/:itemId', isAuthenticated, async (req: any, res) => {
     try {
       const { pickedQuantity, packedQuantity, ...otherUpdates } = req.body;
 
@@ -7235,7 +7271,7 @@ Important:
   });
 
   // Detect and mark orders as modified after packing
-  app.post('/api/orders/:id/check-modifications', async (req: any, res) => {
+  app.post('/api/orders/:id/check-modifications', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const order = await storage.getOrder(id);
@@ -7285,7 +7321,7 @@ Important:
 
 
   // Batch undo ship - Return orders to ready status
-  app.post('/api/orders/batch-undo-ship', async (req: any, res) => {
+  app.post('/api/orders/batch-undo-ship', isAuthenticated, async (req: any, res) => {
     try {
       const { orderIds } = req.body;
 
@@ -7360,7 +7396,7 @@ Important:
   });
 
   // Batch update order status - Optimized for multiple orders
-  app.post('/api/orders/batch-ship', async (req: any, res) => {
+  app.post('/api/orders/batch-ship', isAuthenticated, async (req: any, res) => {
     try {
       const { orderIds } = req.body;
 
@@ -7436,7 +7472,7 @@ Important:
   });
 
   // Update order status for Pick & Pack workflow
-  app.patch('/api/orders/:id/status', async (req: any, res) => {
+  app.patch('/api/orders/:id/status', isAuthenticated, async (req: any, res) => {
     try {
       const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy, pickStartTime, pickEndTime, packStartTime, packEndTime } = req.body;
 
@@ -7546,7 +7582,7 @@ Important:
     }
   });
 
-  app.delete('/api/orders/:id', async (req: any, res) => {
+  app.delete('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
@@ -7571,7 +7607,7 @@ Important:
   });
 
   // Generate SKU endpoint
-  app.post('/api/generate-sku', async (req, res) => {
+  app.post('/api/generate-sku', isAuthenticated, async (req, res) => {
     try {
       const { categoryName, productName } = req.body;
       if (!categoryName || !productName) {
@@ -7587,7 +7623,7 @@ Important:
   });
 
   // Pre-orders endpoints
-  app.get('/api/pre-orders', async (req, res) => {
+  app.get('/api/pre-orders', isAuthenticated, async (req, res) => {
     try {
       const preOrders = await storage.getPreOrders();
       res.json(preOrders);
@@ -7597,7 +7633,7 @@ Important:
     }
   });
 
-  app.post('/api/pre-orders', async (req: any, res) => {
+  app.post('/api/pre-orders', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertPreOrderSchema.parse(req.body);
       const preOrder = await storage.createPreOrder(data);
@@ -7617,7 +7653,7 @@ Important:
     }
   });
 
-  app.delete('/api/pre-orders/:id', async (req: any, res) => {
+  app.delete('/api/pre-orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       await storage.deletePreOrder(req.params.id);
 
@@ -7749,7 +7785,7 @@ Important:
   });
 
   // Ticket endpoints
-  app.get('/api/tickets', async (req, res) => {
+  app.get('/api/tickets', isAuthenticated, async (req, res) => {
     try {
       const { orderId, customerId } = req.query;
       let tickets = await storage.getTickets();
@@ -7771,7 +7807,7 @@ Important:
     }
   });
 
-  app.get('/api/tickets/:id', async (req, res) => {
+  app.get('/api/tickets/:id', isAuthenticated, async (req, res) => {
     try {
       const ticket = await storage.getTicketById(req.params.id);
       if (!ticket) {
@@ -7784,7 +7820,7 @@ Important:
     }
   });
 
-  app.post('/api/tickets', async (req: any, res) => {
+  app.post('/api/tickets', isAuthenticated, async (req: any, res) => {
     try {
       // Generate ticket ID (e.g., TKT-20241018-ABC123)
       const date = new Date();
@@ -7836,7 +7872,7 @@ Important:
     }
   });
 
-  app.post('/api/tickets/generate-subject', async (req: any, res) => {
+  app.post('/api/tickets/generate-subject', isAuthenticated, async (req: any, res) => {
     try {
       const { description } = req.body;
 
@@ -7899,7 +7935,7 @@ Important:
     }
   });
 
-  app.patch('/api/tickets/:id', async (req: any, res) => {
+  app.patch('/api/tickets/:id', isAuthenticated, async (req: any, res) => {
     try {
       const existingTicket = await storage.getTicketById(req.params.id);
       if (!existingTicket) {
@@ -7950,7 +7986,7 @@ Important:
     }
   });
 
-  app.delete('/api/tickets/:id', async (req: any, res) => {
+  app.delete('/api/tickets/:id', isAuthenticated, async (req: any, res) => {
     try {
       const ticket = await storage.getTicketById(req.params.id);
       if (!ticket) {
@@ -7974,7 +8010,7 @@ Important:
     }
   });
 
-  app.get('/api/tickets/:id/comments', async (req, res) => {
+  app.get('/api/tickets/:id/comments', isAuthenticated, async (req, res) => {
     try {
       const comments = await storage.getTicketComments(req.params.id);
       res.json(comments);
@@ -7984,7 +8020,7 @@ Important:
     }
   });
 
-  app.post('/api/tickets/:id/comments', async (req: any, res) => {
+  app.post('/api/tickets/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
       const ticket = await storage.getTicketById(req.params.id);
       if (!ticket) {
@@ -8255,7 +8291,7 @@ Important:
   });
 
   // Services endpoints
-  app.get('/api/services', async (req, res) => {
+  app.get('/api/services', isAuthenticated, async (req, res) => {
     try {
       const services = await storage.getServices();
       res.json(services);
@@ -8265,7 +8301,7 @@ Important:
     }
   });
 
-  app.get('/api/services/:id', async (req, res) => {
+  app.get('/api/services/:id', isAuthenticated, async (req, res) => {
     try {
       const service = await storage.getServiceById(req.params.id);
       if (!service) {
@@ -8280,7 +8316,7 @@ Important:
     }
   });
 
-  app.post('/api/services', async (req: any, res) => {
+  app.post('/api/services', isAuthenticated, async (req: any, res) => {
     try {
       // Validate service data
       const serviceData = insertServiceSchema.parse(req.body.service || req.body);
@@ -8304,7 +8340,7 @@ Important:
     }
   });
 
-  app.patch('/api/services/:id', async (req: any, res) => {
+  app.patch('/api/services/:id', isAuthenticated, async (req: any, res) => {
     try {
       const service = await storage.getServiceById(req.params.id);
       if (!service) {
@@ -8328,7 +8364,7 @@ Important:
     }
   });
 
-  app.delete('/api/services/:id', async (req: any, res) => {
+  app.delete('/api/services/:id', isAuthenticated, async (req: any, res) => {
     try {
       const service = await storage.getServiceById(req.params.id);
       if (!service) {
@@ -8343,7 +8379,7 @@ Important:
     }
   });
 
-  app.get('/api/services/:id/items', async (req, res) => {
+  app.get('/api/services/:id/items', isAuthenticated, async (req, res) => {
     try {
       const items = await storage.getServiceItems(req.params.id);
       res.json(items);
@@ -8354,7 +8390,7 @@ Important:
   });
 
   // Pre-Orders endpoints
-  app.get('/api/pre-orders', async (req, res) => {
+  app.get('/api/pre-orders', isAuthenticated, async (req, res) => {
     try {
       const preOrders = await storage.getPreOrders();
       // Filter financial data based on user role
@@ -8367,7 +8403,7 @@ Important:
     }
   });
 
-  app.get('/api/pre-orders/:id', async (req, res) => {
+  app.get('/api/pre-orders/:id', isAuthenticated, async (req, res) => {
     try {
       const preOrder = await storage.getPreOrder(req.params.id);
       if (!preOrder) {
@@ -8387,7 +8423,7 @@ Important:
     }
   });
 
-  app.post('/api/pre-orders', async (req: any, res) => {
+  app.post('/api/pre-orders', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertPreOrderSchema.parse(req.body);
       const preOrder = await storage.createPreOrder(data);
@@ -8398,7 +8434,7 @@ Important:
     }
   });
 
-  app.patch('/api/pre-orders/:id', async (req: any, res) => {
+  app.patch('/api/pre-orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const preOrder = await storage.getPreOrder(req.params.id);
       if (!preOrder) {
@@ -8414,7 +8450,7 @@ Important:
     }
   });
 
-  app.delete('/api/pre-orders/:id', async (req: any, res) => {
+  app.delete('/api/pre-orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const preOrder = await storage.getPreOrder(req.params.id);
       if (!preOrder) {
@@ -8430,7 +8466,7 @@ Important:
   });
 
   // Pre-Order Items endpoints
-  app.get('/api/pre-orders/:preOrderId/items', async (req, res) => {
+  app.get('/api/pre-orders/:preOrderId/items', isAuthenticated, async (req, res) => {
     try {
       const items = await storage.getPreOrderItems(req.params.preOrderId);
       // Filter financial data based on user role
@@ -8443,7 +8479,7 @@ Important:
     }
   });
 
-  app.post('/api/pre-orders/:preOrderId/items', async (req: any, res) => {
+  app.post('/api/pre-orders/:preOrderId/items', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertPreOrderItemSchema.parse({
         ...req.body,
@@ -8457,7 +8493,7 @@ Important:
     }
   });
 
-  app.patch('/api/pre-order-items/:id', async (req: any, res) => {
+  app.patch('/api/pre-order-items/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = insertPreOrderItemSchema.partial().parse(req.body);
       const item = await storage.updatePreOrderItem(req.params.id, updates);
@@ -8468,7 +8504,7 @@ Important:
     }
   });
 
-  app.delete('/api/pre-order-items/:id', async (req: any, res) => {
+  app.delete('/api/pre-order-items/:id', isAuthenticated, async (req: any, res) => {
     try {
       const deleted = await storage.deletePreOrderItem(req.params.id);
       if (!deleted) {
@@ -8482,7 +8518,7 @@ Important:
   });
 
   // Sales/Discounts endpoints
-  app.get('/api/discounts', async (req, res) => {
+  app.get('/api/discounts', isAuthenticated, async (req, res) => {
     try {
       const discounts = await storage.getDiscounts();
       res.json(discounts);
@@ -8492,7 +8528,7 @@ Important:
     }
   });
 
-  app.post('/api/discounts', async (req: any, res) => {
+  app.post('/api/discounts', isAuthenticated, async (req: any, res) => {
     try {
       // Parse dates from strings to Date objects
       const body = {
@@ -8519,7 +8555,7 @@ Important:
     }
   });
 
-  app.get('/api/discounts/:id', async (req, res) => {
+  app.get('/api/discounts/:id', isAuthenticated, async (req, res) => {
     try {
       const discount = await storage.getDiscount(req.params.id);
       if (!discount) {
@@ -8532,7 +8568,7 @@ Important:
     }
   });
 
-  app.patch('/api/discounts/:id', async (req: any, res) => {
+  app.patch('/api/discounts/:id', isAuthenticated, async (req: any, res) => {
     try {
       // Parse dates from strings to Date objects
       const updates = {
@@ -8562,7 +8598,7 @@ Important:
     }
   });
 
-  app.delete('/api/discounts/:id', async (req: any, res) => {
+  app.delete('/api/discounts/:id', isAuthenticated, async (req: any, res) => {
     try {
       const discount = await storage.getDiscount(req.params.id);
       if (!discount) {
@@ -8601,7 +8637,7 @@ Important:
   app.use('/api/optimize', optimizeDb);
 
   // Returns endpoints
-  app.get('/api/returns', async (req, res) => {
+  app.get('/api/returns', isAuthenticated, async (req, res) => {
     try {
       const returns = await storage.getReturns();
       // Filter financial data based on user role
@@ -8614,7 +8650,7 @@ Important:
     }
   });
 
-  app.get('/api/returns/:id', async (req, res) => {
+  app.get('/api/returns/:id', isAuthenticated, async (req, res) => {
     try {
       const returnData = await storage.getReturn(req.params.id);
       if (!returnData) {
@@ -8630,7 +8666,7 @@ Important:
     }
   });
 
-  app.post('/api/returns', async (req: any, res) => {
+  app.post('/api/returns', isAuthenticated, async (req: any, res) => {
     try {
       const { items, ...returnData } = req.body;
 
@@ -8673,7 +8709,7 @@ Important:
     }
   });
 
-  app.put('/api/returns/:id', async (req: any, res) => {
+  app.put('/api/returns/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { items, ...returnData } = req.body;
 
@@ -8753,7 +8789,7 @@ Important:
     }
   });
 
-  app.delete('/api/returns/:id', async (req: any, res) => {
+  app.delete('/api/returns/:id', isAuthenticated, async (req: any, res) => {
     try {
       const returnData = await storage.getReturnById(req.params.id);
       if (!returnData) {
@@ -8785,7 +8821,7 @@ Important:
   });
 
   // Mock data endpoint (for development)
-  app.post('/api/seed-mock-data', async (req, res) => {
+  app.post('/api/seed-mock-data', requireRole(['administrator']), async (req, res) => {
     try {
       await seedMockData();
       res.json({ message: "Mock data seeded successfully" });
@@ -8795,7 +8831,7 @@ Important:
     }
   });
 
-  app.post('/api/seed-comprehensive-data', async (req, res) => {
+  app.post('/api/seed-comprehensive-data', requireRole(['administrator']), async (req, res) => {
     try {
       const { seedComprehensiveData } = await import('./seedComprehensiveData');
       const result = await seedComprehensiveData();
@@ -8807,7 +8843,7 @@ Important:
   });
 
   // Fix order items endpoint
-  app.post('/api/fix-order-items', async (req, res) => {
+  app.post('/api/fix-order-items', requireRole(['administrator']), async (req, res) => {
     try {
       const { addMissingOrderItems } = await import('./fixOrderItems');
       await addMissingOrderItems();
@@ -8819,7 +8855,7 @@ Important:
   });
 
   // Clear and reseed sales/discounts data
-  app.post('/api/reseed-discounts', async (req, res) => {
+  app.post('/api/reseed-discounts', requireRole(['administrator']), async (req, res) => {
     try {
       // Clear existing sales data
       await storage.deleteAllSales();
@@ -9212,7 +9248,7 @@ Important:
   });
 
   // Geocoding endpoint for address search
-  app.get('/api/geocode', async (req, res) => {
+  app.get('/api/geocode', isAuthenticated, async (req, res) => {
     try {
       const { q } = req.query;
       if (!q || typeof q !== 'string' || q.length < 2) {
@@ -9296,7 +9332,7 @@ Important:
   });
 
   // Seed returns data
-  app.post('/api/seed-returns', async (req, res) => {
+  app.post('/api/seed-returns', requireRole(['administrator']), async (req, res) => {
     try {
       const { seedReturns } = await import('./seedReturns');
       await seedReturns();
@@ -9308,7 +9344,7 @@ Important:
   });
 
   // Seed Pick & Pack data with bundles
-  app.post('/api/seed-pick-pack', async (req, res) => {
+  app.post('/api/seed-pick-pack', requireRole(['administrator']), async (req, res) => {
     try {
       const { seedPickPackData } = await import('./seedPickPackData.js');
       const result = await seedPickPackData();
@@ -9326,7 +9362,7 @@ Important:
   const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
 
   // Test PPL connection
-  app.get('/api/shipping/test-connection', async (req, res) => {
+  app.get('/api/shipping/test-connection', isAuthenticated, async (req, res) => {
     try {
       const { getPPLAccessToken } = await import('./services/pplService');
       const token = await getPPLAccessToken();
@@ -9346,7 +9382,7 @@ Important:
   });
 
   // Create PPL shipping label for order
-  app.post('/api/shipping/create-label', async (req, res) => {
+  app.post('/api/shipping/create-label', isAuthenticated, async (req, res) => {
     try {
       const { orderId, codAmount, codCurrency } = req.body;
 
@@ -9548,7 +9584,7 @@ Important:
   });
 
   // Get PPL batch status
-  app.get('/api/shipping/ppl/batch/:batchId', async (req, res) => {
+  app.get('/api/shipping/ppl/batch/:batchId', isAuthenticated, async (req, res) => {
     try {
       const { batchId } = req.params;
       const status = await getPPLBatchStatus(batchId);
@@ -9562,7 +9598,7 @@ Important:
   });
 
   // Create additional PPL shipment for an order (for multiple packages)
-  app.post('/api/shipping/create-additional-label/:orderId', async (req, res) => {
+  app.post('/api/shipping/create-additional-label/:orderId', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -9808,7 +9844,7 @@ Important:
   // Shipment Labels Routes
 
   // Get all shipment labels
-  app.get('/api/shipment-labels', async (req, res) => {
+  app.get('/api/shipment-labels', isAuthenticated, async (req, res) => {
     try {
       const labels = await storage.getShipmentLabels();
       res.json(labels);
@@ -9819,7 +9855,7 @@ Important:
   });
 
   // Get shipment labels by order ID
-  app.get('/api/shipment-labels/order/:orderId', async (req, res) => {
+  app.get('/api/shipment-labels/order/:orderId', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const labels = await storage.getShipmentLabelsByOrderId(orderId);
@@ -9831,7 +9867,7 @@ Important:
   });
 
   // Delete a shipment label (PPL Cancel API)
-  app.delete('/api/shipment-labels/:labelId', async (req, res) => {
+  app.delete('/api/shipment-labels/:labelId', isAuthenticated, async (req, res) => {
     try {
       const { labelId } = req.params;
 
@@ -9868,7 +9904,7 @@ Important:
   });
 
   // Get single shipment label
-  app.get('/api/shipment-labels/:id', async (req, res) => {
+  app.get('/api/shipment-labels/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const label = await storage.getShipmentLabel(id);
@@ -9883,7 +9919,7 @@ Important:
   });
 
   // Create new shipment label
-  app.post('/api/shipment-labels', async (req, res) => {
+  app.post('/api/shipment-labels', isAuthenticated, async (req, res) => {
     try {
       const label = await storage.createShipmentLabel(req.body);
       res.json(label);
@@ -9894,7 +9930,7 @@ Important:
   });
 
   // Update shipment label tracking numbers
-  app.patch('/api/shipment-labels/:labelId/tracking', async (req, res) => {
+  app.patch('/api/shipment-labels/:labelId/tracking', isAuthenticated, async (req, res) => {
     try {
       const { labelId } = req.params;
       const { trackingNumbers } = req.body;
@@ -9936,7 +9972,7 @@ Important:
   });
 
   // Update shipment label
-  app.patch('/api/shipment-labels/:id', async (req, res) => {
+  app.patch('/api/shipment-labels/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const label = await storage.updateShipmentLabel(id, req.body);
@@ -9951,7 +9987,7 @@ Important:
   });
 
   // Update tracking number for a shipment label
-  app.patch('/api/shipment-labels/:id/tracking', async (req, res) => {
+  app.patch('/api/shipment-labels/:id/tracking', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const { trackingNumber } = req.body;
@@ -9991,7 +10027,7 @@ Important:
   });
 
   // Cancel shipment label
-  app.post('/api/shipment-labels/:id/cancel', async (req, res) => {
+  app.post('/api/shipment-labels/:id/cancel', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const { reason } = req.body;
@@ -10021,7 +10057,7 @@ Important:
   });
 
   // Get PPL label
-  app.get('/api/shipping/ppl/label/:batchId', async (req, res) => {
+  app.get('/api/shipping/ppl/label/:batchId', isAuthenticated, async (req, res) => {
     try {
       const { batchId } = req.params;
       const format = (req.query.format as 'pdf' | 'zpl') || 'pdf';
@@ -10046,7 +10082,7 @@ Important:
   // Weight Calculation AI Endpoints
 
   // Calculate package weight for an order
-  app.post('/api/orders/:orderId/calculate-weight', async (req, res) => {
+  app.post('/api/orders/:orderId/calculate-weight', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { selectedCartonId, optimizeMultipleCartons } = req.body;
@@ -10066,7 +10102,7 @@ Important:
   });
 
   // Multi-carton optimization endpoint
-  app.post('/api/orders/:orderId/optimize-multi-carton', async (req, res) => {
+  app.post('/api/orders/:orderId/optimize-multi-carton', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -10081,7 +10117,7 @@ Important:
   });
 
   // Get available cartons for selection
-  app.get('/api/cartons/available', async (req, res) => {
+  app.get('/api/cartons/available', isAuthenticated, async (req, res) => {
     try {
       const cartons = await weightCalculationService.getAvailableCartons();
       res.json(cartons);
@@ -10094,7 +10130,7 @@ Important:
   });
 
   // Get popular cartons sorted by usage
-  app.get('/api/cartons/popular', async (req, res) => {
+  app.get('/api/cartons/popular', isAuthenticated, async (req, res) => {
     try {
       const cartons = await storage.getPopularCartons();
 
@@ -10135,7 +10171,7 @@ Important:
   });
 
   // Increment carton usage count
-  app.post('/api/cartons/:cartonId/increment-usage', async (req, res) => {
+  app.post('/api/cartons/:cartonId/increment-usage', isAuthenticated, async (req, res) => {
     try {
       const { cartonId } = req.params;
       await storage.incrementCartonUsage(cartonId);
@@ -10151,7 +10187,7 @@ Important:
   // Multi-Carton Packing Routes
 
   // Get all cartons for an order
-  app.get('/api/orders/:orderId/cartons', async (req, res) => {
+  app.get('/api/orders/:orderId/cartons', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const cartons = await storage.getOrderCartons(orderId);
@@ -10165,7 +10201,7 @@ Important:
   });
 
   // Create a new carton for an order
-  app.post('/api/orders/:orderId/cartons', async (req, res) => {
+  app.post('/api/orders/:orderId/cartons', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const cartonData = insertOrderCartonSchema.parse({
@@ -10184,7 +10220,7 @@ Important:
   });
 
   // Update a carton
-  app.patch('/api/orders/:orderId/cartons/:cartonId', async (req, res) => {
+  app.patch('/api/orders/:orderId/cartons/:cartonId', isAuthenticated, async (req, res) => {
     try {
       const { cartonId } = req.params;
       const updatedCarton = await storage.updateOrderCarton(cartonId, req.body);
@@ -10203,7 +10239,7 @@ Important:
   });
 
   // Delete a carton
-  app.delete('/api/orders/:orderId/cartons/:cartonId', async (req, res) => {
+  app.delete('/api/orders/:orderId/cartons/:cartonId', isAuthenticated, async (req, res) => {
     try {
       const { cartonId } = req.params;
       const success = await storage.deleteOrderCarton(cartonId);
@@ -10222,7 +10258,7 @@ Important:
   });
 
   // Generate shipping label for a specific carton
-  app.post('/api/orders/:orderId/cartons/:cartonId/generate-label', async (req, res) => {
+  app.post('/api/orders/:orderId/cartons/:cartonId/generate-label', isAuthenticated, async (req, res) => {
     try {
       const { orderId, cartonId } = req.params;
 
@@ -10266,7 +10302,7 @@ Important:
   // PPL Shipping Label API endpoints
 
   // Create PPL shipping labels for an order
-  app.post('/api/orders/:orderId/ppl/create-labels', async (req, res) => {
+  app.post('/api/orders/:orderId/ppl/create-labels', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
@@ -10607,7 +10643,7 @@ Important:
   });
 
   // Get PPL batch status
-  app.get('/api/shipping/ppl/batch/:batchId', async (req, res) => {
+  app.get('/api/shipping/ppl/batch/:batchId', isAuthenticated, async (req, res) => {
     try {
       const { batchId } = req.params;
       const status = await getPPLBatchStatus(batchId);
@@ -10625,7 +10661,7 @@ Important:
   // ============================================================================
 
   // Get a setting by key
-  app.get('/api/settings/:key', async (req, res) => {
+  app.get('/api/settings/:key', isAuthenticated, async (req, res) => {
     try {
       const { key } = req.params;
       const { appSettings } = await import('@shared/schema');
@@ -10648,7 +10684,7 @@ Important:
   });
 
   // Save or update a setting
-  app.post('/api/settings', async (req, res) => {
+  app.post('/api/settings', isAuthenticated, async (req, res) => {
     try {
       const { key, value, category, description } = req.body;
       const { appSettings } = await import('@shared/schema');
@@ -10702,7 +10738,7 @@ Important:
 
   // Get packing materials for an order
   // Get all files and documents for an order
-  app.get('/api/orders/:orderId/files', async (req, res) => {
+  app.get('/api/orders/:orderId/files', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -10766,7 +10802,7 @@ Important:
     }
   });
 
-  app.get('/api/orders/:orderId/packing-materials', async (req, res) => {
+  app.get('/api/orders/:orderId/packing-materials', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -10854,7 +10890,7 @@ Important:
   });
 
   // Generate professional packing list PDF
-  app.get('/api/orders/:orderId/packing-list.pdf', async (req, res) => {
+  app.get('/api/orders/:orderId/packing-list.pdf', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -11180,7 +11216,7 @@ Important:
   });
 
   // Recommend optimal carton for an order with intelligent packaging classification
-  app.get('/api/orders/:orderId/recommend-carton', async (req, res) => {
+  app.get('/api/orders/:orderId/recommend-carton', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -11225,7 +11261,7 @@ Important:
   });
 
   // Apply AI-recommended cartons to order
-  app.post('/api/orders/:orderId/apply-ai-cartons', async (req, res) => {
+  app.post('/api/orders/:orderId/apply-ai-cartons', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -11306,7 +11342,7 @@ Important:
   });
 
   // Recalculate carton plan based on user-selected carton types
-  app.post('/api/orders/:orderId/recalculate-carton-plan', async (req, res) => {
+  app.post('/api/orders/:orderId/recalculate-carton-plan', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { selectedCartonTypes } = req.body;
@@ -11364,7 +11400,7 @@ Important:
   });
 
   // Real-time weight calculation as items are picked
-  app.post('/api/orders/:orderId/realtime-weight', async (req, res) => {
+  app.post('/api/orders/:orderId/realtime-weight', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { pickedItems, selectedCartonId } = req.body;
@@ -11396,7 +11432,7 @@ Important:
   });
 
   // Product Files Routes
-  app.get('/api/product-files', async (req, res) => {
+  app.get('/api/product-files', isAuthenticated, async (req, res) => {
     try {
       const { productId, fileType } = req.query;
 
@@ -11417,7 +11453,7 @@ Important:
   });
 
   // Get files required for packing an order
-  app.get('/api/orders/:orderId/packing-files', async (req, res) => {
+  app.get('/api/orders/:orderId/packing-files', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -11493,7 +11529,7 @@ Important:
     }
   });
 
-  app.post('/api/product-files', async (req, res) => {
+  app.post('/api/product-files', isAuthenticated, async (req, res) => {
     try {
       const file = await storage.createProductFile(req.body);
       res.json(file);
@@ -11504,7 +11540,7 @@ Important:
   });
 
   // Mark documents as included in packing
-  app.post('/api/orders/:orderId/packing-documents', async (req, res) => {
+  app.post('/api/orders/:orderId/packing-documents', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { documentIds, packingSessionId } = req.body;
@@ -11530,7 +11566,7 @@ Important:
   });
 
   // Complete packing with document checklist
-  app.post('/api/orders/:orderId/complete-packing', async (req, res) => {
+  app.post('/api/orders/:orderId/complete-packing', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const { 
@@ -11589,7 +11625,7 @@ Important:
   // Carton Packing Optimization Routes
 
   // Get all available packing cartons
-  app.get('/api/packing-cartons', async (req, res) => {
+  app.get('/api/packing-cartons', isAuthenticated, async (req, res) => {
     try {
       const cartons = await storage.getPackingCartons();
       res.json(cartons);
@@ -11600,7 +11636,7 @@ Important:
   });
 
   // Optimize packing without saving (on-the-fly optimization)
-  app.post('/api/packing/optimize', async (req, res) => {
+  app.post('/api/packing/optimize', isAuthenticated, async (req, res) => {
     try {
       const { items, shippingCountry } = req.body;
 
@@ -11662,7 +11698,7 @@ Important:
   });
 
   // Create a packing plan for an order
-  app.post('/api/orders/:orderId/packing-plan', async (req, res) => {
+  app.post('/api/orders/:orderId/packing-plan', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
       const planData = req.body as UIPackingPlan;
@@ -11760,7 +11796,7 @@ Important:
   });
 
   // Get the latest packing plan for an order
-  app.get('/api/orders/:orderId/packing-plan', async (req, res) => {
+  app.get('/api/orders/:orderId/packing-plan', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
 
@@ -11849,7 +11885,7 @@ Important:
   });
 
   // Update a packing plan (mainly status)
-  app.patch('/api/orders/:orderId/packing-plan/:planId', async (req, res) => {
+  app.patch('/api/orders/:orderId/packing-plan/:planId', isAuthenticated, async (req, res) => {
     try {
       const { planId } = req.params;
 
@@ -11886,7 +11922,7 @@ Important:
     }
   });
 
-  app.put('/api/product-files/:id', async (req, res) => {
+  app.put('/api/product-files/:id', isAuthenticated, async (req, res) => {
     try {
       const file = await storage.updateProductFile(req.params.id, req.body);
       res.json(file);
@@ -11896,7 +11932,7 @@ Important:
     }
   });
 
-  app.delete('/api/product-files/:id', async (req, res) => {
+  app.delete('/api/product-files/:id', isAuthenticated, async (req, res) => {
     try {
       await storage.deleteProductFile(req.params.id);
       res.status(204).send();
@@ -11907,7 +11943,7 @@ Important:
   });
 
   // Address Autocomplete Endpoint
-  app.get('/api/addresses/autocomplete', async (req, res) => {
+  app.get('/api/addresses/autocomplete', isAuthenticated, async (req, res) => {
     try {
       const query = req.query.q as string;
 
@@ -11949,7 +11985,7 @@ Important:
   });
 
   // ARES Lookup Endpoint (Czech company registry)
-  app.get('/api/tax/ares-lookup', async (req, res) => {
+  app.get('/api/tax/ares-lookup', isAuthenticated, async (req, res) => {
     try {
       const ico = req.query.ico as string;
 
@@ -11997,7 +12033,7 @@ Important:
   });
 
   // VIES VAT Validation Endpoint
-  app.post('/api/tax/validate-vat', async (req, res) => {
+  app.post('/api/tax/validate-vat', isAuthenticated, async (req, res) => {
     try {
       const { vatNumber, countryCode } = req.body;
 
@@ -12068,7 +12104,7 @@ Important:
   });
 
   // Facebook Name Extraction Endpoint (Username-based only, no Graph API)
-  app.get('/api/facebook/name', async (req, res) => {
+  app.get('/api/facebook/name', isAuthenticated, async (req, res) => {
     try {
       const facebookUrl = req.query.url as string;
 
@@ -12187,7 +12223,7 @@ Important:
   });
 
   // App Settings endpoints
-  app.get('/api/settings', async (req, res) => {
+  app.get('/api/settings', isAuthenticated, async (req, res) => {
     try {
       const settings = await storage.getAppSettings();
       res.json(settings);
@@ -12197,7 +12233,7 @@ Important:
     }
   });
 
-  app.get('/api/settings/:key', async (req, res) => {
+  app.get('/api/settings/:key', isAuthenticated, async (req, res) => {
     try {
       const { key } = req.params;
       const setting = await storage.getAppSettingByKey(key);
@@ -12213,7 +12249,7 @@ Important:
     }
   });
 
-  app.post('/api/settings', async (req, res) => {
+  app.post('/api/settings', isAuthenticated, async (req, res) => {
     try {
       const data = insertAppSettingSchema.parse(req.body);
       const setting = await storage.createAppSetting(data);
@@ -12230,7 +12266,7 @@ Important:
     }
   });
 
-  app.patch('/api/settings/:key', async (req, res) => {
+  app.patch('/api/settings/:key', isAuthenticated, async (req, res) => {
     try {
       const { key } = req.params;
       const data = req.body;
@@ -12255,7 +12291,7 @@ Important:
     }
   });
 
-  app.delete('/api/settings/:key', async (req, res) => {
+  app.delete('/api/settings/:key', isAuthenticated, async (req, res) => {
     try {
       const { key } = req.params;
 
