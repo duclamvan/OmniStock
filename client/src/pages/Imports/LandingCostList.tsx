@@ -297,9 +297,9 @@ export default function LandingCostList() {
           {filteredShipments.map(shipment => (
             <Card key={shipment.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-start gap-4">
                   {/* Left Section */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="bg-cyan-100 dark:bg-cyan-900 p-2 rounded-lg shrink-0">
                         <Package className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
@@ -331,7 +331,7 @@ export default function LandingCostList() {
                     </div>
 
                     {/* Cost Details Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-muted/30 rounded-lg p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-muted/30 dark:bg-muted/20 rounded-lg p-3">
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">{t('shippingCost')}</p>
                         <p className="font-semibold">{getShippingCostDisplay(shipment)}</p>
@@ -340,7 +340,7 @@ export default function LandingCostList() {
                         <>
                           <div>
                             <p className="text-xs text-muted-foreground mb-0.5">{t('totalLandedCost')}</p>
-                            <p className="font-semibold text-green-600">
+                            <p className="font-semibold text-green-600 dark:text-green-400">
                               {formatCurrency(shipment.landingCost.totalCost || 0, shipment.landingCost.baseCurrency || 'EUR')}
                             </p>
                           </div>
@@ -397,7 +397,7 @@ export default function LandingCostList() {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-2">
-                          <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-white dark:bg-gray-950">
+                          <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-950">
                             {shipment.items.map((item: any, idx: number) => (
                               <div
                                 key={idx}
@@ -431,7 +431,7 @@ export default function LandingCostList() {
                   </div>
 
                   {/* Right Section - Actions */}
-                  <div className="flex flex-col gap-2 shrink-0">
+                  <div className="flex flex-col gap-2 w-full md:w-auto md:shrink-0">
                     <Link href={`/imports/landing-costs/${shipment.id}`}>
                       <Button size="sm" className="w-full" data-testid={`button-view-costs-${shipment.id}`}>
                         <Calculator className="h-4 w-4 mr-2" />
