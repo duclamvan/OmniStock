@@ -59,18 +59,27 @@ import {
   Calendar,
   Building2,
   Phone,
-  Mail
+  Mail,
+  ClipboardList
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/currencyUtils";
-import type { Employee } from "@shared/schema";
+import { useLocation } from "wouter";
+import type { Employee, User } from "@shared/schema";
 
 const createEmployeeFormSchema = (t: (key: string) => string) => z.object({
   employeeId: z.string().min(1, t('system:employeeIdRequired')),
+  userId: z.string().optional().or(z.literal("")),
   firstName: z.string().min(1, t('system:firstNameRequired')),
   lastName: z.string().min(1, t('system:lastNameRequired')),
   email: z.string().email(t('system:invalidEmail')).optional().or(z.literal("")),
@@ -99,6 +108,7 @@ export default function Employees() {
   const { t } = useTranslation(['system', 'common']);
   const employeeFormSchema = createEmployeeFormSchema(t);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -108,10 +118,16 @@ export default function Employees() {
     queryKey: ['/api/employees'],
   });
 
+  // Fetch all users
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+  });
+
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
       employeeId: "",
+      userId: "",
       firstName: "",
       lastName: "",
       email: "",
@@ -140,6 +156,7 @@ export default function Employees() {
     mutationFn: async (data: EmployeeFormValues) => {
       const payload = {
         ...data,
+        userId: data.userId || null,
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
@@ -215,6 +232,7 @@ export default function Employees() {
     setSelectedEmployee(employee);
     form.reset({
       employeeId: employee.employeeId,
+      userId: employee.userId || "",
       firstName: employee.firstName,
       lastName: employee.lastName,
       email: employee.email || "",
@@ -377,12 +395,13 @@ export default function Employees() {
                   <TableRow>
                     <TableHead>{t('system:employeeId')}</TableHead>
                     <TableHead>{t('common:name')}</TableHead>
+                    <TableHead>{t('system:userAccount')}</TableHead>
                     <TableHead>{t('system:position')}</TableHead>
                     <TableHead>{t('system:department')}</TableHead>
                     <TableHead>{t('system:hireDate')}</TableHead>
                     <TableHead>{t('system:salary')}</TableHead>
                     <TableHead>{t('common:status')}</TableHead>
-                    <TableHead className="w-[100px]">{t('common:actions')}</TableHead>
+                    <TableHead className="w-[150px]">{t('common:actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -406,6 +425,22 @@ export default function Employees() {
                             <Phone className="h-3 w-3" />
                             {employee.phone}
                           </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {employee.userId ? (
+                          (() => {
+                            const assignedUser = users.find(u => u.id === employee.userId);
+                            return assignedUser ? (
+                              <div className="text-sm">
+                                {assignedUser.firstName} {assignedUser.lastName}
+                              </div>
+                            ) : (
+                              <Badge variant="outline">{t('system:notAssigned')}</Badge>
+                            );
+                          })()
+                        ) : (
+                          <Badge variant="outline">{t('system:notAssigned')}</Badge>
                         )}
                       </TableCell>
                       <TableCell data-testid={`text-position-${employee.id}`}>
@@ -439,22 +474,61 @@ export default function Employees() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditEmployee(employee)}
-                            data-testid={`button-edit-${employee.id}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteEmployee(employee)}
-                            data-testid={`button-delete-${employee.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditEmployee(employee)}
+                                  data-testid={`button-edit-${employee.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('common:edit')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          {employee.userId && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setLocation(`/activity-log/${employee.userId}`)}
+                                    data-testid={`button-activity-log-${employee.id}`}
+                                  >
+                                    <ClipboardList className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t('system:viewActivityLog')}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteEmployee(employee)}
+                                  data-testid={`button-delete-${employee.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('common:delete')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -492,6 +566,32 @@ export default function Employees() {
                       <FormControl>
                         <Input placeholder={t('system:employeeIdPlaceholder')} {...field} data-testid="input-employee-id" />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="userId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('system:userAccount')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-user">
+                            <SelectValue placeholder={t('system:selectUser')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">{t('system:noUserAssigned')}</SelectItem>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName} {user.lastName} ({user.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

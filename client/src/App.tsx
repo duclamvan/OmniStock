@@ -93,6 +93,7 @@ import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
 import Employees from "@/pages/Employees";
+import ActivityLog from "@/pages/ActivityLog";
 import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
@@ -363,6 +364,10 @@ function Router() {
         {/* Employees Route */}
         <Route path="/employees">
           {() => <ProtectedRoute requireAdmin><Employees /></ProtectedRoute>}
+        </Route>
+        {/* Activity Log Route */}
+        <Route path="/activity-log/:userId">
+          {() => <ProtectedRoute requireAdmin><ActivityLog /></ProtectedRoute>}
         </Route>
         {/* Reports Routes */}
         <Route path="/reports/custom">

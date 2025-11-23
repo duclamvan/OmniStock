@@ -51,8 +51,11 @@ import {
   appSettings,
   receipts,
   notifications,
+  activityLog,
   type User,
   type InsertUser,
+  type ActivityLog,
+  type InsertActivityLog,
   type Employee,
   type InsertEmployee,
   type Category,
@@ -252,6 +255,12 @@ export interface IStorage {
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: number): Promise<void>;
+  assignUserToEmployee(employeeId: number, userId: string | null): Promise<void>;
+
+  // Activity Logs
+  getActivityLogs(options?: { userId?: string; limit?: number; offset?: number }): Promise<ActivityLog[]>;
+  getActivityLogsByUserId(userId: string): Promise<ActivityLog[]>;
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
 
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
@@ -887,6 +896,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmployee(id: number): Promise<void> {
     await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  async assignUserToEmployee(employeeId: number, userId: string | null): Promise<void> {
+    await db
+      .update(employees)
+      .set({ userId, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId));
+  }
+
+  // Activity Logs
+  async getActivityLogs(options?: { userId?: string; limit?: number; offset?: number }): Promise<ActivityLog[]> {
+    let query = db
+      .select()
+      .from(activityLog)
+      .orderBy(desc(activityLog.createdAt));
+
+    // Apply userId filter if provided
+    if (options?.userId) {
+      query = query.where(eq(activityLog.userId, options.userId)) as any;
+    }
+
+    // Apply pagination
+    if (options?.limit) {
+      query = query.limit(options.limit) as any;
+    }
+    if (options?.offset) {
+      query = query.offset(options.offset) as any;
+    }
+
+    return await query;
+  }
+
+  async getActivityLogsByUserId(userId: string): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLog)
+      .where(eq(activityLog.userId, userId))
+      .orderBy(desc(activityLog.createdAt));
+  }
+
+  async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const [newLog] = await db
+      .insert(activityLog)
+      .values(log)
+      .returning();
+    return newLog;
   }
 
   // Import Purchases

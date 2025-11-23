@@ -35,6 +35,7 @@ import {
   insertOrderCartonSchema,
   insertAppSettingSchema,
   insertNotificationSchema,
+  insertActivityLogSchema,
   productCostHistory,
   products,
   productBundles,
@@ -597,64 +598,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User Management API Endpoints
   
-  // GET /api/users - List all users (admin-only)
-  app.get('/api/users', requireRole(['administrator']), async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      const sanitizedUsers = users.map(user => ({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        createdAt: user.createdAt
-      }));
-      res.json(sanitizedUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      res.status(500).json({ message: 'Failed to fetch users' });
-    }
-  });
-
-  // PATCH /api/users/:userId/role - Update user role (admin-only)
-  app.patch('/api/users/:userId/role', requireRole(['administrator']), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { role } = req.body;
-
-      // Allow null to revoke access
-      if (role !== null && role !== undefined && !['administrator', 'warehouse_operator'].includes(role)) {
-        return res.status(400).json({ message: 'Invalid role. Must be either "administrator", "warehouse_operator", or null' });
-      }
-
-      await storage.updateUserRole(userId, role);
-      res.json({ message: 'User role updated successfully' });
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      res.status(500).json({ message: 'Failed to update user role' });
-    }
-  });
-
-  // DELETE /api/users/:userId - Delete user (admin-only)
-  app.delete('/api/users/:userId', requireRole(['administrator']), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const currentUser = (req as any).user;
-
-      // Prevent self-deletion
-      if (currentUser && currentUser.id === userId) {
-        return res.status(403).json({ message: 'You cannot delete your own account' });
-      }
-
-      await storage.deleteUser(userId);
-      res.json({ message: 'User deleted successfully' });
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Failed to delete user' });
-    }
-  });
-
   // GET /api/users/me - Get current user info (authenticated users)
+  // NOTE: This must come BEFORE /api/users/:userId to prevent "me" from being treated as a userId
   app.get('/api/users/me', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.user) {
@@ -770,6 +715,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/users - List all users (admin-only)
+  app.get('/api/users', requireRole(['administrator']), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        createdAt: user.createdAt
+      }));
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  // GET /api/users/:userId - Get a single user by ID (admin-only)
+  app.get('/api/users/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const sanitizedUser = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        createdAt: user.createdAt
+      };
+      
+      res.json(sanitizedUser);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
+
+  // PATCH /api/users/:userId/role - Update user role (admin-only)
+  app.patch('/api/users/:userId/role', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+
+      // Allow null to revoke access
+      if (role !== null && role !== undefined && !['administrator', 'warehouse_operator'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role. Must be either "administrator", "warehouse_operator", or null' });
+      }
+
+      await storage.updateUserRole(userId, role);
+      res.json({ message: 'User role updated successfully' });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Failed to update user role' });
+    }
+  });
+
+  // DELETE /api/users/:userId - Delete user (admin-only)
+  app.delete('/api/users/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const currentUser = (req as any).user;
+
+      // Prevent self-deletion
+      if (currentUser && currentUser.id === userId) {
+        return res.status(403).json({ message: 'You cannot delete your own account' });
+      }
+
+      await storage.deleteUser(userId);
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+
   // Employee Management API Endpoints
 
   // GET /api/employees - List all employees (admin-only)
@@ -837,6 +865,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting employee:', error);
       res.status(500).json({ message: 'Failed to delete employee' });
+    }
+  });
+
+  // PATCH /api/employees/:id/assign-user - Assign user account to employee (admin-only)
+  app.patch('/api/employees/:id/assign-user', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const { userId } = req.body;
+      const adminUser = req.user;
+
+      // Validate that userId is either a string or null
+      if (userId !== null && typeof userId !== 'string') {
+        return res.status(400).json({ message: 'userId must be a string or null' });
+      }
+
+      // Get employee details for logging
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+
+      // Get previous userId before update for comparison
+      const previousUserId = employee.userId;
+
+      // Perform the assignment
+      await storage.assignUserToEmployee(employeeId, userId);
+
+      // Log activity for the assigned/unassigned user
+      if (userId && userId !== previousUserId) {
+        // User was assigned to employee
+        await storage.createActivityLog({
+          userId,
+          action: 'user_assigned_to_employee',
+          entityType: 'employee',
+          entityId: employeeId.toString(),
+          metadata: {
+            employeeName: employee.name,
+            employeeId,
+            assignedBy: adminUser.id,
+            assignedByName: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || adminUser.email
+          }
+        });
+      } else if (previousUserId && userId === null) {
+        // User was unassigned from employee
+        await storage.createActivityLog({
+          userId: previousUserId,
+          action: 'user_unassigned_from_employee',
+          entityType: 'employee',
+          entityId: employeeId.toString(),
+          metadata: {
+            employeeName: employee.name,
+            employeeId,
+            unassignedBy: adminUser.id,
+            unassignedByName: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || adminUser.email
+          }
+        });
+      }
+
+      res.json({ message: 'User assigned to employee successfully' });
+    } catch (error) {
+      console.error('Error assigning user to employee:', error);
+      res.status(500).json({ message: 'Failed to assign user to employee' });
+    }
+  });
+
+  // Activity Log API Endpoints
+
+  // GET /api/activity-log - Get all activity logs with optional filtering (admin-only)
+  app.get('/api/activity-log', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId, limit, offset } = req.query;
+
+      const options: { userId?: string; limit?: number; offset?: number } = {};
+
+      if (userId && typeof userId === 'string') {
+        options.userId = userId;
+      }
+
+      if (limit && typeof limit === 'string') {
+        const parsedLimit = parseInt(limit);
+        if (!isNaN(parsedLimit) && parsedLimit > 0) {
+          options.limit = parsedLimit;
+        }
+      }
+
+      if (offset && typeof offset === 'string') {
+        const parsedOffset = parseInt(offset);
+        if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+          options.offset = parsedOffset;
+        }
+      }
+
+      const logs = await storage.getActivityLogs(options);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+      res.status(500).json({ message: 'Failed to fetch activity logs' });
+    }
+  });
+
+  // GET /api/activity-log/:userId - Get activity logs for a specific user (admin-only)
+  app.get('/api/activity-log/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const logs = await storage.getActivityLogsByUserId(userId);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching activity logs for user:', error);
+      res.status(500).json({ message: 'Failed to fetch activity logs for user' });
+    }
+  });
+
+  // POST /api/activity-log - Create a new activity log entry
+  app.post('/api/activity-log', isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertActivityLogSchema.safeParse(req.body);
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: 'Invalid activity log data', 
+          errors: validation.error.errors 
+        });
+      }
+
+      const log = await storage.createActivityLog(validation.data);
+      res.json(log);
+    } catch (error) {
+      console.error('Error creating activity log:', error);
+      res.status(500).json({ message: 'Failed to create activity log' });
     }
   });
 

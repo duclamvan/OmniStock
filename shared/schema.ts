@@ -27,6 +27,7 @@ export const users = pgTable('users', {
 export const employees = pgTable('employees', {
   id: serial('id').primaryKey(),
   employeeId: varchar('employee_id').notNull().unique(), // Custom employee ID (e.g., EMP001)
+  userId: varchar('user_id').references(() => users.id), // Link to user account for system access
   firstName: varchar('first_name').notNull(),
   lastName: varchar('last_name').notNull(),
   email: varchar('email'),
@@ -52,6 +53,20 @@ export const employees = pgTable('employees', {
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Activity Log table - tracks user actions in the system
+export const activityLog = pgTable('activity_log', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').references(() => users.id), // User who performed the action
+  action: varchar('action').notNull(), // e.g., 'create', 'update', 'delete', 'login', 'logout'
+  entityType: varchar('entity_type'), // e.g., 'order', 'product', 'customer', 'employee'
+  entityId: varchar('entity_id'), // ID of the affected entity
+  description: text('description').notNull(), // Human-readable description of the action
+  metadata: jsonb('metadata'), // Additional context (old/new values, IP address, etc.)
+  ipAddress: varchar('ip_address'), // IP address of the user
+  userAgent: text('user_agent'), // Browser/device information
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
 // Categories table
@@ -1897,3 +1912,10 @@ export const insertNotificationSchema = createInsertSchema(notifications, {
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
