@@ -302,7 +302,7 @@ interface CartonRecommendation {
 }
 
 // Helper function to format shipping address (handles both string and object formats)
-const formatShippingAddress = (address: any): string => {
+const formatShippingAddress = (address: any, t: (key: string) => string): string => {
   if (!address) return '';
   
   // If it's already a string (legacy format), return it as-is
@@ -342,11 +342,11 @@ const formatShippingAddress = (address: any): string => {
   
   // Contact info (optional)
   if (address.tel) {
-    parts.push(`Tel: ${address.tel}`);
+    parts.push(`${t('tel')}: ${address.tel}`);
   }
   
   if (address.email) {
-    parts.push(`Email: ${address.email}`);
+    parts.push(`${t('email')}: ${address.email}`);
   }
   
   return parts.join('\n');
@@ -8411,7 +8411,7 @@ export default function PickPack() {
                       <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
                     </div>
                     {(() => {
-                      const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
+                      const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress, t);
                       return formattedAddress ? (
                         <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
                           {formattedAddress}
@@ -11600,7 +11600,7 @@ export default function PickPack() {
                           {expandedOverviewItems.has(item.id) && (
                             <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
                               <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
-                                <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">Warehouse Location</p>
+                                <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
                                 <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">{item.warehouseLocation}</p>
                               </div>
                               <Button
@@ -11725,7 +11725,7 @@ export default function PickPack() {
 
                       {/* Warehouse Location - High Contrast Banner */}
                       <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
-                        <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">Warehouse Location</p>
+                        <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
                         <p 
                           className="font-black text-orange-600 dark:text-orange-400 font-mono"
                           style={{
@@ -11774,9 +11774,9 @@ export default function PickPack() {
                       {currentItem.isBundle && currentItem.bundleItems && currentItem.bundleItems.length > 0 ? (
                         <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-pink-50 dark:to-pink-900/30 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-purple-400 dark:border-purple-700 shadow-xl">
                           <div className="flex items-center justify-between mb-4">
-                            <p className="text-base lg:text-xl font-black text-purple-800 dark:text-purple-200 uppercase tracking-wider">Bundle Items</p>
+                            <p className="text-base lg:text-xl font-black text-purple-800 dark:text-purple-200 uppercase tracking-wider">{t('bundleItems')}</p>
                             <Badge className="bg-purple-600 text-white dark:bg-purple-700 px-3 py-1">
-                              {bundlePickedItems[currentItem.id]?.size || 0} / {currentItem.bundleItems.length} picked
+                              {bundlePickedItems[currentItem.id]?.size || 0} / {currentItem.bundleItems.length} {t('picked')}
                             </Badge>
                           </div>
                           
@@ -11886,7 +11886,7 @@ export default function PickPack() {
                               }}
                             >
                               <CheckCircle2 className="h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 mr-2 lg:mr-3" />
-                              Quick Pick All Bundle Items
+                              {t('quickPickAllBundleItems')}
                             </Button>
                           )}
                         </div>
@@ -13768,11 +13768,11 @@ export default function PickPack() {
               {/* Shipping Address Section */}
               <div className="py-3 border-b">
                 <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Ship To
+                  {t('shipTo')}
                 </div>
                 <div className="text-xs sm:text-sm">
                   <p className="text-gray-900 dark:text-gray-100 break-words whitespace-pre-line leading-relaxed">
-                    {formatShippingAddress(previewOrder?.shippingAddress) || 'No address provided'}
+                    {formatShippingAddress(previewOrder?.shippingAddress, t) || t('noAddressProvided')}
                   </p>
                   <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-600 dark:text-gray-400">
                     <Truck className="h-3.5 w-3.5" />
@@ -13792,7 +13792,7 @@ export default function PickPack() {
               {/* Items Section */}
               <div className="py-3 border-b">
                 <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Items
+                  {t('items')}
                 </div>
                 <div className="space-y-2">
                   {previewOrder?.items.map((item, index) => {
@@ -13818,7 +13818,7 @@ export default function PickPack() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            SKU: {item.sku}{item.warehouseLocation && ` • ${item.warehouseLocation}`}
+                            {t('sku')}: {item.sku}{item.warehouseLocation && ` • ${item.warehouseLocation}`}
                           </div>
                         </div>
                         {showPricing ? (
@@ -13832,7 +13832,7 @@ export default function PickPack() {
                           </div>
                         ) : (
                           <div className="text-gray-900 dark:text-gray-100 font-medium text-nowrap">
-                            Qty: {item.quantity}
+                            {t('qty')}: {item.quantity}
                           </div>
                         )}
                       </div>
@@ -13914,7 +13914,7 @@ export default function PickPack() {
                 className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
               >
                 <FileText className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">View Full Details</span>
+                <span className="hidden sm:inline">{t('viewFullDetails')}</span>
                 <span className="sm:hidden">{t('details')}</span>
               </Button>
             </Link>
@@ -13931,7 +13931,7 @@ export default function PickPack() {
                 className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
               >
                 <Printer className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">Print Label</span>
+                <span className="hidden sm:inline">{t('printLabel')}</span>
                 <span className="sm:hidden">{t('print')}</span>
               </Button>
             )}
@@ -14027,7 +14027,7 @@ export default function PickPack() {
           <DialogHeader>
             <DialogTitle>{t('confirmShipment')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to mark all {getOrdersByStatus('ready').length} orders as shipped?
+              {t('confirmShipAllDialog', { count: getOrdersByStatus('ready').length })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
@@ -14054,7 +14054,7 @@ export default function PickPack() {
           <DialogHeader>
             <DialogTitle>{t('resetOrder')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to reset this order? All picked quantities will be cleared and you'll start from the beginning.
+              {t('resetOrderDialogDetailed')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
@@ -14137,7 +14137,7 @@ export default function PickPack() {
               size="lg"
             >
               <Printer className="h-4 w-4 mr-2" />
-              Print Label
+              {t('printLabel')}
             </Button>
             <Button
               variant="outline"
@@ -14153,7 +14153,7 @@ export default function PickPack() {
               className="border-gray-300 hover:bg-gray-100 px-6"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Download PDF
+              {t('downloadPDF')}
             </Button>
           </div>
         </DialogContent>
@@ -14165,7 +14165,7 @@ export default function PickPack() {
           <DialogHeader>
             <DialogTitle>{t('putOrderOnHold')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to put order {orderToHold?.orderId} on hold? The order will be paused and can be resumed later.
+              {t('putOnHoldDialogDetailed', { orderId: orderToHold?.orderId })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
@@ -14192,7 +14192,7 @@ export default function PickPack() {
           <DialogHeader>
             <DialogTitle>{t('cancelOrder')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel order {orderToCancel?.orderId}? This action will mark the order as cancelled.
+              {t('cancelOrderDialogDetailed', { orderId: orderToCancel?.orderId })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
