@@ -44,7 +44,8 @@ import {
   FileText,
   Wrench,
   Ticket,
-  Briefcase
+  Briefcase,
+  Languages
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,9 @@ import { ChevronRight as BreadcrumbChevron, Home } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useTranslation } from 'react-i18next';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -170,7 +174,8 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const { user, isAdministrator, isWarehouseOperator } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { toast } = useToast();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const desktopNavRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
@@ -182,6 +187,32 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [openSections, setOpenSections] = useState<string[]>(() => 
     getLocalStorageArray<string>('sidebarOpenSections', ['Warehouse Operations', 'Admin & Management'])
   );
+  
+  // Language toggle mutation
+  const languageMutation = useMutation({
+    mutationFn: async (newLang: 'en' | 'vi') => {
+      await i18n.changeLanguage(newLang);
+      await apiRequest('POST', '/api/settings', {
+        key: 'default_language',
+        value: newLang,
+        category: 'general'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: t('common:success'),
+        description: t('common:languageChanged'),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('common:languageChangeFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
   
   // Set CSS variable to 0px on desktop to prevent padding override
   useEffect(() => {
@@ -1178,17 +1209,57 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Link href="/profile">
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
-                      <span>{t('common:myProfile')}</span>
+                      <span>{t('common:profile')}</span>
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/settings">
+                  <Link href="/user-settings">
                     <DropdownMenuItem>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>{t('common:settings')}</span>
                     </DropdownMenuItem>
                   </Link>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setIsDarkMode(!isDarkMode);
+                      if (isDarkMode) {
+                        document.documentElement.classList.remove('dark');
+                      } else {
+                        document.documentElement.classList.add('dark');
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
+                    {isDarkMode ? (
+                      <>
+                        <Sun className="mr-2 h-4 w-4 text-orange-500" />
+                        <span>{t('common:lightMode')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="mr-2 h-4 w-4 text-slate-700" />
+                        <span>{t('common:darkMode')}</span>
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      const newLang = i18n.language === 'en' ? 'vi' : 'en';
+                      languageMutation.mutate(newLang);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Languages className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>
+                      {i18n.language === 'en' ? 'Tiếng Việt' : 'English'}
+                    </span>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      window.location.href = '/api/logout';
+                    }}
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t('common:logout')}</span>
                   </DropdownMenuItem>
