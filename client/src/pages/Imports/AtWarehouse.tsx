@@ -81,6 +81,7 @@ interface CustomItem {
   classification?: string;
   purchaseOrderId?: number;
   orderItems?: any[];
+  imageUrl?: string | null;
   createdAt: string;
 }
 
@@ -237,7 +238,8 @@ const ItemCard = memo(({
   unpackItemMutation,
   getClassificationIcon,
   getSourceBadge,
-  itemSortBy
+  itemSortBy,
+  t
 }: any) => {
   const handleClick = useCallback((e: any) => {
     const target = e.target as HTMLElement;
@@ -280,6 +282,15 @@ const ItemCard = memo(({
                     <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
                   </div>
                 </div>
+                {item.imageUrl ? (
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.name}
+                    className="w-12 h-12 object-cover rounded-md border"
+                  />
+                ) : (
+                  <Package className="w-12 h-12 text-muted-foreground p-2" />
+                )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-base">{item.name}</span>
@@ -2725,6 +2736,7 @@ export default function AtWarehouse() {
                                       getClassificationIcon={getClassificationIcon}
                                       getSourceBadge={getSourceBadge}
                                       itemSortBy={itemSortBy}
+                                      t={t}
                                     />
                                   </div>
                                 );
@@ -2773,6 +2785,15 @@ export default function AtWarehouse() {
                                             <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
                                           </div>
                                         </div>
+                                        {item.imageUrl ? (
+                                          <img 
+                                            src={item.imageUrl} 
+                                            alt={item.name}
+                                            className="w-12 h-12 object-cover rounded-md border"
+                                          />
+                                        ) : (
+                                          <Package className="w-12 h-12 text-muted-foreground p-2" />
+                                        )}
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-base">{item.name}</span>
