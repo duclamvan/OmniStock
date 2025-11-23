@@ -486,6 +486,32 @@ const products = {
     assignBarcodes: 'Gán mã vạch',
   },
   
+  // Images - Extended
+  images: {
+    title: 'Hình ảnh sản phẩm',
+    uploadMultiple: 'Tải lên nhiều hình ảnh cho các mục đích khác nhau',
+    count: 'một hình ảnh###{{count}} hình ảnh',
+    noImagesYet: 'Chưa tải lên hình ảnh nào',
+    uploadInstruction: 'Nhấp vào danh mục hình ảnh để tải lên ảnh',
+    autoCompressInfo: 'Hình ảnh tự động được nén thành định dạng WebP để tiết kiệm lưu trữ',
+    primary: 'Chính',
+    setPrimary: 'Đặt làm chính',
+    find: 'tìm',
+    map: 'bản đồ',
+    purposes: {
+      main: 'Hình ảnh chính',
+      mainDescription: 'Hình ảnh sản phẩm chính cho hệ thống quản lý kho',
+      inHand: 'Trong tay',
+      inHandDescription: 'Sản phẩm cầm tay để tham khảo khi lấy',
+      detail: 'Chi tiết',
+      detailDescription: 'Ảnh cận cảnh kết cấu hoặc tính năng',
+      packaging: 'Đóng gói',
+      packagingDescription: 'Hình ảnh gói hoặc hộp',
+      label: 'Nhãn/Mã vạch',
+      labelDescription: 'Nhãn, mã vạch hoặc thẻ SKU',
+    },
+  },
+  
   // Image Viewer
   imageViewer: {
     productImageAlt: 'Hình ảnh sản phẩm',

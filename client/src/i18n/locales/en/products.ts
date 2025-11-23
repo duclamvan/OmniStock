@@ -379,6 +379,32 @@ const products = {
     assignBarcodes: 'Assign Barcodes',
   },
   
+  // Images - Extended
+  images: {
+    title: 'Product Images',
+    uploadMultiple: 'Upload multiple images for different purposes',
+    count: 'one image###{{count}} images',
+    noImagesYet: 'No images uploaded yet',
+    uploadInstruction: 'Click on an image category to upload photos',
+    autoCompressInfo: 'Images are automatically compressed to WebP format for optimal storage',
+    primary: 'Primary',
+    setPrimary: 'Set Primary',
+    find: 'find',
+    map: 'map',
+    purposes: {
+      main: 'Main Image',
+      mainDescription: 'Primary product image for WMS',
+      inHand: 'In Hand',
+      inHandDescription: 'Product in hand for picking reference',
+      detail: 'Detail Shot',
+      detailDescription: 'Close-up of texture or features',
+      packaging: 'Packaging',
+      packagingDescription: 'Package or box image',
+      label: 'Label/Barcode',
+      labelDescription: 'Label, barcode, or SKU tag',
+    },
+  },
+
   // Image Viewer
   imageViewer: {
     productImageAlt: 'Product image',
