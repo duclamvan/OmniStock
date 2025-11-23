@@ -43,7 +43,8 @@ import {
   Send,
   FileText,
   Wrench,
-  Ticket
+  Ticket,
+  Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -487,6 +488,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           icon: Users,
           color: "text-indigo-600 dark:text-indigo-400",
           description: t('common:manageUsersAndRoles')
+        },
+        {
+          name: t('common:employees'),
+          href: "/employees",
+          icon: Briefcase,
+          color: "text-cyan-600 dark:text-cyan-400",
+          description: t('common:employeeManagement')
         },
       ]
     }

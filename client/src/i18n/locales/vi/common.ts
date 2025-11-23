@@ -395,6 +395,7 @@ const common = {
   system: 'Hệ thống',
   userManagement: 'Quản lý người dùng',
   manageUsersAndRoles: 'Quản lý người dùng & Quyền',
+  employeeManagement: 'Quản lý nhân viên',
   tickets: 'Tickets',
   landingCosts: 'Chi phí hạ cánh',
   

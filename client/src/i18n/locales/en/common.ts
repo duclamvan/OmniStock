@@ -419,6 +419,7 @@ const common = {
   system: 'System',
   userManagement: 'User Management',
   manageUsersAndRoles: 'Manage Users & Roles',
+  employeeManagement: 'Employee Management',
   tickets: 'Tickets',
   landingCosts: 'Landing Costs',
   
