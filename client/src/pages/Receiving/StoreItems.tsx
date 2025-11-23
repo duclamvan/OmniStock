@@ -406,11 +406,11 @@ export default function StoreItems() {
                       </div>
                       <div className="ml-2">
                         {isComplete ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                         ) : isCurrent ? (
-                          <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
+                          <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-pulse" />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-gray-400" />
+                          <AlertCircle className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                         )}
                       </div>
                     </div>
@@ -446,7 +446,7 @@ export default function StoreItems() {
                       <div className="space-y-2">
                         {currentItem.existingLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span className="font-mono text-sm">{loc.locationCode}</span>
                             <Badge variant="outline" className="text-xs">
                               {t('warehouse:qty')}: {loc.quantity}
@@ -473,7 +473,7 @@ export default function StoreItems() {
                     </Label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <QrCode className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <QrCode className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-300" />
                         <Input
                           ref={locationInputRef}
                           id="location-scan"
@@ -510,7 +510,7 @@ export default function StoreItems() {
                       <div className="space-y-2">
                         {currentItem.newLocations.map((loc, index) => (
                           <div key={loc.id} className="flex items-center gap-2 p-3 border rounded-lg">
-                            <MapPin className="h-4 w-4 text-blue-500" />
+                            <MapPin className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                             <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
                             
                             <div className="flex items-center gap-1">
@@ -577,7 +577,7 @@ export default function StoreItems() {
               <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
                 <CardContent className="pt-6">
                   <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                     <div className="space-y-1 text-sm">
                       <p className="font-medium text-blue-900 dark:text-blue-100">{t('storageTips')}:</p>
                       <ul className="text-blue-800 dark:text-blue-200 space-y-1">
@@ -596,7 +596,7 @@ export default function StoreItems() {
             <Card className="h-full flex items-center justify-center">
               <CardContent>
                 <div className="text-center space-y-2">
-                  <Warehouse className="h-12 w-12 text-gray-400 mx-auto" />
+                  <Warehouse className="h-12 w-12 text-gray-400 dark:text-gray-300 mx-auto" />
                   <p className="text-muted-foreground">{t('noItemsToStore')}</p>
                 </div>
               </CardContent>
