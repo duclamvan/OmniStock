@@ -926,6 +926,33 @@ const settings = {
   messagingAppViber: 'Viber',
   messagingAppWhatsApp: 'WhatsApp',
   messagingAppZalo: 'Zalo',
+
+  // Factory Reset
+  factoryResetTitle: 'Khôi phục cài đặt gốc',
+  factoryResetDescription: 'Xóa tất cả dữ liệu hoạt động trong khi giữ cấu hình hệ thống',
+  factoryResetWarningTitle: 'NGUY HIỂM: Hành động này không thể hoàn tác!',
+  factoryResetWarning1: 'Điều này sẽ xóa vĩnh viễn tất cả dữ liệu hoạt động khỏi cơ sở dữ liệu của bạn.',
+  factoryResetWarning2: 'Dữ liệu sau đây sẽ được GIỮ LẠI:',
+  factoryResetKeep1: 'Tài khoản người dùng và cài đặt',
+  factoryResetKeep2: 'Cấu trúc kho và cấu hình nhà vận chuyển',
+  factoryResetKeep3: 'Danh mục, nhà cung cấp và danh mục vật liệu đóng gói',
+  factoryResetButton: 'Khôi phục cài đặt gốc',
+  factoryResetConfirmTitle: 'Xác nhận khôi phục cài đặt gốc',
+  factoryResetDialogWarning: 'CẢNH BÁO NGHIÊM TRỌNG',
+  factoryResetDialogDescription: 'Hành động này là VĨNH VIỄN và KHÔNG THỂ hoàn tác. Tất cả dữ liệu hoạt động của bạn sẽ bị xóa mãi mãi.',
+  factoryResetWillDelete: 'Điều này sẽ XÓA:',
+  factoryResetDelete1: 'Tất cả sản phẩm, đơn hàng, khách hàng và nhân viên',
+  factoryResetDelete2: 'Tất cả nhập khẩu, lô hàng và hồ sơ tài chính',
+  factoryResetDelete3: 'Tất cả dữ liệu tồn kho và giao dịch',
+  factoryResetDelete4: 'Tất cả vé và dịch vụ (nhật ký kiểm toán được bảo toàn)',
+  factoryResetWillKeep: 'Điều này sẽ GIỮ LẠI:',
+  factoryResetConfirmInstructions: 'Để xác nhận, nhập chính xác: DELETE ALL DATA',
+  factoryResetBackupRecommendation: 'Chúng tôi khuyến nghị sao lưu cơ sở dữ liệu trước khi tiếp tục.',
+  factoryResetConfirmButton: 'Xóa tất cả dữ liệu',
+  factoryResetInProgress: 'Đang xóa...',
+  factoryResetSuccess: 'Khôi phục cài đặt gốc hoàn tất',
+  factoryResetFailed: 'Khôi phục cài đặt gốc thất bại',
+  recordsDeleted: 'bản ghi đã xóa',
 } as const;
 
 export default settings;

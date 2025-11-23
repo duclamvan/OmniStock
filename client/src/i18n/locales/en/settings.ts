@@ -1070,6 +1070,33 @@ const settings = {
   messagingAppViber: 'Viber',
   messagingAppWhatsApp: 'WhatsApp',
   messagingAppZalo: 'Zalo',
+
+  // Factory Reset
+  factoryResetTitle: 'Factory Reset Data',
+  factoryResetDescription: 'Delete all operational data while preserving system configuration',
+  factoryResetWarningTitle: 'DANGER: This action cannot be undone!',
+  factoryResetWarning1: 'This will permanently delete all operational data from your database.',
+  factoryResetWarning2: 'The following data will be PRESERVED:',
+  factoryResetKeep1: 'User accounts and settings',
+  factoryResetKeep2: 'Warehouse structures and carrier configurations',
+  factoryResetKeep3: 'Categories, suppliers, and packing materials catalog',
+  factoryResetButton: 'Factory Reset Data',
+  factoryResetConfirmTitle: 'Confirm Factory Reset',
+  factoryResetDialogWarning: 'CRITICAL WARNING',
+  factoryResetDialogDescription: 'This action is PERMANENT and CANNOT be undone. All your operational data will be deleted forever.',
+  factoryResetWillDelete: 'This will DELETE:',
+  factoryResetDelete1: 'All products, orders, customers, and employees',
+  factoryResetDelete2: 'All imports, shipments, and financial records',
+  factoryResetDelete3: 'All inventory data and transactions',
+  factoryResetDelete4: 'All tickets and services (audit trail is preserved)',
+  factoryResetWillKeep: 'This will KEEP:',
+  factoryResetConfirmInstructions: 'To confirm, type exactly: DELETE ALL DATA',
+  factoryResetBackupRecommendation: 'We strongly recommend backing up your database before proceeding.',
+  factoryResetConfirmButton: 'Delete All Data',
+  factoryResetInProgress: 'Deleting...',
+  factoryResetSuccess: 'Factory Reset Completed',
+  factoryResetFailed: 'Factory reset failed',
+  recordsDeleted: 'records deleted',
 } as const;
 
 export default settings;

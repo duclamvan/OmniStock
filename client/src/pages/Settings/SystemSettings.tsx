@@ -10,10 +10,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2 } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
@@ -100,6 +113,8 @@ export default function SystemSettings() {
   const { toast } = useToast();
   const { systemSettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
+  const [showFactoryResetDialog, setShowFactoryResetDialog] = useState(false);
+  const [confirmationPhrase, setConfirmationPhrase] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -221,6 +236,36 @@ export default function SystemSettings() {
 
   const onSubmit = (values: FormValues) => {
     saveMutation.mutate(values);
+  };
+
+  const factoryResetMutation = useMutation({
+    mutationFn: async (confirmationPhrase: string) => {
+      const response = await apiRequest('POST', '/api/system/factory-reset', { confirmationPhrase });
+      return response;
+    },
+    onSuccess: (data: any) => {
+      setShowFactoryResetDialog(false);
+      setConfirmationPhrase('');
+      toast({
+        title: t('settings:factoryResetSuccess'),
+        description: `${data.totalDeleted} ${t('settings:recordsDeleted')}`,
+      });
+      // Invalidate all queries to refresh the UI
+      queryClient.invalidateQueries();
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: error.message || t('settings:factoryResetFailed'),
+      });
+    },
+  });
+
+  const handleFactoryReset = () => {
+    if (confirmationPhrase === 'DELETE ALL DATA') {
+      factoryResetMutation.mutate(confirmationPhrase);
+    }
   };
 
   if (isLoading) {
@@ -555,6 +600,43 @@ export default function SystemSettings() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Factory Reset Card */}
+            <Card className="border-red-200 dark:border-red-900">
+              <CardHeader className="p-4 sm:p-6 bg-red-50 dark:bg-red-950/30">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:factoryResetTitle')}
+                </CardTitle>
+                <CardDescription className="text-sm text-red-600 dark:text-red-400">
+                  {t('settings:factoryResetDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t('settings:factoryResetWarningTitle')}</AlertTitle>
+                  <AlertDescription className="mt-2 space-y-2">
+                    <p>{t('settings:factoryResetWarning1')}</p>
+                    <p className="font-semibold">{t('settings:factoryResetWarning2')}</p>
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                      <li>{t('settings:factoryResetKeep1')}</li>
+                      <li>{t('settings:factoryResetKeep2')}</li>
+                      <li>{t('settings:factoryResetKeep3')}</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowFactoryResetDialog(true)}
+                  className="w-full sm:w-auto"
+                  data-testid="button-factory-reset"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t('settings:factoryResetButton')}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -926,6 +1008,83 @@ export default function SystemSettings() {
           </Button>
         </div>
       </form>
+
+      {/* Factory Reset Confirmation Dialog */}
+      <Dialog open={showFactoryResetDialog} onOpenChange={setShowFactoryResetDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              {t('settings:factoryResetConfirmTitle')}
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{t('settings:factoryResetDialogWarning')}</AlertTitle>
+                <AlertDescription className="mt-2">
+                  <p className="text-sm">{t('settings:factoryResetDialogDescription')}</p>
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2 text-sm">
+                <p className="font-semibold">{t('settings:factoryResetWillDelete')}</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>{t('settings:factoryResetDelete1')}</li>
+                  <li>{t('settings:factoryResetDelete2')}</li>
+                  <li>{t('settings:factoryResetDelete3')}</li>
+                  <li>{t('settings:factoryResetDelete4')}</li>
+                </ul>
+                <p className="font-semibold mt-3">{t('settings:factoryResetWillKeep')}</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>{t('settings:factoryResetKeep1')}</li>
+                  <li>{t('settings:factoryResetKeep2')}</li>
+                  <li>{t('settings:factoryResetKeep3')}</li>
+                </ul>
+              </div>
+              <div className="space-y-2 pt-2">
+                <p className="text-sm font-semibold">{t('settings:factoryResetConfirmInstructions')}</p>
+                <Input
+                  value={confirmationPhrase}
+                  onChange={(e) => setConfirmationPhrase(e.target.value)}
+                  placeholder="DELETE ALL DATA"
+                  className="font-mono"
+                  data-testid="input-factory-reset-confirm"
+                />
+                <p className="text-xs text-muted-foreground">{t('settings:factoryResetBackupRecommendation')}</p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowFactoryResetDialog(false);
+                setConfirmationPhrase('');
+              }}
+              data-testid="button-cancel-factory-reset"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleFactoryReset}
+              disabled={confirmationPhrase !== 'DELETE ALL DATA' || factoryResetMutation.isPending}
+              data-testid="button-confirm-factory-reset"
+            >
+              {factoryResetMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('settings:factoryResetInProgress')}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t('settings:factoryResetConfirmButton')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }

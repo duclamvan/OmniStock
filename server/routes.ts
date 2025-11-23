@@ -12492,6 +12492,128 @@ Important:
     }
   });
 
+  // Factory Reset - Delete all operational data while preserving system configuration
+  app.post('/api/system/factory-reset', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const { confirmationPhrase } = req.body;
+      
+      // Require typed confirmation
+      if (confirmationPhrase !== 'DELETE ALL DATA') {
+        return res.status(400).json({ 
+          message: 'Invalid confirmation phrase. Type exactly: DELETE ALL DATA' 
+        });
+      }
+
+      // Execute deletions in transaction with FK-safe order (children → parents)
+      const deletionSummary: Record<string, number> = {};
+      
+      await db.transaction(async (tx) => {
+        // ===== FACTORY RESET DELETION POLICY =====
+        // DELETE: All operational/transactional data
+        // PRESERVE: System configuration and audit trail
+        //   - users (authentication & roles)
+        //   - user_activities (audit trail - MUST NEVER DELETE)
+        //   - warehouses, warehouse_layouts (infrastructure)
+        //   - categories, suppliers (reference data)
+        //   - packing_materials (catalog)
+        //   - app_settings (system configuration)
+        // ==========================================
+        
+        // Delete in FK-safe order - children first, then parents
+        
+        // Level 1: Leaf tables (no children)
+        deletionSummary.ticketComments = (await tx.delete(ticketComments)).rowCount || 0;
+        deletionSummary.orderFulfillmentLogs = (await tx.delete(orderFulfillmentLogs)).rowCount || 0;
+        deletionSummary.customerBadges = (await tx.delete(customerBadges)).rowCount || 0;
+        deletionSummary.supplierFiles = (await tx.delete(supplierFiles)).rowCount || 0;
+        deletionSummary.warehouseFiles = (await tx.delete(warehouseFiles)).rowCount || 0;
+        deletionSummary.warehouseFinancialContracts = (await tx.delete(warehouseFinancialContracts)).rowCount || 0;
+        deletionSummary.productFiles = (await tx.delete(productFiles)).rowCount || 0;
+        deletionSummary.orderFiles = (await tx.delete(orderFiles)).rowCount || 0;
+        deletionSummary.aiLocationSuggestions = (await tx.delete(aiLocationSuggestions)).rowCount || 0;
+        deletionSummary.stockAdjustmentRequests = (await tx.delete(stockAdjustmentRequests)).rowCount || 0;
+        deletionSummary.productLocations = (await tx.delete(productLocations)).rowCount || 0;
+        deletionSummary.notifications = (await tx.delete(notifications)).rowCount || 0;
+        
+        // Level 2: Tables with level 1 parents
+        deletionSummary.orderCartonItems = (await tx.delete(orderCartonItems)).rowCount || 0;
+        deletionSummary.bundleItems = (await tx.delete(bundleItems)).rowCount || 0;
+        deletionSummary.productTieredPricing = (await tx.delete(productTieredPricing)).rowCount || 0;
+        deletionSummary.productVariants = (await tx.delete(productVariants)).rowCount || 0;
+        deletionSummary.orderItems = (await tx.delete(orderItems)).rowCount || 0;
+        deletionSummary.serviceItems = (await tx.delete(serviceItems)).rowCount || 0;
+        deletionSummary.preOrderItems = (await tx.delete(preOrderItems)).rowCount || 0;
+        deletionSummary.customerShippingAddresses = (await tx.delete(customerShippingAddresses)).rowCount || 0;
+        deletionSummary.customerBillingAddresses = (await tx.delete(customerBillingAddresses)).rowCount || 0;
+        deletionSummary.packingMaterialUsage = (await tx.delete(packingMaterialUsage)).rowCount || 0;
+        deletionSummary.shipmentLabels = (await tx.delete(shipmentLabels)).rowCount || 0;
+        deletionSummary.shipmentItems = (await tx.delete(shipmentItems)).rowCount || 0;
+        deletionSummary.shipmentCartons = (await tx.delete(shipmentCartons)).rowCount || 0;
+        deletionSummary.consolidationItems = (await tx.delete(consolidationItems)).rowCount || 0;
+        deletionSummary.costAllocations = (await tx.delete(costAllocations)).rowCount || 0;
+        deletionSummary.receiptItems = (await tx.delete(receiptItems)).rowCount || 0;
+        deletionSummary.purchaseItems = (await tx.delete(purchaseItems)).rowCount || 0;
+        deletionSummary.deliveryHistory = (await tx.delete(deliveryHistory)).rowCount || 0;
+        
+        // Level 3: Tables with level 2 parents
+        deletionSummary.orderCartonPlans = (await tx.delete(orderCartonPlans)).rowCount || 0;
+        deletionSummary.orderCartons = (await tx.delete(orderCartons)).rowCount || 0;
+        deletionSummary.productBundles = (await tx.delete(productBundles)).rowCount || 0;
+        deletionSummary.tickets = (await tx.delete(tickets)).rowCount || 0;
+        deletionSummary.landedCosts = (await tx.delete(landedCosts)).rowCount || 0;
+        deletionSummary.receipts = (await tx.delete(receipts)).rowCount || 0;
+        deletionSummary.shipmentCosts = (await tx.delete(shipmentCosts)).rowCount || 0;
+        deletionSummary.productCostHistory = (await tx.delete(productCostHistory)).rowCount || 0;
+        deletionSummary.shipmentTracking = (await tx.delete(shipmentTracking)).rowCount || 0;
+        deletionSummary.customItems = (await tx.delete(customItems)).rowCount || 0;
+        
+        // Level 4: Major entity tables
+        deletionSummary.orders = (await tx.delete(orders)).rowCount || 0;
+        deletionSummary.products = (await tx.delete(products)).rowCount || 0;
+        deletionSummary.customers = (await tx.delete(customers)).rowCount || 0;
+        deletionSummary.shipments = (await tx.delete(shipments)).rowCount || 0;
+        deletionSummary.consolidations = (await tx.delete(consolidations)).rowCount || 0;
+        deletionSummary.importPurchases = (await tx.delete(importPurchases)).rowCount || 0;
+        deletionSummary.services = (await tx.delete(services)).rowCount || 0;
+        deletionSummary.preOrders = (await tx.delete(preOrders)).rowCount || 0;
+        deletionSummary.expenses = (await tx.delete(expenses)).rowCount || 0;
+        deletionSummary.discounts = (await tx.delete(discounts)).rowCount || 0;
+        deletionSummary.employees = (await tx.delete(employees)).rowCount || 0;
+        deletionSummary.packingCartons = (await tx.delete(packingCartons)).rowCount || 0;
+        deletionSummary.dailySequences = (await tx.delete(dailySequences)).rowCount || 0;
+        
+        // NOTE: user_activities (audit trail) is PRESERVED for forensic evidence
+        // Log the factory reset action INSIDE transaction AFTER successful deletions
+        await tx.insert(userActivities).values({
+          userId: req.user?.id || "system",
+          action: 'factory_reset',
+          entityType: 'system',
+          entityId: 'factory_reset',
+          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} operational records deleted.`,
+        });
+      }, {
+        accessMode: 'read write',
+        isolationLevel: 'serializable',
+      });
+
+      // Calculate total deleted
+      const totalDeleted = Object.values(deletionSummary).reduce((sum, count) => sum + count, 0);
+
+      res.json({
+        success: true,
+        message: `Factory reset completed. ${totalDeleted} records deleted.`,
+        deletionSummary,
+        totalDeleted
+      });
+    } catch (error) {
+      console.error('Error during factory reset:', error);
+      res.status(500).json({ 
+        message: 'Factory reset failed. Database may be in inconsistent state.',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
