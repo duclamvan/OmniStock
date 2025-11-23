@@ -441,7 +441,7 @@ export default function ShippingManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* PPL Connection Card */}
             <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b p-4 sm:p-6">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border-b dark:border-gray-700 p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
@@ -485,9 +485,9 @@ export default function ShippingManagement() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">{t('shipping:status')}</p>
-                            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
+                            <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
                               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                              <p className="font-semibold text-green-700">{t('shipping:active')}</p>
+                              <p className="font-semibold text-green-700 dark:text-green-400">{t('shipping:active')}</p>
                             </div>
                           </div>
                         </div>
@@ -546,7 +546,7 @@ export default function ShippingManagement() {
           <Collapsible open={isPPLOpen} onOpenChange={setIsPPLOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b cursor-pointer hover:bg-slate-100 transition-colors p-4 sm:p-6">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800/50 dark:to-gray-800/50 border-b dark:border-gray-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors p-4 sm:p-6">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
@@ -564,7 +564,7 @@ export default function ShippingManagement() {
               <CollapsibleContent>
                 <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-5 border border-blue-100 dark:border-blue-800">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
                     {t('shipping:defaultPPLSenderAddress')}
@@ -736,14 +736,14 @@ export default function ShippingManagement() {
                       <Package className="w-4 h-4 text-blue-600" />
                       Product Types
                     </h4>
-                    <div className="bg-white border rounded-lg p-4">
+                    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                       <p className="font-medium text-sm">PPL Parcel CZ Business</p>
                       <p className="text-muted-foreground text-xs mt-1">Standard domestic Czech Republic shipments</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                   <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                     <ExternalLink className="w-4 h-4 text-amber-600" />
                     Cash on Delivery (Dobírka)
@@ -776,7 +776,7 @@ export default function ShippingManagement() {
           <Collapsible open={isDHLOpen} onOpenChange={setIsDHLOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b cursor-pointer hover:bg-yellow-100 transition-colors p-4 sm:p-6">
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/50 dark:to-amber-950/50 border-b dark:border-gray-700 cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors p-4 sm:p-6">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
@@ -795,7 +795,7 @@ export default function ShippingManagement() {
                 <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-6">
                     {/* Sender Address Section */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
+                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 rounded-lg p-5 border border-yellow-100 dark:border-yellow-800">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-yellow-600" />
                         Default DHL DE Sender Address
@@ -916,7 +916,7 @@ export default function ShippingManagement() {
                     </div>
 
                     {/* Bank Details Section */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
+                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 rounded-lg p-5 border border-yellow-100 dark:border-yellow-800">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-yellow-600" />
                         {t('shipping:dhlBankDetails')}
@@ -984,7 +984,7 @@ export default function ShippingManagement() {
                     </div>
 
                     {/* Instructions Section */}
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg p-5 border border-blue-100 dark:border-blue-800">
                       <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-blue-600" />
                         {t('shipping:howToUseDHLManualShipping')}
