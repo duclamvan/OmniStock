@@ -11553,7 +11553,7 @@ export default function PickPack() {
                                   isPartiallyPicked ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200' :
                                   'bg-gray-100 text-gray-600'
                                 }`}>
-                                  {isPicked ? 'Complete' : isPartiallyPicked ? 'In Progress' : 'Not Started'}
+                                  {isPicked ? t('complete') : isPartiallyPicked ? t('inProgress') : t('notStarted')}
                                 </span>
                               </div>
                               
@@ -11613,7 +11613,7 @@ export default function PickPack() {
                                 }}
                               >
                                 <ChevronRight className="h-4 w-4 mr-2" />
-                                Go to This Item
+                                {t('goToThisItem')}
                               </Button>
                             </div>
                           )}
@@ -11659,7 +11659,7 @@ export default function PickPack() {
                   onClick={() => setShowItemOverviewModal(false)}
                   data-testid="button-close-overview-bottom"
                 >
-                  Continue Picking
+                  {t('continuePicking')}
                 </Button>
               </div>
             </div>
@@ -13728,7 +13728,7 @@ export default function PickPack() {
         <DialogContent className="w-[92vw] max-w-3xl sm:w-full max-h-[80vh] sm:max-h-[90vh] mx-auto flex flex-col p-2 sm:p-6">
           <DialogHeader className="flex-shrink-0 pb-1 sm:pb-2 border-b-2">
             <DialogTitle className="text-center text-sm sm:text-xl font-bold uppercase tracking-wide">
-              ORDER DETAILS
+              {t('orderDetails')}
             </DialogTitle>
           </DialogHeader>
           
@@ -13866,7 +13866,7 @@ export default function PickPack() {
                 return (
                   <div className="py-3 border-t-2 border-gray-900 dark:border-gray-100">
                     <div className="flex justify-between text-xs sm:text-sm mb-1">
-                      <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('subtotal')}:</span>
                       <span className="text-gray-900 dark:text-gray-100">
                         {previewOrder?.currency || 'CZK'}{subtotal.toFixed(2)}
                       </span>
@@ -13874,7 +13874,7 @@ export default function PickPack() {
                     <div className="flex justify-between items-center pt-2">
                       <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <DollarSign className="h-5 w-5" />
-                        TOTAL:
+                        {t('total')}:
                       </span>
                       <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {previewOrder?.currency || 'CZK'}{subtotal.toFixed(2)}
@@ -13903,7 +13903,7 @@ export default function PickPack() {
               onClick={() => setPreviewOrder(null)}
               className="sm:hidden text-[10px] px-2 py-1 h-7"
             >
-              Close
+              {t('close')}
             </Button>
             
             {/* Go to Order Details Button */}
@@ -14015,7 +14015,7 @@ export default function PickPack() {
               onClick={() => setPreviewOrder(null)}
               className="hidden sm:block"
             >
-              Close
+              {t('close')}
             </Button>
           </div>
         </DialogContent>
@@ -14035,14 +14035,14 @@ export default function PickPack() {
               variant="outline"
               onClick={() => setShowShipAllConfirm(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               className="bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600"
               onClick={shipAllOrders}
             >
               <Truck className="h-4 w-4 mr-2" />
-              Confirm Shipment
+              {t('confirmShipmentAction')}
             </Button>
           </div>
         </DialogContent>
@@ -14062,7 +14062,7 @@ export default function PickPack() {
               variant="outline"
               onClick={() => setShowResetOrderDialog(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600"
@@ -14082,12 +14082,12 @@ export default function PickPack() {
           <div className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 dark:from-slate-800 to-gray-50 dark:to-gray-800">
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900">
-                Shipping Label - {labelPreviewData?.orderId}
+                {t('shippingLabel')} - {labelPreviewData?.orderId}
               </h2>
               {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                   <Hash className="h-3.5 w-3.5" />
-                  Tracking: <span className="font-medium text-gray-900">{labelPreviewData.trackingNumbers.join(', ')}</span>
+                  {t('tracking')}: <span className="font-medium text-gray-900">{labelPreviewData.trackingNumbers.join(', ')}</span>
                 </p>
               )}
             </div>
@@ -14117,7 +14117,7 @@ export default function PickPack() {
                 if (printWindow) {
                   printWindow.document.write(`
                     <html>
-                      <head><title>Shipping Label - ${labelPreviewData?.orderId}</title></head>
+                      <head><title>${t('shippingLabel')} - ${labelPreviewData?.orderId}</title></head>
                       <body style="margin:0">
                         <embed src="data:application/pdf;base64,${labelPreviewData?.labelBase64}" 
                                type="application/pdf" 
@@ -14173,14 +14173,14 @@ export default function PickPack() {
               variant="outline"
               onClick={() => setOrderToHold(null)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               className="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-600"
               onClick={() => orderToHold && handlePutOnHold(orderToHold)}
             >
               <Pause className="h-4 w-4 mr-2" />
-              Put On Hold
+              {t('putOnHold')}
             </Button>
           </div>
         </DialogContent>
@@ -14200,14 +14200,14 @@ export default function PickPack() {
               variant="outline"
               onClick={() => setOrderToCancel(null)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600"
               onClick={() => orderToCancel && handleCancelOrder(orderToCancel)}
             >
               <XCircle className="h-4 w-4 mr-2" />
-              Cancel Order
+              {t('cancelOrder')}
             </Button>
           </div>
         </DialogContent>
