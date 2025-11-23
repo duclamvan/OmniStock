@@ -210,7 +210,7 @@ export function MobileHeader({
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(true)}
-              className="h-8 px-2 gap-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="h-8 px-3 gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex-1 max-w-[120px]"
               data-testid="button-expand-search"
             >
               <Search className="h-4 w-4 text-gray-700 dark:text-gray-300" />

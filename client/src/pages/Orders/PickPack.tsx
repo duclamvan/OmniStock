@@ -11710,6 +11710,7 @@ export default function PickPack() {
                   size="sm"
                   className="h-8 px-2 bg-white/20 hover:bg-white/30 text-white touch-manipulation"
                   onClick={() => {
+                    window.scrollTo(0, 0);
                     setActivePickingOrder(null);
                     setIsTimerRunning(false);
                   }}
@@ -11807,6 +11808,7 @@ export default function PickPack() {
                     size="sm"
                     className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
                     onClick={() => {
+                      window.scrollTo(0, 0);
                       setActivePickingOrder(null);
                       setIsTimerRunning(false);
                     }}
@@ -12652,6 +12654,7 @@ export default function PickPack() {
                           
                           // Immediately transition to packing without delay
                           setShowPickingCompletionModal(false);
+                          window.scrollTo(0, 0);
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
@@ -12681,6 +12684,7 @@ export default function PickPack() {
                           
                           // Hide modal immediately and reset state
                           setShowPickingCompletionModal(false);
+                          window.scrollTo(0, 0);
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
@@ -12746,6 +12750,7 @@ export default function PickPack() {
                           }
                           
                           // Exit picking mode and return to the tab where user started
+                          window.scrollTo(0, 0);
                           setActivePickingOrder(null);
                           setIsTimerRunning(false);
                           if (activePickingOrder) {
