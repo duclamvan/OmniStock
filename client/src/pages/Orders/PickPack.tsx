@@ -12878,7 +12878,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     <Pause className="h-3.5 w-3.5 mr-1.5" />
-                                    Put On Hold
+                                    {t('putOnHold')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
@@ -12888,7 +12888,7 @@ export default function PickPack() {
                                     className="text-red-600 dark:text-red-400"
                                   >
                                     <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                                    Cancel Order
+                                    {t('cancelOrder')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -12922,7 +12922,7 @@ export default function PickPack() {
             <Card className="shadow-sm">
               <CardHeader className="pb-4 sm:pb-6">
                 <CardTitle className="text-lg sm:text-xl font-bold">
-                  Orders Being Picked ({getOrdersByStatus('picking').length})
+                  {t('ordersBeingPicked')} ({getOrdersByStatus('picking').length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 sm:px-4">
@@ -12966,18 +12966,18 @@ export default function PickPack() {
                                   <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <Package className="h-4 w-4 text-gray-400" />
-                                  <span className="font-medium">{order.totalItems} items</span>
+                                  <Package className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                  <span className="font-medium">{order.totalItems} {t('items')}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Truck className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
+                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
                                 <div className="flex items-center gap-1.5 text-sm mb-3">
                                   <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-                                  <span className="text-green-600 dark:text-green-400 dark:text-green-300 font-medium">Picked by {order.pickedBy}</span>
+                                  <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
                               {/* Compact product list */}
@@ -13020,7 +13020,7 @@ export default function PickPack() {
                                   playSound('success');
                                 }}
                               >
-                                Resume
+                                {t('resume')}
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -13050,7 +13050,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     <Pause className="h-3.5 w-3.5 mr-1.5" />
-                                    Put On Hold
+                                    {t('putOnHold')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
@@ -13060,7 +13060,7 @@ export default function PickPack() {
                                     className="text-red-600 dark:text-red-400"
                                   >
                                     <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                                    Cancel Order
+                                    {t('cancelOrder')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -13131,18 +13131,18 @@ export default function PickPack() {
                                   <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <Package className="h-4 w-4 text-gray-400" />
-                                  <span className="font-medium">{order.totalItems} items</span>
+                                  <Package className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                  <span className="font-medium">{order.totalItems} {t('items')}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Truck className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
+                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
                                 <div className="flex items-center gap-1.5 text-sm mb-3">
                                   <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-                                  <span className="text-green-600 dark:text-green-400 dark:text-green-300 font-medium">Picked by {order.pickedBy}</span>
+                                  <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
                               {/* Compact product list */}
@@ -13210,7 +13210,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     <Pause className="h-3.5 w-3.5 mr-1.5" />
-                                    Put On Hold
+                                    {t('putOnHold')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
@@ -13220,7 +13220,7 @@ export default function PickPack() {
                                     className="text-red-600 dark:text-red-400"
                                   >
                                     <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                                    Cancel Order
+                                    {t('cancelOrder')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
