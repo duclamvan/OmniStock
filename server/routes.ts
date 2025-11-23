@@ -8532,6 +8532,12 @@ Important:
     try {
       const { items, ...returnData } = req.body;
 
+      // Get the existing return to check previous status
+      const existingReturn = await storage.getReturn(req.params.id);
+      if (!existingReturn) {
+        return res.status(404).json({ message: "Return not found" });
+      }
+
       // Convert date strings to Date objects
       if (returnData.returnDate) {
         returnData.returnDate = new Date(returnData.returnDate);
@@ -8555,6 +8561,36 @@ Important:
             returnId: req.params.id,
           })
         ));
+      }
+
+      // Handle inventory restoration when return is completed
+      if (returnData.status === 'completed' && existingReturn.status !== 'completed') {
+        const returnType = returnData.returnType || existingReturn.returnType;
+        const returnItems = items || await storage.getReturnItems(req.params.id);
+
+        // Only restore inventory for exchange, refund, and store_credit types
+        // DO NOT restore inventory for damaged_goods and bad_quality (they are disposed)
+        const shouldRestoreInventory = ['exchange', 'refund', 'store_credit'].includes(returnType);
+
+        if (shouldRestoreInventory && returnItems && returnItems.length > 0) {
+          // Restore inventory for each returned item
+          for (const item of returnItems) {
+            try {
+              const product = await storage.getProductById(item.productId);
+              if (product) {
+                const currentQuantity = parseInt(product.quantity || '0');
+                const returnQuantity = parseInt(item.quantity || '0');
+                const newQuantity = currentQuantity + returnQuantity;
+
+                await storage.updateProduct(item.productId, {
+                  quantity: newQuantity.toString(),
+                });
+              }
+            } catch (error) {
+              console.error(`Error restoring inventory for product ${item.productId}:`, error);
+            }
+          }
+        }
       }
 
       await storage.createUserActivity({

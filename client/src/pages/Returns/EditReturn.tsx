@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Save, Plus, X, Search, Trash2 } from "lucide-react";
@@ -50,7 +51,7 @@ export default function EditReturn() {
     customerId: z.string().min(1, t('common:required')),
     orderId: z.string().optional(),
     returnDate: z.string().min(1, t('common:required')),
-    returnType: z.enum(['exchange', 'refund', 'store_credit']),
+    returnType: z.enum(['exchange', 'refund', 'store_credit', 'damaged_goods', 'bad_quality']),
     status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
     shippingCarrier: z.string().optional(),
     notes: z.string().optional(),
@@ -380,8 +381,15 @@ export default function EditReturn() {
                     <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
                     <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
                     <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
+                    <SelectItem value="damaged_goods">{t('inventory:damagedGoods')}</SelectItem>
+                    <SelectItem value="bad_quality">{t('inventory:badQuality')}</SelectItem>
                   </SelectContent>
                 </Select>
+                {(form.watch("returnType") === 'damaged_goods' || form.watch("returnType") === 'bad_quality') && (
+                  <Badge variant="destructive" className="mt-2">
+                    {t('inventory:disposedNotReturnedToInventory')}
+                  </Badge>
+                )}
               </div>
               <div>
                 <Label>{t('inventory:statusLabel')}</Label>

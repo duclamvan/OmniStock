@@ -60,7 +60,7 @@ export default function AddReturn() {
     customerId: z.string().min(1, t('common:required')),
     orderId: z.string().optional(),
     returnDate: z.string().min(1, t('common:required')),
-    returnType: z.enum(['exchange', 'refund', 'store_credit']),
+    returnType: z.enum(['exchange', 'refund', 'store_credit', 'damaged_goods', 'bad_quality']),
     status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
     trackingNumber: z.string().optional(),
     shippingCarrier: z.string().optional(),
@@ -623,8 +623,15 @@ export default function AddReturn() {
                         <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
                         <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
                         <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
+                        <SelectItem value="damaged_goods">{t('inventory:damagedGoods')}</SelectItem>
+                        <SelectItem value="bad_quality">{t('inventory:badQuality')}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {(form.watch("returnType") === 'damaged_goods' || form.watch("returnType") === 'bad_quality') && (
+                      <Badge variant="destructive" className="mt-2">
+                        {t('inventory:disposedNotReturnedToInventory')}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
