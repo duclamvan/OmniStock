@@ -1438,12 +1438,22 @@ const orders = {
   // PickPack.tsx - Order States/Messages
   ordersBeingPicked: 'Orders Being Picked',
   readyForPacking: 'Ready for Packing',
+  orderReady: 'order ready',
+  ordersReady: 'orders ready',
   noOrdersCurrentlyBeingPicked: 'No orders currently being picked',
   noOrdersReadyForPacking: 'No orders ready for packing',
   noOrdersReadyToShip: 'No orders ready to ship',
   noPendingOrdersToPick: 'No pending orders to pick',
   noLabelGeneratedYet: 'No label generated yet',
   thisTrackingAlreadyUsed: 'This tracking number is already used by another carton',
+  shippedOrdersFrom: 'Shipped {{count}} orders from {{title}}',
+  shipCount: 'Ship {{count}}',
+  modified: 'Modified',
+  label: 'Label',
+  repackOrder: 'Repack Order',
+  returnToPacking: 'Return to Packing',
+  packedBy: 'Packed by {{name}}',
+  tracking: 'Tracking: {{number}}',
   
   // PickPack.tsx - Carton & Packing
   cartons: 'Cartons',

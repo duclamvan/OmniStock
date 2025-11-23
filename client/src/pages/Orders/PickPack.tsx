@@ -13244,7 +13244,7 @@ export default function PickPack() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <CardTitle className="text-lg sm:text-xl font-bold">
-                      Ready to Ship {getOrdersByStatus('ready').length > 0 && `(${getOrdersByStatus('ready').length})`}
+                      {t('readyToShip')} {getOrdersByStatus('ready').length > 0 && `(${getOrdersByStatus('ready').length})`}
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">{t('ordersOrganizedByDestination')}</CardDescription>
                   </div>
@@ -13459,7 +13459,7 @@ export default function PickPack() {
                                       {section.title}
                                     </h3>
                                     <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
-                                      {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
+                                      {section.orders.length} {section.orders.length === 1 ? t('orderReady') : t('ordersReady')}
                                     </p>
                                   </div>
                                   {/* Collapse/Expand indicator */}
@@ -13493,7 +13493,7 @@ export default function PickPack() {
                                     setPendingShipments({
                                       orderIds,
                                       timestamp: Date.now(),
-                                      description: `Shipped ${section.orders.length} orders from ${section.title}`
+                                      description: t('shippedOrdersFrom', { count: section.orders.length, title: section.title })
                                     });
                                     setShowUndoPopup(true);
                                     setUndoTimeLeft(15);
@@ -13518,7 +13518,7 @@ export default function PickPack() {
                                   }}
                                 >
                                   <Check className="h-3.5 w-3.5 mr-1.5" />
-                                  <span>Ship {section.orders.length}</span>
+                                  <span>{t('shipCount', { count: section.orders.length })}</span>
                                 </Button>
                               </div>
                             </div>
@@ -13542,12 +13542,12 @@ export default function PickPack() {
                                         <div className="flex items-center gap-1.5 mb-1">
                                           <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                                           <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200 border-green-200 dark:border-green-700">
-                                            Ready to Ship
+                                            {t('readyToShip')}
                                           </span>
                                           {order.modifiedAfterPacking && (
                                             <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700 flex items-center gap-1 animate-pulse">
                                               <AlertTriangle className="h-3 w-3" />
-                                              Modified
+                                              {t('modified')}
                                             </span>
                                           )}
                                         </div>
@@ -13561,24 +13561,24 @@ export default function PickPack() {
                                             <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
-                                            <Package className="h-3 w-3 text-gray-400" />
-                                            <span className="font-medium">{order.totalItems} items</span>
+                                            <Package className="h-3 w-3 text-gray-400 dark:text-gray-500" />
+                                            <span className="font-medium">{order.totalItems} {t('items')}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Truck className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-                                            <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
+                                            <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
                                           </div>
                                         </div>
                                         {order.packedBy && (
                                           <div className="flex items-center gap-1.5 text-xs mt-1">
                                             <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400" />
-                                            <span className="text-green-600 dark:text-green-400 dark:text-green-300 font-medium">Packed by {order.packedBy}</span>
+                                            <span className="text-green-600 dark:text-green-400 font-medium">{t('packedBy', { name: order.packedBy })}</span>
                                           </div>
                                         )}
                                         {order.trackingNumber && (
                                           <div className="flex items-center gap-1.5 text-xs mt-1">
                                             <Hash className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-                                            <span className="text-blue-600 dark:text-blue-400 font-medium">Tracking: {order.trackingNumber}</span>
+                                            <span className="text-blue-600 dark:text-blue-400 font-medium">{t('tracking', { number: order.trackingNumber })}</span>
                                           </div>
                                         )}
                                         {/* Compact product list */}
@@ -13634,7 +13634,7 @@ export default function PickPack() {
                                           }}
                                         >
                                           <Printer className="h-3 w-3 mr-1" />
-                                          Label
+                                          {t('label')}
                                         </Button>
                                         <Button
                                           size="sm"
@@ -13645,7 +13645,7 @@ export default function PickPack() {
                                           }}
                                         >
                                           <Truck className="h-3 w-3 mr-1" />
-                                          Ship
+                                          {t('ship')}
                                         </Button>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
@@ -13668,7 +13668,7 @@ export default function PickPack() {
                                                 className="text-amber-600 dark:text-amber-400 font-medium text-xs"
                                               >
                                                 <Package className="h-3 w-3 mr-1.5" />
-                                                Repack Order
+                                                {t('repackOrder')}
                                               </DropdownMenuItem>
                                             )}
                                             <DropdownMenuItem 
@@ -13679,7 +13679,7 @@ export default function PickPack() {
                                               className="text-xs"
                                             >
                                               <RotateCcw className="h-3 w-3 mr-1.5" />
-                                              Return to Packing
+                                              {t('returnToPacking')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={(e) => {
@@ -13689,7 +13689,7 @@ export default function PickPack() {
                                               className="text-xs"
                                             >
                                               <Pause className="h-3 w-3 mr-1.5" />
-                                              Put On Hold
+                                              {t('putOnHold')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={(e) => {
@@ -13699,7 +13699,7 @@ export default function PickPack() {
                                               className="text-red-600 dark:text-red-400 text-xs"
                                             >
                                               <XCircle className="h-3 w-3 mr-1.5" />
-                                              Cancel Order
+                                              {t('cancelOrder')}
                                             </DropdownMenuItem>
                                           </DropdownMenuContent>
                                         </DropdownMenu>

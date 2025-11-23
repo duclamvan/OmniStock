@@ -1359,12 +1359,22 @@ const orders = {
   // PickPack.tsx - Order States/Messages
   ordersBeingPicked: 'Đơn hàng đang lấy',
   readyForPacking: 'Sẵn sàng đóng gói',
+  orderReady: 'đơn sẵn sàng',
+  ordersReady: 'đơn sẵn sàng',
   noOrdersCurrentlyBeingPicked: 'Không có đơn hàng đang được lấy',
   noOrdersReadyForPacking: 'Không có đơn hàng sẵn sàng đóng gói',
   noOrdersReadyToShip: 'Không có đơn hàng sẵn sàng giao vận',
   noPendingOrdersToPick: 'Không có đơn hàng chờ lấy',
   noLabelGeneratedYet: 'Chưa tạo nhãn',
   thisTrackingAlreadyUsed: 'Mã vận đơn này đã được sử dụng bởi thùng khác',
+  shippedOrdersFrom: 'Đã giao vận {{count}} đơn từ {{title}}',
+  shipCount: 'Giao {{count}}',
+  modified: 'Đã sửa',
+  label: 'Nhãn',
+  repackOrder: 'Đóng gói lại',
+  returnToPacking: 'Trả về đóng gói',
+  packedBy: 'Đóng gói bởi {{name}}',
+  tracking: 'Mã vận đơn: {{number}}',
   
   // PickPack.tsx - Carton & Packing
   cartons: 'Thùng',
