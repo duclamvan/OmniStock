@@ -61,13 +61,14 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  console.log("Upserting user with sub:", claims["sub"]);
+  console.log("Upserting user with sub:", claims["sub"], "role:", claims["role"]);
   await storage.upsertUser({
     id: String(claims["sub"]),
     email: claims["email"] || null,
     firstName: claims["first_name"] || null,
     lastName: claims["last_name"] || null,
     profileImageUrl: claims["profile_image_url"] || null,
+    role: claims["role"] || null,
   });
 }
 
@@ -84,6 +85,7 @@ export async function setupAuth(app: Express) {
     verified: passport.AuthenticateCallback
   ) => {
     console.log("Verifying user authentication");
+    console.log("Full claims object:", JSON.stringify(tokens.claims(), null, 2));
     const user: any = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());

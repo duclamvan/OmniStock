@@ -244,7 +244,7 @@ export interface IStorage {
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
   updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
   setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
-  upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User>;
+  upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null; role?: string | null }): Promise<User>;
 
   // Employees
   getEmployees(): Promise<Employee[]>;
@@ -797,7 +797,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User> {
+  async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null; role?: string | null }): Promise<User> {
     // Check if user exists by ID or email
     let existingUser = await this.getUser(userData.id);
     
@@ -811,18 +811,25 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (existingUser) {
-      // Update existing user
+      // Update existing user - preserve existing role if no new role provided
+      const updateData: any = {
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+        replitSub: userData.replitSub || userData.id,
+        authProvider: 'replit',
+        updatedAt: new Date(),
+      };
+      
+      // Only update role if provided AND not null (don't overwrite existing role with null)
+      if (userData.role !== undefined && userData.role !== null) {
+        updateData.role = userData.role;
+      }
+      
       const [updatedUser] = await db
         .update(users)
-        .set({
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
-          replitSub: userData.replitSub || userData.id,
-          authProvider: 'replit',
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, existingUser.id))
         .returning();
       return updatedUser;
@@ -838,7 +845,7 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: userData.profileImageUrl,
           replitSub: userData.replitSub || userData.id,
           authProvider: 'replit',
-          role: null,
+          role: userData.role || null,
         })
         .returning();
       return newUser;

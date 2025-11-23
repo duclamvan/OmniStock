@@ -303,6 +303,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Test-only endpoint for seeding user roles (RBAC testing)
+  // This endpoint bypasses OIDC limitations and allows direct role assignment for automated tests
+  app.post('/api/test/seed-role', async (req, res) => {
+    // Only available in non-production environments
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ message: 'Not found' });
+    }
+
+    try {
+      const { sub, role, email, firstName, lastName } = req.body;
+
+      if (!sub || !role) {
+        return res.status(400).json({ message: 'sub and role are required' });
+      }
+
+      // Validate role value
+      if (role !== 'administrator' && role !== 'warehouse_operator') {
+        return res.status(400).json({ message: 'Invalid role. Must be administrator or warehouse_operator' });
+      }
+
+      // First, upsert the user to ensure they exist (with or without role)
+      // This creates the user record if it doesn't exist
+      await storage.upsertUser({
+        id: sub,
+        email: email || null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        profileImageUrl: null,
+        replitSub: sub,
+        role: null, // Don't set role here to avoid the update logic blocking it
+      });
+
+      // Now update the role (this will work because user exists)
+      await storage.updateUserRole(sub, role);
+
+      console.log(`[TEST] Seeded role ${role} for user ${sub}`);
+      return res.json({ success: true, sub, role });
+    } catch (error: any) {
+      console.error('Error seeding role:', error);
+      return res.status(500).json({ message: 'Failed to seed role', error: error.message });
+    }
+  });
+
   // Phone verification storage (in production, use Redis or database)
   const phoneVerificationCodes = new Map<string, { code: string; expires: number; attempts: number }>();
 

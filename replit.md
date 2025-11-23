@@ -15,6 +15,23 @@ The backend is an Express.js application written in TypeScript (ESM modules), pr
 ## Authentication System
 The system utilizes Replit Auth with optional Twilio SMS Two-Factor Authentication (2FA) and Strict Role-Based Access Control (RBAC). Primary authentication uses Replit's OpenID Connect, with session management via HTTP-only cookies and automatic token refresh. New users have a NULL role by default, requiring administrator assignment. Frontend displays "Pending Approval" for unassigned users, and backend blocks API access. Available roles include `administrator` and `warehouse_operator`.
 
+### RBAC Testing Architecture
+**Important**: Replit's OIDC provider does NOT support arbitrary custom claims like `role`. Only standard OIDC claims (sub, email, first_name, last_name, profile_image_url) are supported.
+
+**Test-Only Role Seeding Endpoint**:
+- **Route**: `POST /api/test/seed-role`
+- **Purpose**: Bypass OIDC limitations for automated RBAC testing
+- **Security**: Only available when `NODE_ENV !== 'production'`
+- **Request**: `{sub, role, email?, firstName?, lastName?}`
+- **Response**: `{success: true, sub, role}`
+- **Implementation**: Creates user if needed, then sets role directly in database
+
+**Testing Flow**:
+1. Before login: Call `/api/test/seed-role` to assign role
+2. During login: OIDC provides standard claims (no role)  
+3. After login: Role from database is loaded and enforced
+4. RBAC enforcement: Routes protected by `requireAdmin` check user.role from database
+
 ## Database Design
 The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow, including entities for users, products, orders, customers, warehouses, suppliers, returns, inventory tracking, multi-currency financial tracking, and an audit trail.
 
