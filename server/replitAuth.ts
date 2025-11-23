@@ -92,7 +92,8 @@ export async function setupAuth(app: Express) {
     
     // Load the full user from database to get role and other fields
     // Try by ID first (normal case), then by replitSub (test case)
-    const sub = String(tokens.claims()["sub"]);
+    const claims = tokens.claims();
+    const sub = String(claims?.["sub"] || "");
     let dbUser = await storage.getUser(sub);
     
     // Fallback: if not found by ID, try by replitSub (for backwards compatibility or test scenarios)
@@ -215,7 +216,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
-    // Check if 2FA verification is required
+    // Check if 2FA verification is required and load user role
     try {
       const dbUser = await storage.getUser(user.claims?.sub || user.id);
       if (dbUser && dbUser.twoFactorEnabled && !dbUser.twoFactorVerified) {
@@ -235,8 +236,16 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
         user.profileImageUrl = dbUser.profileImageUrl;
         user.createdAt = dbUser.createdAt;
       }
+      
+      // RBAC: Block access if user has no assigned role (pending approval)
+      if (dbUser && dbUser.role === null) {
+        return res.status(403).json({ 
+          message: "Access pending administrator approval",
+          pendingApproval: true
+        });
+      }
     } catch (error) {
-      console.error("Error checking 2FA status:", error);
+      console.error("Error checking authentication status:", error);
     }
     return next();
   }
@@ -262,6 +271,14 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       user.role = dbUser.role;
       user.profileImageUrl = dbUser.profileImageUrl;
       user.createdAt = dbUser.createdAt;
+      
+      // RBAC: Block access if user has no assigned role (pending approval)
+      if (dbUser.role === null) {
+        return res.status(403).json({ 
+          message: "Access pending administrator approval",
+          pendingApproval: true
+        });
+      }
     }
     
     return next();
