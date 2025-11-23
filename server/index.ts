@@ -1,9 +1,16 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Security headers middleware (helmet)
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for Vite dev server compatibility
+  crossOriginEmbedderPolicy: false, // Disabled for Vite dev server compatibility
+}));
 
 // Add compression middleware for all responses
 app.use(compression({
