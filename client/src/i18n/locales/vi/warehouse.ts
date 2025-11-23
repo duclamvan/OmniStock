@@ -727,7 +727,6 @@ const warehouse = {
   failedToCreateRequest: 'Không thể tạo yêu cầu điều chỉnh',
   failedToAdjustStock: 'Không thể điều chỉnh tồn kho',
   itemScanned: 'Đã quét mục',
-  totalItems: 'Tổng: {{count}} mục',
   productLabel: 'Sản phẩm: {{name}}',
   currentLabel: 'Hiện tại: {{quantity}} đơn vị',
   newLabel: 'Mới: {{quantity}} đơn vị',
@@ -760,7 +759,6 @@ const warehouse = {
   gridLabel: 'Lưới: {{rows}} hàng × {{columns}} cột',
   binCodesLabel: 'Mã ngăn: {{start}} đến {{end}}',
   generating: 'Đang tạo...',
-  generateLayout: 'Tạo bố cục',
   failedToGenerateLayout: 'Không thể tạo bố cục',
   
   // Print Labels

@@ -41,7 +41,7 @@ export function getSession() {
     rolling: true,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to false for development
+      secure: process.env.NODE_ENV === 'production', // Secure cookies in production (HTTPS required)
       sameSite: 'lax',
       maxAge: sessionTtl,
     },
