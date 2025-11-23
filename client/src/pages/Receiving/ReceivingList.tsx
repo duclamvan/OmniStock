@@ -1552,6 +1552,9 @@ export default function ReceivingList() {
   const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
   const [unmatchedBarcode, setUnmatchedBarcode] = useState("");
   const [filter, setFilter] = useState("all");
+  
+  // Ref for tabs container to enable auto-centering
+  const tabsListRef = useRef<HTMLDivElement>(null);
 
   // Fetch shipments data
   const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery<Shipment[]>({
@@ -1577,6 +1580,22 @@ export default function ReceivingList() {
   const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery<Receipt[]>({
     queryKey: ['/api/imports/receipts'],
   });
+
+  // Auto-center active tab when it changes
+  useEffect(() => {
+    if (tabsListRef.current) {
+      // Find the active tab button
+      const activeButton = tabsListRef.current.querySelector(`[data-state="active"]`);
+      if (activeButton) {
+        // Scroll it into view with centering
+        activeButton.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }
+    }
+  }, [activeTab]);
 
   // Barcode scanning handler
   const handleBarcodeScan = useCallback(async (barcode: string) => {
@@ -1733,7 +1752,7 @@ export default function ReceivingList() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
               <div className="sticky top-0 z-30 bg-background border-b">
                 <div className="px-3 md:px-6">
-                  <TabsList className="w-full justify-start h-auto p-0 bg-transparent gap-2 overflow-x-auto flex-nowrap">
+                  <TabsList ref={tabsListRef} className="w-full justify-start h-auto p-0 bg-transparent gap-2 overflow-x-auto flex-nowrap">
                     <TabsTrigger 
                       value="to-receive" 
                       className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
