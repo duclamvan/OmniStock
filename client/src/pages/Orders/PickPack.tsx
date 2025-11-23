@@ -11179,7 +11179,7 @@ export default function PickPack() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         {/* Header - Ultra Compact for Mobile */}
-        <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-blue-600 dark:to-blue-700 text-white shadow-lg z-20">
+        <div className="bg-gradient-to-r from-blue-700 dark:from-blue-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
             {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
