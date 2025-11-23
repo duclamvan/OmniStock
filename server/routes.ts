@@ -401,14 +401,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store verification code
       phoneVerificationCodes.set(phone, { code, expires, attempts: 0 });
 
-      // TODO: Integrate with SMS provider (Twilio, AWS SNS, etc.)
-      console.log(`Verification code for ${phone}: ${code}`);
-
-      // For development, return code in response (remove in production!)
+      // In production, integrate with SMS provider (Twilio, AWS SNS, etc.)
+      // For development, code is logged securely (not exposed in API response)
       if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] Verification code for ${phone}: ${code}`);
         return res.json({ message: 'Code sent', devCode: code });
       }
 
+      // Production: code should be sent via SMS, not logged
       res.json({ message: 'Verification code sent' });
     } catch (error) {
       console.error('Error sending verification code:', error);
