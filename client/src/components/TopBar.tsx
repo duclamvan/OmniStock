@@ -50,18 +50,6 @@ export function TopBar() {
 
   const unreadCount = unreadData?.count || 0;
 
-  // Auto-mark notifications as read when dialog opens (1-second impression threshold)
-  useEffect(() => {
-    if (showNotifications && unreadCount > 0) {
-      // Wait 1 second before marking as read (impression threshold)
-      const timer = setTimeout(() => {
-        markAllAsReadMutation.mutate();
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [showNotifications, unreadCount, markAllAsReadMutation]);
-
   // Mutation to mark a single notification as read
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: number) =>
@@ -83,6 +71,16 @@ export function TopBar() {
       refetchNotifications();
     },
   });
+
+  // Auto-mark notifications as read when dialog opens
+  useEffect(() => {
+    console.log('[TopBar] useEffect triggered - showNotifications:', showNotifications, 'unreadCount:', unreadCount);
+    if (showNotifications && unreadCount > 0) {
+      // Mark all notifications as read immediately when dialog opens
+      console.log('[TopBar] Marking all notifications as read, count:', unreadCount);
+      markAllAsReadMutation.mutate();
+    }
+  }, [showNotifications, unreadCount]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -169,7 +167,7 @@ export function TopBar() {
             <div className="flex items-center space-x-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage 
-                  src={user?.profileImageUrl} 
+                  src={user?.profileImageUrl || undefined} 
                   alt={user?.firstName || 'User'} 
                   className="object-contain bg-slate-50 dark:bg-slate-900"
                 />

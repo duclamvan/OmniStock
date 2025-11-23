@@ -105,17 +105,14 @@ export function MobileHeader({
 
   // Track notification dropdown state
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
-  const wasDropdownOpen = useRef(false);
   
-  // Mark all as read when dropdown closes (only if it was actually opened and had unread notifications)
+  // Mark all as read when dropdown opens (if there are unread notifications)
   useEffect(() => {
-    if (!notificationDropdownOpen && wasDropdownOpen.current && unreadCount > 0) {
-      // Dropdown just closed, it was previously open, and there were unread notifications
+    console.log('[MobileHeader] useEffect triggered - dropdown:', notificationDropdownOpen, 'unreadCount:', unreadCount);
+    if (notificationDropdownOpen && unreadCount > 0) {
+      // Dropdown just opened and there are unread notifications - mark them all as read
+      console.log('[MobileHeader] Marking all notifications as read, count:', unreadCount);
       markAllAsReadMutation.mutate();
-      wasDropdownOpen.current = false;
-    } else if (notificationDropdownOpen) {
-      // Dropdown is now open, track this
-      wasDropdownOpen.current = true;
     }
   }, [notificationDropdownOpen, unreadCount]);
   
