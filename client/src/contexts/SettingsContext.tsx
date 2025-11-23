@@ -220,7 +220,7 @@ export interface FinancialSettings {
   defaultPriceMargin?: number;
   taxCalculationMethod?: 'inclusive' | 'exclusive';
   roundingMethod?: 'nearest' | 'up' | 'down';
-  expenseCategories?: string[];
+  expenseCategories: string[]; // Always defined with DEFAULT_EXPENSE_CATEGORIES fallback
 }
 
 export interface SystemSettings {
@@ -509,10 +509,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const financialSettings = useMemo(() => {
     const parsed = parseSettingsByCategory<FinancialSettings>(settings, 'financial');
     // Ensure expenseCategories always has a value (fallback to defaults)
-    if (!parsed.expenseCategories || parsed.expenseCategories.length === 0) {
-      parsed.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
-    }
-    return parsed;
+    // Use || to handle undefined, null, or empty array cases
+    return {
+      ...parsed,
+      expenseCategories: (parsed.expenseCategories && parsed.expenseCategories.length > 0) 
+        ? parsed.expenseCategories 
+        : DEFAULT_EXPENSE_CATEGORIES
+    };
   }, [settings]);
 
   const systemSettings = useMemo(

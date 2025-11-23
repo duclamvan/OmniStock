@@ -460,7 +460,6 @@ const financial = {
   selectCustomerFirst: 'Chọn khách hàng trước',
   selectOrder: 'Chọn đơn hàng',
   selectDate: 'Chọn ngày',
-  selectStatus: 'Chọn trạng thái',
   
   // Service Messages
   serviceCreatedSuccessfully: 'Tạo dịch vụ thành công',
@@ -502,7 +501,6 @@ const financial = {
   newServiceBill: 'Hóa đơn dịch vụ mới',
   serviceBill_title: 'HÓA ĐƠN DỊCH VỤ',
   professionalServiceRepair: 'Dịch vụ & Sửa chữa chuyên nghiệp',
-  billId: 'Mã hóa đơn',
   draft: 'Bản nháp',
   billTo: 'Khách hàng',
   linkedOrder: 'Đơn hàng liên kết',
@@ -510,9 +508,7 @@ const financial = {
   noCustomerFound: 'Không tìm thấy khách hàng.',
   searchOrder: 'Tìm kiếm đơn hàng...',
   noOrderFound: 'Không tìm thấy đơn hàng.',
-  none: 'Không có',
   serviceDetails_section: 'Chi tiết dịch vụ',
-  serviceName: 'Tên dịch vụ',
   serviceNameRequired: 'Tên dịch vụ là bắt buộc',
   serviceNamePlaceholder: 'VD: Sửa màn hình điện thoại',
   describeServicePerformed: 'Mô tả dịch vụ đã thực hiện...',
@@ -525,12 +521,10 @@ const financial = {
   quickSelectTopProducts: 'Chọn nhanh - Sản phẩm hàng đầu',
   productName: 'Tên sản phẩm',
   qty: 'SL',
-  price: 'Giá',
   costSummary: 'Tổng kết chi phí',
   reviewTotals: 'Xem lại tổng số',
   serviceLabor: 'Nhân công dịch vụ',
   partsAndMaterialsColon: 'Phụ tùng & Vật liệu:',
-  totalAmount: 'Tổng số tiền',
   currentStatus: 'Trạng thái hiện tại',
   saving: 'Đang lưu...',
   updateService: 'Cập nhật dịch vụ',
@@ -547,7 +541,16 @@ const financial = {
   deleteServiceConfirmation: 'Bạn có chắc chắn muốn xóa dịch vụ này? Hành động này không thể hoàn tác và sẽ xóa tất cả các mục dịch vụ liên quan.',
   deleting: 'Đang xóa...',
   serviceStatusUpdatedSuccessfully: 'Cập nhật trạng thái dịch vụ thành công',
-  sku: 'SKU',
+  
+  // Expense Category Management
+  expenseCategories: 'Danh mục chi phí',
+  manageCategoriesDescription: 'Quản lý danh mục chi phí để theo dõi và báo cáo tốt hơn',
+  newCategoryPlaceholder: 'Nhập tên danh mục mới',
+  categoryNameRequired: 'Tên danh mục là bắt buộc',
+  categoryAlreadyExists: 'Danh mục đã tồn tại',
+  categoriesSavedSuccessfully: 'Lưu danh mục chi phí thành công',
+  failedToSaveCategories: 'Lưu danh mục chi phí thất bại',
+  saveCategories: 'Lưu danh mục',
 } as const;
 
 export default financial;

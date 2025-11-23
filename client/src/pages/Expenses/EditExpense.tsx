@@ -38,6 +38,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const getExpenseSchema = (t: any) => z.object({
   name: z.string().min(1, t('nameIsRequired')),
@@ -61,23 +62,10 @@ export default function EditExpense() {
   const { toast } = useToast();
   const { t } = useTranslation(['financial', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { financialSettings } = useSettings();
 
-  const categories = [
-    t('officeSupplies'),
-    t('travel'),
-    t('marketing'),
-    t('software'),
-    t('equipment'),
-    t('utilities'),
-    t('rent'),
-    t('salaries'),
-    t('insurance'),
-    t('legal'),
-    t('consulting'),
-    t('shipping'),
-    t('inventory'),
-    t('other')
-  ];
+  // Get expense categories from settings (guaranteed to have defaults via SettingsContext)
+  const categories = financialSettings.expenseCategories ?? [];
 
   const { data: expense, isLoading } = useQuery<any>({
     queryKey: [`/api/expenses/${id}`],

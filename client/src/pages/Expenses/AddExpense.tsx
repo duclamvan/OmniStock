@@ -44,30 +44,16 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatCzechDate } from "@/lib/dateUtils";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function AddExpense() {
   const { t } = useTranslation(['financial', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { financialSettings } = useSettings();
 
-  const categories = [
-    t('financial.officeSupplies'),
-    t('financial.travel'),
-    t('financial.marketing'),
-    t('financial.salaries'),
-    t('financial.rent'),
-    t('financial.utilities'),
-    t('financial.supplies'),
-    t('financial.software'),
-    t('financial.equipment'),
-    t('financial.insurance'),
-    t('financial.legal'),
-    t('financial.consulting'),
-    t('financial.inventory'),
-    t('financial.shipping'),
-    t('financial.operations'),
-    t('financial.general'),
-  ];
+  // Get expense categories from settings (guaranteed to have defaults via SettingsContext)
+  const categories = financialSettings.expenseCategories ?? [];
 
   const expenseSchema = z.object({
     vendorName: z.string().min(1, t('vendorNameRequired')),

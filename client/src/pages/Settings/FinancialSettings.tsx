@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen, Plus, X, Edit2, Tag } from "lucide-react";
+import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen, Plus, X, Edit2, Tag, Wallet, Check, Trash2 } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
@@ -207,11 +207,25 @@ export default function FinancialSettings() {
 
   const handleSaveCategories = async () => {
     try {
-      await apiRequest('POST', '/api/settings', {
-        key: 'expense_categories',
-        value: expenseCategories,
-        category: 'financial'
-      });
+      // Try to update first (PATCH), if setting doesn't exist, create it (POST)
+      try {
+        await apiRequest('PATCH', '/api/settings/expense_categories', {
+          value: expenseCategories,
+          category: 'financial'
+        });
+      } catch (patchError: any) {
+        // If setting doesn't exist (404), create it with POST
+        if (patchError.status === 404 || patchError.message?.includes('not found')) {
+          await apiRequest('POST', '/api/settings', {
+            key: 'expense_categories',
+            value: expenseCategories,
+            category: 'financial',
+            description: 'Expense categories for tracking and reporting'
+          });
+        } else {
+          throw patchError;
+        }
+      }
       
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
@@ -326,7 +340,7 @@ export default function FinancialSettings() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="pricing" className="flex items-center gap-1 sm:gap-2">
               <Percent className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{t('settings:pricing')}</span>
@@ -346,6 +360,10 @@ export default function FinancialSettings() {
             <TabsTrigger value="accounting" className="flex items-center gap-1 sm:gap-2">
               <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{t('settings:accounting')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="flex items-center gap-1 sm:gap-2">
+              <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t('financial:expenseCategories')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1019,6 +1037,123 @@ export default function FinancialSettings() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab 6: Expense Categories */}
+          <TabsContent value="expenses" className="space-y-4">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('financial:expenseCategories')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('financial:manageCategoriesDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* Add new category */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t('financial:newCategoryPlaceholder')}
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                    data-testid="input-new-category"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddCategory}
+                    data-testid="button-add-category"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('common:add')}
+                  </Button>
+                </div>
+
+                {/* List of categories */}
+                <div className="space-y-2">
+                  {expenseCategories.map((category) => (
+                    <div 
+                      key={category}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                      data-testid={`category-item-${category}`}
+                    >
+                      {editingCategory === category ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            value={editCategoryValue}
+                            onChange={(e) => setEditCategoryValue(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleEditCategory(category)}
+                            className="flex-1"
+                            data-testid="input-edit-category"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleEditCategory(category)}
+                            data-testid="button-confirm-edit"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingCategory(null);
+                              setEditCategoryValue('');
+                            }}
+                            data-testid="button-cancel-edit"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="font-medium">{category}</span>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setEditCategoryValue(category);
+                              }}
+                              data-testid={`button-edit-${category}`}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteCategory(category)}
+                              data-testid={`button-delete-${category}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Save categories button */}
+                <div className="flex justify-end pt-4">
+                  <Button
+                    type="button"
+                    onClick={handleSaveCategories}
+                    data-testid="button-save-categories"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {t('financial:saveCategories')}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
