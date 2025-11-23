@@ -122,7 +122,8 @@ import {
   ExternalLink,
   Download,
   Star,
-  BookmarkCheck
+  BookmarkCheck,
+  ShoppingBasket
 } from "lucide-react";
 
 interface BundleItem {
@@ -12382,7 +12383,7 @@ export default function PickPack() {
               className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
               data-testid="tab-picking"
             >
-              <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <ShoppingBasket className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pick</span>
