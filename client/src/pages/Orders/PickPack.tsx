@@ -4142,6 +4142,81 @@ export default function PickPack() {
     }
   }, [transformedOrders]);
 
+  // TASK LIST FOR AGENT - PICKING MODE LIST VIEW IMPLEMENTATION
+  // ============================================================
+  // 
+  // Phase 1: Core List View Structure
+  // ✅ TODO: Create `PickingListView` component separate from card view
+  // ✅ TODO: Add view toggle button (Card ↔️ List) in picking header with icon
+  // ✅ TODO: Implement localStorage for view preference persistence
+  // ✅ TODO: Design compact row component with all essential info
+  // ✅ TODO: Add visual states (unpicked/picked/focused) with smooth transitions
+  // 
+  // Phase 2: One-Click Row Interactions
+  // ✅ TODO: Make entire row clickable to toggle picked status (except action buttons)
+  // ✅ TODO: Add hover state with cursor pointer and background highlight
+  // ✅ TODO: Implement quantity increment on row click (smart increment to max)
+  // ✅ TODO: Add checkbox for visual feedback (synced with picked state)
+  // ✅ TODO: Prevent event bubbling on nested interactive elements (buttons, links)
+  // ✅ TODO: Add click animation/ripple effect for tactile feedback
+  // 
+  // Phase 3: Visual Design & Polish
+  // ✅ TODO: Color-code location badges by warehouse zone (A=blue, B=green, etc.)
+  // ✅ TODO: Add smooth animations for expand/collapse of row details
+  // ✅ TODO: Implement progress tracking visual at top (X/Y items picked)
+  // ✅ TODO: Add sticky section headers by location for easy navigation
+  // ✅ TODO: Design mobile-first responsive layout (stack on small screens)
+  // ✅ TODO: Show small product thumbnails (40x40px) in rows
+  // ✅ TODO: Add visual separator lines between rows for clarity
+  // 
+  // Phase 4: Advanced Features
+  // ✅ TODO: Add virtual scrolling for large orders (50+ items)
+  // ✅ TODO: Implement swipe gestures (swipe right = mark as picked)
+  // ✅ TODO: Add batch actions (select multiple rows → mark all picked)
+  // ✅ TODO: Smart sorting by location path for optimal warehouse route
+  // ✅ TODO: Add item search/filter in list view header
+  // ✅ TODO: "Jump to Next Unpicked" floating action button
+  // 
+  // Phase 5: Bundle & Service Items Handling
+  // ✅ TODO: Special handling for service items (no location badge)
+  // ✅ TODO: Bundle item expansion in list view (tap to see components)
+  // ✅ TODO: Show bundle progress (e.g., "3/5 components picked")
+  // ✅ TODO: Handle items without images gracefully (placeholder icon)
+  // ✅ TODO: Add notes/instructions inline expand on row tap
+  // 
+  // Phase 6: Barcode Integration
+  // ✅ TODO: Barcode scanning highlights matching row in list
+  // ✅ TODO: Auto-scroll to scanned item in list view
+  // ✅ TODO: Flash animation on successful scan match
+  // ✅ TODO: Error shake animation on scan mismatch
+  // 
+  // Phase 7: Accessibility & UX
+  // ✅ TODO: Keyboard navigation (Arrow keys to move, Space to toggle)
+  // ✅ TODO: Screen reader announcements for picked items
+  // ✅ TODO: High contrast mode support for visual impairment
+  // ✅ TODO: Haptic feedback on mobile devices (vibration on pick)
+  // ✅ TODO: Sound effects integration (reuse existing playSound system)
+  // 
+  // Phase 8: Performance Optimization
+  // ✅ TODO: Memoize row components to prevent unnecessary re-renders
+  // ✅ TODO: Lazy load images as rows scroll into view
+  // ✅ TODO: Debounce rapid clicks to prevent double-picks
+  // ✅ TODO: Optimize re-render on quantity changes (local state first)
+  // 
+  // Phase 9: Settings & Preferences
+  // ✅ TODO: Add "Default to List View" setting in user preferences
+  // ✅ TODO: Remember last used view per user (localStorage + user profile)
+  // ✅ TODO: Row density setting (Compact/Normal/Comfortable)
+  // ✅ TODO: Show/hide thumbnail images option for faster scanning
+  // 
+  // Phase 10: Analytics & Tracking
+  // ✅ TODO: Track pick speed per item in list view
+  // ✅ TODO: Log view preference usage (card vs list analytics)
+  // ✅ TODO: Measure time-to-pick improvements with list view
+  // ✅ TODO: A/B test list vs card for efficiency metrics
+  //
+  // ============================================================
+
   // Handle returning order to packing
   const returnToPacking = async (order: PickPackOrder) => {
     try {
@@ -14261,3 +14336,54 @@ export default function PickPack() {
     </div>
   );
 }
+
+
+{/* 
+  IMPLEMENTATION GUIDE: One-Click Picking Row Component
+  =====================================================
+  
+  Component Structure:
+  ```tsx
+  <PickingRow 
+    item={item} 
+    isPicked={item.pickedQuantity >= item.quantity}
+    onPick={() => handleRowClick(item)}
+  >
+    <div className="row-content" onClick={(e) => e.stopPropagation()}>
+      // Prevent clicks on nested buttons from triggering row pick
+      <Checkbox checked={isPicked} readOnly />
+      <Thumbnail src={item.image} />
+      <ItemDetails>
+        <h4>{item.productName}</h4>
+        <span>{item.sku}</span>
+      </ItemDetails>
+      <QuantityBadge>{item.quantity}x</QuantityBadge>
+      <LocationBadge zone={getZone(item.location)}>
+        {item.warehouseLocation}
+      </LocationBadge>
+      
+      // Action buttons (prevent event bubbling)
+      <Button onClick={(e) => { e.stopPropagation(); viewDetails(); }}>
+        <Eye />
+      </Button>
+    </div>
+  </PickingRow>
+  ```
+  
+  Event Handling:
+  - Row wrapper has onClick for entire row
+  - Nested interactive elements call e.stopPropagation()
+  - Keyboard: onKeyDown for Space/Enter to toggle
+  - Touch: consider touch-action CSS for swipe gestures
+  
+  Visual States:
+  - Unpicked: bg-white hover:bg-gray-50
+  - Picked: bg-green-50 border-green-300
+  - Focused: ring-2 ring-blue-500
+  - Hover: cursor-pointer shadow-sm
+  
+  Performance:
+  - Use React.memo() for row component
+  - Memoize click handlers with useCallback
+  - Only re-render row when its data changes
+*/}
