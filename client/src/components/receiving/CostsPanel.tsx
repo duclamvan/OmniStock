@@ -153,7 +153,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
               toast({
                 title: t('landingCostsCalculated'),
                 description: t('freightCostAddedAndAllocated', { 
-                  cost: formatCurrency(freightCost.amountOriginal, freightCost.currency) 
+                  amount: formatCurrency(freightCost.amountOriginal, freightCost.currency) 
                 })
               });
             } else {
