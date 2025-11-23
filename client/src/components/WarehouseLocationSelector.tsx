@@ -429,7 +429,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-warehouse"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectWarehouse')} />
                       </SelectTrigger>
                       <SelectContent>
                         {warehouseOptions.map((opt) => (
@@ -458,7 +458,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-aisle"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectAislePlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {aisleOptions.slice(0, 30).map((opt) => (
@@ -487,7 +487,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-rack"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectRowPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {rackOptions.map((opt) => (
@@ -516,7 +516,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-level"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectLevelPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {levelOptions.map((opt) => (
@@ -546,7 +546,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                           data-testid="select-bin"
                           className="h-9"
                         >
-                          <SelectValue />
+                          <SelectValue placeholder={t('warehouse:selectBinPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {binOptions.map((opt) => (
@@ -578,7 +578,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-warehouse"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectWarehouse')} />
                       </SelectTrigger>
                       <SelectContent>
                         {warehouseOptions.map((opt) => (
@@ -607,7 +607,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-pallet-aisle"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectAislePlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {palletAisleOptions.slice(0, 30).map((opt) => (
@@ -636,7 +636,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-pallet-rack"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectRowPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {rackOptions.map((opt) => (
@@ -665,7 +665,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-pallet-level"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectLevelPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {levelOptions.map((opt) => (
@@ -694,7 +694,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                         data-testid="select-pallet"
                         className="h-9"
                       >
-                        <SelectValue />
+                        <SelectValue placeholder={t('warehouse:selectPalletPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {palletOptions.map((opt) => (
