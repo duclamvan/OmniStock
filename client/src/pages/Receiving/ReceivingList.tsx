@@ -1682,8 +1682,8 @@ export default function ReceivingList() {
                 <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">Receiving Center</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Manage incoming shipments and receiving operations</p>
+                <h1 className="text-2xl md:text-3xl font-bold">{t('receivingCenter')}</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">{t('manageIncomingShipmentsDesc')}</p>
               </div>
             </div>
 
@@ -1691,25 +1691,25 @@ export default function ReceivingList() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <StatsCard
                 icon={Package}
-                title="To Receive"
+                title={t('toReceive')}
                 value={toReceiveShipments.length}
                 color="blue"
               />
               <StatsCard
                 icon={Clock}
-                title="In Progress"
+                title={t('inProgressReceiving')}
                 value={receivingShipments.length}
                 color="cyan"
               />
               <StatsCard
                 icon={CheckCircle}
-                title="Completed"
+                title={t('completed')}
                 value={completedShipments.length}
                 color="green"
               />
               <StatsCard
                 icon={Package2}
-                title="Total Items"
+                title={t('totalItems')}
                 value={totalItems}
                 color="purple"
               />
@@ -1740,8 +1740,8 @@ export default function ReceivingList() {
                       data-testid="tab-to-receive"
                     >
                       <Package className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">To Receive</span>
-                      <span className="sm:hidden">To Receive</span>
+                      <span className="hidden sm:inline">{t('toReceive')}</span>
+                      <span className="sm:hidden">{t('toReceive')}</span>
                       <Badge variant="secondary" className="ml-2 bg-background/20">
                         {toReceiveShipments.length}
                       </Badge>
@@ -1752,8 +1752,8 @@ export default function ReceivingList() {
                       data-testid="tab-receiving"
                     >
                       <Clock className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Receiving</span>
-                      <span className="sm:hidden">Receiving</span>
+                      <span className="hidden sm:inline">{t('inProgressReceiving')}</span>
+                      <span className="sm:hidden">{t('inProgressReceiving')}</span>
                       <Badge variant="secondary" className="ml-2 bg-background/20">
                         {receivingShipments.length}
                       </Badge>
@@ -1764,8 +1764,8 @@ export default function ReceivingList() {
                       data-testid="tab-storage"
                     >
                       <Warehouse className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Storage</span>
-                      <span className="sm:hidden">Storage</span>
+                      <span className="hidden sm:inline">{t('storage')}</span>
+                      <span className="sm:hidden">{t('storage')}</span>
                       <Badge variant="secondary" className="ml-2 bg-background/20">
                         {storageShipments.length}
                       </Badge>
@@ -1776,8 +1776,8 @@ export default function ReceivingList() {
                       data-testid="tab-completed"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Completed</span>
-                      <span className="sm:hidden">Completed</span>
+                      <span className="hidden sm:inline">{t('completed')}</span>
+                      <span className="sm:hidden">{t('completed')}</span>
                       <Badge variant="secondary" className="ml-2 bg-background/20">
                         {completedShipments.length}
                       </Badge>

@@ -1178,6 +1178,13 @@ const imports = {
   damagedStatus: 'Hư hỏng',
   archived: 'Đã lưu trữ',
   
+  // ReceivingList - Page Header & Stats
+  receivingCenter: 'Trung tâm Nhận hàng',
+  manageIncomingShipmentsDesc: 'Quản lý lô hàng đến và hoạt động nhận hàng',
+  toReceive: 'Cần nhận',
+  inProgressReceiving: 'Đang tiến hành',
+  storage: 'Lưu kho',
+  
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'Không có lô hàng sẵn sàng nhận',
   allIncomingShipmentsReceived: 'Tất cả lô hàng đến đã được nhận. Lô hàng mới sẽ xuất hiện ở đây khi đến.',

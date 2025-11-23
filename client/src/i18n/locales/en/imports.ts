@@ -1165,6 +1165,13 @@ const imports = {
   damagedStatus: 'Damaged',
   archived: 'Archived',
   
+  // ReceivingList - Page Header & Stats
+  receivingCenter: 'Receiving Center',
+  manageIncomingShipmentsDesc: 'Manage incoming shipments and receiving operations',
+  toReceive: 'To Receive',
+  inProgressReceiving: 'In Progress',
+  storage: 'Storage',
+  
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'No shipments ready to receive',
   allIncomingShipmentsReceived: 'All incoming shipments have been received. New shipments will appear here when they arrive.',
