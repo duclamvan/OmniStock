@@ -3871,7 +3871,7 @@ export default function AddOrder() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 border-2 border-dashed border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all duration-300"
+                className="w-full h-12 border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
                 onClick={() => {
                   setShowDiscount(!showDiscount);
                 }}
@@ -3887,7 +3887,7 @@ export default function AddOrder() {
               showDiscount ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}>
               {showDiscount && (
-                <div className="space-y-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30">
+                <div className="space-y-4 p-4 border-2 border-blue-100 dark:border-blue-800 rounded-lg bg-blue-50/30 dark:bg-blue-950/30">
                   <div>
                     <Label className="text-sm font-medium">{t('orders:discount')}</Label>
                     <div className="flex gap-2 mt-1">
@@ -3912,7 +3912,7 @@ export default function AddOrder() {
                         className="flex-1"
                       />
                       {form.watch('discountType') === 'rate' && (
-                        <div className="flex items-center px-3 text-gray-500">
+                        <div className="flex items-center px-3 text-gray-500 dark:text-gray-400">
                           <Percent className="h-4 w-4" />
                         </div>
                       )}
@@ -3920,7 +3920,7 @@ export default function AddOrder() {
 
                     {/* Quick discount buttons */}
                     <div className="mt-2">
-                      <div className="text-xs text-gray-500 mb-1">{t('orders:quickSelect')}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('orders:quickSelect')}</div>
                       <div className="flex flex-wrap gap-1">
                         {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                           <Button
