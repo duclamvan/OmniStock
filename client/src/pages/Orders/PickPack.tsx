@@ -41,6 +41,8 @@ import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
+import { useAuth } from "@/hooks/useAuth";
+import { LayoutGrid, List } from "lucide-react";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -1418,6 +1420,366 @@ function OrderFilesDisplay({
   );
 }
 
+// PickingListView Component - Professional list/table view for picking items
+interface PickingListViewProps {
+  order: PickPackOrder;
+  currentItem: OrderItem | undefined;
+  onUpdatePickedItem: (itemId: string, quantity: number) => void;
+  onItemClick: (index: number) => void;
+  recentlyScannedItemId: string | null;
+  onToggleFullPick: (item: OrderItem) => void;
+}
+
+function PickingListView({ 
+  order, 
+  currentItem, 
+  onUpdatePickedItem, 
+  onItemClick,
+  recentlyScannedItemId,
+  onToggleFullPick
+}: PickingListViewProps) {
+  const { t } = useTranslation('orders');
+  
+  return (
+    <div className="space-y-4">
+      {/* Overall Progress Header */}
+      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            {t('pickingProgress')}
+          </h3>
+          <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-base px-3 py-1">
+            {order.pickedItems} / {order.totalItems}
+          </Badge>
+        </div>
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* List View - Scrollable Table */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden shadow-md">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
+              <tr>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16">
+                  #
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-20">
+                  {t('image')}
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  {t('product')}
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-32">
+                  SKU
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-32">
+                  {t('location')}
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-48">
+                  {t('quantity')}
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-24">
+                  {t('status')}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {order.items.map((item, index) => {
+                const isPicked = item.pickedQuantity >= item.quantity;
+                const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+                const isCurrent = currentItem?.id === item.id;
+                const isRecentlyScanned = recentlyScannedItemId === item.id;
+                const progress = (item.pickedQuantity / item.quantity) * 100;
+                
+                // Determine row background color
+                let rowBgClass = 'bg-white dark:bg-gray-900';
+                if (isPicked) {
+                  rowBgClass = 'bg-green-50 dark:bg-green-900/20';
+                } else if (isPartial) {
+                  rowBgClass = 'bg-yellow-50 dark:bg-yellow-900/20';
+                }
+                
+                // Add highlight for current/recently scanned
+                if (isCurrent || isRecentlyScanned) {
+                  rowBgClass = 'bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500 dark:ring-blue-400';
+                }
+                
+                return (
+                  <tr
+                    key={item.id}
+                    className={`
+                      ${rowBgClass}
+                      cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 
+                      transition-all duration-200 transform hover:scale-[1.01]
+                      ${isRecentlyScanned ? 'animate-pulse' : ''}
+                    `}
+                    onClick={() => { 
+                      onToggleFullPick(item); 
+                      onItemClick(index); 
+                    }}
+                    data-testid={`list-row-${index}`}
+                  >
+                    {/* Item Number */}
+                    <td className="px-3 py-4">
+                      <div className="flex items-center justify-center">
+                        {isPicked ? (
+                          <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
+                            <CheckCircle className="h-5 w-5 text-white" />
+                          </div>
+                        ) : isCurrent ? (
+                          <div className="w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                            {index + 1}
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold text-sm">
+                            {index + 1}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    
+                    {/* Product Image */}
+                    <td className="px-3 py-4">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.productName}
+                          className="h-12 w-12 object-cover rounded border border-gray-200 dark:border-gray-700"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </td>
+                    
+                    {/* Product Name */}
+                    <td className="px-3 py-4">
+                      <div className="space-y-1">
+                        <p className={`font-semibold text-sm ${
+                          isPicked ? 'text-green-700 dark:text-green-300 line-through' : 
+                          'text-gray-900 dark:text-gray-100'
+                        }`}>
+                          {item.productName}
+                        </p>
+                        {item.barcode && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <ScanLine className="h-3 w-3" />
+                            <span className="font-mono">{item.barcode}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    
+                    {/* SKU */}
+                    <td className="px-3 py-4">
+                      <span className="font-mono text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                        {item.sku}
+                      </span>
+                    </td>
+                    
+                    {/* Warehouse Location */}
+                    <td className="px-3 py-4">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg font-mono text-sm font-bold ${
+                        isCurrent 
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700' 
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+                      }`}>
+                        📍 {item.warehouseLocation}
+                      </div>
+                    </td>
+                    
+                    {/* Quantity with Progress Bar */}
+                    <td className="px-3 py-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-sm font-bold ${
+                            isPicked ? 'text-green-600 dark:text-green-400' : 
+                            isPartial ? 'text-yellow-600 dark:text-yellow-400' : 
+                            'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {item.pickedQuantity} / {item.quantity}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {Math.round(progress)}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${
+                              isPicked ? 'bg-green-500 dark:bg-green-600' : 
+                              isPartial ? 'bg-yellow-500 dark:bg-yellow-600' : 
+                              'bg-gray-400 dark:bg-gray-600'
+                            }`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Status Badge */}
+                    <td className="px-3 py-4 text-center">
+                      {isPicked ? (
+                        <Badge className="bg-green-500 dark:bg-green-600 text-white font-bold">
+                          ✓ {t('picked')}
+                        </Badge>
+                      ) : isPartial ? (
+                        <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white font-bold">
+                          {t('partial')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400">
+                          {t('pending')}
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Mobile-friendly Cards for smaller screens */}
+      <div className="lg:hidden space-y-3">
+        {order.items.map((item, index) => {
+          const isPicked = item.pickedQuantity >= item.quantity;
+          const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+          const isCurrent = currentItem?.id === item.id;
+          const isRecentlyScanned = recentlyScannedItemId === item.id;
+          const progress = (item.pickedQuantity / item.quantity) * 100;
+          
+          let cardBgClass = 'bg-white dark:bg-gray-900';
+          if (isPicked) {
+            cardBgClass = 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700';
+          } else if (isPartial) {
+            cardBgClass = 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700';
+          }
+          
+          if (isCurrent || isRecentlyScanned) {
+            cardBgClass = 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 ring-2 ring-blue-500 dark:ring-blue-400';
+          }
+          
+          return (
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              className={`cursor-pointer ${cardBgClass} hover:shadow-lg transition-all duration-200 border-2 ${isRecentlyScanned ? 'animate-pulse' : ''} rounded-lg p-4`}
+              onClick={() => { 
+                onToggleFullPick(item); 
+                onItemClick(index); 
+              }}
+              data-testid={`mobile-list-row-${index}`}
+            >
+              <div className="flex gap-3">
+                {/* Item Number */}
+                <div className="flex-shrink-0">
+                    {isPicked ? (
+                      <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold">
+                        {index + 1}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Product Image */}
+                  <div className="flex-shrink-0">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.productName}
+                        className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-gray-700"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Item Details */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <p className={`font-semibold text-sm ${
+                      isPicked ? 'text-green-700 dark:text-green-300 line-through' : 
+                      'text-gray-900 dark:text-gray-100'
+                    }`}>
+                      {item.productName}
+                    </p>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                        <span className="font-mono font-semibold">SKU: {item.sku}</span>
+                      </div>
+                      
+                      {item.barcode && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                          <ScanLine className="h-3 w-3" />
+                          <span className="font-mono">{item.barcode}</span>
+                        </div>
+                      )}
+                      
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-mono font-bold">
+                        📍 {item.warehouseLocation}
+                      </div>
+                    </div>
+                    
+                    {/* Quantity and Progress */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-bold ${
+                          isPicked ? 'text-green-600 dark:text-green-400' : 
+                          isPartial ? 'text-yellow-600 dark:text-yellow-400' : 
+                          'text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {item.pickedQuantity} / {item.quantity}
+                        </span>
+                        {isPicked ? (
+                          <Badge className="bg-green-500 dark:bg-green-600 text-white font-bold text-xs">
+                            ✓ {t('picked')}
+                          </Badge>
+                        ) : isPartial ? (
+                          <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white font-bold text-xs">
+                            {t('partial')}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 text-xs">
+                            {t('pending')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            isPicked ? 'bg-green-500 dark:bg-green-600' : 
+                            isPartial ? 'bg-yellow-500 dark:bg-yellow-600' : 
+                            'bg-gray-400 dark:bg-gray-600'
+                          }`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function PickPack() {
   const { t } = useTranslation('orders');
   const { toast } = useToast();
@@ -1460,6 +1822,73 @@ export default function PickPack() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const overviewBarcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get user info for preference storage
+  const { user } = useAuth();
+  const userId = user?.id;
+  
+  // Get settings from SettingsContext (includes isLoading state)
+  const { settings: allSettings, isLoading: settingsLoading } = useSettings();
+  
+  // View mode state for picking (card vs list) with proper cross-device sync
+  const [pickingViewMode, setPickingViewMode] = useState<'card' | 'list' | null>(null);
+  const hydratedRef = useRef(false);
+  
+  // Fetch the specific preference setting from the database (auth-gated)
+  const { data: savedPreference } = useQuery({
+    queryKey: [`/api/settings/picking_view_mode_${userId}`],
+    enabled: !!userId,  // Only run when user authenticated
+  });
+  
+  // Load view preference from database on mount for cross-device sync
+  // Uses hydration flag to prevent re-running after initial load
+  useEffect(() => {
+    if (!userId || hydratedRef.current) return;
+    
+    if (savedPreference?.value) {
+      setPickingViewMode(savedPreference.value);
+    } else {
+      // Fall back to localStorage or default
+      const localMode = localStorage.getItem(`picking_view_mode_${userId}`);
+      setPickingViewMode(localMode === 'list' ? 'list' : 'card');
+    }
+    
+    hydratedRef.current = true;
+  }, [userId, savedPreference]);
+  
+  // Save view preference to both localStorage and database
+  const saveViewPreference = useMutation({
+    mutationFn: async (mode: 'card' | 'list') => {
+      if (!userId) return;
+      
+      // Save to localStorage immediately for instant access
+      localStorage.setItem(`picking_view_mode_${userId}`, mode);
+      
+      // Save to database for cross-device sync
+      const preferenceKey = `picking_view_mode_${userId}`;
+      return await apiRequest('POST', '/api/settings', {
+        key: preferenceKey,
+        value: mode,
+        category: 'user_preferences'
+      });
+    },
+    onSuccess: () => {
+      // Invalidate query cache after saving preference
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to save picking view preference:', error);
+      // Still show in UI even if DB save fails (localStorage already updated)
+    }
+  });
+  
+  // Auto-save when view mode changes (gated behind hydration)
+  useEffect(() => {
+    // Guard: only save after hydration and when view mode is set
+    if (!userId || !hydratedRef.current || pickingViewMode === null) return;
+    
+    saveViewPreference.mutate(pickingViewMode);
+  }, [pickingViewMode, userId]);
   
   // State for packing process
   const [packingChecklist, setPackingChecklist] = useState({
@@ -5281,6 +5710,19 @@ export default function PickPack() {
     if (allPicked) {
       setIsTimerRunning(false); // Stop the timer when all items are picked
       playSound('success');
+    }
+  };
+
+  // Toggle full pick for list view - handles bundles, partials, and offline queue
+  const toggleFullPick = (item: OrderItem) => {
+    if (item.isBundle) {
+      // Handle bundle logic: check if all bundle items are picked
+      const allPicked = bundlePickedItems[item.id]?.size === item.bundleItems?.length;
+      updatePickedItem(item.id, allPicked ? 0 : item.quantity);
+    } else {
+      // Simple toggle for non-bundle items
+      const isPicked = item.pickedQuantity >= item.quantity;
+      updatePickedItem(item.id, isPicked ? 0 : item.quantity);
     }
   };
 
@@ -11307,6 +11749,19 @@ export default function PickPack() {
                   >
                     <Volume2 className={`h-3.5 w-3.5 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
                   </Button>
+                  <Button
+                    size="icon"
+                    className="h-7 w-7 bg-white/20 hover:bg-white/30 touch-manipulation"
+                    onClick={() => setPickingViewMode(pickingViewMode === 'card' ? 'list' : 'card')}
+                    title={pickingViewMode === 'card' ? t('switchToListView') : t('switchToCardView')}
+                    data-testid="button-toggle-view-mode"
+                  >
+                    {pickingViewMode === 'card' ? (
+                      <List className="h-3.5 w-3.5 text-white" />
+                    ) : (
+                      <LayoutGrid className="h-3.5 w-3.5 text-white" />
+                    )}
+                  </Button>
                 </div>
               </div>
               
@@ -11409,6 +11864,26 @@ export default function PickPack() {
                       <PauseCircle className="h-4 w-4 text-white" />
                     ) : (
                       <PlayCircle className="h-4 w-4 text-white" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    onClick={() => setPickingViewMode(pickingViewMode === 'card' ? 'list' : 'card')}
+                    title={pickingViewMode === 'card' ? t('switchToListView') : t('switchToCardView')}
+                    data-testid="button-toggle-view-mode-desktop"
+                  >
+                    {pickingViewMode === 'card' ? (
+                      <>
+                        <List className="h-4 w-4 mr-2" />
+                        {t('listView')}
+                      </>
+                    ) : (
+                      <>
+                        <LayoutGrid className="h-4 w-4 mr-2" />
+                        {t('cardView')}
+                      </>
                     )}
                   </Button>
                 </div>
@@ -11744,9 +12219,24 @@ export default function PickPack() {
         {/* Main Content - Scrollable container */}
         <div className="flex-1 overflow-auto">
           <div className="flex flex-col lg:flex-row min-h-full">
-            {/* Left Panel - Current Item Focus */}
+            {/* Left Panel - Current Item Focus (Card View) or Full List View */}
             <div className="flex-1">
-            {!allItemsPicked && currentItem ? (
+            {!allItemsPicked && pickingViewMode === 'list' ? (
+              /* LIST VIEW - Show all items in table format */
+              <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+                <div className="flex-1 p-4 overflow-auto">
+                  <PickingListView 
+                    order={activePickingOrder}
+                    currentItem={currentItem}
+                    onUpdatePickedItem={updatePickedItem}
+                    onItemClick={setManualItemIndex}
+                    recentlyScannedItemId={recentlyScannedItemId}
+                    onToggleFullPick={toggleFullPick}
+                  />
+                </div>
+              </div>
+            ) : !allItemsPicked && currentItem ? (
+              /* CARD VIEW - Show single item detail */
               <div className="h-full flex flex-col bg-gray-50">
                 
                 <div className="flex-1 p-4 space-y-4 overflow-auto">
@@ -12292,7 +12782,8 @@ export default function PickPack() {
             )}
           </div>
 
-          {/* Right Panel - Items List - Hidden on mobile, visible on desktop */}
+          {/* Right Panel - Items List - Hidden on mobile, visible on desktop, hidden in list view */}
+          {pickingViewMode === 'card' && (
           <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white dark:from-gray-900 to-gray-50 dark:to-gray-800 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
             <div className="bg-gradient-to-r from-gray-700 dark:from-gray-800 to-gray-800 dark:to-gray-900 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
               <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
@@ -12372,9 +12863,10 @@ export default function PickPack() {
               })}
             </div>
           </div>
+          )}
           
-            {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
-            {showMobileProgress && (
+            {/* Mobile Items Drawer - Collapsible with Swipe Hint - Only in card view */}
+            {pickingViewMode === 'card' && showMobileProgress && (
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-56 overflow-y-auto shadow-2xl z-30 animate-slide-up">
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -12440,8 +12932,8 @@ export default function PickPack() {
               </div>
             )}
             
-            {/* Mobile Progress Toggle Button - Enhanced */}
-            {!showMobileProgress && (
+            {/* Mobile Progress Toggle Button - Enhanced - Only in card view */}
+            {pickingViewMode === 'card' && !showMobileProgress && (
               <Button
                 className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 active:bg-indigo-800 dark:active:bg-indigo-900 text-white shadow-lg z-30 touch-manipulation animate-pulse"
                 onClick={() => setShowMobileProgress(true)}
