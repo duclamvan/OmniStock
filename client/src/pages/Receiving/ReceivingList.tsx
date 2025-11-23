@@ -380,10 +380,49 @@ const getUnitTypeIcon = (unitType: string, className = "h-4 w-4") => {
 };
 
 // ============================================================================
-// STICKY HEADER SCAN COMPONENT
+// STATS CARD COMPONENT
 // ============================================================================
 
-function StickyHeaderScanHeader({ 
+function StatsCard({ 
+  icon: Icon, 
+  title, 
+  value, 
+  color = "blue" 
+}: { 
+  icon: any; 
+  title: string; 
+  value: number; 
+  color?: "blue" | "cyan" | "green" | "purple";
+}) {
+  const colorClasses = {
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
+    cyan: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/30 dark:text-cyan-400",
+    green: "bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400",
+    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400"
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 md:p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+            <p className="text-2xl md:text-3xl font-bold">{value}</p>
+          </div>
+          <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+            <Icon className="h-6 w-6" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================================
+// FLOATING SCAN BUTTON
+// ============================================================================
+
+function FloatingScanButton({ 
   onScan, 
   isScanning,
   barcodeScanner 
@@ -393,24 +432,18 @@ function StickyHeaderScanHeader({
   barcodeScanner: ReturnType<typeof useBarcodeScanner>;
 }) {
   const { t } = useTranslation(['imports']);
-  const { session, updateSession, undo } = useReceivingSession();
+  const { session, updateSession } = useReceivingSession();
   const { toast } = useToast();
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const [showScanDialog, setShowScanDialog] = useState(false);
   const [manualBarcode, setManualBarcode] = useState("");
-  const [filter, setFilter] = useState<string>("all");
-
-  // Auto-focus scan input
-  useEffect(() => {
-    if (!session.isCameraActive && scanInputRef.current) {
-      scanInputRef.current.focus();
-    }
-  }, [session.isCameraActive]);
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   const handleManualScan = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (manualBarcode.trim()) {
       onScan(manualBarcode.trim());
       setManualBarcode("");
+      setShowScanDialog(false);
     }
   }, [manualBarcode, onScan]);
 
@@ -418,10 +451,12 @@ function StickyHeaderScanHeader({
     if (session.isCameraActive) {
       barcodeScanner.stopScanning();
       updateSession({ isCameraActive: false });
+      setShowScanDialog(false);
     } else {
       try {
         await barcodeScanner.startScanning();
         updateSession({ isCameraActive: true });
+        setShowScanDialog(false);
       } catch (error) {
         console.error('Failed to start camera:', error);
         updateSession({ isCameraActive: false });
@@ -436,54 +471,57 @@ function StickyHeaderScanHeader({
   }, [session.isCameraActive, barcodeScanner, updateSession, toast]);
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
-      <Card className="rounded-none border-0 border-b">
-        <CardContent className="p-3 sm:p-4">
-          {/* Primary Scan Controls */}
-          <div className="flex items-center gap-2 mb-3">
-            {/* Camera Toggle - 48px touch target */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="lg"
-                    variant={session.isCameraActive ? "default" : "outline"}
-                    className="h-12 w-12 p-0 shrink-0"
-                    onClick={handleToggleCamera}
-                    aria-label={session.isCameraActive ? t('disableCamera') : t('enableCamera')}
-                    data-testid="button-toggle-camera"
-                  >
-                    {session.isCameraActive ? (
-                      <Camera className="h-5 w-5" />
-                    ) : (
-                      <CameraOff className="h-5 w-5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{session.isCameraActive ? t('cameraOn') : t('cameraOff')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+    <>
+      {/* Floating Action Button */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="lg"
+              className="fixed bottom-20 md:bottom-6 left-1/2 md:left-auto md:right-6 transform -translate-x-1/2 md:translate-x-0 h-14 w-14 rounded-full shadow-lg hover:shadow-xl z-40"
+              onClick={() => setShowScanDialog(true)}
+              data-testid="button-floating-scan"
+            >
+              <ScanLine className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('scanBarcode')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
-            {/* Manual Barcode Input */}
-            <form onSubmit={handleManualScan} className="flex-1 flex gap-2">
+      {/* Scan Dialog */}
+      <Dialog open={showScanDialog} onOpenChange={setShowScanDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScanLine className="h-5 w-5" />
+              {t('scanBarcode')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('scanOrEnterBarcodeManually')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Manual Input */}
+            <form onSubmit={handleManualScan} className="space-y-3">
               <Input
                 ref={scanInputRef}
                 type="text"
-                placeholder={t('scanOrTypeBarcode')}
+                placeholder={t('enterBarcode')}
                 value={manualBarcode}
                 onChange={(e) => setManualBarcode(e.target.value)}
                 className="h-12 text-base"
-                disabled={session.isCameraActive}
                 data-testid="input-barcode"
                 autoFocus
               />
               <Button 
                 type="submit" 
                 size="lg" 
-                className="h-12 px-6"
-                disabled={!manualBarcode.trim() || session.isCameraActive}
+                className="w-full h-12 text-base"
+                disabled={!manualBarcode.trim()}
                 data-testid="button-scan"
               >
                 <ScanLine className="h-5 w-5 mr-2" />
@@ -491,68 +529,39 @@ function StickyHeaderScanHeader({
               </Button>
             </form>
 
-            {/* Undo Button - 48px touch target */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-12 w-12 p-0 shrink-0"
-                    onClick={undo}
-                    disabled={session.undoStack.length === 0}
-                    aria-label={t('undoLastAction')}
-                    data-testid="button-undo"
-                  >
-                    <Undo2 className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('undoLastScan')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {/* Session Summary */}
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{session.scannedItems.length} items</span>
+            {/* Camera Toggle */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="font-medium">
-                  {session.scannedItems.filter(i => i.status === 'complete').length} complete
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  {t('or')}
                 </span>
               </div>
             </div>
 
-            {/* Quick Filter Toggle */}
-            <ToggleGroup type="single" value={filter} onValueChange={(val) => val && setFilter(val)} className="gap-1">
-              <ToggleGroupItem value="all" aria-label={t('showAll')} className="h-8 px-3 text-xs">
-                {t('allItemsFilter')}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="pending" aria-label={t('showPending')} className="h-8 px-3 text-xs">
-                {t('pendingFilter')}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="issues" aria-label={t('showIssues')} className="h-8 px-3 text-xs">
-                {t('issuesFilter')}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full h-12 text-base"
+              onClick={handleToggleCamera}
+              data-testid="button-toggle-camera"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              {t('useCameraScanner')}
+            </Button>
 
-          {/* Scanning Indicator */}
-          {isScanning && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{t('processingScan')}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            {isScanning && (
+              <div className="flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400 justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{t('processingScan')}</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -991,7 +1000,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
   return (
     <Card className="overflow-hidden" data-testid={`card-shipment-${shipment.id}`}>
       <CardHeader 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
@@ -1034,7 +1043,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
 
       {isExpanded && (
         <CardContent className="p-0 border-t">
-          <div className="p-4 space-y-3">
+          <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
@@ -1084,7 +1093,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   return (
     <Card className="overflow-hidden border-cyan-200 dark:border-cyan-800" data-testid={`card-shipment-${shipment.id}`}>
       <CardHeader 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
@@ -1122,7 +1131,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
 
       {isExpanded && (
         <CardContent className="p-0 border-t">
-          <div className="p-4 space-y-3">
+          <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
@@ -1181,7 +1190,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
   return (
     <Card className="overflow-hidden" data-testid={`card-shipment-${shipment.id}`}>
       <CardHeader 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
@@ -1220,7 +1229,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
 
       {isExpanded && (
         <CardContent className="p-0 border-t">
-          <div className="p-4 space-y-3">
+          <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
@@ -1299,7 +1308,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
   return (
     <Card className="overflow-hidden border-green-200 dark:border-green-800" data-testid={`card-shipment-${shipment.id}`}>
       <CardHeader 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
@@ -1338,7 +1347,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
 
       {isExpanded && (
         <CardContent className="p-0 border-t">
-          <div className="p-4 space-y-3">
+          <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
@@ -1408,7 +1417,7 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
   return (
     <Card className="overflow-hidden opacity-75" data-testid={`card-shipment-${shipment.id}`}>
       <CardHeader 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
@@ -1447,7 +1456,7 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
 
       {isExpanded && (
         <CardContent className="p-0 border-t">
-          <div className="p-4 space-y-3">
+          <div className="p-3 md:p-4 space-y-3">
             {shipment.items && shipment.items.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
@@ -1633,16 +1642,23 @@ export default function ReceivingList() {
 
   const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingStorage || isLoadingCompleted || isLoadingReceipts;
 
+  // Calculate stats
+  const totalItems = useMemo(() => {
+    return toReceiveShipments.reduce((sum: number, s: any) => 
+      sum + (s.items?.reduce((itemSum: number, item: any) => itemSum + (item.quantity || 0), 0) || 0), 0) +
+      receivingShipments.reduce((sum: number, s: any) => 
+      sum + (s.items?.reduce((itemSum: number, item: any) => itemSum + (item.quantity || 0), 0) || 0), 0);
+  }, [toReceiveShipments, receivingShipments]);
+
+  // Filter active receipts (receiving or pending_verification)
+  const activeReceipts = useMemo(() => 
+    receipts.filter((r: any) => r.status === 'pending_verification' || r.status === 'receiving'),
+    [receipts]
+  );
+
   return (
     <ReceivingSessionProvider>
-      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-        {/* Sticky Scan Header */}
-        <StickyHeaderScanHeader 
-          onScan={handleBarcodeScan} 
-          isScanning={isScanning}
-          barcodeScanner={barcodeScanner}
-        />
-
+      <div className="flex flex-col min-h-screen">
         {/* Camera View Overlay */}
         {barcodeScanner.isActive && (
           <CameraViewOverlay
@@ -1654,200 +1670,263 @@ export default function ReceivingList() {
           />
         )}
 
-        {/* Receipt Progress Carousel */}
-        <ReceiptProgressCarousel receipts={receipts.filter((r: any) => r.status === 'pending_verification' || r.status === 'receiving')} />
-
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Tabs */}
-          <div className="px-4 py-3 border-b overflow-x-auto">
-            <div className="flex gap-2 min-w-max">
-              <Button
-                variant={activeTab === 'to-receive' ? 'default' : 'outline'}
-                size="sm"
-                className="h-10 px-4"
-                onClick={() => setActiveTab('to-receive')}
-                data-testid="tab-to-receive"
-              >
-                <Package className="h-4 w-4 mr-2" />
-                To Receive ({toReceiveShipments.length})
-              </Button>
-              <Button
-                variant={activeTab === 'receiving' ? 'default' : 'outline'}
-                size="sm"
-                className="h-10 px-4"
-                onClick={() => setActiveTab('receiving')}
-                data-testid="tab-receiving"
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Receiving ({receivingShipments.length})
-              </Button>
-              <Button
-                variant={activeTab === 'storage' ? 'default' : 'outline'}
-                size="sm"
-                className="h-10 px-4"
-                onClick={() => setActiveTab('storage')}
-                data-testid="tab-storage"
-              >
-                <Warehouse className="h-4 w-4 mr-2" />
-                Storage ({storageShipments.length})
-              </Button>
-              <Button
-                variant={activeTab === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                className="h-10 px-4"
-                onClick={() => setActiveTab('completed')}
-                data-testid="tab-completed"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Completed ({completedShipments.length})
-              </Button>
-              <Button
-                variant={activeTab === 'archived' ? 'default' : 'outline'}
-                size="sm"
-                className="h-10 px-4"
-                onClick={() => setActiveTab('archived')}
-                data-testid="tab-archived"
-              >
-                <Archive className="h-4 w-4 mr-2" />
-                {t('archived')} ({archivedShipments.length})
-              </Button>
+        {/* Header Section */}
+        <div className="p-3 md:p-6 pb-4 bg-background border-b">
+          <div className="max-w-7xl mx-auto">
+            {/* Page Title */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Receiving Center</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Manage incoming shipments and receiving operations</p>
+              </div>
             </div>
-          </div>
 
-          {/* Tab Content */}
-          <div className="flex-1 overflow-visible">
-            <div className="p-4 space-y-3">
-              {/* To Receive Tab */}
-              {activeTab === 'to-receive' && (
-                <>
-                  {isLoadingToReceive ? (
-                    <>
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                    </>
-                  ) : toReceiveShipments.length === 0 ? (
-                    <EmptyState
-                      icon={Package}
-                      title={t('noShipmentsReadyToReceive')}
-                      description={t('allIncomingShipmentsReceived')}
-                    />
-                  ) : (
-                    toReceiveShipments.map((shipment: any) => (
-                      <ToReceiveShipmentCard key={shipment.id} shipment={shipment} />
-                    ))
-                  )}
-                </>
-              )}
-
-              {/* Receiving Tab */}
-              {activeTab === 'receiving' && (
-                <>
-                  {isLoadingReceiving ? (
-                    <>
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                    </>
-                  ) : receivingShipments.length === 0 ? (
-                    <EmptyState
-                      icon={Clock}
-                      title={t('noActiveReceivingSessions')}
-                      description={t('startReceivingToSeeHere')}
-                      action={
-                        toReceiveShipments.length > 0 ? (
-                          <Button
-                            size="lg"
-                            className="h-12"
-                            onClick={() => setActiveTab('to-receive')}
-                            data-testid="button-go-to-receive"
-                          >
-                            <Package className="h-5 w-5 mr-2" />
-                            View Shipments to Receive
-                          </Button>
-                        ) : null
-                      }
-                    />
-                  ) : (
-                    receivingShipments.map((shipment: any) => (
-                      <ReceivingShipmentCard key={shipment.id} shipment={shipment} />
-                    ))
-                  )}
-                </>
-              )}
-
-              {/* Storage Tab */}
-              {activeTab === 'storage' && (
-                <>
-                  {isLoadingStorage ? (
-                    <>
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                    </>
-                  ) : storageShipments.length === 0 ? (
-                    <EmptyState
-                      icon={Warehouse}
-                      title={t('noShipmentsInStorage')}
-                      description={t('shipmentsPendingApprovalOrPutaway')}
-                    />
-                  ) : (
-                    storageShipments.map((shipment: any) => (
-                      <StorageShipmentCard key={shipment.id} shipment={shipment} />
-                    ))
-                  )}
-                </>
-              )}
-
-              {/* Completed Tab */}
-              {activeTab === 'completed' && (
-                <>
-                  {isLoadingCompleted ? (
-                    <>
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                    </>
-                  ) : completedShipments.length === 0 ? (
-                    <EmptyState
-                      icon={CheckCircle}
-                      title={t('noCompletedShipments')}
-                      description={t('successfullyReceivedAndStoredShipments')}
-                    />
-                  ) : (
-                    completedShipments.map((shipment: any) => (
-                      <CompletedShipmentCard key={shipment.id} shipment={shipment} />
-                    ))
-                  )}
-                </>
-              )}
-
-              {/* Archived Tab */}
-              {activeTab === 'archived' && (
-                <>
-                  {isLoadingArchived ? (
-                    <>
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                      <ShipmentCardSkeleton />
-                    </>
-                  ) : archivedShipments.length === 0 ? (
-                    <EmptyState
-                      icon={Archive}
-                      title={t('noArchivedShipments')}
-                      description={t('archivedShipmentsStoredHere')}
-                    />
-                  ) : (
-                    archivedShipments.map((shipment: any) => (
-                      <ArchivedShipmentCard key={shipment.id} shipment={shipment} />
-                    ))
-                  )}
-                </>
-              )}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <StatsCard
+                icon={Package}
+                title="To Receive"
+                value={toReceiveShipments.length}
+                color="blue"
+              />
+              <StatsCard
+                icon={Clock}
+                title="In Progress"
+                value={receivingShipments.length}
+                color="cyan"
+              />
+              <StatsCard
+                icon={CheckCircle}
+                title="Completed"
+                value={completedShipments.length}
+                color="green"
+              />
+              <StatsCard
+                icon={Package2}
+                title="Total Items"
+                value={totalItems}
+                color="purple"
+              />
             </div>
           </div>
         </div>
+
+        {/* Active Receipts Progress - Only show when receipts exist */}
+        {activeReceipts.length > 0 && (
+          <div className="border-b bg-muted/30">
+            <div className="max-w-7xl mx-auto">
+              <ReceiptProgressCarousel receipts={activeReceipts} />
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-hidden">
+          <div className="max-w-7xl mx-auto h-full flex flex-col">
+            {/* Tabs Navigation */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <div className="sticky top-0 z-30 bg-background border-b">
+                <div className="px-3 md:px-6">
+                  <TabsList className="w-full justify-start h-auto p-0 bg-transparent gap-2 overflow-x-auto flex-nowrap">
+                    <TabsTrigger 
+                      value="to-receive" 
+                      className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      data-testid="tab-to-receive"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">To Receive</span>
+                      <span className="sm:hidden">To Receive</span>
+                      <Badge variant="secondary" className="ml-2 bg-background/20">
+                        {toReceiveShipments.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="receiving" 
+                      className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      data-testid="tab-receiving"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Receiving</span>
+                      <span className="sm:hidden">Receiving</span>
+                      <Badge variant="secondary" className="ml-2 bg-background/20">
+                        {receivingShipments.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="storage" 
+                      className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      data-testid="tab-storage"
+                    >
+                      <Warehouse className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Storage</span>
+                      <span className="sm:hidden">Storage</span>
+                      <Badge variant="secondary" className="ml-2 bg-background/20">
+                        {storageShipments.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="completed" 
+                      className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      data-testid="tab-completed"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Completed</span>
+                      <span className="sm:hidden">Completed</span>
+                      <Badge variant="secondary" className="ml-2 bg-background/20">
+                        {completedShipments.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="archived" 
+                      className="h-12 px-4 min-w-fit data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      data-testid="tab-archived"
+                    >
+                      <Archive className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">{t('archived')}</span>
+                      <span className="sm:hidden">{t('archived')}</span>
+                      <Badge variant="secondary" className="ml-2 bg-background/20">
+                        {archivedShipments.length}
+                      </Badge>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-3 md:p-6">
+                  {/* To Receive Tab */}
+                  <TabsContent value="to-receive" className="mt-0 space-y-4">
+                    {isLoadingToReceive ? (
+                      <>
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                      </>
+                    ) : toReceiveShipments.length === 0 ? (
+                      <EmptyState
+                        icon={Package}
+                        title={t('noShipmentsReadyToReceive')}
+                        description={t('allIncomingShipmentsReceived')}
+                      />
+                    ) : (
+                      toReceiveShipments.map((shipment: any) => (
+                        <ToReceiveShipmentCard key={shipment.id} shipment={shipment} />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Receiving Tab */}
+                  <TabsContent value="receiving" className="mt-0 space-y-4">
+                    {isLoadingReceiving ? (
+                      <>
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                      </>
+                    ) : receivingShipments.length === 0 ? (
+                      <EmptyState
+                        icon={Clock}
+                        title={t('noActiveReceivingSessions')}
+                        description={t('startReceivingToSeeHere')}
+                        action={
+                          toReceiveShipments.length > 0 ? (
+                            <Button
+                              size="lg"
+                              className="h-12"
+                              onClick={() => setActiveTab('to-receive')}
+                              data-testid="button-go-to-receive"
+                            >
+                              <Package className="h-5 w-5 mr-2" />
+                              View Shipments to Receive
+                            </Button>
+                          ) : null
+                        }
+                      />
+                    ) : (
+                      receivingShipments.map((shipment: any) => (
+                        <ReceivingShipmentCard key={shipment.id} shipment={shipment} />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Storage Tab */}
+                  <TabsContent value="storage" className="mt-0 space-y-4">
+                    {isLoadingStorage ? (
+                      <>
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                      </>
+                    ) : storageShipments.length === 0 ? (
+                      <EmptyState
+                        icon={Warehouse}
+                        title={t('noShipmentsInStorage')}
+                        description={t('shipmentsPendingApprovalOrPutaway')}
+                      />
+                    ) : (
+                      storageShipments.map((shipment: any) => (
+                        <StorageShipmentCard key={shipment.id} shipment={shipment} />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Completed Tab */}
+                  <TabsContent value="completed" className="mt-0 space-y-4">
+                    {isLoadingCompleted ? (
+                      <>
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                      </>
+                    ) : completedShipments.length === 0 ? (
+                      <EmptyState
+                        icon={CheckCircle}
+                        title={t('noCompletedShipments')}
+                        description={t('successfullyReceivedAndStoredShipments')}
+                      />
+                    ) : (
+                      completedShipments.map((shipment: any) => (
+                        <CompletedShipmentCard key={shipment.id} shipment={shipment} />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Archived Tab */}
+                  <TabsContent value="archived" className="mt-0 space-y-4">
+                    {isLoadingArchived ? (
+                      <>
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                        <ShipmentCardSkeleton />
+                      </>
+                    ) : archivedShipments.length === 0 ? (
+                      <EmptyState
+                        icon={Archive}
+                        title={t('noArchivedShipments')}
+                        description={t('archivedShipmentsStoredHere')}
+                      />
+                    ) : (
+                      archivedShipments.map((shipment: any) => (
+                        <ArchivedShipmentCard key={shipment.id} shipment={shipment} />
+                      ))
+                    )}
+                  </TabsContent>
+                </div>
+              </div>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Floating Scan Button */}
+        <FloatingScanButton 
+          onScan={handleBarcodeScan} 
+          isScanning={isScanning}
+          barcodeScanner={barcodeScanner}
+        />
 
         {/* Session Footer */}
         <SessionFooter
