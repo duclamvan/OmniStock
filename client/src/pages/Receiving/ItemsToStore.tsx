@@ -119,16 +119,16 @@ const getShipmentTypeIcon = (shipmentType: string, className = "h-3.5 w-3.5") =>
   const isSensitive = shipmentType?.includes('sensitive');
 
   if (shipmentType?.includes('express')) {
-    const iconColor = isSensitive ? 'text-orange-500' : 'text-red-500';
+    const iconColor = isSensitive ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400';
     return <Zap className={`${className} ${iconColor}`} />;
   } else if (shipmentType?.includes('air')) {
-    const iconColor = isSensitive ? 'text-blue-600' : 'text-blue-500';
+    const iconColor = isSensitive ? 'text-blue-600 dark:text-blue-400' : 'text-blue-500 dark:text-blue-400';
     return <Plane className={`${className} ${iconColor}`} />;
   } else if (shipmentType?.includes('railway') || shipmentType?.includes('rail')) {
-    const iconColor = isSensitive ? 'text-purple-600' : 'text-purple-500';
+    const iconColor = isSensitive ? 'text-purple-600 dark:text-purple-400' : 'text-purple-500 dark:text-purple-400';
     return <Train className={`${className} ${iconColor}`} />;
   } else if (shipmentType?.includes('sea')) {
-    const iconColor = isSensitive ? 'text-indigo-600' : 'text-amber-700';
+    const iconColor = isSensitive ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-700 dark:text-amber-400';
     return <Ship className={`${className} ${iconColor}`} />;
   }
   return <Package className={`${className} text-muted-foreground`} />;
@@ -182,11 +182,11 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
             <img 
               src={item.imageUrl} 
               alt={item.productName}
-              className="w-10 h-10 rounded object-contain border bg-slate-50"
+              className="w-10 h-10 rounded object-contain border bg-slate-50 dark:bg-slate-900"
             />
           ) : (
-            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-              <Package className="h-5 w-5 text-gray-400" />
+            <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <Package className="h-5 w-5 text-gray-400 dark:text-gray-300" />
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -201,7 +201,7 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
       <TableCell className="text-right font-mono text-xs">
         {formatCurrency(unitCost, currency)}
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-blue-600">
+      <TableCell className="text-right font-mono text-xs text-blue-600 dark:text-blue-400">
         {formatCurrency(shippingCost, currency)}
       </TableCell>
       <TableCell className="text-right font-semibold font-mono text-xs">
@@ -254,11 +254,11 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
             <img 
               src={item.imageUrl} 
               alt={item.productName}
-              className="w-16 h-16 rounded object-contain border bg-slate-50 shrink-0"
+              className="w-16 h-16 rounded object-contain border bg-slate-50 dark:bg-slate-900 shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded bg-gray-100 flex items-center justify-center shrink-0">
-              <Package className="h-6 w-6 text-gray-400" />
+            <div className="w-16 h-16 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+              <Package className="h-6 w-6 text-gray-400 dark:text-gray-300" />
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -278,7 +278,7 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('shipping')}</p>
-            <p className="font-mono font-medium text-blue-600">{formatCurrency(shippingCost, currency)}</p>
+            <p className="font-mono font-medium text-blue-600 dark:text-blue-400">{formatCurrency(shippingCost, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('landingCost')}</p>
@@ -1194,7 +1194,7 @@ export default function ItemsToStore() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-32 w-full" />
@@ -1206,7 +1206,7 @@ export default function ItemsToStore() {
 
   if (!storageData || receiptsWithItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Boxes className="h-16 w-16 text-muted-foreground mb-4" />
@@ -1225,9 +1225,9 @@ export default function ItemsToStore() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Mobile Header */}
-      <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b dark:border-gray-800 shadow-sm">
         <div className="flex items-center justify-between p-4">
           <button onClick={() => window.history.back()} className="p-2 -ml-2">
             <ArrowLeft className="h-6 w-6" />
@@ -1239,11 +1239,11 @@ export default function ItemsToStore() {
             className="p-2 -mr-2"
           >
             {saveStorageMutation.isPending ? (
-              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-amber-600 dark:text-amber-400" />
             ) : saveStorageMutation.isSuccess ? (
-              <Check className="h-6 w-6 text-green-500" />
+              <Check className="h-6 w-6 text-green-500 dark:text-green-400" />
             ) : (
-              <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300' : 'text-amber-600'}`} />
+              <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-amber-600 dark:text-amber-400'}`} />
             )}
           </button>
         </div>
@@ -1260,7 +1260,7 @@ export default function ItemsToStore() {
 
       {/* Receipt Selector - Horizontal Scroll with Comprehensive Shipping Info */}
       {receiptsWithItems.length > 1 && (
-        <div className="bg-white border-b">
+        <div className="bg-white dark:bg-gray-950 border-b dark:border-gray-800">
           <div className="px-4 py-3">
             <p className="text-xs font-medium text-muted-foreground mb-2">{t('selectShipmentToWorkOn')}</p>
             <div className="overflow-x-auto -mx-4 px-4">
@@ -1279,8 +1279,8 @@ export default function ItemsToStore() {
                       }}
                       className={`flex-shrink-0 p-3 rounded-xl border-2 transition-all min-w-[240px] text-left ${
                         selectedReceipt === receiptData.receipt.id
-                          ? 'border-amber-600 bg-amber-50 dark:bg-amber-950/20 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                          ? 'border-amber-600 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
                       }`}
                     >
                       {/* Shipment Name - Prominent Title */}
@@ -1289,7 +1289,7 @@ export default function ItemsToStore() {
                           {receiptData.shipment?.shipmentName || `Shipment #${receiptData.shipment?.id || receiptData.receipt.id}`}
                         </h3>
                         {completionPercent === 100 && (
-                          <Badge className="bg-green-500 text-white text-[10px] h-5 ml-2">
+                          <Badge className="bg-green-500 dark:bg-green-600 text-white text-[10px] h-5 ml-2">
                             <Check className="h-3 w-3 mr-0.5" />
                             {t('done')}
                           </Badge>
@@ -1347,7 +1347,7 @@ export default function ItemsToStore() {
       )}
 
       {/* Tab Selector */}
-      <div className="bg-white border-b sticky top-[88px] z-30">
+      <div className="bg-white dark:bg-gray-950 border-b dark:border-gray-800 sticky top-[88px] z-30">
         <div className="flex">
           <button
             onClick={() => {
@@ -1362,7 +1362,7 @@ export default function ItemsToStore() {
           >
             Pending ({filteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length).length})
             {activeTab === 'pending' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 dark:bg-amber-500" />
             )}
           </button>
           <button
@@ -1378,7 +1378,7 @@ export default function ItemsToStore() {
           >
             Completed ({filteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0).length})
             {activeTab === 'completed' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 dark:bg-amber-500" />
             )}
           </button>
         </div>
@@ -1399,10 +1399,10 @@ export default function ItemsToStore() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setSelectedItemIndex(index)}
-                className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
+                className={`bg-white dark:bg-gray-950 rounded-xl border-2 overflow-hidden transition-all ${
                   isSelected 
-                    ? 'border-amber-600 shadow-lg' 
-                    : 'border-gray-200 shadow-sm'
+                    ? 'border-amber-600 dark:border-amber-500 shadow-lg' 
+                    : 'border-gray-200 dark:border-gray-700 shadow-sm'
                 }`}
               >
                 {/* Item Header */}
@@ -1414,15 +1414,15 @@ export default function ItemsToStore() {
                         <img 
                           src={item.imageUrl} 
                           alt={item.productName}
-                          className="w-16 h-16 rounded-lg object-contain border bg-slate-50"
+                          className="w-16 h-16 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <Package className="h-8 w-8 text-gray-400" />
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-400 dark:text-gray-300" />
                         </div>
                       )}
                       {isComplete && (
-                        <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                        <div className="absolute -top-1 -right-1 bg-green-500 dark:bg-green-600 rounded-full p-1">
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       )}
@@ -1448,7 +1448,7 @@ export default function ItemsToStore() {
                               <TooltipTrigger asChild>
                                 <Badge 
                                   variant={item.hasCompleteLandingCost ? "default" : "secondary"} 
-                                  className={`text-xs ${!item.hasCompleteLandingCost ? 'bg-yellow-100 text-yellow-800' : ''}`}
+                                  className={`text-xs ${!item.hasCompleteLandingCost ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : ''}`}
                                   data-testid={`landing-cost-${item.receiptItemId}`}
                                 >
                                   {t('landing')} €{parseFloat(item.landingCostUnitBase).toFixed(2)}
@@ -1463,7 +1463,7 @@ export default function ItemsToStore() {
                                       <p className="text-xs text-muted-foreground mt-1">Includes freight, duties, and fees</p>
                                     </>
                                   ) : (
-                                    <p className="text-yellow-600">Landing cost pending—enter freight to finalize</p>
+                                    <p className="text-yellow-600 dark:text-yellow-400">Landing cost pending—enter freight to finalize</p>
                                   )}
                                 </div>
                               </TooltipContent>
@@ -1471,7 +1471,7 @@ export default function ItemsToStore() {
                           </TooltipProvider>
                         )}
                         {!item.landingCostUnitBase && item.purchaseItemId && (
-                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+                          <Badge variant="secondary" className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
                             {t('landingCostPending')}
                           </Badge>
                         )}
@@ -1479,7 +1479,7 @@ export default function ItemsToStore() {
                     </div>
 
                     {/* Expand Icon */}
-                    <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${
+                    <ChevronRight className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform ${
                       isSelected ? 'rotate-90' : ''
                     }`} />
                   </div>
@@ -1488,7 +1488,7 @@ export default function ItemsToStore() {
                   {(item.newLocations.length > 0 || item.existingLocations.length > 0) && (
                     <div className="mt-3 pt-3 border-t">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-amber-600" />
+                        <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <span className="text-xs text-muted-foreground">
                           {item.newLocations.length > 0 && t('newLocationsCount', { count: item.newLocations.length })}
                           {item.existingLocations.length > 0 && ` • ${item.existingLocations.length} ${t('existing')}`}
@@ -1505,7 +1505,7 @@ export default function ItemsToStore() {
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="border-t bg-gray-50"
+                    className="border-t bg-gray-50 dark:bg-gray-900"
                   >
                     <div className="p-4 space-y-3">
                       {/* Prominent Location Display */}
@@ -1516,7 +1516,7 @@ export default function ItemsToStore() {
                             {getSuggestedLocation(item) || generateSuggestedLocationWithAI(item, aiSuggestions)}
                           </span>
                           {item.existingLocations.some(loc => loc.isPrimary) && (
-                            <Badge className="ml-2 bg-yellow-500 text-white">
+                            <Badge className="ml-2 bg-yellow-500 dark:bg-yellow-600 text-white">
                               <Star className="h-3 w-3 mr-1" fill="currentColor" />
                               {t('primary')}
                             </Badge>
@@ -1532,11 +1532,11 @@ export default function ItemsToStore() {
 
                       {/* Quick Stats */}
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white rounded-lg p-3 border">
+                        <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
                           <p className="text-xs text-muted-foreground">Received</p>
                           <p className="text-lg font-bold">{item.receivedQuantity}</p>
                         </div>
-                        <div className="bg-white rounded-lg p-3 border">
+                        <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
                           <p className="text-xs text-muted-foreground">Remaining</p>
                           <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{remainingQuantity}</p>
                         </div>
@@ -1544,11 +1544,11 @@ export default function ItemsToStore() {
 
                       {/* Existing Locations */}
                       {item.existingLocations.length > 0 && (
-                        <div className="bg-white rounded-lg p-3 border">
+                        <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
                           <p className="text-xs font-medium text-muted-foreground mb-2">Current Locations</p>
                           {item.existingLocations.map(loc => (
                             <div key={loc.id} className="flex items-center gap-2 py-1">
-                              <MapPin className="h-3 w-3 text-gray-400" />
+                              <MapPin className="h-3 w-3 text-gray-400 dark:text-gray-300" />
                               <span className="text-sm font-mono">{loc.locationCode}</span>
                               <Badge variant="secondary" className="text-xs ml-auto">
                                 {loc.quantity}
@@ -1562,8 +1562,8 @@ export default function ItemsToStore() {
                       {item.newLocations.length > 0 && (
                         <div className="space-y-2">
                           {item.newLocations.map((loc, locIndex) => (
-                            <div key={loc.id} className="bg-white rounded-lg p-3 border flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-amber-600" />
+                            <div key={loc.id} className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800 flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                               <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
                               <input
                                 type="number"
@@ -1575,13 +1575,13 @@ export default function ItemsToStore() {
                               />
                               <button
                                 onClick={() => togglePrimaryLocation(locIndex)}
-                                className={`p-1 ${loc.isPrimary ? 'text-yellow-500' : 'text-gray-300'}`}
+                                className={`p-1 ${loc.isPrimary ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
                               >
                                 <Star className="h-4 w-4" fill={loc.isPrimary ? 'currentColor' : 'none'} />
                               </button>
                               <button
                                 onClick={() => removeLocation(locIndex)}
-                                className="p-1 text-red-500"
+                                className="p-1 text-red-500 dark:text-red-400"
                               >
                                 <X className="h-4 w-4" />
                               </button>
@@ -1605,14 +1605,14 @@ export default function ItemsToStore() {
                             setPricingReceiptId(item.receiptId || null);
                             setShowPricingSheet(true);
                           }}
-                          className="p-3 bg-white border rounded-lg"
+                          className="p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
                           data-testid="button-view-pricing"
                         >
                           <TrendingUp className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => setShowDetails(true)}
-                          className="p-3 bg-white border rounded-lg"
+                          className="p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
                           data-testid="button-item-details"
                         >
                           <Eye className="h-5 w-5" />
@@ -1628,7 +1628,7 @@ export default function ItemsToStore() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shadow-lg z-40">
         <div className="p-4 flex gap-2">
           <button
             onClick={() => {
@@ -1637,10 +1637,10 @@ export default function ItemsToStore() {
               }
             }}
             disabled={selectedItemIndex === 0}
-            className={`p-3 rounded-lg border ${
+            className={`p-3 rounded-lg border dark:border-gray-800 ${
               selectedItemIndex === 0 
-                ? 'bg-gray-50 text-gray-300' 
-                : 'bg-white text-gray-700'
+                ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
             }`}
           >
             <ArrowUp className="h-5 w-5" />
@@ -1652,10 +1652,10 @@ export default function ItemsToStore() {
               }
             }}
             disabled={selectedItemIndex === displayItems.length - 1}
-            className={`p-3 rounded-lg border ${
+            className={`p-3 rounded-lg border dark:border-gray-800 ${
               selectedItemIndex === displayItems.length - 1
-                ? 'bg-gray-50 text-gray-300' 
-                : 'bg-white text-gray-700'
+                ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
             }`}
           >
             <ArrowDown className="h-5 w-5" />
@@ -1695,10 +1695,10 @@ export default function ItemsToStore() {
             {currentItem && (
               <div className="mt-2 space-y-2">
                 {/* Compact Item Info */}
-                <div className="bg-gray-50 rounded-lg p-2.5">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5">
                   <div className="flex items-start gap-3">
                     {/* Product Image */}
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white dark:bg-gray-950 border dark:border-gray-800 flex-shrink-0">
                       {currentItem.imageUrl ? (
                         <img 
                           src={currentItem.imageUrl} 
@@ -1707,7 +1707,7 @@ export default function ItemsToStore() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-400" />
+                          <Package className="h-6 w-6 text-gray-400 dark:text-gray-300" />
                         </div>
                       )}
                     </div>
@@ -1731,20 +1731,20 @@ export default function ItemsToStore() {
 
                 {/* Suggested Location - Compact */}
                 {getSuggestedLocation(currentItem) ? (
-                  <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
-                    <MapPin className="h-3.5 w-3.5 text-green-600" />
-                    <span className="text-xs text-green-700">Current:</span>
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 rounded-lg px-3 py-2">
+                    <MapPin className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                    <span className="text-xs text-green-700 dark:text-green-300">Current:</span>
                     <span className="font-mono text-xs font-semibold">{getSuggestedLocation(currentItem)}</span>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 rounded-lg px-3 py-2 space-y-1">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg px-3 py-2 space-y-1">
                     <div className="flex items-center gap-2">
-                      <Navigation className="h-3.5 w-3.5 text-blue-600" />
-                      <span className="text-xs text-blue-700">AI Suggested:</span>
+                      <Navigation className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs text-blue-700 dark:text-blue-300">AI Suggested:</span>
                       <span className="font-mono text-xs font-semibold">{generateSuggestedLocationWithAI(currentItem, aiSuggestions)}</span>
                     </div>
                     {getAIReasoning(currentItem, aiSuggestions) && (
-                      <p className="text-xs text-blue-600 italic pl-5">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 italic pl-5">
                         {getAIReasoning(currentItem, aiSuggestions)}
                       </p>
                     )}
@@ -1775,12 +1775,12 @@ export default function ItemsToStore() {
                     const maxQuantity = currentItem ? currentItem.receivedQuantity - totalAllocated - totalAssigned : 0;
                     
                     return (
-                      <div key={idx} className="bg-white border rounded-lg p-2.5">
+                      <div key={idx} className="bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg p-2.5">
                         <div className="space-y-2">
                           {/* Location Code Row */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-3.5 w-3.5 text-gray-500" />
+                              <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                               <span className="font-mono text-sm font-medium">{loc.code}</span>
                               {loc.isPrimary && (
                                 <Badge variant="default" className="h-4 text-xs px-1.5">Main</Badge>
@@ -1809,7 +1809,7 @@ export default function ItemsToStore() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-7 px-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
                                 onClick={() => {
                                   setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
                                   soundEffects.playErrorBeep();
@@ -1983,7 +1983,7 @@ export default function ItemsToStore() {
           {currentItem && (
             <div className="mt-4 space-y-6">
               {/* Hero Product Image */}
-              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
+              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                 {currentItem.imageUrl ? (
                   <img 
                     src={currentItem.imageUrl} 
@@ -1992,7 +1992,7 @@ export default function ItemsToStore() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Package className="h-16 w-16 text-gray-400" />
+                    <Package className="h-16 w-16 text-gray-400 dark:text-gray-300" />
                   </div>
                 )}
               </div>
@@ -2073,15 +2073,15 @@ export default function ItemsToStore() {
                       <Progress value={(totalAssigned / currentItem.receivedQuantity) * 100} className="h-2" />
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="bg-gray-50">
+                      <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">
                         <Package className="h-3 w-3 mr-1" />
                         Received: {currentItem.receivedQuantity}
                       </Badge>
-                      <Badge className="bg-green-600">
+                      <Badge className="bg-green-600 dark:bg-green-700">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Assigned: {totalAssigned}
                       </Badge>
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                      <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300">
                         <Clock className="h-3 w-3 mr-1" />
                         Remaining: {remainingQuantity}
                       </Badge>
@@ -2245,7 +2245,7 @@ export default function ItemsToStore() {
                 <SheetHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-5 w-5 text-amber-600')}
+                      {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-5 w-5 text-amber-600 dark:text-amber-400')}
                       <div>
                         <SheetTitle className="text-lg font-semibold">
                           {receiptData.shipment?.shipmentName || `Shipment #${shipmentId}`}
@@ -2282,7 +2282,7 @@ export default function ItemsToStore() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">{t('perUnit')}</p>
-                    <p className="font-semibold text-sm text-blue-600">{formatCurrency(shippingPerUnit, currency)}</p>
+                    <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">{formatCurrency(shippingPerUnit, currency)}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-muted-foreground">{t('route')}</p>
@@ -2310,7 +2310,7 @@ export default function ItemsToStore() {
                       <SelectContent>
                         <SelectItem value="AUTO">
                           <div className="flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-amber-500" />
+                            <Zap className="h-3 w-3 text-amber-500 dark:text-amber-400" />
                             <span>{t('autoSelect')}</span>
                           </div>
                         </SelectItem>
@@ -2387,7 +2387,7 @@ export default function ItemsToStore() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-amber-600" />
+                        <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         Item Pricing & Landing Cost
                       </h3>
                       <div className="flex items-center gap-2">
