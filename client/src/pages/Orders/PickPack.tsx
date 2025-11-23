@@ -11071,12 +11071,12 @@ export default function PickPack() {
               {canCompletePacking ? (
                 <>
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  Complete Packing - Ready for Shipping
+                  {t('completePackingReadyForShipping')}
                 </>
               ) : (
                 <>
                   <PackageCheck className="h-5 w-5 mr-2" />
-                  Complete All Steps to Finish Packing
+                  {t('completeAllStepsToFinishPacking')}
                 </>
               )}
             </Button>
@@ -11163,7 +11163,7 @@ export default function PickPack() {
                       <Package className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/80 text-xs font-medium">Picking Item</p>
+                      <p className="text-white/80 text-xs font-medium">{t('pickingItem')}</p>
                       <p className="text-white text-lg font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
                     </div>
                   </div>
@@ -11199,7 +11199,7 @@ export default function PickPack() {
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Exit
+                    {t('exit')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -11208,7 +11208,7 @@ export default function PickPack() {
                     onClick={() => setShowResetOrderDialog(true)}
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
-                    Reset Order
+                    {t('resetOrder')}
                   </Button>
                   <Separator orientation="vertical" className="h-6 bg-white/30" />
                   <div>
@@ -11234,7 +11234,7 @@ export default function PickPack() {
                       <Timer className="h-5 w-5 text-blue-200 dark:text-blue-100" />
                       <span className="font-mono text-2xl font-bold" data-picking-timer>{formatTimer(pickingTimer)}</span>
                     </div>
-                    <p className="text-xs text-blue-100 dark:text-blue-50 mt-1">Elapsed Time</p>
+                    <p className="text-xs text-blue-100 dark:text-blue-50 mt-1">{t('elapsedTime')}</p>
                   </div>
                   
                   <Button
@@ -11267,7 +11267,7 @@ export default function PickPack() {
                       <Package className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/80 text-sm font-medium">Picking Item</p>
+                      <p className="text-white/80 text-sm font-medium">{t('pickingItem')}</p>
                       <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
                     </div>
                   </div>
@@ -13977,7 +13977,7 @@ export default function PickPack() {
               onClick={resetOrder}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reset Order
+              {t('resetOrder')}
             </Button>
           </div>
         </DialogContent>

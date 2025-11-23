@@ -1467,6 +1467,8 @@ const orders = {
   elapsedTime: 'Elapsed Time',
   pickingTime: 'Picking Time',
   packingTime: 'Packing Time',
+  completePackingReadyForShipping: 'Complete Packing - Ready for Shipping',
+  completeAllStepsToFinishPacking: 'Complete All Steps to Finish Packing',
   
   // PickPack.tsx - Details & Information
   details: 'Details',
