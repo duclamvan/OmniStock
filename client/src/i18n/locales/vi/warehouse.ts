@@ -101,6 +101,7 @@ const warehouse = {
   warehouseUpdateError: 'Không thể cập nhật kho',
   warehouseDeletedSuccess: 'Xóa kho thành công',
   warehouseDeleteError: 'Không thể xóa kho',
+  geocodeError: 'Không thể tìm kiếm địa chỉ',
   updating: 'Đang cập nhật...',
   updateWarehouse: 'Cập nhật kho',
   deleteWarehouse: 'Xóa kho',

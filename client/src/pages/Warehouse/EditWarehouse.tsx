@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
@@ -102,11 +103,25 @@ export default function EditWarehouse() {
   const [editingContract, setEditingContract] = useState<WarehouseFinancialContract | null>(null);
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
   
-  // Address autocomplete state
-  const [addressSearch, setAddressSearch] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
-  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
-  const [isLoadingAddressSearch, setIsLoadingAddressSearch] = useState(false);
+  // Address autocomplete hook
+  const {
+    addressSearch,
+    setAddressSearch,
+    addressSuggestions,
+    showAddressDropdown,
+    setShowAddressDropdown,
+    isLoadingAddressSearch,
+    searchAddresses,
+    selectAddress,
+  } = useAddressAutocomplete({
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: t('warehouse:geocodeError'),
+        variant: "destructive",
+      });
+    },
+  });
 
   const warehouseSchema = z.object({
     name: z.string().min(1, t('warehouse:warehouseNameRequired')),
@@ -179,9 +194,9 @@ export default function EditWarehouse() {
       phone: "",
       email: "",
       manager: "",
-      capacity: 0,
+      capacity: undefined,
       type: "branch",
-      floorArea: 0,
+      floorArea: undefined,
     },
   });
 
@@ -222,11 +237,11 @@ export default function EditWarehouse() {
         phone: warehouseData.phone || "",
         email: warehouseData.email || "",
         manager: warehouseData.manager || "",
-        capacity: warehouseData.capacity || 0,
+        capacity: warehouseData.capacity ?? undefined,
         type: (warehouseData.type as any) || "branch",
         floorArea: (warehouseData.floor_area || warehouseData.floorArea) 
           ? parseFloat((warehouseData.floor_area || warehouseData.floorArea).toString()) 
-          : 0,
+          : undefined,
       });
     }
   }, [warehouse]);
@@ -452,61 +467,6 @@ export default function EditWarehouse() {
       case 'cancelled': return 'outline';
       default: return 'secondary';
     }
-  };
-
-  // Address autocomplete search
-  const searchAddresses = async (query: string) => {
-    if (query.length < 3) {
-      setAddressSuggestions([]);
-      setShowAddressDropdown(false);
-      return;
-    }
-
-    setIsLoadingAddressSearch(true);
-    setShowAddressDropdown(true);
-
-    try {
-      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch addresses');
-      }
-      const data = await response.json();
-
-      const suggestions = data.map((item: any) => ({
-        formatted: item.formatted,
-        street: item.street,
-        houseNumber: item.houseNumber,
-        city: item.city,
-        state: item.state,
-        zipCode: item.zipCode,
-        country: item.country,
-      }));
-
-      setAddressSuggestions(suggestions);
-    } catch (error) {
-      console.error('Error searching addresses:', error);
-      setAddressSuggestions([]);
-    } finally {
-      setIsLoadingAddressSearch(false);
-    }
-  };
-
-  // Select address from autocomplete
-  const selectAddress = (suggestion: any) => {
-    // Build full address string
-    const fullAddress = [suggestion.street, suggestion.houseNumber]
-      .filter(Boolean)
-      .join(' ');
-    
-    // Update form fields
-    form.setValue('address', fullAddress);
-    form.setValue('city', suggestion.city || '');
-    form.setValue('zipCode', suggestion.zipCode || '');
-    form.setValue('country', suggestion.country || '');
-
-    setAddressSearch(suggestion.formatted);
-    setShowAddressDropdown(false);
-    setAddressSuggestions([]);
   };
 
   if (isLoading) {
@@ -794,7 +754,7 @@ export default function EditWarehouse() {
                         <button
                           key={index}
                           type="button"
-                          onClick={() => selectAddress(suggestion)}
+                          onClick={() => selectAddress(suggestion, form.setValue)}
                           className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm border-b border-slate-100 dark:border-slate-700 last:border-0"
                         >
                           <div className="font-medium text-slate-900 dark:text-white">
