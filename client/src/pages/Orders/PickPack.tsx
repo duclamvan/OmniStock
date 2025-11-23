@@ -13079,10 +13079,13 @@ export default function PickPack() {
             <Card className="shadow-sm">
               <CardHeader className="pb-4 sm:pb-6">
                 <CardTitle className="text-lg sm:text-xl font-bold">
-                  Ready for Packing ({getOrdersByStatus('packing').length})
+                  {t('readyForPacking')} ({getOrdersByStatus('packing').length})
                   {getOrdersByStatus('packing').length > 0 && predictions && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
-                      ~{Math.floor(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m est.
+                    <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                      {t('estimatedTime', { 
+                        hours: Math.floor(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60), 
+                        minutes: Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60) 
+                      })}
                     </span>
                   )}
                 </CardTitle>
@@ -13180,7 +13183,7 @@ export default function PickPack() {
                                 onClick={() => startPacking(order)}
                               >
                                 <Box className="h-4 w-4 mr-2" />
-                                {order.packStatus === 'in_progress' ? 'Resume' : 'Start'}
+                                {order.packStatus === 'in_progress' ? t('resume') : t('start')}
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -13201,7 +13204,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                                    Send back to Pick
+                                    {t('sendBackToPick')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
