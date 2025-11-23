@@ -11407,7 +11407,7 @@ export default function PickPack() {
               className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 text-white p-3 sm:p-4 flex-shrink-0">
+              <div className="bg-gradient-to-r from-teal-50 dark:from-teal-900/30 to-cyan-50 dark:to-cyan-900/30 text-white p-3 sm:p-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -11425,10 +11425,10 @@ export default function PickPack() {
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-4">
-                    <Badge className="bg-white text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
+                    <Badge className="bg-white text-teal-600 dark:text-teal-400 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
                       {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
                     </Badge>
-                    <div className="text-xs sm:text-sm text-blue-100 dark:text-blue-50">
+                    <div className="text-xs sm:text-sm text-teal-100 dark:text-teal-50">
                       Order: {activePickingOrder.orderId}
                     </div>
                   </div>
@@ -11476,7 +11476,7 @@ export default function PickPack() {
                         className={`transition-all ${
                           isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
                           isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-amber-50 dark:to-amber-900/30 border-2 border-yellow-400 dark:border-yellow-700 shadow-md' :
-                          isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-lg' : 
+                          isCurrent ? 'bg-gradient-to-r from-teal-50 dark:from-teal-900/30 to-cyan-50 dark:to-cyan-900/30 border-2 border-teal-500 shadow-lg' : 
                           'bg-white hover:shadow-md border-2 border-gray-200'
                         }`}
                         data-testid={`item-overview-${item.id}`}
@@ -11508,7 +11508,7 @@ export default function PickPack() {
                                   <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                 </div>
                               ) : (
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:bg-blue-900/300 hover:text-white hover:border-blue-600 dark:border-blue-500 transition-all shadow-md">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-teal-50 dark:hover:bg-teal-900/30 dark:bg-teal-900/30 hover:text-white hover:border-teal-600 dark:border-teal-500 transition-all shadow-md">
                                   {index + 1}
                                 </div>
                               )}
@@ -11534,7 +11534,7 @@ export default function PickPack() {
                               <p className={`font-bold text-sm sm:text-base leading-tight ${
                                 isPicked ? 'text-green-700 dark:text-green-200' : 
                                 isPartiallyPicked ? 'text-yellow-700 dark:text-yellow-200' :
-                                isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-900'
+                                isCurrent ? 'text-teal-700 dark:text-teal-200 dark:text-teal-100' : 'text-gray-900'
                               }`}>
                                 {item.productName}
                               </p>
