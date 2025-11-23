@@ -2120,9 +2120,9 @@ export default function AddOrder() {
 
             {/* Quick Customer Forms */}
             {quickCustomerType && !selectedCustomer && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-blue-900">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-300">
                     {quickCustomerType === 'quick' && t('orders:quickCustomerOneTime')}
                     {quickCustomerType === 'tel' && t('orders:telephoneOrder')}
                     {quickCustomerType === 'msg' && t('orders:socialMediaCustomer')}
@@ -2171,7 +2171,7 @@ export default function AddOrder() {
                       placeholder="+420776887045"
                       data-testid="input-quick-customer-phone"
                     />
-                    <p className="text-xs text-slate-500 mt-1">{t('orders:formatWithoutSpaces')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('orders:formatWithoutSpaces')}</p>
                   </div>
                 )}
 
