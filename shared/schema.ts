@@ -420,8 +420,8 @@ export const warehouses = pgTable('warehouses', {
   email: text('email'),
   manager: text('manager'),
   capacity: integer('capacity'),
-  type: text('type').default('fulfillment'), // fulfillment, storage, transit
-  status: text('status').default('active'), // active, inactive, maintenance
+  type: text('type').default('branch'), // main, branch, temporary
+  status: text('status').default('active'), // active, inactive, maintenance, rented
   rentedFromDate: date('rented_from_date'),
   expenseId: integer('expense_id'),
   contact: text('contact'),
