@@ -504,6 +504,8 @@ const CartonCard = memo(({
   isGLS = false,
   toast
 }: any) => {
+  const { t } = useTranslation('orders');
+  
   // Local state for weight input to make it responsive
   const [localWeight, setLocalWeight] = useState(carton.weight || '');
   const [isWeightExpanded, setIsWeightExpanded] = useState(false);
