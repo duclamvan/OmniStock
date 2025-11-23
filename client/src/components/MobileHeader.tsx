@@ -166,18 +166,18 @@ export function MobileHeader({
       }}
       data-testid="mobile-header"
     >
-      <div className="h-full flex items-center justify-between px-3 transition-all duration-300">
+      <div className="h-full flex items-center justify-between px-2 transition-all duration-300">
         {/* Left: Logo + Menu */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="touch-target h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="touch-target h-9 w-9 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-mobile-menu"
               >
-                <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                <Menu className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 flex flex-col h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700">
@@ -196,7 +196,7 @@ export function MobileHeader({
               alt="Davie Professional" 
               className={cn(
                 "transition-all duration-300",
-                isCollapsed && !isSearchExpanded ? "h-6" : "h-8"
+                isCollapsed && !isSearchExpanded ? "h-5" : "h-6"
               )} 
             />
           </Link>
@@ -204,7 +204,7 @@ export function MobileHeader({
 
         {/* Center: Search (expandable) */}
         <div className={cn(
-          "mx-2 flex items-center justify-center transition-all duration-300",
+          "mx-1 flex items-center justify-center transition-all duration-300",
           isCollapsed && !isSearchExpanded ? "flex-1" : "flex-1 min-w-0"
         )}>
           {isCollapsed && !isSearchExpanded ? (
@@ -213,11 +213,11 @@ export function MobileHeader({
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(true)}
-              className="h-8 px-3 gap-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="h-8 px-2 gap-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-testid="button-expand-search"
             >
               <Search className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{t('common:search')}</span>
+              <span className="hidden sm:inline text-xs text-gray-700 dark:text-gray-300">{t('common:search')}</span>
             </Button>
           ) : (
             // Expanded: Show full search input - constrained to not overflow
@@ -239,10 +239,10 @@ export function MobileHeader({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="relative h-9 w-9 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-notifications"
               >
-                <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                <Bell className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 dark:bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-sm">
                     {unreadCount}
@@ -329,11 +329,11 @@ export function MobileHeader({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="h-9 w-9 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-user-menu"
               >
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-700 flex items-center justify-center shadow-sm">
-                  <User className="h-4 w-4 text-white" />
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-700 flex items-center justify-center shadow-sm">
+                  <User className="h-3.5 w-3.5 text-white" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
