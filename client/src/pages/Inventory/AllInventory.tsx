@@ -158,6 +158,11 @@ export default function AllInventory() {
     refetchInterval: 60000,
   });
 
+  // Fetch recently approved receipts (last 7 days)
+  const { data: recentReceipts = [] } = useQuery<any[]>({
+    queryKey: ['/api/imports/receipts/recent'],
+  });
+
   // Calculate units sold per product
   const unitsSoldByProduct: { [productId: string]: number } = {};
   (orderItems as any[])?.forEach((item: any) => {
@@ -1249,6 +1254,32 @@ export default function AllInventory() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Recently Received Goods Banner */}
+      {recentReceipts.length > 0 && (
+        <Card className="border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-green-900 dark:text-green-100">
+                    {t('receiving:recentArrivals', { count: recentReceipts.length })}
+                  </h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    {t('receiving:goodsApprovedInLast7Days')}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="border-green-300 dark:border-green-800 text-green-700 dark:text-green-300 bg-white dark:bg-green-950/50">
+                {recentReceipts.length} {recentReceipts.length === 1 ? t('common:receipt') : t('common:receipts')}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Filters & Search */}

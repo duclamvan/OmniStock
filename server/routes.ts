@@ -12728,6 +12728,30 @@ Important:
     }
   });
 
+  // Get recently approved receipts (last 7 days)
+  app.get('/api/imports/receipts/recent', isAuthenticated, async (req, res) => {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentReceipts = await db
+        .select()
+        .from(receipts)
+        .where(
+          and(
+            eq(receipts.status, 'approved'),
+            gte(receipts.approvedAt, sevenDaysAgo)
+          )
+        )
+        .orderBy(desc(receipts.approvedAt));
+      
+      res.json(recentReceipts);
+    } catch (error) {
+      console.error('Error fetching recent receipts:', error);
+      res.status(500).json({ message: 'Failed to fetch recent receipts' });
+    }
+  });
+
   // Factory Reset - Delete all operational data while preserving system configuration
   app.post('/api/system/factory-reset', requireRole(['administrator']), async (req: any, res) => {
     try {

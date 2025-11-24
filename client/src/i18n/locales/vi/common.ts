@@ -644,6 +644,8 @@ const common = {
   noRecentActivities: 'Chưa có hoạt động gần đây',
   yourOrderActivitiesWillAppearHere: 'Các hoạt động đơn hàng của bạn sẽ hiển thị tại đây',
   customer: 'Khách hàng',
+  receipt: 'Phiếu nhận',
+  receipts: 'Phiếu nhận',
   profileUpdated: 'Đã cập nhật hồ sơ',
   yourProfileHasBeenUpdatedSuccessfully: 'Hồ sơ của bạn đã được cập nhật thành công.',
   updateFailed: 'Cập nhật thất bại',

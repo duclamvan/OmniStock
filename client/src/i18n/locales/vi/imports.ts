@@ -1184,6 +1184,8 @@ const imports = {
   toReceive: 'Cần nhận',
   inProgressReceiving: 'Đang tiến hành',
   storage: 'Lưu kho',
+  recentArrivals: '{{count}} Hàng mới về',
+  goodsApprovedInLast7Days: 'Hàng đã được duyệt trong 7 ngày qua',
   
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'Không có lô hàng sẵn sàng nhận',

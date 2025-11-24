@@ -1171,6 +1171,8 @@ const imports = {
   toReceive: 'To Receive',
   inProgressReceiving: 'In Progress',
   storage: 'Storage',
+  recentArrivals: '{{count}} Recent Arrival{{count, plural, one {} other{s}}}',
+  goodsApprovedInLast7Days: 'Goods approved in the last 7 days',
   
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'No shipments ready to receive',

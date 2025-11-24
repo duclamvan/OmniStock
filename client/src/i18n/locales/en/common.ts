@@ -693,6 +693,8 @@ const common = {
   noRecentActivities: 'No recent activities',
   yourOrderActivitiesWillAppearHere: 'Your order activities will appear here',
   customer: 'Customer',
+  receipt: 'Receipt',
+  receipts: 'Receipts',
   profileUpdated: 'Profile Updated',
   yourProfileHasBeenUpdatedSuccessfully: 'Your profile has been updated successfully.',
   updateFailed: 'Update Failed',
