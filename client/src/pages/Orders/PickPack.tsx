@@ -12579,6 +12579,30 @@ export default function PickPack() {
                           <ClipboardList className="h-4 w-4 mr-2" />
                           View All Items ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
                         </Button>
+                        
+                        {/* Finish Picking Button - Always available for items not in stock */}
+                        <Button
+                          className="w-full h-12 text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
+                          onClick={async () => {
+                            // Complete picking with current progress
+                            await completePicking(true);
+                            
+                            // Clear picking state
+                            setActivePickingOrder(null);
+                            setPickingTimer(0);
+                            setManualItemIndex(0);
+                            
+                            // Return to originating tab or pending tab
+                            setSelectedTab(originatingTab || 'pending');
+                            
+                            // Scroll to top
+                            window.scrollTo(0, 0);
+                          }}
+                          data-testid="button-finish-picking"
+                        >
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Finish Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items)
+                        </Button>
                       </div>
                     </div>
                   
