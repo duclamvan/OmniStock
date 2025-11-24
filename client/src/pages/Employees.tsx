@@ -577,14 +577,20 @@ export default function Employees() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('system:userAccount')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select 
+                        onValueChange={(value) => {
+                          // Convert "none" to empty string for form
+                          field.onChange(value === "none" ? "" : value);
+                        }} 
+                        value={field.value || "none"}
+                      >
                         <FormControl>
                           <SelectTrigger data-testid="select-user">
                             <SelectValue placeholder={t('system:selectUser')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">{t('system:noUserAssigned')}</SelectItem>
+                          <SelectItem value="none">{t('system:noUserAssigned')}</SelectItem>
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.firstName} {user.lastName} ({user.email})
