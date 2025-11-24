@@ -316,10 +316,10 @@ export default function StockLookup() {
 
   const getStockStatus = (stock: number, customThreshold?: number) => {
     const threshold = customThreshold ?? lowStockThreshold;
-    if (stock === 0) return { label: t('outOfStock'), color: "bg-red-500", icon: AlertCircle };
-    if (stock <= threshold) return { label: t('lowStock'), color: "bg-yellow-500", icon: TrendingDown };
-    if (stock <= threshold * 2) return { label: t('mediumStock'), color: "bg-blue-500", icon: TrendingUp };
-    return { label: t('inStock'), color: "bg-green-500", icon: TrendingUp };
+    if (stock === 0) return { label: t('outOfStock'), borderColor: "border-red-500", textColor: "text-red-700 dark:text-red-400", icon: AlertCircle };
+    if (stock <= threshold) return { label: t('lowStock'), borderColor: "border-yellow-500", textColor: "text-yellow-700 dark:text-yellow-400", icon: TrendingDown };
+    if (stock <= threshold * 2) return { label: t('mediumStock'), borderColor: "border-blue-500", textColor: "text-blue-700 dark:text-blue-400", icon: TrendingUp };
+    return { label: t('inStock'), borderColor: "border-green-500", textColor: "text-green-700 dark:text-green-400", icon: TrendingUp };
   };
 
   const handleBarcodeScan = (barcode: string) => {
@@ -714,7 +714,7 @@ export default function StockLookup() {
                           <h3 className="font-semibold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
                             {product.name}
                           </h3>
-                          <Badge className={`${status.color} text-white flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
+                          <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
                             <StatusIcon className="h-3 w-3" />
                             <span className="font-bold">{displayProduct.totalStock}</span>
                           </Badge>
