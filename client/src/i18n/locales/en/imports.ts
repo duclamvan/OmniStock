@@ -1164,6 +1164,9 @@ const imports = {
   completeStatus: 'Complete',
   damagedStatus: 'Damaged',
   archived: 'Archived',
+  itemsPendingStorage: 'items pending storage',
+  itemsCompleted: 'items completed',
+  goToStorage: 'Go to Storage',
   
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Receiving Center',

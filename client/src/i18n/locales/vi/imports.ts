@@ -1177,6 +1177,9 @@ const imports = {
   completeStatus: 'Hoàn tất',
   damagedStatus: 'Hư hỏng',
   archived: 'Đã lưu trữ',
+  itemsPendingStorage: 'sản phẩm chờ lưu kho',
+  itemsCompleted: 'sản phẩm đã hoàn tất',
+  goToStorage: 'Đi đến Lưu kho',
   
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Trung tâm Nhận hàng',
