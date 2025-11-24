@@ -195,6 +195,8 @@ const imports = {
   missingInformation: 'Missing Information',
   fillRequiredFields: 'Please fill in all required item fields.',
   noItems: 'No Items',
+  pleaseEnterValidQuantity: 'Please enter a valid quantity greater than 0',
+  quantityExceedsRemaining: 'Quantity cannot exceed {{max}} remaining units',
 
   // Empty States
   noImportOrders: 'No import orders',
@@ -1174,6 +1176,15 @@ const imports = {
   toReceive: 'To Receive',
   inProgressReceiving: 'In Progress',
   storage: 'Storage',
+  quickStorage: 'Quick Storage',
+  scanLocation: 'Scan storage location',
+  assignQuantity: 'Assign quantity',
+  remainingUnits: 'Remaining units',
+  storedSuccessfully: 'Stored successfully',
+  storageComplete: 'Storage complete',
+  invalidLocationFormat: 'Invalid location format',
+  duplicateLocation: 'This location is already assigned',
+  barcodeScanningDisabled: 'Barcode scanning is disabled in settings',
   recentArrivals: '{{count}} Recent Arrival{{count, plural, one {} other{s}}}',
   goodsApprovedInLast7Days: 'Goods approved in the last 7 days',
   

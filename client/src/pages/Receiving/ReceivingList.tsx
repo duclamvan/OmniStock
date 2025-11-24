@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,14 +54,17 @@ import {
   Train,
   Zap,
   CheckSquare,
-  Square
+  Square,
+  Star,
+  Save
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { soundEffects } from "@/utils/soundEffects";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { ScanFeedback } from "@/components/ScanFeedback";
 import type { Shipment, Receipt } from "@shared/schema";
 
 // ============================================================================
@@ -1182,10 +1186,663 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   );
 }
 
+// ============================================================================
+// QUICK STORAGE SHEET COMPONENT
+// ============================================================================
+
+interface LocationAssignment {
+  id: string;
+  locationCode: string;
+  locationType: 'display' | 'warehouse' | 'pallet' | 'other';
+  quantity: number;
+  isPrimary: boolean;
+}
+
+interface StorageItem {
+  receiptItemId: number;
+  productId?: number;
+  productName: string;
+  sku?: string;
+  barcode?: string;
+  receivedQuantity: number;
+  assignedQuantity: number;
+  locations: LocationAssignment[];
+}
+
+function QuickStorageSheet({ 
+  shipment, 
+  open, 
+  onOpenChange 
+}: { 
+  shipment: any; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation(['imports', 'warehouse', 'common']);
+  const { toast } = useToast();
+  
+  // State
+  const [items, setItems] = useState<StorageItem[]>([]);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [locationInput, setLocationInput] = useState("");
+  const [quantityInput, setQuantityInput] = useState("");
+  const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Refs
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const quantityInputRef = useRef<HTMLInputElement>(null);
+  
+  // Barcode Scanner Integration
+  const handleBarcodeScan = useCallback(async (scannedValue: string) => {
+    const uppercaseValue = scannedValue.toUpperCase();
+    setLocationInput(uppercaseValue);
+    
+    // Validate location format directly (no synthetic keyboard events)
+    if (!/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/.test(uppercaseValue)) {
+      await soundEffects.playErrorBeep();
+      setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      toast({
+        title: t('invalidLocationFormat'),
+        variant: "destructive",
+      });
+      setLocationInput("");
+      return;
+    }
+    
+    // Check for duplicates
+    const currentItem = items[selectedItemIndex];
+    if (currentItem?.locations.some(loc => loc.locationCode === uppercaseValue)) {
+      await soundEffects.playDuplicateBeep();
+      setScanFeedback({ type: 'duplicate', message: t('duplicateLocation') });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      toast({
+        title: t('duplicateLocation'),
+        variant: "destructive",
+      });
+      setLocationInput("");
+      return;
+    }
+    
+    // Determine location type based on prefix
+    let locationType: LocationAssignment['locationType'] = 'warehouse';
+    if (uppercaseValue.startsWith('DS')) locationType = 'display';
+    else if (uppercaseValue.startsWith('PL')) locationType = 'pallet';
+    
+    // Add new location to current item
+    const newLocation: LocationAssignment = {
+      id: `new-${Date.now()}`,
+      locationCode: uppercaseValue,
+      locationType,
+      quantity: 0,
+      isPrimary: currentItem?.locations.length === 0
+    };
+    
+    const updatedItems = [...items];
+    updatedItems[selectedItemIndex].locations.push(newLocation);
+    setItems(updatedItems);
+    
+    // Play success sound and show feedback
+    await soundEffects.playSuccessBeep();
+    setScanFeedback({ type: 'success', message: `Location scanned: ${uppercaseValue}` });
+    setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+    
+    setLocationInput("");
+    
+    // Auto-focus on quantity input
+    setTimeout(() => quantityInputRef.current?.focus(), 100);
+  }, [items, selectedItemIndex, toast, t]);
+  
+  const barcodeScanner = useBarcodeScanner({
+    onScan: handleBarcodeScan,
+    scanInterval: 500
+  });
+  
+  // Effect to manage barcode scanner lifecycle
+  useEffect(() => {
+    if (open && !isSubmitting && barcodeScanner.scanningEnabled) {
+      // Auto-start scanner when sheet opens (optional - user can manually start)
+      // barcodeScanner.startScanning();
+    }
+    
+    return () => {
+      // Stop scanner when sheet closes
+      if (barcodeScanner.isActive) {
+        barcodeScanner.stopScanning();
+      }
+    };
+  }, [open, isSubmitting, barcodeScanner]);
+  
+  // Fetch storage items data
+  const { data: receiptData, isLoading } = useQuery<any>({
+    queryKey: [`/api/imports/receipts/${shipment.id}/storage-items`],
+    enabled: !!shipment.id && open
+  });
+  
+  // Initialize items from receipt data - PRESERVE existing assignedQuantity and locations
+  useEffect(() => {
+    if (receiptData?.items) {
+      const storageItems: StorageItem[] = receiptData.items.map((item: any) => ({
+        receiptItemId: item.id,
+        productId: item.productId,
+        productName: item.productName || item.description || `Item #${item.id}`,
+        sku: item.sku,
+        barcode: item.barcode,
+        receivedQuantity: item.receivedQuantity || 0,
+        assignedQuantity: item.assignedQuantity || 0,
+        locations: item.locations || []
+      }));
+      setItems(storageItems);
+    }
+  }, [receiptData]);
+  
+  // Store location mutation
+  const storeLocationMutation = useMutation({
+    mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary }: {
+      productId: number;
+      locationCode: string;
+      locationType: string;
+      quantity: number;
+      isPrimary: boolean;
+    }) => {
+      return apiRequest(`/api/products/${productId}/locations`, {
+        method: 'POST',
+        body: JSON.stringify({ locationCode, locationType, quantity, isPrimary })
+      });
+    },
+    onSuccess: (data, variables) => {
+      // Force immediate refetch to sync cache and UI
+      queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/${shipment.id}/storage-items`] });
+      queryClient.refetchQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      
+      toast({
+        title: t('storedSuccessfully'),
+        description: `${variables.quantity} units stored at ${variables.locationCode}`,
+        duration: 2000
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: error instanceof Error ? error.message : 'Failed to save storage location',
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Calculate progress
+  const totalItems = items.length;
+  const completedItems = items.filter(item => 
+    item.assignedQuantity >= item.receivedQuantity
+  ).length;
+  const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+  
+  const currentItem = items[selectedItemIndex];
+  const remainingQuantity = currentItem ? 
+    currentItem.receivedQuantity - currentItem.assignedQuantity : 0;
+  
+  // Handle location scan
+  const handleLocationScan = async () => {
+    const trimmedValue = locationInput.trim().toUpperCase();
+    
+    if (!trimmedValue) return;
+    
+    // Validate location code format (e.g., WH1-A01-R02-L03)
+    const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
+    if (!locationPattern.test(trimmedValue)) {
+      await soundEffects.playErrorBeep();
+      setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      toast({
+        title: t('common:error'),
+        description: t('invalidLocationFormat'),
+        variant: "destructive",
+        duration: 3000
+      });
+      setLocationInput("");
+      return;
+    }
+    
+    // Check if location already added for this item
+    if (currentItem?.locations.some(loc => loc.locationCode === trimmedValue)) {
+      await soundEffects.playDuplicateBeep();
+      setScanFeedback({ type: 'duplicate', message: `Location already added: ${trimmedValue}` });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      setLocationInput("");
+      return;
+    }
+    
+    // Determine location type based on prefix
+    let locationType: LocationAssignment['locationType'] = 'warehouse';
+    if (trimmedValue.startsWith('DS')) locationType = 'display';
+    else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
+    
+    // Add new location to current item
+    const newLocation: LocationAssignment = {
+      id: `new-${Date.now()}`,
+      locationCode: trimmedValue,
+      locationType,
+      quantity: 0,
+      isPrimary: currentItem?.locations.length === 0
+    };
+    
+    const updatedItems = [...items];
+    updatedItems[selectedItemIndex].locations.push(newLocation);
+    setItems(updatedItems);
+    
+    // Play success sound and show feedback
+    await soundEffects.playSuccessBeep();
+    setScanFeedback({ type: 'success', message: `Location scanned: ${trimmedValue}` });
+    setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+    
+    setLocationInput("");
+    
+    // Auto-focus on quantity input
+    setTimeout(() => quantityInputRef.current?.focus(), 100);
+  };
+  
+  // Handle quantity assignment
+  const handleQuantityAssign = async (locationIndex: number) => {
+    if (!currentItem) return;
+    
+    // Harden quantity validation - trim and check for empty
+    const trimmedQuantity = quantityInput.trim();
+    if (!trimmedQuantity) {
+      await soundEffects.playErrorBeep();
+      toast({
+        title: t('common:error'),
+        description: t('pleaseEnterValidQuantity'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const qty = parseInt(trimmedQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      await soundEffects.playErrorBeep();
+      toast({
+        title: t('common:error'),
+        description: t('pleaseEnterValidQuantity'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const location = currentItem.locations[locationIndex];
+    
+    // Validate location format
+    if (!location.locationCode || !/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/.test(location.locationCode)) {
+      await soundEffects.playErrorBeep();
+      toast({
+        title: t('invalidLocationFormat'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const maxQuantity = currentItem.receivedQuantity - currentItem.assignedQuantity;
+    
+    // Validate quantity doesn't exceed remaining
+    if (qty > maxQuantity) {
+      await soundEffects.playErrorBeep();
+      toast({
+        title: t('common:error'),
+        description: t('quantityExceedsRemaining', { max: maxQuantity }),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const assignedQty = qty;
+    
+    // Call mutation FIRST, update state only on success
+    if (currentItem.productId) {
+      try {
+        await storeLocationMutation.mutateAsync({
+          productId: currentItem.productId,
+          locationCode: location.locationCode,
+          locationType: location.locationType,
+          quantity: assignedQty,
+          isPrimary: location.isPrimary
+        });
+        
+        // Only update local state after successful mutation
+        const updatedItems = [...items];
+        updatedItems[selectedItemIndex].locations[locationIndex].quantity = assignedQty;
+        updatedItems[selectedItemIndex].assignedQuantity += assignedQty;
+        setItems(updatedItems);
+        
+        await soundEffects.playSuccessBeep();
+        
+        // Auto-advance to next item if current item is complete
+        if (updatedItems[selectedItemIndex].assignedQuantity >= updatedItems[selectedItemIndex].receivedQuantity) {
+          if (selectedItemIndex < items.length - 1) {
+            setSelectedItemIndex(selectedItemIndex + 1);
+          }
+        }
+        
+        setQuantityInput("");
+        locationInputRef.current?.focus();
+      } catch (error) {
+        await soundEffects.playErrorBeep();
+        // State never changed, so no rollback needed
+        // Error toast is handled by mutation's onError
+      }
+    }
+  };
+  
+  // Handle remove location
+  const handleRemoveLocation = (locationIndex: number) => {
+    const updatedItems = [...items];
+    const location = updatedItems[selectedItemIndex].locations[locationIndex];
+    
+    updatedItems[selectedItemIndex].assignedQuantity -= location.quantity;
+    updatedItems[selectedItemIndex].locations.splice(locationIndex, 1);
+    
+    // If removed primary, make first location primary
+    if (location.isPrimary && updatedItems[selectedItemIndex].locations.length > 0) {
+      updatedItems[selectedItemIndex].locations[0].isPrimary = true;
+    }
+    
+    setItems(updatedItems);
+  };
+  
+  // Handle complete
+  const handleComplete = () => {
+    toast({
+      title: t('storageComplete'),
+      description: `${completedItems}/${totalItems} items stored`,
+    });
+    onOpenChange(false);
+  };
+  
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent 
+        side="bottom" 
+        className="h-[95vh] p-0 flex flex-col"
+        data-testid="sheet-quick-storage"
+      >
+        <SheetHeader className="p-4 border-b">
+          <SheetTitle className="flex items-center gap-2">
+            <Warehouse className="h-5 w-5 text-amber-600" />
+            {t('quickStorage')}
+          </SheetTitle>
+          <SheetDescription>
+            {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
+          </SheetDescription>
+        </SheetHeader>
+        
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Progress bar */}
+            <div className="p-4 border-b space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  {completedItems}/{totalItems} {t('itemsCompleted')}
+                </span>
+                <span className="text-muted-foreground">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+            
+            {/* Item selector */}
+            {items.length > 0 && (
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-4">
+                  {/* Current item */}
+                  <Card className="border-2 border-amber-500">
+                    <CardHeader className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <CardTitle className="text-base">
+                            {currentItem.productName}
+                          </CardTitle>
+                          {currentItem.sku && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              SKU: {currentItem.sku}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={remainingQuantity === 0 ? "success" : "secondary"}>
+                          {currentItem.assignedQuantity}/{currentItem.receivedQuantity}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-3 pt-0 space-y-3">
+                      {/* Scan feedback */}
+                      {scanFeedback.type && (
+                        <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+                      )}
+                      
+                      {/* Remaining quantity */}
+                      {remainingQuantity > 0 && (
+                        <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded">
+                          <Package className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm font-medium">
+                            {remainingQuantity} {t('remainingUnits')}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Assigned locations */}
+                      {currentItem.locations.length > 0 && (
+                        <div className="space-y-2">
+                          {currentItem.locations.map((location, idx) => (
+                            <div 
+                              key={location.id}
+                              className="flex items-center gap-2 p-2 bg-muted rounded"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  {location.isPrimary && (
+                                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                                  )}
+                                  <span className="font-mono text-sm font-medium">
+                                    {location.locationCode}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  {location.quantity > 0 ? `${location.quantity} units` : t('assignQuantity')}
+                                </div>
+                              </div>
+                              {location.quantity === 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    ref={idx === currentItem.locations.length - 1 ? quantityInputRef : undefined}
+                                    type="number"
+                                    value={quantityInput}
+                                    onChange={(e) => setQuantityInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleQuantityAssign(idx);
+                                      }
+                                    }}
+                                    placeholder="Qty"
+                                    className="w-20 h-9 text-center"
+                                    min="1"
+                                    max={remainingQuantity}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleQuantityAssign(idx)}
+                                    disabled={!quantityInput || parseInt(quantityInput) <= 0}
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveLocation(idx)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Other items */}
+                  {items.filter((_, idx) => idx !== selectedItemIndex).map((item, idx) => {
+                    const actualIdx = idx >= selectedItemIndex ? idx + 1 : idx;
+                    const isComplete = item.assignedQuantity >= item.receivedQuantity;
+                    
+                    return (
+                      <Card 
+                        key={item.receiptItemId}
+                        className="cursor-pointer hover:border-amber-300 transition-colors"
+                        onClick={() => setSelectedItemIndex(actualIdx)}
+                      >
+                        <CardHeader className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {item.productName}
+                              </p>
+                              {item.sku && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  SKU: {item.sku}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant={isComplete ? "success" : "secondary"}>
+                              {item.assignedQuantity}/{item.receivedQuantity}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+            
+            {/* Sticky bottom input */}
+            <div className="border-t bg-background p-4 space-y-3">
+              {/* Camera scanner UI - Only show if scanning is enabled in settings */}
+              {barcodeScanner.scanningEnabled ? (
+                <div className="space-y-2">
+                  {barcodeScanner.isActive && (
+                    <div className="relative rounded-lg overflow-hidden bg-black">
+                      <video
+                        ref={barcodeScanner.videoRef}
+                        className="w-full h-48 object-cover"
+                        playsInline
+                        muted
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge className="bg-green-500 text-white">
+                          <Camera className="h-3 w-3 mr-1" />
+                          {t('scanning')}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button
+                    variant={barcodeScanner.isActive ? "destructive" : "secondary"}
+                    size="sm"
+                    onClick={() => {
+                      if (barcodeScanner.isActive) {
+                        barcodeScanner.stopScanning();
+                      } else {
+                        barcodeScanner.startScanning();
+                      }
+                    }}
+                    className="w-full"
+                    disabled={!currentItem || remainingQuantity === 0}
+                  >
+                    {barcodeScanner.isActive ? (
+                      <>
+                        <CameraOff className="h-4 w-4 mr-2" />
+                        {t('stopCamera')}
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4 mr-2" />
+                        {t('startCamera')}
+                      </>
+                    )}
+                  </Button>
+                  
+                  {barcodeScanner.error && (
+                    <div className="text-sm text-destructive p-2 bg-destructive/10 rounded">
+                      {barcodeScanner.error}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-muted/30 rounded-lg text-center text-sm text-muted-foreground">
+                  {t('barcodeScanningDisabled')}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="location-input" className="text-sm font-medium">
+                  <ScanLine className="h-4 w-4 inline mr-1" />
+                  {t('scanLocation')}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="location-input"
+                    ref={locationInputRef}
+                    value={locationInput}
+                    onChange={(e) => setLocationInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleLocationScan();
+                      }
+                    }}
+                    placeholder="WH1-A01-R02-L03"
+                    className="flex-1 h-12 text-base font-mono"
+                    autoFocus
+                    disabled={!currentItem || remainingQuantity === 0}
+                    data-testid="input-location-scan"
+                  />
+                  <Button
+                    size="lg"
+                    onClick={handleLocationScan}
+                    disabled={!locationInput || !currentItem || remainingQuantity === 0}
+                    className="h-12 px-6"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+              
+              <Button
+                size="lg"
+                className="w-full h-12 bg-green-600 hover:bg-green-700"
+                onClick={handleComplete}
+                disabled={completedItems < totalItems}
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                {t('common:complete')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function StorageShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showQuickStorage, setShowQuickStorage] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
 
@@ -1254,15 +1911,21 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
             <Button
               size="lg"
               className="w-full h-12 text-base bg-amber-600 hover:bg-amber-700"
-              onClick={() => navigate('/storage')}
+              onClick={() => setShowQuickStorage(true)}
               data-testid={`button-go-to-storage-${shipment.id}`}
             >
               <Warehouse className="h-5 w-5 mr-2" />
-              {t('goToStorage')}
+              {t('quickStorage')}
             </Button>
           </div>
         </CardContent>
       )}
+      
+      <QuickStorageSheet
+        shipment={shipment}
+        open={showQuickStorage}
+        onOpenChange={setShowQuickStorage}
+      />
     </Card>
   );
 }

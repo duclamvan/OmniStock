@@ -206,6 +206,8 @@ const imports = {
   missingInformation: 'Thiếu thông tin',
   fillRequiredFields: 'Vui lòng điền đầy đủ các trường bắt buộc của sản phẩm.',
   noItems: 'Chưa có sản phẩm',
+  pleaseEnterValidQuantity: 'Vui lòng nhập số lượng hợp lệ lớn hơn 0',
+  quantityExceedsRemaining: 'Số lượng không thể vượt quá {{max}} đơn vị còn lại',
 
   // Empty States
   noImportOrders: 'Chưa có đơn nhập hàng',
@@ -1187,6 +1189,15 @@ const imports = {
   toReceive: 'Cần nhận',
   inProgressReceiving: 'Đang tiến hành',
   storage: 'Lưu kho',
+  quickStorage: 'Lưu kho nhanh',
+  scanLocation: 'Quét vị trí lưu kho',
+  assignQuantity: 'Gán số lượng',
+  remainingUnits: 'Đơn vị còn lại',
+  storedSuccessfully: 'Đã lưu kho thành công',
+  storageComplete: 'Hoàn tất lưu kho',
+  invalidLocationFormat: 'Định dạng vị trí không hợp lệ',
+  duplicateLocation: 'Vị trí này đã được gán',
+  barcodeScanningDisabled: 'Quét mã vạch đã bị tắt trong cài đặt',
   recentArrivals: '{{count}} Hàng mới về',
   goodsApprovedInLast7Days: 'Hàng đã được duyệt trong 7 ngày qua',
   
