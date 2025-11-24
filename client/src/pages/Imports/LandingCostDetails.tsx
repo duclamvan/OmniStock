@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, 
   Package, 
@@ -19,7 +20,8 @@ import {
   DollarSign,
   Save,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  PackagePlus
 } from "lucide-react";
 import { format } from "date-fns";
 import CostsPanel from "@/components/receiving/CostsPanel";
@@ -93,6 +95,7 @@ interface Product {
   name: string;
   price: string;
   purchasePrice: string;
+  quantity: string;
 }
 
 interface PriceUpdate {
@@ -107,6 +110,7 @@ export default function LandingCostDetails() {
   const { id } = useParams();
   const { toast } = useToast();
   const [priceUpdates, setPriceUpdates] = useState<Record<string, PriceUpdate>>({});
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery<Shipment>({
@@ -174,6 +178,66 @@ export default function LandingCostDetails() {
     }
   });
 
+  // Add to inventory mutation
+  const addToInventoryMutation = useMutation({
+    mutationFn: async (items: LandingCostItem[]) => {
+      const responses = await Promise.all(
+        items.map(async (item) => {
+          const product = productsBySKU[item.sku];
+          const priceUpdate = priceUpdates[item.sku];
+          
+          if (product) {
+            // Update existing product: add quantity, update landing cost
+            const response = await fetch(`/api/products/${product.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                quantity: (parseInt(product.quantity) || 0) + item.quantity,
+                landingCost: item.landingCostPerUnit.toString(),
+                price: priceUpdate?.priceEUR?.toString() || product.price
+              })
+            });
+            if (!response.ok) throw new Error('Failed to update product');
+            return response.json();
+          } else {
+            // Create new product
+            const response = await fetch('/api/products', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: item.name,
+                sku: item.sku,
+                quantity: item.quantity,
+                landingCost: item.landingCostPerUnit.toString(),
+                price: priceUpdate?.priceEUR?.toString() || (item.landingCostPerUnit * 1.5).toString(),
+                category: 'Imported',
+                description: `Imported from shipment with landing cost calculated`
+              })
+            });
+            if (!response.ok) throw new Error('Failed to create product');
+            return response.json();
+          }
+        })
+      );
+      return responses;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: t('success'),
+        description: `${data.length} items added/updated in inventory`,
+      });
+      setSelectedItems(new Set());
+    },
+    onError: (error) => {
+      toast({
+        title: t('error'),
+        description: error instanceof Error ? error.message : 'Failed to add items to inventory',
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle price change
   const handlePriceChange = (sku: string, productId: number, currency: 'EUR' | 'CZK', value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -215,6 +279,19 @@ export default function LandingCostDetails() {
       return;
     }
     savePricesMutation.mutate(updates);
+  };
+
+  // Handle add selected to inventory
+  const handleAddSelectedToInventory = () => {
+    if (!landingCostPreview) return;
+    const itemsToAdd = landingCostPreview.items.filter(item => selectedItems.has(item.sku));
+    addToInventoryMutation.mutate(itemsToAdd);
+  };
+
+  // Handle add all to inventory
+  const handleAddAllToInventory = () => {
+    if (!landingCostPreview) return;
+    addToInventoryMutation.mutate(landingCostPreview.items);
   };
 
   if (isLoading || !shipment) {
@@ -339,25 +416,73 @@ export default function LandingCostDetails() {
       {landingCostPreview && landingCostPreview.items && landingCostPreview.items.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  {t('landedCostPerItem')} ({landingCostPreview.items.length})
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {t('viewLandedCostsSetPrices')}
-                </CardDescription>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={
+                        landingCostPreview.items.filter(item => !productsBySKU[item.sku]).length > 0 &&
+                        landingCostPreview.items.filter(item => !productsBySKU[item.sku]).every(item => selectedItems.has(item.sku))
+                      }
+                      onCheckedChange={(checked) => {
+                        const newSelected = new Set<string>();
+                        if (checked) {
+                          landingCostPreview.items.forEach(item => {
+                            if (!productsBySKU[item.sku]) {
+                              newSelected.add(item.sku);
+                            }
+                          });
+                        }
+                        setSelectedItems(newSelected);
+                      }}
+                      data-testid="checkbox-select-all"
+                    />
+                    <Label className="text-xs cursor-pointer">Select All</Label>
+                  </div>
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      {t('landedCostPerItem')} ({landingCostPreview.items.length})
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {t('viewLandedCostsSetPrices')}
+                    </CardDescription>
+                  </div>
+                </div>
               </div>
-              <Button
-                size="sm"
-                onClick={handleSavePrices}
-                disabled={Object.keys(priceUpdates).length === 0 || savePricesMutation.isPending}
-                data-testid="button-save-prices"
-              >
-                <Save className="h-3.5 w-3.5 mr-1.5" />
-                {savePricesMutation.isPending ? t('saving') : t('savePrices')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddSelectedToInventory}
+                  disabled={selectedItems.size === 0 || addToInventoryMutation.isPending}
+                  data-testid="button-add-selected"
+                >
+                  <Package className="h-3.5 w-3.5 mr-1.5" />
+                  Add Selected to Inventory ({selectedItems.size})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddAllToInventory}
+                  disabled={landingCostPreview.items.length === 0 || addToInventoryMutation.isPending}
+                  data-testid="button-add-all"
+                >
+                  <PackagePlus className="h-3.5 w-3.5 mr-1.5" />
+                  Add All to Inventory
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSavePrices}
+                  disabled={Object.keys(priceUpdates).length === 0 || savePricesMutation.isPending}
+                  data-testid="button-save-prices"
+                  className="ml-auto"
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  {savePricesMutation.isPending ? t('saving') : t('savePrices')}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -387,7 +512,22 @@ export default function LandingCostDetails() {
                       data-testid={`item-${item.sku}`}
                     >
                       {/* Product Header */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start gap-3 mb-3">
+                        <Checkbox
+                          checked={selectedItems.has(item.sku)}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedItems);
+                            if (checked) {
+                              newSelected.add(item.sku);
+                            } else {
+                              newSelected.delete(item.sku);
+                            }
+                            setSelectedItems(newSelected);
+                          }}
+                          disabled={!!product}
+                          data-testid={`checkbox-item-${item.sku}`}
+                          className="mt-1"
+                        />
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">{item.name}</h4>
                           <div className="flex items-center gap-3 mt-1">
@@ -397,10 +537,14 @@ export default function LandingCostDetails() {
                             <span className="text-xs text-muted-foreground">
                               {t('quantity')}: <strong>{item.quantity}</strong>
                             </span>
-                            {!product && (
+                            {!product ? (
                               <Badge variant="secondary" className="text-xs">
                                 <AlertCircle className="h-3 w-3 mr-1" />
                                 {t('notInInventory')}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400">
+                                In Inventory
                               </Badge>
                             )}
                           </div>
