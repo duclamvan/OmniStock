@@ -150,12 +150,6 @@ const navigation: NavItem[] = [
     namespace: "warehouse"
   },
   {
-    labelKey: "itemsToStore",
-    href: "/receiving/storage",
-    icon: PackageCheck,
-    namespace: "warehouse"
-  },
-  {
     labelKey: "employees",
     href: "/employees",
     icon: Users,
