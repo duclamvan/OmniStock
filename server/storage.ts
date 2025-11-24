@@ -52,8 +52,11 @@ import {
   receipts,
   notifications,
   activityLog,
+  invoices,
   type User,
   type InsertUser,
+  type Invoice,
+  type InsertInvoice,
   type ActivityLog,
   type InsertActivityLog,
   type Employee,
@@ -642,6 +645,15 @@ export interface IStorage {
   createAppSetting(data: InsertAppSetting): Promise<AppSetting>;
   updateAppSetting(key: string, data: Partial<InsertAppSetting>): Promise<AppSetting>;
   deleteAppSetting(key: string): Promise<void>;
+
+  // Invoices
+  getInvoices(): Promise<Invoice[]>;
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined>;
+  getInvoicesByOrderId(orderId: string): Promise<Invoice[]>;
+  createInvoice(data: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<Invoice>;
+  deleteInvoice(id: number): Promise<void>;
 
   // Analytics & Reports
   getDeadStockProducts(daysSinceLastSale: number): Promise<Product[]>;
@@ -5698,6 +5710,105 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error deleting app setting with key ${key}:`, error);
       throw new Error(`Failed to delete app setting with key: ${key}`);
+    }
+  }
+
+  // Invoices
+  async getInvoices(): Promise<Invoice[]> {
+    try {
+      return await db
+        .select()
+        .from(invoices)
+        .orderBy(desc(invoices.createdAt));
+    } catch (error) {
+      console.error('Error getting invoices:', error);
+      throw new Error('Failed to retrieve invoices');
+    }
+  }
+
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    try {
+      const [invoice] = await db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.id, id));
+      return invoice || undefined;
+    } catch (error) {
+      console.error(`Error getting invoice with id ${id}:`, error);
+      throw new Error(`Failed to retrieve invoice with id: ${id}`);
+    }
+  }
+
+  async getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined> {
+    try {
+      const [invoice] = await db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.invoiceNumber, invoiceNumber));
+      return invoice || undefined;
+    } catch (error) {
+      console.error(`Error getting invoice with number ${invoiceNumber}:`, error);
+      throw new Error(`Failed to retrieve invoice with number: ${invoiceNumber}`);
+    }
+  }
+
+  async getInvoicesByOrderId(orderId: string): Promise<Invoice[]> {
+    try {
+      return await db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.orderId, orderId))
+        .orderBy(desc(invoices.createdAt));
+    } catch (error) {
+      console.error(`Error getting invoices for order ${orderId}:`, error);
+      throw new Error(`Failed to retrieve invoices for order: ${orderId}`);
+    }
+  }
+
+  async createInvoice(data: InsertInvoice): Promise<Invoice> {
+    try {
+      const [invoice] = await db
+        .insert(invoices)
+        .values({ ...data, updatedAt: new Date() })
+        .returning();
+      return invoice;
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      throw new Error('Failed to create invoice');
+    }
+  }
+
+  async updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<Invoice> {
+    try {
+      const [updated] = await db
+        .update(invoices)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(invoices.id, id))
+        .returning();
+
+      if (!updated) {
+        throw new Error(`Invoice with id ${id} not found`);
+      }
+
+      return updated;
+    } catch (error) {
+      console.error(`Error updating invoice with id ${id}:`, error);
+      throw new Error(`Failed to update invoice with id: ${id}`);
+    }
+  }
+
+  async deleteInvoice(id: number): Promise<void> {
+    try {
+      const result = await db
+        .delete(invoices)
+        .where(eq(invoices.id, id));
+
+      if ((result.rowCount ?? 0) === 0) {
+        throw new Error(`Invoice with id ${id} not found`);
+      }
+    } catch (error) {
+      console.error(`Error deleting invoice with id ${id}:`, error);
+      throw new Error(`Failed to delete invoice with id: ${id}`);
     }
   }
 

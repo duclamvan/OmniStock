@@ -10813,86 +10813,6 @@ Important:
     }
   });
 
-  // ============================================================================
-  // APP SETTINGS ROUTES
-  // ============================================================================
-
-  // Get a setting by key
-  app.get('/api/settings/:key', isAuthenticated, async (req, res) => {
-    try {
-      const { key } = req.params;
-      const { appSettings } = await import('@shared/schema');
-
-      const setting = await db
-        .select()
-        .from(appSettings)
-        .where(eq(appSettings.key, key))
-        .limit(1);
-
-      if (setting.length === 0) {
-        return res.status(404).json({ error: 'Setting not found' });
-      }
-
-      res.json(setting[0]);
-    } catch (error: any) {
-      console.error('Error fetching setting:', error);
-      res.status(500).json({ error: error.message || 'Failed to fetch setting' });
-    }
-  });
-
-  // Save or update a setting
-  app.post('/api/settings', isAuthenticated, async (req, res) => {
-    try {
-      const { key, value, category, description } = req.body;
-      const { appSettings } = await import('@shared/schema');
-
-      if (!key || value === undefined) {
-        return res.status(400).json({ error: 'Key and value are required' });
-      }
-
-      // Check if setting exists
-      const existing = await db
-        .select()
-        .from(appSettings)
-        .where(eq(appSettings.key, key))
-        .limit(1);
-
-      let result;
-      if (existing.length > 0) {
-        // Update existing setting
-        result = await db
-          .update(appSettings)
-          .set({
-            value,
-            category: category || existing[0].category,
-            description: description || existing[0].description,
-            updatedAt: new Date(),
-            updatedBy: (req as any).user?.id || null
-          })
-          .where(eq(appSettings.key, key))
-          .returning();
-      } else {
-        // Insert new setting
-        result = await db
-          .insert(appSettings)
-          .values({
-            key,
-            value,
-            category: category || 'general',
-            description: description || null,
-            updatedAt: new Date(),
-            updatedBy: (req as any).user?.id || null
-          })
-          .returning();
-      }
-
-      res.json(result[0]);
-    } catch (error: any) {
-      console.error('Error saving setting:', error);
-      res.status(500).json({ error: error.message || 'Failed to save setting' });
-    }
-  });
-
   // Get packing materials for an order
   // Get all files and documents for an order
   app.get('/api/orders/:orderId/files', isAuthenticated, async (req, res) => {
@@ -12390,6 +12310,70 @@ Important:
     }
   });
 
+  // ============================================================================
+  // POS SETTINGS ROUTES (must be before /api/settings/:key to avoid route conflict)
+  // ============================================================================
+
+  // Get POS-specific settings with default values
+  app.get('/api/settings/pos', isAuthenticated, async (req, res) => {
+    try {
+      const posSettings = await getSettingsByCategory('pos');
+      
+      // Define default POS settings
+      const defaults = {
+        defaultWarehouseId: null,
+        defaultDiscountRate: null,
+        enableInvoiceButton: true,
+        enableBankTransfer: true,
+      };
+
+      // Merge stored settings with defaults (stored settings take precedence)
+      const settingsWithDefaults = { ...defaults, ...posSettings };
+      
+      res.json(settingsWithDefaults);
+    } catch (error) {
+      console.error('Error fetching POS settings:', error);
+      res.status(500).json({ message: 'Failed to fetch POS settings' });
+    }
+  });
+
+  // Update POS settings
+  app.post('/api/settings/pos', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const settings = req.body;
+
+      // Process each setting and update/create
+      const results = [];
+      for (const [key, value] of Object.entries(settings)) {
+        const existing = await storage.getAppSettingByKey(key);
+        
+        if (existing) {
+          const updated = await storage.updateAppSetting(key, {
+            value: typeof value === 'string' ? value : JSON.stringify(value),
+            category: 'pos'
+          });
+          results.push(updated);
+        } else {
+          const created = await storage.createAppSetting({
+            key,
+            value: typeof value === 'string' ? value : JSON.stringify(value),
+            category: 'pos'
+          });
+          results.push(created);
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error updating POS settings:', error);
+      res.status(500).json({ message: 'Failed to update POS settings' });
+    }
+  });
+
+  // ============================================================================
+  // GENERIC SETTINGS ROUTES (must be after specific routes like /api/settings/pos)
+  // ============================================================================
+
   app.get('/api/settings/:key', isAuthenticated, async (req, res) => {
     try {
       const { key } = req.params;
@@ -12463,6 +12447,77 @@ Important:
     } catch (error) {
       console.error('Error deleting app setting:', error);
       res.status(500).json({ message: 'Failed to delete app setting' });
+    }
+  });
+
+  // ============================================================================
+  // INVOICE ROUTES
+  // ============================================================================
+
+  // Create invoice
+  app.post('/api/invoices', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { insertInvoiceSchema } = await import('@shared/schema');
+      const data = insertInvoiceSchema.parse(req.body);
+
+      // Generate invoice number if not provided
+      if (!data.invoiceNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        data.invoiceNumber = `INV-${timestamp}-${randomSuffix}`;
+      }
+
+      const invoice = await storage.createInvoice(data);
+      res.status(201).json(invoice);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: error.errors 
+        });
+      }
+      console.error('Error creating invoice:', error);
+      res.status(500).json({ message: 'Failed to create invoice' });
+    }
+  });
+
+  // Get all invoices
+  app.get('/api/invoices', isAuthenticated, async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      res.status(500).json({ message: 'Failed to fetch invoices' });
+    }
+  });
+
+  // Get invoice by ID
+  app.get('/api/invoices/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const invoice = await storage.getInvoice(id);
+
+      if (!invoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+
+      res.json(invoice);
+    } catch (error) {
+      console.error('Error fetching invoice:', error);
+      res.status(500).json({ message: 'Failed to fetch invoice' });
+    }
+  });
+
+  // Get invoices for an order
+  app.get('/api/invoices/order/:orderId', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const invoices = await storage.getInvoicesByOrderId(orderId);
+      res.json(invoices);
+    } catch (error) {
+      console.error('Error fetching invoices for order:', error);
+      res.status(500).json({ message: 'Failed to fetch invoices' });
     }
   });
 

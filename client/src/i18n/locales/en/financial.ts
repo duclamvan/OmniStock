@@ -193,6 +193,12 @@ const financial = {
   unit: 'Unit',
   completeSale: 'Complete Sale',
   checkout: 'Checkout',
+  posSettings: 'POS Settings',
+  selectPaymentMethod: 'Select Payment Method',
+  paymentMethodRequired: 'Payment method is required',
+  invoiceGeneratedSuccessfully: 'Invoice generated successfully',
+  failedToGenerateInvoice: 'Failed to generate invoice',
+  sku: 'SKU',
   
   // Services
   services: 'Services',

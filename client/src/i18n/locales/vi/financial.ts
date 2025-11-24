@@ -193,6 +193,12 @@ const financial = {
   unit: 'Đơn vị',
   completeSale: 'Hoàn tất bán',
   checkout: 'Thanh toán',
+  posSettings: 'Cài đặt POS',
+  selectPaymentMethod: 'Chọn phương thức thanh toán',
+  paymentMethodRequired: 'Yêu cầu phương thức thanh toán',
+  invoiceGeneratedSuccessfully: 'Tạo hóa đơn thành công',
+  failedToGenerateInvoice: 'Tạo hóa đơn thất bại',
+  sku: 'SKU',
   
   // Services
   services: 'Dịch vụ',

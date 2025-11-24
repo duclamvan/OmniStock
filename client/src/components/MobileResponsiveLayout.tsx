@@ -74,6 +74,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
+  layoutWidth?: 'default' | 'full';
 }
 
 // Defensive helpers for localStorage with error handling and type validation
@@ -171,7 +172,7 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
   }
 }
 
-export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
+export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const { user, isAdministrator, isWarehouseOperator } = useAuth();
   const { t, i18n } = useTranslation();
@@ -1271,7 +1272,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         )}
 
         <div className={cn(
-          "px-mobile py-mobile max-w-7xl mx-auto"
+          "px-mobile py-mobile mx-auto",
+          layoutWidth === 'full' ? 'max-w-full' : 'max-w-7xl'
         )}>
           {children}
         </div>

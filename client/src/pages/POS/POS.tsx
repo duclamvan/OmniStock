@@ -14,7 +14,9 @@ import {
   Search,
   Package,
   Check,
-  X
+  X,
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product } from '@shared/schema';
+import { insertInvoiceSchema } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from 'react-i18next';
 
@@ -46,9 +49,11 @@ export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'bank_transfer'>('cash');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(() => {
     return localStorage.getItem('pos_warehouse') || '';
   });
+  const [lastSaleId, setLastSaleId] = useState<string | null>(null);
 
   // Fetch products
   const { data: products = [] } = useQuery<Product[]>({
@@ -76,7 +81,7 @@ export default function POS() {
   });
 
   // Fetch warehouses
-  const { data: warehouses = [] } = useQuery({
+  const warehousesQuery = useQuery({
     queryKey: ['/api/warehouses'],
     queryFn: async () => {
       const response = await fetch('/api/warehouses');
@@ -84,6 +89,20 @@ export default function POS() {
       return response.json();
     },
   });
+  const warehouses = warehousesQuery.data || [];
+
+  // Fetch POS settings (returns object with defaults)
+  const posSettingsQuery = useQuery({
+    queryKey: ['/api/settings/pos'],
+    queryFn: async () => {
+      const response = await fetch('/api/settings/pos');
+      if (!response.ok) {
+        throw new Error('Failed to fetch POS settings');
+      }
+      return response.json();
+    },
+  });
+  const posSettings = posSettingsQuery.data;
 
   // Combine products, variants, and bundles
   const allItems = [
@@ -123,15 +142,24 @@ export default function POS() {
 
   const displayProducts = searchResults.map(r => r.item);
 
-  // Auto-select first warehouse
+  // Auto-select warehouse from POS settings or first warehouse (with deterministic fallback)
+  // Wait for BOTH queries to complete before attempting auto-selection
   useEffect(() => {
-    if (warehouses && Array.isArray(warehouses) && warehouses.length > 0 && !selectedWarehouse) {
-      const firstWarehouse = warehouses[0];
-      if (firstWarehouse && firstWarehouse.id) {
-        setSelectedWarehouse(firstWarehouse.id);
-      }
+    // Skip if either query is still loading
+    if (posSettingsQuery.isLoading || warehousesQuery.isLoading) return;
+    
+    // Skip if warehouses data is not available yet
+    if (!warehouses || warehouses.length === 0) return;
+    
+    // Auto-select warehouse only if none is currently selected
+    if (!selectedWarehouse) {
+      const defaultId = posSettings?.defaultWarehouseId;
+      const warehouseToSelect = defaultId 
+        ? warehouses.find((w: any) => w.id === defaultId) || warehouses[0]
+        : warehouses[0];
+      setSelectedWarehouse(warehouseToSelect.id);
     }
-  }, [warehouses, selectedWarehouse]);
+  }, [posSettings, posSettingsQuery.isLoading, warehousesQuery.isLoading, selectedWarehouse, warehouses]);
 
   // Save warehouse to localStorage
   useEffect(() => {
@@ -139,6 +167,33 @@ export default function POS() {
       localStorage.setItem('pos_warehouse', selectedWarehouse);
     }
   }, [selectedWarehouse]);
+
+  // Recalculate cart prices when currency changes to maintain currency-specific totals
+  useEffect(() => {
+    if (cart.length === 0) return;
+
+    // Update all cart item prices based on new currency
+    setCart(prevCart => prevCart.map(cartItem => {
+      // Find the original item in allItems
+      const originalItem = allItems.find(item => 
+        item.id === cartItem.id && 
+        (item.itemType || 'product') === cartItem.type
+      );
+
+      if (!originalItem) return cartItem;
+
+      // Get the price for the current currency
+      const newPrice = currency === 'EUR' 
+        ? parseFloat(originalItem.priceEur || '0') 
+        : parseFloat(originalItem.priceCzk || '0');
+
+      // Return updated cart item with new price
+      return {
+        ...cartItem,
+        price: newPrice
+      };
+    }));
+  }, [currency]); // Only run when currency changes
 
   // Add to cart
   const addToCart = (item: any) => {
@@ -221,12 +276,12 @@ export default function POS() {
           variantId: item.variantId,
           bundleId: item.bundleId,
           quantity: item.quantity,
-          price: item.price.toString(),
+          price: item.price.toFixed(2),
         })),
-        subtotal: subtotal.toString(),
-        total: total.toString(),
-        grandTotal: total.toString(),
-        paymentMethod: 'cash',
+        subtotal: subtotal.toFixed(2),
+        total: total.toFixed(2),
+        grandTotal: total.toFixed(2),
+        paymentMethod: paymentMethod,
         fulfillmentStage: 'completed',
         customerEmail: 'walkin@pos.local',
         customerName: t('financial:walkInCustomer'),
@@ -235,11 +290,12 @@ export default function POS() {
 
       return await apiRequest('POST', '/api/orders', orderData);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
         title: t('common:success'),
         description: t('financial:saleCompletedSuccessfully'),
       });
+      setLastSaleId(data.id);
       clearCart();
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
@@ -247,6 +303,44 @@ export default function POS() {
       toast({
         title: t('common:error'),
         description: error.message || t('financial:failedToCompleteSale'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Generate invoice mutation with proper schema validation
+  const generateInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      if (!lastSaleId) {
+        throw new Error('No recent sale to generate invoice for');
+      }
+
+      // Prepare invoice data with proper fields from schema
+      // Status must be one of: 'draft', 'generated', 'sent'
+      // pdfUrl is optional and omitted here (will be generated server-side if needed)
+      const invoiceData = {
+        posSaleId: lastSaleId, // Use posSaleId for POS sales
+        status: 'generated' as const,
+        invoiceNumber: `INV-${Date.now()}`,
+      };
+
+      // Validate using insertInvoiceSchema before sending
+      const validatedData = insertInvoiceSchema.parse(invoiceData);
+
+      return await apiRequest('POST', '/api/invoices', validatedData);
+    },
+    onSuccess: () => {
+      toast({
+        title: t('common:success'),
+        description: t('financial:invoiceGeneratedSuccessfully'),
+      });
+      setLastSaleId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('financial:failedToGenerateInvoice'),
         variant: "destructive",
       });
     },
@@ -324,19 +418,19 @@ export default function POS() {
                     )}
                     
                     {/* Item Info & Controls */}
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-1.5">
                       {/* Product Name - Full Display */}
                       <div>
-                        <h4 className="font-semibold text-sm leading-tight break-words">{item.name}</h4>
+                        <h4 className="font-semibold text-xs leading-tight break-words">{item.name}</h4>
                         {item.sku && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{t('financial:sku')}: {item.sku}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{t('financial:sku')}: {item.sku}</p>
                         )}
                       </div>
 
                       {/* Price & Quantity Row */}
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center justify-between gap-2">
                         {/* Unit Price */}
-                        <div className="text-sm">
+                        <div className="text-xs">
                           <span className="text-muted-foreground">{t('financial:unit')}: </span>
                           <span className="font-semibold text-primary">
                             {currency} {item.price.toFixed(2)}
@@ -344,47 +438,47 @@ export default function POS() {
                         </div>
 
                         {/* Quantity Controls */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-6 w-6"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             data-testid={`button-decrease-${item.id}`}
                           >
-                            <Minus className="h-3 w-3" />
+                            <Minus className="h-2.5 w-2.5" />
                           </Button>
-                          <span className="font-bold min-w-[2.5rem] text-center text-base">
+                          <span className="font-bold min-w-[2rem] text-center text-sm">
                             {item.quantity}
                           </span>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-6 w-6"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             data-testid={`button-increase-${item.id}`}
                           >
-                            <Plus className="h-3 w-3" />
+                            <Plus className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       </div>
 
                       {/* Subtotal & Remove */}
-                      <div className="flex items-center justify-between pt-1.5 border-t">
-                        <div className="text-sm">
+                      <div className="flex items-center justify-between pt-1 border-t">
+                        <div className="text-xs">
                           <span className="text-muted-foreground">{t('financial:subtotal')}: </span>
-                          <span className="font-bold text-base text-primary">
+                          <span className="font-bold text-sm text-primary">
                             {currency} {(item.price * item.quantity).toFixed(2)}
                           </span>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 -mr-2"
+                          className="h-6 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 -mr-2"
                           onClick={() => removeFromCart(item.id)}
                           data-testid={`button-remove-${item.id}`}
                         >
-                          <X className="h-4 w-4 mr-1" />
+                          <X className="h-3 w-3 mr-0.5" />
                           {t('common:remove')}
                         </Button>
                       </div>
@@ -399,14 +493,30 @@ export default function POS() {
 
       {/* Total and Checkout */}
       {cart.length > 0 && (
-        <div className="pt-4 border-t space-y-3 mt-4">
-          <div className="flex items-center justify-between text-lg font-bold">
-            <span>{t('financial:total')}</span>
-            <span className="text-primary">{currency} {total.toFixed(2)}</span>
+        <div className="pt-3 border-t space-y-2 mt-3">
+          {/* Payment Method Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">{t('financial:selectPaymentMethod')}</label>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'cash' | 'card' | 'bank_transfer')}>
+              <SelectTrigger className="w-full h-9 text-sm" data-testid="select-payment-method">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">{t('financial:cash')}</SelectItem>
+                <SelectItem value="card">{t('financial:card')}</SelectItem>
+                <SelectItem value="bank_transfer">{t('financial:bankTransfer')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="flex items-center justify-between text-base font-bold pt-2">
+            <span className="text-sm">{t('financial:total')}</span>
+            <span className="text-primary text-lg">{currency} {total.toFixed(2)}</span>
+          </div>
+          
           <Button
             size="lg"
-            className="w-full h-12"
+            className="w-full h-11"
             onClick={handleCheckout}
             disabled={createOrderMutation.isPending}
             data-testid="button-checkout"
@@ -415,11 +525,32 @@ export default function POS() {
               t('common:processing')
             ) : (
               <>
-                <Check className="mr-2 h-5 w-5" />
+                <Check className="mr-2 h-4 w-4" />
                 {t('financial:completeSale')}
               </>
             )}
           </Button>
+
+          {/* Invoice Generation Button */}
+          {lastSaleId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-9"
+              onClick={() => generateInvoiceMutation.mutate()}
+              disabled={generateInvoiceMutation.isPending}
+              data-testid="button-generate-invoice"
+            >
+              {generateInvoiceMutation.isPending ? (
+                t('common:processing')
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  {t('financial:generateInvoice')}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
     </>
@@ -434,10 +565,10 @@ export default function POS() {
           <div className="p-4 space-y-3">
             {/* Title and Currency */}
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold">{t('financial:pos')}</h1>
+              <h1 className="text-lg font-bold">{t('financial:pos')}</h1>
               <div className="flex items-center gap-2">
                 <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
-                  <SelectTrigger className="w-20 h-9 bg-primary-foreground text-primary border-0">
+                  <SelectTrigger className="w-16 h-8 bg-primary-foreground text-primary border-0 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -447,20 +578,6 @@ export default function POS() {
                 </Select>
               </div>
             </div>
-
-            {/* Warehouse Selection */}
-            <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-              <SelectTrigger className="w-full bg-primary-foreground text-primary border-0" data-testid="select-warehouse">
-                <SelectValue placeholder={t('common:selectWarehouse')} />
-              </SelectTrigger>
-              <SelectContent>
-                {warehouses.map((warehouse: any) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
             {/* Search */}
             <div className="relative">
@@ -478,8 +595,8 @@ export default function POS() {
 
         {/* Products Grid */}
         <ScrollArea className="flex-1">
-          <div className="p-3 pb-28 lg:pb-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
+          <div className="p-2 pb-28 lg:pb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-10 gap-1.5 sm:gap-2">
             {displayProducts.map((product: any) => {
               const cartItem = cart.find(item => item.id === product.id);
               const isInCart = !!cartItem;
@@ -500,45 +617,45 @@ export default function POS() {
                 >
                   {/* Type Badge */}
                   {product.itemType === 'variant' && (
-                    <div className="absolute top-1 left-1 bg-purple-600 text-white rounded px-1.5 py-0.5 text-[10px] font-semibold z-10">
+                    <div className="absolute top-0.5 left-0.5 bg-purple-600 text-white rounded px-1 py-0.5 text-[9px] font-semibold z-10">
                       V
                     </div>
                   )}
                   {product.itemType === 'bundle' && (
-                    <div className="absolute top-1 left-1 bg-orange-600 text-white rounded px-1.5 py-0.5 text-[10px] font-semibold z-10">
+                    <div className="absolute top-0.5 left-0.5 bg-orange-600 text-white rounded px-1 py-0.5 text-[9px] font-semibold z-10">
                       B
                     </div>
                   )}
 
                   {/* Quantity Badge */}
                   {isInCart && cartItem && (
-                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-10">
+                    <div className="absolute top-0.5 right-0.5 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold z-10">
                       {cartItem.quantity}
                     </div>
                   )}
                   
                   <CardContent className="p-0">
                     {/* Image */}
-                    <div className="relative h-20 sm:h-24 bg-muted/30 border-b">
+                    <div className="relative h-16 sm:h-20 bg-muted/30 border-b">
                       {product.imageUrl ? (
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
-                          className="w-full h-full object-contain p-1"
+                          className="w-full h-full object-contain p-0.5"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground/30" />
+                          <Package className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/30" />
                         </div>
                       )}
                     </div>
                     
                     {/* Details */}
-                    <div className="p-2 space-y-1">
-                      <h3 className="font-medium text-xs sm:text-sm leading-tight line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
+                    <div className="p-1.5 space-y-0.5">
+                      <h3 className="font-medium text-[10px] sm:text-xs leading-tight line-clamp-2 min-h-[1.5rem]">
                         {product.name}
                       </h3>
-                      <p className="text-sm sm:text-base font-bold text-primary">
+                      <p className="text-xs sm:text-sm font-bold text-primary">
                         {currency} {price.toFixed(2)}
                       </p>
                     </div>

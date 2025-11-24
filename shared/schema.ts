@@ -1880,6 +1880,31 @@ export const insertShipmentTrackingSchema = createInsertSchema(shipmentTracking)
 export type ShipmentTracking = typeof shipmentTracking.$inferSelect;
 export type InsertShipmentTracking = z.infer<typeof insertShipmentTrackingSchema>;
 
+// Invoices table - for POS and order invoice generation
+export const invoices = pgTable('invoices', {
+  id: serial('id').primaryKey(),
+  orderId: varchar('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+  posSaleId: varchar('pos_sale_id'), // For POS sales (references order.id where orderType='pos')
+  invoiceNumber: varchar('invoice_number', { length: 100 }).notNull().unique(),
+  pdfUrl: text('pdf_url'),
+  status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft', 'generated', 'sent'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices, {
+  status: z.enum(['draft', 'generated', 'sent']),
+  invoiceNumber: z.string().min(1, 'Invoice number is required'),
+  pdfUrl: z.string().url().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
 // Notifications table
 export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),
