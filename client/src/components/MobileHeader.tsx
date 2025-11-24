@@ -96,8 +96,19 @@ export function MobileHeader({
       const res = await apiRequest('POST', '/api/notifications/mark-all-read', {});
       return res.json();
     },
-    onSuccess: () => {
-      // Invalidate both queries to refresh the data
+    onSuccess: (data) => {
+      // Immediately update cache to show badge disappear instantly
+      queryClient.setQueryData(['/api/notifications/unread-count'], { count: 0 });
+      
+      // Also update the notifications list - mark all as read
+      const currentNotifications = queryClient.getQueryData<any[]>(['/api/notifications']);
+      if (currentNotifications) {
+        queryClient.setQueryData(['/api/notifications'], 
+          currentNotifications.map(notif => ({ ...notif, isRead: true }))
+        );
+      }
+      
+      // Then refetch to ensure data is in sync with server
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
     },
