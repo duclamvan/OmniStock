@@ -24,7 +24,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   labelKey: string;
@@ -311,7 +311,7 @@ export function Sidebar() {
                               }
                             }}
                           >
-                            <Link href={child.href}>
+                            <Link href={child.href!}>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -345,7 +345,7 @@ export function Sidebar() {
                   }
                 }}
               >
-                <Link href={item.href}>
+                <Link href={item.href!}>
                   <Button
                     variant="ghost"
                     className={cn(

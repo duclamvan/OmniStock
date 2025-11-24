@@ -690,6 +690,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
 // ============================================================================
 
 function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: string }) {
+  const { t } = useTranslation(['imports']);
   const { updateItemQuantity, removeItem, updateItemStatus } = useReceivingSession();
 
   const filteredItems = useMemo(() => {
@@ -827,6 +828,7 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
 // ============================================================================
 
 function ActionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { t } = useTranslation(['imports']);
   const { session, clearSession } = useReceivingSession();
   const { toast } = useToast();
 
@@ -900,6 +902,8 @@ function CameraViewOverlay({ videoRef, onClose, error }: {
   onClose: () => void;
   error: string | null;
 }) {
+  const { t } = useTranslation(['imports']);
+  
   return (
     <div className="fixed inset-0 z-50 bg-black">
       {/* Video Stream */}
@@ -1314,22 +1318,23 @@ function QuickStorageSheet({
     };
   }, [open, isSubmitting, barcodeScanner]);
   
-  // Fetch storage items data
+  // Fetch storage items data - use by-shipment endpoint to get receipt with items
   const { data: receiptData, isLoading } = useQuery<any>({
-    queryKey: [`/api/imports/receipts/${shipment.id}/storage-items`],
+    queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`],
     enabled: !!shipment.id && open
   });
   
   // Initialize items from receipt data - PRESERVE existing assignedQuantity and locations
   useEffect(() => {
-    if (receiptData?.items) {
-      const storageItems: StorageItem[] = receiptData.items.map((item: any) => ({
+    const items = receiptData?.shipment?.items || receiptData?.items;
+    if (items) {
+      const storageItems: StorageItem[] = items.map((item: any) => ({
         receiptItemId: item.id,
         productId: item.productId,
         productName: item.productName || item.description || `Item #${item.id}`,
         sku: item.sku,
         barcode: item.barcode,
-        receivedQuantity: item.receivedQuantity || 0,
+        receivedQuantity: item.receivedQuantity || item.quantity || 0,
         assignedQuantity: item.assignedQuantity || 0,
         locations: item.locations || []
       }));
@@ -1346,14 +1351,11 @@ function QuickStorageSheet({
       quantity: number;
       isPrimary: boolean;
     }) => {
-      return apiRequest(`/api/products/${productId}/locations`, {
-        method: 'POST',
-        body: JSON.stringify({ locationCode, locationType, quantity, isPrimary })
-      });
+      return apiRequest('POST', `/api/products/${productId}/locations`, { locationCode, locationType, quantity, isPrimary });
     },
     onSuccess: (data, variables) => {
       // Force immediate refetch to sync cache and UI
-      queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/${shipment.id}/storage-items`] });
+      queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
       queryClient.refetchQueries({ queryKey: ['/api/imports/shipments/storage'] });
       
       toast({
@@ -1611,7 +1613,7 @@ function QuickStorageSheet({
                             </p>
                           )}
                         </div>
-                        <Badge variant={remainingQuantity === 0 ? "success" : "secondary"}>
+                        <Badge variant={remainingQuantity === 0 ? "secondary" : "secondary"}>
                           {currentItem.assignedQuantity}/{currentItem.receivedQuantity}
                         </Badge>
                       </div>
@@ -1716,7 +1718,7 @@ function QuickStorageSheet({
                                 </p>
                               )}
                             </div>
-                            <Badge variant={isComplete ? "success" : "secondary"}>
+                            <Badge variant={isComplete ? "secondary" : "secondary"}>
                               {item.assignedQuantity}/{item.receivedQuantity}
                             </Badge>
                           </div>
