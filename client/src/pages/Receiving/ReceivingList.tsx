@@ -56,10 +56,15 @@ import {
   CheckSquare,
   Square,
   Star,
-  Save
+  Save,
+  ArrowUp,
+  ArrowDown,
+  QrCode,
+  Check
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { soundEffects } from "@/utils/soundEffects";
@@ -1200,17 +1205,82 @@ interface LocationAssignment {
   locationType: 'display' | 'warehouse' | 'pallet' | 'other';
   quantity: number;
   isPrimary: boolean;
+  notes?: string;
+  isNew?: boolean;
 }
 
 interface StorageItem {
   receiptItemId: number;
-  productId?: number;
+  productId?: number | string;
   productName: string;
   sku?: string;
   barcode?: string;
+  imageUrl?: string;
+  description?: string;
   receivedQuantity: number;
   assignedQuantity: number;
   locations: LocationAssignment[];
+  existingLocations: LocationAssignment[];
+}
+
+// Helper function to get suggested location from existing inventory
+function getSuggestedLocation(item: StorageItem): string | null {
+  if (item.existingLocations && item.existingLocations.length > 0) {
+    const primaryLoc = item.existingLocations.find(loc => loc.isPrimary);
+    if (primaryLoc) return primaryLoc.locationCode;
+    const sortedByQty = [...item.existingLocations].sort((a, b) => b.quantity - a.quantity);
+    if (sortedByQty.length > 0) return sortedByQty[0].locationCode;
+  }
+  return null;
+}
+
+// Generate AI location suggestion with fallback heuristics
+function generateSuggestedLocationWithAI(
+  item: StorageItem, 
+  aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>
+): string {
+  const key = item.productId || item.sku || item.productName;
+  if (aiSuggestions.has(key)) {
+    return aiSuggestions.get(key)!.location;
+  }
+  
+  // Fallback to heuristic-based suggestion
+  const seed = item.productId?.toString() || item.sku || item.productName || 'default';
+  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  const productNameLower = item.productName?.toLowerCase() || '';
+  
+  let aisleNumber = (hash % 6) + 1;
+  
+  if (productNameLower.includes('mask') || productNameLower.includes('medical')) {
+    aisleNumber = 20 + (hash % 3);
+  } else if (productNameLower.includes('electronic') || productNameLower.includes('phone')) {
+    aisleNumber = 15 + (hash % 3);
+  } else if (productNameLower.includes('clothing') || productNameLower.includes('shirt')) {
+    aisleNumber = 10 + (hash % 3);
+  } else if (productNameLower.includes('food') || productNameLower.includes('snack')) {
+    aisleNumber = 25 + (hash % 3);
+  } else if (productNameLower.includes('toy') || productNameLower.includes('game')) {
+    aisleNumber = 5 + (hash % 3);
+  } else if (productNameLower.includes('book') || productNameLower.includes('paper')) {
+    aisleNumber = 28 + (hash % 2);
+  }
+  
+  const aisle = `A${String(aisleNumber).padStart(2, '0')}`;
+  const rack = `R${String((hash % 8) + 1).padStart(2, '0')}`;
+  const level = `L${String((hash % 4) + 1).padStart(2, '0')}`;
+  const bin = `B${(hash % 5) + 1}`;
+  
+  return `WH1-${aisle}-${rack}-${level}-${bin}`;
+}
+
+// Get AI reasoning for suggested location
+function getAIReasoning(
+  item: StorageItem, 
+  aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>
+): string | null {
+  const key = item.productId || item.sku || item.productName;
+  return aiSuggestions.has(key) ? aiSuggestions.get(key)!.reasoning : null;
 }
 
 function QuickStorageSheet({ 
@@ -1232,10 +1302,17 @@ function QuickStorageSheet({
   const [quantityInput, setQuantityInput] = useState("");
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
+  
+  // AI suggestion caching refs to prevent re-fetching on re-open
+  const aiSuggestionCache = useRef<Map<string, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
+  const aiSuggestionInflight = useRef<Set<string>>(new Set());
+  const aiSuggestionFetched = useRef<Set<string>>(new Set());
   
   // Barcode Scanner Integration
   const handleBarcodeScan = useCallback(async (scannedValue: string) => {
@@ -1326,21 +1403,111 @@ function QuickStorageSheet({
   
   // Initialize items from receipt data - PRESERVE existing assignedQuantity and locations
   useEffect(() => {
-    const items = receiptData?.shipment?.items || receiptData?.items;
-    if (items) {
-      const storageItems: StorageItem[] = items.map((item: any) => ({
+    const receiptItems = receiptData?.shipment?.items || receiptData?.items;
+    if (receiptItems) {
+      const storageItems: StorageItem[] = receiptItems.map((item: any) => ({
         receiptItemId: item.id,
         productId: item.productId,
         productName: item.productName || item.description || `Item #${item.id}`,
         sku: item.sku,
         barcode: item.barcode,
+        imageUrl: item.imageUrl || item.product?.imageUrl,
+        description: item.description,
         receivedQuantity: item.receivedQuantity || item.quantity || 0,
         assignedQuantity: item.assignedQuantity || 0,
-        locations: item.locations || []
+        locations: item.locations || [],
+        existingLocations: item.existingLocations || item.product?.locations || []
       }));
       setItems(storageItems);
     }
   }, [receiptData]);
+  
+  // Fetch AI suggestions for items without existing locations (with batching and caching)
+  useEffect(() => {
+    const fetchAISuggestions = async () => {
+      // Filter items that need suggestions, using cache to prevent re-fetching
+      const itemsNeedingSuggestions = items.filter(item => {
+        const key = String(item.productId || item.sku || item.productName);
+        // Skip if: has existing locations, already cached, already fetched, or currently fetching
+        if (item.existingLocations && item.existingLocations.length > 0) return false;
+        if (aiSuggestionCache.current.has(key)) return false;
+        if (aiSuggestionFetched.current.has(key)) return false;
+        if (aiSuggestionInflight.current.has(key)) return false;
+        return true;
+      });
+
+      if (itemsNeedingSuggestions.length === 0) {
+        // Sync state from cache if needed
+        const cacheSize = aiSuggestionCache.current.size;
+        if (cacheSize > 0 && aiSuggestions.size < cacheSize) {
+          setAiSuggestions(new Map(aiSuggestionCache.current));
+        }
+        return;
+      }
+
+      // Fetch AI suggestions in parallel batches of 3 to avoid API rate limits
+      const batchSize = 3;
+      for (let i = 0; i < itemsNeedingSuggestions.length; i += batchSize) {
+        const batch = itemsNeedingSuggestions.slice(i, i + batchSize);
+        
+        await Promise.all(
+          batch.map(async (item) => {
+            const key = String(item.productId || item.sku || item.productName);
+            
+            // Mark as inflight to prevent duplicate requests
+            aiSuggestionInflight.current.add(key);
+            
+            try {
+              const response = await fetch('/api/imports/suggest-storage-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  productId: item.productId,
+                  productName: item.productName,
+                  category: item.description || ''
+                })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                const suggestion = {
+                  location: data.suggestedLocation,
+                  reasoning: data.reasoning,
+                  zone: data.zone,
+                  accessibility: data.accessibility
+                };
+                
+                // Store in cache and mark as fetched
+                aiSuggestionCache.current.set(key, suggestion);
+                aiSuggestionFetched.current.add(key);
+                
+                setAiSuggestions(prev => {
+                  const newMap = new Map(prev);
+                  newMap.set(key, suggestion);
+                  return newMap;
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to fetch AI suggestion for ${item.productName}:`, error);
+              // Mark as fetched even on error to prevent retries
+              aiSuggestionFetched.current.add(key);
+            } finally {
+              aiSuggestionInflight.current.delete(key);
+            }
+          })
+        );
+
+        // Small delay between batches to be respectful of API
+        if (i + batchSize < itemsNeedingSuggestions.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    };
+
+    if (items.length > 0 && open) {
+      fetchAISuggestions();
+    }
+  }, [items.length, open]);
   
   // Store location mutation
   const storeLocationMutation = useMutation({
@@ -1566,9 +1733,9 @@ function QuickStorageSheet({
         className="h-[95vh] p-0 flex flex-col"
         data-testid="sheet-quick-storage"
       >
-        <SheetHeader className="p-4 border-b">
+        <SheetHeader className="p-4 border-b dark:border-gray-800">
           <SheetTitle className="flex items-center gap-2">
-            <Warehouse className="h-5 w-5 text-amber-600" />
+            <Warehouse className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             {t('quickStorage')}
           </SheetTitle>
           <SheetDescription>
@@ -1581,9 +1748,9 @@ function QuickStorageSheet({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden pb-20">
             {/* Progress bar */}
-            <div className="p-4 border-b space-y-2">
+            <div className="p-4 border-b dark:border-gray-800 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">
                   {completedItems}/{totalItems} {t('itemsCompleted')}
@@ -1595,209 +1762,379 @@ function QuickStorageSheet({
               <Progress value={progress} className="h-2" />
             </div>
             
-            {/* Item selector */}
+            {/* Item Cards with Animation */}
             {items.length > 0 && (
               <ScrollArea className="flex-1">
-                <div className="p-4 space-y-4">
-                  {/* Current item */}
-                  <Card className="border-2 border-amber-500">
-                    <CardHeader className="p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <CardTitle className="text-base">
-                            {currentItem.productName}
-                          </CardTitle>
-                          {currentItem.sku && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              SKU: {currentItem.sku}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant={remainingQuantity === 0 ? "secondary" : "secondary"}>
-                          {currentItem.assignedQuantity}/{currentItem.receivedQuantity}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0 space-y-3">
-                      {/* Scan feedback */}
-                      {scanFeedback.type && (
-                        <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
-                      )}
-                      
-                      {/* Remaining quantity */}
-                      {remainingQuantity > 0 && (
-                        <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded">
-                          <Package className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm font-medium">
-                            {remainingQuantity} {t('remainingUnits')}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Assigned locations */}
-                      {currentItem.locations.length > 0 && (
-                        <div className="space-y-2">
-                          {currentItem.locations.map((location, idx) => (
-                            <div 
-                              key={location.id}
-                              className="flex items-center gap-2 p-2 bg-muted rounded"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  {location.isPrimary && (
-                                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                <div className="p-4 space-y-3">
+                  <AnimatePresence mode="wait">
+                    {items.map((item, index) => {
+                      const isSelected = index === selectedItemIndex;
+                      const isComplete = item.locations.length > 0 || item.existingLocations?.length > 0;
+                      const itemRemainingQty = item.receivedQuantity - item.assignedQuantity;
+
+                      return (
+                        <motion.div
+                          key={item.receiptItemId}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.2 }}
+                          onClick={() => setSelectedItemIndex(index)}
+                          className={`bg-white dark:bg-gray-950 rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-amber-600 dark:border-amber-500 shadow-lg' 
+                              : 'border-gray-200 dark:border-gray-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-700'
+                          }`}
+                        >
+                          {/* Item Header */}
+                          <div className="p-4">
+                            <div className="flex items-start gap-3">
+                              {/* Product Image */}
+                              <div className="relative">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.productName}
+                                    className="w-16 h-16 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <Package className="h-8 w-8 text-gray-400 dark:text-gray-300" />
+                                  </div>
+                                )}
+                                {isComplete && (
+                                  <div className="absolute -top-1 -right-1 bg-green-500 dark:bg-green-600 rounded-full p-1">
+                                    <Check className="h-3 w-3 text-white" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Product Info */}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-sm line-clamp-1">{item.productName}</h3>
+                                {item.description && item.description !== item.productName && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
+                                )}
+                                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                  {item.sku && (
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      {item.sku}
+                                    </span>
                                   )}
-                                  <span className="font-mono text-sm font-medium">
-                                    {location.locationCode}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-0.5">
-                                  {location.quantity > 0 ? `${location.quantity} units` : t('assignQuantity')}
+                                  <Badge variant="outline" className="text-xs">
+                                    {t('qty')} {item.receivedQuantity}
+                                  </Badge>
                                 </div>
                               </div>
-                              {location.quantity === 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    ref={idx === currentItem.locations.length - 1 ? quantityInputRef : undefined}
-                                    type="number"
-                                    value={quantityInput}
-                                    onChange={(e) => setQuantityInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        handleQuantityAssign(idx);
-                                      }
-                                    }}
-                                    placeholder="Qty"
-                                    className="w-20 h-9 text-center"
-                                    min="1"
-                                    max={remainingQuantity}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleQuantityAssign(idx)}
-                                    disabled={!quantityInput || parseInt(quantityInput) <= 0}
-                                  >
-                                    <Save className="h-4 w-4" />
-                                  </Button>
+
+                              {/* Expand Icon */}
+                              <ChevronRight className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform ${
+                                isSelected ? 'rotate-90' : ''
+                              }`} />
+                            </div>
+
+                            {/* Location Summary */}
+                            {(item.locations.length > 0 || item.existingLocations?.length > 0) && (
+                              <div className="mt-3 pt-3 border-t dark:border-gray-800">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.locations.length > 0 && `${item.locations.length} new`}
+                                    {item.existingLocations?.length > 0 && ` • ${item.existingLocations.length} existing`}
+                                  </span>
                                 </div>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveLocation(idx)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Other items */}
-                  {items.filter((_, idx) => idx !== selectedItemIndex).map((item, idx) => {
-                    const actualIdx = idx >= selectedItemIndex ? idx + 1 : idx;
-                    const isComplete = item.assignedQuantity >= item.receivedQuantity;
-                    
-                    return (
-                      <Card 
-                        key={item.receiptItemId}
-                        className="cursor-pointer hover:border-amber-300 transition-colors"
-                        onClick={() => setSelectedItemIndex(actualIdx)}
-                      >
-                        <CardHeader className="p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {item.productName}
-                              </p>
-                              {item.sku && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  SKU: {item.sku}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant={isComplete ? "secondary" : "secondary"}>
-                              {item.assignedQuantity}/{item.receivedQuantity}
-                            </Badge>
+                              </div>
+                            )}
                           </div>
-                        </CardHeader>
-                      </Card>
-                    );
-                  })}
+
+                          {/* Expanded Actions - Only show for selected item */}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
+                            >
+                              <div className="p-4 space-y-3">
+                                {/* Scan feedback */}
+                                {scanFeedback.type && (
+                                  <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+                                )}
+
+                                {/* Prominent Location Display */}
+                                <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                                    <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
+                                      {getSuggestedLocation(item) || generateSuggestedLocationWithAI(item, aiSuggestions)}
+                                    </span>
+                                    {item.existingLocations?.some(loc => loc.isPrimary) && (
+                                      <Badge className="ml-2 bg-yellow-500 dark:bg-yellow-600 text-white">
+                                        <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                                        {t('primary')}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {/* AI Reasoning */}
+                                  {getAIReasoning(item, aiSuggestions) && (
+                                    <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
+                                      <span className="font-semibold">AI:</span> {getAIReasoning(item, aiSuggestions)}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Quick Stats */}
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                    <p className="text-xs text-muted-foreground">{t('received')}</p>
+                                    <p className="text-lg font-bold">{item.receivedQuantity}</p>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                    <p className="text-xs text-muted-foreground">{t('remaining')}</p>
+                                    <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{itemRemainingQty}</p>
+                                  </div>
+                                </div>
+
+                                {/* Existing Locations */}
+                                {item.existingLocations && item.existingLocations.length > 0 && (
+                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">{t('currentLocations')}</p>
+                                    {item.existingLocations.map(loc => (
+                                      <div key={loc.id} className="flex items-center gap-2 py-1">
+                                        <MapPin className="h-3 w-3 text-gray-400 dark:text-gray-300" />
+                                        <span className="text-sm font-mono">{loc.locationCode}</span>
+                                        {loc.isPrimary && (
+                                          <Star className="h-3 w-3 text-yellow-500" fill="currentColor" />
+                                        )}
+                                        <Badge variant="secondary" className="text-xs ml-auto">
+                                          {loc.quantity}
+                                        </Badge>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* New Locations */}
+                                {item.locations.length > 0 && (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-medium text-muted-foreground">{t('newLocations')}</p>
+                                    {item.locations.map((loc, locIndex) => (
+                                      <div key={loc.id} className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800 flex items-center gap-2">
+                                        <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
+                                        {loc.quantity === 0 ? (
+                                          <>
+                                            <Input
+                                              ref={locIndex === item.locations.length - 1 ? quantityInputRef : undefined}
+                                              type="number"
+                                              value={quantityInput}
+                                              onChange={(e) => setQuantityInput(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                  handleQuantityAssign(locIndex);
+                                                }
+                                              }}
+                                              placeholder="Qty"
+                                              className="w-16 px-2 py-1 text-sm border rounded ml-auto h-8"
+                                              min="0"
+                                              max={itemRemainingQty}
+                                            />
+                                            <Button
+                                              size="sm"
+                                              onClick={() => handleQuantityAssign(locIndex)}
+                                              disabled={!quantityInput || parseInt(quantityInput) <= 0}
+                                              className="h-8"
+                                            >
+                                              <Save className="h-4 w-4" />
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <Badge variant="secondary" className="ml-auto">{loc.quantity}</Badge>
+                                        )}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveLocation(locIndex);
+                                          }}
+                                          className="p-1 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowScanner(true);
+                                    }}
+                                    className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-3 flex items-center justify-center gap-2"
+                                    data-testid="button-scan-location"
+                                  >
+                                    <QrCode className="h-5 w-5" />
+                                    <span className="font-medium">{t('scanLocation')}</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
+                                    data-testid="button-item-details"
+                                  >
+                                    <Eye className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
               </ScrollArea>
             )}
-            
-            {/* Sticky bottom input */}
-            <div className="border-t bg-background p-4 space-y-3">
-              {/* Camera scanner UI - Only show if scanning is enabled in settings */}
-              {barcodeScanner.scanningEnabled ? (
-                <div className="space-y-2">
-                  {barcodeScanner.isActive && (
-                    <div className="relative rounded-lg overflow-hidden bg-black">
-                      <video
-                        ref={barcodeScanner.videoRef}
-                        className="w-full h-48 object-cover"
-                        playsInline
-                        muted
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Badge className="bg-green-500 text-white">
-                          <Camera className="h-3 w-3 mr-1" />
-                          {t('scanning')}
-                        </Badge>
+          </div>
+        )}
+        
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shadow-lg z-40">
+          <div className="p-4 flex gap-2">
+            <button
+              onClick={() => {
+                if (selectedItemIndex > 0) {
+                  setSelectedItemIndex(selectedItemIndex - 1);
+                }
+              }}
+              disabled={selectedItemIndex === 0}
+              className={`p-3 rounded-lg border dark:border-gray-800 ${
+                selectedItemIndex === 0 
+                  ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                  : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <ArrowUp className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                if (selectedItemIndex < items.length - 1) {
+                  setSelectedItemIndex(selectedItemIndex + 1);
+                }
+              }}
+              disabled={selectedItemIndex === items.length - 1}
+              className={`p-3 rounded-lg border dark:border-gray-800 ${
+                selectedItemIndex === items.length - 1
+                  ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                  : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <ArrowDown className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setShowScanner(true)}
+              disabled={!currentItem}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+            >
+              <ScanLine className="h-5 w-5" />
+              {t('quickScan')}
+            </button>
+          </div>
+        </div>
+        
+        {/* Scanner Sheet */}
+        <Sheet open={showScanner} onOpenChange={setShowScanner}>
+          <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto pb-6">
+            <SheetHeader className="pb-2">
+              <SheetTitle className="text-base font-semibold">{t('addLocation')}</SheetTitle>
+              {currentItem && (
+                <div className="mt-2 space-y-2">
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-white dark:bg-gray-950 border dark:border-gray-800 flex-shrink-0">
+                        {currentItem.imageUrl ? (
+                          <img 
+                            src={currentItem.imageUrl} 
+                            alt={currentItem.productName}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-6 w-6 text-gray-400 dark:text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{currentItem.productName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {t('remaining')}: {remainingQuantity}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  )}
-                  
-                  <Button
-                    variant={barcodeScanner.isActive ? "destructive" : "secondary"}
-                    size="sm"
-                    onClick={() => {
-                      if (barcodeScanner.isActive) {
-                        barcodeScanner.stopScanning();
-                      } else {
-                        barcodeScanner.startScanning();
-                      }
-                    }}
-                    className="w-full"
-                    disabled={!currentItem || remainingQuantity === 0}
-                  >
-                    {barcodeScanner.isActive ? (
-                      <>
-                        <CameraOff className="h-4 w-4 mr-2" />
-                        {t('stopCamera')}
-                      </>
-                    ) : (
-                      <>
-                        <Camera className="h-4 w-4 mr-2" />
-                        {t('startCamera')}
-                      </>
-                    )}
-                  </Button>
-                  
-                  {barcodeScanner.error && (
-                    <div className="text-sm text-destructive p-2 bg-destructive/10 rounded">
-                      {barcodeScanner.error}
-                    </div>
-                  )}
+                  </div>
                 </div>
-              ) : (
-                <div className="p-3 bg-muted/30 rounded-lg text-center text-sm text-muted-foreground">
-                  {t('barcodeScanningDisabled')}
+              )}
+            </SheetHeader>
+            
+            <div className="space-y-4 mt-4">
+              {/* Camera scanner */}
+              {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
+                <div className="relative rounded-lg overflow-hidden bg-black">
+                  <video
+                    ref={barcodeScanner.videoRef}
+                    className="w-full h-48 object-cover"
+                    playsInline
+                    muted
+                  />
+                  <div className="absolute top-2 right-2">
+                    <Badge className="bg-green-500 text-white">
+                      <Camera className="h-3 w-3 mr-1" />
+                      {t('scanning')}
+                    </Badge>
+                  </div>
                 </div>
               )}
               
+              {barcodeScanner.scanningEnabled && (
+                <Button
+                  variant={barcodeScanner.isActive ? "destructive" : "secondary"}
+                  size="sm"
+                  onClick={() => {
+                    if (barcodeScanner.isActive) {
+                      barcodeScanner.stopScanning();
+                    } else {
+                      barcodeScanner.startScanning();
+                    }
+                  }}
+                  className="w-full"
+                  disabled={remainingQuantity === 0}
+                >
+                  {barcodeScanner.isActive ? (
+                    <>
+                      <CameraOff className="h-4 w-4 mr-2" />
+                      {t('stopCamera')}
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4 mr-2" />
+                      {t('startCamera')}
+                    </>
+                  )}
+                </Button>
+              )}
+              
               <div className="space-y-2">
-                <Label htmlFor="location-input" className="text-sm font-medium">
+                <Label htmlFor="scanner-location-input" className="text-sm font-medium">
                   <ScanLine className="h-4 w-4 inline mr-1" />
                   {t('scanLocation')}
                 </Label>
                 <div className="flex gap-2">
                   <Input
-                    id="location-input"
+                    id="scanner-location-input"
                     ref={locationInputRef}
                     value={locationInput}
                     onChange={(e) => setLocationInput(e.target.value.toUpperCase())}
@@ -1809,13 +2146,13 @@ function QuickStorageSheet({
                     placeholder="WH1-A01-R02-L03"
                     className="flex-1 h-12 text-base font-mono"
                     autoFocus
-                    disabled={!currentItem || remainingQuantity === 0}
+                    disabled={remainingQuantity === 0}
                     data-testid="input-location-scan"
                   />
                   <Button
                     size="lg"
                     onClick={handleLocationScan}
-                    disabled={!locationInput || !currentItem || remainingQuantity === 0}
+                    disabled={!locationInput || remainingQuantity === 0}
                     className="h-12 px-6"
                   >
                     <Plus className="h-5 w-5" />
@@ -1825,16 +2162,15 @@ function QuickStorageSheet({
               
               <Button
                 size="lg"
-                className="w-full h-12 bg-green-600 hover:bg-green-700"
-                onClick={handleComplete}
-                disabled={completedItems < totalItems}
+                variant="outline"
+                className="w-full h-12"
+                onClick={() => setShowScanner(false)}
               >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                {t('common:complete')}
+                {t('common:done')}
               </Button>
             </div>
-          </div>
-        )}
+          </SheetContent>
+        </Sheet>
       </SheetContent>
     </Sheet>
   );

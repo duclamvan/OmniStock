@@ -4044,6 +4044,48 @@ router.get("/receipts/storage", async (req, res) => {
   }
 });
 
+// Get recently approved receipts (last 7 days)
+router.get("/receipts/recent", async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentReceipts = await db
+      .select({
+        id: receipts.id,
+        receiptNumber: receipts.receiptNumber,
+        supplierName: receipts.supplierName,
+        status: receipts.status,
+        receivedAt: receipts.receivedAt,
+        approvedAt: receipts.approvedAt,
+        approvedBy: receipts.approvedBy,
+        shipmentId: receipts.shipmentId,
+        referenceNumber: receipts.referenceNumber,
+        totalCartons: receipts.totalCartons,
+        totalLines: receipts.totalLines,
+        notes: receipts.notes,
+        receivedBy: receipts.receivedBy
+      })
+      .from(receipts)
+      .where(
+        and(
+          eq(receipts.status, 'approved'),
+          gte(receipts.receivedAt, sevenDaysAgo)
+        )
+      )
+      .orderBy(desc(receipts.receivedAt))
+      .limit(50);
+
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(recentReceipts, userRole);
+    res.json(filtered);
+  } catch (error) {
+    console.error("Error fetching recent receipts:", error);
+    res.status(500).json({ message: "Failed to fetch recent receipts" });
+  }
+});
+
 // Get receipt with items
 router.get("/receipts/:id", async (req, res) => {
   try {
