@@ -1193,6 +1193,7 @@ const imports = {
   scanLocation: 'Quét vị trí lưu kho',
   assignQuantity: 'Gán số lượng',
   remainingUnits: 'Đơn vị còn lại',
+  notStored: 'Chưa lưu kho',
   storedSuccessfully: 'Đã lưu kho thành công',
   storageComplete: 'Hoàn tất lưu kho',
   invalidLocationFormat: 'Định dạng vị trí không hợp lệ',

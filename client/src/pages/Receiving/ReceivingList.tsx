@@ -2135,7 +2135,7 @@ function QuickStorageSheet({
                             variant={remainingQuantity > 0 ? "secondary" : "default"} 
                             className={`text-xs ${remainingQuantity === 0 ? 'bg-green-500 text-white' : ''}`}
                           >
-                            {t('remaining')}: {remainingQuantity}
+                            {t('notStored')}: {remainingQuantity}
                           </Badge>
                         </div>
                       </div>

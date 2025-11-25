@@ -1180,6 +1180,7 @@ const imports = {
   scanLocation: 'Scan storage location',
   assignQuantity: 'Assign quantity',
   remainingUnits: 'Remaining units',
+  notStored: 'Not stored',
   storedSuccessfully: 'Stored successfully',
   storageComplete: 'Storage complete',
   invalidLocationFormat: 'Invalid location format',
