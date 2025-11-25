@@ -1862,6 +1862,16 @@ function QuickStorageSheet({
                                   <Badge variant="outline" className="text-xs">
                                     {t('qty')} {item.receivedQuantity}
                                   </Badge>
+                                  <Badge 
+                                    variant={itemRemainingQty > 0 ? "secondary" : "default"} 
+                                    className={`text-xs ${
+                                      itemRemainingQty === 0 
+                                        ? 'bg-green-500 dark:bg-green-600 text-white' 
+                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                    }`}
+                                  >
+                                    {t('notStored')} {itemRemainingQty}
+                                  </Badge>
                                 </div>
                                 
                                 {/* Warehouse Locations - Always visible in collapsed state */}
