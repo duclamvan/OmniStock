@@ -2545,7 +2545,7 @@ function ShipmentReportDialog({
   const printRef = useRef<HTMLDivElement>(null);
   
   const { data: reportData, isLoading } = useQuery<ShipmentReportData>({
-    queryKey: ['/api/imports/receipts', shipmentId, 'report'],
+    queryKey: [`/api/imports/shipments/${shipmentId}/report`],
     enabled: open && !!shipmentId,
   });
   
