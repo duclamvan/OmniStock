@@ -1387,6 +1387,11 @@ const imports = {
   orScanBarcode: 'hoặc quét mã vạch',
   unitsAtLocation: 'đơn vị',
   noSavedLocationsYet: 'Chưa có vị trí đã lưu',
+  scanStorageLocationTitle: 'Quét vị trí lưu kho',
+  addLocation: 'Thêm vị trí',
+  startCamera: 'Bật Camera',
+  stopCamera: 'Tắt Camera',
+  scanning: 'Đang quét',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'TRỌNG LƯỢNG',

@@ -1383,6 +1383,11 @@ const imports = {
   orScanBarcode: 'or scan barcode',
   unitsAtLocation: 'units',
   noSavedLocationsYet: 'No saved locations yet',
+  scanStorageLocationTitle: 'Scan Storage Location',
+  addLocation: 'Add Location',
+  startCamera: 'Start Camera',
+  stopCamera: 'Stop Camera',
+  scanning: 'Scanning',
   
   // ItemsToStore & StoreItems - Allocation Methods
   auto: 'AUTO',

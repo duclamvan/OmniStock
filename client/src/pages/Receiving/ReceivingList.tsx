@@ -2112,7 +2112,7 @@ function QuickStorageSheet({
         <Sheet open={showScanner} onOpenChange={setShowScanner}>
           <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto pb-6">
             <SheetHeader className="pb-2">
-              <SheetTitle className="text-base font-semibold">{t('addLocation')}</SheetTitle>
+              <SheetTitle className="text-base font-semibold">{t('scanStorageLocationTitle')}</SheetTitle>
               {currentItem && (
                 <div className="mt-2 space-y-2">
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5">
@@ -2425,7 +2425,7 @@ function QuickStorageSheet({
                   className={`h-12 ${currentItem && currentItem.locations.some(loc => (loc.quantity || 0) > 0) ? '' : 'flex-1'}`}
                   onClick={() => setShowScanner(false)}
                 >
-                  {t('common:done')}
+                  {t('common:cancel')}
                 </Button>
               </div>
             </div>
