@@ -1609,13 +1609,19 @@ function QuickStorageSheet({
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
     
-    // Add new location to current item
+    // Calculate remaining quantity for auto-fill
+    const isFirstLocation = currentItem?.locations.length === 0;
+    const currentRemaining = currentItem ? 
+      currentItem.receivedQuantity - currentItem.assignedQuantity - 
+      currentItem.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0) : 0;
+    
+    // Add new location to current item - auto-fill quantity for first location
     const newLocation: LocationAssignment = {
       id: `new-${Date.now()}`,
       locationCode: trimmedValue,
       locationType,
-      quantity: 0,
-      isPrimary: currentItem?.locations.length === 0
+      quantity: isFirstLocation ? currentRemaining : 0,
+      isPrimary: isFirstLocation
     };
     
     const updatedItems = [...items];
@@ -1624,13 +1630,18 @@ function QuickStorageSheet({
     
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
-    setScanFeedback({ type: 'success', message: `Location scanned: ${trimmedValue}` });
+    const feedbackMsg = isFirstLocation && currentRemaining > 0
+      ? `Location scanned: ${trimmedValue} (${currentRemaining} units assigned)`
+      : `Location scanned: ${trimmedValue}`;
+    setScanFeedback({ type: 'success', message: feedbackMsg });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
     
     setLocationInput("");
     
-    // Auto-focus on quantity input
-    setTimeout(() => quantityInputRef.current?.focus(), 100);
+    // Auto-focus on quantity input only if not auto-filled
+    if (!isFirstLocation) {
+      setTimeout(() => quantityInputRef.current?.focus(), 100);
+    }
   };
   
   // Handle quantity assignment
