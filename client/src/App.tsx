@@ -28,6 +28,7 @@ import AllWarehouses from "@/pages/Warehouse/AllWarehouses";
 import AddWarehouse from "@/pages/Warehouse/AddWarehouse";
 import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
 import WarehouseDetails from "@/pages/Warehouse/WarehouseDetails";
+import WarehouseDashboard from "@/pages/Warehouse/WarehouseDashboard";
 import AllDiscounts from "@/pages/Discounts/AllDiscounts";
 import AddDiscount from "@/pages/Discounts/AddDiscount";
 import EditDiscount from "@/pages/Discounts/EditDiscount";
@@ -208,6 +209,9 @@ function Router() {
         </Route>
         <Route path="/packing-materials/edit/:id">
           {() => <ProtectedRoute requireAdmin><EditPackingMaterial /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouse-dashboard">
+          {() => <ProtectedRoute><WarehouseDashboard /></ProtectedRoute>}
         </Route>
         <Route path="/warehouses">
           {() => <ProtectedRoute requireAdmin><AllWarehouses /></ProtectedRoute>}

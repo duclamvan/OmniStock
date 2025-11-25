@@ -62,6 +62,13 @@ const navigation: NavItem[] = [
     labelKey: "dashboard",
     href: "/",
     icon: ChartLine,
+    namespace: "common",
+    adminOnly: true
+  },
+  {
+    labelKey: "warehouseDashboard",
+    href: "/warehouse-dashboard",
+    icon: ClipboardList,
     namespace: "common"
   },
   {
