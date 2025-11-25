@@ -1373,9 +1373,12 @@ const imports = {
   currentLocations: 'Vị trí hiện tại',
   assignedLocations: 'Vị trí đã phân bổ',
   assignAllToLastLocation: 'Phân bổ tất cả cho vị trí cuối',
+  assignAllToLast: 'Phân bổ còn lại cho vị trí cuối',
   setAsPrimaryLocation: 'Đặt làm vị trí chính',
   quickScanBarcodeInput: 'Ô nhập quét nhanh mã vạch',
   scanOrEnterLocationCodeExample: 'Quét hoặc nhập mã vị trí (VD: WH1-A01-R02-L03)',
+  locationFormatHint: 'Định dạng: WH1-A01-R02-L03 (Kho-Khu-Dãy-Tầng)',
+  saveLocations: 'Lưu vị trí',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'TRỌNG LƯỢNG',

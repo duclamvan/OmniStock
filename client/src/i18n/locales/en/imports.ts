@@ -1369,9 +1369,12 @@ const imports = {
   currentLocations: 'Current Locations',
   assignedLocations: 'Assigned Locations',
   assignAllToLastLocation: 'Assign All to Last Location',
+  assignAllToLast: 'Assign all remaining to last location',
   setAsPrimaryLocation: 'Set as primary location',
   quickScanBarcodeInput: 'Quick scan barcode input',
   scanOrEnterLocationCodeExample: 'Scan or enter location code (e.g., WH1-A01-R02-L03)',
+  locationFormatHint: 'Format: WH1-A01-R02-L03 (Warehouse-Area-Row-Level)',
+  saveLocations: 'Save Locations',
   
   // ItemsToStore & StoreItems - Allocation Methods
   auto: 'AUTO',
