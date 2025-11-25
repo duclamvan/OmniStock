@@ -2480,6 +2480,20 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
                       )}
+                      {item.locations && item.locations.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.locations.map((loc: any, locIdx: number) => (
+                            <Badge 
+                              key={locIdx} 
+                              variant="outline" 
+                              className="text-xs font-mono bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                            >
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {loc.locationCode}: {loc.quantity}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
