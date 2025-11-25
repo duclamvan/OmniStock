@@ -6771,6 +6771,198 @@ router.get('/receipts/:id/storage-items', async (req, res) => {
   }
 });
 
+// Get comprehensive shipment report with product prices and locations
+router.get('/receipts/:id/report', async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    
+    // Get receipt with all details
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    
+    // Get shipment details
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+    
+    // Get receipt items
+    const receiptItemsList = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+    
+    // For each item, get product details including prices and locations
+    const itemsWithDetails = await Promise.all(receiptItemsList.map(async (item) => {
+      let productInfo: any = null;
+      let productPrices: any = null;
+      let warehouseLocations: any[] = [];
+      
+      if (item.itemType === 'purchase') {
+        // Get purchase item details
+        const [purchaseItem] = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.id, item.itemId));
+        
+        if (purchaseItem) {
+          // Try to find matching product by SKU or barcode
+          const [product] = await db
+            .select()
+            .from(products)
+            .where(
+              or(
+                eq(products.sku, purchaseItem.sku || ''),
+                eq(products.barcode, item.barcode || '')
+              )
+            )
+            .limit(1);
+          
+          if (product) {
+            productInfo = {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku,
+              barcode: product.barcode,
+              imageUrl: product.imageUrl
+            };
+            
+            productPrices = {
+              priceCzk: product.priceCzk,
+              priceEur: product.priceEur,
+              priceUsd: product.priceUsd
+            };
+            
+            // Get all warehouse locations for this product
+            warehouseLocations = await db
+              .select({
+                id: productLocations.id,
+                locationCode: productLocations.locationCode,
+                locationType: productLocations.locationType,
+                quantity: productLocations.quantity,
+                isPrimary: productLocations.isPrimary,
+                notes: productLocations.notes
+              })
+              .from(productLocations)
+              .where(eq(productLocations.productId, product.id));
+          } else {
+            productInfo = {
+              productId: null,
+              productName: purchaseItem.name || `Item #${item.itemId}`,
+              sku: purchaseItem.sku,
+              barcode: item.barcode
+            };
+          }
+        }
+      } else if (item.itemType === 'custom') {
+        // Get custom item details
+        const [customItem] = await db
+          .select()
+          .from(consolidationItems)
+          .where(eq(consolidationItems.id, item.itemId));
+        
+        if (customItem) {
+          productInfo = {
+            productId: null,
+            productName: `Custom Item #${item.itemId}`,
+            sku: null,
+            barcode: item.barcode
+          };
+        }
+      }
+      
+      // Calculate status based on quantities
+      let itemStatus = 'ok';
+      if (item.damagedQuantity && item.damagedQuantity > 0) {
+        itemStatus = 'damaged';
+      } else if (item.missingQuantity && item.missingQuantity > 0) {
+        itemStatus = 'missing';
+      } else if (item.receivedQuantity < item.expectedQuantity) {
+        itemStatus = 'partial';
+      }
+      
+      return {
+        receiptItemId: item.id,
+        itemId: item.itemId,
+        itemType: item.itemType,
+        expectedQuantity: item.expectedQuantity,
+        receivedQuantity: item.receivedQuantity,
+        damagedQuantity: item.damagedQuantity || 0,
+        missingQuantity: item.missingQuantity || 0,
+        status: itemStatus,
+        condition: item.condition,
+        notes: item.notes,
+        barcode: item.barcode,
+        warehouseLocation: item.warehouseLocation,
+        ...productInfo,
+        prices: productPrices,
+        locations: warehouseLocations
+      };
+    }));
+    
+    // Calculate summary statistics
+    const summary = {
+      totalItems: itemsWithDetails.length,
+      totalExpected: itemsWithDetails.reduce((sum, i) => sum + i.expectedQuantity, 0),
+      totalReceived: itemsWithDetails.reduce((sum, i) => sum + i.receivedQuantity, 0),
+      totalDamaged: itemsWithDetails.reduce((sum, i) => sum + i.damagedQuantity, 0),
+      totalMissing: itemsWithDetails.reduce((sum, i) => sum + i.missingQuantity, 0),
+      okItems: itemsWithDetails.filter(i => i.status === 'ok').length,
+      damagedItems: itemsWithDetails.filter(i => i.status === 'damaged').length,
+      missingItems: itemsWithDetails.filter(i => i.status === 'missing').length,
+      partialItems: itemsWithDetails.filter(i => i.status === 'partial').length
+    };
+    
+    const reportData = {
+      receipt: {
+        id: receipt.id,
+        receiptNumber: receipt.receiptNumber,
+        status: receipt.status,
+        receivedAt: receipt.receivedAt,
+        completedAt: receipt.completedAt,
+        approvedAt: receipt.approvedAt,
+        receivedBy: receipt.receivedBy,
+        verifiedBy: receipt.verifiedBy,
+        approvedBy: receipt.approvedBy,
+        carrier: receipt.carrier,
+        parcelCount: receipt.parcelCount,
+        notes: receipt.notes,
+        damageNotes: receipt.damageNotes,
+        photos: receipt.photos || [],
+        scannedParcels: receipt.scannedParcels || []
+      },
+      shipment: shipment ? {
+        id: shipment.id,
+        shipmentName: shipment.shipmentName,
+        trackingNumber: shipment.trackingNumber,
+        carrier: shipment.carrier,
+        status: shipment.status,
+        estimatedArrival: shipment.estimatedArrival,
+        actualArrival: shipment.actualArrival
+      } : null,
+      items: itemsWithDetails,
+      summary
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(reportData, userRole);
+    res.json(filtered);
+  } catch (error) {
+    console.error("Error fetching shipment report:", error);
+    res.status(500).json({ 
+      message: "Failed to fetch shipment report",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 // Store items in warehouse locations
 router.post('/receipts/:id/store-items', async (req, res) => {
   try {
