@@ -983,7 +983,6 @@ export default function StockLookup() {
                         <Button
                           variant="outline"
                           className="w-full"
-                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDescriptionDialogOpen(true);
