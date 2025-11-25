@@ -3873,6 +3873,10 @@ export default function AddOrder() {
                 variant="outline"
                 className="w-full h-12 border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
                 onClick={() => {
+                  if (showDiscount) {
+                    form.setValue('discountType', 'flat');
+                    form.setValue('discountValue', 0);
+                  }
                   setShowDiscount(!showDiscount);
                 }}
               >
