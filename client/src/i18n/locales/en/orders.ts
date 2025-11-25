@@ -1631,6 +1631,14 @@ const orders = {
   orderDetails: 'Order Details',
   noTicketsForThisOrder: 'No tickets for this order',
   
+  // AddOrder.tsx - Mobile Order Summary
+  shippingMethod: 'Shipping Method',
+  subtotalColon: 'Subtotal:',
+  shippingColon: 'Shipping:',
+  discountLabel: 'Discount',
+  taxWithRate: 'Tax ({{rate}}%):',
+  creatingOrder: 'Creating...',
+  
 } as const;
 
 export default orders;

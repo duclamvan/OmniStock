@@ -1552,6 +1552,14 @@ const orders = {
   orderDetails: 'Chi tiết đơn hàng',
   noTicketsForThisOrder: 'Không có ticket cho đơn hàng này',
   
+  // AddOrder.tsx - Mobile Order Summary
+  shippingMethod: 'Phương thức vận chuyển',
+  subtotalColon: 'Tạm tính:',
+  shippingColon: 'Vận chuyển:',
+  discountLabel: 'Giảm giá',
+  taxWithRate: 'Thuế ({{rate}}%):',
+  creatingOrder: 'Đang tạo...',
+  
 } as const;
 
 export default orders;

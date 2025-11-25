@@ -4750,7 +4750,7 @@ export default function AddOrder() {
                             onClick={() => setLocation(`/orders/${orderId}`)}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            View Order
+                            {t('orders:viewOrder')}
                           </Button>
                           <Button 
                             type="button" 
@@ -4758,18 +4758,18 @@ export default function AddOrder() {
                             className="w-full" 
                             onClick={() => setLocation('/orders')}
                           >
-                            Back to Orders
+                            {t('orders:backToOrders')}
                           </Button>
                         </>
                       ) : (
                         <>
                           <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
                             <ShoppingCart className="h-4 w-4 mr-2" />
-                            {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+                            {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                           </Button>
                           <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
                             <Save className="h-4 w-4 mr-2" />
-                            Save Draft
+                            {t('orders:saveDraft')}
                           </Button>
                         </>
                       )}
@@ -4787,7 +4787,7 @@ export default function AddOrder() {
             <CardHeader className="p-3 border-b">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
-                Order Summary
+                {t('orders:orderSummary')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 space-y-3">
@@ -4805,7 +4805,7 @@ export default function AddOrder() {
                 return avgMargin !== null ? (
                   <div className="pb-3 mb-3 border-b">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Margin</span>
+                      <span className="text-sm font-medium">{t('orders:margin')}</span>
                       <MarginPill
                         sellingPrice={totalSellingPrice}
                         landingCost={totalLandingCost}
@@ -4820,22 +4820,22 @@ export default function AddOrder() {
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-gray-600">{t('orders:subtotalColon')}</span>
                   <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
                 </div>
                 {showTaxInvoice && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
+                    <span className="text-gray-600">{t('orders:taxWithRate', { rate: form.watch('taxRate') || 0 })}</span>
                     <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping:</span>
+                  <span className="text-gray-600">{t('orders:shippingColon')}</span>
                   <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                    {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
                   </span>
                   <span className="font-medium text-green-600">
                     -{formatCurrency(
@@ -4939,7 +4939,7 @@ export default function AddOrder() {
                       onClick={() => setLocation(`/orders/${orderId}`)}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      View Order
+                      {t('orders:viewOrder')}
                     </Button>
                     <Button 
                       type="button" 
@@ -4947,18 +4947,18 @@ export default function AddOrder() {
                       className="w-full" 
                       onClick={() => setLocation('/orders')}
                     >
-                      Back to Orders
+                      {t('orders:backToOrders')}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+                      {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
                       <Save className="h-4 w-4 mr-2" />
-                      Save Draft
+                      {t('orders:saveDraft')}
                     </Button>
                   </>
                 )}
