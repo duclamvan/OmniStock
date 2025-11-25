@@ -97,6 +97,7 @@ import {
 } from "@/components/ui/popover";
 import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle } from "lucide-react";
 import html2canvas from "html2canvas";
+import logoPath from '@assets/logo_1754349267160.png';
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -275,7 +276,17 @@ export default function OrderDetails() {
     if (!order) return;
     
     try {
-      // Create a clean HTML invoice
+      // Get customer name
+      const customerName = order.customer?.name || order.customer?.firstName 
+        ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()
+        : t('orders:walkInCustomer');
+      
+      // Format date
+      const orderDate = order.createdAt 
+        ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+
+      // Create a professional invoice card HTML
       const invoiceHTML = `
         <!DOCTYPE html>
         <html>
@@ -292,193 +303,249 @@ export default function OrderDetails() {
             .invoice-card {
               background: white;
               border: 1px solid #e2e8f0;
-              border-radius: 12px;
+              border-radius: 16px;
               overflow: hidden;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             .invoice-header {
-              padding: 10px 24px 12px 24px;
+              padding: 20px 24px;
+              background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
               border-bottom: 2px solid #e2e8f0;
-              background: #f8fafc;
             }
-            .invoice-title {
-              font-size: 18px;
-              font-weight: 700;
-              color: #0f172a;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              line-height: 1;
-            }
-            .invoice-title span {
-              margin-bottom: 5px;
-            }
-            .invoice-icon {
-              width: 20px;
-              height: 20px;
-              color: #64748b;
-              flex-shrink: 0;
-            }
-            .invoice-body {
-              padding: 0;
-            }
-            .item-row {
-              padding: 24px 32px;
-              border-bottom: 1px solid #e2e8f0;
-              display: flex;
-              gap: 16px;
-              align-items: center;
-            }
-            .item-image {
-              width: 56px;
-              height: 56px;
-              border: 1px solid #e2e8f0;
-              border-radius: 6px;
-              background: #f8fafc;
+            .logo-section {
               display: flex;
               align-items: center;
               justify-content: center;
-              flex-shrink: 0;
+              margin-bottom: 16px;
             }
-            .item-details {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
+            .logo-section img {
+              height: 48px;
+              object-fit: contain;
             }
-            .item-name {
-              font-size: 16px;
-              font-weight: 600;
+            .order-info {
+              text-align: center;
+            }
+            .order-id {
+              font-size: 24px;
+              font-weight: 800;
               color: #0f172a;
-              margin: 0 0 4px 0;
-              line-height: 1.2;
+              margin-bottom: 4px;
+              letter-spacing: -0.5px;
             }
-            .item-sku {
+            .order-meta {
               font-size: 13px;
               color: #64748b;
-              margin: 0 0 8px 0;
-              line-height: 1.2;
+              display: flex;
+              justify-content: center;
+              gap: 16px;
             }
-            .item-qty {
-              font-size: 14px;
-              color: #475569;
-              margin: 0;
-              line-height: 1.2;
-            }
-            .item-qty-value {
-              font-weight: 700;
-              color: #0f172a;
-            }
-            .item-price {
-              text-align: right;
-              font-size: 18px;
-              font-weight: 700;
-              color: #0f172a;
-              flex-shrink: 0;
+            .order-meta span {
               display: flex;
               align-items: center;
-              justify-content: flex-end;
-              line-height: 1;
+              gap: 4px;
             }
+            
+            /* Items Table */
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .items-table thead {
+              background: #f8fafc;
+            }
+            .items-table th {
+              padding: 12px 16px;
+              text-align: left;
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .items-table th:last-child {
+              text-align: right;
+            }
+            .items-table td {
+              padding: 14px 16px;
+              font-size: 14px;
+              color: #0f172a;
+              border-bottom: 1px solid #f1f5f9;
+              vertical-align: middle;
+            }
+            .items-table tr:last-child td {
+              border-bottom: none;
+            }
+            .item-cell {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            .item-image {
+              width: 44px;
+              height: 44px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              background: #f8fafc;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+              overflow: hidden;
+            }
+            .item-image img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+            .item-info {
+              flex: 1;
+              min-width: 0;
+            }
+            .item-name {
+              font-weight: 600;
+              color: #0f172a;
+              margin-bottom: 2px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .item-sku {
+              font-size: 12px;
+              color: #94a3b8;
+            }
+            .qty-cell {
+              text-align: center;
+              font-weight: 700;
+              color: #0f172a;
+            }
+            .price-cell {
+              text-align: right;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .unit-price {
+              font-size: 12px;
+              color: #94a3b8;
+              font-weight: 400;
+            }
+            
+            /* Pricing Summary */
             .pricing-section {
-              padding: 32px;
+              padding: 20px 24px;
+              background: #fafafa;
               border-top: 2px solid #e2e8f0;
             }
             .price-row {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              margin-bottom: 16px;
+              padding: 8px 0;
             }
             .price-label {
-              font-size: 15px;
+              font-size: 14px;
               font-weight: 500;
-              color: #475569;
-              line-height: 1.2;
+              color: #64748b;
             }
             .price-value {
-              font-size: 15px;
+              font-size: 14px;
               font-weight: 600;
               color: #0f172a;
-              line-height: 1.2;
             }
-            .price-separator {
+            .discount-row .price-label,
+            .discount-row .price-value {
+              color: #16a34a;
+            }
+            .total-divider {
               height: 2px;
               background: #cbd5e1;
-              margin: 20px 0;
+              margin: 12px 0;
             }
             .total-row {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              padding-top: 8px;
+              padding: 8px 0;
             }
             .total-label {
-              font-size: 20px;
+              font-size: 18px;
               font-weight: 700;
               color: #0f172a;
-              line-height: 1.2;
             }
             .total-value {
-              font-size: 24px;
-              font-weight: 700;
+              font-size: 22px;
+              font-weight: 800;
               color: #0f172a;
-              line-height: 1.2;
             }
           </style>
         </head>
         <body>
           <div class="invoice-card">
             <div class="invoice-header">
-              <div class="invoice-title">
-                <svg class="invoice-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                </svg>
-                ${order.orderId || order.id}
+              <div class="logo-section">
+                <img src="${logoPath}" alt="Company Logo" />
+              </div>
+              <div class="order-info">
+                <div class="order-id">${order.orderId || order.id}</div>
+                <div class="order-meta">
+                  <span>${customerName}</span>
+                  <span>•</span>
+                  <span>${orderDate}</span>
+                </div>
               </div>
             </div>
-            <div class="invoice-body">
-              ${order.items?.map((item: any) => `
-                <div class="item-row">
-                  <div class="item-image">
-                    ${item.image ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: contain;" />` : `
-                      <svg style="width: 32px; height: 32px; color: #cbd5e1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                      </svg>
-                    `}
-                  </div>
-                  <div class="item-details">
-                    <div class="item-name">${item.productName}</div>
-                    <div class="item-sku">${t('orders:skuColon')} ${item.sku}</div>
-                    <div class="item-qty">
-                      ${t('orders:qtyColon')} <span class="item-qty-value">${item.quantity}</span>
-                      <span style="color: #64748b; margin: 0 8px;">×</span>
-                      ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
-                    </div>
-                  </div>
-                  <div class="item-price">
-                    ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
+            
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 55%;">${t('orders:product')}</th>
+                  <th style="width: 15%; text-align: center;">${t('orders:qty')}</th>
+                  <th style="width: 30%;">${t('orders:price')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order.items?.map((item: any) => `
+                  <tr>
+                    <td>
+                      <div class="item-cell">
+                        <div class="item-image">
+                          ${item.image 
+                            ? `<img src="${item.image}" alt="${item.productName}" />` 
+                            : `<svg style="width: 24px; height: 24px; color: #cbd5e1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                              </svg>`
+                          }
+                        </div>
+                        <div class="item-info">
+                          <div class="item-name">${item.productName}</div>
+                          <div class="item-sku">${item.sku || '-'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="qty-cell">${item.quantity}</td>
+                    <td class="price-cell">
+                      ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                      <div class="unit-price">@ ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            
             <div class="pricing-section">
               <div class="price-row">
                 <span class="price-label">${t('orders:subtotal')}</span>
                 <span class="price-value">${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
               </div>
               ${order.discountValue > 0 ? `
-                <div class="price-row">
-                  <span class="price-label" style="color: #15803d;">
-                    ${t('orders:discount')} ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
-                  </span>
-                  <span class="price-value" style="color: #15803d;">
-                    -${formatCurrency(
-                      order.discountType === 'rate' 
-                        ? (order.subtotal * order.discountValue / 100) 
-                        : order.discountValue || 0, 
-                      order.currency || 'EUR'
-                    )}
-                  </span>
+                <div class="price-row discount-row">
+                  <span class="price-label">${t('orders:discount')} ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}</span>
+                  <span class="price-value">-${formatCurrency(
+                    order.discountType === 'rate' 
+                      ? (order.subtotal * order.discountValue / 100) 
+                      : order.discountValue || 0, 
+                    order.currency || 'EUR'
+                  )}</span>
                 </div>
               ` : ''}
               ${order.taxAmount > 0 ? `
@@ -489,21 +556,17 @@ export default function OrderDetails() {
               ` : ''}
               ${order.shippingCost > 0 ? `
                 <div class="price-row">
-                  <span class="price-label">${t('orders:shipping')} (${order.shippingMethod})</span>
+                  <span class="price-label">${t('orders:shipping')}</span>
                   <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               ${order.adjustment != null && Number(order.adjustment) !== 0 ? `
                 <div class="price-row">
-                  <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
-                    ${t('orders:adjustment')}
-                  </span>
-                  <span class="price-value" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
-                    ${order.adjustment > 0 ? '+' : ''}${formatCurrency(order.adjustment || 0, order.currency || 'EUR')}
-                  </span>
+                  <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">${t('orders:adjustment')}</span>
+                  <span class="price-value" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">${order.adjustment > 0 ? '+' : ''}${formatCurrency(order.adjustment || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
-              <div class="price-separator"></div>
+              <div class="total-divider"></div>
               <div class="total-row">
                 <span class="total-label">${t('orders:grandTotal')}</span>
                 <span class="total-value">${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
@@ -514,7 +577,7 @@ export default function OrderDetails() {
         </html>
       `;
 
-      // Create an invisible iframe to render the HTML (iPhone 17 Pro Max dimensions)
+      // Create an invisible iframe to render the HTML
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
@@ -537,7 +600,7 @@ export default function OrderDetails() {
         throw new Error('Invoice card not found');
       }
 
-      // Capture only the invoice card (no extra white space)
+      // Capture only the invoice card
       const canvas = await html2canvas(invoiceCard, {
         backgroundColor: '#ffffff',
         scale: 3,
