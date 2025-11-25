@@ -1531,6 +1531,11 @@ function QuickStorageSheet({
       // Force immediate refetch to sync cache and UI
       queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
       queryClient.refetchQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      // Also invalidate inventory/products queries for real-time stock updates
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${variables.productId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${variables.productId}/locations`] });
       
       toast({
         title: t('storedSuccessfully'),

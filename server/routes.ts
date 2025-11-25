@@ -4693,12 +4693,21 @@ Important:
 
       const location = await storage.createProductLocation(locationData);
 
+      // Update the product's main stock quantity (add the new location quantity)
+      const quantityToAdd = locationData.quantity || 0;
+      if (quantityToAdd > 0) {
+        const currentStock = product.quantity || 0;
+        await storage.updateProduct(productId, { 
+          quantity: currentStock + quantityToAdd 
+        });
+      }
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
         entityType: 'product_location',
         entityId: location.id,
-        description: `Added location ${location.locationCode} for product`,
+        description: `Added location ${location.locationCode} for product with ${quantityToAdd} units`,
       });
 
       res.status(201).json(location);
