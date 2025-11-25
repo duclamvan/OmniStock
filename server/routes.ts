@@ -119,6 +119,7 @@ function normalizeVietnamese(str: string): string {
 // SQL normalization helper - creates REPLACE chain for Vietnamese and Czech diacritics
 // This allows database-level filtering instead of loading entire tables
 // IMPORTANT: Apply LOWER() first, then REPLACE operations on the lowercased value
+// Total: 79 replacements = 7 lines of 10 + 1 line of 9
 function normalizeSQLColumn(column: any) {
   return sql`
     REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
@@ -127,6 +128,8 @@ function normalizeSQLColumn(column: any) {
     REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
     REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
     REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
       LOWER(${column}),
       'á', 'a'), 'à', 'a'), 'ả', 'a'), 'ã', 'a'), 'ạ', 'a'),
       'ă', 'a'), 'ắ', 'a'), 'ằ', 'a'), 'ẳ', 'a'), 'ẵ', 'a'), 'ặ', 'a'),
