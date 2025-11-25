@@ -1560,6 +1560,17 @@ function QuickStorageSheet({
   const remainingQuantity = currentItem ? 
     currentItem.receivedQuantity - currentItem.assignedQuantity - pendingLocationQuantity : 0;
   
+  // Pre-fill location input with AI suggestion when scanner sheet opens
+  useEffect(() => {
+    if (showScanner && currentItem) {
+      // Get suggested location from existing locations or AI suggestion
+      const suggested = getSuggestedLocation(currentItem) || generateSuggestedLocationWithAI(currentItem, aiSuggestions);
+      if (suggested && !locationInput) {
+        setLocationInput(suggested);
+      }
+    }
+  }, [showScanner, currentItem, aiSuggestions]);
+  
   // Handle location scan
   const handleLocationScan = async () => {
     const trimmedValue = locationInput.trim().toUpperCase();
