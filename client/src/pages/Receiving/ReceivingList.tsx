@@ -2165,11 +2165,45 @@ function QuickStorageSheet({
                 </Button>
               )}
               
-              {/* Scan Location Input */}
+              {/* Saved Locations Section - Read-only display from database */}
+              {currentItem && currentItem.existingLocations && currentItem.existingLocations.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    {t('savedLocationsInDb')} ({currentItem.existingLocations.length})
+                  </Label>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                    {currentItem.existingLocations.map((loc: any, idx: number) => (
+                      <div 
+                        key={`existing-${loc.id || idx}`} 
+                        className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg"
+                      >
+                        <MapPin className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <span className="font-mono text-sm font-medium flex-1">{loc.locationCode}</span>
+                        {loc.isPrimary && (
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        )}
+                        <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                          {loc.quantity} {t('unitsAtLocation')}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-gray-50 dark:bg-gray-900 rounded p-2">
+                    <span>{t('totalSaved')}:</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">
+                      {currentItem.existingLocations.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0)} {t('unitsAtLocation')}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Add Location - Scan or Manual Entry */}
               <div className="space-y-2">
-                <Label htmlFor="scanner-location-input" className="text-sm font-medium">
-                  <ScanLine className="h-4 w-4 inline mr-1" />
-                  {t('scanLocation')}
+                <Label htmlFor="scanner-location-input" className="text-sm font-medium flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t('addLocationManually')}
+                  <span className="text-xs text-muted-foreground font-normal">({t('orScanBarcode')})</span>
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -2201,24 +2235,24 @@ function QuickStorageSheet({
                 </p>
               </div>
               
-              {/* Scanned Locations List with Quantity Inputs */}
+              {/* Pending Locations - New locations with quantity inputs */}
               {currentItem && currentItem.locations.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {t('assignedLocations')} ({currentItem.locations.length})
+                    <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    {t('pendingLocations')} ({currentItem.locations.length})
                   </Label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {currentItem.locations.map((loc, locIndex) => (
                       <div 
                         key={loc.id} 
-                        className="flex items-center gap-2 p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
+                        className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg"
                       >
                         <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                        <span className="font-mono text-sm font-medium min-w-[120px]">{loc.locationCode}</span>
+                        <span className="font-mono text-sm font-medium min-w-[100px]">{loc.locationCode}</span>
                         
                         {/* Quantity Input */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 ml-auto">
                           <Input
                             type="number"
                             value={loc.quantity || ''}
@@ -2283,6 +2317,15 @@ function QuickStorageSheet({
                       {t('assignAllToLast')} ({remainingQuantity})
                     </Button>
                   )}
+                </div>
+              )}
+              
+              {/* Empty state when no locations at all */}
+              {currentItem && (!currentItem.existingLocations || currentItem.existingLocations.length === 0) && currentItem.locations.length === 0 && (
+                <div className="text-center py-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">{t('noSavedLocationsYet')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('locationFormatHint')}</p>
                 </div>
               )}
               

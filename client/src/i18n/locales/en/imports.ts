@@ -1375,6 +1375,13 @@ const imports = {
   scanOrEnterLocationCodeExample: 'Scan or enter location code (e.g., WH1-A01-R02-L03)',
   locationFormatHint: 'Format: WH1-A01-R02-L03 (Warehouse-Area-Row-Level)',
   saveLocations: 'Save Locations',
+  savedLocationsInDb: 'Saved Locations',
+  pendingLocations: 'Pending Locations',
+  totalSaved: 'Total Saved',
+  addLocationManually: 'Add Location Manually',
+  orScanBarcode: 'or scan barcode',
+  unitsAtLocation: 'units',
+  noSavedLocationsYet: 'No saved locations yet',
   
   // ItemsToStore & StoreItems - Allocation Methods
   auto: 'AUTO',

@@ -1379,6 +1379,13 @@ const imports = {
   scanOrEnterLocationCodeExample: 'Quét hoặc nhập mã vị trí (VD: WH1-A01-R02-L03)',
   locationFormatHint: 'Định dạng: WH1-A01-R02-L03 (Kho-Khu-Dãy-Tầng)',
   saveLocations: 'Lưu vị trí',
+  savedLocationsInDb: 'Vị trí đã lưu',
+  pendingLocations: 'Vị trí đang chờ',
+  totalSaved: 'Tổng đã lưu',
+  addLocationManually: 'Thêm vị trí thủ công',
+  orScanBarcode: 'hoặc quét mã vạch',
+  unitsAtLocation: 'đơn vị',
+  noSavedLocationsYet: 'Chưa có vị trí đã lưu',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'TRỌNG LƯỢNG',
