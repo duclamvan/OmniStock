@@ -1690,7 +1690,7 @@ function QuickStorageSheet({
     if (currentItem.productId) {
       try {
         await storeLocationMutation.mutateAsync({
-          productId: currentItem.productId,
+          productId: Number(currentItem.productId),
           locationCode: location.locationCode,
           locationType: location.locationType,
           quantity: assignedQty,
@@ -2356,7 +2356,7 @@ function QuickStorageSheet({
                         if (currentItem.productId && loc.quantity > 0) {
                           try {
                             await storeLocationMutation.mutateAsync({
-                              productId: currentItem.productId,
+                              productId: Number(currentItem.productId),
                               locationCode: loc.locationCode,
                               locationType: loc.locationType,
                               quantity: loc.quantity,
