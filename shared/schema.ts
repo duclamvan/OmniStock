@@ -1944,3 +1944,41 @@ export const insertActivityLogSchema = createInsertSchema(activityLog).omit({
 });
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+// Warehouse Tasks - Admin-assigned tasks for warehouse employees
+export const warehouseTasks = pgTable('warehouse_tasks', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: varchar('type', { length: 50 }).notNull().default('general'), // general, urgent, inventory, maintenance, other
+  priority: varchar('priority', { length: 20 }).notNull().default('medium'), // low, medium, high, urgent
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, in_progress, completed, cancelled
+  dueAt: timestamp('due_at'),
+  assignedToUserId: varchar('assigned_to_user_id').references(() => users.id),
+  createdByUserId: varchar('created_by_user_id').notNull().references(() => users.id),
+  completedAt: timestamp('completed_at'),
+  completedByUserId: varchar('completed_by_user_id').references(() => users.id),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const insertWarehouseTaskSchema = createInsertSchema(warehouseTasks, {
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  type: z.enum(['general', 'urgent', 'inventory', 'maintenance', 'other']).default('general'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
+  dueAt: z.union([z.string(), z.date()]).optional(),
+  assignedToUserId: z.string().optional(),
+  notes: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  completedByUserId: true,
+});
+
+export type WarehouseTask = typeof warehouseTasks.$inferSelect;
+export type InsertWarehouseTask = z.infer<typeof insertWarehouseTaskSchema>;

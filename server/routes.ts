@@ -36,6 +36,8 @@ import {
   insertAppSettingSchema,
   insertNotificationSchema,
   insertActivityLogSchema,
+  warehouseTasks,
+  insertWarehouseTaskSchema,
   productCostHistory,
   products,
   productBundles,
@@ -8446,6 +8448,219 @@ Important:
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // ============================================================================
+  // WAREHOUSE DASHBOARD & TASKS ENDPOINTS
+  // ============================================================================
+
+  // GET /api/dashboard/warehouse - Aggregated dashboard data for warehouse employees
+  app.get('/api/dashboard/warehouse', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
+
+      // 1. Orders to pick/pack - orders with status in ['pending', 'processing', 'confirmed']
+      const ordersToPickPack = await db
+        .select()
+        .from(orders)
+        .where(inArray(orders.status, ['pending', 'processing', 'confirmed']))
+        .orderBy(desc(orders.createdAt));
+
+      // 2. Receiving tasks - shipments that are in receiving status
+      const receivingTasks = await db
+        .select()
+        .from(shipments)
+        .where(
+          or(
+            eq(shipments.receivingStatus, 'receiving'),
+            eq(shipments.receivingStatus, 'pending_approval')
+          )
+        )
+        .orderBy(desc(shipments.createdAt));
+
+      // 3. Incoming shipments - shipments with estimatedArrival within 2 days
+      const twoDaysFromNow = new Date();
+      twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+      const now = new Date();
+      
+      const incomingShipments = await db
+        .select()
+        .from(importPurchases)
+        .where(
+          and(
+            inArray(importPurchases.status, ['shipped', 'processing']),
+            sql`${importPurchases.estimatedArrival} IS NOT NULL`,
+            sql`${importPurchases.estimatedArrival} <= ${twoDaysFromNow}`,
+            sql`${importPurchases.estimatedArrival} >= ${now}`
+          )
+        )
+        .orderBy(importPurchases.estimatedArrival);
+
+      // 4. Admin tasks - warehouse tasks assigned to current user or unassigned with status 'pending' or 'in_progress'
+      let adminTasks;
+      if (userRole === 'administrator') {
+        // Admins see all pending/in_progress tasks
+        adminTasks = await db
+          .select()
+          .from(warehouseTasks)
+          .where(inArray(warehouseTasks.status, ['pending', 'in_progress']))
+          .orderBy(desc(warehouseTasks.createdAt));
+      } else {
+        // Operators see tasks assigned to them or unassigned
+        adminTasks = await db
+          .select()
+          .from(warehouseTasks)
+          .where(
+            and(
+              inArray(warehouseTasks.status, ['pending', 'in_progress']),
+              or(
+                eq(warehouseTasks.assignedToUserId, userId),
+                isNull(warehouseTasks.assignedToUserId)
+              )
+            )
+          )
+          .orderBy(desc(warehouseTasks.createdAt));
+      }
+
+      // Filter financial data for non-admins
+      const filteredOrders = filterFinancialData(ordersToPickPack, userRole);
+
+      res.json({
+        ordersToPickPack: filteredOrders,
+        receivingTasks,
+        incomingShipments,
+        adminTasks
+      });
+    } catch (error) {
+      console.error("Error fetching warehouse dashboard:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse dashboard" });
+    }
+  });
+
+  // GET /api/warehouse-tasks - List all tasks (admin sees all, operator sees assigned)
+  app.get('/api/warehouse-tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
+      const { status, assignedToUserId } = req.query;
+
+      // Build filters
+      const filters: { status?: string; assignedToUserId?: string } = {};
+      if (status) filters.status = status as string;
+      if (assignedToUserId) filters.assignedToUserId = assignedToUserId as string;
+
+      let tasks;
+      if (userRole === 'administrator') {
+        // Admins see all tasks (with optional filters)
+        tasks = await storage.getWarehouseTasks(filters);
+      } else {
+        // Operators see only tasks assigned to them or unassigned
+        const allTasks = await storage.getWarehouseTasks(filters);
+        tasks = allTasks.filter(task => 
+          task.assignedToUserId === userId || task.assignedToUserId === null
+        );
+      }
+
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching warehouse tasks:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse tasks" });
+    }
+  });
+
+  // POST /api/warehouse-tasks - Create task (admin only)
+  app.post('/api/warehouse-tasks', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      
+      // Validate with insertWarehouseTaskSchema
+      const data = insertWarehouseTaskSchema.parse({
+        ...req.body,
+        createdByUserId: userId
+      });
+
+      const task = await storage.createWarehouseTask(data);
+      res.status(201).json(task);
+    } catch (error) {
+      console.error("Error creating warehouse task:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create warehouse task" });
+    }
+  });
+
+  // PATCH /api/warehouse-tasks/:id - Update task
+  app.patch('/api/warehouse-tasks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
+
+      // Get existing task
+      const existingTask = await storage.getWarehouseTaskById(taskId);
+      if (!existingTask) {
+        return res.status(404).json({ message: "Warehouse task not found" });
+      }
+
+      // Check permissions
+      const isAdmin = userRole === 'administrator';
+      const isAssigned = existingTask.assignedToUserId === userId;
+
+      if (!isAdmin && !isAssigned) {
+        return res.status(403).json({ message: "You do not have permission to update this task" });
+      }
+
+      // Operators can only update status, admins can update everything
+      let updates: any;
+      if (isAdmin) {
+        updates = insertWarehouseTaskSchema.partial().parse(req.body);
+      } else {
+        // Operators can only update status and notes
+        const { status, notes } = req.body;
+        const limitedUpdates: any = {};
+        if (status) limitedUpdates.status = status;
+        if (notes !== undefined) limitedUpdates.notes = notes;
+        
+        // Validate the limited updates
+        updates = insertWarehouseTaskSchema.partial().parse(limitedUpdates);
+      }
+
+      // If status is being changed to 'completed', set completedAt and completedByUserId
+      if (updates.status === 'completed') {
+        (updates as any).completedAt = new Date();
+        (updates as any).completedByUserId = userId;
+      }
+
+      const updatedTask = await storage.updateWarehouseTask(taskId, updates);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error updating warehouse task:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update warehouse task" });
+    }
+  });
+
+  // DELETE /api/warehouse-tasks/:id - Delete task (admin only)
+  app.delete('/api/warehouse-tasks/:id', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+
+      // Check if task exists
+      const existingTask = await storage.getWarehouseTaskById(taskId);
+      if (!existingTask) {
+        return res.status(404).json({ message: "Warehouse task not found" });
+      }
+
+      await storage.deleteWarehouseTask(taskId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting warehouse task:", error);
+      res.status(500).json({ message: "Failed to delete warehouse task" });
     }
   });
 

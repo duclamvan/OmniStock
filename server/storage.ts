@@ -53,6 +53,7 @@ import {
   notifications,
   activityLog,
   invoices,
+  warehouseTasks,
   type User,
   type InsertUser,
   type Invoice,
@@ -157,7 +158,9 @@ import {
   type InsertAppSetting,
   type CustomerBadge,
   type InsertCustomerBadge,
-  customerBadges
+  customerBadges,
+  type WarehouseTask,
+  type InsertWarehouseTask
 } from "@shared/schema";
 import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -659,6 +662,13 @@ export interface IStorage {
   getDeadStockProducts(daysSinceLastSale: number): Promise<Product[]>;
   getReorderAlerts(): Promise<Product[]>;
   getColorTrendReport(categoryName: string, startDate?: Date, endDate?: Date): Promise<any[]>;
+
+  // Warehouse Tasks
+  getWarehouseTasks(filters?: { status?: string; assignedToUserId?: string; createdByUserId?: string }): Promise<WarehouseTask[]>;
+  getWarehouseTaskById(id: number): Promise<WarehouseTask | undefined>;
+  createWarehouseTask(task: InsertWarehouseTask): Promise<WarehouseTask>;
+  updateWarehouseTask(id: number, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined>;
+  deleteWarehouseTask(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -5930,6 +5940,93 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting color trend report:', error);
       throw new Error('Failed to retrieve color trend report');
+    }
+  }
+
+  // Warehouse Tasks
+  async getWarehouseTasks(filters?: { status?: string; assignedToUserId?: string; createdByUserId?: string }): Promise<WarehouseTask[]> {
+    try {
+      const conditions = [];
+      
+      if (filters?.status) {
+        conditions.push(eq(warehouseTasks.status, filters.status));
+      }
+      if (filters?.assignedToUserId) {
+        conditions.push(eq(warehouseTasks.assignedToUserId, filters.assignedToUserId));
+      }
+      if (filters?.createdByUserId) {
+        conditions.push(eq(warehouseTasks.createdByUserId, filters.createdByUserId));
+      }
+
+      if (conditions.length > 0) {
+        return await db
+          .select()
+          .from(warehouseTasks)
+          .where(and(...conditions))
+          .orderBy(desc(warehouseTasks.createdAt));
+      }
+
+      return await db
+        .select()
+        .from(warehouseTasks)
+        .orderBy(desc(warehouseTasks.createdAt));
+    } catch (error) {
+      console.error('Error getting warehouse tasks:', error);
+      throw new Error('Failed to retrieve warehouse tasks');
+    }
+  }
+
+  async getWarehouseTaskById(id: number): Promise<WarehouseTask | undefined> {
+    try {
+      const [task] = await db
+        .select()
+        .from(warehouseTasks)
+        .where(eq(warehouseTasks.id, id))
+        .limit(1);
+      return task;
+    } catch (error) {
+      console.error('Error getting warehouse task by ID:', error);
+      throw new Error('Failed to retrieve warehouse task');
+    }
+  }
+
+  async createWarehouseTask(task: InsertWarehouseTask): Promise<WarehouseTask> {
+    try {
+      const [result] = await db
+        .insert(warehouseTasks)
+        .values(task)
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating warehouse task:', error);
+      throw new Error('Failed to create warehouse task');
+    }
+  }
+
+  async updateWarehouseTask(id: number, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined> {
+    try {
+      const [result] = await db
+        .update(warehouseTasks)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(warehouseTasks.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating warehouse task:', error);
+      throw new Error('Failed to update warehouse task');
+    }
+  }
+
+  async deleteWarehouseTask(id: number): Promise<boolean> {
+    try {
+      await db.delete(warehouseTasks).where(eq(warehouseTasks.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting warehouse task:', error);
+      throw new Error('Failed to delete warehouse task');
     }
   }
 }
