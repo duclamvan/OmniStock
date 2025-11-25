@@ -1309,6 +1309,7 @@ function QuickStorageSheet({
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showProductDetails, setShowProductDetails] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
   
   // Refs
@@ -2024,7 +2025,10 @@ function QuickStorageSheet({
                                     <span className="font-medium">{t('scanLocation')}</span>
                                   </button>
                                   <button
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowProductDetails(true);
+                                    }}
                                     className="p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
                                     data-testid="button-item-details"
                                   >
@@ -2409,6 +2413,106 @@ function QuickStorageSheet({
                 </Button>
               </div>
             </div>
+          </SheetContent>
+        </Sheet>
+        
+        {/* Product Details Sheet */}
+        <Sheet open={showProductDetails} onOpenChange={setShowProductDetails}>
+          <SheetContent side="bottom" className="h-auto max-h-[80vh] overflow-y-auto pb-6">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-base font-semibold">{t('common:productDetails')}</SheetTitle>
+            </SheetHeader>
+            
+            {currentItem && (
+              <div className="space-y-4">
+                {/* Large Product Image */}
+                <div className="flex justify-center">
+                  <div className="w-48 h-48 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border dark:border-gray-800 flex items-center justify-center">
+                    {currentItem.imageUrl ? (
+                      <img 
+                        src={currentItem.imageUrl} 
+                        alt={currentItem.productName}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Package className="h-16 w-16 text-gray-300 dark:text-gray-600" />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Product Name */}
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">{currentItem.productName}</h3>
+                  {currentItem.sku && (
+                    <p className="text-sm text-muted-foreground font-mono mt-1">{currentItem.sku}</p>
+                  )}
+                </div>
+                
+                {/* Product Description */}
+                {currentItem.description && currentItem.description !== currentItem.productName && (
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">{t('common:description')}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{currentItem.description}</p>
+                  </div>
+                )}
+                
+                {/* Quantity Info */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 text-center">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('received')}</p>
+                    <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{currentItem.receivedQuantity}</p>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${
+                    remainingQuantity === 0 
+                      ? 'bg-green-50 dark:bg-green-950/20' 
+                      : 'bg-amber-50 dark:bg-amber-950/20'
+                  }`}>
+                    <p className={`text-xs font-medium ${
+                      remainingQuantity === 0 
+                        ? 'text-green-600 dark:text-green-400' 
+                        : 'text-amber-600 dark:text-amber-400'
+                    }`}>{t('remaining')}</p>
+                    <p className={`text-xl font-bold ${
+                      remainingQuantity === 0 
+                        ? 'text-green-700 dark:text-green-300' 
+                        : 'text-amber-700 dark:text-amber-300'
+                    }`}>{remainingQuantity}</p>
+                  </div>
+                </div>
+                
+                {/* Existing Locations */}
+                {currentItem.existingLocations && currentItem.existingLocations.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">{t('currentLocations')}</p>
+                    <div className="space-y-1.5">
+                      {currentItem.existingLocations.map((loc: any, idx: number) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg"
+                        >
+                          <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <span className="font-mono text-sm font-medium flex-1">{loc.locationCode}</span>
+                          {loc.isPrimary && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          )}
+                          <Badge variant="secondary" className="text-xs">{loc.quantity}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Close Button */}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={() => setShowProductDetails(false)}
+                >
+                  {t('common:close')}
+                </Button>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       </SheetContent>
