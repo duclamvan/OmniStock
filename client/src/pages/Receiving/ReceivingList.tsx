@@ -434,8 +434,34 @@ function StatsCard({
 }
 
 // ============================================================================
-// FLOATING SCAN BUTTON
+// FLOATING SCAN BUTTON WITH BULK SCANNING
 // ============================================================================
+
+interface TrackingLookupResult {
+  trackingNumber: string;
+  matched: boolean;
+  orderId: string | null;
+  orderDisplayId: string | null;
+  source: 'carton' | 'label' | null;
+  cartonNumber?: number;
+  carrier?: string;
+}
+
+interface OrderCount {
+  count: number;
+  orderId: string;
+  orderDisplayId: string;
+}
+
+interface BulkScanState {
+  scannedNumbers: string[];
+  results: TrackingLookupResult[];
+  orderCounts: OrderCount[];
+  totalScanned: number;
+  matched: number;
+  unmatched: number;
+  isLookingUp: boolean;
+}
 
 function FloatingScanButton({ 
   onScan, 
@@ -446,13 +472,138 @@ function FloatingScanButton({
   isScanning: boolean;
   barcodeScanner: ReturnType<typeof useBarcodeScanner>;
 }) {
-  const { t } = useTranslation(['imports']);
+  const { t } = useTranslation(['imports', 'common']);
   const { session, updateSession } = useReceivingSession();
   const { toast } = useToast();
   const [showScanDialog, setShowScanDialog] = useState(false);
+  const [scanMode, setScanMode] = useState<'single' | 'bulk'>('bulk');
   const [manualBarcode, setManualBarcode] = useState("");
+  const [bulkInput, setBulkInput] = useState("");
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const bulkInputRef = useRef<HTMLTextAreaElement>(null);
+  const rapidScanInputRef = useRef<HTMLInputElement>(null);
+  
+  // Bulk scan state
+  const [bulkScanState, setBulkScanState] = useState<BulkScanState>({
+    scannedNumbers: [],
+    results: [],
+    orderCounts: [],
+    totalScanned: 0,
+    matched: 0,
+    unmatched: 0,
+    isLookingUp: false
+  });
 
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!showScanDialog) {
+      setBulkScanState({
+        scannedNumbers: [],
+        results: [],
+        orderCounts: [],
+        totalScanned: 0,
+        matched: 0,
+        unmatched: 0,
+        isLookingUp: false
+      });
+      setBulkInput("");
+      setManualBarcode("");
+    }
+  }, [showScanDialog]);
+
+  // Focus input when dialog opens
+  useEffect(() => {
+    if (showScanDialog) {
+      setTimeout(() => {
+        if (scanMode === 'bulk') {
+          rapidScanInputRef.current?.focus();
+        } else {
+          scanInputRef.current?.focus();
+        }
+      }, 100);
+    }
+  }, [showScanDialog, scanMode]);
+
+  // Look up tracking numbers via API
+  const lookupTrackingNumbers = useCallback(async (numbers: string[]) => {
+    if (numbers.length === 0) return;
+
+    setBulkScanState(prev => ({ ...prev, isLookingUp: true }));
+
+    try {
+      const response = await fetch('/api/receiving/lookup-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ trackingNumbers: numbers })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to lookup tracking numbers');
+      }
+
+      const data = await response.json();
+
+      setBulkScanState({
+        scannedNumbers: numbers,
+        results: data.results || [],
+        orderCounts: data.summary?.orderCounts || [],
+        totalScanned: data.summary?.totalScanned || 0,
+        matched: data.summary?.matched || 0,
+        unmatched: data.summary?.unmatched || 0,
+        isLookingUp: false
+      });
+
+      // Play sound based on results
+      if (data.summary?.matched > 0) {
+        await soundEffects.playSuccessBeep();
+      } else if (data.summary?.unmatched > 0) {
+        await soundEffects.playErrorBeep();
+      }
+    } catch (error) {
+      console.error('Error looking up tracking numbers:', error);
+      setBulkScanState(prev => ({ ...prev, isLookingUp: false }));
+      toast({
+        title: t('common:error'),
+        description: t('failedToLookupTracking'),
+        variant: "destructive"
+      });
+    }
+  }, [toast, t]);
+
+  // Handle rapid scan input (for hardware scanners)
+  const handleRapidScanKeyDown = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = (e.target as HTMLInputElement).value.trim();
+      if (value) {
+        // Add to existing scanned numbers and look up
+        const newNumbers = [...bulkScanState.scannedNumbers, value];
+        (e.target as HTMLInputElement).value = '';
+        await lookupTrackingNumbers(newNumbers);
+      }
+    }
+  }, [bulkScanState.scannedNumbers, lookupTrackingNumbers]);
+
+  // Handle bulk paste/input
+  const handleBulkProcess = useCallback(async () => {
+    if (!bulkInput.trim()) return;
+
+    // Parse input - split by newlines, commas, spaces, tabs
+    const numbers = bulkInput
+      .split(/[\n,\s\t]+/)
+      .map(n => n.trim())
+      .filter(n => n.length > 0);
+
+    if (numbers.length === 0) return;
+
+    // Combine with existing scanned numbers (deduplicate)
+    const allNumbers = [...new Set([...bulkScanState.scannedNumbers, ...numbers])];
+    setBulkInput("");
+    await lookupTrackingNumbers(allNumbers);
+  }, [bulkInput, bulkScanState.scannedNumbers, lookupTrackingNumbers]);
+
+  // Handle single barcode scan
   const handleManualScan = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (manualBarcode.trim()) {
@@ -462,6 +613,7 @@ function FloatingScanButton({
     }
   }, [manualBarcode, onScan]);
 
+  // Handle camera toggle
   const handleToggleCamera = useCallback(async () => {
     if (session.isCameraActive) {
       barcodeScanner.stopScanning();
@@ -483,7 +635,31 @@ function FloatingScanButton({
         });
       }
     }
-  }, [session.isCameraActive, barcodeScanner, updateSession, toast]);
+  }, [session.isCameraActive, barcodeScanner, updateSession, toast, t]);
+
+  // Clear all scanned items
+  const handleClearAll = useCallback(() => {
+    setBulkScanState({
+      scannedNumbers: [],
+      results: [],
+      orderCounts: [],
+      totalScanned: 0,
+      matched: 0,
+      unmatched: 0,
+      isLookingUp: false
+    });
+    setBulkInput("");
+  }, []);
+
+  // Remove a single tracking number
+  const handleRemoveNumber = useCallback(async (trackingNumber: string) => {
+    const newNumbers = bulkScanState.scannedNumbers.filter(n => n.toUpperCase() !== trackingNumber.toUpperCase());
+    if (newNumbers.length > 0) {
+      await lookupTrackingNumbers(newNumbers);
+    } else {
+      handleClearAll();
+    }
+  }, [bulkScanState.scannedNumbers, lookupTrackingNumbers, handleClearAll]);
 
   return (
     <>
@@ -506,73 +682,286 @@ function FloatingScanButton({
         </Tooltip>
       </TooltipProvider>
 
-      {/* Scan Dialog */}
+      {/* Enhanced Scan Dialog */}
       <Dialog open={showScanDialog} onOpenChange={setShowScanDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ScanLine className="h-5 w-5" />
-              {t('scanBarcode')}
+              {t('scanParcels')}
             </DialogTitle>
             <DialogDescription>
-              {t('scanOrEnterBarcodeManually')}
+              {t('scanMultipleParcelsAtOnce')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Manual Input */}
-            <form onSubmit={handleManualScan} className="space-y-3">
-              <Input
-                ref={scanInputRef}
-                type="text"
-                placeholder={t('enterBarcode')}
-                value={manualBarcode}
-                onChange={(e) => setManualBarcode(e.target.value)}
-                className="h-12 text-base"
-                data-testid="input-barcode"
-                autoFocus
-              />
-              <Button 
-                type="submit" 
-                size="lg" 
-                className="w-full h-12 text-base"
-                disabled={!manualBarcode.trim()}
-                data-testid="button-scan"
-              >
-                <ScanLine className="h-5 w-5 mr-2" />
-                {t('scan')}
-              </Button>
-            </form>
+          {/* Mode Toggle */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={scanMode === 'bulk' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setScanMode('bulk')}
+              className="flex-1"
+              data-testid="button-mode-bulk"
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              {t('bulkScan')}
+            </Button>
+            <Button
+              variant={scanMode === 'single' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setScanMode('single')}
+              className="flex-1"
+              data-testid="button-mode-single"
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              {t('singleScan')}
+            </Button>
+          </div>
 
-            {/* Camera Toggle */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  {t('or')}
-                </span>
-              </div>
-            </div>
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {scanMode === 'bulk' ? (
+              <>
+                {/* Rapid Scan Input (for hardware scanners) */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('rapidScanInput')}</Label>
+                  <Input
+                    ref={rapidScanInputRef}
+                    type="text"
+                    placeholder={t('scanOrTypeTrackingNumber')}
+                    onKeyDown={handleRapidScanKeyDown}
+                    className="h-12 text-base font-mono"
+                    data-testid="input-rapid-scan"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">{t('pressEnterAfterEachScan')}</p>
+                </div>
 
+                {/* Bulk Paste Area */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('bulkPasteArea')}</Label>
+                  <div className="flex gap-2">
+                    <textarea
+                      ref={bulkInputRef}
+                      value={bulkInput}
+                      onChange={(e) => setBulkInput(e.target.value)}
+                      placeholder={t('pasteMultipleTrackingNumbers')}
+                      className="flex-1 min-h-[80px] p-3 text-sm font-mono border rounded-md resize-none bg-background"
+                      data-testid="textarea-bulk-input"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleBulkProcess}
+                      disabled={!bulkInput.trim() || bulkScanState.isLookingUp}
+                      className="flex-1"
+                      data-testid="button-process-bulk"
+                    >
+                      {bulkScanState.isLookingUp ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4 mr-2" />
+                      )}
+                      {t('processTracking')}
+                    </Button>
+                    {bulkScanState.totalScanned > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={handleClearAll}
+                        data-testid="button-clear-all"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        {t('common:clear')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Real-time Results Summary */}
+                {bulkScanState.totalScanned > 0 && (
+                  <div className="space-y-3">
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {bulkScanState.totalScanned}
+                        </div>
+                        <div className="text-xs text-blue-600/80 dark:text-blue-400/80">{t('totalScanned')}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {bulkScanState.matched}
+                        </div>
+                        <div className="text-xs text-green-600/80 dark:text-green-400/80">{t('matched')}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
+                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                          {bulkScanState.unmatched}
+                        </div>
+                        <div className="text-xs text-red-600/80 dark:text-red-400/80">{t('unmatched')}</div>
+                      </div>
+                    </div>
+
+                    {/* Order Counts */}
+                    {bulkScanState.orderCounts.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          {t('parcelsByOrder')}
+                        </Label>
+                        <div className="grid gap-2 max-h-[150px] overflow-y-auto">
+                          {bulkScanState.orderCounts.map((order) => (
+                            <div 
+                              key={order.orderId}
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-mono font-medium">{order.orderDisplayId}</span>
+                              </div>
+                              <Badge variant="secondary" className="font-bold">
+                                {order.count} {order.count === 1 ? t('parcel') : t('parcels')}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Unmatched Tracking Numbers */}
+                    {bulkScanState.unmatched > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2 text-red-600 dark:text-red-400">
+                          <AlertCircle className="h-4 w-4" />
+                          {t('unmatchedTrackingNumbers')}
+                        </Label>
+                        <div className="flex flex-wrap gap-2 max-h-[100px] overflow-y-auto">
+                          {bulkScanState.results
+                            .filter(r => !r.matched)
+                            .map((result, idx) => (
+                              <Badge 
+                                key={idx} 
+                                variant="outline" 
+                                className="font-mono text-xs border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                                onClick={() => handleRemoveNumber(result.trackingNumber)}
+                              >
+                                {result.trackingNumber}
+                                <X className="h-3 w-3 ml-1" />
+                              </Badge>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    )}
+
+                    {/* All Scanned List (collapsible) */}
+                    <details className="group">
+                      <summary className="text-sm font-medium cursor-pointer hover:text-primary flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                        {t('viewAllScanned')} ({bulkScanState.totalScanned})
+                      </summary>
+                      <div className="mt-2 max-h-[150px] overflow-y-auto border rounded-md p-2">
+                        {bulkScanState.results.map((result, idx) => (
+                          <div 
+                            key={idx}
+                            className="flex items-center justify-between py-1 px-2 text-sm hover:bg-muted/50 rounded"
+                          >
+                            <span className="font-mono text-xs">{result.trackingNumber}</span>
+                            <div className="flex items-center gap-2">
+                              {result.matched ? (
+                                <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800">
+                                  {result.orderDisplayId}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800">
+                                  {t('notFound')}
+                                </Badge>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => handleRemoveNumber(result.trackingNumber)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Single Scan Mode */}
+                <form onSubmit={handleManualScan} className="space-y-3">
+                  <Input
+                    ref={scanInputRef}
+                    type="text"
+                    placeholder={t('enterBarcode')}
+                    value={manualBarcode}
+                    onChange={(e) => setManualBarcode(e.target.value)}
+                    className="h-12 text-base"
+                    data-testid="input-barcode"
+                    autoFocus
+                  />
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full h-12 text-base"
+                    disabled={!manualBarcode.trim()}
+                    data-testid="button-scan"
+                  >
+                    <ScanLine className="h-5 w-5 mr-2" />
+                    {t('scan')}
+                  </Button>
+                </form>
+
+                {/* Camera Toggle */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      {t('or')}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-12 text-base"
+                  onClick={handleToggleCamera}
+                  data-testid="button-toggle-camera"
+                >
+                  <Camera className="h-5 w-5 mr-2" />
+                  {t('useCameraScanner')}
+                </Button>
+
+                {isScanning && (
+                  <div className="flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400 justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t('processingScan')}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Footer with close button */}
+          <div className="pt-4 border-t mt-4">
             <Button
               variant="outline"
-              size="lg"
-              className="w-full h-12 text-base"
-              onClick={handleToggleCamera}
-              data-testid="button-toggle-camera"
+              className="w-full"
+              onClick={() => setShowScanDialog(false)}
+              data-testid="button-close-dialog"
             >
-              <Camera className="h-5 w-5 mr-2" />
-              {t('useCameraScanner')}
+              {t('common:close')}
             </Button>
-
-            {isScanning && (
-              <div className="flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400 justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t('processingScan')}</span>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
