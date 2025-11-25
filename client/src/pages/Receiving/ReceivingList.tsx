@@ -1831,6 +1831,42 @@ function QuickStorageSheet({
                                     {t('qty')} {item.receivedQuantity}
                                   </Badge>
                                 </div>
+                                
+                                {/* Warehouse Locations - Always visible in collapsed state */}
+                                {(item.existingLocations?.length > 0 || item.locations.length > 0) && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {/* Show existing locations first */}
+                                    {item.existingLocations?.slice(0, 3).map((loc, idx) => (
+                                      <Badge 
+                                        key={`existing-${idx}`} 
+                                        variant="secondary" 
+                                        className="text-xs font-mono bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                                      >
+                                        <MapPin className="h-3 w-3 mr-1" />
+                                        {loc.locationCode}
+                                        {loc.isPrimary && <Star className="h-3 w-3 ml-1" fill="currentColor" />}
+                                      </Badge>
+                                    ))}
+                                    {/* Show new locations */}
+                                    {item.locations.slice(0, 3).map((loc, idx) => (
+                                      <Badge 
+                                        key={`new-${idx}`} 
+                                        variant="outline" 
+                                        className="text-xs font-mono border-green-500 text-green-600 dark:text-green-400"
+                                      >
+                                        <MapPin className="h-3 w-3 mr-1" />
+                                        {loc.locationCode}
+                                        {loc.quantity > 0 && <span className="ml-1">×{loc.quantity}</span>}
+                                      </Badge>
+                                    ))}
+                                    {/* Show overflow count */}
+                                    {((item.existingLocations?.length || 0) + item.locations.length) > 3 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        +{((item.existingLocations?.length || 0) + item.locations.length) - 3}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Expand Icon */}
@@ -1838,19 +1874,6 @@ function QuickStorageSheet({
                                 isSelected ? 'rotate-90' : ''
                               }`} />
                             </div>
-
-                            {/* Location Summary */}
-                            {(item.locations.length > 0 || item.existingLocations?.length > 0) && (
-                              <div className="mt-3 pt-3 border-t dark:border-gray-800">
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {item.locations.length > 0 && `${item.locations.length} new`}
-                                    {item.existingLocations?.length > 0 && ` • ${item.existingLocations.length} existing`}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           {/* Expanded Actions - Only show for selected item */}

@@ -5652,18 +5652,76 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       ))
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // Transform the results to match the expected format with item names
+    // Collect all product IDs from purchase items to get product details
+    const productIds = receiptItemsWithDetails
+      .filter(row => row.purchaseItem?.productId)
+      .map(row => row.purchaseItem!.productId as string);
+    
+    // Fetch product details and locations in parallel if we have product IDs
+    let productsMap: Record<string, any> = {};
+    let locationsMap: Record<string, any[]> = {};
+    
+    if (productIds.length > 0) {
+      const [productsData, locationsData] = await Promise.all([
+        db.select({
+          id: products.id,
+          name: products.name,
+          sku: products.sku,
+          imageUrl: products.imageUrl,
+          category: products.category
+        })
+        .from(products)
+        .where(inArray(products.id, productIds)),
+        
+        db.select({
+          id: productLocations.id,
+          productId: productLocations.productId,
+          locationCode: productLocations.locationCode,
+          locationType: productLocations.locationType,
+          quantity: productLocations.quantity,
+          isPrimary: productLocations.isPrimary,
+          notes: productLocations.notes
+        })
+        .from(productLocations)
+        .where(inArray(productLocations.productId, productIds))
+      ]);
+      
+      // Build lookup maps
+      productsData.forEach(p => { productsMap[p.id] = p; });
+      locationsData.forEach(loc => {
+        if (!locationsMap[loc.productId]) {
+          locationsMap[loc.productId] = [];
+        }
+        locationsMap[loc.productId].push({
+          id: loc.id.toString(),
+          locationCode: loc.locationCode,
+          locationType: loc.locationType || 'warehouse',
+          quantity: loc.quantity || 0,
+          isPrimary: loc.isPrimary || false,
+          notes: loc.notes || ''
+        });
+      });
+    }
+    
+    // Transform the results to match the expected format with product names and locations
     const itemsWithDetails = receiptItemsWithDetails.map(row => {
-      // Get the name from whichever item type exists
-      const name = row.purchaseItem?.name || row.customItem?.name || row.consolidationItem?.name || 'Unknown Item';
-      const sku = row.purchaseItem?.sku || row.customItem?.sku || null;
-      const imageUrl = row.purchaseItem?.imageUrl || null;
+      const productId = row.purchaseItem?.productId;
+      const product = productId ? productsMap[productId] : null;
+      
+      // Prefer product name from products table, fallback to purchase/custom/consolidation item name
+      const productName = product?.name || row.purchaseItem?.name || row.customItem?.name || row.consolidationItem?.name || 'Unknown Item';
+      const sku = product?.sku || row.purchaseItem?.sku || row.customItem?.sku || null;
+      const imageUrl = product?.imageUrl || row.purchaseItem?.imageUrl || null;
+      const existingLocations = productId ? (locationsMap[productId] || []) : [];
       
       return {
         ...row.receiptItem,
-        name, // Add name to receipt item
-        sku,  // Add SKU to receipt item
-        imageUrl, // Add image URL if available
+        productId,
+        productName, // Use productName for frontend consistency
+        name: productName, // Also include as name for backwards compatibility
+        sku,
+        imageUrl,
+        existingLocations,
         purchaseItem: row.purchaseItem,
         customItem: row.customItem,
         consolidationItem: row.consolidationItem
