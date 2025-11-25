@@ -6950,10 +6950,9 @@ router.get('/receipts/:id/report', async (req, res) => {
       summary
     };
     
-    // Filter financial data based on user role
-    const userRole = (req as any).user?.role || 'warehouse_operator';
-    const filtered = filterFinancialData(reportData, userRole);
-    res.json(filtered);
+    // Note: We intentionally don't filter financial data for this endpoint
+    // Warehouse operators need to see prices on printed warehouse labels
+    res.json(reportData);
   } catch (error) {
     console.error("Error fetching shipment report:", error);
     res.status(500).json({ 

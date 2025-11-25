@@ -60,7 +60,13 @@ import {
   ArrowUp,
   ArrowDown,
   QrCode,
-  Check
+  Check,
+  Printer,
+  FileText,
+  DollarSign,
+  Tag,
+  XCircle,
+  Image as ImageIcon
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -2268,11 +2274,575 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
   );
 }
 
+// ============================================================================
+// SHIPMENT REPORT DIALOG
+// ============================================================================
+
+interface ShipmentReportItem {
+  receiptItemId: number;
+  itemId: number;
+  itemType: string;
+  expectedQuantity: number;
+  receivedQuantity: number;
+  damagedQuantity: number;
+  missingQuantity: number;
+  status: string;
+  condition: string;
+  notes: string;
+  barcode: string;
+  warehouseLocation: string;
+  productId: string | null;
+  productName: string;
+  sku: string | null;
+  imageUrl: string | null;
+  prices: {
+    priceCzk: string | null;
+    priceEur: string | null;
+    priceUsd: string | null;
+  } | null;
+  locations: Array<{
+    id: string;
+    locationCode: string;
+    locationType: string;
+    quantity: number;
+    isPrimary: boolean;
+    notes: string;
+  }>;
+}
+
+interface ShipmentReportData {
+  receipt: {
+    id: number;
+    receiptNumber: string;
+    status: string;
+    receivedAt: string;
+    completedAt: string;
+    approvedAt: string;
+    receivedBy: string;
+    verifiedBy: string;
+    approvedBy: string;
+    carrier: string;
+    parcelCount: number;
+    notes: string;
+    damageNotes: string;
+    photos: string[];
+    scannedParcels: string[];
+  };
+  shipment: {
+    id: number;
+    shipmentName: string;
+    trackingNumber: string;
+    carrier: string;
+    status: string;
+    estimatedArrival: string;
+    actualArrival: string;
+  } | null;
+  items: ShipmentReportItem[];
+  summary: {
+    totalItems: number;
+    totalExpected: number;
+    totalReceived: number;
+    totalDamaged: number;
+    totalMissing: number;
+    okItems: number;
+    damagedItems: number;
+    missingItems: number;
+    partialItems: number;
+  };
+}
+
+function ShipmentReportDialog({ 
+  shipmentId, 
+  open, 
+  onOpenChange 
+}: { 
+  shipmentId: number; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation(['imports', 'common']);
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedItemsForLabels, setSelectedItemsForLabels] = useState<Set<string>>(new Set());
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  const { data: reportData, isLoading } = useQuery<ShipmentReportData>({
+    queryKey: ['/api/imports/receipts', shipmentId, 'report'],
+    enabled: open && !!shipmentId,
+  });
+  
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ok':
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"><CheckCircle className="h-3 w-3 mr-1" /> OK</Badge>;
+      case 'damaged':
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"><AlertTriangle className="h-3 w-3 mr-1" /> {t('damaged')}</Badge>;
+      case 'missing':
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"><XCircle className="h-3 w-3 mr-1" /> {t('missing')}</Badge>;
+      case 'partial':
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"><AlertCircle className="h-3 w-3 mr-1" /> {t('partial')}</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+  
+  const formatPrice = (price: string | null | undefined, currency: string) => {
+    if (!price) return '-';
+    const num = parseFloat(price);
+    if (isNaN(num)) return '-';
+    return `${num.toFixed(2)} ${currency}`;
+  };
+  
+  const toggleItemForLabel = (itemId: string) => {
+    setSelectedItemsForLabels(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+  
+  const selectAllForLabels = () => {
+    if (!reportData) return;
+    const allIds = reportData.items
+      .filter(item => item.locations.length > 0)
+      .map(item => String(item.receiptItemId));
+    setSelectedItemsForLabels(new Set(allIds));
+  };
+  
+  const printLabels = () => {
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const selectedItems = reportData?.items.filter(item => 
+      selectedItemsForLabels.has(String(item.receiptItemId))
+    ) || [];
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${t('warehouseLabels')}</title>
+        <style>
+          @page { size: 50mm 30mm; margin: 2mm; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+          .label { 
+            width: 46mm; 
+            height: 26mm; 
+            border: 1px solid #000; 
+            padding: 2mm; 
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .label:last-child { page-break-after: auto; }
+          .location { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 1mm; }
+          .product-name { font-size: 8pt; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .sku { font-size: 7pt; text-align: center; color: #666; }
+          .prices { display: flex; justify-content: space-between; font-size: 9pt; font-weight: bold; margin-top: 1mm; }
+          .price { text-align: center; flex: 1; }
+          .currency { font-size: 6pt; color: #666; }
+        </style>
+      </head>
+      <body>
+        ${selectedItems.map(item => 
+          item.locations.map(loc => `
+            <div class="label">
+              <div class="location">${loc.locationCode}</div>
+              <div class="product-name">${item.productName}</div>
+              <div class="sku">${item.sku || '-'}</div>
+              <div class="prices">
+                <div class="price">
+                  <div>${item.prices?.priceCzk ? parseFloat(item.prices.priceCzk).toFixed(0) : '-'}</div>
+                  <div class="currency">CZK</div>
+                </div>
+                <div class="price">
+                  <div>${item.prices?.priceEur ? parseFloat(item.prices.priceEur).toFixed(2) : '-'}</div>
+                  <div class="currency">EUR</div>
+                </div>
+              </div>
+            </div>
+          `).join('')
+        ).join('')}
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 250);
+  };
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {t('shipmentReport')}
+          </DialogTitle>
+          <DialogDescription>
+            {reportData?.shipment?.shipmentName || `${t('shipmentNumber', { number: shipmentId })}`}
+          </DialogDescription>
+        </DialogHeader>
+        
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : reportData ? (
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+                <TabsTrigger value="items">{t('items')}</TabsTrigger>
+                <TabsTrigger value="photos">{t('photos')}</TabsTrigger>
+                <TabsTrigger value="labels">{t('labels')}</TabsTrigger>
+              </TabsList>
+              
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="flex-1 overflow-y-auto mt-4 space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card className="p-3">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
+                    <div className="text-xs text-muted-foreground">{t('received')}</div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
+                    <div className="text-xs text-muted-foreground">{t('damaged')}</div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
+                    <div className="text-xs text-muted-foreground">{t('missing')}</div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="text-2xl font-bold">{reportData.summary.totalItems}</div>
+                    <div className="text-xs text-muted-foreground">{t('totalItems')}</div>
+                  </Card>
+                </div>
+                
+                {/* Receipt Details */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t('receiptDetails')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-muted-foreground">{t('receiptNumber')}:</span>
+                        <span className="ml-2 font-medium">{reportData.receipt.receiptNumber || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('status')}:</span>
+                        <Badge className="ml-2" variant="outline">{reportData.receipt.status}</Badge>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('receivedBy')}:</span>
+                        <span className="ml-2">{reportData.receipt.receivedBy || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('receivedAt')}:</span>
+                        <span className="ml-2">{reportData.receipt.receivedAt ? format(new Date(reportData.receipt.receivedAt), 'dd MMM yyyy HH:mm') : '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('carrier')}:</span>
+                        <span className="ml-2">{reportData.receipt.carrier || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('parcels')}:</span>
+                        <span className="ml-2">{reportData.receipt.parcelCount || 0}</span>
+                      </div>
+                    </div>
+                    {reportData.receipt.notes && (
+                      <div className="pt-2 border-t">
+                        <span className="text-muted-foreground">{t('notes')}:</span>
+                        <p className="mt-1">{reportData.receipt.notes}</p>
+                      </div>
+                    )}
+                    {reportData.receipt.damageNotes && (
+                      <div className="pt-2 border-t">
+                        <span className="text-muted-foreground text-red-600">{t('damageNotes')}:</span>
+                        <p className="mt-1 text-red-600">{reportData.receipt.damageNotes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Scanned Parcels */}
+                {reportData.receipt.scannedParcels && reportData.receipt.scannedParcels.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        {t('scannedParcels')} ({reportData.receipt.scannedParcels.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {reportData.receipt.scannedParcels.map((parcel, idx) => (
+                          <Badge key={idx} variant="secondary" className="font-mono text-xs">
+                            {parcel}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+              
+              {/* Items Tab */}
+              <TabsContent value="items" className="flex-1 overflow-y-auto mt-4">
+                <div className="space-y-3">
+                  {reportData.items.map((item) => (
+                    <Card key={item.receiptItemId} className="overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          {/* Product Image */}
+                          <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-contain" />
+                            ) : (
+                              <Package className="h-8 w-8 text-gray-400" />
+                            )}
+                          </div>
+                          
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h4 className="font-semibold text-sm line-clamp-1">{item.productName}</h4>
+                                {item.sku && (
+                                  <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                                )}
+                              </div>
+                              {getStatusBadge(item.status)}
+                            </div>
+                            
+                            {/* Quantities */}
+                            <div className="flex items-center gap-4 mt-2 text-sm">
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">{t('expected')}:</span>
+                                <span className="font-medium">{item.expectedQuantity}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">{t('received')}:</span>
+                                <span className="font-medium text-green-600 dark:text-green-400">{item.receivedQuantity}</span>
+                              </div>
+                              {item.damagedQuantity > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">{t('damaged')}:</span>
+                                  <span className="font-medium text-red-600 dark:text-red-400">{item.damagedQuantity}</span>
+                                </div>
+                              )}
+                              {item.missingQuantity > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">{t('missing')}:</span>
+                                  <span className="font-medium text-orange-600 dark:text-orange-400">{item.missingQuantity}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Prices */}
+                            {item.prices && (
+                              <div className="flex items-center gap-4 mt-2 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3 text-muted-foreground" />
+                                  <span className="font-medium">{formatPrice(item.prices.priceCzk, 'CZK')}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">{formatPrice(item.prices.priceEur, 'EUR')}</span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Locations */}
+                            {item.locations.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {item.locations.map((loc, idx) => (
+                                  <Badge 
+                                    key={idx} 
+                                    variant={loc.isPrimary ? "default" : "outline"}
+                                    className="text-xs font-mono"
+                                  >
+                                    <MapPin className="h-3 w-3 mr-1" />
+                                    {loc.locationCode}
+                                    <span className="ml-1 opacity-60">×{loc.quantity}</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {item.notes && (
+                              <p className="text-xs text-muted-foreground mt-2 italic">{item.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              {/* Photos Tab */}
+              <TabsContent value="photos" className="flex-1 overflow-y-auto mt-4">
+                {reportData.receipt.photos && reportData.receipt.photos.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {reportData.receipt.photos.map((photo, idx) => (
+                      <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                        <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">{t('noPhotos')}</p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              {/* Labels Tab */}
+              <TabsContent value="labels" className="flex-1 overflow-y-auto mt-4">
+                <div className="space-y-4">
+                  {/* Actions */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={selectAllForLabels}
+                        disabled={reportData.items.filter(i => i.locations.length > 0).length === 0}
+                      >
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        {t('selectAll')}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedItemsForLabels.size} {t('selected')}
+                      </span>
+                    </div>
+                    <Button 
+                      onClick={printLabels}
+                      disabled={selectedItemsForLabels.size === 0}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      {t('printLabels')}
+                    </Button>
+                  </div>
+                  
+                  {/* Items with locations */}
+                  <div className="space-y-2">
+                    {reportData.items
+                      .filter(item => item.locations.length > 0)
+                      .map((item) => (
+                        <Card 
+                          key={item.receiptItemId} 
+                          className={`cursor-pointer transition-all ${
+                            selectedItemsForLabels.has(String(item.receiptItemId))
+                              ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-900/10'
+                              : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => toggleItemForLabel(String(item.receiptItemId))}
+                        >
+                          <div className="p-3 flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              selectedItemsForLabels.has(String(item.receiptItemId))
+                                ? 'bg-amber-500 border-amber-500'
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}>
+                              {selectedItemsForLabels.has(String(item.receiptItemId)) && (
+                                <Check className="h-3 w-3 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm line-clamp-1">{item.productName}</div>
+                              <div className="text-xs text-muted-foreground font-mono">{item.sku || '-'}</div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-bold text-sm">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
+                              <div className="text-xs text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
+                            </div>
+                            <div className="flex flex-wrap gap-1 shrink-0 max-w-32">
+                              {item.locations.slice(0, 2).map((loc, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs font-mono">
+                                  {loc.locationCode}
+                                </Badge>
+                              ))}
+                              {item.locations.length > 2 && (
+                                <Badge variant="secondary" className="text-xs">+{item.locations.length - 2}</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    
+                    {reportData.items.filter(i => i.locations.length > 0).length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">{t('noLocationsAssigned')}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('storeItemsFirst')}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Label Preview */}
+                  {selectedItemsForLabels.size > 0 && (
+                    <Card className="mt-4">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">{t('labelPreview')}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div ref={printRef} className="flex flex-wrap gap-3">
+                          {reportData.items
+                            .filter(item => selectedItemsForLabels.has(String(item.receiptItemId)))
+                            .slice(0, 3)
+                            .map((item) => 
+                              item.locations.slice(0, 1).map((loc, idx) => (
+                                <div key={`${item.receiptItemId}-${idx}`} className="w-48 p-3 border-2 border-dashed rounded-lg">
+                                  <div className="text-center font-bold text-lg">{loc.locationCode}</div>
+                                  <div className="text-center text-xs truncate mt-1">{item.productName}</div>
+                                  <div className="text-center text-xs text-muted-foreground font-mono">{item.sku || '-'}</div>
+                                  <div className="flex justify-between mt-2 text-sm font-bold">
+                                    <span>{item.prices?.priceCzk ? parseFloat(item.prices.priceCzk).toFixed(0) : '-'} CZK</span>
+                                    <span>{item.prices?.priceEur ? parseFloat(item.prices.priceEur).toFixed(2) : '-'} €</span>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                        </div>
+                        {selectedItemsForLabels.size > 3 && (
+                          <p className="text-xs text-muted-foreground text-center mt-2">
+                            +{selectedItemsForLabels.size - 3} {t('moreLabels')}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <p className="text-muted-foreground">{t('noDataAvailable')}</p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CompletedShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showReport, setShowReport] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
 
@@ -2375,11 +2945,14 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                 size="lg"
                 variant="outline"
                 className="flex-1 h-12 text-base"
-                onClick={() => navigate(`/receiving/receipt/${shipment.id}`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReport(true);
+                }}
                 data-testid={`button-view-details-${shipment.id}`}
               >
-                <Eye className="h-5 w-5 mr-2" />
-                View Details
+                <FileText className="h-5 w-5 mr-2" />
+                {t('viewReport')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -2407,6 +2980,12 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
           </div>
         </CardContent>
       )}
+      
+      <ShipmentReportDialog
+        shipmentId={shipment.id}
+        open={showReport}
+        onOpenChange={setShowReport}
+      />
     </Card>
   );
 }
