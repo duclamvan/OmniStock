@@ -349,13 +349,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
           description: t('common:incomingShipments')
         },
         {
-          name: t('common:storage'),
-          href: "/receiving/storage",
-          icon: PackageCheck,
-          color: "text-lime-600 dark:text-lime-400",
-          description: t('common:itemsToStore')
-        },
-        {
           name: t('common:stock'),
           href: "/stock",
           icon: Package,
