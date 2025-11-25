@@ -1273,6 +1273,7 @@ const orders = {
   customerLabel: 'Khách hàng',
   orderDateLabel: 'Ngày đặt hàng',
   totalAmountLabel: 'Tổng tiền',
+  totalAmount: 'Tổng tiền',
   
   // OrderDetails.tsx - Tickets
   noTicketsForOrder: 'Không có ticket nào cho đơn hàng này',

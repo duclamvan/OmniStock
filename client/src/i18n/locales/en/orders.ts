@@ -1352,6 +1352,7 @@ const orders = {
   customerLabel: 'Customer',
   orderDateLabel: 'Order Date',
   totalAmountLabel: 'Total Amount',
+  totalAmount: 'Total Amount',
   
   // OrderDetails.tsx - Tickets
   noTicketsForOrder: 'No tickets for this order',
