@@ -8341,27 +8341,17 @@ Important:
   app.get('/api/notifications/unread-count', validateUserFromDatabase, async (req: any, res) => {
     try {
       const userId = req.verifiedUser.id;
-      const userRole = req.verifiedUser.role;
-      const isAdmin = userRole === 'administrator';
 
-      let result;
-
-      if (isAdmin) {
-        // Admin view: count all unread notifications from all users
-        result = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(notifications)
-          .where(eq(notifications.isRead, false));
-      } else {
-        // Non-admin view: count only user's own unread notifications
-        result = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(notifications)
-          .where(and(
-            eq(notifications.userId, userId),
-            eq(notifications.isRead, false)
-          ));
-      }
+      // Always count only the current user's unread notifications
+      // This ensures the badge shows personal unread count, even for admins
+      // (mark-all-read only marks the user's own notifications, so this must match)
+      const result = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
 
       res.json({ count: result[0]?.count || 0 });
     } catch (error) {
