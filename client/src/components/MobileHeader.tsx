@@ -285,20 +285,40 @@ export function MobileHeader({
                     {notifications.slice(0, 5).map((notification: any) => (
                       <DropdownMenuItem 
                         key={notification.id}
-                        className="flex flex-col items-start p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700"
+                        className={cn(
+                          "flex flex-col items-start p-3 cursor-pointer",
+                          !notification.isRead 
+                            ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:bg-blue-100 dark:focus:bg-blue-900/50" 
+                            : "bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
+                        )}
                         data-testid={`notification-item-${notification.id}`}
                       >
                         <div className="flex items-start gap-2 w-full">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            <p className={cn(
+                              "text-sm truncate",
+                              !notification.isRead 
+                                ? "font-semibold text-blue-900 dark:text-blue-100" 
+                                : "font-medium text-gray-900 dark:text-gray-100"
+                            )}>
                               {notification.title}
                             </p>
                             {notification.description && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">
+                              <p className={cn(
+                                "text-xs mt-0.5 line-clamp-2",
+                                !notification.isRead 
+                                  ? "text-blue-700 dark:text-blue-300" 
+                                  : "text-gray-600 dark:text-gray-400"
+                              )}>
                                 {notification.description}
                               </p>
                             )}
-                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            <p className={cn(
+                              "text-xs mt-1",
+                              !notification.isRead 
+                                ? "text-blue-600 dark:text-blue-400" 
+                                : "text-gray-500 dark:text-gray-500"
+                            )}>
                               {new Date(notification.createdAt).toLocaleDateString(undefined, {
                                 month: 'short',
                                 day: 'numeric',
@@ -308,7 +328,7 @@ export function MobileHeader({
                             </p>
                           </div>
                           {!notification.isRead && (
-                            <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1" />
+                            <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1 animate-pulse" />
                           )}
                         </div>
                       </DropdownMenuItem>
