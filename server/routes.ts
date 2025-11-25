@@ -61,6 +61,7 @@ import {
   appSettings,
   notifications,
   shipmentTracking,
+  shipmentLabels,
   serializePackingPlanToDB,
   serializePackingPlanItems,
   deserializePackingPlanFromDB,
@@ -8661,6 +8662,166 @@ Important:
     } catch (error) {
       console.error("Error deleting warehouse task:", error);
       res.status(500).json({ message: "Failed to delete warehouse task" });
+    }
+  });
+
+  // ============================================================================
+  // RECEIVING - BULK TRACKING NUMBER LOOKUP
+  // ============================================================================
+
+  // POST /api/receiving/lookup-tracking - Look up tracking numbers and return associated orders
+  app.post('/api/receiving/lookup-tracking', isAuthenticated, async (req: any, res) => {
+    try {
+      const { trackingNumbers } = req.body;
+
+      if (!trackingNumbers || !Array.isArray(trackingNumbers) || trackingNumbers.length === 0) {
+        return res.status(400).json({ message: "trackingNumbers array is required" });
+      }
+
+      // Normalize and deduplicate tracking numbers
+      const normalizedNumbers = [...new Set(
+        trackingNumbers
+          .map((n: string) => n.trim().toUpperCase())
+          .filter((n: string) => n.length > 0)
+      )];
+
+      if (normalizedNumbers.length === 0) {
+        return res.json({
+          results: [],
+          summary: { totalScanned: 0, matched: 0, unmatched: 0, orderCounts: {} }
+        });
+      }
+
+      // Look up in orderCartons table (single tracking number per carton)
+      const cartonMatches = await db
+        .select({
+          trackingNumber: orderCartons.trackingNumber,
+          orderId: orderCartons.orderId,
+          cartonNumber: orderCartons.cartonNumber
+        })
+        .from(orderCartons)
+        .where(
+          sql`UPPER(${orderCartons.trackingNumber}) IN (${sql.join(
+            normalizedNumbers.map(n => sql`${n}`),
+            sql`, `
+          )})`
+        );
+
+      // Look up in shipmentLabels table (array of tracking numbers)
+      const labelMatches = await db
+        .select({
+          trackingNumbers: shipmentLabels.trackingNumbers,
+          orderId: shipmentLabels.orderId,
+          carrier: shipmentLabels.carrier,
+          id: shipmentLabels.id
+        })
+        .from(shipmentLabels)
+        .where(eq(shipmentLabels.status, 'active'));
+
+      // Build results map
+      const results: Array<{
+        trackingNumber: string;
+        matched: boolean;
+        orderId: string | null;
+        orderDisplayId: string | null;
+        source: 'carton' | 'label' | null;
+        cartonNumber?: number;
+        carrier?: string;
+      }> = [];
+
+      const orderCounts: Record<string, { count: number; orderId: string; orderDisplayId: string }> = {};
+
+      // Get order display IDs for matched orders
+      const matchedOrderIds = new Set<string>();
+      cartonMatches.forEach(m => m.orderId && matchedOrderIds.add(m.orderId));
+      labelMatches.forEach(m => m.orderId && matchedOrderIds.add(m.orderId));
+
+      let orderDisplayMap: Record<string, string> = {};
+      if (matchedOrderIds.size > 0) {
+        const orderRecords = await db
+          .select({ id: orders.id, orderId: orders.orderId })
+          .from(orders)
+          .where(inArray(orders.id, Array.from(matchedOrderIds)));
+        orderDisplayMap = Object.fromEntries(
+          orderRecords.map(o => [o.id, o.orderId])
+        );
+      }
+
+      // Process each scanned tracking number
+      for (const trackingNum of normalizedNumbers) {
+        // Check carton matches first
+        const cartonMatch = cartonMatches.find(
+          m => m.trackingNumber?.toUpperCase() === trackingNum
+        );
+
+        if (cartonMatch && cartonMatch.orderId) {
+          const displayId = orderDisplayMap[cartonMatch.orderId] || cartonMatch.orderId;
+          results.push({
+            trackingNumber: trackingNum,
+            matched: true,
+            orderId: cartonMatch.orderId,
+            orderDisplayId: displayId,
+            source: 'carton',
+            cartonNumber: cartonMatch.cartonNumber
+          });
+
+          // Update order counts
+          if (!orderCounts[cartonMatch.orderId]) {
+            orderCounts[cartonMatch.orderId] = { count: 0, orderId: cartonMatch.orderId, orderDisplayId: displayId };
+          }
+          orderCounts[cartonMatch.orderId].count++;
+          continue;
+        }
+
+        // Check label matches (array contains)
+        const labelMatch = labelMatches.find(
+          m => m.trackingNumbers?.some(tn => tn.toUpperCase() === trackingNum)
+        );
+
+        if (labelMatch && labelMatch.orderId) {
+          const displayId = orderDisplayMap[labelMatch.orderId] || labelMatch.orderId;
+          results.push({
+            trackingNumber: trackingNum,
+            matched: true,
+            orderId: labelMatch.orderId,
+            orderDisplayId: displayId,
+            source: 'label',
+            carrier: labelMatch.carrier || undefined
+          });
+
+          // Update order counts
+          if (!orderCounts[labelMatch.orderId]) {
+            orderCounts[labelMatch.orderId] = { count: 0, orderId: labelMatch.orderId, orderDisplayId: displayId };
+          }
+          orderCounts[labelMatch.orderId].count++;
+          continue;
+        }
+
+        // No match found
+        results.push({
+          trackingNumber: trackingNum,
+          matched: false,
+          orderId: null,
+          orderDisplayId: null,
+          source: null
+        });
+      }
+
+      const matched = results.filter(r => r.matched).length;
+      const unmatched = results.length - matched;
+
+      res.json({
+        results,
+        summary: {
+          totalScanned: results.length,
+          matched,
+          unmatched,
+          orderCounts: Object.values(orderCounts)
+        }
+      });
+    } catch (error) {
+      console.error("Error looking up tracking numbers:", error);
+      res.status(500).json({ message: "Failed to look up tracking numbers" });
     }
   });
 
