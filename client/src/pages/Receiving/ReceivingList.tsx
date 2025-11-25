@@ -1577,8 +1577,9 @@ function QuickStorageSheet({
     
     if (!trimmedValue) return;
     
-    // Validate location code format (e.g., WH1-A01-R02-L03)
-    const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
+    // Validate location code format (e.g., WH1-A01-R02-L03 or WH1-A01-R02-L03-B3)
+    // Accepts 4 parts (warehouse-aisle-rack-level) or 5 parts (with optional bin)
+    const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+(-[A-Z0-9]+)?$/;
     if (!locationPattern.test(trimmedValue)) {
       await soundEffects.playErrorBeep();
       setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
@@ -1660,8 +1661,8 @@ function QuickStorageSheet({
     
     const location = currentItem.locations[locationIndex];
     
-    // Validate location format
-    if (!location.locationCode || !/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/.test(location.locationCode)) {
+    // Validate location format (4 or 5 parts with optional bin)
+    if (!location.locationCode || !/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+(-[A-Z0-9]+)?$/.test(location.locationCode)) {
       await soundEffects.playErrorBeep();
       toast({
         title: t('invalidLocationFormat'),
@@ -2227,7 +2228,7 @@ function QuickStorageSheet({
                         handleLocationScan();
                       }
                     }}
-                    placeholder="WH1-A01-R02-L03"
+                    placeholder="WH1-A01-R02-L03 or WH1-A01-R02-L03-B3"
                     className="flex-1 h-12 text-base font-mono"
                     autoFocus
                     data-testid="input-location-scan"
