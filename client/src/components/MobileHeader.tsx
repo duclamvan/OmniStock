@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Menu, Bell, Sun, Moon, User, Settings, LogOut, Search, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -96,8 +96,9 @@ export function MobileHeader({
       const res = await apiRequest('POST', '/api/notifications/mark-all-read', {});
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Immediately update cache to show badge disappear instantly
+      // Do NOT invalidate queries here - that causes the blink issue
       queryClient.setQueryData(['/api/notifications/unread-count'], { count: 0 });
       
       // Also update the notifications list - mark all as read
@@ -107,25 +108,31 @@ export function MobileHeader({
           currentNotifications.map(notif => ({ ...notif, isRead: true }))
         );
       }
-      
-      // Then refetch to ensure data is in sync with server
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
+      // Let the 30-second refetch naturally sync with server
     },
   });
 
   // Track notification dropdown state
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   
-  // Mark all as read when dropdown opens (if there are unread notifications)
-  useEffect(() => {
-    console.log('[MobileHeader] useEffect triggered - dropdown:', notificationDropdownOpen, 'unreadCount:', unreadCount);
-    if (notificationDropdownOpen && unreadCount > 0) {
-      // Dropdown just opened and there are unread notifications - mark them all as read
-      console.log('[MobileHeader] Marking all notifications as read, count:', unreadCount);
+  // Ref to prevent marking as read multiple times during same dropdown session
+  const hasMarkedAsReadRef = useRef(false);
+  
+  // Handle dropdown open/close - mark as read when opening
+  const handleNotificationDropdownChange = useCallback((open: boolean) => {
+    setNotificationDropdownOpen(open);
+    
+    if (open && unreadCount > 0 && !hasMarkedAsReadRef.current) {
+      // Dropdown just opened with unread notifications - mark as read once
+      hasMarkedAsReadRef.current = true;
       markAllAsReadMutation.mutate();
     }
-  }, [notificationDropdownOpen, unreadCount]);
+    
+    if (!open) {
+      // Reset ref when dropdown closes so next open can mark as read again
+      hasMarkedAsReadRef.current = false;
+    }
+  }, [unreadCount, markAllAsReadMutation]);
   
   // Determine if header should be collapsed
   const isCollapsed = scrollDir === 'down' && isPastThreshold && !isAtTop && !isSearchExpanded;
@@ -242,7 +249,7 @@ export function MobileHeader({
         {/* Right: Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Notifications Dropdown */}
-          <DropdownMenu open={notificationDropdownOpen} onOpenChange={setNotificationDropdownOpen}>
+          <DropdownMenu open={notificationDropdownOpen} onOpenChange={handleNotificationDropdownChange}>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
