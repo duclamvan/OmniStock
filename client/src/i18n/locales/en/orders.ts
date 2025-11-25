@@ -70,6 +70,7 @@ const orders = {
   orderItems: 'Order Items',
   item: 'Item',
   items: 'Items',
+  itemsWithCount: '{{count}} items',
   product: 'Product',
   sku: 'SKU',
   qty: 'Qty',

@@ -70,6 +70,7 @@ const orders = {
   orderItems: 'Sản phẩm trong đơn',
   item: 'Sản phẩm',
   items: 'Sản phẩm',
+  itemsWithCount: '{{count}} sản phẩm',
   product: 'Sản phẩm',
   sku: 'SKU',
   qty: 'SL',
