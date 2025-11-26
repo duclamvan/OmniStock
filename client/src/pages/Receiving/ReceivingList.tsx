@@ -1618,7 +1618,67 @@ interface StorageItem {
   existingLocations: LocationAssignment[];
 }
 
-// Helper function to get suggested location from existing inventory
+// Enhanced location suggestion with quantity info
+interface LocationSuggestion {
+  locationCode: string;
+  currentQuantity: number;
+  isPrimary: boolean;
+  source: 'existing' | 'ai' | 'heuristic';
+  reasoning?: string;
+}
+
+// Helper function to build all location suggestions with quantities
+function buildLocationSuggestions(
+  item: StorageItem,
+  aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>
+): LocationSuggestion[] {
+  const suggestions: LocationSuggestion[] = [];
+  
+  // First, add all existing locations sorted by priority (primary first, then by quantity)
+  if (item.existingLocations && item.existingLocations.length > 0) {
+    const sorted = [...item.existingLocations].sort((a, b) => {
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return b.quantity - a.quantity;
+    });
+    
+    for (const loc of sorted) {
+      suggestions.push({
+        locationCode: loc.locationCode,
+        currentQuantity: loc.quantity,
+        isPrimary: loc.isPrimary,
+        source: 'existing'
+      });
+    }
+  }
+  
+  // If no existing locations, add AI or heuristic suggestion
+  if (suggestions.length === 0) {
+    const key = item.productId || item.sku || item.productName;
+    if (aiSuggestions.has(key)) {
+      const aiSugg = aiSuggestions.get(key)!;
+      suggestions.push({
+        locationCode: aiSugg.location,
+        currentQuantity: 0,
+        isPrimary: true,
+        source: 'ai',
+        reasoning: aiSugg.reasoning
+      });
+    } else {
+      // Fallback heuristic
+      suggestions.push({
+        locationCode: generateSuggestedLocationWithAI(item, aiSuggestions),
+        currentQuantity: 0,
+        isPrimary: true,
+        source: 'heuristic'
+      });
+    }
+  }
+  
+  return suggestions;
+}
+
+// Helper function to get suggested location from existing inventory (legacy - returns primary)
 function getSuggestedLocation(item: StorageItem): string | null {
   if (item.existingLocations && item.existingLocations.length > 0) {
     const primaryLoc = item.existingLocations.find(loc => loc.isPrimary);
@@ -2340,27 +2400,95 @@ function QuickStorageSheet({
                                   <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
                                 )}
 
-                                {/* Prominent Location Display */}
-                                <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-                                    <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
-                                      {getSuggestedLocation(item) || generateSuggestedLocationWithAI(item, aiSuggestions)}
-                                    </span>
-                                    {item.existingLocations?.some(loc => loc.isPrimary) && (
-                                      <Badge className="ml-2 bg-yellow-500 dark:bg-yellow-600 text-white">
-                                        <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                                        {t('primary')}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {/* AI Reasoning */}
-                                  {getAIReasoning(item, aiSuggestions) && (
-                                    <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
-                                      <span className="font-semibold">AI:</span> {getAIReasoning(item, aiSuggestions)}
+                                {/* Suggested Locations Display */}
+                                {(() => {
+                                  const suggestions = buildLocationSuggestions(item, aiSuggestions);
+                                  const hasExistingLocations = item.existingLocations && item.existingLocations.length > 0;
+                                  
+                                  return (
+                                    <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                                          {hasExistingLocations ? t('warehouse:suggestedLocations') : t('warehouse:aiSuggestion')}
+                                        </span>
+                                        {hasExistingLocations && (
+                                          <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
+                                            {t('warehouse:restockProduct')}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Primary/First Suggestion - Large Display */}
+                                      {suggestions.length > 0 && (
+                                        <div 
+                                          className="flex items-center gap-2 flex-wrap cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 -mx-2 px-2 py-1 rounded transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setLocationInput(suggestions[0].locationCode);
+                                          }}
+                                        >
+                                          <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                                          <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
+                                            {suggestions[0].locationCode}
+                                          </span>
+                                          {suggestions[0].isPrimary && (
+                                            <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white text-xs">
+                                              <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                                              {t('primary')}
+                                            </Badge>
+                                          )}
+                                          {suggestions[0].source === 'existing' && (
+                                            <Badge variant="outline" className="text-xs border-green-500 text-green-600 dark:text-green-400">
+                                              {suggestions[0].currentQuantity} {t('common:inStock')}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Additional Suggested Locations */}
+                                      {suggestions.length > 1 && (
+                                        <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-700 space-y-1">
+                                          <span className="text-xs text-amber-600 dark:text-amber-500">
+                                            {t('warehouse:otherLocations')}:
+                                          </span>
+                                          <div className="flex flex-wrap gap-1">
+                                            {suggestions.slice(1).map((sugg, idx) => (
+                                              <Badge 
+                                                key={idx}
+                                                variant="secondary" 
+                                                className="text-xs font-mono cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setLocationInput(sugg.locationCode);
+                                                }}
+                                              >
+                                                <MapPin className="h-3 w-3 mr-1" />
+                                                {sugg.locationCode}
+                                                {sugg.currentQuantity > 0 && (
+                                                  <span className="ml-1 text-green-600 dark:text-green-400">
+                                                    ({sugg.currentQuantity})
+                                                  </span>
+                                                )}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* AI Reasoning */}
+                                      {suggestions[0]?.reasoning && (
+                                        <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
+                                          <span className="font-semibold">AI:</span> {suggestions[0].reasoning}
+                                        </div>
+                                      )}
+                                      {!suggestions[0]?.reasoning && getAIReasoning(item, aiSuggestions) && (
+                                        <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
+                                          <span className="font-semibold">AI:</span> {getAIReasoning(item, aiSuggestions)}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
+                                  );
+                                })()}
 
                                 {/* Quick Stats */}
                                 <div className="grid grid-cols-2 gap-3">

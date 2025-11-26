@@ -64,6 +64,7 @@ const common = {
   deselectAll: 'Deselect All',
   items: 'items',
   item: 'item',
+  inStock: 'in stock',
   
   // Form Labels
   name: 'Name',

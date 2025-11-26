@@ -68,6 +68,7 @@ const common = {
   deselectAll: 'Bỏ chọn tất cả',
   items: 'mục',
   item: 'mục',
+  inStock: 'trong kho',
   
   // Form Labels
   name: 'Tên',
