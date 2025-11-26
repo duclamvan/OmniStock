@@ -12809,10 +12809,16 @@ Important:
       const { key } = req.params;
       const data = req.body;
 
-      // Check if setting exists first
+      // Check if setting exists - if not, create it (upsert behavior)
       const existing = await storage.getAppSettingByKey(key);
       if (!existing) {
-        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+        // Create new setting with the key from URL and data from body
+        const newSetting = await storage.createAppSetting({
+          key,
+          value: data.value,
+          category: data.category || 'general'
+        });
+        return res.status(201).json(newSetting);
       }
 
       const updated = await storage.updateAppSetting(key, data);

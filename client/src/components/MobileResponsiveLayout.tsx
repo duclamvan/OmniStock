@@ -194,8 +194,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
   const languageMutation = useMutation({
     mutationFn: async (newLang: 'en' | 'vi') => {
       await i18n.changeLanguage(newLang);
-      await apiRequest('POST', '/api/settings', {
-        key: 'default_language',
+      // Use PATCH to update existing setting (upsert behavior)
+      await apiRequest('PATCH', '/api/settings/default_language', {
         value: newLang,
         category: 'general'
       });
