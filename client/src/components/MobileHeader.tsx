@@ -115,22 +115,22 @@ export function MobileHeader({
   // Track notification dropdown state
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   
-  // Ref to prevent marking as read multiple times during same dropdown session
-  const hasMarkedAsReadRef = useRef(false);
+  // Ref to track if there were unread notifications when dropdown opened
+  const hadUnreadWhenOpenedRef = useRef(false);
   
-  // Handle dropdown open/close - mark as read when opening
+  // Handle dropdown open/close - mark as read when CLOSING (not opening)
   const handleNotificationDropdownChange = useCallback((open: boolean) => {
     setNotificationDropdownOpen(open);
     
-    if (open && unreadCount > 0 && !hasMarkedAsReadRef.current) {
-      // Dropdown just opened with unread notifications - mark as read once
-      hasMarkedAsReadRef.current = true;
-      markAllAsReadMutation.mutate();
-    }
-    
-    if (!open) {
-      // Reset ref when dropdown closes so next open can mark as read again
-      hasMarkedAsReadRef.current = false;
+    if (open) {
+      // Dropdown just opened - remember if there were unread notifications
+      hadUnreadWhenOpenedRef.current = unreadCount > 0;
+    } else {
+      // Dropdown is closing - mark as read if there were unread when opened
+      if (hadUnreadWhenOpenedRef.current) {
+        markAllAsReadMutation.mutate();
+        hadUnreadWhenOpenedRef.current = false;
+      }
     }
   }, [unreadCount, markAllAsReadMutation]);
   
