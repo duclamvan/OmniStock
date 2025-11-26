@@ -13119,6 +13119,43 @@ Important:
     }
   });
 
+  // Update shipment receiving status
+  app.patch('/api/imports/shipments/:id/receiving-status', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { receivingStatus } = req.body;
+      
+      // Validate receivingStatus value
+      const validStatuses = ['receiving', 'pending_approval', 'completed', 'archived'];
+      if (!receivingStatus || !validStatuses.includes(receivingStatus)) {
+        return res.status(400).json({ 
+          message: 'Invalid receiving status. Must be one of: ' + validStatuses.join(', ')
+        });
+      }
+      
+      // Update the shipment
+      const [updated] = await db
+        .update(shipments)
+        .set({ 
+          receivingStatus,
+          updatedAt: new Date(),
+          ...(receivingStatus === 'completed' ? { completedAt: new Date() } : {}),
+          ...(receivingStatus === 'archived' ? { archivedAt: new Date() } : {})
+        })
+        .where(eq(shipments.id, parseInt(id)))
+        .returning();
+      
+      if (!updated) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating shipment receiving status:', error);
+      res.status(500).json({ message: 'Failed to update shipment status' });
+    }
+  });
+
   // Get shipments by receiving status - Archived
   app.get('/api/imports/shipments/archived', isAuthenticated, async (req, res) => {
     try {

@@ -1219,7 +1219,6 @@ const imports = {
   notStored: 'Chưa lưu kho',
   storedSuccessfully: 'Đã lưu kho thành công',
   storageComplete: 'Hoàn tất lưu kho',
-  completeReceiving: 'Hoàn tất nhận hàng',
   allItemsStoredSuccessfully: 'Tất cả sản phẩm đã được lưu kho thành công',
   allStored: 'Đã lưu hết',
   invalidLocationFormat: 'Định dạng vị trí không hợp lệ',

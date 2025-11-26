@@ -2016,6 +2016,35 @@ function QuickStorageSheet({
     }
   });
   
+  // Complete receiving mutation - updates shipment status to completed
+  const completeReceivingMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('PATCH', `/api/imports/shipments/${shipment.id}/receiving-status`, { 
+        receivingStatus: 'completed' 
+      });
+    },
+    onSuccess: () => {
+      // Invalidate both storage and completed shipments queries
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      
+      soundEffects.playCompletionSound();
+      toast({
+        title: t('storageComplete'),
+        description: t('allItemsStoredSuccessfully'),
+        duration: 3000
+      });
+      onClose();
+    },
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: error instanceof Error ? error.message : 'Failed to complete receiving',
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Calculate progress
   const totalItems = items.length;
   const completedItems = items.filter(item => 
@@ -2633,21 +2662,22 @@ function QuickStorageSheet({
           {allItemsStored && (
             <div className="px-4 pt-4 pb-2">
               <button
-                onClick={() => {
-                  // Close the storage sheet and show success
-                  soundEffects.playCompletionSound();
-                  toast({
-                    title: t('storageComplete'),
-                    description: t('allItemsStoredSuccessfully'),
-                    duration: 3000
-                  });
-                  onClose();
-                }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg py-4 flex items-center justify-center gap-3 font-semibold text-base shadow-lg"
+                onClick={() => completeReceivingMutation.mutate()}
+                disabled={completeReceivingMutation.isPending}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg py-4 flex items-center justify-center gap-3 font-semibold text-base shadow-lg"
                 data-testid="button-complete-receiving"
               >
-                <CheckCircle className="h-6 w-6" />
-                {t('completeReceiving')}
+                {completeReceivingMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    {t('common:loading')}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-6 w-6" />
+                    {t('completeReceiving')}
+                  </>
+                )}
               </button>
             </div>
           )}

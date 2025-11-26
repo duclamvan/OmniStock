@@ -1206,7 +1206,6 @@ const imports = {
   notStored: 'Not stored',
   storedSuccessfully: 'Stored successfully',
   storageComplete: 'Storage complete',
-  completeReceiving: 'Complete Receiving',
   allItemsStoredSuccessfully: 'All items have been stored successfully',
   allStored: 'All Stored',
   invalidLocationFormat: 'Invalid location format',
