@@ -23,16 +23,16 @@ import ExpenseReports from "./ExpenseReports";
 
 export default function ReportsIndex() {
   const [location, setLocation] = useLocation();
-  const { t } = useTranslation(['reports', 'common']);
+  const { t } = useTranslation('reports');
 
   const reportTabs = [
-    { value: '/reports', label: t('reports.overview'), icon: LayoutDashboard },
-    { value: '/reports/financial', label: t('reports.financialReport'), icon: Coins },
-    { value: '/reports/sales', label: t('reports.salesReport'), icon: ShoppingBag },
-    { value: '/reports/inventory', label: t('reports.inventoryReport'), icon: Package },
-    { value: '/reports/customers', label: t('reports.customerReport'), icon: Users },
-    { value: '/reports/orders', label: t('reports.orderReport'), icon: ShoppingCart },
-    { value: '/reports/expenses', label: t('reports.expenseReport'), icon: Receipt },
+    { value: '/reports', label: t('overview'), icon: LayoutDashboard },
+    { value: '/reports/financial', label: t('financialReport'), icon: Coins },
+    { value: '/reports/sales', label: t('salesReport'), icon: ShoppingBag },
+    { value: '/reports/inventory', label: t('inventoryReport'), icon: Package },
+    { value: '/reports/customers', label: t('customerReport'), icon: Users },
+    { value: '/reports/orders', label: t('orderReport'), icon: ShoppingCart },
+    { value: '/reports/expenses', label: t('expenseReport'), icon: Receipt },
   ];
 
   const getActiveTab = () => {
@@ -63,8 +63,8 @@ export default function ReportsIndex() {
     <ReportsProvider>
       <div className="space-y-6" data-testid="reports-container">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{t('reports.reports')}</h1>
-          <p className="text-slate-600 mt-1">{t('reports.businessOverviewDesc')}</p>
+          <h1 className="text-3xl font-bold text-slate-900">{t('reports')}</h1>
+          <p className="text-slate-600 mt-1">{t('businessOverviewDesc')}</p>
         </div>
 
         <Card className="p-1">

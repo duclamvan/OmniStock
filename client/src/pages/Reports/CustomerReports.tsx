@@ -17,7 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export default function CustomerReports() {
-  const { t } = useTranslation(['reports', 'customers', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
+  const { t: tCustomers } = useTranslation('customers');
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
@@ -64,9 +66,9 @@ export default function CustomerReports() {
     const lowValue = customerMetrics.filter(c => c.totalSpent <= 10000).length;
 
     return preparePieChartData([
-      { name: t('reports:highValueCustomers'), value: highValue },
-      { name: t('reports:mediumValueCustomers'), value: mediumValue },
-      { name: t('reports:lowValueCustomers'), value: lowValue },
+      { name: t('highValueCustomers'), value: highValue },
+      { name: t('mediumValueCustomers'), value: mediumValue },
+      { name: t('lowValueCustomers'), value: lowValue },
     ]);
   }, [customerMetrics, t]);
 
@@ -77,10 +79,10 @@ export default function CustomerReports() {
     const oneTime = customerMetrics.filter(c => c.orderCount === 1).length;
 
     return preparePieChartData([
-      { name: t('reports:frequentBuyers'), value: frequent },
-      { name: t('reports:regularBuyers'), value: regular },
-      { name: t('reports:occasionalBuyers'), value: occasional },
-      { name: t('reports:oneTimeBuyers'), value: oneTime },
+      { name: t('frequentBuyers'), value: frequent },
+      { name: t('regularBuyers'), value: regular },
+      { name: t('occasionalBuyers'), value: occasional },
+      { name: t('oneTimeBuyers'), value: oneTime },
     ]);
   }, [customerMetrics, t]);
 
@@ -95,24 +97,24 @@ export default function CustomerReports() {
   const handleExportExcel = () => {
     try {
       const exportData = customerMetrics.map(c => ({
-        [t('customers:customer')]: c.customerName,
-        [t('reports:totalOrders')]: c.orderCount,
-        [t('reports:totalSpent')]: c.totalSpent.toFixed(2),
-        [t('reports:avgOrderValue')]: c.avgOrderValue.toFixed(2),
-        [t('reports:firstOrder')]: c.firstOrderDate ? format(c.firstOrderDate, 'yyyy-MM-dd') : '-',
-        [t('reports:lastOrder')]: c.lastOrderDate ? format(c.lastOrderDate, 'yyyy-MM-dd') : '-',
+        [tCustomers('customer')]: c.customerName,
+        [t('totalOrders')]: c.orderCount,
+        [t('totalSpent')]: c.totalSpent.toFixed(2),
+        [t('avgOrderValue')]: c.avgOrderValue.toFixed(2),
+        [t('firstOrder')]: c.firstOrderDate ? format(c.firstOrderDate, 'yyyy-MM-dd') : '-',
+        [t('lastOrder')]: c.lastOrderDate ? format(c.lastOrderDate, 'yyyy-MM-dd') : '-',
       }));
 
-      exportToXLSX(exportData, `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:customerReport'));
+      exportToXLSX(exportData, `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('customerReport'));
       
       toast({
-        title: t('common:success'),
-        description: t('reports:exportSuccessful'),
+        title: tCommon('success'),
+        description: t('exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: t('common:error'),
-        description: t('reports:exportFailed'),
+        title: tCommon('error'),
+        description: t('exportFailed'),
         variant: "destructive",
       });
     }
@@ -128,27 +130,27 @@ export default function CustomerReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'customer', header: t('customers:customer') },
-        { key: 'orders', header: t('common:orders') },
-        { key: 'spent', header: t('reports:totalSpent') },
-        { key: 'avgOrder', header: t('reports:avgOrderValue') },
+        { key: 'customer', header: tCustomers('customer') },
+        { key: 'orders', header: tCommon('orders') },
+        { key: 'spent', header: t('totalSpent') },
+        { key: 'avgOrder', header: t('avgOrderValue') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        t('reports:topCustomers')
+        t('topCustomers')
       );
 
       toast({
-        title: t('common:success'),
-        description: t('reports:exportSuccessful'),
+        title: tCommon('success'),
+        description: t('exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: t('common:error'),
-        description: t('reports:exportFailed'),
+        title: tCommon('error'),
+        description: t('exportFailed'),
         variant: "destructive",
       });
     }
@@ -171,8 +173,8 @@ export default function CustomerReports() {
   return (
     <div className="space-y-6" data-testid="customer-reports">
       <ReportHeader
-        title={t('reports:customerReport')}
-        description={t('reports:customerAnalyticsDesc')}
+        title={t('customerReport')}
+        description={t('customerAnalyticsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -180,7 +182,7 @@ export default function CustomerReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title={t('customers:totalCustomers')}
+          title={tCustomers('totalCustomers')}
           value={metrics.totalCustomers}
           icon={Users}
           iconColor="text-blue-600"
@@ -188,16 +190,16 @@ export default function CustomerReports() {
           testId="metric-total-customers"
         />
         <MetricCard
-          title={t('reports:activeCustomers')}
+          title={t('activeCustomers')}
           value={metrics.activeCustomers}
-          subtitle={t('reports:withOrders')}
+          subtitle={t('withOrders')}
           icon={UserCheck}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-active-customers"
         />
         <MetricCard
-          title={t('reports:avgLifetimeValue')}
+          title={t('avgLifetimeValue')}
           value={formatCurrency(metrics.avgLifetimeValue, 'CZK')}
           icon={Coins}
           iconColor="text-purple-600"
@@ -205,7 +207,7 @@ export default function CustomerReports() {
           testId="metric-avg-ltv"
         />
         <MetricCard
-          title={t('reports:averageOrdersPerCustomer')}
+          title={t('averageOrdersPerCustomer')}
           value={metrics.avgOrdersPerCustomer.toFixed(1)}
           icon={TrendingUp}
           iconColor="text-orange-600"
@@ -216,10 +218,10 @@ export default function CustomerReports() {
 
       {/* Top Customers Chart */}
       <BarChartCard
-        title={t('reports:top10CustomersByRevenue')}
+        title={t('top10CustomersByRevenue')}
         data={topCustomersChartData}
         bars={[
-          { dataKey: 'totalSpent', name: `${t('reports:totalSpent')} (CZK)`, color: '#3b82f6' },
+          { dataKey: 'totalSpent', name: `${t('totalSpent')} (CZK)`, color: '#3b82f6' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-top-customers"
@@ -228,12 +230,12 @@ export default function CustomerReports() {
       {/* Customer Segmentation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title={t('reports:customerSegmentationByValue')}
+          title={t('customerSegmentationByValue')}
           data={customerSegmentation}
           testId="chart-customer-segmentation"
         />
         <PieChartCard
-          title={t('reports:purchaseFrequency')}
+          title={t('purchaseFrequency')}
           data={purchaseFrequency}
           testId="chart-purchase-frequency"
         />
@@ -242,18 +244,18 @@ export default function CustomerReports() {
       {/* Top Customers Table */}
       <Card data-testid="table-top-customers">
         <CardHeader>
-          <CardTitle>{t('reports:topCustomersByRevenue')}</CardTitle>
+          <CardTitle>{t('topCustomersByRevenue')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('customers:customer')}</TableHead>
-                  <TableHead className="text-right">{t('common:orders')}</TableHead>
-                  <TableHead className="text-right">{t('reports:totalSpent')}</TableHead>
-                  <TableHead className="text-right">{t('reports:avgOrderValue')}</TableHead>
-                  <TableHead>{t('reports:lastOrder')}</TableHead>
+                  <TableHead>{tCustomers('customer')}</TableHead>
+                  <TableHead className="text-right">{tCommon('orders')}</TableHead>
+                  <TableHead className="text-right">{t('totalSpent')}</TableHead>
+                  <TableHead className="text-right">{t('avgOrderValue')}</TableHead>
+                  <TableHead>{t('lastOrder')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -273,7 +275,7 @@ export default function CustomerReports() {
                 {topCustomers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-500">
-                      {t('reports:noCustomerData')}
+                      {t('noCustomerData')}
                     </TableCell>
                   </TableRow>
                 )}

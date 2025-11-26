@@ -19,7 +19,8 @@ import { format } from "date-fns";
 
 export default function SalesReports() {
   const { toast } = useToast();
-  const { t } = useTranslation(['reports', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
 
@@ -85,7 +86,7 @@ export default function SalesReports() {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product && product.categoryId) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
-        const categoryName = category?.name || t('common:uncategorized');
+        const categoryName = category?.name || tCommon('uncategorized');
         const revenue = parseFloat(item.totalPrice || '0');
         categorySales[categoryName] = (categorySales[categoryName] || 0) + revenue;
       }
@@ -115,24 +116,24 @@ export default function SalesReports() {
   const handleExportExcel = () => {
     try {
       const exportData = topSellingProducts.map(p => ({
-        [t('reports.product')]: p.productName,
-        [t('reports.sku')]: p.sku,
-        [t('reports.quantitySold')]: p.quantity,
-        [t('reports.revenue')]: p.revenue.toFixed(2),
-        [t('reports.cost')]: p.cost.toFixed(2),
-        [t('reports.profit')]: p.profit.toFixed(2),
+        [t('product')]: p.productName,
+        [t('sku')]: p.sku,
+        [t('quantitySold')]: p.quantity,
+        [t('revenue')]: p.revenue.toFixed(2),
+        [t('cost')]: p.cost.toFixed(2),
+        [t('profit')]: p.profit.toFixed(2),
       }));
 
-      exportToXLSX(exportData, `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.salesReport'));
+      exportToXLSX(exportData, `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('salesReport'));
       
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.salesReportExportedXlsx'),
+        title: t('exportSuccessful'),
+        description: t('salesReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportSalesReport'),
+        title: t('exportFailed'),
+        description: t('failedToExportSalesReport'),
         variant: "destructive",
       });
     }
@@ -148,27 +149,27 @@ export default function SalesReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'product', header: t('reports.product') },
-        { key: 'quantity', header: t('reports.qty') },
-        { key: 'revenue', header: t('reports.revenue') },
-        { key: 'profit', header: t('reports.profit') },
+        { key: 'product', header: t('product') },
+        { key: 'quantity', header: t('qty') },
+        { key: 'revenue', header: t('revenue') },
+        { key: 'profit', header: t('profit') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        t('reports.salesReport')
+        t('salesReport')
       );
 
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.salesReportExportedPdf'),
+        title: t('exportSuccessful'),
+        description: t('salesReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportSalesReportPdf'),
+        title: t('exportFailed'),
+        description: t('failedToExportSalesReportPdf'),
         variant: "destructive",
       });
     }
@@ -191,8 +192,8 @@ export default function SalesReports() {
   return (
     <div className="space-y-6" data-testid="sales-reports">
       <ReportHeader
-        title={t('reports.salesReportsTitle')}
-        description={t('reports.salesReportsDesc')}
+        title={t('salesReportsTitle')}
+        description={t('salesReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -200,7 +201,7 @@ export default function SalesReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title={t('reports.totalOrders')}
+          title={t('totalOrders')}
           value={metrics.totalOrders}
           icon={ShoppingCart}
           iconColor="text-blue-600"
@@ -208,7 +209,7 @@ export default function SalesReports() {
           testId="metric-total-orders"
         />
         <MetricCard
-          title={t('reports.totalRevenue')}
+          title={t('totalRevenue')}
           value={formatCurrency(metrics.totalRevenue, 'CZK')}
           icon={Coins}
           iconColor="text-green-600"
@@ -216,7 +217,7 @@ export default function SalesReports() {
           testId="metric-total-revenue"
         />
         <MetricCard
-          title={t('reports.avgOrderValue')}
+          title={t('avgOrderValue')}
           value={formatCurrency(metrics.avgOrderValue, 'CZK')}
           icon={TrendingUp}
           iconColor="text-purple-600"
@@ -224,7 +225,7 @@ export default function SalesReports() {
           testId="metric-avg-order-value"
         />
         <MetricCard
-          title={t('reports.unitsSold')}
+          title={t('unitsSold')}
           value={metrics.totalUnitsSold}
           icon={Package}
           iconColor="text-orange-600"
@@ -235,11 +236,11 @@ export default function SalesReports() {
 
       {/* Sales Trends */}
       <TrendLineChart
-        title={t('reports.salesTrend')}
+        title={t('salesTrend')}
         data={salesTrends}
         lines={[
-          { dataKey: 'revenue', name: `${t('reports.revenue')} (CZK)`, color: '#3b82f6' },
-          { dataKey: 'avgOrderValue', name: t('reports.avgOrderValue'), color: '#10b981' },
+          { dataKey: 'revenue', name: `${t('revenue')} (CZK)`, color: '#3b82f6' },
+          { dataKey: 'avgOrderValue', name: t('avgOrderValue'), color: '#10b981' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-sales-trends"
@@ -247,10 +248,10 @@ export default function SalesReports() {
 
       {/* Top Products Bar Chart */}
       <BarChartCard
-        title={t('reports.top10SellingProducts')}
+        title={t('top10SellingProducts')}
         data={topProductsChartData}
         bars={[
-          { dataKey: 'quantity', name: t('reports.unitsSold'), color: '#3b82f6' },
+          { dataKey: 'quantity', name: t('unitsSold'), color: '#3b82f6' },
         ]}
         testId="chart-top-products"
       />
@@ -258,7 +259,7 @@ export default function SalesReports() {
       {/* Sales by Category */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title={t('reports.salesByCategory')}
+          title={t('salesByCategory')}
           data={salesByCategory}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-sales-by-category"
@@ -267,17 +268,17 @@ export default function SalesReports() {
         {/* Top Products Table */}
         <Card data-testid="table-top-products">
           <CardHeader>
-            <CardTitle>{t('reports.topSellingProducts')}</CardTitle>
+            <CardTitle>{t('topSellingProducts')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('reports.product')}</TableHead>
-                    <TableHead className="text-right">{t('reports.qty')}</TableHead>
-                    <TableHead className="text-right">{t('reports.revenue')}</TableHead>
-                    <TableHead className="text-right">{t('reports.profit')}</TableHead>
+                    <TableHead>{t('product')}</TableHead>
+                    <TableHead className="text-right">{t('qty')}</TableHead>
+                    <TableHead className="text-right">{t('revenue')}</TableHead>
+                    <TableHead className="text-right">{t('profit')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

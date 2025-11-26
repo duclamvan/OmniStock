@@ -44,7 +44,8 @@ import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endO
 
 export default function Reports() {
   const { toast } = useToast();
-  const { t } = useTranslation(['reports', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
   const [dateRange, setDateRange] = useState<string>("all");
 
   // Fetch all necessary data
@@ -259,50 +260,50 @@ export default function Reports() {
     try {
       const exportData = [
         {
-          [t('reports.metric')]: t('reports.totalRevenueCZK'),
-          [t('reports.value')]: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK'),
+          [t('metric')]: t('totalRevenueCZK'),
+          [t('value')]: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK'),
         },
         {
-          [t('reports.metric')]: t('reports.totalRevenueEUR'),
-          [t('reports.value')]: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR'),
+          [t('metric')]: t('totalRevenueEUR'),
+          [t('value')]: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR'),
         },
         {
-          [t('reports.metric')]: `${t('reports.totalCost')} (CZK)`,
-          [t('reports.value')]: formatCurrency(financialMetrics.totalCostCZK, 'CZK'),
+          [t('metric')]: `${t('totalCost')} (CZK)`,
+          [t('value')]: formatCurrency(financialMetrics.totalCostCZK, 'CZK'),
         },
         {
-          [t('reports.metric')]: `${t('reports.profit')} (CZK)`,
-          [t('reports.value')]: formatCurrency(financialMetrics.profitCZK, 'CZK'),
+          [t('metric')]: `${t('profit')} (CZK)`,
+          [t('value')]: formatCurrency(financialMetrics.profitCZK, 'CZK'),
         },
         {
-          [t('reports.metric')]: t('reports.profitMargin'),
-          [t('reports.value')]: `${financialMetrics.profitMargin.toFixed(2)}%`,
+          [t('metric')]: t('profitMargin'),
+          [t('value')]: `${financialMetrics.profitMargin.toFixed(2)}%`,
         },
         {
-          [t('reports.metric')]: t('reports.totalOrders'),
-          [t('reports.value')]: financialMetrics.totalOrders,
+          [t('metric')]: t('totalOrders'),
+          [t('value')]: financialMetrics.totalOrders,
         },
         {
-          [t('reports.metric')]: t('reports.unitsSold'),
-          [t('reports.value')]: productPerformance.totalUnitsSold,
+          [t('metric')]: t('unitsSold'),
+          [t('value')]: productPerformance.totalUnitsSold,
         },
         {
-          [t('reports.metric')]: t('reports.activeCustomers'),
-          [t('reports.value')]: customerAnalytics.activeCustomers,
+          [t('metric')]: t('activeCustomers'),
+          [t('value')]: customerAnalytics.activeCustomers,
         },
       ];
 
-      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.businessReports'));
+      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}`, t('businessReports'));
       
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.reportExportedXlsx'),
+        title: t('exportSuccessful'),
+        description: t('reportExportedXlsx'),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportReport'),
+        title: t('exportFailed'),
+        description: t('failedToExportReport'),
         variant: "destructive",
       });
     }
@@ -311,32 +312,32 @@ export default function Reports() {
   const handleExportPDF = () => {
     try {
       const exportData = [
-        { metric: t('reports.totalRevenueCZK'), value: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK') },
-        { metric: t('reports.totalRevenueEUR'), value: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR') },
-        { metric: `${t('reports.totalCost')} (CZK)`, value: formatCurrency(financialMetrics.totalCostCZK, 'CZK') },
-        { metric: `${t('reports.profit')} (CZK)`, value: formatCurrency(financialMetrics.profitCZK, 'CZK') },
-        { metric: t('reports.profitMargin'), value: `${financialMetrics.profitMargin.toFixed(2)}%` },
-        { metric: t('reports.totalOrders'), value: financialMetrics.totalOrders.toString() },
-        { metric: t('reports.unitsSold'), value: productPerformance.totalUnitsSold.toString() },
-        { metric: t('reports.activeCustomers'), value: customerAnalytics.activeCustomers.toString() },
+        { metric: t('totalRevenueCZK'), value: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK') },
+        { metric: t('totalRevenueEUR'), value: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR') },
+        { metric: `${t('totalCost')} (CZK)`, value: formatCurrency(financialMetrics.totalCostCZK, 'CZK') },
+        { metric: `${t('profit')} (CZK)`, value: formatCurrency(financialMetrics.profitCZK, 'CZK') },
+        { metric: t('profitMargin'), value: `${financialMetrics.profitMargin.toFixed(2)}%` },
+        { metric: t('totalOrders'), value: financialMetrics.totalOrders.toString() },
+        { metric: t('unitsSold'), value: productPerformance.totalUnitsSold.toString() },
+        { metric: t('activeCustomers'), value: customerAnalytics.activeCustomers.toString() },
       ];
 
       const columns: PDFColumn[] = [
-        { key: 'metric', header: t('reports.metric') },
-        { key: 'value', header: t('reports.value') },
+        { key: 'metric', header: t('metric') },
+        { key: 'value', header: t('value') },
       ];
 
-      exportToPDF(t('reports.businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.reportExportedPdf'),
+        title: t('exportSuccessful'),
+        description: t('reportExportedPdf'),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportReport'),
+        title: t('exportFailed'),
+        description: t('failedToExportReport'),
         variant: "destructive",
       });
     }
@@ -348,10 +349,10 @@ export default function Reports() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {t('reports.businessReports')}
+            {t('businessReports')}
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-            {t('reports.comprehensiveAnalytics')}
+            {t('comprehensiveAnalytics')}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -361,31 +362,31 @@ export default function Reports() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('reports.allTime')}</SelectItem>
-              <SelectItem value="today">{t('reports.today')}</SelectItem>
-              <SelectItem value="week">{t('reports.last7Days')}</SelectItem>
-              <SelectItem value="month">{t('reports.last30Days')}</SelectItem>
-              <SelectItem value="thisMonth">{t('reports.thisMonth')}</SelectItem>
-              <SelectItem value="year">{t('reports.thisYear')}</SelectItem>
+              <SelectItem value="all">{t('allTime')}</SelectItem>
+              <SelectItem value="today">{t('today')}</SelectItem>
+              <SelectItem value="week">{t('last7Days')}</SelectItem>
+              <SelectItem value="month">{t('last30Days')}</SelectItem>
+              <SelectItem value="thisMonth">{t('thisMonth')}</SelectItem>
+              <SelectItem value="year">{t('thisYear')}</SelectItem>
             </SelectContent>
           </Select>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                {t('reports.export')}
+                {t('export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('reports.exportOptions')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                {t('reports.exportAsXlsx')}
+                {t('exportAsXlsx')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                {t('reports.exportAsPdf')}
+                {t('exportAsPdf')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -396,7 +397,7 @@ export default function Reports() {
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-          {t('reports.financialOverview')}
+          {t('financialOverview')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Revenue CZK */}
@@ -405,7 +406,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.revenue')} (CZK)
+                    {t('revenue')} (CZK)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -433,7 +434,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.revenue')} (EUR)
+                    {t('revenue')} (EUR)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -461,7 +462,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.profitEst')}
+                    {t('profitEst')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -493,7 +494,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.profitMargin')}
+                    {t('profitMargin')}
                   </p>
                   <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-margin">
                     {financialMetrics.profitMargin.toFixed(1)}%
@@ -512,7 +513,7 @@ export default function Reports() {
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
           <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600" />
-          {t('reports.salesAndOrders')}
+          {t('salesAndOrders')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Orders */}
@@ -521,7 +522,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.totalOrders')}
+                    {t('totalOrders')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
                     {formatCompactNumber(financialMetrics.totalOrders)}
@@ -540,7 +541,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.unitsSold')}
+                    {t('unitsSold')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
                     {formatCompactNumber(productPerformance.totalUnitsSold)}
@@ -559,7 +560,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.avgOrderCzk')}
+                    {t('avgOrderCzk')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order-czk">
                     {formatCompactNumber(financialMetrics.avgOrderValueCZK)} Kč
@@ -578,7 +579,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('reports.activeCustomers')}
+                    {t('activeCustomers')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
                     {formatCompactNumber(customerAnalytics.activeCustomers)}
@@ -600,17 +601,17 @@ export default function Reports() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-amber-500" />
-              {t('reports.topSellingProducts')}
+              {t('topSellingProducts')}
             </CardTitle>
             <CardDescription>
-              {t('reports.topSellingProductsDesc')}
+              {t('topSellingProductsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {productPerformance.topProducts.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                  {t('reports.noSalesDataAvailable')}
+                  {t('noSalesDataAvailable')}
                 </p>
               ) : (
                 productPerformance.topProducts.map((item, index) => (
@@ -630,7 +631,7 @@ export default function Reports() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {item.quantity} {t('reports.units')}
+                        {item.quantity} {t('units')}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatCurrency(item.revenue, 'CZK')}
@@ -648,10 +649,10 @@ export default function Reports() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              {t('reports.inventoryAlerts')}
+              {t('inventoryAlerts')}
             </CardTitle>
             <CardDescription>
-              {t('reports.lowStockAndOutOfStock')}
+              {t('lowStockAndOutOfStock')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -659,13 +660,13 @@ export default function Reports() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('reports.lowStock')}</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('lowStock')}</p>
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                     {inventoryInsights.lowStockCount}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-                  <p className="text-xs text-red-700 dark:text-red-300 mb-1">{t('reports.outOfStock')}</p>
+                  <p className="text-xs text-red-700 dark:text-red-300 mb-1">{t('outOfStock')}</p>
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {inventoryInsights.outOfStockCount}
                   </p>
@@ -674,10 +675,10 @@ export default function Reports() {
 
               {/* Low Stock List */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('reports.lowStockItems')}</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('lowStockItems')}</p>
                 {inventoryInsights.lowStockProducts.length === 0 ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-2">
-                    {t('reports.allProductsWellStocked')}
+                    {t('allProductsWellStocked')}
                   </p>
                 ) : (
                   inventoryInsights.lowStockProducts.slice(0, 5).map((product: any) => (
@@ -686,7 +687,7 @@ export default function Reports() {
                         {product.name}
                       </p>
                       <Badge variant="outline" className="text-amber-600 border-amber-600 shrink-0">
-                        {product.quantity} {t('reports.left')}
+                        {product.quantity} {t('left')}
                       </Badge>
                     </div>
                   ))
@@ -702,17 +703,17 @@ export default function Reports() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-violet-500" />
-            {t('reports.topCustomers')}
+            {t('topCustomers')}
           </CardTitle>
           <CardDescription>
-            {t('reports.highestValueCustomers')}
+            {t('highestValueCustomers')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {customerAnalytics.topCustomers.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                {t('reports.noCustomerDataAvailable')}
+                {t('noCustomerDataAvailable')}
               </p>
             ) : (
               customerAnalytics.topCustomers.map((item, index) => (
@@ -726,7 +727,7 @@ export default function Reports() {
                         {item.customer.name}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {item.orderCount} {t('reports.ordersLowercase')}
+                        {item.orderCount} {t('ordersLowercase')}
                       </p>
                     </div>
                   </div>
@@ -752,10 +753,10 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('reports.totalInventory')}
+                  {t('totalInventory')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactNumber(inventoryInsights.totalStock)} {t('reports.units')}
+                  {formatCompactNumber(inventoryInsights.totalStock)} {t('units')}
                 </p>
               </div>
             </div>
@@ -770,7 +771,7 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('reports.stockValue')}
+                  {t('stockValue')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {formatCompactNumber(inventoryInsights.totalValue)} Kč
@@ -788,7 +789,7 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('reports.productVarieties')}
+                  {t('productVarieties')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {formatCompactNumber((products as any[]).length)}

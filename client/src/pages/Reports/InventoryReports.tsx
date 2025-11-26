@@ -24,7 +24,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function InventoryReports() {
   const { toast } = useToast();
-  const { t } = useTranslation(['reports', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
   const { getDateRangeValues } = useReports();
   const [deadStockDays, setDeadStockDays] = useState(200);
   const [colorTrendsStartDate, setColorTrendsStartDate] = useState('');
@@ -72,7 +73,7 @@ export default function InventoryReports() {
     (products as any[]).forEach((product: any) => {
       if (product.categoryId) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
-        const categoryName = category?.name || t('common:uncategorized');
+        const categoryName = category?.name || tCommon('uncategorized');
         const value = (product.quantity || 0) * parseFloat(product.priceCzk || '0');
         categoryStock[categoryName] = (categoryStock[categoryName] || 0) + value;
       }
@@ -88,9 +89,9 @@ export default function InventoryReports() {
     const outOfStock = inventoryMetrics.outOfStockCount;
 
     return preparePieChartData([
-      { name: t('reports.inStock'), value: inStock },
-      { name: t('reports.lowStock'), value: lowStock },
-      { name: t('reports.outOfStock'), value: outOfStock },
+      { name: t('inStock'), value: inStock },
+      { name: t('lowStock'), value: lowStock },
+      { name: t('outOfStock'), value: outOfStock },
     ]);
   }, [products, inventoryMetrics, t]);
 
@@ -112,25 +113,25 @@ export default function InventoryReports() {
   const handleExportExcel = () => {
     try {
       const exportData = (products as any[]).map((p: any) => ({
-        [t('reports.product')]: p.name,
-        [t('reports.sku')]: p.sku || '',
-        [t('reports.stock')]: p.quantity || 0,
-        [t('reports.lowStockAlert')]: p.lowStockAlert || 0,
-        [t('reports.price')]: parseFloat(p.priceCzk || '0'),
-        [t('reports.totalValue')]: (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
-        [t('reports.status')]: (p.quantity || 0) === 0 ? t('reports.outOfStock') : (p.quantity || 0) <= (p.lowStockAlert || 5) ? t('reports.lowStock') : t('reports.inStock'),
+        [t('product')]: p.name,
+        [t('sku')]: p.sku || '',
+        [t('stock')]: p.quantity || 0,
+        [t('lowStockAlert')]: p.lowStockAlert || 0,
+        [t('price')]: parseFloat(p.priceCzk || '0'),
+        [t('totalValue')]: (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
+        [t('status')]: (p.quantity || 0) === 0 ? t('outOfStock') : (p.quantity || 0) <= (p.lowStockAlert || 5) ? t('lowStock') : t('inStock'),
       }));
 
-      exportToXLSX(exportData, `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.inventoryReport'));
+      exportToXLSX(exportData, `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('inventoryReport'));
       
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.inventoryReportExportedXlsx'),
+        title: t('exportSuccessful'),
+        description: t('inventoryReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportInventoryReport'),
+        title: t('exportFailed'),
+        description: t('failedToExportInventoryReport'),
         variant: "destructive",
       });
     }
@@ -146,27 +147,27 @@ export default function InventoryReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'product', header: t('reports.product') },
-        { key: 'sku', header: t('reports.sku') },
-        { key: 'quantity', header: t('reports.stock') },
-        { key: 'alert', header: t('reports.lowStockAlert') },
+        { key: 'product', header: t('product') },
+        { key: 'sku', header: t('sku') },
+        { key: 'quantity', header: t('stock') },
+        { key: 'alert', header: t('lowStockAlert') },
       ];
 
       exportToPDF(
-        t('reports.lowStockAlerts'),
+        t('lowStockAlerts'),
         exportData,
         columns,
         `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`
       );
 
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.inventoryReportExportedPdf'),
+        title: t('exportSuccessful'),
+        description: t('inventoryReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportInventoryReportPdf'),
+        title: t('exportFailed'),
+        description: t('failedToExportInventoryReportPdf'),
         variant: "destructive",
       });
     }
@@ -180,14 +181,14 @@ export default function InventoryReports() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reports/reorder-alerts'] });
       toast({
-        title: t('reports.emailFeature'),
-        description: data.message || t('reports.emailNotificationFeatureComingSoon'),
+        title: t('emailFeature'),
+        description: data.message || t('emailNotificationFeatureComingSoon'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: t('common:error'),
-        description: error.message || t('reports.failedToSendEmailNotifications'),
+        title: tCommon('error'),
+        description: error.message || t('failedToSendEmailNotifications'),
         variant: "destructive",
       });
     },
@@ -210,8 +211,8 @@ export default function InventoryReports() {
   return (
     <div className="space-y-6" data-testid="inventory-reports">
       <ReportHeader
-        title={t('reports.inventoryReportsTitle')}
-        description={t('reports.inventoryReportsDesc')}
+        title={t('inventoryReportsTitle')}
+        description={t('inventoryReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -219,16 +220,16 @@ export default function InventoryReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title={t('reports.totalStock')}
+          title={t('totalStock')}
           value={inventoryMetrics.totalStock}
-          subtitle={t('reports.units')}
+          subtitle={t('units')}
           icon={Package}
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
           testId="metric-total-stock"
         />
         <MetricCard
-          title={t('reports.totalValue')}
+          title={t('totalValue')}
           value={formatCurrency(inventoryMetrics.totalValue, 'CZK')}
           icon={Coins}
           iconColor="text-green-600"
@@ -236,18 +237,18 @@ export default function InventoryReports() {
           testId="metric-total-value"
         />
         <MetricCard
-          title={t('reports.lowStockItems')}
+          title={t('lowStockItems')}
           value={inventoryMetrics.lowStockCount}
-          subtitle={t('reports.products')}
+          subtitle={t('products')}
           icon={AlertTriangle}
           iconColor="text-orange-600"
           iconBgColor="bg-orange-100"
           testId="metric-low-stock"
         />
         <MetricCard
-          title={t('reports.outOfStockItems')}
+          title={t('outOfStockItems')}
           value={inventoryMetrics.outOfStockCount}
-          subtitle={t('reports.products')}
+          subtitle={t('products')}
           icon={TrendingDown}
           iconColor="text-red-600"
           iconBgColor="bg-red-100"
@@ -258,13 +259,13 @@ export default function InventoryReports() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title={t('reports.inventoryValueByCategory')}
+          title={t('inventoryValueByCategory')}
           data={stockByCategory}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-stock-by-category"
         />
         <PieChartCard
-          title={t('reports.stockLevelDistribution')}
+          title={t('stockLevelDistribution')}
           data={stockLevelData}
           colors={['#10b981', '#f59e0b', '#ef4444']}
           testId="chart-stock-levels"
@@ -274,18 +275,18 @@ export default function InventoryReports() {
       {/* Low Stock Alerts */}
       <Card data-testid="table-low-stock">
         <CardHeader>
-          <CardTitle>{t('reports.lowStockAlerts')}</CardTitle>
+          <CardTitle>{t('lowStockAlerts')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('reports.product')}</TableHead>
-                  <TableHead>{t('reports.sku')}</TableHead>
-                  <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
-                  <TableHead className="text-right">{t('reports.alertLevel')}</TableHead>
-                  <TableHead>{t('reports.status')}</TableHead>
+                  <TableHead>{t('product')}</TableHead>
+                  <TableHead>{t('sku')}</TableHead>
+                  <TableHead className="text-right">{t('currentStock')}</TableHead>
+                  <TableHead className="text-right">{t('alertLevel')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,14 +297,14 @@ export default function InventoryReports() {
                     <TableCell className="text-right">{product.quantity}</TableCell>
                     <TableCell className="text-right">{product.lowStockAlert || 5}</TableCell>
                     <TableCell>
-                      <Badge variant="destructive">{t('reports.lowStock')}</Badge>
+                      <Badge variant="destructive">{t('lowStock')}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
                 {inventoryMetrics.lowStockProducts.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-500">
-                      {t('reports.noLowStockItems')}
+                      {t('noLowStockItems')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -316,18 +317,18 @@ export default function InventoryReports() {
       {/* Top Value Products */}
       <Card data-testid="table-top-value">
         <CardHeader>
-          <CardTitle>{t('reports.highestValueInventory')}</CardTitle>
+          <CardTitle>{t('highestValueInventory')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('reports.product')}</TableHead>
-                  <TableHead className="text-right">{t('reports.quantity')}</TableHead>
-                  <TableHead className="text-right">{t('reports.unitPrice')}</TableHead>
-                  <TableHead className="text-right">{t('reports.totalValue')}</TableHead>
-                  <TableHead className="text-right">{t('reports.reorderRate')}</TableHead>
+                  <TableHead>{t('product')}</TableHead>
+                  <TableHead className="text-right">{t('quantity')}</TableHead>
+                  <TableHead className="text-right">{t('unitPrice')}</TableHead>
+                  <TableHead className="text-right">{t('totalValue')}</TableHead>
+                  <TableHead className="text-right">{t('reorderRate')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,12 +356,12 @@ export default function InventoryReports() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-slate-600" />
-                {t('reports.deadStockReport')}
+                {t('deadStockReport')}
               </CardTitle>
-              <CardDescription>{t('reports.deadStockDesc')}</CardDescription>
+              <CardDescription>{t('deadStockDesc')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="dead-stock-days" className="text-sm">{t('reports.daysThreshold')}:</Label>
+              <Label htmlFor="dead-stock-days" className="text-sm">{t('daysThreshold')}:</Label>
               <Input
                 id="dead-stock-days"
                 type="number"
@@ -381,11 +382,11 @@ export default function InventoryReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('reports.productName')}</TableHead>
-                    <TableHead>{t('reports.sku')}</TableHead>
-                    <TableHead className="text-right">{t('reports.daysSinceLastSale')}</TableHead>
-                    <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
-                    <TableHead className="text-right">{t('reports.value')}</TableHead>
+                    <TableHead>{t('productName')}</TableHead>
+                    <TableHead>{t('sku')}</TableHead>
+                    <TableHead className="text-right">{t('daysSinceLastSale')}</TableHead>
+                    <TableHead className="text-right">{t('currentStock')}</TableHead>
+                    <TableHead className="text-right">{t('value')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -410,7 +411,7 @@ export default function InventoryReports() {
                   {(deadStockProducts as any[]).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-slate-500">
-                        {t('reports.noDeadStockFound')}
+                        {t('noDeadStockFound')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -428,9 +429,9 @@ export default function InventoryReports() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
-                {t('reports.reorderAlerts')}
+                {t('reorderAlerts')}
               </CardTitle>
-              <CardDescription>{t('reports.reorderAlertsDesc')}</CardDescription>
+              <CardDescription>{t('reorderAlertsDesc')}</CardDescription>
             </div>
             <Button
               onClick={() => sendReorderAlertsMutation.mutate()}
@@ -441,7 +442,7 @@ export default function InventoryReports() {
               data-testid="button-send-email-alerts"
             >
               <Mail className="h-4 w-4" />
-              {sendReorderAlertsMutation.isPending ? t('reports.sending') : t('reports.sendEmailAlert')}
+              {sendReorderAlertsMutation.isPending ? t('sending') : t('sendEmailAlert')}
             </Button>
           </div>
         </CardHeader>
@@ -453,12 +454,12 @@ export default function InventoryReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('reports.productName')}</TableHead>
-                    <TableHead>{t('reports.sku')}</TableHead>
-                    <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
-                    <TableHead className="text-right">{t('reports.minLevel')}</TableHead>
-                    <TableHead className="text-right">{t('reports.shortage')}</TableHead>
-                    <TableHead>{t('reports.urgency')}</TableHead>
+                    <TableHead>{t('productName')}</TableHead>
+                    <TableHead>{t('sku')}</TableHead>
+                    <TableHead className="text-right">{t('currentStock')}</TableHead>
+                    <TableHead className="text-right">{t('minLevel')}</TableHead>
+                    <TableHead className="text-right">{t('shortage')}</TableHead>
+                    <TableHead>{t('urgency')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -481,7 +482,7 @@ export default function InventoryReports() {
                             variant={isUrgent ? "destructive" : "default"}
                             data-testid={`badge-urgency-${product.id}`}
                           >
-                            {isUrgent ? t('reports.critical') : t('reports.low')}
+                            {isUrgent ? t('critical') : t('low')}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -490,7 +491,7 @@ export default function InventoryReports() {
                   {(reorderAlerts as any[]).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-slate-500">
-                        {t('reports.noReorderAlerts')}
+                        {t('noReorderAlerts')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -507,12 +508,12 @@ export default function InventoryReports() {
           <div>
             <CardTitle className="flex items-center gap-2 mb-4">
               <Palette className="h-5 w-5 text-purple-600" />
-              {t('reports.colorTrendTracking')}
+              {t('colorTrendTracking')}
             </CardTitle>
-            <CardDescription className="mb-4">{t('reports.colorTrendDesc')}</CardDescription>
+            <CardDescription className="mb-4">{t('colorTrendDesc')}</CardDescription>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-start" className="text-sm">{t('reports.startDate')}:</Label>
+                <Label htmlFor="color-trends-start" className="text-sm">{t('startDate')}:</Label>
                 <Input
                   id="color-trends-start"
                   type="date"
@@ -523,7 +524,7 @@ export default function InventoryReports() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-end" className="text-sm">{t('reports.endDate')}:</Label>
+                <Label htmlFor="color-trends-end" className="text-sm">{t('endDate')}:</Label>
                 <Input
                   id="color-trends-end"
                   type="date"
@@ -564,10 +565,10 @@ export default function InventoryReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('reports.colorVariant')}</TableHead>
-                      <TableHead>{t('reports.product')}</TableHead>
-                      <TableHead className="text-right">{t('reports.totalSales')}</TableHead>
-                      <TableHead>{t('reports.trend')}</TableHead>
+                      <TableHead>{t('colorVariant')}</TableHead>
+                      <TableHead>{t('product')}</TableHead>
+                      <TableHead className="text-right">{t('totalSales')}</TableHead>
+                      <TableHead>{t('trend')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -578,7 +579,7 @@ export default function InventoryReports() {
                         <TableCell className="text-right">{trend.totalQuantitySold} units</TableCell>
                         <TableCell>
                           <Badge variant={index < 3 ? "default" : "secondary"}>
-                            {index < 3 ? t('reports.topSeller') : t('reports.popular')}
+                            {index < 3 ? t('topSeller') : t('popular')}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -586,7 +587,7 @@ export default function InventoryReports() {
                     {(colorTrends as any[]).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-slate-500">
-                          {t('reports.noColorTrendData')}
+                          {t('noColorTrendData')}
                         </TableCell>
                       </TableRow>
                     )}

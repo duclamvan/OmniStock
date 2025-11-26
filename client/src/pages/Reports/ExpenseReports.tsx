@@ -17,7 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format, eachMonthOfInterval, startOfMonth, subMonths } from "date-fns";
 
 export default function ExpenseReports() {
-  const { t } = useTranslation(['reports', 'financial', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
+  const { t: tFinancial } = useTranslation('financial');
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
@@ -77,7 +79,7 @@ export default function ExpenseReports() {
     const categoryExpenses: { [key: string]: number } = {};
 
     filteredExpenses.forEach((expense: any) => {
-      const category = expense.category || t('financial:uncategorized');
+      const category = expense.category || tFinancial('uncategorized');
       const amount = parseFloat(expense.amount || '0');
       const amountInCZK = convertToBaseCurrency(amount, expense.currency);
       categoryExpenses[category] = (categoryExpenses[category] || 0) + amountInCZK;
@@ -138,24 +140,24 @@ export default function ExpenseReports() {
   const handleExportExcel = () => {
     try {
       const exportData = filteredExpenses.map((exp: any) => ({
-        [t('common:date')]: format(new Date(exp.createdAt || exp.date), 'yyyy-MM-dd'),
-        [t('common:description')]: exp.description || '-',
-        [t('financial:category')]: exp.category || t('financial:uncategorized'),
-        [t('common:amount')]: parseFloat(exp.amount || '0'),
-        [t('common:currency')]: exp.currency,
-        [t('reports:amountCZK')]: convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency).toFixed(2),
+        [tCommon('date')]: format(new Date(exp.createdAt || exp.date), 'yyyy-MM-dd'),
+        [tCommon('description')]: exp.description || '-',
+        [tFinancial('category')]: exp.category || tFinancial('uncategorized'),
+        [tCommon('amount')]: parseFloat(exp.amount || '0'),
+        [tCommon('currency')]: exp.currency,
+        [t('amountCZK')]: convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency).toFixed(2),
       }));
 
-      exportToXLSX(exportData, `Expense_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:expenseReport'));
+      exportToXLSX(exportData, `Expense_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('expenseReport'));
       
       toast({
-        title: t('common:success'),
-        description: t('reports:exportSuccessful'),
+        title: tCommon('success'),
+        description: t('exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: t('common:error'),
-        description: t('reports:exportFailed'),
+        title: tCommon('error'),
+        description: t('exportFailed'),
         variant: "destructive",
       });
     }
@@ -165,33 +167,33 @@ export default function ExpenseReports() {
     try {
       const exportData = topExpenses.map((exp: any) => ({
         description: exp.description || '-',
-        category: exp.category || t('financial:uncategorized'),
+        category: exp.category || tFinancial('uncategorized'),
         amount: formatCurrency(exp.amountInCZK, 'CZK'),
         date: format(new Date(exp.createdAt || exp.date), 'MMM dd, yyyy'),
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'description', header: t('common:description') },
-        { key: 'category', header: t('financial:category') },
-        { key: 'amount', header: t('common:amount') },
-        { key: 'date', header: t('common:date') },
+        { key: 'description', header: tCommon('description') },
+        { key: 'category', header: tFinancial('category') },
+        { key: 'amount', header: tCommon('amount') },
+        { key: 'date', header: tCommon('date') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Expense_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        t('reports:topExpenses')
+        t('topExpenses')
       );
 
       toast({
-        title: t('common:success'),
-        description: t('reports:exportSuccessful'),
+        title: tCommon('success'),
+        description: t('exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: t('common:error'),
-        description: t('reports:exportFailed'),
+        title: tCommon('error'),
+        description: t('exportFailed'),
         variant: "destructive",
       });
     }
@@ -214,8 +216,8 @@ export default function ExpenseReports() {
   return (
     <div className="space-y-6" data-testid="expense-reports">
       <ReportHeader
-        title={t('reports:expenseReport')}
-        description={t('reports:expenseAnalysisDesc')}
+        title={t('expenseReport')}
+        description={t('expenseAnalysisDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -223,7 +225,7 @@ export default function ExpenseReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title={t('financial:totalExpenses')}
+          title={tFinancial('totalExpenses')}
           value={formatCurrency(metrics.totalExpenses, 'CZK')}
           icon={Coins}
           iconColor="text-red-600"
@@ -231,16 +233,16 @@ export default function ExpenseReports() {
           testId="metric-total-expenses"
         />
         <MetricCard
-          title={t('reports:expenseCount')}
+          title={t('expenseCount')}
           value={metrics.expenseCount}
-          subtitle={t('financial:transactions')}
+          subtitle={tFinancial('transactions')}
           icon={PieChart}
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
           testId="metric-expense-count"
         />
         <MetricCard
-          title={t('reports:avgExpense')}
+          title={t('avgExpense')}
           value={formatCurrency(metrics.avgExpense, 'CZK')}
           icon={TrendingUp}
           iconColor="text-purple-600"
@@ -248,7 +250,7 @@ export default function ExpenseReports() {
           testId="metric-avg-expense"
         />
         <MetricCard
-          title={t('reports:expenseRevenueRatio')}
+          title={t('expenseRevenueRatio')}
           value={`${metrics.expenseToRevenueRatio.toFixed(1)}%`}
           icon={AlertCircle}
           iconColor="text-orange-600"
@@ -259,11 +261,11 @@ export default function ExpenseReports() {
 
       {/* Monthly Expense Trends */}
       <TrendLineChart
-        title={t('reports:monthlyExpenseVsRevenue')}
+        title={t('monthlyExpenseVsRevenue')}
         data={monthlyExpenseTrends}
         lines={[
-          { dataKey: 'expenses', name: `${t('financial:expenses')} (CZK)`, color: '#ef4444' },
-          { dataKey: 'revenue', name: `${t('reports:totalRevenue')} (CZK)`, color: '#10b981' },
+          { dataKey: 'expenses', name: `${tFinancial('expenses')} (CZK)`, color: '#ef4444' },
+          { dataKey: 'revenue', name: `${t('totalRevenue')} (CZK)`, color: '#10b981' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-expense-trends"
@@ -271,7 +273,7 @@ export default function ExpenseReports() {
 
       {/* Expense Breakdown */}
       <PieChartCard
-        title={t('reports:expensesByCategory')}
+        title={t('expensesByCategory')}
         data={expensesByCategory}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-expenses-by-category"
@@ -280,25 +282,25 @@ export default function ExpenseReports() {
       {/* Top Expenses Table */}
       <Card data-testid="table-top-expenses">
         <CardHeader>
-          <CardTitle>{t('reports:topExpenses')}</CardTitle>
+          <CardTitle>{t('topExpenses')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common:description')}</TableHead>
-                  <TableHead>{t('financial:category')}</TableHead>
-                  <TableHead className="text-right">{t('common:amount')}</TableHead>
-                  <TableHead className="text-right">{t('common:currency')}</TableHead>
-                  <TableHead>{t('common:date')}</TableHead>
+                  <TableHead>{tCommon('description')}</TableHead>
+                  <TableHead>{tFinancial('category')}</TableHead>
+                  <TableHead className="text-right">{tCommon('amount')}</TableHead>
+                  <TableHead className="text-right">{tCommon('currency')}</TableHead>
+                  <TableHead>{tCommon('date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {topExpenses.map((expense: any) => (
                   <TableRow key={expense.id}>
                     <TableCell className="font-medium">{expense.description || '-'}</TableCell>
-                    <TableCell>{expense.category || t('financial:uncategorized')}</TableCell>
+                    <TableCell>{expense.category || tFinancial('uncategorized')}</TableCell>
                     <TableCell className="text-right font-semibold text-red-600">
                       {formatCurrency(expense.amountInCZK, 'CZK')}
                     </TableCell>
@@ -309,7 +311,7 @@ export default function ExpenseReports() {
                 {topExpenses.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-500">
-                      {t('reports:noExpenseData')}
+                      {t('noExpenseData')}
                     </TableCell>
                   </TableRow>
                 )}

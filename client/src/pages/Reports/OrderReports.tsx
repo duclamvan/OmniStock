@@ -17,7 +17,8 @@ import { format, eachMonthOfInterval, startOfMonth, subMonths } from "date-fns";
 
 export default function OrderReports() {
   const { toast } = useToast();
-  const { t } = useTranslation(['reports', 'common']);
+  const { t } = useTranslation('reports');
+  const { t: tCommon } = useTranslation('common');
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
 
@@ -105,25 +106,25 @@ export default function OrderReports() {
   const handleExportExcel = () => {
     try {
       const exportData = filteredOrders.map((o: any) => ({
-        [t('reports.orderId')]: o.orderId,
-        [t('reports.customer')]: o.customer?.name || '-',
-        [t('reports.date')]: format(new Date(o.createdAt), 'yyyy-MM-dd'),
-        [t('reports.status')]: o.status,
-        [t('reports.paymentStatus')]: o.paymentStatus || 'unpaid',
-        [t('reports.total')]: parseFloat(o.totalPrice || '0'),
+        [t('orderId')]: o.orderId,
+        [t('customer')]: o.customer?.name || '-',
+        [t('date')]: format(new Date(o.createdAt), 'yyyy-MM-dd'),
+        [t('status')]: o.status,
+        [t('paymentStatus')]: o.paymentStatus || 'unpaid',
+        [t('total')]: parseFloat(o.totalPrice || '0'),
         [t('financial.currency')]: o.currency,
       }));
 
-      exportToXLSX(exportData, `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.orderReport'));
+      exportToXLSX(exportData, `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('orderReport'));
       
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.orderReportExportedXlsx'),
+        title: t('exportSuccessful'),
+        description: t('orderReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportOrderReport'),
+        title: t('exportFailed'),
+        description: t('failedToExportOrderReport'),
         variant: "destructive",
       });
     }
@@ -139,27 +140,27 @@ export default function OrderReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'month', header: t('reports.month') },
-        { key: 'orders', header: t('reports.total') },
-        { key: 'fulfilled', header: t('reports.fulfilled') },
-        { key: 'pending', header: t('reports.pending') },
+        { key: 'month', header: t('month') },
+        { key: 'orders', header: t('total') },
+        { key: 'fulfilled', header: t('fulfilled') },
+        { key: 'pending', header: t('pending') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        t('reports.orderTrends')
+        t('orderTrends')
       );
 
       toast({
-        title: t('reports.exportSuccessful'),
-        description: t('reports.orderReportExportedPdf'),
+        title: t('exportSuccessful'),
+        description: t('orderReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: t('reports.exportFailed'),
-        description: t('reports.failedToExportOrderReportPdf'),
+        title: t('exportFailed'),
+        description: t('failedToExportOrderReportPdf'),
         variant: "destructive",
       });
     }
@@ -182,8 +183,8 @@ export default function OrderReports() {
   return (
     <div className="space-y-6" data-testid="order-reports">
       <ReportHeader
-        title={t('reports.orderReportsTitle')}
-        description={t('reports.orderReportsDesc')}
+        title={t('orderReportsTitle')}
+        description={t('orderReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -191,7 +192,7 @@ export default function OrderReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title={t('reports.totalOrders')}
+          title={t('totalOrders')}
           value={metrics.totalOrders}
           icon={ShoppingCart}
           iconColor="text-blue-600"
@@ -199,27 +200,27 @@ export default function OrderReports() {
           testId="metric-total-orders"
         />
         <MetricCard
-          title={t('reports.toFulfill')}
+          title={t('toFulfill')}
           value={metrics.toFulfill}
-          subtitle={t('reports.pending')}
+          subtitle={t('pending')}
           icon={Truck}
           iconColor="text-orange-600"
           iconBgColor="bg-orange-100"
           testId="metric-to-fulfill"
         />
         <MetricCard
-          title={t('reports.shipped')}
+          title={t('shipped')}
           value={metrics.shipped}
-          subtitle={t('reports.completed')}
+          subtitle={t('completed')}
           icon={CheckCircle}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-shipped"
         />
         <MetricCard
-          title={t('reports.cancelled')}
+          title={t('cancelled')}
           value={metrics.cancelled}
-          subtitle={t('reports.cancelled')}
+          subtitle={t('cancelled')}
           icon={XCircle}
           iconColor="text-red-600"
           iconBgColor="bg-red-100"
@@ -229,12 +230,12 @@ export default function OrderReports() {
 
       {/* Order Trends */}
       <TrendLineChart
-        title={t('reports.orderTrends')}
+        title={t('orderTrends')}
         data={monthlyOrderTrends}
         lines={[
-          { dataKey: 'orders', name: t('reports.totalOrders'), color: '#3b82f6' },
-          { dataKey: 'fulfilled', name: t('reports.fulfilled'), color: '#10b981' },
-          { dataKey: 'pending', name: t('reports.pending'), color: '#f59e0b' },
+          { dataKey: 'orders', name: t('totalOrders'), color: '#3b82f6' },
+          { dataKey: 'fulfilled', name: t('fulfilled'), color: '#10b981' },
+          { dataKey: 'pending', name: t('pending'), color: '#f59e0b' },
         ]}
         testId="chart-order-trends"
       />
@@ -242,12 +243,12 @@ export default function OrderReports() {
       {/* Order Status & Payment Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title={t('reports.ordersByStatus')}
+          title={t('ordersByStatus')}
           data={ordersByStatus}
           testId="chart-orders-by-status"
         />
         <PieChartCard
-          title={t('reports.ordersByPaymentStatus')}
+          title={t('ordersByPaymentStatus')}
           data={ordersByPaymentStatus}
           colors={['#10b981', '#ef4444', '#f59e0b']}
           testId="chart-payment-status"
@@ -256,7 +257,7 @@ export default function OrderReports() {
 
       {/* Orders by Currency */}
       <PieChartCard
-        title={t('reports.ordersByCurrency')}
+        title={t('ordersByCurrency')}
         data={ordersByCurrency}
         testId="chart-orders-by-currency"
       />
