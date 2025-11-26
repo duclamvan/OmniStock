@@ -395,41 +395,58 @@ const getUnitTypeIcon = (unitType: string, className = "h-4 w-4") => {
 };
 
 // ============================================================================
-// STATS CARD COMPONENT
+// COMPACT STATS TAB COMPONENT (Clickable, links to tabs)
 // ============================================================================
 
-function StatsCard({ 
+function CompactStatTab({ 
   icon: Icon, 
-  title, 
+  label, 
   value, 
-  color = "blue" 
+  isActive = false,
+  color = "blue",
+  onClick
 }: { 
   icon: any; 
-  title: string; 
-  value: number; 
-  color?: "blue" | "cyan" | "green" | "purple";
+  label: string; 
+  value: number;
+  isActive?: boolean;
+  color?: "blue" | "cyan" | "amber" | "green" | "purple";
+  onClick?: () => void;
 }) {
   const colorClasses = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
-    cyan: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/30 dark:text-cyan-400",
-    green: "bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400"
+    blue: {
+      active: "bg-blue-600 text-white dark:bg-blue-500",
+      inactive: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+    },
+    cyan: {
+      active: "bg-cyan-600 text-white dark:bg-cyan-500",
+      inactive: "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50"
+    },
+    amber: {
+      active: "bg-amber-600 text-white dark:bg-amber-500",
+      inactive: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+    },
+    green: {
+      active: "bg-green-600 text-white dark:bg-green-500",
+      inactive: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50"
+    },
+    purple: {
+      active: "bg-purple-600 text-white dark:bg-purple-500",
+      inactive: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50"
+    }
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4 md:p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-            <p className="text-2xl md:text-3xl font-bold">{value}</p>
-          </div>
-          <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-            <Icon className="h-6 w-6" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <button
+      onClick={onClick}
+      className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+        isActive ? colorClasses[color].active : colorClasses[color].inactive
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="text-xs font-medium whitespace-nowrap">{label}</span>
+      <span className={`text-sm font-bold ${isActive ? '' : ''}`}>{value}</span>
+    </button>
   );
 }
 
@@ -4111,6 +4128,20 @@ export default function ReceivingList() {
     }
   }, [activeTab]);
 
+  // Handle clicking on compact stat tabs - switch tab and scroll to content
+  const handleStatTabClick = useCallback((tabValue: string) => {
+    setActiveTab(tabValue);
+    // Scroll to tab content after a brief delay to let the DOM update
+    setTimeout(() => {
+      if (tabsListRef.current) {
+        tabsListRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
+  }, []);
+
   // Barcode scanning handler
   const handleBarcodeScan = useCallback(async (barcode: string) => {
     setIsScanning(true);
@@ -4246,29 +4277,43 @@ export default function ReceivingList() {
               </Card>
             )}
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-              <StatsCard
+            {/* Compact Clickable Stats Tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              <CompactStatTab
                 icon={Package}
-                title={t('toReceive')}
+                label={t('toReceive')}
                 value={toReceiveShipments.length}
                 color="blue"
+                isActive={activeTab === 'to-receive'}
+                onClick={() => handleStatTabClick('to-receive')}
               />
-              <StatsCard
+              <CompactStatTab
                 icon={Clock}
-                title={t('inProgressReceiving')}
+                label={t('inProgressReceiving')}
                 value={receivingShipments.length}
                 color="cyan"
+                isActive={activeTab === 'receiving'}
+                onClick={() => handleStatTabClick('receiving')}
               />
-              <StatsCard
+              <CompactStatTab
+                icon={Warehouse}
+                label={t('storage')}
+                value={storageShipments.length}
+                color="amber"
+                isActive={activeTab === 'storage'}
+                onClick={() => handleStatTabClick('storage')}
+              />
+              <CompactStatTab
                 icon={CheckCircle}
-                title={t('completed')}
+                label={t('completed')}
                 value={completedShipments.length}
                 color="green"
+                isActive={activeTab === 'completed'}
+                onClick={() => handleStatTabClick('completed')}
               />
-              <StatsCard
+              <CompactStatTab
                 icon={Package2}
-                title={t('totalItems')}
+                label={t('totalItems')}
                 value={totalItems}
                 color="purple"
               />
