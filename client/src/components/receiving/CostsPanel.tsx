@@ -81,7 +81,6 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const [selectedCost, setSelectedCost] = useState<ShipmentCost | null>(null);
   const [costToDelete, setCostToDelete] = useState<ShipmentCost | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [hasAutoCreatedFreight, setHasAutoCreatedFreight] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
 
   // Fetch shipment data
@@ -115,72 +114,9 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     enabled: !!shipmentId
   });
 
-  // Auto-create freight cost from shipment data
-  useEffect(() => {
-    if (shipmentData && !hasAutoCreatedFreight && costs.length === 0) {
-      // Check if shipment has shipping cost
-      if (shipmentData.shippingCost && parseFloat(shipmentData.shippingCost) > 0) {
-        const freightCost = {
-          type: 'FREIGHT',
-          mode: shipmentData.shipmentType?.includes('air') ? 'AIR' : 
-                shipmentData.shipmentType?.includes('sea') ? 'SEA' : 
-                shipmentData.shipmentType?.includes('rail') ? 'RAIL' : 'COURIER',
-          amountOriginal: parseFloat(shipmentData.shippingCost),
-          currency: shipmentData.shippingCostCurrency || 'USD',
-          notes: `Auto-populated from shipment: ${shipmentData.shipmentName || 'N/A'}`,
-          volumetricDivisor: shipmentData.shipmentType?.includes('air') ? 6000 : 
-                            shipmentData.shipmentType?.includes('express') ? 5000 : 1000
-        };
-        
-        // Create the freight cost
-        fetch(`/api/imports/shipments/${shipmentId}/costs`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(freightCost),
-          credentials: 'include'
-        }).then(async (res) => {
-          if (!res.ok) throw new Error('Failed to create freight cost');
-          setHasAutoCreatedFreight(true);
-          
-          // Auto-trigger landing cost calculation after creating freight cost
-          try {
-            const calcResponse = await fetch(`/api/imports/shipments/${shipmentId}/calculate-landing-costs`, {
-              method: 'POST',
-              credentials: 'include'
-            });
-            
-            if (calcResponse.ok) {
-              toast({
-                title: t('landingCostsCalculated'),
-                description: t('freightCostAddedAndAllocated', { 
-                  amount: formatCurrency(freightCost.amountOriginal, freightCost.currency) 
-                })
-              });
-            } else {
-              throw new Error('Calculation failed');
-            }
-          } catch (calcError: any) {
-            console.error('Failed to auto-calculate landing costs:', calcError);
-            toast({
-              title: t('warning'),
-              description: t('freightCostAddedButFailed', { 
-                error: calcError.message || 'Unknown error'
-              }),
-              variant: "destructive"
-            });
-          }
-          
-          // Refresh all data
-          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
-          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
-          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
-          onUpdate?.();
-        }).catch((error) => {
-          console.error('Failed to auto-create freight cost:', error);
-        });
-      }
-    }
-  }, [shipmentData, hasAutoCreatedFreight, costs.length, shipmentId, toast]);
+  // Auto-create freight cost from shipment data - DISABLED to prevent duplicate creation
+  // The auto-population was creating duplicate freight costs due to race conditions.
+  // Users should manually add freight costs via the "Add Cost" button instead.
 
   // Delete cost mutation
   const deleteCostMutation = useMutation({
