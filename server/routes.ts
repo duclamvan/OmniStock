@@ -13073,13 +13073,34 @@ Important:
   });
 
   // Get shipments by receiving status - Completed
+  // Auto-archives completed shipments older than 2 days
   app.get('/api/imports/shipments/completed', isAuthenticated, async (req, res) => {
     try {
+      // Calculate the cutoff date (2 days ago)
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      // Auto-archive completed shipments older than 2 days
+      await db
+        .update(shipments)
+        .set({ 
+          receivingStatus: 'archived',
+          archivedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(shipments.receivingStatus, 'completed'),
+            lt(shipments.completedAt, twoDaysAgo)
+          )
+        );
+      
+      // Get remaining completed shipments (within 2 days)
       const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'completed'))
-        .orderBy(desc(shipments.updatedAt));
+        .orderBy(desc(shipments.completedAt));
       
       const shipmentsWithItems = await Promise.all(
         shipmentList.map(async (shipment) => {
@@ -13157,13 +13178,14 @@ Important:
   });
 
   // Get shipments by receiving status - Archived
+  // Includes auto-archived shipments (completed > 2 days) and manually archived
   app.get('/api/imports/shipments/archived', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'archived'))
-        .orderBy(desc(shipments.updatedAt));
+        .orderBy(desc(shipments.archivedAt));
       
       const shipmentsWithItems = await Promise.all(
         shipmentList.map(async (shipment) => {

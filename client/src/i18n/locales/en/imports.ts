@@ -1190,6 +1190,7 @@ const imports = {
   archived: 'Archived',
   itemsPendingStorage: 'items pending storage',
   itemsCompleted: 'items completed',
+  archivingSoon: 'archiving soon',
   goToStorage: 'Go to Storage',
   partiallyReceived: 'Partially Received',
   

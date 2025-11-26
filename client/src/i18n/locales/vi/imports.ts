@@ -1203,6 +1203,7 @@ const imports = {
   archived: 'Đã lưu trữ',
   itemsPendingStorage: 'sản phẩm chờ lưu kho',
   itemsCompleted: 'sản phẩm đã hoàn tất',
+  archivingSoon: 'sẽ lưu trữ',
   goToStorage: 'Đi đến Lưu kho',
   partiallyReceived: 'Đã nhận một phần',
   

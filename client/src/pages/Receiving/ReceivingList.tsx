@@ -3952,6 +3952,18 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>{format(new Date(shipment.completedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  <span className="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                    {(() => {
+                      const completedDate = new Date(shipment.completedAt);
+                      const archiveDate = new Date(completedDate);
+                      archiveDate.setDate(archiveDate.getDate() + 2);
+                      const now = new Date();
+                      const hoursRemaining = Math.max(0, Math.floor((archiveDate.getTime() - now.getTime()) / (1000 * 60 * 60)));
+                      if (hoursRemaining <= 0) return t('archivingSoon');
+                      if (hoursRemaining < 24) return `${hoursRemaining}h`;
+                      return `${Math.floor(hoursRemaining / 24)}d`;
+                    })()}
+                  </span>
                 </div>
               )}
             </div>
