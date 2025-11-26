@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -11,6 +11,7 @@ import { CheckCircle, XCircle, AlertTriangle, Info, ExternalLink } from 'lucide-
 import { Link } from 'wouter';
 import { formatDistanceToNow } from 'date-fns';
 import type { Notification } from '@shared/schema';
+import { groupNotifications, type GroupedNotification } from '@/lib/notificationUtils';
 
 const ICON_MAP = {
   success: CheckCircle,
@@ -50,9 +51,13 @@ export default function Notifications() {
     },
   });
 
+  const groupedNotifications = useMemo(() => {
+    return groupNotifications(notifications);
+  }, [notifications]);
+
   const markAsReadMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return await apiRequest('PATCH', `/api/notifications/${id}/read`, {});
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map(id => apiRequest('PATCH', `/api/notifications/${id}/read`, {})));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
@@ -60,8 +65,11 @@ export default function Notifications() {
     },
   });
 
-  const handleMarkAsRead = (id: number) => {
-    markAsReadMutation.mutate(id);
+  const handleMarkGroupAsRead = (group: GroupedNotification) => {
+    const unreadIds = group.notifications.filter(n => !n.isRead).map(n => n.id);
+    if (unreadIds.length > 0) {
+      markAsReadMutation.mutate(unreadIds);
+    }
   };
 
   if (isLoading) {
@@ -94,7 +102,7 @@ export default function Notifications() {
         </TabsList>
       </Tabs>
 
-      {notifications.length === 0 ? (
+      {groupedNotifications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Info className="h-12 w-12 text-muted-foreground dark:text-gray-400 mb-4" />
@@ -110,58 +118,69 @@ export default function Notifications() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {notifications.map((notification) => {
-            const Icon = ICON_MAP[notification.type as keyof typeof ICON_MAP] || Info;
-            const iconColor = COLOR_MAP[notification.type as keyof typeof COLOR_MAP] || COLOR_MAP.info;
-            const badgeVariant = BADGE_VARIANT_MAP[notification.type as keyof typeof BADGE_VARIANT_MAP] || 'outline';
+          {groupedNotifications.map((group) => {
+            const Icon = ICON_MAP[group.type as keyof typeof ICON_MAP] || Info;
+            const iconColor = COLOR_MAP[group.type as keyof typeof COLOR_MAP] || COLOR_MAP.info;
+            const badgeVariant = BADGE_VARIANT_MAP[group.type as keyof typeof BADGE_VARIANT_MAP] || 'outline';
 
             return (
               <Card 
-                key={notification.id} 
-                className={notification.isRead ? 'opacity-60 dark:opacity-50' : ''}
-                data-testid={`notification-${notification.id}`}
+                key={group.key} 
+                className={!group.hasUnread ? 'opacity-60 dark:opacity-50' : ''}
+                data-testid={`notification-group-${group.latestNotificationId}`}
               >
                 <CardHeader>
                   <div className="flex items-start gap-4">
-                    <Icon className={`h-6 w-6 flex-shrink-0 mt-1 ${iconColor}`} data-testid={`icon-${notification.type}`} />
+                    <Icon className={`h-6 w-6 flex-shrink-0 mt-1 ${iconColor}`} data-testid={`icon-${group.type}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid={`title-${notification.id}`}>
-                          {notification.title}
-                        </CardTitle>
-                        <Badge variant={badgeVariant} className="flex-shrink-0" data-testid={`badge-${notification.type}`}>
-                          {t(`system:${notification.type}`)}
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid={`title-${group.latestNotificationId}`}>
+                            {group.title}
+                          </CardTitle>
+                          {group.count > 1 && (
+                            <Badge 
+                              variant="secondary" 
+                              className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                              data-testid={`count-${group.latestNotificationId}`}
+                            >
+                              ×{group.count}
+                            </Badge>
+                          )}
+                        </div>
+                        <Badge variant={badgeVariant} className="flex-shrink-0" data-testid={`badge-${group.type}`}>
+                          {t(`system:${group.type}`)}
                         </Badge>
                       </div>
-                      {notification.description && (
-                        <CardDescription className="text-sm text-gray-600 dark:text-gray-400" data-testid={`description-${notification.id}`}>
-                          {notification.description}
+                      {group.description && (
+                        <CardDescription className="text-sm text-gray-600 dark:text-gray-400" data-testid={`description-${group.latestNotificationId}`}>
+                          {group.description}
                         </CardDescription>
                       )}
                       <div className="flex flex-wrap items-center gap-3 mt-4">
-                        <span className="text-xs text-muted-foreground dark:text-gray-400" data-testid={`timestamp-${notification.id}`}>
-                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                        <span className="text-xs text-muted-foreground dark:text-gray-400" data-testid={`timestamp-${group.latestNotificationId}`}>
+                          {formatDistanceToNow(group.latestCreatedAt, { addSuffix: true })}
                         </span>
-                        {!notification.isRead && (
+                        {group.hasUnread && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleMarkAsRead(notification.id)}
+                            onClick={() => handleMarkGroupAsRead(group)}
                             disabled={markAsReadMutation.isPending}
-                            data-testid={`button-mark-read-${notification.id}`}
+                            data-testid={`button-mark-read-${group.latestNotificationId}`}
                           >
-                            {t('system:markAsRead')}
+                            {group.count > 1 ? t('system:markAllAsRead') : t('system:markAsRead')}
                           </Button>
                         )}
-                        {notification.actionUrl && notification.actionLabel && (
-                          <Link href={notification.actionUrl}>
+                        {group.actionUrl && group.actionLabel && (
+                          <Link href={group.actionUrl}>
                             <Button 
                               variant="outline" 
                               size="sm"
                               className="gap-1"
-                              data-testid={`button-action-${notification.id}`}
+                              data-testid={`button-action-${group.latestNotificationId}`}
                             >
-                              {notification.actionLabel}
+                              {group.actionLabel}
                               <ExternalLink className="h-3 w-3" />
                             </Button>
                           </Link>

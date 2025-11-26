@@ -35,6 +35,14 @@ export function groupNotifications(notifications: Notification[]): GroupedNotifi
       if (notifDate > group.latestCreatedAt) {
         group.latestCreatedAt = notifDate;
         group.latestNotificationId = notification.id;
+        if (notification.actionUrl) {
+          group.actionUrl = notification.actionUrl;
+          group.actionLabel = notification.actionLabel;
+        }
+      }
+      if (!group.actionUrl && notification.actionUrl) {
+        group.actionUrl = notification.actionUrl;
+        group.actionLabel = notification.actionLabel;
       }
     } else {
       groups.set(key, {
