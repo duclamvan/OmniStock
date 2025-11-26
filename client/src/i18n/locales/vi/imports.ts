@@ -1145,6 +1145,28 @@ const imports = {
   undoLastAction: 'Hoàn tác thao tác cuối',
   processingScan: 'Đang xử lý quét...',
   
+  // ReceivingList - Bulk Scan Dialog
+  scanParcels: 'Quét Bưu kiện',
+  scanMultipleParcelsAtOnce: 'Quét nhiều bưu kiện và nhận dạng đơn hàng theo thời gian thực',
+  bulkScan: 'Quét hàng loạt',
+  singleScan: 'Quét đơn',
+  rapidScanInput: 'Quét nhanh',
+  scanOrTypeTrackingNumber: 'Quét hoặc nhập mã vận đơn...',
+  pressEnterAfterEachScan: 'Nhấn Enter sau mỗi lần quét để tra cứu ngay',
+  bulkPasteArea: 'Dán hàng loạt',
+  pasteMultipleTrackingNumbers: 'Dán nhiều mã vận đơn (mỗi dòng một mã, cách nhau bởi dấu phẩy hoặc khoảng trắng)',
+  processTracking: 'Xử lý mã vận đơn',
+  failedToLookupTracking: 'Không thể tra cứu mã vận đơn',
+  totalScanned: 'Đã quét',
+  matched: 'Khớp',
+  unmatched: 'Không khớp',
+  parcelsByOrder: 'Bưu kiện theo đơn hàng',
+  parcel: 'bưu kiện',
+  parcels: 'bưu kiện',
+  unmatchedTrackingNumbers: 'Mã vận đơn không khớp',
+  viewAllScanned: 'Xem tất cả đã quét',
+  notFound: 'Không tìm thấy',
+  
   // ReceivingList - Filters & UI
   allItemsFilter: 'Tất cả',
   pendingFilter: 'Chờ xử lý',

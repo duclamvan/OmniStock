@@ -1131,6 +1131,28 @@ const imports = {
   undoLastAction: 'Undo last action',
   processingScan: 'Processing scan...',
   
+  // ReceivingList - Bulk Scan Dialog
+  scanParcels: 'Scan Parcels',
+  scanMultipleParcelsAtOnce: 'Scan multiple parcels and identify orders in real-time',
+  bulkScan: 'Bulk Scan',
+  singleScan: 'Single Scan',
+  rapidScanInput: 'Rapid Scan Input',
+  scanOrTypeTrackingNumber: 'Scan or type tracking number...',
+  pressEnterAfterEachScan: 'Press Enter after each scan for instant lookup',
+  bulkPasteArea: 'Bulk Paste Area',
+  pasteMultipleTrackingNumbers: 'Paste multiple tracking numbers (one per line, comma or space separated)',
+  processTracking: 'Process Tracking',
+  failedToLookupTracking: 'Failed to look up tracking numbers',
+  totalScanned: 'Scanned',
+  matched: 'Matched',
+  unmatched: 'Unmatched',
+  parcelsByOrder: 'Parcels by Order',
+  parcel: 'parcel',
+  parcels: 'parcels',
+  unmatchedTrackingNumbers: 'Unmatched Tracking Numbers',
+  viewAllScanned: 'View All Scanned',
+  notFound: 'Not found',
+  
   // ReceivingList - Filters & UI
   allItemsFilter: 'All',
   pendingFilter: 'Pending',

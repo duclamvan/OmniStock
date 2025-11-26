@@ -8485,16 +8485,21 @@ Important:
       const twoDaysFromNow = new Date();
       twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
       const now = new Date();
+      const twoDaysFromNowISO = twoDaysFromNow.toISOString();
+      const nowISO = now.toISOString();
       
       const incomingShipments = await db
         .select()
         .from(importPurchases)
         .where(
           and(
-            inArray(importPurchases.status, ['shipped', 'processing']),
+            or(
+              eq(importPurchases.status, 'shipped'),
+              eq(importPurchases.status, 'processing')
+            ),
             sql`${importPurchases.estimatedArrival} IS NOT NULL`,
-            sql`${importPurchases.estimatedArrival} <= ${twoDaysFromNow}`,
-            sql`${importPurchases.estimatedArrival} >= ${now}`
+            sql`${importPurchases.estimatedArrival}::timestamp <= ${twoDaysFromNowISO}::timestamp`,
+            sql`${importPurchases.estimatedArrival}::timestamp >= ${nowISO}::timestamp`
           )
         )
         .orderBy(importPurchases.estimatedArrival);
