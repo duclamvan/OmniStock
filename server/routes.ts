@@ -8462,18 +8462,39 @@ Important:
       const userId = req.user?.id;
       const userRole = req.user?.role;
 
-      // 1. Orders to pick/pack - orders with status in ['pending', 'processing', 'confirmed']
-      const ordersToPickPack = await db
-        .select()
+      // 1. Orders to pick/pack - orders with status 'to_fulfill' or 'pending'
+      const ordersToPickPackRaw = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          orderStatus: orders.orderStatus,
+          customerId: orders.customerId,
+          createdAt: orders.createdAt,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency
+        })
         .from(orders)
         .where(
           or(
-            eq(orders.status, 'pending'),
-            eq(orders.status, 'processing'),
-            eq(orders.status, 'confirmed')
+            eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.orderStatus, 'pending'),
+            eq(orders.orderStatus, 'confirmed')
           )
         )
         .orderBy(desc(orders.createdAt));
+      
+      // Get customer names for orders
+      const customerIds = [...new Set(ordersToPickPackRaw.map(o => o.customerId).filter(Boolean))];
+      const customersList = customerIds.length > 0 
+        ? await db.select({ id: customers.id, name: customers.name }).from(customers).where(inArray(customers.id, customerIds as number[]))
+        : [];
+      const customerMap = new Map(customersList.map(c => [c.id, c]));
+      
+      const ordersToPickPack = ordersToPickPackRaw.map(order => ({
+        ...order,
+        status: order.orderStatus, // Add status alias for frontend compatibility
+        customer: order.customerId ? customerMap.get(order.customerId) : null
+      }));
 
       // 2. Receiving tasks - shipments that are in receiving status
       const receivingTasks = await db
