@@ -86,9 +86,8 @@ export function MobileHeader({
       // CRITICAL FIX: Immediately change UI language BEFORE persisting to backend
       await i18n.changeLanguage(newLang);
       
-      // Then persist to backend
-      await apiRequest('POST', '/api/settings', {
-        key: 'default_language',
+      // Use PATCH to update existing setting (upsert behavior)
+      await apiRequest('PATCH', '/api/settings/default_language', {
         value: newLang,
         category: 'general'
       });
