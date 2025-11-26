@@ -488,6 +488,20 @@ const imports = {
   
   // SupplierProcessing - Filters
   filterByLocation: 'Filter by location',
+  filterByStatus: 'Filter by status',
+  
+  // SupplierProcessing - Page UI
+  manageImportPurchases: 'Track and manage your supplier orders',
+  manageSupplierPurchases: 'Manage and track supplier orders by status',
+  totalPurchases: 'Total Purchases',
+  dateInitiated: 'Date Initiated',
+  tbd: 'TBD',
+  viewItems: 'View items',
+  noItemsAddedYet: 'No items added to this purchase yet',
+  createFirstPurchaseOrder: 'Create your first purchase order to get started',
+  note: 'Note',
+  moveTo: 'Move to...',
+  complete: 'Complete',
   
   // SupplierProcessing - Empty States
   noPurchasesFound: 'No purchases found',

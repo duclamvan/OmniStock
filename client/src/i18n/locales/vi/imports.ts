@@ -497,6 +497,19 @@ const imports = {
   filterByLocation: 'Lọc theo địa điểm',
   allLocations: 'Tất cả địa điểm',
   
+  // SupplierProcessing - Page UI
+  manageImportPurchases: 'Theo dõi và quản lý đơn hàng nhà cung cấp',
+  manageSupplierPurchases: 'Quản lý và theo dõi đơn hàng nhà cung cấp theo trạng thái',
+  totalPurchases: 'Tổng Đơn Hàng',
+  dateInitiated: 'Ngày Tạo',
+  tbd: 'Chưa xác định',
+  viewItems: 'Xem sản phẩm',
+  noItemsAddedYet: 'Chưa có sản phẩm nào trong đơn hàng này',
+  createFirstPurchaseOrder: 'Tạo đơn đặt hàng đầu tiên để bắt đầu',
+  note: 'Ghi chú',
+  moveTo: 'Chuyển sang...',
+  complete: 'Hoàn thành',
+  
   // SupplierProcessing - Empty States
   noPurchasesFound: 'Không tìm thấy đơn mua',
   noMatchingPurchases: 'Không có đơn mua phù hợp',
