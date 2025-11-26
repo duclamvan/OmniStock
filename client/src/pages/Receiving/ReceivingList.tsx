@@ -2196,8 +2196,8 @@ function QuickStorageSheet({
                   <AnimatePresence mode="wait">
                     {items.map((item, index) => {
                       const isSelected = index === selectedItemIndex;
-                      const isComplete = item.locations.length > 0 || item.existingLocations?.length > 0;
                       const itemRemainingQty = item.receivedQuantity - item.assignedQuantity;
+                      const isFullyStored = itemRemainingQty === 0;
 
                       return (
                         <motion.div
@@ -2206,11 +2206,13 @@ function QuickStorageSheet({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -20 }}
                           transition={{ duration: 0.2 }}
-                          onClick={() => setSelectedItemIndex(index)}
+                          onClick={() => setSelectedItemIndex(isSelected ? -1 : index)}
                           className={`bg-white dark:bg-gray-950 rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
-                            isSelected 
-                              ? 'border-amber-600 dark:border-amber-500 shadow-lg' 
-                              : 'border-gray-200 dark:border-gray-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-700'
+                            isFullyStored
+                              ? 'border-green-500 dark:border-green-600 shadow-md'
+                              : isSelected 
+                                ? 'border-amber-600 dark:border-amber-500 shadow-lg' 
+                                : 'border-gray-200 dark:border-gray-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-700'
                           }`}
                         >
                           {/* Item Header */}
@@ -2222,15 +2224,19 @@ function QuickStorageSheet({
                                   <img 
                                     src={item.imageUrl} 
                                     alt={item.productName}
-                                    className="w-16 h-16 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900"
+                                    className={`w-16 h-16 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900 ${
+                                      isFullyStored ? 'border-green-500 dark:border-green-600' : ''
+                                    }`}
                                   />
                                 ) : (
-                                  <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                  <div className={`w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center ${
+                                    isFullyStored ? 'border-2 border-green-500 dark:border-green-600' : ''
+                                  }`}>
                                     <Package className="h-8 w-8 text-gray-400 dark:text-gray-300" />
                                   </div>
                                 )}
-                                {isComplete && (
-                                  <div className="absolute -top-1 -right-1 bg-green-500 dark:bg-green-600 rounded-full p-1">
+                                {isFullyStored && (
+                                  <div className="absolute -top-1 -right-1 bg-green-500 dark:bg-green-600 rounded-full p-1 shadow-sm">
                                     <Check className="h-3 w-3 text-white" />
                                   </div>
                                 )}
@@ -2300,10 +2306,22 @@ function QuickStorageSheet({
                                 )}
                               </div>
 
-                              {/* Expand Icon */}
-                              <ChevronRight className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform ${
-                                isSelected ? 'rotate-90' : ''
-                              }`} />
+                              {/* Expand/Collapse Icon */}
+                              <div className={`flex items-center justify-center h-8 w-8 rounded-full transition-all ${
+                                isFullyStored 
+                                  ? 'bg-green-100 dark:bg-green-900/30' 
+                                  : isSelected 
+                                    ? 'bg-amber-100 dark:bg-amber-900/30' 
+                                    : 'bg-gray-100 dark:bg-gray-800'
+                              }`}>
+                                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${
+                                  isFullyStored 
+                                    ? 'text-green-600 dark:text-green-400' 
+                                    : isSelected 
+                                      ? 'text-amber-600 dark:text-amber-400'
+                                      : 'text-gray-400 dark:text-gray-500'
+                                } ${isSelected ? 'rotate-180' : ''}`} />
+                              </div>
                             </div>
                           </div>
 
