@@ -1165,7 +1165,7 @@ const imports = {
   parcels: 'bưu kiện',
   unmatchedTrackingNumbers: 'Mã vận đơn không khớp',
   viewAllScanned: 'Xem tất cả đã quét',
-  notFound: 'Không tìm thấy',
+  trackingNotFound: 'Không tìm thấy',
   
   // ReceivingList - Filters & UI
   allItemsFilter: 'Tất cả',

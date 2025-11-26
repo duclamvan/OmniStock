@@ -874,7 +874,7 @@ function FloatingScanButton({
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800">
-                                  {t('notFound')}
+                                  {t('trackingNotFound')}
                                 </Badge>
                               )}
                               <Button

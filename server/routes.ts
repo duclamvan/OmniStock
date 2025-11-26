@@ -8466,7 +8466,13 @@ Important:
       const ordersToPickPack = await db
         .select()
         .from(orders)
-        .where(inArray(orders.status, ['pending', 'processing', 'confirmed']))
+        .where(
+          or(
+            eq(orders.status, 'pending'),
+            eq(orders.status, 'processing'),
+            eq(orders.status, 'confirmed')
+          )
+        )
         .orderBy(desc(orders.createdAt));
 
       // 2. Receiving tasks - shipments that are in receiving status
@@ -8511,7 +8517,12 @@ Important:
         adminTasks = await db
           .select()
           .from(warehouseTasks)
-          .where(inArray(warehouseTasks.status, ['pending', 'in_progress']))
+          .where(
+            or(
+              eq(warehouseTasks.status, 'pending'),
+              eq(warehouseTasks.status, 'in_progress')
+            )
+          )
           .orderBy(desc(warehouseTasks.createdAt));
       } else {
         // Operators see tasks assigned to them or unassigned
@@ -8520,7 +8531,10 @@ Important:
           .from(warehouseTasks)
           .where(
             and(
-              inArray(warehouseTasks.status, ['pending', 'in_progress']),
+              or(
+                eq(warehouseTasks.status, 'pending'),
+                eq(warehouseTasks.status, 'in_progress')
+              ),
               or(
                 eq(warehouseTasks.assignedToUserId, userId),
                 isNull(warehouseTasks.assignedToUserId)

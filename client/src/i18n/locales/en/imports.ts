@@ -1151,7 +1151,7 @@ const imports = {
   parcels: 'parcels',
   unmatchedTrackingNumbers: 'Unmatched Tracking Numbers',
   viewAllScanned: 'View All Scanned',
-  notFound: 'Not found',
+  trackingNotFound: 'Not found',
   
   // ReceivingList - Filters & UI
   allItemsFilter: 'All',
