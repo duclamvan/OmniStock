@@ -1029,16 +1029,14 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
                 data-testid={`card-receipt-${receipt.id}`}
               >
                 <CardHeader className="p-5 pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg mb-1.5 truncate font-bold">
-                        {t('receiptNumber', { number: receipt.id })}
-                      </CardTitle>
-                      <CardDescription className="text-sm truncate font-medium">
-                        {receipt.shipment?.shipmentName || t('shipmentNumber', { number: receipt.shipmentId })}
-                      </CardDescription>
-                    </div>
-                    <Badge className={`${getStatusColor(receipt.status)} text-xs shrink-0`}>
+                  <div className="flex flex-col gap-2">
+                    <CardTitle className="text-lg font-bold">
+                      {t('receiptNumber', { number: receipt.id })}
+                    </CardTitle>
+                    <CardDescription className="text-sm font-medium">
+                      {receipt.shipment?.shipmentName || t('shipmentNumber', { number: receipt.shipmentId })}
+                    </CardDescription>
+                    <Badge className={`${getStatusColor(receipt.status)} text-xs w-fit`}>
                       {receipt.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>

@@ -45,7 +45,8 @@ import {
   Wrench,
   Ticket,
   Briefcase,
-  Languages
+  Languages,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -334,6 +335,13 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
       type: "section",
       name: t('common:warehouseOperations'),
       items: [
+        {
+          name: t('common:warehouseDashboard'),
+          href: "/warehouse-dashboard",
+          icon: ClipboardList,
+          color: "text-cyan-600 dark:text-cyan-400",
+          description: t('common:warehouseDashboardSubtitle')
+        },
         {
           name: t('common:pickAndPack'),
           href: "/orders/pick-pack",
