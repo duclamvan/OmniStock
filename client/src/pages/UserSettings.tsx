@@ -31,8 +31,11 @@ import {
   Camera,
   Lock,
   Settings as SettingsIcon,
-  Key
+  Key,
+  Link2,
+  ExternalLink
 } from "lucide-react";
+import { SiReplit, SiGoogle, SiGithub, SiFacebook } from "react-icons/si";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { applyThemePreference, getCurrentTheme } from "@/lib/theme-utils";
@@ -972,6 +975,103 @@ export default function UserSettings() {
         </Card>
       )}
 
+      {/* Connected Accounts Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-primary" />
+            <CardTitle>{t('settings:connectedAccounts')}</CardTitle>
+          </div>
+          <CardDescription>
+            {t('settings:manageYourLinkedAccounts')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Replit Account - Primary */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
+                <SiReplit className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Replit</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {user.authProvider === 'replit' ? t('settings:primaryLoginMethod') : t('settings:notConnected')}
+                </p>
+              </div>
+            </div>
+            {user.authProvider === 'replit' ? (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                <Check className="h-3 w-3 mr-1" />
+                {t('settings:connected')}
+              </Badge>
+            ) : (
+              <Button variant="outline" size="sm" disabled className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                {t('settings:connectAccount')}
+              </Button>
+            )}
+          </div>
+
+          {/* Google Account */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                <SiGoogle className="h-5 w-5 text-[#4285F4]" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Google</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings:notConnected')}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" disabled className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              {t('settings:connectAccount')}
+            </Button>
+          </div>
+
+          {/* GitHub Account */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gray-900 dark:bg-gray-700 rounded-lg">
+                <SiGithub className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">GitHub</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings:notConnected')}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" disabled className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              {t('settings:connectAccount')}
+            </Button>
+          </div>
+
+          {/* Facebook Account */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#1877F2] rounded-lg">
+                <SiFacebook className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Facebook</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings:notConnected')}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" disabled className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              {t('settings:connectAccount')}
+            </Button>
+          </div>
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
+            {i18n.language === 'vi' 
+              ? 'Liên kết thêm tài khoản sẽ được hỗ trợ trong phiên bản tương lai' 
+              : 'Additional account linking will be available in a future update'}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Language & Theme Preferences Section */}
       <Card>
         <CardHeader>
@@ -990,17 +1090,19 @@ export default function UserSettings() {
             <RadioGroup 
               value={i18n.language} 
               onValueChange={(value) => handleLanguageChange(value as 'en' | 'vi')}
-              className="flex flex-col gap-3"
+              className="grid grid-cols-2 gap-3"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                 <RadioGroupItem value="en" id="lang-en" data-testid="radio-language-en" />
-                <Label htmlFor="lang-en" className="font-normal cursor-pointer">
+                <Label htmlFor="lang-en" className="font-normal cursor-pointer flex items-center gap-2">
+                  <span className="text-lg">🇬🇧</span>
                   English
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                 <RadioGroupItem value="vi" id="lang-vi" data-testid="radio-language-vi" />
-                <Label htmlFor="lang-vi" className="font-normal cursor-pointer">
+                <Label htmlFor="lang-vi" className="font-normal cursor-pointer flex items-center gap-2">
+                  <span className="text-lg">🇻🇳</span>
                   Tiếng Việt
                 </Label>
               </div>
@@ -1015,19 +1117,19 @@ export default function UserSettings() {
             <RadioGroup 
               value={isDarkMode ? 'dark' : 'light'} 
               onValueChange={(value) => handleThemeChange(value as 'light' | 'dark')}
-              className="flex flex-col gap-3"
+              className="grid grid-cols-2 gap-3"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                 <RadioGroupItem value="light" id="theme-light" data-testid="radio-theme-light" />
                 <Label htmlFor="theme-light" className="font-normal cursor-pointer flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
+                  <Sun className="h-5 w-5 text-amber-500" />
                   {t('settings:lightMode')}
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                 <RadioGroupItem value="dark" id="theme-dark" data-testid="radio-theme-dark" />
                 <Label htmlFor="theme-dark" className="font-normal cursor-pointer flex items-center gap-2">
-                  <Moon className="h-4 w-4" />
+                  <Moon className="h-5 w-5 text-indigo-500" />
                   {t('settings:darkMode')}
                 </Label>
               </div>

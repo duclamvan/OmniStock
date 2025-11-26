@@ -953,6 +953,122 @@ const settings = {
   factoryResetSuccess: 'Khôi phục cài đặt gốc hoàn tất',
   factoryResetFailed: 'Khôi phục cài đặt gốc thất bại',
   recordsDeleted: 'bản ghi đã xóa',
+
+  // User Settings Page
+  userSettings: 'Cài đặt tài khoản',
+  manageYourAccountPreferences: 'Quản lý thông tin cá nhân và tùy chọn bảo mật của bạn',
+  
+  // Profile Picture
+  profilePicture: 'Ảnh đại diện',
+  uploadProfilePictureToPersonalize: 'Tải ảnh lên để cá nhân hóa tài khoản của bạn',
+  uploadPhoto: 'Tải ảnh lên',
+  uploading: 'Đang tải...',
+  maxFileSize: 'Kích thước tối đa: 5MB',
+  fileTooLarge: 'Tệp quá lớn',
+  pleaseSelectAnImageUnder5MB: 'Vui lòng chọn ảnh dưới 5MB',
+  profileImageUpdatedSuccessfully: 'Cập nhật ảnh đại diện thành công',
+  failedToUpdateProfileImage: 'Cập nhật ảnh đại diện thất bại',
+  
+  // Personal Information
+  personalInformationUpdatedSuccessfully: 'Cập nhật thông tin cá nhân thành công',
+  failedToUpdatePersonalInformation: 'Cập nhật thông tin cá nhân thất bại',
+  thisEmailWillBeUsedForAccountRecovery: 'Email này sẽ được sử dụng để khôi phục tài khoản',
+  
+  // Contact Information
+  contactInformation: 'Thông tin liên hệ',
+  manageYourContactDetails: 'Quản lý số điện thoại và các thông tin liên hệ khác',
+  phoneNumber: 'Số điện thoại',
+  enterYourPhoneNumberInE164Format: 'Nhập số điện thoại theo định dạng quốc tế (VD: +84123456789)',
+  contactInformationUpdatedSuccessfully: 'Cập nhật thông tin liên hệ thành công',
+  failedToUpdateContactInformation: 'Cập nhật thông tin liên hệ thất bại',
+  
+  // Change Password
+  changePassword: 'Đổi mật khẩu',
+  updateYourAccountPassword: 'Cập nhật mật khẩu đăng nhập của bạn',
+  currentPassword: 'Mật khẩu hiện tại',
+  newPassword: 'Mật khẩu mới',
+  confirmNewPassword: 'Xác nhận mật khẩu mới',
+  passwordsDoNotMatch: 'Mật khẩu không khớp',
+  passwordMinLength: 'Mật khẩu phải có ít nhất 8 ký tự',
+  passwordChangedSuccessfully: 'Đổi mật khẩu thành công',
+  failedToChangePassword: 'Đổi mật khẩu thất bại',
+  updatePassword: 'Cập nhật mật khẩu',
+  passwordRequirements: 'Mật khẩu phải có ít nhất 8 ký tự',
+  enterCurrentPassword: 'Nhập mật khẩu hiện tại',
+  enterNewPassword: 'Nhập mật khẩu mới',
+  passwordMustBeAtLeast8Characters: 'Mật khẩu phải có ít nhất 8 ký tự',
+  changingPassword: 'Đang đổi mật khẩu...',
+  warning: 'Cảnh báo',
+  disabling2FAWarning: 'Tắt xác thực hai yếu tố sẽ làm giảm bảo mật tài khoản của bạn',
+  disabling: 'Đang tắt...',
+  disable2FA: 'Tắt 2FA',
+  
+  // Two-Factor Authentication
+  addExtraLayerOfSecurityWithSMS: 'Thêm lớp bảo mật với xác thực SMS',
+  status: 'Trạng thái',
+  enabled: 'Đã bật',
+  disabled: 'Đã tắt',
+  activeOnPhone: 'Đang hoạt động trên {{phone}}',
+  yourPhone: 'điện thoại của bạn',
+  enable2FAToSecureYourAccount: 'Bật 2FA để bảo mật tài khoản của bạn',
+  phoneNumberFor2FA: 'Số điện thoại cho 2FA',
+  sendVerificationCode: 'Gửi mã xác thực',
+  sending: 'Đang gửi...',
+  codeSent: 'Đã gửi mã',
+  verificationCodeSentToYourPhoneNumber: 'Mã xác thực đã được gửi đến số điện thoại của bạn',
+  codeSentToPhone: 'Đã gửi mã đến {{phone}}',
+  verificationCode: 'Mã xác thực',
+  enterThe6DigitCodeSentToYourPhone: 'Nhập mã 6 chữ số đã gửi đến điện thoại của bạn',
+  verifyAndEnable2FA: 'Xác thực và bật 2FA',
+  verifying: 'Đang xác thực...',
+  resendCodeIn: 'Gửi lại mã sau {{seconds}} giây',
+  resendCode: 'Gửi lại mã',
+  invalidPhoneNumber: 'Số điện thoại không hợp lệ',
+  pleaseEnterValidPhoneNumberInE164: 'Vui lòng nhập số điện thoại hợp lệ theo định dạng quốc tế',
+  invalidCode: 'Mã không hợp lệ',
+  pleaseEnterA6DigitVerificationCode: 'Vui lòng nhập mã xác thực 6 chữ số',
+  verificationFailed: 'Xác thực thất bại',
+  invalidVerificationCode: 'Mã xác thực không đúng',
+  failedToSendVerificationCode: 'Gửi mã xác thực thất bại',
+  twoFAHasBeenDisabled: 'Đã tắt xác thực hai yếu tố',
+  twoFAHasBeenEnabledSuccessfully: 'Đã bật xác thực hai yếu tố thành công',
+  failedToUpdate2FASettings: 'Cập nhật cài đặt 2FA thất bại',
+  
+  // Connected Accounts
+  connectedAccounts: 'Tài khoản liên kết',
+  manageYourLinkedAccounts: 'Quản lý các tài khoản đăng nhập liên kết',
+  connectedVia: 'Đã liên kết qua',
+  connected: 'Đã liên kết',
+  notConnected: 'Chưa liên kết',
+  primaryLoginMethod: 'Phương thức đăng nhập chính',
+  connectAccount: 'Liên kết tài khoản',
+  disconnectAccount: 'Hủy liên kết',
+  replit: 'Replit',
+  google: 'Google',
+  github: 'GitHub',
+  facebook: 'Facebook',
+  email: 'Email',
+  
+  // Language and Display
+  languageAndDisplay: 'Ngôn ngữ & Giao diện',
+  customizeYourInterfacePreferences: 'Tùy chỉnh ngôn ngữ và giao diện hiển thị',
+  language: 'Ngôn ngữ',
+  theme: 'Giao diện',
+  lightMode: 'Sáng',
+  darkMode: 'Tối',
+  themeUpdated: 'Đã cập nhật giao diện',
+  switchedToThemeMode: 'Đã chuyển sang chế độ {{theme}}',
+  
+  // Account Details
+  readOnlyInformationAboutYourAccount: 'Thông tin chi tiết về tài khoản của bạn',
+  authenticationMethod: 'Phương thức xác thực',
+  lastUpdated: 'Cập nhật lần cuối',
+  
+  // Error states
+  failedToLoadSettings: 'Không thể tải cài đặt',
+  unableToLoadYourAccountInformation: 'Không thể tải thông tin tài khoản của bạn',
+  thereWasAnErrorLoadingYourAccountData: 'Đã xảy ra lỗi khi tải dữ liệu tài khoản',
+  accountDataIsUnavailable: 'Dữ liệu tài khoản không khả dụng',
 } as const;
 
 export default settings;
