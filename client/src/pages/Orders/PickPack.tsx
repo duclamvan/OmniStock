@@ -13065,7 +13065,7 @@ export default function PickPack() {
               <ShoppingBasket className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
-                  <span className="sm:hidden">Pick</span>
+                  <span className="sm:hidden">{t('pickShort')}</span>
                   <span className="hidden sm:inline">{t('picking')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
@@ -13081,7 +13081,7 @@ export default function PickPack() {
               <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">
-                  <span className="sm:hidden">Pack</span>
+                  <span className="sm:hidden">{t('packShort')}</span>
                   <span className="hidden sm:inline">{t('packing')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
