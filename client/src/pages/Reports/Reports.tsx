@@ -114,7 +114,7 @@ export default function Reports() {
     let totalCostUSD = 0;
 
     filteredOrders.forEach((order: any) => {
-      const revenue = parseFloat(order.totalPrice || '0');
+      const revenue = parseFloat(order.grandTotal || '0');
       if (order.currency === 'CZK') {
         totalRevenueCZK += revenue;
       } else if (order.currency === 'EUR') {
@@ -178,7 +178,7 @@ export default function Reports() {
           productSales[product.id] = { product, quantity: 0, revenue: 0 };
         }
         productSales[product.id].quantity += item.quantity || 0;
-        productSales[product.id].revenue += parseFloat(item.totalPrice || '0');
+        productSales[product.id].revenue += parseFloat(item.total || '0');
       }
     });
 
@@ -212,7 +212,7 @@ export default function Reports() {
           }
           customerOrders[customer.id].orderCount += 1;
           
-          const orderAmount = parseFloat(order.totalPrice || '0');
+          const orderAmount = parseFloat(order.grandTotal || '0');
           const amountInCZK = order.currency === 'EUR' ? orderAmount * eurToCzk : orderAmount;
           customerOrders[customer.id].totalSpent += amountInCZK;
         }

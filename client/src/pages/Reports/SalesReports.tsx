@@ -102,13 +102,13 @@ export default function SalesReports() {
     const prevItems = orderItemsData.filter((item: any) => prevOrderIds.has(item.orderId));
 
     const calcRevenue = (periodOrders: any[]) => periodOrders.reduce((sum, order: any) => {
-      return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+      return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
     }, 0);
     
     const calcProfit = (periodOrders: any[], items: any[], prods: any[]) => {
       const orderMap = new Map(periodOrders.map((o: any) => [o.id, o]));
       const revenue = periodOrders.reduce((sum, order: any) => {
-        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+        return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
       const costs = items.reduce((sum, item: any) => {
         const order = orderMap.get(item.orderId);
@@ -186,7 +186,7 @@ export default function SalesReports() {
       const orderMap = new Map(dayOrders.map((o: any) => [o.id, o]));
       const dayItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = dayOrders.reduce((sum, order: any) => {
-        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+        return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
       const costs = dayItems.reduce((sum, item: any) => {
         const order = orderMap.get(item.orderId);
@@ -219,7 +219,7 @@ export default function SalesReports() {
       const orderMap = new Map(weekOrders.map((o: any) => [o.id, o]));
       const weekItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = weekOrders.reduce((sum, order: any) => {
-        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+        return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
       const costs = weekItems.reduce((sum, item: any) => {
         const order = orderMap.get(item.orderId);
@@ -252,7 +252,7 @@ export default function SalesReports() {
       const orderMap = new Map(monthOrders.map((o: any) => [o.id, o]));
       const monthItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = monthOrders.reduce((sum, order: any) => {
-        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+        return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
       const costs = monthItems.reduce((sum, item: any) => {
         const order = orderMap.get(item.orderId);
@@ -281,7 +281,7 @@ export default function SalesReports() {
       const orderDate = new Date(order.createdAt);
       const dayIndex = getDay(orderDate);
       daySales[dayIndex].orders += 1;
-      daySales[dayIndex].revenue += convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+      daySales[dayIndex].revenue += convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
     });
 
     return daySales;
@@ -318,7 +318,7 @@ export default function SalesReports() {
       if (product && product.categoryId && order) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
         const categoryName = category?.name || tCommon('uncategorized');
-        const revenue = convertToBaseCurrency(parseFloat(item.totalPrice || '0'), order.currency || 'CZK');
+        const revenue = convertToBaseCurrency(parseFloat(item.total || '0'), order.currency || 'CZK');
         categorySales[categoryName] = (categorySales[categoryName] || 0) + revenue;
       }
     });

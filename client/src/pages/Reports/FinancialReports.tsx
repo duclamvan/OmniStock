@@ -81,7 +81,7 @@ export default function FinancialReports() {
     const prevItems = (orderItems as any[]).filter((item: any) => prevOrderIds.has(item.orderId));
 
     const calcRevenue = (periodOrders: any[]) => periodOrders.reduce((sum, order: any) => {
-      const revenue = parseFloat(order.totalPrice || '0');
+      const revenue = parseFloat(order.grandTotal || '0');
       return sum + convertToBaseCurrency(revenue, order.currency || 'CZK');
     }, 0);
 
@@ -163,7 +163,7 @@ export default function FinancialReports() {
       const monthItems = (orderItems as any[]).filter((item: any) => monthOrderIds.has(item.orderId));
       
       const revenue = monthOrders.reduce((sum, order: any) => {
-        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+        return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
       const costs = monthItems.reduce((sum, item: any) => {
         const product = (products as any[]).find((p: any) => p.id === item.productId);
@@ -221,7 +221,7 @@ export default function FinancialReports() {
     const currencyTotals: { [key: string]: number } = { CZK: 0, EUR: 0, USD: 0 };
     
     (orders as any[]).forEach((order: any) => {
-      const revenue = parseFloat(order.totalPrice || '0');
+      const revenue = parseFloat(order.grandTotal || '0');
       if (currencyTotals[order.currency] !== undefined) {
         currencyTotals[order.currency] += revenue;
       }

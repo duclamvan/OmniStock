@@ -68,7 +68,7 @@ export default function ExpenseReports() {
 
     const totalExpenses = totalExpensesCZK + convertToBaseCurrency(totalExpensesEUR, 'EUR') + convertToBaseCurrency(totalExpensesUSD, 'USD');
     const totalRevenue = filteredOrders.reduce((sum, order: any) => {
-      const revenue = parseFloat(order.totalPrice || '0');
+      const revenue = parseFloat(order.grandTotal || '0');
       return sum + convertToBaseCurrency(revenue, order.currency);
     }, 0);
 
@@ -163,7 +163,7 @@ export default function ExpenseReports() {
         return sum + convertToBaseCurrency(amount, exp.currency);
       }, 0);
       const totalRevenue = monthOrders.reduce((sum, order: any) => {
-        const revenue = parseFloat(order.totalPrice || '0');
+        const revenue = parseFloat(order.grandTotal || '0');
         return sum + convertToBaseCurrency(revenue, order.currency);
       }, 0);
 

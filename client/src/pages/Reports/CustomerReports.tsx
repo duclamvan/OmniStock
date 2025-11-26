@@ -141,7 +141,7 @@ export default function CustomerReports() {
       });
       
       const uniqueCustomers = new Set(monthOrders.map((o: any) => o.customerId)).size;
-      const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
+      const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
       const avgLTV = uniqueCustomers > 0 ? revenue / uniqueCustomers : 0;
 
       return {

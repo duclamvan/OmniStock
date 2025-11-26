@@ -51,7 +51,7 @@ export default function OrderReports() {
     const shipped = filteredOrders.filter((o: any) => o.orderStatus === 'shipped' || o.status === 'shipped').length;
     const cancelled = filteredOrders.filter((o: any) => o.orderStatus === 'cancelled' || o.status === 'cancelled').length;
     
-    const totalRevenue = filteredOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
+    const totalRevenue = filteredOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const fulfillmentRate = totalOrders > 0 ? (shipped / totalOrders) * 100 : 0;
 
@@ -73,8 +73,8 @@ export default function OrderReports() {
       return d >= prevWeekStart && d <= prevWeekEnd;
     });
 
-    const revenue = weekOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
-    const prevRevenue = prevWeekOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
+    const revenue = weekOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
+    const prevRevenue = prevWeekOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
     const growth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
 
     return { orders: weekOrders.length, revenue, growth };
@@ -95,8 +95,8 @@ export default function OrderReports() {
       return d >= prevMonthStart && d <= prevMonthEnd;
     });
 
-    const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
-    const prevRevenue = prevMonthOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
+    const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
+    const prevRevenue = prevMonthOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
     const growth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
 
     return { orders: monthOrders.length, revenue, growth };
@@ -127,12 +127,12 @@ export default function OrderReports() {
   }, [filteredOrders, t, tCommon]);
 
   const orderValueDistribution = useMemo(() => {
-    const high = filteredOrders.filter((o: any) => parseFloat(o.totalPrice || '0') > 5000).length;
+    const high = filteredOrders.filter((o: any) => parseFloat(o.grandTotal || '0') > 5000).length;
     const medium = filteredOrders.filter((o: any) => {
-      const price = parseFloat(o.totalPrice || '0');
+      const price = parseFloat(o.grandTotal || '0');
       return price >= 1000 && price <= 5000;
     }).length;
-    const low = filteredOrders.filter((o: any) => parseFloat(o.totalPrice || '0') < 1000).length;
+    const low = filteredOrders.filter((o: any) => parseFloat(o.grandTotal || '0') < 1000).length;
     return preparePieChartData([
       { name: `${t('highValue')} (>5000 Kč)`, value: high },
       { name: `${t('mediumValue')} (1-5K Kč)`, value: medium },
@@ -149,7 +149,7 @@ export default function OrderReports() {
         const orderDate = new Date(order.createdAt);
         return orderDate >= monthStart && orderDate <= monthEnd;
       });
-      const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0);
+      const revenue = monthOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
       const fulfilled = monthOrders.filter((o: any) => (o.orderStatus || o.status) === 'shipped').length;
       return {
         month: format(monthDate, 'MMM'),
@@ -173,7 +173,7 @@ export default function OrderReports() {
       return {
         date: format(day, 'MMM dd'),
         orders: dayOrders.length,
-        revenue: dayOrders.reduce((sum, o: any) => sum + parseFloat(o.totalPrice || '0'), 0),
+        revenue: dayOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0),
       };
     });
   }, [orders, now]);
@@ -186,7 +186,7 @@ export default function OrderReports() {
       const orderDate = new Date(order.createdAt);
       const dayIndex = getDay(orderDate);
       dayCounts[dayIndex].orders += 1;
-      dayCounts[dayIndex].revenue += parseFloat(order.totalPrice || '0');
+      dayCounts[dayIndex].revenue += parseFloat(order.grandTotal || '0');
     });
     return dayCounts;
   }, [orders]);
@@ -210,7 +210,7 @@ export default function OrderReports() {
         [t('date')]: format(new Date(o.createdAt), 'yyyy-MM-dd'),
         [t('status')]: o.orderStatus || o.status,
         [t('paymentStatus')]: o.paymentStatus || 'unpaid',
-        [t('total')]: parseFloat(o.totalPrice || '0'),
+        [t('total')]: parseFloat(o.grandTotal || '0'),
         [tCommon('currency')]: o.currency,
       }));
       exportToXLSX(exportData, `Order_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('orderReport'));
