@@ -134,7 +134,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                        (results?.customers.length || 0);
 
   return (
-    <div ref={searchRef} className="relative w-full max-w-2xl">
+    <div ref={searchRef} className="relative w-full sm:max-w-2xl">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-400" />
         <Input
@@ -161,7 +161,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       </div>
 
       {showResults && searchQuery.trim().length > 0 && (
-        <Card className="absolute top-full mt-2 w-full max-h-[80vh] overflow-y-auto z-50 shadow-lg dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+        <Card className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(100%+0.5rem)] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[80vh] overflow-y-auto z-50 shadow-lg dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-lg">
           {searchQuery.trim().length === 1 ? (
             <div className="p-4 text-center text-sm text-muted-foreground dark:text-gray-400">
               {t('common:typeAtLeastTwoCharacters')}
