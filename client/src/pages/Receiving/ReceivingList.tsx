@@ -66,7 +66,9 @@ import {
   DollarSign,
   Tag,
   XCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ClipboardList,
+  Barcode
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -3486,95 +3488,138 @@ function ShipmentReportDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {t('shipmentReport')}
-          </DialogTitle>
-          <DialogDescription>
-            {reportData?.shipment?.shipmentName || `${t('shipmentNumber', { number: shipmentId })}`}
-          </DialogDescription>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="flex-1 flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        {/* Fixed Header */}
+        <div className="px-6 py-4 border-b bg-background sticky top-0 z-10">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold">
+                  {t('shipmentReport')}
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  {reportData?.shipment?.shipmentName || `${t('shipmentNumber', { number: shipmentId })}`}
+                </DialogDescription>
+              </div>
+            </div>
+            {reportData && (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                {t('completed')}
+              </Badge>
+            )}
           </div>
-        ) : reportData ? (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
-                <TabsTrigger value="items">{t('items')}</TabsTrigger>
-                <TabsTrigger value="photos">{t('photos')}</TabsTrigger>
-                <TabsTrigger value="labels">{t('labels')}</TabsTrigger>
+        </div>
+        
+        <div className="flex-1 overflow-hidden flex flex-col px-6 pb-6">
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : reportData ? (
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col overflow-hidden pt-4">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="overview" className="gap-1">
+                  <ClipboardList className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('overview')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="items" className="gap-1">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('items')}</span>
+                  <Badge variant="secondary" className="ml-1 text-xs">{reportData.items.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="photos" className="gap-1">
+                  <ImageIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('photos')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="labels" className="gap-1">
+                  <Tag className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('labels')}</span>
+                </TabsTrigger>
               </TabsList>
               
               {/* Overview Tab */}
-              <TabsContent value="overview" className="flex-1 overflow-y-auto mt-4 space-y-4">
-                {/* Summary Cards */}
+              <TabsContent value="overview" className="flex-1 overflow-y-auto space-y-4">
+                {/* Summary Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Card className="p-3">
+                  <Card className="p-4 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <span className="text-xs font-medium text-green-700 dark:text-green-300">{t('received')}</span>
+                    </div>
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
-                    <div className="text-xs text-muted-foreground">{t('received')}</div>
                   </Card>
-                  <Card className="p-3">
+                  <Card className="p-4 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <span className="text-xs font-medium text-red-700 dark:text-red-300">{t('damaged')}</span>
+                    </div>
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
-                    <div className="text-xs text-muted-foreground">{t('damaged')}</div>
                   </Card>
-                  <Card className="p-3">
+                  <Card className="p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <span className="text-xs font-medium text-orange-700 dark:text-orange-300">{t('missing')}</span>
+                    </div>
                     <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
-                    <div className="text-xs text-muted-foreground">{t('missing')}</div>
                   </Card>
-                  <Card className="p-3">
-                    <div className="text-2xl font-bold">{reportData.summary.totalItems}</div>
-                    <div className="text-xs text-muted-foreground">{t('totalItems')}</div>
+                  <Card className="p-4 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('totalItems')}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{reportData.summary.totalItems}</div>
                   </Card>
                 </div>
                 
                 {/* Receipt Details */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{t('receiptDetails')}</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      {t('receiptDetails')}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-muted-foreground">{t('receiptNumber')}:</span>
-                        <span className="ml-2 font-medium">{reportData.receipt.receiptNumber || '-'}</span>
+                  <CardContent className="text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('receiptNumber')}</span>
+                        <span className="font-medium">{reportData.receipt.receiptNumber || '-'}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('status')}:</span>
-                        <Badge className="ml-2" variant="outline">{reportData.receipt.status}</Badge>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('status')}</span>
+                        <Badge variant="outline">{reportData.receipt.status}</Badge>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('receivedBy')}:</span>
-                        <span className="ml-2">{reportData.receipt.receivedBy || '-'}</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('receivedBy')}</span>
+                        <span className="font-medium">{reportData.receipt.receivedBy || '-'}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('receivedAt')}:</span>
-                        <span className="ml-2">{reportData.receipt.receivedAt ? format(new Date(reportData.receipt.receivedAt), 'dd MMM yyyy HH:mm') : '-'}</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('receivedAt')}</span>
+                        <span className="font-medium">{reportData.receipt.receivedAt ? format(new Date(reportData.receipt.receivedAt), 'dd MMM yyyy HH:mm') : '-'}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('carrier')}:</span>
-                        <span className="ml-2">{reportData.receipt.carrier || '-'}</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('carrier')}</span>
+                        <span className="font-medium">{reportData.receipt.carrier || '-'}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('parcels')}:</span>
-                        <span className="ml-2">{reportData.receipt.parcelCount || 0}</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('parcels')}</span>
+                        <span className="font-medium">{reportData.receipt.parcelCount || 0}</span>
                       </div>
                     </div>
                     {reportData.receipt.notes && (
-                      <div className="pt-2 border-t">
-                        <span className="text-muted-foreground">{t('notes')}:</span>
-                        <p className="mt-1">{reportData.receipt.notes}</p>
+                      <div className="mt-4 p-3 rounded bg-muted/50">
+                        <div className="text-xs text-muted-foreground mb-1">{t('notes')}</div>
+                        <p className="text-sm">{reportData.receipt.notes}</p>
                       </div>
                     )}
                     {reportData.receipt.damageNotes && (
-                      <div className="pt-2 border-t">
-                        <span className="text-muted-foreground text-red-600">{t('damageNotes')}:</span>
-                        <p className="mt-1 text-red-600">{reportData.receipt.damageNotes}</p>
+                      <div className="mt-3 p-3 rounded bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+                        <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">{t('damageNotes')}</div>
+                        <p className="text-sm text-red-700 dark:text-red-300">{reportData.receipt.damageNotes}</p>
                       </div>
                     )}
                   </CardContent>
@@ -3585,7 +3630,7 @@ function ShipmentReportDialog({
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
-                        <Package className="h-4 w-4" />
+                        <Barcode className="h-4 w-4" />
                         {t('scannedParcels')} ({reportData.receipt.scannedParcels.length})
                       </CardTitle>
                     </CardHeader>
@@ -3832,12 +3877,12 @@ function ShipmentReportDialog({
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('noDataAvailable')}</p>
-          </div>
-        )}
+          ) : (
+            <div className="flex-1 flex items-center justify-center py-12">
+              <p className="text-muted-foreground">{t('noDataAvailable')}</p>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
