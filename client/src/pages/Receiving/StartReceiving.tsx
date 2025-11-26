@@ -2000,32 +2000,40 @@ export default function StartReceiving() {
         </div>
       </div>
 
-      {/* Step Navigation - Redesigned */}
-      <div className="flex gap-3 mb-6">
-        <Button
-          variant={currentStep === 1 ? "default" : "outline"}
-          onClick={() => setCurrentStep(1)}
-          className={`flex-1 h-12 text-base font-medium transition-all ${
-            currentStep === 1 
-              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
-              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-          }`}
-        >
-          <Package className="h-5 w-5 mr-2" />
-          <span>{t('parcelCheck')}</span>
-        </Button>
-        <Button
-          variant={currentStep === 2 ? "default" : "outline"}
-          onClick={() => setCurrentStep(2)}
-          className={`flex-1 h-12 text-base font-medium transition-all ${
-            currentStep === 2 
-              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
-              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-          }`}
-        >
-          <CheckSquare className="h-5 w-5 mr-2" />
-          <span>{t('itemChecklist')}</span>
-        </Button>
+      {/* Step Navigation - Mobile Optimized Segmented Control */}
+      <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
+        <div className="flex gap-1">
+          <button
+            onClick={() => setCurrentStep(1)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              currentStep === 1 
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+            data-testid="tab-parcel-check"
+          >
+            <Package className={`h-4 w-4 flex-shrink-0 ${currentStep === 1 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+            <span className="truncate">{t('parcelCheck')}</span>
+            {scannedParcels === parcelCount && parcelCount > 0 && (
+              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+            )}
+          </button>
+          <button
+            onClick={() => setCurrentStep(2)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              currentStep === 2 
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+            data-testid="tab-item-checklist"
+          >
+            <CheckSquare className={`h-4 w-4 flex-shrink-0 ${currentStep === 2 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+            <span className="truncate">{t('itemChecklist')}</span>
+            {completedItems === totalItems && totalItems > 0 && (
+              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Step 1: Parcel Verification - Redesigned */}
