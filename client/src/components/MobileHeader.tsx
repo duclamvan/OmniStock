@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, Bell, Sun, Moon, User, Settings, LogOut, Search, Languages } from 'lucide-react';
+import { Menu, Bell, Sun, Moon, User, Settings, LogOut, Search, Languages, Package, Warehouse, Box, ShoppingCart, Truck, Users, Receipt, LayoutDashboard, ClipboardList, FileText, CreditCard, BarChart3, Archive, Tag, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -22,6 +22,37 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import logoPath from '@assets/logo_1754349267160.png';
+
+// Helper function to get notification background icon based on action URL or type
+function getNotificationIcon(actionUrl: string | null, type: string): React.ComponentType<{ className?: string }> {
+  // Map action URLs to icons
+  if (actionUrl) {
+    if (actionUrl.includes('/receiving') || actionUrl.includes('/imports')) return Warehouse;
+    if (actionUrl.includes('/order') || actionUrl.includes('/pick-pack')) return Package;
+    if (actionUrl.includes('/inventory') || actionUrl.includes('/product')) return Box;
+    if (actionUrl.includes('/customer')) return Users;
+    if (actionUrl.includes('/shipping') || actionUrl.includes('/carrier')) return Truck;
+    if (actionUrl.includes('/pos') || actionUrl.includes('/sale')) return ShoppingCart;
+    if (actionUrl.includes('/invoice') || actionUrl.includes('/receipt')) return Receipt;
+    if (actionUrl.includes('/dashboard')) return LayoutDashboard;
+    if (actionUrl.includes('/task')) return ClipboardList;
+    if (actionUrl.includes('/report')) return BarChart3;
+    if (actionUrl.includes('/setting')) return Settings;
+    if (actionUrl.includes('/return')) return Archive;
+    if (actionUrl.includes('/discount') || actionUrl.includes('/price')) return Tag;
+    if (actionUrl.includes('/payment')) return CreditCard;
+    if (actionUrl.includes('/document') || actionUrl.includes('/file')) return FileText;
+  }
+  
+  // Fall back to type-based icons
+  switch (type) {
+    case 'success': return CheckCircle;
+    case 'error': return AlertCircle;
+    case 'warning': return AlertTriangle;
+    case 'info':
+    default: return Info;
+  }
+}
 
 interface MobileHeaderProps {
   isMobileMenuOpen: boolean;
@@ -288,69 +319,80 @@ export function MobileHeader({
               <div className="max-h-96 overflow-y-auto">
                 {groupedNotifications && groupedNotifications.length > 0 ? (
                   <>
-                    {groupedNotifications.slice(0, 5).map((group) => (
-                      <DropdownMenuItem 
-                        key={group.key}
-                        className={cn(
-                          "flex flex-col items-start p-3 cursor-pointer",
-                          group.hasUnread 
-                            ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:bg-blue-100 dark:focus:bg-blue-900/50" 
-                            : "bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
-                        )}
-                        data-testid={`notification-group-${group.latestNotificationId}`}
-                      >
-                        <div className="flex items-start gap-2 w-full">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className={cn(
-                                "text-sm truncate flex-1",
-                                group.hasUnread 
-                                  ? "font-semibold text-blue-900 dark:text-blue-100" 
-                                  : "font-medium text-gray-900 dark:text-gray-100"
-                              )}>
-                                {group.title}
-                              </p>
-                              {group.count > 1 && (
-                                <span className={cn(
-                                  "text-xs px-1.5 py-0.5 rounded-full flex-shrink-0",
-                                  group.hasUnread 
-                                    ? "bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-semibold" 
-                                    : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                                )}>
-                                  ×{group.count}
-                                </span>
-                              )}
-                            </div>
-                            {group.description && (
-                              <p className={cn(
-                                "text-xs mt-0.5 line-clamp-2",
-                                group.hasUnread 
-                                  ? "text-blue-700 dark:text-blue-300" 
-                                  : "text-gray-600 dark:text-gray-400"
-                              )}>
-                                {group.description}
-                              </p>
-                            )}
-                            <p className={cn(
-                              "text-xs mt-1",
-                              group.hasUnread 
-                                ? "text-blue-600 dark:text-blue-400" 
-                                : "text-gray-500 dark:text-gray-500"
-                            )}>
-                              {group.latestCreatedAt.toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                          {group.hasUnread && (
-                            <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1 animate-pulse" />
+                    {groupedNotifications.slice(0, 5).map((group) => {
+                      const BackgroundIcon = getNotificationIcon(group.actionUrl, group.type);
+                      return (
+                        <DropdownMenuItem 
+                          key={group.key}
+                          className={cn(
+                            "flex flex-col items-start p-3 cursor-pointer relative overflow-hidden",
+                            group.hasUnread 
+                              ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:bg-blue-100 dark:focus:bg-blue-900/50" 
+                              : "bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
                           )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
+                          data-testid={`notification-group-${group.latestNotificationId}`}
+                        >
+                          {/* Faded background icon */}
+                          <BackgroundIcon className={cn(
+                            "absolute -right-2 top-1/2 -translate-y-1/2 h-16 w-16 pointer-events-none",
+                            group.hasUnread
+                              ? "text-blue-200 dark:text-blue-800/50"
+                              : "text-gray-100 dark:text-gray-700/50"
+                          )} />
+                          
+                          <div className="flex items-start gap-2 w-full relative z-10">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className={cn(
+                                  "text-sm truncate flex-1",
+                                  group.hasUnread 
+                                    ? "font-semibold text-blue-900 dark:text-blue-100" 
+                                    : "font-medium text-gray-900 dark:text-gray-100"
+                                )}>
+                                  {group.title}
+                                </p>
+                                {group.count > 1 && (
+                                  <span className={cn(
+                                    "text-xs px-1.5 py-0.5 rounded-full flex-shrink-0",
+                                    group.hasUnread 
+                                      ? "bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-semibold" 
+                                      : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                                  )}>
+                                    ×{group.count}
+                                  </span>
+                                )}
+                              </div>
+                              {group.description && (
+                                <p className={cn(
+                                  "text-xs mt-0.5 line-clamp-2",
+                                  group.hasUnread 
+                                    ? "text-blue-700 dark:text-blue-300" 
+                                    : "text-gray-600 dark:text-gray-400"
+                                )}>
+                                  {group.description}
+                                </p>
+                              )}
+                              <p className={cn(
+                                "text-xs mt-1",
+                                group.hasUnread 
+                                  ? "text-blue-600 dark:text-blue-400" 
+                                  : "text-gray-500 dark:text-gray-500"
+                              )}>
+                                {group.latestCreatedAt.toLocaleDateString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            {group.hasUnread && (
+                              <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1 animate-pulse" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </>
                 ) : (
                   <div className="p-4 text-center">

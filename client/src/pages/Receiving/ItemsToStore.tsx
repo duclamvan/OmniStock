@@ -695,15 +695,23 @@ export default function ItemsToStore() {
   const handleQuickScanLocation = async (code: string) => {
     if (!currentItem || !code) return;
 
-    // Play success sound
-    await soundEffects.playSuccessBeep();
+    // Calculate if this will complete the item
+    const quantityToAssign = currentItem.receivedQuantity - totalAssigned;
+    const willCompleteItem = quantityToAssign > 0 && totalAssigned + quantityToAssign >= currentItem.receivedQuantity;
+    
+    // Play appropriate sound - completion if fully assigned, otherwise success beep
+    if (willCompleteItem) {
+      await soundEffects.playCompletionSound();
+    } else {
+      await soundEffects.playSuccessBeep();
+    }
 
     // Add location to current item using functional updates
     const newLocation: LocationAssignment = {
       id: nanoid(),
       locationCode: code.toUpperCase(),
       locationType: 'warehouse',
-      quantity: currentItem.receivedQuantity - totalAssigned,
+      quantity: quantityToAssign,
       isPrimary: currentItem.newLocations.length === 0,
       isNew: true
     };

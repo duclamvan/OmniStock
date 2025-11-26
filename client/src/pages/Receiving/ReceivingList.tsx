@@ -2932,9 +2932,9 @@ function QuickStorageSheet({
                       }
                       
                       // Update assigned quantity
-                      const totalAssigned = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                      const newlyAssignedTotal = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
                       const updatedItems = [...items];
-                      updatedItems[selectedItemIndex].assignedQuantity += totalAssigned;
+                      updatedItems[selectedItemIndex].assignedQuantity += newlyAssignedTotal;
                       
                       // Clear saved locations (they're now persisted)
                       updatedItems[selectedItemIndex].locations = updatedItems[selectedItemIndex].locations.filter(
@@ -2942,15 +2942,26 @@ function QuickStorageSheet({
                       );
                       setItems(updatedItems);
                       
+                      // Check if item is now fully assigned (remaining = 0) AFTER all updates
+                      const finalAssignedQuantity = updatedItems[selectedItemIndex].assignedQuantity;
+                      const receivedQuantity = updatedItems[selectedItemIndex].receivedQuantity;
+                      const isFullyAssigned = finalAssignedQuantity >= receivedQuantity;
+                      
                       // Auto-advance if complete
-                      if (updatedItems[selectedItemIndex].assignedQuantity >= updatedItems[selectedItemIndex].receivedQuantity) {
+                      if (isFullyAssigned) {
                         if (selectedItemIndex < items.length - 1) {
                           setSelectedItemIndex(selectedItemIndex + 1);
                         }
                       }
                       
                       setShowScanner(false);
-                      await soundEffects.playSuccessBeep();
+                      
+                      // Play completion sound if item is fully assigned, otherwise regular success beep
+                      if (isFullyAssigned) {
+                        await soundEffects.playCompletionSound();
+                      } else {
+                        await soundEffects.playSuccessBeep();
+                      }
                     }}
                     disabled={storeLocationMutation.isPending}
                   >

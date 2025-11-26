@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle, XCircle, AlertTriangle, Info, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, ExternalLink, Package, Warehouse, Box, ShoppingCart, Truck, Users, Receipt, LayoutDashboard, ClipboardList, Settings, Archive, Tag, CreditCard, FileText, BarChart3 } from 'lucide-react';
 import { Link } from 'wouter';
 import { formatDistanceToNow } from 'date-fns';
 import type { Notification } from '@shared/schema';
@@ -33,6 +33,34 @@ const BADGE_VARIANT_MAP = {
   warning: 'secondary' as const,
   info: 'outline' as const,
 };
+
+function getBackgroundIcon(actionUrl: string | null, type: string): React.ComponentType<{ className?: string }> {
+  if (actionUrl) {
+    if (actionUrl.includes('/receiving') || actionUrl.includes('/imports')) return Warehouse;
+    if (actionUrl.includes('/order') || actionUrl.includes('/pick-pack')) return Package;
+    if (actionUrl.includes('/inventory') || actionUrl.includes('/product')) return Box;
+    if (actionUrl.includes('/customer')) return Users;
+    if (actionUrl.includes('/shipping') || actionUrl.includes('/carrier')) return Truck;
+    if (actionUrl.includes('/pos') || actionUrl.includes('/sale')) return ShoppingCart;
+    if (actionUrl.includes('/invoice') || actionUrl.includes('/receipt')) return Receipt;
+    if (actionUrl.includes('/dashboard')) return LayoutDashboard;
+    if (actionUrl.includes('/task')) return ClipboardList;
+    if (actionUrl.includes('/report')) return BarChart3;
+    if (actionUrl.includes('/setting')) return Settings;
+    if (actionUrl.includes('/return')) return Archive;
+    if (actionUrl.includes('/discount') || actionUrl.includes('/price')) return Tag;
+    if (actionUrl.includes('/payment')) return CreditCard;
+    if (actionUrl.includes('/document') || actionUrl.includes('/file')) return FileText;
+  }
+  
+  switch (type) {
+    case 'success': return CheckCircle;
+    case 'error': return XCircle;
+    case 'warning': return AlertTriangle;
+    case 'info':
+    default: return Info;
+  }
+}
 
 export default function Notifications() {
   const { t } = useTranslation(['system', 'common']);
@@ -122,14 +150,18 @@ export default function Notifications() {
             const Icon = ICON_MAP[group.type as keyof typeof ICON_MAP] || Info;
             const iconColor = COLOR_MAP[group.type as keyof typeof COLOR_MAP] || COLOR_MAP.info;
             const badgeVariant = BADGE_VARIANT_MAP[group.type as keyof typeof BADGE_VARIANT_MAP] || 'outline';
+            const BackgroundIcon = getBackgroundIcon(group.actionUrl, group.type);
 
             return (
               <Card 
                 key={group.key} 
-                className={!group.hasUnread ? 'opacity-60 dark:opacity-50' : ''}
+                className={`relative overflow-hidden ${!group.hasUnread ? 'opacity-60 dark:opacity-50' : ''}`}
                 data-testid={`notification-group-${group.latestNotificationId}`}
               >
-                <CardHeader>
+                {/* Faded background icon */}
+                <BackgroundIcon className="absolute -right-4 top-1/2 -translate-y-1/2 h-32 w-32 text-gray-100 dark:text-gray-800/40 pointer-events-none" />
+                
+                <CardHeader className="relative z-10">
                   <div className="flex items-start gap-4">
                     <Icon className={`h-6 w-6 flex-shrink-0 mt-1 ${iconColor}`} data-testid={`icon-${group.type}`} />
                     <div className="flex-1 min-w-0">
