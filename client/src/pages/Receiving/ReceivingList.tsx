@@ -2023,6 +2023,9 @@ function QuickStorageSheet({
   ).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
   
+  // Check if all items are fully stored
+  const allItemsStored = totalItems > 0 && completedItems === totalItems;
+  
   const currentItem = items[selectedItemIndex];
   // Calculate remaining quantity including pending location quantities (not yet saved)
   const pendingLocationQuantity = currentItem ? 
@@ -2626,7 +2629,30 @@ function QuickStorageSheet({
         
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shadow-lg z-40">
-          <div className="p-4 flex gap-2">
+          {/* Complete Receiving Button - Shows when all items are stored */}
+          {allItemsStored && (
+            <div className="px-4 pt-4 pb-2">
+              <button
+                onClick={() => {
+                  // Close the storage sheet and show success
+                  soundEffects.playCompletionSound();
+                  toast({
+                    title: t('storageComplete'),
+                    description: t('allItemsStoredSuccessfully'),
+                    duration: 3000
+                  });
+                  onClose();
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg py-4 flex items-center justify-center gap-3 font-semibold text-base shadow-lg"
+                data-testid="button-complete-receiving"
+              >
+                <CheckCircle className="h-6 w-6" />
+                {t('completeReceiving')}
+              </button>
+            </div>
+          )}
+          
+          <div className={`p-4 flex gap-2 ${allItemsStored ? 'pt-2' : ''}`}>
             <button
               onClick={() => {
                 if (selectedItemIndex > 0) {
@@ -2659,11 +2685,15 @@ function QuickStorageSheet({
             </button>
             <button
               onClick={() => setShowScanner(true)}
-              disabled={!currentItem}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+              disabled={!currentItem || allItemsStored}
+              className={`flex-1 rounded-lg py-3 flex items-center justify-center gap-2 font-medium ${
+                allItemsStored 
+                  ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white'
+              }`}
             >
               <ScanLine className="h-5 w-5" />
-              {t('quickScan')}
+              {allItemsStored ? t('allStored') : t('quickScan')}
             </button>
           </div>
         </div>
