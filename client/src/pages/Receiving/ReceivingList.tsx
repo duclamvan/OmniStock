@@ -4337,46 +4337,60 @@ export default function ReceivingList() {
               </Card>
             )}
 
-            {/* Compact Clickable Stats Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-              <CompactStatTab
-                icon={Package}
-                label={t('toReceive')}
-                value={toReceiveShipments.length}
-                color="blue"
-                isActive={activeTab === 'to-receive'}
+            {/* Quick Stats Overview - Compact Grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+              <button 
                 onClick={() => handleStatTabClick('to-receive')}
-              />
-              <CompactStatTab
-                icon={Clock}
-                label={t('inProgressReceiving')}
-                value={receivingShipments.length}
-                color="cyan"
-                isActive={activeTab === 'receiving'}
+                className={`bg-blue-50 dark:bg-blue-900/30 border rounded-lg p-2 text-center transition-all ${
+                  activeTab === 'to-receive' 
+                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
+                    : 'border-blue-200 dark:border-blue-700 hover:border-blue-400'
+                }`}
+                data-testid="stat-to-receive"
+              >
+                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{toReceiveShipments.length}</div>
+                <div className="text-xs text-blue-700 dark:text-blue-200">{t('toReceive')}</div>
+              </button>
+              <button 
                 onClick={() => handleStatTabClick('receiving')}
-              />
-              <CompactStatTab
-                icon={Warehouse}
-                label={t('storage')}
-                value={storageShipments.length}
-                color="amber"
-                isActive={activeTab === 'storage'}
+                className={`bg-cyan-50 dark:bg-cyan-900/30 border rounded-lg p-2 text-center transition-all ${
+                  activeTab === 'receiving' 
+                    ? 'border-cyan-500 ring-2 ring-cyan-500/30' 
+                    : 'border-cyan-200 dark:border-cyan-700 hover:border-cyan-400'
+                }`}
+                data-testid="stat-receiving"
+              >
+                <div className="text-lg sm:text-2xl font-bold text-cyan-600 dark:text-cyan-400">{receivingShipments.length}</div>
+                <div className="text-xs text-cyan-700 dark:text-cyan-200">{t('inProgressReceiving')}</div>
+              </button>
+              <button 
                 onClick={() => handleStatTabClick('storage')}
-              />
-              <CompactStatTab
-                icon={CheckCircle}
-                label={t('completed')}
-                value={completedShipments.length}
-                color="green"
-                isActive={activeTab === 'completed'}
+                className={`bg-amber-50 dark:bg-amber-900/30 border rounded-lg p-2 text-center transition-all ${
+                  activeTab === 'storage' 
+                    ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                    : 'border-amber-200 dark:border-amber-700 hover:border-amber-400'
+                }`}
+                data-testid="stat-storage"
+              >
+                <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400">{storageShipments.length}</div>
+                <div className="text-xs text-amber-700 dark:text-amber-200">{t('storage')}</div>
+              </button>
+              <button 
                 onClick={() => handleStatTabClick('completed')}
-              />
-              <CompactStatTab
-                icon={Package2}
-                label={t('totalItems')}
-                value={totalItems}
-                color="purple"
-              />
+                className={`bg-green-50 dark:bg-green-900/30 border rounded-lg p-2 text-center transition-all ${
+                  activeTab === 'completed' 
+                    ? 'border-green-500 ring-2 ring-green-500/30' 
+                    : 'border-green-200 dark:border-green-700 hover:border-green-400'
+                }`}
+                data-testid="stat-completed"
+              >
+                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{completedShipments.length}</div>
+                <div className="text-xs text-green-700 dark:text-green-200">{t('completed')}</div>
+              </button>
+              <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center col-span-3 sm:col-span-1" data-testid="stat-total-items">
+                <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{totalItems}</div>
+                <div className="text-xs text-purple-700 dark:text-purple-200">{t('totalItems')}</div>
+              </div>
             </div>
           </div>
         </div>
