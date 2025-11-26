@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Menu, Bell, Sun, Moon, User, Settings, LogOut, Search, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { cn } from '@/lib/utils';
+import { groupNotifications } from '@/lib/notificationUtils';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -89,6 +90,11 @@ export function MobileHeader({
     queryKey: ['/api/notifications'],
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  // Group similar notifications together
+  const groupedNotifications = useMemo(() => {
+    return groupNotifications(notifications);
+  }, [notifications]);
   
   // Mark all notifications as read mutation
   const markAllAsReadMutation = useMutation({
@@ -278,48 +284,60 @@ export function MobileHeader({
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               
-              {/* Recent Notifications (max 5) */}
+              {/* Recent Notifications (max 5 groups) */}
               <div className="max-h-96 overflow-y-auto">
-                {notifications && notifications.length > 0 ? (
+                {groupedNotifications && groupedNotifications.length > 0 ? (
                   <>
-                    {notifications.slice(0, 5).map((notification: any) => (
+                    {groupedNotifications.slice(0, 5).map((group) => (
                       <DropdownMenuItem 
-                        key={notification.id}
+                        key={group.key}
                         className={cn(
                           "flex flex-col items-start p-3 cursor-pointer",
-                          !notification.isRead 
+                          group.hasUnread 
                             ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:bg-blue-100 dark:focus:bg-blue-900/50" 
                             : "bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
                         )}
-                        data-testid={`notification-item-${notification.id}`}
+                        data-testid={`notification-group-${group.latestNotificationId}`}
                       >
                         <div className="flex items-start gap-2 w-full">
                           <div className="flex-1 min-w-0">
-                            <p className={cn(
-                              "text-sm truncate",
-                              !notification.isRead 
-                                ? "font-semibold text-blue-900 dark:text-blue-100" 
-                                : "font-medium text-gray-900 dark:text-gray-100"
-                            )}>
-                              {notification.title}
-                            </p>
-                            {notification.description && (
+                            <div className="flex items-center gap-2">
+                              <p className={cn(
+                                "text-sm truncate flex-1",
+                                group.hasUnread 
+                                  ? "font-semibold text-blue-900 dark:text-blue-100" 
+                                  : "font-medium text-gray-900 dark:text-gray-100"
+                              )}>
+                                {group.title}
+                              </p>
+                              {group.count > 1 && (
+                                <span className={cn(
+                                  "text-xs px-1.5 py-0.5 rounded-full flex-shrink-0",
+                                  group.hasUnread 
+                                    ? "bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-semibold" 
+                                    : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                                )}>
+                                  ×{group.count}
+                                </span>
+                              )}
+                            </div>
+                            {group.description && (
                               <p className={cn(
                                 "text-xs mt-0.5 line-clamp-2",
-                                !notification.isRead 
+                                group.hasUnread 
                                   ? "text-blue-700 dark:text-blue-300" 
                                   : "text-gray-600 dark:text-gray-400"
                               )}>
-                                {notification.description}
+                                {group.description}
                               </p>
                             )}
                             <p className={cn(
                               "text-xs mt-1",
-                              !notification.isRead 
+                              group.hasUnread 
                                 ? "text-blue-600 dark:text-blue-400" 
                                 : "text-gray-500 dark:text-gray-500"
                             )}>
-                              {new Date(notification.createdAt).toLocaleDateString(undefined, {
+                              {group.latestCreatedAt.toLocaleDateString(undefined, {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
@@ -327,7 +345,7 @@ export function MobileHeader({
                               })}
                             </p>
                           </div>
-                          {!notification.isRead && (
+                          {group.hasUnread && (
                             <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1 animate-pulse" />
                           )}
                         </div>
