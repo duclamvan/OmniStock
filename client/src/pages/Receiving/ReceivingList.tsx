@@ -2034,7 +2034,7 @@ function QuickStorageSheet({
         description: t('allItemsStoredSuccessfully'),
         duration: 3000
       });
-      onClose();
+      onOpenChange(false);
     },
     onError: (error) => {
       toast({
