@@ -2282,7 +2282,7 @@ function QuickStorageSheet({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden pb-44">
+          <div className={`flex-1 flex flex-col overflow-hidden ${allItemsStored ? 'pb-44' : 'pb-24'}`}>
             {/* Progress bar */}
             <div className="p-4 border-b dark:border-gray-800 space-y-2">
               <div className="flex items-center justify-between text-sm">
