@@ -454,6 +454,157 @@ const reports = {
   emailFeature: 'Email Feature',
   emailNotificationFeatureComingSoon: 'Email notifications feature coming soon',
   failedToSendEmailNotifications: 'Failed to send email notifications',
+  
+  // Enhanced Sales Reports
+  keyInsights: 'Key Insights',
+  keyInsightsDesc: 'Important patterns and business intelligence from your sales data',
+  bestSellingDay: 'Best Selling Day',
+  worstSellingDay: 'Worst Selling Day',
+  peakHour: 'Peak Sales Hour',
+  bestMonth: 'Best Month',
+  avgProfitMargin: 'Avg. Profit Margin',
+  yearlyProfit: 'Yearly Profit',
+  yearlyRevenue: 'Yearly Revenue',
+  salesByDayOfWeek: 'Sales by Day of Week',
+  
+  // Time period tabs
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  yearly: 'Yearly',
+  
+  // Daily reports
+  dailySalesLast30Days: 'Daily Sales - Last 30 Days',
+  dailySalesDesc: 'Track your daily revenue and profit trends',
+  dailyBreakdown: 'Daily Breakdown',
+  
+  // Weekly reports
+  weeklySalesLast12Weeks: 'Weekly Sales - Last 12 Weeks',
+  weeklySalesDesc: 'Compare week-over-week performance',
+  weeklyBreakdown: 'Weekly Breakdown',
+  week: 'Week',
+  
+  // Monthly reports
+  monthlySalesLast12Months: 'Monthly Sales - Last 12 Months',
+  monthlySalesDesc: 'Analyze monthly trends and seasonal patterns',
+  monthlyBreakdown: 'Monthly Breakdown',
+  margin: 'Margin',
+  profitMarginTrend: 'Profit Margin Trend',
+  profitMarginTrendDesc: 'Track your profit margin health over time',
+  
+  // Period comparisons
+  vsYesterday: 'vs Yesterday',
+  vsLastWeek: 'vs Last Week',
+  vsLastMonth: 'vs Last Month',
+  vsLastYear: 'vs Last Year',
+  
+  // Additional metrics
+  growthRate: 'Growth Rate',
+  periodChange: 'Period Change',
+  averageDaily: 'Average Daily',
+  averageWeekly: 'Average Weekly',
+  averageMonthly: 'Average Monthly',
+  
+  // Enhanced Financial Reports
+  profitability: 'Profitability',
+  cashFlow: 'Cash Flow',
+  breakdown: 'Breakdown',
+  keyFinancialRatios: 'Key Financial Ratios',
+  keyFinancialRatiosDesc: 'Important metrics for evaluating business health',
+  grossMargin: 'Gross Margin',
+  roi: 'ROI',
+  revenuePerOrder: 'Revenue/Order',
+  profitPerOrder: 'Profit/Order',
+  costEfficiency: 'Cost Efficiency',
+  revenueProfitTrend: 'Revenue & Profit Trend',
+  monthlyProfitMarginAnalysis: 'Monthly Profit Margin Analysis',
+  monthlyProfitMarginDesc: 'Track profit margin health over time',
+  monthlyRevenueCostsComparison: 'Monthly Revenue vs Costs',
+  cashFlowAnalysis: 'Cash Flow Analysis',
+  netCashFlow: 'Net Cash Flow',
+  cumulativeCashFlow: 'Cumulative Cash Flow',
+  monthlyCashFlowBreakdown: 'Monthly Cash Flow Breakdown',
+  cumulative: 'Cumulative',
+  positive: 'Positive',
+  negative: 'Negative',
+  monthlyFinancialDetails: 'Monthly Financial Details',
+  yearlyRevenue: 'Yearly Revenue',
+  yearlyProfit: 'Yearly Profit',
+  yearlyCosts: 'Yearly Costs',
+  yearlyMargin: 'Yearly Margin',
+  costs: 'Costs',
+  
+  // Enhanced Order Reports
+  avgProcessingTime: 'Avg Processing Time',
+  fulfillmentRate: 'Fulfillment Rate',
+  orderValueDistribution: 'Order Value Distribution',
+  orderVolumeByDay: 'Order Volume by Day',
+  orderPerformance: 'Order Performance',
+  orderTrendsAnalysis: 'Order Trends Analysis',
+  avgDaysToFulfill: 'Avg Days to Fulfill',
+  ordersThisWeek: 'Orders This Week',
+  ordersThisMonth: 'Orders This Month',
+  highValue: 'High Value',
+  mediumValue: 'Medium Value',
+  lowValue: 'Low Value',
+  
+  // Enhanced Customer Reports
+  customerRetention: 'Customer Retention',
+  customerAcquisition: 'Customer Acquisition',
+  customerLifetimeValueTrend: 'Customer Lifetime Value Trend',
+  churnRisk: 'Churn Risk',
+  atRisk: 'At Risk',
+  loyal: 'Loyal',
+  newCustomer: 'New Customer',
+  returningCustomer: 'Returning Customer',
+  customersAtRisk: 'Customers at Risk',
+  noActivityDays: 'No Activity (Days)',
+  lastOrderAmount: 'Last Order Amount',
+  customerValueTiers: 'Customer Value Tiers',
+  
+  // Enhanced Inventory Reports
+  inventoryTurnover: 'Inventory Turnover',
+  turnoverRate: 'Turnover Rate',
+  avgDaysInStock: 'Avg Days in Stock',
+  abcAnalysis: 'ABC Analysis',
+  classAProducts: 'Class A Products',
+  classBProducts: 'Class B Products',
+  classCProducts: 'Class C Products',
+  stockMovementTrend: 'Stock Movement Trend',
+  
+  // Enhanced Expense Reports
+  expenseTrend: 'Expense Trend',
+  budgetVsActual: 'Budget vs Actual',
+  expenseForecasting: 'Expense Forecasting',
+  categoryTrends: 'Category Trends',
+  topExpenseCategories: 'Top Expense Categories',
+  expenseGrowth: 'Expense Growth',
+  monthlyExpenseTrend: 'Monthly Expense Trend',
+  expenseBreakdownByMonth: 'Expense Breakdown by Month',
+  
+  // Additional report keys
+  retentionMetrics: 'Retention Metrics',
+  retentionRate: 'Retention Rate',
+  returningCustomers: 'Returning Customers',
+  newCustomersThisMonth: 'New Customers This Month',
+  customerTypeSplit: 'Customer Type Split',
+  newCustomers: 'New Customers',
+  customersAtRiskDesc: 'Customers with no orders in the last 90 days',
+  noCustomersAtRisk: 'No customers at risk',
+  customerAcquisitionTrend: 'Customer Acquisition Trend',
+  monthlyCustomerBreakdown: 'Monthly Customer Breakdown',
+  recent: 'Recent',
+  
+  // Expense report keys
+  expenseRevenueRatioTrend: 'Expense to Revenue Ratio Trend',
+  expenseRevenueRatioDesc: 'Track expense efficiency over time',
+  efficient: 'Efficient',
+  moderate: 'Moderate',
+  high: 'High',
+  ratio: 'Ratio',
+  
+  // Order report keys
+  monthlyOrderTrends: 'Monthly Order Trends',
 } as const;
 
 export default reports;

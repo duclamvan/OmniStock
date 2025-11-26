@@ -454,6 +454,157 @@ const reports = {
   emailFeature: 'Tính năng Email',
   emailNotificationFeatureComingSoon: 'Tính năng thông báo email sắp ra mắt',
   failedToSendEmailNotifications: 'Không thể gửi thông báo email',
+  
+  // Enhanced Sales Reports
+  keyInsights: 'Thông tin chính',
+  keyInsightsDesc: 'Các xu hướng và thông tin kinh doanh quan trọng từ dữ liệu bán hàng',
+  bestSellingDay: 'Ngày bán chạy nhất',
+  worstSellingDay: 'Ngày bán kém nhất',
+  peakHour: 'Giờ cao điểm',
+  bestMonth: 'Tháng tốt nhất',
+  avgProfitMargin: 'Lợi nhuận TB',
+  yearlyProfit: 'Lợi nhuận năm',
+  yearlyRevenue: 'Doanh thu năm',
+  salesByDayOfWeek: 'Doanh số theo ngày trong tuần',
+  
+  // Time period tabs
+  daily: 'Hàng ngày',
+  weekly: 'Hàng tuần',
+  monthly: 'Hàng tháng',
+  yearly: 'Hàng năm',
+  
+  // Daily reports
+  dailySalesLast30Days: 'Doanh số hàng ngày - 30 ngày qua',
+  dailySalesDesc: 'Theo dõi xu hướng doanh thu và lợi nhuận hàng ngày',
+  dailyBreakdown: 'Chi tiết hàng ngày',
+  
+  // Weekly reports
+  weeklySalesLast12Weeks: 'Doanh số hàng tuần - 12 tuần qua',
+  weeklySalesDesc: 'So sánh hiệu suất giữa các tuần',
+  weeklyBreakdown: 'Chi tiết hàng tuần',
+  week: 'Tuần',
+  
+  // Monthly reports
+  monthlySalesLast12Months: 'Doanh số hàng tháng - 12 tháng qua',
+  monthlySalesDesc: 'Phân tích xu hướng theo tháng và mùa',
+  monthlyBreakdown: 'Chi tiết hàng tháng',
+  margin: 'Biên lợi nhuận',
+  profitMarginTrend: 'Xu hướng biên lợi nhuận',
+  profitMarginTrendDesc: 'Theo dõi sức khỏe lợi nhuận theo thời gian',
+  
+  // Period comparisons
+  vsYesterday: 'so với hôm qua',
+  vsLastWeek: 'so với tuần trước',
+  vsLastMonth: 'so với tháng trước',
+  vsLastYear: 'so với năm trước',
+  
+  // Additional metrics
+  growthRate: 'Tỷ lệ tăng trưởng',
+  periodChange: 'Thay đổi kỳ',
+  averageDaily: 'Trung bình ngày',
+  averageWeekly: 'Trung bình tuần',
+  averageMonthly: 'Trung bình tháng',
+  
+  // Enhanced Financial Reports
+  profitability: 'Lợi nhuận',
+  cashFlow: 'Dòng tiền',
+  breakdown: 'Phân tích',
+  keyFinancialRatios: 'Các chỉ số tài chính chính',
+  keyFinancialRatiosDesc: 'Các chỉ số quan trọng để đánh giá sức khỏe doanh nghiệp',
+  grossMargin: 'Biên lợi nhuận gộp',
+  roi: 'ROI',
+  revenuePerOrder: 'Doanh thu/Đơn',
+  profitPerOrder: 'Lợi nhuận/Đơn',
+  costEfficiency: 'Hiệu quả chi phí',
+  revenueProfitTrend: 'Xu hướng doanh thu & lợi nhuận',
+  monthlyProfitMarginAnalysis: 'Phân tích biên lợi nhuận hàng tháng',
+  monthlyProfitMarginDesc: 'Theo dõi sức khỏe biên lợi nhuận theo thời gian',
+  monthlyRevenueCostsComparison: 'Doanh thu vs Chi phí hàng tháng',
+  cashFlowAnalysis: 'Phân tích dòng tiền',
+  netCashFlow: 'Dòng tiền ròng',
+  cumulativeCashFlow: 'Dòng tiền tích lũy',
+  monthlyCashFlowBreakdown: 'Chi tiết dòng tiền hàng tháng',
+  cumulative: 'Tích lũy',
+  positive: 'Dương',
+  negative: 'Âm',
+  monthlyFinancialDetails: 'Chi tiết tài chính hàng tháng',
+  yearlyRevenue: 'Doanh thu năm',
+  yearlyProfit: 'Lợi nhuận năm',
+  yearlyCosts: 'Chi phí năm',
+  yearlyMargin: 'Biên lợi nhuận năm',
+  costs: 'Chi phí',
+  
+  // Enhanced Order Reports
+  avgProcessingTime: 'Thời gian xử lý TB',
+  fulfillmentRate: 'Tỷ lệ hoàn thành',
+  orderValueDistribution: 'Phân phối giá trị đơn hàng',
+  orderVolumeByDay: 'Khối lượng đơn hàng theo ngày',
+  orderPerformance: 'Hiệu suất đơn hàng',
+  orderTrendsAnalysis: 'Phân tích xu hướng đơn hàng',
+  avgDaysToFulfill: 'Số ngày hoàn thành TB',
+  ordersThisWeek: 'Đơn hàng tuần này',
+  ordersThisMonth: 'Đơn hàng tháng này',
+  highValue: 'Giá trị cao',
+  mediumValue: 'Giá trị trung bình',
+  lowValue: 'Giá trị thấp',
+  
+  // Enhanced Customer Reports
+  customerRetention: 'Giữ chân khách hàng',
+  customerAcquisition: 'Thu hút khách hàng',
+  customerLifetimeValueTrend: 'Xu hướng giá trị vòng đời KH',
+  churnRisk: 'Rủi ro mất khách',
+  atRisk: 'Có rủi ro',
+  loyal: 'Trung thành',
+  newCustomer: 'Khách mới',
+  returningCustomer: 'Khách quay lại',
+  customersAtRisk: 'Khách có rủi ro mất',
+  noActivityDays: 'Không hoạt động (ngày)',
+  lastOrderAmount: 'Số tiền đơn cuối',
+  customerValueTiers: 'Phân tầng giá trị KH',
+  
+  // Enhanced Inventory Reports
+  inventoryTurnover: 'Vòng quay hàng tồn',
+  turnoverRate: 'Tỷ lệ vòng quay',
+  avgDaysInStock: 'Số ngày tồn kho TB',
+  abcAnalysis: 'Phân tích ABC',
+  classAProducts: 'Sản phẩm loại A',
+  classBProducts: 'Sản phẩm loại B',
+  classCProducts: 'Sản phẩm loại C',
+  stockMovementTrend: 'Xu hướng luân chuyển kho',
+  
+  // Enhanced Expense Reports
+  expenseTrend: 'Xu hướng chi phí',
+  budgetVsActual: 'Ngân sách vs Thực tế',
+  expenseForecasting: 'Dự báo chi phí',
+  categoryTrends: 'Xu hướng theo danh mục',
+  topExpenseCategories: 'Danh mục chi phí lớn nhất',
+  expenseGrowth: 'Tăng trưởng chi phí',
+  monthlyExpenseTrend: 'Xu hướng chi phí hàng tháng',
+  expenseBreakdownByMonth: 'Chi tiết chi phí theo tháng',
+  
+  // Additional report keys
+  retentionMetrics: 'Chỉ số giữ chân',
+  retentionRate: 'Tỷ lệ giữ chân',
+  returningCustomers: 'Khách quay lại',
+  newCustomersThisMonth: 'Khách mới tháng này',
+  customerTypeSplit: 'Phân loại khách hàng',
+  newCustomers: 'Khách mới',
+  customersAtRiskDesc: 'Khách hàng không có đơn hàng trong 90 ngày qua',
+  noCustomersAtRisk: 'Không có khách hàng có rủi ro',
+  customerAcquisitionTrend: 'Xu hướng thu hút khách hàng',
+  monthlyCustomerBreakdown: 'Chi tiết khách hàng hàng tháng',
+  recent: 'Gần đây',
+  
+  // Expense report keys
+  expenseRevenueRatioTrend: 'Xu hướng tỷ lệ chi phí/doanh thu',
+  expenseRevenueRatioDesc: 'Theo dõi hiệu quả chi phí theo thời gian',
+  efficient: 'Hiệu quả',
+  moderate: 'Trung bình',
+  high: 'Cao',
+  ratio: 'Tỷ lệ',
+  
+  // Order report keys
+  monthlyOrderTrends: 'Xu hướng đơn hàng hàng tháng',
 } as const;
 
 export default reports;

@@ -18,7 +18,7 @@ import {
   ArrowUpRight, ArrowDownRight, Target, Zap, Clock, Star,
   DollarSign, PiggyBank, Activity, Users
 } from "lucide-react";
-import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData } from "@/lib/reportUtils";
+import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData, convertToBaseCurrency } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -101,24 +101,34 @@ export default function SalesReports() {
     const currentItems = orderItemsData.filter((item: any) => currentOrderIds.has(item.orderId));
     const prevItems = orderItemsData.filter((item: any) => prevOrderIds.has(item.orderId));
 
-    const calcRevenue = (items: any[]) => items.reduce((sum, item: any) => sum + parseFloat(item.totalPrice || '0'), 0);
-    const calcProfit = (items: any[], prods: any[]) => {
-      return items.reduce((sum, item: any) => {
-        const product = prods.find((p: any) => p.id === item.productId);
-        const cost = parseFloat(product?.importCostCzk || '0') * (item.quantity || 0);
-        const revenue = parseFloat(item.totalPrice || '0');
-        return sum + (revenue - cost);
+    const calcRevenue = (periodOrders: any[]) => periodOrders.reduce((sum, order: any) => {
+      return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
+    }, 0);
+    
+    const calcProfit = (periodOrders: any[], items: any[], prods: any[]) => {
+      const orderMap = new Map(periodOrders.map((o: any) => [o.id, o]));
+      const revenue = periodOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
       }, 0);
+      const costs = items.reduce((sum, item: any) => {
+        const order = orderMap.get(item.orderId);
+        if (!order) return sum;
+        const product = prods.find((p: any) => p.id === item.productId);
+        if (!product) return sum;
+        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      }, 0);
+      return revenue - costs;
     };
+    
     const calcUnits = (items: any[]) => items.reduce((sum, item: any) => sum + (item.quantity || 0), 0);
 
-    const currentRevenue = calcRevenue(currentItems);
-    const prevRevenue = calcRevenue(prevItems);
-    const currentProfit = calcProfit(currentItems, productsData);
-    const prevProfit = calcProfit(prevItems, productsData);
+    const currentRevenue = calcRevenue(currentOrders);
+    const prevRevenue = calcRevenue(prevOrders);
+    const currentProfit = calcProfit(currentOrders, currentItems, productsData);
+    const prevProfit = calcProfit(prevOrders, prevItems, productsData);
 
     const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
-    const profitGrowth = prevProfit > 0 ? ((currentProfit - prevProfit) / prevProfit) * 100 : 0;
+    const profitGrowth = prevProfit !== 0 ? ((currentProfit - prevProfit) / Math.abs(prevProfit)) * 100 : (currentProfit !== 0 ? 100 : 0);
     const ordersGrowth = prevOrders.length > 0 ? ((currentOrders.length - prevOrders.length) / prevOrders.length) * 100 : 0;
 
     return {
@@ -173,13 +183,19 @@ export default function SalesReports() {
         return isSameDay(orderDate, day);
       });
       const orderIds = new Set(dayOrders.map((o: any) => o.id));
+      const orderMap = new Map(dayOrders.map((o: any) => [o.id, o]));
       const dayItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
-      const revenue = dayItems.reduce((sum, item: any) => sum + parseFloat(item.totalPrice || '0'), 0);
-      const profit = dayItems.reduce((sum, item: any) => {
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        const cost = parseFloat(product?.importCostCzk || '0') * (item.quantity || 0);
-        return sum + (parseFloat(item.totalPrice || '0') - cost);
+      const revenue = dayOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
       }, 0);
+      const costs = dayItems.reduce((sum, item: any) => {
+        const order = orderMap.get(item.orderId);
+        if (!order) return sum;
+        const product = (products as any[]).find((p: any) => p.id === item.productId);
+        if (!product) return sum;
+        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      }, 0);
+      const profit = revenue - costs;
       return {
         date: format(day, 'MMM dd'),
         fullDate: format(day, 'yyyy-MM-dd'),
@@ -200,13 +216,19 @@ export default function SalesReports() {
         return orderDate >= weekStart && orderDate <= weekEnd;
       });
       const orderIds = new Set(weekOrders.map((o: any) => o.id));
+      const orderMap = new Map(weekOrders.map((o: any) => [o.id, o]));
       const weekItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
-      const revenue = weekItems.reduce((sum, item: any) => sum + parseFloat(item.totalPrice || '0'), 0);
-      const profit = weekItems.reduce((sum, item: any) => {
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        const cost = parseFloat(product?.importCostCzk || '0') * (item.quantity || 0);
-        return sum + (parseFloat(item.totalPrice || '0') - cost);
+      const revenue = weekOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
       }, 0);
+      const costs = weekItems.reduce((sum, item: any) => {
+        const order = orderMap.get(item.orderId);
+        if (!order) return sum;
+        const product = (products as any[]).find((p: any) => p.id === item.productId);
+        if (!product) return sum;
+        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      }, 0);
+      const profit = revenue - costs;
       return {
         week: `W${format(weekStart, 'ww')}`,
         startDate: format(weekStart, 'MMM dd'),
@@ -227,13 +249,19 @@ export default function SalesReports() {
         return orderDate >= monthStart && orderDate <= monthEnd;
       });
       const orderIds = new Set(monthOrders.map((o: any) => o.id));
+      const orderMap = new Map(monthOrders.map((o: any) => [o.id, o]));
       const monthItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
-      const revenue = monthItems.reduce((sum, item: any) => sum + parseFloat(item.totalPrice || '0'), 0);
-      const profit = monthItems.reduce((sum, item: any) => {
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        const cost = parseFloat(product?.importCostCzk || '0') * (item.quantity || 0);
-        return sum + (parseFloat(item.totalPrice || '0') - cost);
+      const revenue = monthOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
       }, 0);
+      const costs = monthItems.reduce((sum, item: any) => {
+        const order = orderMap.get(item.orderId);
+        if (!order) return sum;
+        const product = (products as any[]).find((p: any) => p.id === item.productId);
+        if (!product) return sum;
+        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      }, 0);
+      const profit = revenue - costs;
       return {
         month: format(monthStart, 'MMM yyyy'),
         shortMonth: format(monthStart, 'MMM'),
@@ -253,22 +281,11 @@ export default function SalesReports() {
       const orderDate = new Date(order.createdAt);
       const dayIndex = getDay(orderDate);
       daySales[dayIndex].orders += 1;
-    });
-
-    const orderIds = (orders as any[]).map((o: any) => o.id);
-    const orderIdSet = new Set(orderIds);
-    (orderItems as any[]).forEach((item: any) => {
-      if (orderIdSet.has(item.orderId)) {
-        const order = (orders as any[]).find((o: any) => o.id === item.orderId);
-        if (order) {
-          const dayIndex = getDay(new Date(order.createdAt));
-          daySales[dayIndex].revenue += parseFloat(item.totalPrice || '0');
-        }
-      }
+      daySales[dayIndex].revenue += convertToBaseCurrency(parseFloat(order.totalPrice || '0'), order.currency || 'CZK');
     });
 
     return daySales;
-  }, [orders, orderItems]);
+  }, [orders]);
 
   const hourOfDayAnalysis = useMemo((): HourOfDaySales[] => {
     const hourSales = Array.from({ length: 24 }, (_, hour) => ({ hour, revenue: 0, orders: 0 }));
@@ -292,15 +309,16 @@ export default function SalesReports() {
 
   const salesByCategory = useMemo(() => {
     const categorySales: { [key: string]: number } = {};
-    const allOrderIds = new Set((orders as any[]).map((o: any) => o.id));
-    const allItems = (orderItems as any[]).filter((item: any) => allOrderIds.has(item.orderId));
+    const orderMap = new Map((orders as any[]).map((o: any) => [o.id, o]));
+    const allItems = (orderItems as any[]).filter((item: any) => orderMap.has(item.orderId));
 
     allItems.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
-      if (product && product.categoryId) {
+      const order = orderMap.get(item.orderId);
+      if (product && product.categoryId && order) {
         const category = (categories as any[]).find((c: any) => c.id === product.categoryId);
         const categoryName = category?.name || tCommon('uncategorized');
-        const revenue = parseFloat(item.totalPrice || '0');
+        const revenue = convertToBaseCurrency(parseFloat(item.totalPrice || '0'), order.currency || 'CZK');
         categorySales[categoryName] = (categorySales[categoryName] || 0) + revenue;
       }
     });
