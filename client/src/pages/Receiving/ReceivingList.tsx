@@ -4338,7 +4338,7 @@ export default function ReceivingList() {
             )}
 
             {/* Quick Stats Overview - Compact Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <button 
                 onClick={() => handleStatTabClick('to-receive')}
                 className={`bg-blue-50 dark:bg-blue-900/30 border rounded-lg p-2 text-center transition-all ${
@@ -4387,10 +4387,6 @@ export default function ReceivingList() {
                 <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{completedShipments.length}</div>
                 <div className="text-xs text-green-700 dark:text-green-200">{t('completed')}</div>
               </button>
-              <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center col-span-3 sm:col-span-1" data-testid="stat-total-items">
-                <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{totalItems}</div>
-                <div className="text-xs text-purple-700 dark:text-purple-200">{t('totalItems')}</div>
-              </div>
             </div>
           </div>
         </div>
