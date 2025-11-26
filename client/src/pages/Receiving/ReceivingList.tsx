@@ -3086,6 +3086,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
   const [showQuickStorage, setShowQuickStorage] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
+  const isPartiallyReceived = shipment.isPartiallyReceived || shipment.receivingStatus === 'receiving';
 
   return (
     <Card className="overflow-hidden" data-testid={`card-shipment-${shipment.id}`}>
@@ -3100,6 +3101,12 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
               <CardTitle className="text-base truncate">
                 {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
+              {isPartiallyReceived && (
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {t('partiallyReceived')}
+                </Badge>
+              )}
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">

@@ -1204,6 +1204,7 @@ const imports = {
   itemsPendingStorage: 'sản phẩm chờ lưu kho',
   itemsCompleted: 'sản phẩm đã hoàn tất',
   goToStorage: 'Đi đến Lưu kho',
+  partiallyReceived: 'Đã nhận một phần',
   
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Trung tâm Nhận hàng',

@@ -1191,6 +1191,7 @@ const imports = {
   itemsPendingStorage: 'items pending storage',
   itemsCompleted: 'items completed',
   goToStorage: 'Go to Storage',
+  partiallyReceived: 'Partially Received',
   
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Receiving Center',

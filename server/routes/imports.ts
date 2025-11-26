@@ -3246,9 +3246,10 @@ router.get("/shipments/receiving", async (req, res) => {
   }
 });
 
-// Get shipments in storage (pending approval)
+// Get shipments in storage (pending approval or partially received with items ready to store)
 router.get("/shipments/storage", async (req, res) => {
   try {
+    // Get shipments with pending_approval status OR receiving status (for partial receives)
     const shipmentsWithStatus = await db
       .select({
         shipment: shipments,
@@ -3256,13 +3257,49 @@ router.get("/shipments/storage", async (req, res) => {
       })
       .from(shipments)
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
-      .where(eq(shipments.receivingStatus, 'pending_approval'))
+      .where(or(
+        eq(shipments.receivingStatus, 'pending_approval'),
+        eq(shipments.receivingStatus, 'receiving')
+      ))
       .orderBy(desc(shipments.updatedAt));
+    
+    // For receiving status shipments, we need to check if they have items ready to store
+    // (items with receivedQuantity > 0 that haven't been assigned a warehouse location yet)
+    const receivingShipmentIds = shipmentsWithStatus
+      .filter(s => s.shipment.receivingStatus === 'receiving')
+      .map(s => s.shipment.id);
+    
+    let shipmentsWithStorableItems = new Set<number>();
+    
+    if (receivingShipmentIds.length > 0) {
+      // Check for receipts with items ready to store
+      const receiptsForShipments = await db
+        .select({ shipmentId: receipts.shipmentId })
+        .from(receipts)
+        .innerJoin(receiptItems, eq(receipts.id, receiptItems.receiptId))
+        .where(and(
+          inArray(receipts.shipmentId, receivingShipmentIds),
+          isNull(receiptItems.warehouseLocation),
+          sql`${receiptItems.receivedQuantity} > 0`
+        ))
+        .groupBy(receipts.shipmentId);
+      
+      shipmentsWithStorableItems = new Set(receiptsForShipments.map(r => r.shipmentId));
+    }
+    
+    // Filter to only include shipments that are:
+    // 1. pending_approval status, OR
+    // 2. receiving status WITH storable items
+    const filteredShipmentsWithStatus = shipmentsWithStatus.filter(s => 
+      s.shipment.receivingStatus === 'pending_approval' || 
+      shipmentsWithStorableItems.has(s.shipment.id)
+    );
 
-    let formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+    let formattedShipments = filteredShipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+      isPartiallyReceived: shipment.receivingStatus === 'receiving',
     }));
 
     // Load consolidation items for each shipment
