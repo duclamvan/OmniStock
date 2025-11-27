@@ -13167,6 +13167,140 @@ Important:
     }
   });
 
+  // Helper function to reconcile purchase order delivery status based on received items
+  async function reconcilePurchaseDeliveryForShipment(shipmentId: number): Promise<string[]> {
+    const updatedPurchases: string[] = [];
+    
+    try {
+      // Step 1: Find all receipts for this shipment
+      const shipmentReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(eq(receipts.shipmentId, shipmentId));
+      
+      if (shipmentReceipts.length === 0) {
+        console.log(`No receipts found for shipment ${shipmentId}`);
+        return updatedPurchases;
+      }
+      
+      const receiptIds = shipmentReceipts.map(r => r.id);
+      
+      // Step 2: Get all receipt items of type 'purchase' for these receipts
+      const purchaseReceiptItems = await db
+        .select({
+          itemId: receiptItems.itemId,
+          receiptId: receiptItems.receiptId,
+          expectedQuantity: receiptItems.expectedQuantity,
+          receivedQuantity: receiptItems.receivedQuantity,
+          damagedQuantity: receiptItems.damagedQuantity,
+          missingQuantity: receiptItems.missingQuantity
+        })
+        .from(receiptItems)
+        .where(and(
+          inArray(receiptItems.receiptId, receiptIds),
+          eq(receiptItems.itemType, 'purchase')
+        ));
+      
+      if (purchaseReceiptItems.length === 0) {
+        console.log(`No purchase items found in receipts for shipment ${shipmentId}`);
+        return updatedPurchases;
+      }
+      
+      // Step 3: Get purchase IDs from purchaseItems
+      const purchaseItemIds = purchaseReceiptItems.map(ri => ri.itemId);
+      const purchaseItemsData = await db
+        .select({
+          id: purchaseItems.id,
+          purchaseId: purchaseItems.purchaseId,
+          quantity: purchaseItems.quantity
+        })
+        .from(purchaseItems)
+        .where(inArray(purchaseItems.id, purchaseItemIds));
+      
+      // Map itemId to purchaseId
+      const itemToPurchase = new Map(purchaseItemsData.map(pi => [pi.id, { purchaseId: pi.purchaseId, expectedQty: pi.quantity }]));
+      
+      // Step 4: Aggregate by purchaseId
+      const purchaseAggregates = new Map<number, { expected: number; received: number; missing: number }>();
+      
+      for (const ri of purchaseReceiptItems) {
+        const purchaseInfo = itemToPurchase.get(ri.itemId);
+        if (!purchaseInfo) continue;
+        
+        const { purchaseId } = purchaseInfo;
+        const current = purchaseAggregates.get(purchaseId) || { expected: 0, received: 0, missing: 0 };
+        
+        current.expected += ri.expectedQuantity;
+        current.received += (ri.receivedQuantity || 0) + (ri.damagedQuantity || 0);
+        current.missing += ri.missingQuantity || 0;
+        
+        purchaseAggregates.set(purchaseId, current);
+      }
+      
+      // Step 5: For each purchase, check all items across ALL receipts (not just this shipment)
+      for (const [purchaseId, _] of purchaseAggregates) {
+        // Get all items for this purchase
+        const allPurchaseItems = await db
+          .select({
+            id: purchaseItems.id,
+            quantity: purchaseItems.quantity
+          })
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchaseId));
+        
+        const totalExpected = allPurchaseItems.reduce((sum, pi) => sum + pi.quantity, 0);
+        const allItemIds = allPurchaseItems.map(pi => pi.id);
+        
+        // Get all receipt items for these purchase items across ALL receipts
+        const allReceivedItems = await db
+          .select({
+            receivedQuantity: receiptItems.receivedQuantity,
+            damagedQuantity: receiptItems.damagedQuantity,
+            missingQuantity: receiptItems.missingQuantity
+          })
+          .from(receiptItems)
+          .where(and(
+            inArray(receiptItems.itemId, allItemIds),
+            eq(receiptItems.itemType, 'purchase')
+          ));
+        
+        let totalReceived = 0;
+        let totalMissing = 0;
+        
+        for (const ri of allReceivedItems) {
+          totalReceived += (ri.receivedQuantity || 0) + (ri.damagedQuantity || 0);
+          totalMissing += ri.missingQuantity || 0;
+        }
+        
+        // Check if all items are received (no missing) and enough quantity received
+        if (totalReceived >= totalExpected && totalMissing === 0) {
+          // Update purchase order to delivered
+          const [updatedPurchase] = await db
+            .update(importPurchases)
+            .set({ 
+              status: 'delivered',
+              updatedAt: new Date()
+            })
+            .where(and(
+              eq(importPurchases.id, purchaseId),
+              sql`${importPurchases.status} != 'delivered'`
+            ))
+            .returning();
+          
+          if (updatedPurchase) {
+            updatedPurchases.push(`Purchase #${purchaseId} marked as delivered`);
+            console.log(`Purchase #${purchaseId} automatically marked as delivered (received: ${totalReceived}/${totalExpected})`);
+          }
+        }
+      }
+      
+      return updatedPurchases;
+    } catch (error) {
+      console.error('Error reconciling purchase delivery status:', error);
+      return updatedPurchases;
+    }
+  }
+
   // Update shipment receiving status
   app.patch('/api/imports/shipments/:id/receiving-status', isAuthenticated, async (req, res) => {
     try {
@@ -13197,7 +13331,16 @@ Important:
         return res.status(404).json({ message: 'Shipment not found' });
       }
       
-      res.json(updated);
+      // When receiving is completed, reconcile purchase order statuses
+      let updatedPurchases: string[] = [];
+      if (receivingStatus === 'completed') {
+        updatedPurchases = await reconcilePurchaseDeliveryForShipment(parseInt(id));
+      }
+      
+      res.json({
+        ...updated,
+        updatedPurchases
+      });
     } catch (error) {
       console.error('Error updating shipment receiving status:', error);
       res.status(500).json({ message: 'Failed to update shipment status' });
