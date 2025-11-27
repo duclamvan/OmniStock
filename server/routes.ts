@@ -13642,6 +13642,273 @@ Important:
     }
   });
 
+  // Revert completed shipment back to receiving - reverses inventory and cost changes
+  app.post('/api/imports/shipments/:id/revert-to-receiving', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const shipmentId = parseInt(id);
+      
+      // Get the shipment and verify it's in completed status
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      if (shipment.receivingStatus !== 'completed') {
+        return res.status(400).json({ 
+          message: 'Only completed shipments can be reverted to receiving',
+          currentStatus: shipment.receivingStatus
+        });
+      }
+      
+      const revertResults = {
+        inventoryReverted: [] as string[],
+        costHistoryRemoved: [] as string[],
+        purchaseOrdersReverted: [] as string[]
+      };
+      
+      // Step 1: Find all receipts for this shipment
+      const shipmentReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(eq(receipts.shipmentId, shipmentId));
+      
+      const receiptIds = shipmentReceipts.map(r => r.id);
+      
+      if (receiptIds.length > 0) {
+        // Step 2: Get all receipt items with stored locations
+        const allReceiptItems = await db
+          .select({
+            id: receiptItems.id,
+            productId: receiptItems.productId,
+            itemId: receiptItems.itemId,
+            itemType: receiptItems.itemType,
+            receivedQuantity: receiptItems.receivedQuantity,
+            storedLocations: receiptItems.storedLocations
+          })
+          .from(receiptItems)
+          .where(inArray(receiptItems.receiptId, receiptIds));
+        
+        // Step 3: Revert inventory for each product that was stored
+        for (const item of allReceiptItems) {
+          if (!item.productId || !item.storedLocations) continue;
+          
+          try {
+            // Parse stored locations
+            const locations = typeof item.storedLocations === 'string' 
+              ? JSON.parse(item.storedLocations) 
+              : item.storedLocations;
+            
+            if (!Array.isArray(locations) || locations.length === 0) continue;
+            
+            // For each stored location, reduce quantity
+            for (const loc of locations) {
+              const locationCode = loc.locationCode || loc.location;
+              const quantity = parseInt(loc.quantity) || 0;
+              
+              if (!locationCode || quantity <= 0) continue;
+              
+              // Find the product location
+              const [productLocation] = await db
+                .select()
+                .from(productLocations)
+                .where(and(
+                  eq(productLocations.productId, item.productId),
+                  eq(productLocations.locationCode, locationCode)
+                ));
+              
+              if (productLocation) {
+                const newQuantity = Math.max(0, (productLocation.quantity || 0) - quantity);
+                
+                if (newQuantity === 0) {
+                  // Delete the location if quantity becomes 0
+                  await db
+                    .delete(productLocations)
+                    .where(eq(productLocations.id, productLocation.id));
+                  revertResults.inventoryReverted.push(`Removed location ${locationCode} for product ${item.productId}`);
+                } else {
+                  // Update the quantity
+                  await db
+                    .update(productLocations)
+                    .set({ 
+                      quantity: newQuantity,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(productLocations.id, productLocation.id));
+                  revertResults.inventoryReverted.push(`Reduced ${locationCode} by ${quantity} units for product ${item.productId}`);
+                }
+                
+                // Update product's main stock quantity
+                const [product] = await db
+                  .select({ id: products.id, quantity: products.quantity })
+                  .from(products)
+                  .where(eq(products.id, item.productId));
+                
+                if (product) {
+                  const newStockQuantity = Math.max(0, (product.quantity || 0) - quantity);
+                  await db
+                    .update(products)
+                    .set({ 
+                      quantity: newStockQuantity,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(products.id, item.productId));
+                }
+              }
+            }
+            
+            // Clear the stored locations from receipt item
+            await db
+              .update(receiptItems)
+              .set({ storedLocations: null })
+              .where(eq(receiptItems.id, item.id));
+            
+          } catch (locError) {
+            console.error(`Error reverting inventory for receipt item ${item.id}:`, locError);
+          }
+        }
+        
+        // Step 4: Remove cost history entries and restore product costs to pre-completion values
+        // Find product IDs that were affected
+        const productIdsAffected = [...new Set(
+          allReceiptItems
+            .filter(ri => ri.productId)
+            .map(ri => ri.productId!)
+        )];
+        
+        if (productIdsAffected.length > 0 && shipment.completedAt) {
+          const completedTime = new Date(shipment.completedAt);
+          const fiveMinutesBefore = new Date(completedTime.getTime() - 5 * 60 * 1000);
+          const fiveMinutesAfter = new Date(completedTime.getTime() + 5 * 60 * 1000);
+          
+          // For each affected product, restore to pre-completion cost
+          for (const productId of productIdsAffected) {
+            try {
+              // Find the most recent cost history entry BEFORE completion
+              const [previousCostEntry] = await db
+                .select({
+                  landingCostUnitBase: productCostHistory.landingCostUnitBase
+                })
+                .from(productCostHistory)
+                .where(and(
+                  eq(productCostHistory.productId, productId),
+                  sql`${productCostHistory.computedAt} < ${fiveMinutesBefore.toISOString()}::timestamp`
+                ))
+                .orderBy(desc(productCostHistory.computedAt))
+                .limit(1);
+              
+              // Restore product's landing cost to pre-completion value
+              if (previousCostEntry) {
+                await db
+                  .update(products)
+                  .set({ 
+                    landingCostCzk: previousCostEntry.landingCostUnitBase,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(products.id, productId));
+                revertResults.costHistoryRemoved.push(`Restored cost for product ${productId} to ${previousCostEntry.landingCostUnitBase}`);
+              } else {
+                // No previous entry - clear the landing cost
+                await db
+                  .update(products)
+                  .set({ 
+                    landingCostCzk: null,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(products.id, productId));
+                revertResults.costHistoryRemoved.push(`Cleared cost for product ${productId} (no previous history)`);
+              }
+              
+              // Delete cost history entries created during completion
+              await db
+                .delete(productCostHistory)
+                .where(and(
+                  eq(productCostHistory.productId, productId),
+                  sql`${productCostHistory.computedAt} >= ${fiveMinutesBefore.toISOString()}::timestamp`,
+                  sql`${productCostHistory.computedAt} <= ${fiveMinutesAfter.toISOString()}::timestamp`
+                ));
+                
+            } catch (costError) {
+              console.error(`Error restoring cost for product ${productId}:`, costError);
+            }
+          }
+        }
+        
+        // Step 5: Revert purchase order status if changed to 'delivered'
+        // Find linked purchase IDs
+        const purchaseItemIds = allReceiptItems
+          .filter(ri => ri.itemType === 'purchase')
+          .map(ri => ri.itemId);
+        
+        if (purchaseItemIds.length > 0) {
+          const linkedPurchaseItems = await db
+            .select({ purchaseId: purchaseItems.purchaseId })
+            .from(purchaseItems)
+            .where(inArray(purchaseItems.id, purchaseItemIds));
+          
+          const purchaseIds = [...new Set(linkedPurchaseItems.map(pi => pi.purchaseId).filter(Boolean))] as number[];
+          
+          for (const purchaseId of purchaseIds) {
+            // Revert to 'shipped' if it's currently 'delivered'
+            const [updated] = await db
+              .update(importPurchases)
+              .set({ 
+                status: 'shipped',
+                updatedAt: new Date()
+              })
+              .where(and(
+                eq(importPurchases.id, purchaseId),
+                eq(importPurchases.status, 'delivered')
+              ))
+              .returning();
+            
+            if (updated) {
+              revertResults.purchaseOrdersReverted.push(`Purchase #${purchaseId} reverted to shipped`);
+            }
+          }
+        }
+      }
+      
+      // Step 6: Update shipment status back to receiving
+      const [updated] = await db
+        .update(shipments)
+        .set({ 
+          receivingStatus: 'receiving',
+          completedAt: null,
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, shipmentId))
+        .returning();
+      
+      // Step 7: Update receipt status if exists
+      if (receiptIds.length > 0) {
+        await db
+          .update(receipts)
+          .set({ 
+            status: 'receiving',
+            updatedAt: new Date()
+          })
+          .where(inArray(receipts.id, receiptIds));
+      }
+      
+      console.log(`Shipment ${shipmentId} reverted to receiving:`, revertResults);
+      
+      res.json({
+        success: true,
+        message: 'Shipment reverted to receiving successfully',
+        shipment: updated,
+        revertResults
+      });
+    } catch (error) {
+      console.error('Error reverting shipment to receiving:', error);
+      res.status(500).json({ message: 'Failed to revert shipment to receiving' });
+    }
+  });
+
   // Get shipment report with full item details including product names
   app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
     try {

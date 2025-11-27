@@ -1218,6 +1218,17 @@ const imports = {
   itemsCompleted: 'sản phẩm đã hoàn tất',
   archivingSoon: 'sẽ lưu trữ',
   goToStorage: 'Đi đến Lưu kho',
+  
+  // Revert to Receiving
+  sendBackToReceive: 'Chuyển về Nhận hàng',
+  shipmentRevertedToReceiving: 'Lô hàng đã được chuyển về trạng thái nhận hàng',
+  failedToRevertShipment: 'Không thể hoàn tác lô hàng',
+  confirmRevertTitle: 'Chuyển về Nhận hàng?',
+  confirmRevertDescription: 'Thao tác này sẽ chuyển lô hàng về trạng thái nhận hàng. Các thay đổi sau sẽ được thực hiện:',
+  revertWarningInventory: 'Số lượng tồn kho sẽ bị giảm',
+  revertWarningCosts: 'Lịch sử chi phí sẽ bị xóa',
+  revertWarningPurchaseOrders: 'Trạng thái đơn mua có thể bị hoàn tác',
+  confirmRevert: 'Đồng ý, Hoàn tác',
   partiallyReceived: 'Đã nhận một phần',
   
   // ReceivingList - Page Header & Stats

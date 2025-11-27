@@ -1206,6 +1206,17 @@ const imports = {
   itemsCompleted: 'items completed',
   archivingSoon: 'archiving soon',
   goToStorage: 'Go to Storage',
+  
+  // Revert to Receiving
+  sendBackToReceive: 'Send Back to Receiving',
+  shipmentRevertedToReceiving: 'Shipment has been reverted to receiving status',
+  failedToRevertShipment: 'Failed to revert shipment',
+  confirmRevertTitle: 'Revert to Receiving?',
+  confirmRevertDescription: 'This will revert the shipment back to receiving status. The following changes will be made:',
+  revertWarningInventory: 'Inventory quantities will be reduced',
+  revertWarningCosts: 'Cost history entries will be removed',
+  revertWarningPurchaseOrders: 'Purchase order status may be reverted',
+  confirmRevert: 'Yes, Revert',
   partiallyReceived: 'Partially Received',
   
   // ReceivingList - Page Header & Stats

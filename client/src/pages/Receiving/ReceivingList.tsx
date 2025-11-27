@@ -3591,7 +3591,9 @@ function ShipmentReportDialog({
                       </div>
                       <div className="flex items-center justify-between p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('status')}</span>
-                        <Badge variant="outline">{reportData.receipt.status}</Badge>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                          {t('completeStatus')}
+                        </Badge>
                       </div>
                       <div className="flex items-center justify-between p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('receivedBy')}</span>
@@ -3894,39 +3896,49 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showReport, setShowReport] = useState(false);
+  const [showRevertConfirm, setShowRevertConfirm] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
 
-  const sendBackToReceiveMutation = useMutation({
+  const revertToReceiveMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/imports/receipts/${shipment.id}/status`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/imports/shipments/${shipment.id}/revert-to-receiving`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'to_receive' }),
       });
-      if (!response.ok) throw new Error('Failed to update status');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to revert');
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
         title: t('statusUpdated'),
-        description: t('receiptSentBackToReceiveStatus'),
+        description: t('shipmentRevertedToReceiving'),
       });
+      setShowRevertConfirm(false);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: t('common:error'),
-        description: t('failedToUpdateReceiptStatus'),
+        description: error.message || t('failedToRevertShipment'),
         variant: "destructive",
       });
     },
   });
 
-  const handleSendBackToReceive = (e: React.MouseEvent) => {
+  const handleRevertClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    sendBackToReceiveMutation.mutate();
+    setShowRevertConfirm(true);
+  };
+  
+  const handleConfirmRevert = () => {
+    revertToReceiveMutation.mutate();
   };
 
   return (
@@ -4030,8 +4042,8 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={handleSendBackToReceive}
-                    disabled={sendBackToReceiveMutation.isPending}
+                    onClick={handleRevertClick}
+                    disabled={revertToReceiveMutation.isPending}
                     data-testid={`menu-item-send-back-${shipment.id}`}
                   >
                     <Undo2 className="h-4 w-4 mr-2" />
@@ -4049,6 +4061,34 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
         open={showReport}
         onOpenChange={setShowReport}
       />
+      
+      <AlertDialog open={showRevertConfirm} onOpenChange={setShowRevertConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmRevertTitle')}</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{t('confirmRevertDescription')}</p>
+              <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                <li>{t('revertWarningInventory')}</li>
+                <li>{t('revertWarningCosts')}</li>
+                <li>{t('revertWarningPurchaseOrders')}</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revertToReceiveMutation.isPending}>
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRevert}
+              disabled={revertToReceiveMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {revertToReceiveMutation.isPending ? t('common:processing') : t('confirmRevert')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
