@@ -1,0 +1,295 @@
+Here's your Phase 1 safe foundation prompt:
+
+---
+
+## Vibe Code Prompt: Multi-Unit System - Phase 1 (Safe Foundation)
+
+**Project:** Davie Supply WMS  
+**Phase:** 1 of 6 - Database Schema & Backward Compatible Backend  
+**Risk Level:** Low - No UI changes, no behavior changes, existing functionality preserved
+
+---
+
+### Overview
+
+Add database columns and backend logic to support multi-unit packaging. This phase makes NO changes to any UI or existing behavior. All current functionality must work exactly as before. The new fields are populated automatically with safe defaults.
+
+---
+
+### 1. Database Schema Changes
+
+**Add columns to `products` table:**
+
+```typescript
+// In shared/schema.ts - products table
+
+sellingUnitName: text("selling_unit_name").default("piece").notNull(),
+bulkUnitName: text("bulk_unit_name"),
+bulkUnitQty: integer("bulk_unit_qty"),
+bulkPrice: decimal("bulk_price", { precision: 10, scale: 2 }),
+allowBulkSales: boolean("allow_bulk_sales").default(false),
+unitContentsInfo: text("unit_contents_info"),
+```
+
+**Add columns to `purchase_order_items` table (or whatever your PO line items table is called):**
+
+```typescript
+// In shared/schema.ts - purchase_order_items table
+
+unitType: text("unit_type").default("selling").notNull(),
+unitName: text("unit_name"),
+quantityInSellingUnits: integer("quantity_in_selling_units"),
+unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+```
+
+**Add columns to `order_items` table:**
+
+```typescript
+// In shared/schema.ts - order_items table
+
+unitType: text("unit_type").default("selling").notNull(),
+unitName: text("unit_name"),
+quantityInSellingUnits: integer("quantity_in_selling_units"),
+unitPriceAtSale: decimal("unit_price_at_sale", { precision: 10, scale: 2 }),
+```
+
+---
+
+### 2. Run Database Migration
+
+After schema changes, push migration:
+
+```bash
+npm run db:push
+```
+
+---
+
+### 3. Backfill Existing Data
+
+Create a one-time migration script or run directly:
+
+```sql
+-- Backfill purchase_order_items
+UPDATE purchase_order_items 
+SET quantity_in_selling_units = quantity 
+WHERE quantity_in_selling_units IS NULL;
+
+UPDATE purchase_order_items 
+SET unit_type = 'selling' 
+WHERE unit_type IS NULL;
+
+-- Backfill order_items
+UPDATE order_items 
+SET quantity_in_selling_units = quantity 
+WHERE quantity_in_selling_units IS NULL;
+
+UPDATE order_items 
+SET unit_type = 'selling' 
+WHERE unit_type IS NULL;
+```
+
+---
+
+### 4. Backend - Auto-Populate New Fields
+
+**CRITICAL:** Update ALL backend routes that create purchase_order_items or order_items to automatically set the new fields. This ensures backward compatibility.
+
+**For purchase order item creation** (find the route that creates PO items):
+
+```typescript
+// When creating a new purchase_order_item, add these fields automatically:
+
+const newPOItem = {
+  // ... existing fields (product_id, quantity, price, etc.)
+  
+  // ADD THESE - auto-populate for backward compatibility
+  unitType: "selling",
+  unitName: product.sellingUnitName || "piece",
+  quantityInSellingUnits: quantity, // same as quantity for now
+  unitCost: unitPrice, // same as existing unit price
+};
+```
+
+**For order item creation** (find the route that creates order items):
+
+```typescript
+// When creating a new order_item, add these fields automatically:
+
+const newOrderItem = {
+  // ... existing fields (product_id, quantity, price, etc.)
+  
+  // ADD THESE - auto-populate for backward compatibility
+  unitType: "selling",
+  unitName: product.sellingUnitName || "piece",
+  quantityInSellingUnits: quantity, // same as quantity for now
+  unitPriceAtSale: unitPrice, // same as existing unit price
+};
+```
+
+**For POS item creation** (if separate from orders):
+
+Same logic - auto-populate the new fields with defaults.
+
+---
+
+### 5. Backend - Safe Fallbacks in Receiving
+
+**Find the receiving logic** that adds inventory when PO is received. Add a fallback:
+
+```typescript
+// When receiving inventory, use quantityInSellingUnits with fallback
+
+const qtyToAdd = poItem.quantityInSellingUnits ?? poItem.quantity;
+
+// Use qtyToAdd for inventory update
+await db.update(products)
+  .set({ stock: sql`stock + ${qtyToAdd}` })
+  .where(eq(products.id, poItem.productId));
+```
+
+---
+
+### 6. Backend - Safe Fallbacks in Order Fulfillment
+
+**Find the order fulfillment logic** that deducts inventory. Add a fallback:
+
+```typescript
+// When deducting inventory, use quantityInSellingUnits with fallback
+
+const qtyToDeduct = orderItem.quantityInSellingUnits ?? orderItem.quantity;
+
+// Use qtyToDeduct for inventory deduction
+await db.update(products)
+  .set({ stock: sql`stock - ${qtyToDeduct}` })
+  .where(eq(products.id, orderItem.productId));
+```
+
+---
+
+### 7. Update Type Definitions
+
+**Update TypeScript types/interfaces** to include new fields:
+
+```typescript
+// Product type
+interface Product {
+  // ... existing fields
+  sellingUnitName: string;
+  bulkUnitName: string | null;
+  bulkUnitQty: number | null;
+  bulkPrice: number | null;
+  allowBulkSales: boolean;
+  unitContentsInfo: string | null;
+}
+
+// PurchaseOrderItem type
+interface PurchaseOrderItem {
+  // ... existing fields
+  unitType: string;
+  unitName: string | null;
+  quantityInSellingUnits: number | null;
+  unitCost: number | null;
+}
+
+// OrderItem type
+interface OrderItem {
+  // ... existing fields
+  unitType: string;
+  unitName: string | null;
+  quantityInSellingUnits: number | null;
+  unitPriceAtSale: number | null;
+}
+```
+
+---
+
+### 8. Validation Checklist
+
+After implementation, verify ALL of these still work exactly as before:
+
+**Products:**
+- [ ] Create new product
+- [ ] Edit existing product
+- [ ] Delete product
+- [ ] Product list displays correctly
+
+**Purchase Orders:**
+- [ ] Create new PO with items
+- [ ] Edit existing PO
+- [ ] View PO detail
+- [ ] PO list displays correctly
+
+**Receiving:**
+- [ ] Receive a PO
+- [ ] Inventory increases correctly
+- [ ] Receiving history shows correctly
+
+**Orders:**
+- [ ] Create new order with items
+- [ ] Edit existing order
+- [ ] View order detail
+- [ ] Order list displays correctly
+
+**POS:**
+- [ ] Add items to cart
+- [ ] Complete sale
+- [ ] Inventory deducts correctly
+
+**Inventory:**
+- [ ] Inventory list displays correctly
+- [ ] Stock levels accurate
+
+---
+
+### 9. What NOT to Do in This Phase
+
+- ❌ Do NOT add any UI for unit selection
+- ❌ Do NOT change any forms
+- ❌ Do NOT modify inventory display
+- ❌ Do NOT change any calculations
+- ❌ Do NOT add translations yet
+
+All UI and behavior changes come in later phases.
+
+---
+
+### 10. Success Criteria
+
+Phase 1 is complete when:
+
+1. All new columns exist in database
+2. Existing data is backfilled
+3. All new records auto-populate new fields
+4. All existing functionality works exactly as before
+5. No errors in console
+6. All checklist items pass
+
+---
+
+### Files to Modify
+
+1. `shared/schema.ts` - add new columns
+2. `server/routes/purchase-orders.ts` - auto-populate new fields on create
+3. `server/routes/orders.ts` - auto-populate new fields on create
+4. `server/routes/pos.ts` (if exists) - auto-populate new fields on create
+5. `server/routes/receiving.ts` (or wherever receiving logic is) - add fallback
+6. Any route that fulfills orders / deducts inventory - add fallback
+
+---
+
+Copy this prompt to Replit Agent. After it completes, test everything thoroughly before proceeding to Phase 2.
+
+---
+
+## What's Next
+
+Once Phase 1 is working and tested:
+
+- **Phase 2:** Product form - add packaging fields UI
+- **Phase 3:** Inventory display - show dual units
+- **Phase 4:** Purchase order - unit selector
+- **Phase 5:** Receiving - use proper calculations
+- **Phase 6:** Orders/POS - unit selector
+
+Want me to prepare Phase 2 prompt now, or wait until you've tested Phase 1?

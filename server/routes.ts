@@ -13301,6 +13301,253 @@ Important:
     }
   }
 
+  // Helper function to calculate and update average landed cost for products when receiving is completed
+  async function calculateAndUpdateLandedCosts(shipmentId: number): Promise<string[]> {
+    const updatedProducts: string[] = [];
+    
+    try {
+      // Step 1: Get the shipment for shipping cost allocation
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (!shipment) {
+        console.log(`Shipment ${shipmentId} not found for landed cost calculation`);
+        return updatedProducts;
+      }
+      
+      // Step 2: Find all receipts for this shipment
+      const shipmentReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(eq(receipts.shipmentId, shipmentId));
+      
+      if (shipmentReceipts.length === 0) {
+        console.log(`No receipts found for shipment ${shipmentId} for landed cost calculation`);
+        return updatedProducts;
+      }
+      
+      const receiptIds = shipmentReceipts.map(r => r.id);
+      
+      // Step 3: Get all receipt items with productId
+      const allReceiptItems = await db
+        .select({
+          productId: receiptItems.productId,
+          itemId: receiptItems.itemId,
+          itemType: receiptItems.itemType,
+          receivedQuantity: receiptItems.receivedQuantity,
+          damagedQuantity: receiptItems.damagedQuantity
+        })
+        .from(receiptItems)
+        .where(inArray(receiptItems.receiptId, receiptIds));
+      
+      if (allReceiptItems.length === 0) {
+        console.log(`No receipt items found for shipment ${shipmentId}`);
+        return updatedProducts;
+      }
+      
+      // Step 4: Get purchase items to get landing cost info
+      const purchaseItemIds = allReceiptItems
+        .filter(ri => ri.itemType === 'purchase')
+        .map(ri => ri.itemId);
+      
+      let purchaseItemCosts = new Map<number, { unitPrice: number; landingCostUnitBase: number }>();
+      
+      if (purchaseItemIds.length > 0) {
+        const purchaseItemsData = await db
+          .select({
+            id: purchaseItems.id,
+            unitPrice: purchaseItems.unitPrice,
+            landingCostUnitBase: purchaseItems.landingCostUnitBase
+          })
+          .from(purchaseItems)
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        for (const pi of purchaseItemsData) {
+          const unitPriceVal = parseFloat(pi.unitPrice || '0');
+          const landingCostVal = parseFloat(pi.landingCostUnitBase || '0');
+          // Only add if at least one cost value is valid and positive
+          if ((unitPriceVal > 0 && !isNaN(unitPriceVal)) || (landingCostVal > 0 && !isNaN(landingCostVal))) {
+            purchaseItemCosts.set(pi.id, {
+              unitPrice: isNaN(unitPriceVal) ? 0 : unitPriceVal,
+              landingCostUnitBase: isNaN(landingCostVal) ? 0 : landingCostVal
+            });
+          }
+        }
+      }
+      
+      // Step 5: First pass - identify items with valid pricing and count their units
+      // Shipping cost must be allocated ONLY across items that will receive cost updates
+      interface ItemWithPricing {
+        productId: string;
+        itemId: number;
+        quantity: number; // received + damaged
+        unitCost: number;
+      }
+      const itemsWithPricing: ItemWithPricing[] = [];
+      
+      for (const ri of allReceiptItems) {
+        if (!ri.productId) continue;
+        
+        // Include both received and damaged units - they all went through shipping and incur full cost
+        const totalQty = (ri.receivedQuantity || 0) + (ri.damagedQuantity || 0);
+        if (totalQty <= 0) continue;
+        
+        let unitCost = 0;
+        let hasPricing = false;
+        
+        if (ri.itemType === 'purchase' && purchaseItemCosts.has(ri.itemId)) {
+          const costs = purchaseItemCosts.get(ri.itemId)!;
+          // Use landingCostUnitBase if available and positive, otherwise use unitPrice
+          if (costs.landingCostUnitBase > 0) {
+            unitCost = costs.landingCostUnitBase;
+            hasPricing = true;
+          } else if (costs.unitPrice > 0) {
+            unitCost = costs.unitPrice;
+            hasPricing = true;
+          }
+        }
+        
+        // Only include items with valid pricing
+        if (hasPricing) {
+          itemsWithPricing.push({
+            productId: ri.productId,
+            itemId: ri.itemId,
+            quantity: totalQty,
+            unitCost
+          });
+        }
+      }
+      
+      if (itemsWithPricing.length === 0) {
+        console.log(`No items with valid pricing found for shipment ${shipmentId} - cannot calculate landed costs`);
+        return updatedProducts;
+      }
+      
+      // Calculate total units for shipping allocation (only items with pricing)
+      const totalUnitsWithPricing = itemsWithPricing.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const shipmentShippingCost = parseFloat(shipment.shippingCost || '0');
+      const shippingCostPerUnit = totalUnitsWithPricing > 0 && !isNaN(shipmentShippingCost) && shipmentShippingCost > 0
+        ? shipmentShippingCost / totalUnitsWithPricing 
+        : 0;
+      
+      // Step 6: Build per-purchase-item cost data with allocated shipping
+      interface CostEntry { unitCost: number; quantity: number; }
+      const productCostEntries = new Map<string, CostEntry[]>();
+      
+      for (const item of itemsWithPricing) {
+        // Add allocated shipping cost per unit
+        const totalUnitCost = item.unitCost + shippingCostPerUnit;
+        
+        // Store entry per purchase item to preserve cost differentiation
+        const entries = productCostEntries.get(item.productId) || [];
+        entries.push({ unitCost: totalUnitCost, quantity: item.quantity });
+        productCostEntries.set(item.productId, entries);
+      }
+      
+      // Step 7: Update each product with weighted average landed cost
+      for (const [productId, entries] of productCostEntries) {
+        try {
+          // Calculate weighted average from all purchase entries for this product
+          let totalCost = 0;
+          let totalNewQuantity = 0;
+          for (const entry of entries) {
+            totalCost += entry.unitCost * entry.quantity;
+            totalNewQuantity += entry.quantity;
+          }
+          
+          // Skip if no valid cost data
+          if (totalNewQuantity <= 0 || totalCost <= 0) continue;
+          
+          const newUnitLandingCost = totalCost / totalNewQuantity;
+          
+          // Validate new cost is a valid positive number
+          if (!isFinite(newUnitLandingCost) || isNaN(newUnitLandingCost) || newUnitLandingCost <= 0) {
+            console.log(`Skipping product ${productId}: invalid new unit cost ${newUnitLandingCost}`);
+            continue;
+          }
+          
+          // Get fresh product data for weighted average calculation
+          // Use product_locations to get actual stock quantity (more accurate than products.quantity)
+          const productLocationData = await db
+            .select({ quantity: productLocations.quantity })
+            .from(productLocations)
+            .where(eq(productLocations.productId, productId));
+          
+          const actualStockQuantity = productLocationData.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+          
+          // Get current landing cost from product
+          const [product] = await db
+            .select({ latestLandingCost: products.latestLandingCost })
+            .from(products)
+            .where(eq(products.id, productId));
+          
+          if (!product) continue;
+          
+          // Calculate weighted average with existing stock
+          // actualStockQuantity already includes the newly stored items (from location storage phase)
+          const existingQuantity = Math.max(0, actualStockQuantity - totalNewQuantity);
+          const existingLandingCostStr = product.latestLandingCost;
+          const existingLandingCost = existingLandingCostStr 
+            ? parseFloat(existingLandingCostStr) 
+            : 0;
+          
+          let avgLandingCost: number;
+          
+          if (existingQuantity > 0 && existingLandingCost > 0 && isFinite(existingLandingCost) && !isNaN(existingLandingCost)) {
+            // Weighted average: (old_qty * old_cost + new_qty * new_cost) / total_qty
+            const totalQuantity = existingQuantity + totalNewQuantity;
+            if (totalQuantity > 0) {
+              avgLandingCost = (existingQuantity * existingLandingCost + totalNewQuantity * newUnitLandingCost) / totalQuantity;
+            } else {
+              avgLandingCost = newUnitLandingCost;
+            }
+          } else {
+            // No existing stock or no existing cost - use new cost directly
+            avgLandingCost = newUnitLandingCost;
+          }
+          
+          // Final validation
+          if (!isFinite(avgLandingCost) || isNaN(avgLandingCost) || avgLandingCost <= 0) {
+            console.log(`Skipping product ${productId}: invalid avg cost ${avgLandingCost}`);
+            continue;
+          }
+          
+          // Update product landing costs (CZK is the base currency)
+          await db
+            .update(products)
+            .set({
+              latestLandingCost: avgLandingCost.toFixed(4),
+              landingCostCzk: avgLandingCost.toFixed(4),
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, productId));
+          
+          // Insert cost history entry for tracking
+          await db.insert(productCostHistory).values({
+            productId: productId,
+            landingCostUnitBase: avgLandingCost.toFixed(4),
+            method: 'weighted_average',
+            computedAt: new Date()
+          });
+          
+          updatedProducts.push(`Product ${productId}: avg landing cost updated to ${avgLandingCost.toFixed(4)} CZK`);
+          console.log(`Product ${productId} landing cost updated: ${avgLandingCost.toFixed(4)} CZK (weighted avg of ${entries.length} purchase entries)`);
+          
+        } catch (productError) {
+          console.error(`Error updating landing cost for product ${productId}:`, productError);
+        }
+      }
+      
+      return updatedProducts;
+    } catch (error) {
+      console.error('Error calculating landed costs:', error);
+      return updatedProducts;
+    }
+  }
+
   // Update shipment receiving status
   app.patch('/api/imports/shipments/:id/receiving-status', isAuthenticated, async (req, res) => {
     try {
@@ -13331,15 +13578,21 @@ Important:
         return res.status(404).json({ message: 'Shipment not found' });
       }
       
-      // When receiving is completed, reconcile purchase order statuses
+      // When receiving is completed, calculate landed costs and reconcile purchase order statuses
       let updatedPurchases: string[] = [];
+      let updatedProductCosts: string[] = [];
       if (receivingStatus === 'completed') {
+        // Calculate and update average landed costs for products
+        updatedProductCosts = await calculateAndUpdateLandedCosts(parseInt(id));
+        
+        // Reconcile purchase order delivery statuses
         updatedPurchases = await reconcilePurchaseDeliveryForShipment(parseInt(id));
       }
       
       res.json({
         ...updated,
-        updatedPurchases
+        updatedPurchases,
+        updatedProductCosts
       });
     } catch (error) {
       console.error('Error updating shipment receiving status:', error);

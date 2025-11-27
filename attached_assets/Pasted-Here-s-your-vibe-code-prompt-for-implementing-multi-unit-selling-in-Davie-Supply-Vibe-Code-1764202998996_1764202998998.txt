@@ -1,0 +1,245 @@
+Here's your vibe code prompt for implementing multi-unit selling in Davie Supply:
+
+---
+
+## Vibe Code Prompt: Multi-Unit Selling System
+
+**Project:** Davie Supply WMS
+**Feature:** Single SKU, Multi-Unit Selling with Flexible Packaging
+
+---
+
+### Overview
+
+Implement a flexible packaging unit system where each product can define its own selling unit and optional bulk unit. Customers and purchase orders can use either unit, with inventory always tracked in the base selling unit. This enables selling "2 cartons" or "10 boxes" from the same inventory pool.
+
+---
+
+### Database Changes
+
+**Extend `products` table** (or `product_variants` if you track at variant level):
+
+```
+selling_unit_name: text, default 'piece' -- base unit name (box, jar, bottle, piece, etc.)
+bulk_unit_name: text, nullable -- optional bulk unit (carton, pallet, case, etc.)
+bulk_unit_qty: integer, nullable -- how many selling units per bulk unit
+bulk_price: decimal, nullable -- optional custom price per bulk unit (if null, calculate from unit_price × bulk_unit_qty)
+allow_bulk_sales: boolean, default false -- enable selling in bulk units
+unit_contents_info: text, nullable -- informational only (e.g., "72 pcs", "5L", "15ml")
+```
+
+---
+
+### Product Form Updates
+
+In the product add/edit form, add a "Packaging & Units" section:
+
+```
+=== Packaging & Units ===
+
+Selling Unit Name: [____box____] (required, free text input)
+  - Placeholder: "piece, box, jar, bottle, pack..."
+  
+☑ Enable Bulk Unit
+  └─ Bulk Unit Name: [____carton____] (free text)
+  └─ Quantity per Bulk: [____50____] (number)
+  └─ Bulk Price: [____2250____] (optional, leave empty to auto-calculate)
+
+Contents Info: [____100 pcs per box____] (optional, for labels/display)
+```
+
+When "Enable Bulk Unit" is unchecked, hide and null out bulk fields.
+
+Validation: If bulk unit enabled, both name and quantity are required.
+
+---
+
+### Inventory Display
+
+Show inventory with both units when bulk unit exists:
+
+```
+Stock: 250 boxes (5 cartons)
+```
+
+Calculation: `Math.floor(inventory / bulk_unit_qty)` for full bulk units
+
+If no bulk unit defined, just show:
+```
+Stock: 250 pieces
+```
+
+---
+
+### Purchase Order - Add Item
+
+When adding line items to a purchase order:
+
+1. Product selector dropdown
+2. After selecting product, dynamically show unit options based on product's defined units
+3. Quantity input
+4. Unit selector (only shows units that product has defined)
+5. Auto-calculated total in selling units
+
+**UI Example:**
+```
+[Product: Face Masks ▼]  [Qty: 10]  [Unit: Carton ▼]  = 500 boxes
+
+Unit dropdown options:
+  - Box (base)
+  - Carton (50 per carton)  ← only shows if product has bulk unit
+```
+
+**Line item stores:**
+```
+product_id, quantity, unit_type ('selling' or 'bulk'), quantity_in_selling_units (calculated)
+```
+
+Always calculate and store `quantity_in_selling_units` for receiving logic.
+
+---
+
+### Receiving Inventory
+
+When receiving PO items:
+- Use `quantity_in_selling_units` to add to inventory
+- Inventory always stored in selling units (base)
+
+Example: Receive 10 cartons → add 500 to inventory (10 × 50)
+
+---
+
+### Orders / POS - Selling
+
+When adding products to customer order or POS:
+
+**Unit selector** (if product has bulk unit and allow_bulk_sales = true):
+```
+[Face Masks]  [Qty: 2]  [Unit: Box ▼ / Carton ▼]  
+
+Subtotal: 
+  - Box: 2 × 50 CZK = 100 CZK
+  - Carton: 2 × 2,250 CZK = 4,500 CZK
+```
+
+**Price calculation:**
+- Selling unit: `quantity × unit_price`
+- Bulk unit: `quantity × bulk_price` (or `quantity × bulk_unit_qty × unit_price` if no custom bulk_price)
+
+**Inventory deduction:**
+- Always convert to selling units before deducting
+- 2 cartons sold → deduct 100 boxes from inventory
+
+---
+
+### Order Line Items Schema
+
+Extend `order_items` table:
+```
+unit_type: text, default 'selling' -- 'selling' or 'bulk'
+unit_name: text -- snapshot of unit name at time of order ('box', 'carton')
+quantity_in_selling_units: integer -- actual inventory deduction amount
+unit_price_at_sale: decimal -- price per unit at time of sale
+```
+
+This preserves order history even if product packaging changes later.
+
+---
+
+### API Endpoints
+
+**GET /api/products/:id/units**
+Returns available units for a product:
+```json
+{
+  "selling_unit": { "name": "box", "price": 50 },
+  "bulk_unit": { "name": "carton", "qty": 50, "price": 2250 },
+  "allow_bulk_sales": true
+}
+```
+
+**Helper function** (shared frontend/backend):
+```typescript
+function convertToSellingUnits(quantity: number, unitType: 'selling' | 'bulk', bulkQty: number): number {
+  return unitType === 'bulk' ? quantity * bulkQty : quantity;
+}
+
+function formatInventoryDisplay(qty: number, sellingUnit: string, bulkUnit?: string, bulkQty?: number): string {
+  if (bulkUnit && bulkQty) {
+    const fullBulk = Math.floor(qty / bulkQty);
+    const remainder = qty % bulkQty;
+    return `${qty} ${sellingUnit}s (${fullBulk} ${bulkUnit}s${remainder > 0 ? ` + ${remainder} ${sellingUnit}s` : ''})`;
+  }
+  return `${qty} ${sellingUnit}s`;
+}
+```
+
+---
+
+### Inventory Page Updates
+
+Add column or display showing both units:
+```
+| Product     | In Stock          | Selling Unit | Bulk Unit        |
+|-------------|-------------------|--------------|------------------|
+| Face Masks  | 250 boxes (5 ctn) | box @ 50 CZK | carton @ 2250 CZK|
+| Body Lotion | 60 jars (10 ctn)  | jar @ 120 CZK| carton @ 650 CZK |
+| Nail Files  | 500 pieces        | piece @ 5 CZK| -                |
+```
+
+---
+
+### Vietnamese Localization
+
+Add translations for new UI elements:
+```
+"packaging_units": "Đơn vị đóng gói"
+"selling_unit": "Đơn vị bán"
+"bulk_unit": "Đơn vị số lượng lớn"
+"qty_per_bulk": "Số lượng mỗi"
+"enable_bulk": "Bật đơn vị số lượng lớn"
+"contents_info": "Thông tin nội dung"
+"unit_box": "hộp"
+"unit_carton": "thùng"
+"unit_piece": "cái"
+"unit_jar": "lọ"
+"unit_bottle": "chai"
+"unit_pallet": "pallet"
+```
+
+---
+
+### Migration Notes
+
+- Add columns with defaults so existing products continue working
+- Existing products get `selling_unit_name = 'piece'` and null bulk fields
+- No data migration needed, just schema extension
+
+---
+
+### Files to Modify
+
+1. `shared/schema.ts` - add new columns to products table
+2. `server/routes/products.ts` - handle new fields in CRUD
+3. `client/src/pages/products/ProductForm.tsx` - add packaging section
+4. `client/src/pages/inventory/InventoryPage.tsx` - update display
+5. `client/src/pages/purchase-orders/AddPurchaseOrderPage.tsx` - unit selector on line items
+6. `client/src/pages/orders/` - unit selector when adding items
+7. `client/src/pages/pos/` - unit selector in POS
+8. `client/src/locales/vi.json` and `en.json` - add translations
+
+---
+
+### Testing Scenarios
+
+1. Create product with bulk unit (masks: box/carton 50)
+2. Create product without bulk unit (nail file: piece only)
+3. Add both to purchase order using different units
+4. Receive PO, verify inventory in selling units
+5. Sell using bulk unit, verify correct inventory deduction
+6. Sell using selling unit, verify deduction
+7. Check inventory display shows both units correctly
+
+---
+
+Copy this entire prompt to Replit Agent and let it implement the feature across your codebase.

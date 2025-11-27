@@ -1,0 +1,426 @@
+Here's your Phase 2 prompt:
+
+---
+
+## Vibe Code Prompt: Multi-Unit System - Phase 2 (Product Form)
+
+**Project:** Davie Supply WMS  
+**Phase:** 2 of 6 - Product Form Packaging Fields  
+**Prerequisite:** Phase 1 completed and tested  
+**Risk Level:** Low - Only adds new optional fields to product form
+
+---
+
+### Overview
+
+Add a "Packaging & Units" section to the product add/edit form. Users can define selling unit name and optional bulk unit configuration. This phase only changes the product form - no other pages affected.
+
+---
+
+### 1. Product Form - Add Packaging Section
+
+**Location:** Find your product form component (likely `ProductForm.tsx` or similar in products folder)
+
+**Add a new collapsible section** after pricing fields, before save button:
+
+```
+=== Packaging & Units ===
+
+Selling Unit Name *
+┌─────────────────────────────┐
+│ piece                       │
+└─────────────────────────────┘
+Helper: "Unit you sell and count inventory in (piece, box, jar, bottle, pack)"
+
+☐ Enable Bulk Unit
+
+[When checkbox enabled, show these fields:]
+
+  Bulk Unit Name *
+  ┌─────────────────────────────┐
+  │ carton                      │
+  └─────────────────────────────┘
+  Helper: "Larger packaging unit (carton, pallet, case)"
+
+  Quantity per Bulk Unit *
+  ┌─────────────────────────────┐
+  │ 50                          │
+  └─────────────────────────────┘
+  Helper: "How many [selling unit] in one [bulk unit]"
+
+  Bulk Unit Price (optional)
+  ┌─────────────────────────────┐
+  │                             │
+  └─────────────────────────────┘
+  Helper: "Leave empty to auto-calculate from unit price"
+
+  ☐ Allow Bulk Sales
+  Helper: "Let customers order in bulk units"
+
+Contents Info (optional)
+┌─────────────────────────────┐
+│ 72 pcs per jar              │
+└─────────────────────────────┘
+Helper: "Additional info for labels (72 pcs, 5L, 15ml)"
+
+[Preview box when bulk unit enabled:]
+┌─────────────────────────────────────────┐
+│ 1 carton = 50 pieces                    │
+│ Bulk price: 2,500 CZK (or auto: 2,500)  │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### 2. Form Fields Configuration
+
+**Selling Unit Name:**
+- Type: Text input
+- Required: Yes
+- Default value: "piece"
+- Placeholder: "piece, box, jar, bottle, pack..."
+- Validation: Required, min 1 character, max 50 characters
+
+**Enable Bulk Unit:**
+- Type: Checkbox/Switch
+- Default: Unchecked
+- When unchecked: Hide all bulk fields, set bulk values to null on save
+
+**Bulk Unit Name:**
+- Type: Text input
+- Required: Only if bulk enabled
+- Placeholder: "carton, pallet, case, box..."
+- Validation: Required if bulk enabled, min 1 character, max 50 characters
+
+**Quantity per Bulk Unit:**
+- Type: Number input
+- Required: Only if bulk enabled
+- Placeholder: "50"
+- Validation: Required if bulk enabled, must be integer > 1
+
+**Bulk Unit Price:**
+- Type: Number input (decimal)
+- Required: No
+- Placeholder: "Leave empty to auto-calculate"
+- Helper shows calculated price: `unit_price × bulk_unit_qty`
+
+**Allow Bulk Sales:**
+- Type: Checkbox/Switch
+- Default: Unchecked
+- Only visible if bulk unit enabled
+
+**Contents Info:**
+- Type: Text input
+- Required: No
+- Placeholder: "72 pcs, 5L, 15ml..."
+- Always visible (not dependent on bulk unit)
+
+---
+
+### 3. Form State Management
+
+```typescript
+// Add to form state/schema
+
+const productFormSchema = z.object({
+  // ... existing fields
+  
+  // New packaging fields
+  sellingUnitName: z.string().min(1).max(50).default("piece"),
+  enableBulkUnit: z.boolean().default(false), // UI only, not saved to DB
+  bulkUnitName: z.string().max(50).nullable().optional(),
+  bulkUnitQty: z.number().int().min(2).nullable().optional(),
+  bulkPrice: z.number().min(0).nullable().optional(),
+  allowBulkSales: z.boolean().default(false),
+  unitContentsInfo: z.string().max(200).nullable().optional(),
+}).refine((data) => {
+  // If bulk enabled, require bulk name and qty
+  if (data.enableBulkUnit) {
+    return data.bulkUnitName && data.bulkUnitName.length > 0 && data.bulkUnitQty && data.bulkUnitQty > 1;
+  }
+  return true;
+}, {
+  message: "Bulk unit name and quantity are required when bulk unit is enabled",
+  path: ["bulkUnitName"],
+});
+```
+
+---
+
+### 4. Form Submission Logic
+
+**When saving product:**
+
+```typescript
+// Before submitting to API
+
+const submitData = {
+  // ... existing fields
+  
+  sellingUnitName: formData.sellingUnitName,
+  unitContentsInfo: formData.unitContentsInfo || null,
+  
+  // Only include bulk fields if enabled
+  bulkUnitName: formData.enableBulkUnit ? formData.bulkUnitName : null,
+  bulkUnitQty: formData.enableBulkUnit ? formData.bulkUnitQty : null,
+  bulkPrice: formData.enableBulkUnit ? formData.bulkPrice : null,
+  allowBulkSales: formData.enableBulkUnit ? formData.allowBulkSales : false,
+};
+```
+
+---
+
+### 5. Form Loading Logic (Edit Mode)
+
+**When loading existing product for editing:**
+
+```typescript
+// Determine if bulk unit is enabled based on existing data
+
+const enableBulkUnit = Boolean(product.bulkUnitName && product.bulkUnitQty);
+
+const defaultValues = {
+  // ... existing fields
+  
+  sellingUnitName: product.sellingUnitName || "piece",
+  enableBulkUnit: enableBulkUnit,
+  bulkUnitName: product.bulkUnitName || "",
+  bulkUnitQty: product.bulkUnitQty || null,
+  bulkPrice: product.bulkPrice || null,
+  allowBulkSales: product.allowBulkSales || false,
+  unitContentsInfo: product.unitContentsInfo || "",
+};
+```
+
+---
+
+### 6. Live Preview Component
+
+**Show a preview box when bulk unit is configured:**
+
+```tsx
+{enableBulkUnit && bulkUnitName && bulkUnitQty && (
+  <div className="p-3 bg-muted rounded-md text-sm">
+    <div className="font-medium">
+      1 {bulkUnitName} = {bulkUnitQty} {sellingUnitName}s
+    </div>
+    {unitPrice && (
+      <div className="text-muted-foreground">
+        Bulk price: {bulkPrice 
+          ? formatCurrency(bulkPrice) 
+          : `${formatCurrency(unitPrice * bulkUnitQty)} (auto-calculated)`
+        }
+      </div>
+    )}
+  </div>
+)}
+```
+
+---
+
+### 7. UI Behavior
+
+**Checkbox toggle behavior:**
+
+```typescript
+// When "Enable Bulk Unit" is toggled OFF
+const handleBulkToggle = (enabled: boolean) => {
+  setEnableBulkUnit(enabled);
+  
+  if (!enabled) {
+    // Clear bulk fields
+    setValue("bulkUnitName", null);
+    setValue("bulkUnitQty", null);
+    setValue("bulkPrice", null);
+    setValue("allowBulkSales", false);
+  }
+};
+```
+
+**Field visibility:**
+- Bulk fields (name, qty, price, allow sales) only visible when checkbox enabled
+- Contents info always visible
+- Preview box only visible when bulk unit fully configured
+
+---
+
+### 8. Backend - Update Product Routes
+
+**Ensure product create/update routes accept new fields:**
+
+```typescript
+// In products route - create and update handlers
+
+// Validate incoming data
+const {
+  // ... existing fields
+  sellingUnitName,
+  bulkUnitName,
+  bulkUnitQty,
+  bulkPrice,
+  allowBulkSales,
+  unitContentsInfo,
+} = req.body;
+
+// Insert/update with new fields
+const productData = {
+  // ... existing fields
+  sellingUnitName: sellingUnitName || "piece",
+  bulkUnitName: bulkUnitName || null,
+  bulkUnitQty: bulkUnitQty || null,
+  bulkPrice: bulkPrice || null,
+  allowBulkSales: allowBulkSales || false,
+  unitContentsInfo: unitContentsInfo || null,
+};
+```
+
+**Ensure product GET routes return new fields:**
+
+```typescript
+// When fetching product, include new fields in response
+// They should already be included if using SELECT * or Drizzle's default behavior
+// Verify the fields appear in API response
+```
+
+---
+
+### 9. Translations
+
+**Add to `client/src/locales/en.json`:**
+
+```json
+{
+  "product": {
+    "packaging_units": "Packaging & Units",
+    "selling_unit_name": "Selling Unit Name",
+    "selling_unit_placeholder": "piece, box, jar, bottle, pack...",
+    "selling_unit_helper": "Unit you sell and count inventory in",
+    "enable_bulk_unit": "Enable Bulk Unit",
+    "bulk_unit_name": "Bulk Unit Name",
+    "bulk_unit_placeholder": "carton, pallet, case...",
+    "bulk_unit_helper": "Larger packaging unit for purchasing",
+    "qty_per_bulk": "Quantity per Bulk Unit",
+    "qty_per_bulk_helper": "How many selling units in one bulk unit",
+    "bulk_price": "Bulk Unit Price",
+    "bulk_price_placeholder": "Leave empty to auto-calculate",
+    "bulk_price_helper": "Custom price per bulk unit",
+    "allow_bulk_sales": "Allow Bulk Sales",
+    "allow_bulk_sales_helper": "Let customers order in bulk units",
+    "contents_info": "Contents Info",
+    "contents_info_placeholder": "72 pcs, 5L, 15ml...",
+    "contents_info_helper": "Additional info for labels",
+    "bulk_preview": "{{bulkQty}} {{sellingUnit}}s per {{bulkUnit}}",
+    "auto_calculated": "auto-calculated"
+  }
+}
+```
+
+**Add to `client/src/locales/vi.json`:**
+
+```json
+{
+  "product": {
+    "packaging_units": "Đơn vị đóng gói",
+    "selling_unit_name": "Tên đơn vị bán",
+    "selling_unit_placeholder": "cái, hộp, lọ, chai, gói...",
+    "selling_unit_helper": "Đơn vị bạn bán và đếm tồn kho",
+    "enable_bulk_unit": "Bật đơn vị sỉ",
+    "bulk_unit_name": "Tên đơn vị sỉ",
+    "bulk_unit_placeholder": "thùng, pallet, kiện...",
+    "bulk_unit_helper": "Đơn vị lớn hơn để mua hàng",
+    "qty_per_bulk": "Số lượng mỗi đơn vị sỉ",
+    "qty_per_bulk_helper": "Bao nhiêu đơn vị bán trong một đơn vị sỉ",
+    "bulk_price": "Giá đơn vị sỉ",
+    "bulk_price_placeholder": "Để trống để tự động tính",
+    "bulk_price_helper": "Giá tùy chỉnh cho mỗi đơn vị sỉ",
+    "allow_bulk_sales": "Cho phép bán sỉ",
+    "allow_bulk_sales_helper": "Cho phép khách hàng đặt theo đơn vị sỉ",
+    "contents_info": "Thông tin nội dung",
+    "contents_info_placeholder": "72 cái, 5L, 15ml...",
+    "contents_info_helper": "Thông tin thêm cho nhãn",
+    "bulk_preview": "{{bulkQty}} {{sellingUnit}} mỗi {{bulkUnit}}",
+    "auto_calculated": "tự động tính"
+  }
+}
+```
+
+---
+
+### 10. Validation Checklist
+
+After implementation, verify:
+
+**Product Form:**
+- [ ] New "Packaging & Units" section appears
+- [ ] Selling unit name field works, defaults to "piece"
+- [ ] Enable bulk unit checkbox toggles field visibility
+- [ ] Bulk fields appear/hide correctly
+- [ ] Validation works (required fields when bulk enabled)
+- [ ] Preview shows correct calculation
+- [ ] Contents info field works independently
+
+**Create Product:**
+- [ ] Create product WITHOUT bulk unit - saves correctly
+- [ ] Create product WITH bulk unit - saves all fields
+- [ ] Fields appear correctly in database
+
+**Edit Product:**
+- [ ] Load existing product without bulk - checkbox unchecked
+- [ ] Load existing product with bulk - checkbox checked, fields populated
+- [ ] Edit and save - changes persist
+- [ ] Disable bulk unit - clears bulk fields on save
+
+**No Regressions:**
+- [ ] All other product form fields still work
+- [ ] Product list still works
+- [ ] Product detail still works
+- [ ] All Phase 1 functionality still works
+
+---
+
+### 11. Files to Modify
+
+1. `client/src/pages/products/ProductForm.tsx` (or equivalent) - add packaging section
+2. `server/routes/products.ts` - ensure new fields handled in create/update
+3. `client/src/locales/en.json` - English translations
+4. `client/src/locales/vi.json` - Vietnamese translations
+
+---
+
+### 12. What NOT to Do in This Phase
+
+- ❌ Do NOT change purchase order forms yet
+- ❌ Do NOT change order forms yet
+- ❌ Do NOT change inventory display yet
+- ❌ Do NOT change POS yet
+- ❌ Do NOT change any calculations yet
+
+Only the product form changes in this phase.
+
+---
+
+### 13. Success Criteria
+
+Phase 2 is complete when:
+
+1. Product form has working packaging section
+2. Can create products with and without bulk units
+3. Can edit products and toggle bulk unit on/off
+4. All validations work correctly
+5. Translations work in both languages
+6. No regressions in existing functionality
+
+---
+
+Copy this prompt to Replit Agent after Phase 1 is tested and working.
+
+---
+
+## What's Next
+
+- **Phase 3:** Inventory display - show dual units (e.g., "250 boxes (5 cartons)")
+- **Phase 4:** Purchase order - unit selector when adding items
+- **Phase 5:** Receiving - proper calculations
+- **Phase 6:** Orders/POS - unit selector for sales
+
+Want me to prepare Phase 3 now?
