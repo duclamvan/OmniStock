@@ -13600,6 +13600,247 @@ Important:
     }
   });
 
+  // Get shipment report with full item details including product names
+  app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const shipmentId = parseInt(id);
+      
+      // Get shipment details
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      // Get receipt for this shipment
+      const [receipt] = await db
+        .select()
+        .from(receipts)
+        .where(eq(receipts.shipmentId, shipmentId));
+      
+      // Get receipt items with product details
+      let items: any[] = [];
+      let summary = {
+        totalItems: 0,
+        totalExpected: 0,
+        totalReceived: 0,
+        totalDamaged: 0,
+        totalMissing: 0,
+        okItems: 0,
+        damagedItems: 0,
+        missingItems: 0,
+        partialItems: 0
+      };
+      
+      if (receipt) {
+        // Get all receipt items
+        const receiptItemsList = await db
+          .select()
+          .from(receiptItems)
+          .where(eq(receiptItems.receiptId, receipt.id));
+        
+        // Enrich with product details
+        items = await Promise.all(receiptItemsList.map(async (item) => {
+          let productDetails = {
+            productId: item.productId,
+            productName: 'Unknown Item',
+            sku: null as string | null,
+            imageUrl: null as string | null,
+            prices: null as { priceCzk: string | null; priceEur: string | null; priceUsd: string | null } | null
+          };
+          
+          // Try to get product details
+          if (item.productId) {
+            const [product] = await db
+              .select({
+                id: products.id,
+                name: products.name,
+                sku: products.sku,
+                imageUrl: products.imageUrl,
+                priceCzk: products.priceCzk,
+                priceEur: products.priceEur,
+                priceUsd: products.priceUsd
+              })
+              .from(products)
+              .where(eq(products.id, item.productId));
+            
+            if (product) {
+              productDetails = {
+                productId: product.id,
+                productName: product.name,
+                sku: product.sku,
+                imageUrl: product.imageUrl,
+                prices: {
+                  priceCzk: product.priceCzk,
+                  priceEur: product.priceEur,
+                  priceUsd: product.priceUsd
+                }
+              };
+            }
+          }
+          
+          // If no product but it's a purchase item, get from purchase items
+          if (productDetails.productName === 'Unknown Item' && item.itemType === 'purchase') {
+            const [purchaseItem] = await db
+              .select({
+                productId: purchaseItems.productId,
+                description: purchaseItems.description,
+                sku: purchaseItems.sku,
+                unitPrice: purchaseItems.unitPrice
+              })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, item.itemId));
+            
+            if (purchaseItem) {
+              // If purchase item has a product, get its details
+              if (purchaseItem.productId) {
+                const [product] = await db
+                  .select({
+                    id: products.id,
+                    name: products.name,
+                    sku: products.sku,
+                    imageUrl: products.imageUrl,
+                    priceCzk: products.priceCzk,
+                    priceEur: products.priceEur,
+                    priceUsd: products.priceUsd
+                  })
+                  .from(products)
+                  .where(eq(products.id, purchaseItem.productId));
+                
+                if (product) {
+                  productDetails = {
+                    productId: product.id,
+                    productName: product.name,
+                    sku: product.sku,
+                    imageUrl: product.imageUrl,
+                    prices: {
+                      priceCzk: product.priceCzk,
+                      priceEur: product.priceEur,
+                      priceUsd: product.priceUsd
+                    }
+                  };
+                }
+              } else {
+                // Use purchase item description as name
+                productDetails.productName = purchaseItem.description || 'Purchase Item';
+                productDetails.sku = purchaseItem.sku;
+              }
+            }
+          }
+          
+          // If custom item, get from custom items
+          if (productDetails.productName === 'Unknown Item' && item.itemType === 'custom') {
+            const [customItem] = await db
+              .select({
+                name: customItems.name,
+                description: customItems.description
+              })
+              .from(customItems)
+              .where(eq(customItems.id, item.itemId));
+            
+            if (customItem) {
+              productDetails.productName = customItem.name || customItem.description || 'Custom Item';
+            }
+          }
+          
+          // Get locations for this product
+          let locations: any[] = [];
+          if (item.productId) {
+            const productLocations = await db
+              .select({
+                id: productLocationsTable.id,
+                locationCode: productLocationsTable.locationCode,
+                locationType: productLocationsTable.locationType,
+                quantity: productLocationsTable.quantity,
+                isPrimary: productLocationsTable.isPrimary
+              })
+              .from(productLocationsTable)
+              .where(eq(productLocationsTable.productId, item.productId));
+            
+            locations = productLocations;
+          }
+          
+          // Determine item status
+          const expected = item.expectedQuantity || 0;
+          const received = item.receivedQuantity || 0;
+          const damaged = item.damagedQuantity || 0;
+          const missing = item.missingQuantity || 0;
+          
+          let status = 'ok';
+          if (missing > 0) {
+            status = 'missing';
+          } else if (damaged > 0) {
+            status = 'damaged';
+          } else if (received < expected) {
+            status = 'partial';
+          }
+          
+          // Update summary
+          summary.totalItems++;
+          summary.totalExpected += expected;
+          summary.totalReceived += received;
+          summary.totalDamaged += damaged;
+          summary.totalMissing += missing;
+          
+          if (status === 'ok') summary.okItems++;
+          else if (status === 'damaged') summary.damagedItems++;
+          else if (status === 'missing') summary.missingItems++;
+          else if (status === 'partial') summary.partialItems++;
+          
+          return {
+            receiptItemId: item.id,
+            itemId: item.itemId,
+            itemType: item.itemType,
+            expectedQuantity: expected,
+            receivedQuantity: received,
+            damagedQuantity: damaged,
+            missingQuantity: missing,
+            status,
+            condition: item.condition || '',
+            notes: item.notes || '',
+            barcode: item.barcode || '',
+            warehouseLocation: item.warehouseLocation || '',
+            ...productDetails,
+            locations
+          };
+        }));
+      }
+      
+      res.json({
+        receipt: receipt ? {
+          id: receipt.id,
+          status: receipt.status,
+          createdAt: receipt.createdAt,
+          completedAt: receipt.completedAt,
+          receivedBy: receipt.receivedBy,
+          approvedBy: receipt.approvedBy,
+          generalNotes: receipt.generalNotes || '',
+          damageNotes: receipt.damageNotes || '',
+          photos: receipt.photos || [],
+          scannedParcels: receipt.scannedParcels || []
+        } : null,
+        shipment: {
+          id: shipment.id,
+          shipmentName: shipment.shipmentName,
+          trackingNumber: shipment.trackingNumber,
+          carrier: shipment.carrier,
+          status: shipment.status,
+          estimatedArrival: shipment.estimatedArrival,
+          actualArrival: shipment.actualArrival
+        },
+        items,
+        summary
+      });
+    } catch (error) {
+      console.error('Error fetching shipment report:', error);
+      res.status(500).json({ message: 'Failed to fetch shipment report' });
+    }
+  });
+
   // Get shipments by receiving status - Archived
   // Includes auto-archived shipments (completed > 2 days) and manually archived
   app.get('/api/imports/shipments/archived', isAuthenticated, async (req, res) => {
