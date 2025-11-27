@@ -975,7 +975,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
       >
         {/* Top Navigation Bar - Desktop Only - Hidden during active picking/packing */}
         {!(location.includes('/orders/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
-          <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
+          <header className="hidden lg:block sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-2">
             {/* Breadcrumb and Page Title */}
             <div className="flex items-center gap-3 flex-1 min-w-0">
