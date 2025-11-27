@@ -8462,12 +8462,19 @@ Important:
       const userId = req.user?.id;
       const userRole = req.user?.role;
 
-      // 1. Orders to pick/pack - orders with status 'to_fulfill' or 'pending'
+      // 1. Orders to pick/pack - Use pickStatus and packStatus for accurate filtering
+      // Match the logic from Pick & Pack page:
+      // - pending: pickStatus === 'not_started' OR pickStatus IS NULL (with status = 'to_fulfill')
+      // - picking: pickStatus === 'in_progress'
+      // - packing: pickStatus === 'completed' AND (packStatus === 'not_started' OR packStatus IS NULL OR packStatus === 'in_progress')
+      // - ready: packStatus === 'completed'
       const ordersToPickPackRaw = await db
         .select({
           id: orders.id,
           orderId: orders.orderId,
           orderStatus: orders.orderStatus,
+          pickStatus: orders.pickStatus,
+          packStatus: orders.packStatus,
           customerId: orders.customerId,
           createdAt: orders.createdAt,
           grandTotal: orders.grandTotal,
@@ -8476,12 +8483,46 @@ Important:
         .from(orders)
         .where(
           or(
-            eq(orders.orderStatus, 'to_fulfill'),
-            eq(orders.orderStatus, 'pending'),
-            eq(orders.orderStatus, 'confirmed')
+            // Pending to pick: status = to_fulfill and not yet picking/packed
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              or(
+                isNull(orders.pickStatus),
+                eq(orders.pickStatus, 'not_started')
+              )
+            ),
+            // Currently picking
+            eq(orders.pickStatus, 'in_progress'),
+            // Ready to pack or packing
+            and(
+              eq(orders.pickStatus, 'completed'),
+              or(
+                isNull(orders.packStatus),
+                eq(orders.packStatus, 'not_started'),
+                eq(orders.packStatus, 'in_progress')
+              )
+            ),
+            // Ready for shipping
+            eq(orders.packStatus, 'completed')
           )
         )
         .orderBy(desc(orders.createdAt));
+      
+      // Calculate stats matching Pick & Pack page logic
+      const pickPackStats = {
+        pending: ordersToPickPackRaw.filter(o => 
+          o.orderStatus === 'to_fulfill' && (!o.pickStatus || o.pickStatus === 'not_started')
+        ).length,
+        picking: ordersToPickPackRaw.filter(o => 
+          o.pickStatus === 'in_progress'
+        ).length,
+        packing: ordersToPickPackRaw.filter(o => 
+          o.pickStatus === 'completed' && (!o.packStatus || o.packStatus === 'not_started' || o.packStatus === 'in_progress')
+        ).length,
+        ready: ordersToPickPackRaw.filter(o => 
+          o.packStatus === 'completed'
+        ).length
+      };
       
       // Get customer names for orders
       const customerIds = [...new Set(ordersToPickPackRaw.map(o => o.customerId).filter(Boolean))];
@@ -8570,6 +8611,7 @@ Important:
 
       res.json({
         ordersToPickPack: filteredOrders,
+        pickPackStats,
         receivingTasks,
         incomingShipments,
         adminTasks

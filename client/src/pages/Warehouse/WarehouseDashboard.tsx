@@ -25,10 +25,18 @@ interface WarehouseDashboardData {
     id: string;
     orderId: string;
     status: string;
+    pickStatus?: string;
+    packStatus?: string;
     customer?: { name?: string };
     items?: Array<{ productName: string; quantity: number }>;
     createdAt: string;
   }>;
+  pickPackStats: {
+    pending: number;
+    picking: number;
+    packing: number;
+    ready: number;
+  };
   receivingTasks: Array<{
     id: number;
     supplier: string;
@@ -167,6 +175,7 @@ export default function WarehouseDashboard() {
   }
 
   const ordersToPickPack = data?.ordersToPickPack || [];
+  const pickPackStats = data?.pickPackStats || { pending: 0, picking: 0, packing: 0, ready: 0 };
   const receivingTasks = data?.receivingTasks || [];
   const incomingShipments = data?.incomingShipments || [];
   const adminTasks = data?.adminTasks || [];
@@ -198,15 +207,37 @@ export default function WarehouseDashboard() {
             </CardTitle>
             <p className="text-xs text-muted-foreground">{t('ordersToPickPackDesc')}</p>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+          <CardContent className="space-y-3">
+            {/* Pick & Pack Stats Overview */}
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center" data-testid="stat-pending">
+                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{pickPackStats.pending}</div>
+                <div className="text-[10px] text-orange-700 dark:text-orange-200">{t('pending')}</div>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center" data-testid="stat-picking">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{pickPackStats.picking}</div>
+                <div className="text-[10px] text-blue-700 dark:text-blue-200">{t('picking')}</div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center" data-testid="stat-packing">
+                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{pickPackStats.packing}</div>
+                <div className="text-[10px] text-purple-700 dark:text-purple-200">{t('packing')}</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center" data-testid="stat-ready">
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">{pickPackStats.ready}</div>
+                <div className="text-[10px] text-green-700 dark:text-green-200">{t('ready')}</div>
+              </div>
+            </div>
+            
+            {/* Orders List */}
+            <div className="max-h-40 overflow-y-auto space-y-2">
             {ordersToPickPack.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                <CheckCircle2 className="h-10 w-10 mb-2 text-green-500" />
+              <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+                <CheckCircle2 className="h-8 w-8 mb-2 text-green-500" />
                 <p className="text-sm">{t('noOrdersToPick')}</p>
               </div>
             ) : (
               ordersToPickPack.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`row-order-${order.id}`}>
+                <div key={order.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg" data-testid={`row-order-${order.id}`}>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">#{order.orderId}</p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -214,21 +245,25 @@ export default function WarehouseDashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(order.status)} variant="secondary">
-                      {order.status}
+                    <Badge className={getStatusColor(order.pickStatus || order.status)} variant="secondary">
+                      {order.pickStatus === 'in_progress' ? 'picking' : 
+                       order.packStatus === 'in_progress' ? 'packing' :
+                       order.packStatus === 'completed' ? 'ready' :
+                       order.pickStatus === 'completed' ? 'packing' : 'pending'}
                     </Badge>
                     <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="outline" className="min-h-[36px]" data-testid={`button-pick-${order.id}`}>
+                      <Button size="sm" variant="outline" className="min-h-[32px] h-8" data-testid={`button-pick-${order.id}`}>
                         {t('view')}
-                        <ArrowRight className="h-4 w-4 ml-1" />
+                        <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </Link>
                   </div>
                 </div>
               ))
             )}
+            </div>
             {ordersToPickPack.length > 5 && (
-              <Link href="/orders?status=pending,processing,confirmed">
+              <Link href="/pick-pack">
                 <Button variant="ghost" className="w-full text-sm" data-testid="button-view-all-orders">
                   {t('view')} {ordersToPickPack.length - 5} {t('more')}...
                 </Button>
