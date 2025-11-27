@@ -67,7 +67,9 @@ import {
   deserializePackingPlanFromDB,
   computePlanChecksum,
   type UIPackingPlan,
+  pushSubscriptions,
 } from "@shared/schema";
+import { sendPushToAllWarehouseOperators, getVapidPublicKey } from "./services/pushNotifications";
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -7312,6 +7314,22 @@ Important:
         description: `Created order: ${order.orderId}`,
       });
 
+      // Send push notification to warehouse operators for new orders to fulfill
+      if (order.orderStatus === 'to_fulfill') {
+        const customerName = order.customerName || 'Guest';
+        const itemCount = items?.length || 0;
+        
+        sendPushToAllWarehouseOperators({
+          title: '📦 New Order Ready to Pick',
+          body: `Order ${order.orderId} from ${customerName} (${itemCount} items)`,
+          url: '/pick-pack',
+          tag: 'new-order',
+          requireInteraction: false
+        }, 'new_order').catch(err => {
+          console.error('[Push] Failed to send new order notification:', err);
+        });
+      }
+
       // Fetch the complete order with items to return
       const completeOrder = await storage.getOrderById(order.id);
       res.json(completeOrder);
@@ -8449,6 +8467,180 @@ Important:
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // ============================================================================
+  // PUSH NOTIFICATIONS ENDPOINTS
+  // ============================================================================
+
+  // GET VAPID public key for push subscription
+  app.get('/api/push/vapid-public-key', isAuthenticated, async (req: any, res) => {
+    const vapidPublicKey = getVapidPublicKey();
+    if (!vapidPublicKey) {
+      return res.status(503).json({ message: 'Push notifications not configured' });
+    }
+    res.json({ publicKey: vapidPublicKey });
+  });
+
+  // Subscribe to push notifications
+  app.post('/api/push/subscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const { endpoint, keys, userAgent, notificationTypes } = req.body;
+
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ message: 'Invalid subscription data' });
+      }
+
+      // Check if subscription already exists
+      const existing = await db
+        .select()
+        .from(pushSubscriptions)
+        .where(and(
+          eq(pushSubscriptions.userId, userId),
+          eq(pushSubscriptions.endpoint, endpoint)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Update existing subscription
+        const [updated] = await db
+          .update(pushSubscriptions)
+          .set({
+            p256dh: keys.p256dh,
+            auth: keys.auth,
+            userAgent: userAgent || existing[0].userAgent,
+            notificationTypes: notificationTypes || existing[0].notificationTypes,
+            isActive: true,
+            lastUsedAt: new Date()
+          })
+          .where(eq(pushSubscriptions.id, existing[0].id))
+          .returning();
+        
+        return res.json({ success: true, subscription: updated, message: 'Subscription updated' });
+      }
+
+      // Create new subscription
+      const [newSub] = await db
+        .insert(pushSubscriptions)
+        .values({
+          userId,
+          endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+          userAgent: userAgent || null,
+          notificationTypes: notificationTypes || ['new_order'],
+          isActive: true
+        })
+        .returning();
+
+      console.log(`[Push] New subscription created for user ${userId}`);
+      res.status(201).json({ success: true, subscription: newSub, message: 'Subscription created' });
+    } catch (error) {
+      console.error('Error creating push subscription:', error);
+      res.status(500).json({ message: 'Failed to create push subscription' });
+    }
+  });
+
+  // Unsubscribe from push notifications
+  app.post('/api/push/unsubscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const { endpoint } = req.body;
+
+      if (!endpoint) {
+        return res.status(400).json({ message: 'Endpoint required' });
+      }
+
+      const result = await db
+        .delete(pushSubscriptions)
+        .where(and(
+          eq(pushSubscriptions.userId, userId),
+          eq(pushSubscriptions.endpoint, endpoint)
+        ))
+        .returning();
+
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Subscription not found' });
+      }
+
+      console.log(`[Push] Subscription removed for user ${userId}`);
+      res.json({ success: true, message: 'Subscription removed' });
+    } catch (error) {
+      console.error('Error removing push subscription:', error);
+      res.status(500).json({ message: 'Failed to remove push subscription' });
+    }
+  });
+
+  // Get user's push subscriptions
+  app.get('/api/push/subscriptions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const subs = await db
+        .select({
+          id: pushSubscriptions.id,
+          userAgent: pushSubscriptions.userAgent,
+          notificationTypes: pushSubscriptions.notificationTypes,
+          isActive: pushSubscriptions.isActive,
+          createdAt: pushSubscriptions.createdAt,
+          lastUsedAt: pushSubscriptions.lastUsedAt
+        })
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.userId, userId))
+        .orderBy(desc(pushSubscriptions.createdAt));
+
+      res.json(subs);
+    } catch (error) {
+      console.error('Error fetching push subscriptions:', error);
+      res.status(500).json({ message: 'Failed to fetch push subscriptions' });
+    }
+  });
+
+  // Update notification types for a subscription
+  app.patch('/api/push/subscriptions/:id/notification-types', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const subId = parseInt(req.params.id);
+      const { notificationTypes } = req.body;
+
+      if (!Array.isArray(notificationTypes)) {
+        return res.status(400).json({ message: 'notificationTypes must be an array' });
+      }
+
+      const [updated] = await db
+        .update(pushSubscriptions)
+        .set({ notificationTypes })
+        .where(and(
+          eq(pushSubscriptions.id, subId),
+          eq(pushSubscriptions.userId, userId)
+        ))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Subscription not found' });
+      }
+
+      res.json({ success: true, subscription: updated });
+    } catch (error) {
+      console.error('Error updating notification types:', error);
+      res.status(500).json({ message: 'Failed to update notification types' });
     }
   });
 

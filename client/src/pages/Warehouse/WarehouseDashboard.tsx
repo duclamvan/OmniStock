@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { 
   Package, 
   Truck, 
@@ -12,13 +13,17 @@ import {
   ArrowRight,
   AlertTriangle,
   Calendar,
-  User
+  User,
+  Bell,
+  BellOff,
+  Smartphone
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatDate } from "@/lib/currencyUtils";
 import { useTranslation } from 'react-i18next';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface WarehouseDashboardData {
   ordersToPickPack: Array<{
@@ -70,11 +75,44 @@ export default function WarehouseDashboard() {
   const { t } = useTranslation('common');
   const { toast } = useToast();
   
+  const {
+    isSupported: pushSupported,
+    permission: pushPermission,
+    isSubscribed: isPushSubscribed,
+    isSubscribing,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush
+  } = usePushNotifications();
+  
   const { data, isLoading } = useQuery<WarehouseDashboardData>({
     queryKey: ['/api/dashboard/warehouse'],
     staleTime: 30000,
     refetchInterval: 60000,
   });
+  
+  const handlePushToggle = async () => {
+    try {
+      if (isPushSubscribed) {
+        await unsubscribePush();
+        toast({
+          title: t('pushNotificationsDisabled'),
+          description: t('pushNotificationsDisabledDesc'),
+        });
+      } else {
+        await subscribePush(['new_order']);
+        toast({
+          title: t('pushNotificationsEnabled'),
+          description: t('pushNotificationsEnabledDesc'),
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: t('error'),
+        description: error.message || t('pushNotificationsFailed'),
+        variant: 'destructive',
+      });
+    }
+  };
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: number) => {
@@ -191,6 +229,33 @@ export default function WarehouseDashboard() {
             {t('warehouseDashboardSubtitle')}
           </p>
         </div>
+        
+        {/* Push Notification Toggle */}
+        {pushSupported && (
+          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              {isPushSubscribed ? (
+                <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              ) : (
+                <BellOff className="h-4 w-4 text-gray-400" />
+              )}
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {t('newOrderNotifications')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isPushSubscribed ? t('notificationsEnabled') : t('notificationsDisabled')}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isPushSubscribed}
+              onCheckedChange={handlePushToggle}
+              disabled={isSubscribing || pushPermission === 'denied'}
+              data-testid="switch-push-notifications"
+            />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

@@ -383,6 +383,16 @@ const common = {
   maintenanceTask: 'Bảo trì',
   otherTask: 'Khác',
   
+  // Push Notifications
+  newOrderNotifications: 'Thông báo đơn mới',
+  notificationsEnabled: 'Bạn sẽ nhận thông báo khi có đơn hàng mới',
+  notificationsDisabled: 'Bật để nhận thông báo đơn hàng',
+  pushNotificationsEnabled: 'Đã bật thông báo',
+  pushNotificationsEnabledDesc: 'Bạn sẽ nhận được thông báo khi có đơn hàng mới',
+  pushNotificationsDisabled: 'Đã tắt thông báo',
+  pushNotificationsDisabledDesc: 'Bạn sẽ không nhận thông báo đơn hàng nữa',
+  pushNotificationsFailed: 'Không thể cập nhật cài đặt thông báo',
+  
   // Navigation Items & Descriptions
   pickAndPack: 'Lấy hàng & Đóng gói',
   orderFulfillment: 'Xử lý đơn hàng',

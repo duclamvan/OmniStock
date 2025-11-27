@@ -407,6 +407,16 @@ const common = {
   maintenanceTask: 'Maintenance',
   otherTask: 'Other',
   
+  // Push Notifications
+  newOrderNotifications: 'New Order Alerts',
+  notificationsEnabled: 'You will receive alerts for new orders',
+  notificationsDisabled: 'Enable to receive order alerts',
+  pushNotificationsEnabled: 'Push Notifications Enabled',
+  pushNotificationsEnabledDesc: 'You will now receive alerts when new orders arrive',
+  pushNotificationsDisabled: 'Push Notifications Disabled',
+  pushNotificationsDisabledDesc: 'You will no longer receive order alerts',
+  pushNotificationsFailed: 'Failed to update notification settings',
+  
   // Navigation Items & Descriptions
   pickAndPack: 'Pick & Pack',
   orderFulfillment: 'Order Fulfillment',

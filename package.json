@@ -53,6 +53,7 @@
     "@types/react-window": "^1.8.8",
     "@types/sharp": "^0.31.1",
     "@types/twilio": "^3.19.2",
+    "@types/web-push": "^3.6.4",
     "@uppy/aws-s3": "^4.3.2",
     "@uppy/core": "^4.5.2",
     "@uppy/dashboard": "^4.4.3",
