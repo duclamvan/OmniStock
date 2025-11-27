@@ -6873,9 +6873,9 @@ export default function PickPack() {
                       <span className="text-sm lg:text-base text-white">•</span>
                       <div className={`px-2.5 py-1 rounded text-sm lg:text-base font-bold ${
                         activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
-                          ? 'bg-emerald-50 dark:bg-emerald-900/300 dark:bg-emerald-600 text-white'
+                          ? 'bg-emerald-600 dark:bg-emerald-700 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
-                          ? 'bg-orange-50 dark:bg-orange-900/300 dark:bg-orange-600 text-white'
+                          ? 'bg-orange-500 dark:bg-orange-600 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
                           ? 'bg-yellow-400 dark:bg-yellow-600 text-gray-900 dark:text-white'
                           : 'bg-white/30 dark:bg-white/20 text-white'
