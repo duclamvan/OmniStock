@@ -1982,3 +1982,32 @@ export const insertWarehouseTaskSchema = createInsertSchema(warehouseTasks, {
 
 export type WarehouseTask = typeof warehouseTasks.$inferSelect;
 export type InsertWarehouseTask = z.infer<typeof insertWarehouseTaskSchema>;
+
+// Push Subscriptions - for browser push notifications
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(), // Public key for encryption
+  auth: text('auth').notNull(), // Auth secret
+  userAgent: text('user_agent'), // Device info for display
+  notificationTypes: text('notification_types').array().notNull().default(sql`ARRAY['new_order']::text[]`), // Types: new_order, low_stock, task_assigned, shipment_arrived
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at')
+});
+
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions, {
+  endpoint: z.string().url(),
+  p256dh: z.string().min(1),
+  auth: z.string().min(1),
+  userAgent: z.string().optional(),
+  notificationTypes: z.array(z.enum(['new_order', 'low_stock', 'task_assigned', 'shipment_arrived'])).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;

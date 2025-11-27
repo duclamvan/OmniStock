@@ -106,3 +106,8 @@ externalPort = 6800
 
 [userenv.development]
 TEST_SECRET = "replit-agent-test-secret-change-in-production"
+
+[userenv.shared]
+VAPID_PUBLIC_KEY = "BH9ADGLltc4HcwuQcqGqgCDQ9JTP6pSfdjnoMuWqeUJi10eGzDcIKpqUDVUiAehok1uPN7mQaBWWGaP_MZ9Orf8"
+VAPID_PRIVATE_KEY = "BCXbE6VzkRaTdQLTxgqpNDJhZ0f9q4FZ4hQl_Eiiaag"
+VITE_VAPID_PUBLIC_KEY = "BH9ADGLltc4HcwuQcqGqgCDQ9JTP6pSfdjnoMuWqeUJi10eGzDcIKpqUDVUiAehok1uPN7mQaBWWGaP_MZ9Orf8"
