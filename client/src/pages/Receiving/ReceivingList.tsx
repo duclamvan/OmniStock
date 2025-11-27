@@ -4313,17 +4313,6 @@ export default function ReceivingList() {
     scanInterval: 500
   });
 
-  // Complete receipt handler
-  const handleCompleteReceipt = useCallback(async () => {
-    await soundEffects.playCompletionSound();
-    toast({
-      title: t('receiptApproved'),
-      description: t('receivingComplete'),
-    });
-    // Clear session and navigate
-    navigate('/receiving');
-  }, [toast, navigate]);
-
   const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingStorage || isLoadingCompleted || isLoadingReceipts;
 
   // Calculate stats
@@ -4660,12 +4649,6 @@ export default function ReceivingList() {
           onScan={handleBarcodeScan} 
           isScanning={isScanning}
           barcodeScanner={barcodeScanner}
-        />
-
-        {/* Session Footer */}
-        <SessionFooter
-          onComplete={handleCompleteReceipt}
-          onCancel={() => navigate('/receiving')}
         />
 
         {/* Action Sheet */}
