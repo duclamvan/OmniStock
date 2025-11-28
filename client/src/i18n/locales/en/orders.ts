@@ -895,6 +895,7 @@ const orders = {
   picked: 'Picked',
   partiallyPicked: 'Partially Picked',
   notFound: 'Not Found',
+  itemReview: 'Item Review',
   
   // Actions
   markAsPicked: 'Mark as Picked',

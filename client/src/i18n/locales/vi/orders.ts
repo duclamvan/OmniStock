@@ -877,6 +877,7 @@ const orders = {
   picked: 'Đã lấy',
   partiallyPicked: 'Lấy một phần',
   notFound: 'Không tìm thấy',
+  itemReview: 'Xem lại sản phẩm',
   
   // Actions
   markAsPicked: 'Đánh dấu đã lấy',

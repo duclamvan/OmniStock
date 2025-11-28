@@ -12844,7 +12844,14 @@ export default function PickPack() {
                       'bg-white hover:shadow-lg border-2 border-gray-200'
                     }`}
                     onClick={() => {
-                      if (!isPicked) {
+                      if (isPicked) {
+                        // Allow reviewing picked items - show toast with item details
+                        toast({
+                          title: t('itemReview') || 'Item Review',
+                          description: `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                        });
+                        playSound('scan');
+                      } else {
                         barcodeInputRef.current?.focus();
                       }
                     }}
@@ -12853,7 +12860,7 @@ export default function PickPack() {
                       <div className="flex items-start gap-2 xl:gap-3">
                         <div className="mt-1">
                           {isPicked ? (
-                            <div className="bg-green-50 dark:bg-green-900/300 rounded-full p-1">
+                            <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
                               <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
                             </div>
                           ) : isCurrent ? (
@@ -12934,9 +12941,15 @@ export default function PickPack() {
                             'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
                           }`}
                           onClick={() => {
-                            if (!isPicked) {
+                            if (isPicked) {
+                              // Allow reviewing picked items - show toast with item details
+                              toast({
+                                title: t('itemReview') || 'Item Review',
+                                description: `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                              });
+                              playSound('scan');
+                            } else {
                               // Jump to item by focusing on barcode input
-                              // The current item is determined by the first unpicked item
                               barcodeInputRef.current?.focus();
                               playSound('scan');
                             }
@@ -12944,7 +12957,7 @@ export default function PickPack() {
                         >
                           <div className="flex items-center gap-1 mb-1">
                             {isPicked ? (
-                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300" />
+                              <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                             ) : (
                               <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                                 isCurrent ? 'bg-blue-50 dark:bg-blue-900/300 text-white' : 'border-2 border-gray-300 text-gray-600'
