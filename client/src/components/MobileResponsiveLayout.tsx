@@ -495,6 +495,13 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
           ],
         },
         {
+          name: t('common:employees'),
+          href: "/employees",
+          icon: Briefcase,
+          color: "text-cyan-600 dark:text-cyan-400",
+          description: t('common:employeeManagement')
+        },
+        {
           name: t('common:reports'),
           href: "/reports",
           icon: FileText,
@@ -521,13 +528,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default' }: Mo
           icon: Users,
           color: "text-indigo-600 dark:text-indigo-400",
           description: t('common:manageUsersAndRoles')
-        },
-        {
-          name: t('common:employees'),
-          href: "/employees",
-          icon: Briefcase,
-          color: "text-cyan-600 dark:text-cyan-400",
-          description: t('common:employeeManagement')
         },
       ]
     }
