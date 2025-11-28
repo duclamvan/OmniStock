@@ -688,6 +688,13 @@ const warehouse = {
   failedToMoveInventory: 'Failed to move inventory',
   pleaseFillRequiredFields: 'Please fill in all required fields',
   cannotMoveMoreThanAvailable: 'Cannot move more than available quantity',
+  scanOrType: 'Scan / Type',
+  selectFromList: 'Select from List',
+  locationCodeFormat: 'Format: WH1-A01, B01, etc.',
+  locationFound: 'Location Found',
+  locationNotFound: 'Location Not Found',
+  pleaseEnterValidLocationCode: 'Please enter a valid location code',
+  locationNotRecognized: 'Location code not recognized',
   
   // Location Selector
   locationType: 'Location Type',
