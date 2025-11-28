@@ -2313,7 +2313,7 @@ export default function AddOrder() {
 
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-96 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[450px] overflow-y-auto z-50">
                   <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
                     {t('orders:customersFound', { count: filteredCustomers.length })}
                   </div>
@@ -2337,8 +2337,23 @@ export default function AddOrder() {
                         }, 100);
                       }}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        {/* Left side - Main info */}
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-semibold">
+                            {customer.profilePictureUrl ? (
+                              <img 
+                                src={customer.profilePictureUrl} 
+                                alt={customer.name}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              customer.name?.charAt(0)?.toUpperCase() || '?'
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Main info */}
                         <div className="flex-1 min-w-0">
                           {/* Name, flag, and badges */}
                           <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap mb-1">
@@ -2346,59 +2361,92 @@ export default function AddOrder() {
                               {customer.country && (
                                 <span className="text-base">{getCountryFlag(customer.country)}</span>
                               )}
-                              <span className="truncate">{customer.name}</span>
+                              <span className="truncate font-semibold">{customer.name}</span>
                             </span>
                             {customer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 border-yellow-300 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-400">
                                 Pay Later
                               </Badge>
                             )}
                             {customer.type && customer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
                                 {customer.type}
                               </Badge>
                             )}
                           </div>
                           
-                          {/* Company */}
-                          {customer.company && (
-                            <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mb-1">
-                              <Building className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{customer.company}</span>
+                          {/* Two-column details */}
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                            {/* Left column */}
+                            <div className="space-y-0.5">
+                              {/* Company */}
+                              {customer.company && (
+                                <div className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <Building className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{customer.company}</span>
+                                </div>
+                              )}
+                              
+                              {/* Location */}
+                              {(customer.city || customer.country) && (
+                                <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">
+                                    {[customer.city, customer.country].filter(Boolean).join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Phone */}
+                              {customer.phone && (
+                                <div className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <Phone className="h-3 w-3 shrink-0" />
+                                  <span>{customer.phone}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
+                            
+                            {/* Right column */}
+                            <div className="space-y-0.5">
+                              {/* Email */}
+                              {customer.email && (
+                                <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                  <Mail className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{customer.email}</span>
+                                </div>
+                              )}
+                              
+                              {/* Facebook */}
+                              {(customer.facebookName || customer.facebookUrl) && (
+                                <div className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                  <svg className="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                  </svg>
+                                  <span className="truncate">{customer.facebookName || 'Facebook'}</span>
+                                </div>
+                              )}
+                              
+                              {/* Order stats */}
+                              {customer.totalOrders > 0 && (
+                                <div className="text-green-600 dark:text-green-400 flex items-center gap-1 font-medium">
+                                  <Package className="h-3 w-3 shrink-0" />
+                                  <span>{customer.totalOrders} orders</span>
+                                  {customer.totalSpent && parseFloat(customer.totalSpent) > 0 && (
+                                    <span className="text-slate-400 dark:text-slate-500">•</span>
+                                  )}
+                                  {customer.totalSpent && parseFloat(customer.totalSpent) > 0 && (
+                                    <span>{formatCurrency(parseFloat(customer.totalSpent), customer.preferredCurrency || 'EUR')}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           
-                          {/* Location */}
-                          {(customer.city || customer.country) && (
-                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-1">
-                              <MapPin className="h-3 w-3 shrink-0" />
-                              <span className="truncate">
-                                {[customer.city, customer.country].filter(Boolean).join(', ')}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Facebook name */}
-                          {customer.facebookName && customer.facebookName !== customer.name && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                              <span className="shrink-0">FB:</span>
-                              <span className="truncate">{customer.facebookName}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Right side - Contact info */}
-                        <div className="text-right shrink-0">
-                          {customer.phone && (
-                            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                              <Phone className="h-3 w-3 inline mr-1" />
-                              {customer.phone}
-                            </div>
-                          )}
-                          {customer.email && (
-                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              <Mail className="h-3 w-3 inline mr-1" />
-                              {customer.email}
+                          {/* Last order date */}
+                          {customer.lastOrderDate && (
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5" />
+                              Last order: {new Date(customer.lastOrderDate).toLocaleDateString('cs-CZ')}
                             </div>
                           )}
                         </div>
@@ -2414,19 +2462,49 @@ export default function AddOrder() {
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
                   <div>No customers found for "{customerSearch}"</div>
                   <div className="text-xs mt-1">Try searching by name, email, phone, Facebook name, or paste a Facebook URL</div>
+                  
+                  {/* Show Facebook URL detected message */}
+                  {extractFacebookId(customerSearch) && (
+                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700">
+                      <div className="flex items-center justify-center gap-1 text-xs text-blue-700 dark:text-blue-300">
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                        Facebook URL detected: <span className="font-semibold">{extractFacebookId(customerSearch)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="mt-3"
                     onClick={() => {
+                      const extractedFbId = extractFacebookId(customerSearch);
                       setShowNewCustomerForm(true);
-                      setNewCustomer({ ...newCustomer, name: customerSearch, facebookName: customerSearch });
+                      
+                      if (extractedFbId) {
+                        // Facebook URL was pasted - use it as facebookUrl and facebookId
+                        setNewCustomer({ 
+                          ...newCustomer, 
+                          name: '', // Don't use URL as name
+                          facebookName: extractedFbId,
+                          facebookUrl: customerSearch.trim(),
+                        });
+                      } else {
+                        // Regular search text - use as name and facebookName
+                        setNewCustomer({ 
+                          ...newCustomer, 
+                          name: customerSearch, 
+                          facebookName: customerSearch 
+                        });
+                      }
                       setShowCustomerDropdown(false);
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add new customer
+                    {extractFacebookId(customerSearch) ? 'Add customer with Facebook' : 'Add new customer'}
                   </Button>
                 </div>
               )}
