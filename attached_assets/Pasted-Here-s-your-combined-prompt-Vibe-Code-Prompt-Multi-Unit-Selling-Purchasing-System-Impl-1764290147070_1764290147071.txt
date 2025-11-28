@@ -1,0 +1,11 @@
+Here's your combined prompt:
+
+---
+
+## Vibe Code Prompt: Multi-Unit Selling & Purchasing System
+
+Implement a flexible packaging unit system where each product can define its own selling unit (box, jar, bottle, piece) and optional bulk unit (carton, pallet, case) with a conversion quantity, allowing purchases and sales in either unit while inventory always tracks in selling units. Add database columns to products table: `selling_unit_name` (text, default "piece"), `bulk_unit_name` (text, nullable), `bulk_unit_qty` (integer, nullable), `bulk_price` (decimal, nullable), `allow_bulk_sales` (boolean, default false), `unit_contents_info` (text, nullable). Add columns to purchase_order_items and order_items tables: `unit_type` (text, default "selling"), `unit_name` (text), `quantity_in_selling_units` (integer), `unit_cost`/`unit_price_at_sale` (decimal). Create a "Packaging & Units" section in the product form with selling unit name input, toggleable bulk unit fields (name, quantity per bulk, optional bulk price, allow bulk sales checkbox), and a live preview showing "1 carton = 50 boxes". Update inventory displays throughout the app to show dual units like "250 boxes (5 cartons)" using a shared utility function that calculates full bulk units and remainders. On purchase order add/edit page, after selecting a product, show a dynamic unit dropdown with the product's available units (e.g., "Box" and "Carton (50/box)"), auto-calculate and display "= X boxes to receive", and store `quantity_in_selling_units` for receiving. Update receiving logic to use `quantity_in_selling_units` (with fallback to `quantity` for old records) when adding to inventory, and calculate landed cost per selling unit. On orders and POS, show unit selector only if product has `allow_bulk_sales` enabled, calculate prices using `bulk_price` or `unit_price × bulk_qty`, and deduct `quantity_in_selling_units` from inventory. Backfill existing records by setting `quantity_in_selling_units = quantity` and `unit_type = "selling"` for all existing purchase_order_items and order_items. Add Vietnamese translations for all new UI elements including unit names (cái, hộp, thùng, lọ, chai, pallet).
+
+---
+
+Copy this to Replit Agent. It covers everything in one shot.

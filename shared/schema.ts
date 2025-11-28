@@ -130,6 +130,10 @@ export const purchaseItems = pgTable('purchase_items', {
   unitWidthCm: decimal('unit_width_cm', { precision: 10, scale: 2 }),
   unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 }),
   landingCostUnitBase: decimal('landing_cost_unit_base', { precision: 12, scale: 4 }),
+  // Multi-unit purchasing fields
+  unitType: text('unit_type').default('selling'), // 'selling' or 'bulk'
+  unitName: text('unit_name'), // The unit name used for this purchase (e.g., "carton", "box")
+  quantityInSellingUnits: integer('quantity_in_selling_units'), // Quantity converted to selling units for inventory
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -570,7 +574,15 @@ export const products = pgTable('products', {
   minStockLevel: integer('min_stock_level'), // Minimum stock level for reorder alerts
   maxStockLevel: integer('max_stock_level'), // Maximum/target stock level
   lastSoldAt: timestamp('last_sold_at'), // Track when product was last sold for dead stock analysis
-  allocated: boolean('allocated').default(false) // Track if product is allocated to orders
+  allocated: boolean('allocated').default(false), // Track if product is allocated to orders
+  // Multi-unit selling & purchasing fields
+  sellingUnitName: text('selling_unit_name').default('piece'), // Base unit name: piece, box, jar, bottle
+  bulkUnitName: text('bulk_unit_name'), // Optional bulk unit: carton, pallet, case
+  bulkUnitQty: integer('bulk_unit_qty'), // How many selling units per bulk unit (e.g., 50 boxes per carton)
+  bulkPriceCzk: decimal('bulk_price_czk', { precision: 12, scale: 2 }), // Optional special bulk price in CZK
+  bulkPriceEur: decimal('bulk_price_eur', { precision: 12, scale: 2 }), // Optional special bulk price in EUR
+  allowBulkSales: boolean('allow_bulk_sales').default(false), // Whether to show bulk unit option in sales/POS
+  unitContentsInfo: text('unit_contents_info') // Additional info like "12 packs of 10 tablets"
 });
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product
