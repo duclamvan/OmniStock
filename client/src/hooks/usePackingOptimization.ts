@@ -19,24 +19,63 @@ interface PackingPlan {
   avgUtilization: number;
   estimatedShippingCost: number;
   suggestions: string[];
+  carrierCode?: string;
+  carrierConstraints?: {
+    carrierName: string;
+    maxWeightKg: number;
+    maxLengthCm?: number;
+    maxWidthCm?: number;
+    maxHeightCm?: number;
+  };
+  shippingCurrency?: string;
   cartons: Array<{
     cartonName: string;
     cartonId?: string;
     cartonNumber?: number;
     dimensions: string;
     weight: number;
+    totalWeightKg?: number;
+    payloadWeightKg?: number;
     utilization: number;
+    volumeUtilization?: number;
+    innerLengthCm?: number;
+    innerWidthCm?: number;
+    innerHeightCm?: number;
     items: Array<{
       productId?: string;
-      productName: string;
+      productName?: string;
       name?: string;
       quantity: number;
       weight: number;
+      weightKg?: number;
+      lengthCm?: number;
+      widthCm?: number;
+      heightCm?: number;
       isEstimated: boolean;
+      aiEstimated?: boolean;
+      isBulkWrappable?: boolean;
     }>;
     fillingWeight?: number;
+    fillingWeightKg?: number;
     unusedVolume?: number;
+    unusedVolumeCm3?: number;
+    recommendedParcelSize?: {
+      name: string;
+      maxWeightKg: number;
+      costEstimate?: number;
+      currency?: string;
+    };
+    carrierValidation?: {
+      valid: boolean;
+      errors?: string[];
+    };
   }>;
+}
+
+interface PackingOptimizationOptions {
+  carrierCode?: string;
+  shippingCountry?: string;
+  preferBulkWrapping?: boolean;
 }
 
 export function usePackingOptimization(
@@ -126,7 +165,12 @@ export function usePackingOptimization(
 
   // Optimization mutation
   const packingOptimizationMutation = useMutation({
-    mutationFn: async ({ items, shippingCountry }: { items: PackingItem[]; shippingCountry: string }) => {
+    mutationFn: async ({ items, shippingCountry, carrierCode, preferBulkWrapping }: { 
+      items: PackingItem[]; 
+      shippingCountry: string;
+      carrierCode?: string;
+      preferBulkWrapping?: boolean;
+    }) => {
       // No-op if AI is disabled
       if (!enableAiCartonPacking) {
         throw new Error(i18n.t('orders:aiPackingDisabledError'));
@@ -138,7 +182,9 @@ export function usePackingOptimization(
       
       const response = await apiRequest('POST', '/api/packing/optimize', {
         items,
-        shippingCountry
+        shippingCountry,
+        carrierCode,
+        preferBulkWrapping
       });
       return response.json();
     },
@@ -167,7 +213,11 @@ export function usePackingOptimization(
     },
   });
 
-  const runPackingOptimization = (items: PackingItem[], shippingCountry: string = 'CZ') => {
+  const runPackingOptimization = (
+    items: PackingItem[], 
+    shippingCountry: string = 'CZ',
+    options: PackingOptimizationOptions = {}
+  ) => {
     // No-op if AI is disabled
     if (!enableAiCartonPacking) {
       toast({
@@ -186,7 +236,12 @@ export function usePackingOptimization(
       });
       return;
     }
-    packingOptimizationMutation.mutate({ items, shippingCountry });
+    packingOptimizationMutation.mutate({ 
+      items, 
+      shippingCountry,
+      carrierCode: options.carrierCode,
+      preferBulkWrapping: options.preferBulkWrapping
+    });
   };
 
   const clearPackingPlan = () => {

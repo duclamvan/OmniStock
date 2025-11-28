@@ -8,6 +8,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   Box, 
   Package, 
@@ -15,7 +21,10 @@ import {
   Weight, 
   Loader2, 
   AlertCircle,
-  Plus
+  Plus,
+  Ruler,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
@@ -111,23 +120,74 @@ export function AICartonPackingPanel({
                           <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
                             {carton.cartonName || t('standardBox')}
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">
-                            {t('weightKg', { weight: carton.weight ? carton.weight.toFixed(2) : '0' })}
+                          <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Weight className="h-3 w-3" />
+                              {carton.weight ? carton.weight.toFixed(2) : carton.totalWeightKg?.toFixed(2) || '0'} kg
+                            </span>
+                            {(carton.innerLengthCm || carton.length) && (
+                              <span className="flex items-center gap-1">
+                                <Ruler className="h-3 w-3" />
+                                {carton.innerLengthCm || carton.length}×{carton.innerWidthCm || carton.width}×{carton.innerHeightCm || carton.height} cm
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={`flex-shrink-0 ${
-                          (carton.utilization || 0) > 80 
-                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
-                            : (carton.utilization || 0) > 70 
-                            ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
-                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                        }`}
-                      >
-                        {carton.utilization ? `${carton.utilization.toFixed(0)}%` : '0%'}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {carton.recommendedParcelSize && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-700"
+                                >
+                                  <Truck className="h-3 w-3 mr-1" />
+                                  {carton.recommendedParcelSize.name}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>DHL Parcel: {carton.recommendedParcelSize.name}</p>
+                                {carton.recommendedParcelSize.costEstimate && (
+                                  <p>Est. cost: {formatCurrency(carton.recommendedParcelSize.costEstimate, carton.recommendedParcelSize.currency || 'EUR')}</p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        {carton.carrierValidation && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {carton.carrierValidation.valid ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 text-red-600" />
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {carton.carrierValidation.valid 
+                                  ? t('carrierValid') || 'Meets carrier requirements'
+                                  : `${t('carrierInvalid') || 'Exceeds limits'}: ${carton.carrierValidation.errors?.join(', ')}`
+                                }
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <Badge 
+                          variant="outline" 
+                          className={`${
+                            (carton.utilization || carton.volumeUtilization || 0) > 80 
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
+                              : (carton.utilization || carton.volumeUtilization || 0) > 70 
+                              ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
+                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                          }`}
+                        >
+                          {(carton.utilization || carton.volumeUtilization) ? `${(carton.utilization || carton.volumeUtilization).toFixed(0)}%` : '0%'}
+                        </Badge>
+                      </div>
                     </div>
                     {/* Show items inside this carton */}
                     {carton.items && carton.items.length > 0 && (
@@ -140,7 +200,7 @@ export function AICartonPackingPanel({
                                 quantity: item.quantity, 
                                 weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
                               })}
-                              {item.isEstimated && <span className="ml-1 text-yellow-600">*</span>}
+                              {(item.isEstimated || item.aiEstimated) && <span className="ml-1 text-yellow-600">*</span>}
                             </span>
                           </div>
                         ))}
@@ -148,6 +208,25 @@ export function AICartonPackingPanel({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Carrier & Cost Summary */}
+          {(packingPlan.carrierCode || packingPlan.estimatedShippingCost > 0) && (
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between text-xs">
+                {packingPlan.carrierCode && (
+                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                    <Truck className="h-3 w-3" />
+                    <span>{packingPlan.carrierConstraints?.carrierName || packingPlan.carrierCode}</span>
+                  </div>
+                )}
+                {packingPlan.estimatedShippingCost > 0 && (
+                  <div className="font-medium text-gray-900 dark:text-gray-100">
+                    {t('estimatedShipping') || 'Est. shipping'}: {formatCurrency(packingPlan.estimatedShippingCost, packingPlan.shippingCurrency || 'EUR')}
+                  </div>
+                )}
               </div>
             </div>
           )}
