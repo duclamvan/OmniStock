@@ -145,6 +145,9 @@ const MathInput = forwardRef<HTMLInputElement, MathInputProps>(
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const result = evaluateMathExpression(displayValue);
         if (result !== null) {
           let finalValue = isInteger ? Math.round(result) : result;
@@ -162,6 +165,7 @@ const MathInput = forwardRef<HTMLInputElement, MathInputProps>(
           setDisplayValue(String(finalValue));
           setHasExpression(false);
         }
+        return;
       }
       onKeyDown?.(e);
     };
