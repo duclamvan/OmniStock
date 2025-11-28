@@ -57,6 +57,10 @@ interface PurchaseItem {
   processingTimeDays?: number;
   unitType?: 'selling' | 'bulk';
   quantityInSellingUnits?: number;
+  cartons?: number;
+  sellingUnitName?: string;
+  bulkUnitName?: string | null;
+  bulkUnitQty?: number | null;
 }
 
 interface Supplier {
@@ -87,6 +91,9 @@ interface Product {
   bulkUnitQty?: number | null;
   bulkUnitPrice?: string | null;
   allowBulkSales?: boolean;
+  stock?: number;
+  importCostUSD?: string | null;
+  importCostEUR?: string | null;
 }
 
 export default function CreatePurchase() {
@@ -220,7 +227,8 @@ export default function CreatePurchase() {
     dimensions: "",
     notes: "",
     binLocation: "TBA",
-    unitType: 'selling'
+    unitType: 'selling',
+    cartons: undefined
   });
   
   // Variants state
@@ -538,7 +546,8 @@ export default function CreatePurchase() {
       totalPrice: 0,
       costWithShipping: 0,
       binLocation: "TBA",
-      unitType: 'selling'
+      unitType: 'selling',
+      cartons: undefined
     });
   };
 
@@ -708,13 +717,16 @@ export default function CreatePurchase() {
       notes: currentItem.notes || "",
       totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
       costWithShipping: 0,
-      // Store product image reference if available
       productId: selectedProduct?.id,
       imageUrl: selectedProduct?.imageUrl,
       imageFile: productImageFile,
       binLocation: currentItem.binLocation || "TBA",
       unitType: unitType,
-      quantityInSellingUnits: quantityInSellingUnits
+      quantityInSellingUnits: quantityInSellingUnits,
+      cartons: currentItem.cartons,
+      sellingUnitName: selectedProduct?.sellingUnitName || 'piece',
+      bulkUnitName: selectedProduct?.bulkUnitName,
+      bulkUnitQty: selectedProduct?.bulkUnitQty
     };
 
     const updatedItems = [...items, newItem];
@@ -736,7 +748,8 @@ export default function CreatePurchase() {
       dimensions: "",
       notes: "",
       binLocation: "TBA",
-      unitType: 'selling'
+      unitType: 'selling',
+      cartons: undefined
     });
   };
 
@@ -1496,367 +1509,462 @@ export default function CreatePurchase() {
               <CardTitle>{t('addItems')}</CardTitle>
               <CardDescription>{t('addProductsToPurchase')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Product Image Section */}
-              <div className="flex justify-center">
-                <div className="relative group">
-                  {selectedProduct?.imageUrl ? (
-                    // Show existing product image
-                    <div className="relative">
-                      <img
-                        src={selectedProduct.imageUrl}
-                        alt={selectedProduct.name}
-                        className="w-32 h-32 object-contain rounded-lg border-2 border-gray-200 bg-slate-50"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-center text-white">
-                          <ImageIcon className="h-6 w-6 mx-auto mb-1" />
-                          <p className="text-xs">{t('existingProduct')}</p>
+            <CardContent className="space-y-6">
+              {/* Product Selection Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {/* Product Image */}
+                  <div className="flex-shrink-0">
+                    <div className="relative group">
+                      {selectedProduct?.imageUrl ? (
+                        <div className="relative">
+                          <img
+                            src={selectedProduct.imageUrl}
+                            alt={selectedProduct.name}
+                            className="w-20 h-20 object-contain rounded-lg border-2 border-primary/30 bg-slate-50"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ImageIcon className="h-5 w-5 text-white" />
+                          </div>
                         </div>
-                      </div>
+                      ) : productImagePreview ? (
+                        <div className="relative">
+                          <img
+                            src={productImagePreview}
+                            alt={t('productPreview')}
+                            className="w-20 h-20 object-contain rounded-lg border-2 border-primary bg-slate-50"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
+                            onClick={() => {
+                              setProductImageFile(null);
+                              setProductImagePreview(null);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            data-testid="input-product-image"
+                          />
+                          <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
+                            <Upload className="h-6 w-6 text-gray-400 mb-1" />
+                            <p className="text-[10px] text-gray-500 text-center px-1">
+                              {currentItem.name ? t('uploadImage') : t('selectProductFirst')}
+                            </p>
+                          </div>
+                        </label>
+                      )}
                     </div>
-                  ) : productImagePreview ? (
-                    // Show uploaded image preview
-                    <div className="relative">
-                      <img
-                        src={productImagePreview}
-                        alt={t('productPreview')}
-                        className="w-32 h-32 object-contain rounded-lg border-2 border-primary bg-slate-50"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                        onClick={() => {
-                          setProductImageFile(null);
-                          setProductImagePreview(null);
+                  </div>
+                  
+                  {/* Product Name and SKU */}
+                  <div className="flex-1 space-y-2">
+                    <div className="relative" ref={productDropdownRef}>
+                      <Label htmlFor="itemName" className="text-xs text-muted-foreground">{t('itemName')} *</Label>
+                      <Input
+                        id="itemName"
+                        value={currentItem.name}
+                        onChange={(e) => {
+                          setCurrentItem({...currentItem, name: e.target.value, sku: ""});
+                          setSelectedProduct(null);
+                          setProductDropdownOpen(true);
                         }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-center text-white">
-                          <Upload className="h-6 w-6 mx-auto mb-1" />
-                          <p className="text-xs">{t('newImage')}</p>
+                        onFocus={() => setProductDropdownOpen(true)}
+                        placeholder={t('typeToSearchProducts')}
+                        className="h-9"
+                        data-testid="input-item-name"
+                      />
+                      {productDropdownOpen && currentItem.name && (
+                        <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-72 overflow-auto">
+                          {filteredProducts.length > 0 ? (
+                            <div>
+                              {filteredProducts.slice(0, 10).map((product) => (
+                                <button
+                                  key={product.id}
+                                  className="w-full px-3 py-2.5 text-left hover:bg-accent flex items-start gap-3 border-b last:border-b-0"
+                                  onClick={() => selectProduct(product)}
+                                >
+                                  {product.imageUrl ? (
+                                    <img src={product.imageUrl} alt="" className="w-10 h-10 object-contain rounded border bg-slate-50 flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                      <Package className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm truncate">{product.name}</div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                      {product.sku && <span>SKU: {product.sku}</span>}
+                                      {product.stock !== undefined && (
+                                        <span className={cn(
+                                          "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                          product.stock > 10 ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" :
+                                          product.stock > 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
+                                          "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                        )}>
+                                          {t('inStock')}: {product.stock}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {product.bulkUnitName && product.bulkUnitQty && (
+                                      <div className="text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">
+                                        {product.bulkUnitQty} {product.sellingUnitName || 'pcs'}/{product.bulkUnitName}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Check className={cn("h-4 w-4 mt-1 flex-shrink-0", currentItem.name === product.name ? "opacity-100 text-primary" : "opacity-0")} />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-3">
+                              <p className="text-sm text-muted-foreground mb-2">{t('noProductFound')}</p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate('/products/add')}
+                                className="w-full"
+                                data-testid="button-add-new-product"
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                {t('goToProductsPage')} "{currentItem.name}"
+                              </Button>
+                            </div>
+                          )}
                         </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="sku" className="text-xs text-muted-foreground">{t('sku')}</Label>
+                        <Input
+                          id="sku"
+                          value={currentItem.sku}
+                          onChange={(e) => setCurrentItem({...currentItem, sku: e.target.value})}
+                          placeholder={t('autoFilledOrEnterManually')}
+                          className="h-8 text-sm"
+                          data-testid="input-sku"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="barcode" className="text-xs text-muted-foreground">{t('barcode')}</Label>
+                        <Input
+                          id="barcode"
+                          value={currentItem.barcode}
+                          onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
+                          placeholder={t('barcodeExample')}
+                          className="h-8 text-sm"
+                          data-testid="input-barcode"
+                        />
                       </div>
                     </div>
-                  ) : (
-                    // Show upload button for new products
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        data-testid="input-product-image"
-                      />
-                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
-                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                        <p className="text-xs text-gray-500 text-center">
-                          {currentItem.name ? t('uploadImage') : t('selectProductFirst')}
-                        </p>
-                      </div>
-                    </label>
+                  </div>
+                  
+                  {/* Clear Button */}
+                  {(selectedProduct || productImagePreview) && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearProductSelection}
+                      className="h-8 px-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
-              </div>
-
-              {/* Clear selection button if product is selected */}
-              {(selectedProduct || productImagePreview) && (
-                <div className="flex justify-center">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={clearProductSelection}
-                    className="text-xs"
-                  >
-                    <RotateCcw className="h-3 w-3 mr-1" />
-                    {t('clearSelection')}
-                  </Button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="itemName">{t('itemName')} *</Label>
-                  <div className="relative" ref={productDropdownRef}>
-                    <Input
-                      id="itemName"
-                      value={currentItem.name}
-                      onChange={(e) => {
-                        setCurrentItem({...currentItem, name: e.target.value, sku: ""});
-                        setSelectedProduct(null);
-                        setProductDropdownOpen(true);
-                      }}
-                      onFocus={() => setProductDropdownOpen(true)}
-                      placeholder={t('typeToSearchProducts')}
-                      data-testid="input-item-name"
-                    />
-                    {productDropdownOpen && currentItem.name && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {filteredProducts.length > 0 ? (
-                          <div>
-                            {filteredProducts.slice(0, 10).map((product) => (
-                              <button
-                                key={product.id}
-                                className="w-full px-3 py-2 text-left hover:bg-accent flex items-start"
-                                onClick={() => selectProduct(product)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4 mt-0.5",
-                                    currentItem.name === product.name ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex-1">
-                                  <div className="font-medium">{product.name}</div>
-                                  {product.sku && (
-                                    <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-2">
-                            <p className="text-sm text-muted-foreground mb-2">{t('noProductFound')}</p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                navigate('/products/add');
-                              }}
-                              className="w-full"
-                              data-testid="button-add-new-product"
-                            >
-                              <Plus className="mr-2 h-4 w-4" />
-                              {t('goToProductsPage')} "{currentItem.name}"
-                            </Button>
-                          </div>
-                        )}
+                
+                {/* Selected Product Info Panel */}
+                {selectedProduct && (
+                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">{t('productInfo')}</span>
+                      {selectedProduct.warehouseLocation && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                          {selectedProduct.warehouseLocation}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">{t('currentStock')}</span>
+                        <span className={cn(
+                          "font-medium",
+                          (selectedProduct.stock || 0) > 10 ? "text-green-600" :
+                          (selectedProduct.stock || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                        )}>
+                          {selectedProduct.stock ?? 0} {selectedProduct.sellingUnitName || 'pcs'}
+                        </span>
                       </div>
-                    )}
+                      {selectedProduct.bulkUnitName && selectedProduct.bulkUnitQty && (
+                        <div>
+                          <span className="text-xs text-muted-foreground block">{t('purchaseUnit')}</span>
+                          <span className="font-medium text-blue-600">
+                            {selectedProduct.bulkUnitQty} {selectedProduct.sellingUnitName || 'pcs'}/{selectedProduct.bulkUnitName}
+                          </span>
+                        </div>
+                      )}
+                      {(selectedProduct.importCostUSD || selectedProduct.importCostEUR) && (
+                        <div>
+                          <span className="text-xs text-muted-foreground block">{t('lastImportCost')}</span>
+                          <span className="font-medium">
+                            {selectedProduct.importCostUSD ? `$${parseFloat(selectedProduct.importCostUSD).toFixed(2)}` : 
+                             selectedProduct.importCostEUR ? `€${parseFloat(selectedProduct.importCostEUR).toFixed(2)}` : '-'}
+                          </span>
+                        </div>
+                      )}
+                      {selectedProduct.weight && (
+                        <div>
+                          <span className="text-xs text-muted-foreground block">{t('weight')}</span>
+                          <span className="font-medium">{selectedProduct.weight} kg</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Separator />
+              
+              {/* Quantity & Pricing Section */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-muted-foreground" />
+                  {t('quantityAndPricing')}
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="quantity" className="text-xs">{t('quantity')} *</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={currentItem.quantity}
+                      onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 1})}
+                      className="h-9"
+                      data-testid="input-quantity"
+                    />
+                  </div>
+                  {selectedProduct?.bulkUnitName && (
+                    <div className="space-y-1">
+                      <Label htmlFor="unitType" className="text-xs">{t('purchaseUnit')}</Label>
+                      <Select
+                        value={currentItem.unitType || 'selling'}
+                        onValueChange={(value: 'selling' | 'bulk') => setCurrentItem({...currentItem, unitType: value})}
+                      >
+                        <SelectTrigger id="unitType" className="h-9" data-testid="select-unit-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="selling">
+                            {selectedProduct?.sellingUnitName || t('sellingUnit')}
+                          </SelectItem>
+                          <SelectItem value="bulk">
+                            {selectedProduct?.bulkUnitName}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <Label htmlFor="unitPrice" className="text-xs">{t('unitPrice')} ({purchaseCurrency}) *</Label>
+                    <Input
+                      id="unitPrice"
+                      type="number"
+                      step="0.01"
+                      value={currentItem.unitPrice}
+                      onChange={(e) => setCurrentItem({...currentItem, unitPrice: parseFloat(e.target.value) || 0})}
+                      className="h-9"
+                      data-testid="input-unit-price"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="cartons" className="text-xs">{t('cartonsOptional')}</Label>
+                    <Input
+                      id="cartons"
+                      type="number"
+                      min="0"
+                      value={currentItem.cartons || ""}
+                      onChange={(e) => setCurrentItem({...currentItem, cartons: e.target.value ? parseInt(e.target.value) : undefined})}
+                      placeholder={t('cartonsPlaceholder')}
+                      className="h-9"
+                      data-testid="input-cartons"
+                    />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sku">{t('sku')}</Label>
-                  <Input
-                    id="sku"
-                    value={currentItem.sku}
-                    onChange={(e) => setCurrentItem({...currentItem, sku: e.target.value})}
-                    placeholder={t('autoFilledOrEnterManually')}
-                    data-testid="input-sku"
-                  />
-                </div>
+                
+                {/* Multi-unit conversion helper */}
+                {selectedProduct?.bulkUnitName && currentItem.unitType === 'bulk' && selectedProduct?.bulkUnitQty && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                    <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      {t('conversionHelper', {
+                        qty: currentItem.quantity || 1,
+                        bulkUnit: selectedProduct.bulkUnitName,
+                        totalQty: (currentItem.quantity || 1) * selectedProduct.bulkUnitQty,
+                        sellingUnit: selectedProduct.sellingUnitName || t('sellingUnit')
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">{t('category')}</Label>
-                  <div className="relative" ref={categoryDropdownRef}>
-                    <div 
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                      data-testid="select-category"
-                    >
-                      <span className={currentItem.categoryId ? "text-foreground" : "text-muted-foreground"}>
-                        {currentItem.categoryId 
-                          ? categories.find(c => c.id === currentItem.categoryId)?.name || t('selectACategory')
-                          : t('selectACategory')
+              
+              {/* Physical Properties Section */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  {t('physicalProperties')}
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="weight" className="text-xs">{t('weight')} (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      step="0.01"
+                      value={currentItem.weight}
+                      onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          document.getElementById('dimensions')?.focus();
                         }
-                      </span>
-                      <ChevronDown className="h-4 w-4 opacity-50" />
-                    </div>
-                    
-                    {categoryDropdownOpen && (
-                      <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-                        <div className="max-h-60 overflow-y-auto">
-                          {categories.map((category) => (
+                      }}
+                      className="h-9"
+                      data-testid="input-weight"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="dimensions" className="text-xs">{t('dimensions')}</Label>
+                    <Input
+                      id="dimensions"
+                      value={currentItem.dimensions}
+                      onChange={(e) => setCurrentItem({...currentItem, dimensions: e.target.value})}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!showVariants || variants.length === 0) {
+                            addItem();
+                          }
+                        }
+                      }}
+                      placeholder={t('dimensionsPlaceholder')}
+                      className="h-9"
+                      data-testid="input-dimensions"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="category" className="text-xs">{t('category')}</Label>
+                    <div className="relative" ref={categoryDropdownRef}>
+                      <div 
+                        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                        data-testid="select-category"
+                      >
+                        <span className={cn("truncate", currentItem.categoryId ? "text-foreground" : "text-muted-foreground")}>
+                          {currentItem.categoryId 
+                            ? categories.find(c => c.id === currentItem.categoryId)?.name || t('selectACategory')
+                            : t('selectACategory')
+                          }
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+                      </div>
+                      
+                      {categoryDropdownOpen && (
+                        <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                          <div className="max-h-48 overflow-y-auto">
+                            {categories.map((category) => (
+                              <div
+                                key={category.id}
+                                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                onClick={() => {
+                                  setCurrentItem({
+                                    ...currentItem, 
+                                    categoryId: category.id, 
+                                    category: category.name || category.name_en || ""
+                                  });
+                                  setCategoryDropdownOpen(false);
+                                }}
+                              >
+                                {category.name || category.name_en}
+                              </div>
+                            ))}
                             <div
-                              key={category.id}
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-primary"
                               onClick={() => {
-                                setCurrentItem({
-                                  ...currentItem, 
-                                  categoryId: category.id, 
-                                  category: category.name || category.name_en || ""
-                                });
+                                setNewCategoryDialogOpen(true);
                                 setCategoryDropdownOpen(false);
                               }}
                             >
-                              {category.name || category.name_en}
+                              <Plus className="h-3 w-3 mr-2" />
+                              {t('addNewCategory')}
                             </div>
-                          ))}
-                          <div
-                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-primary"
-                            onClick={() => {
-                              setNewCategoryDialogOpen(true);
-                              setCategoryDropdownOpen(false);
-                            }}
-                          >
-                            <Plus className="h-3 w-3 mr-2" />
-                            {t('addNewCategory')}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="barcode">{t('barcode')}</Label>
-                  <Input
-                    id="barcode"
-                    value={currentItem.barcode}
-                    onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
-                    placeholder={t('barcodeExample')}
-                    data-testid="input-barcode"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">{t('quantity')} *</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    value={currentItem.quantity}
-                    onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 1})}
-                    data-testid="input-quantity"
-                  />
-                </div>
-                {selectedProduct?.bulkUnitName && (
-                  <div className="space-y-2">
-                    <Label htmlFor="unitType">{t('purchaseUnit')}</Label>
-                    <Select
-                      value={currentItem.unitType || 'selling'}
-                      onValueChange={(value: 'selling' | 'bulk') => setCurrentItem({...currentItem, unitType: value})}
-                    >
-                      <SelectTrigger id="unitType" data-testid="select-unit-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="selling">
-                          {selectedProduct?.sellingUnitName || t('sellingUnit')}
-                        </SelectItem>
-                        <SelectItem value="bulk">
-                          {selectedProduct?.bulkUnitName}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="unitPrice">{t('unitPrice')} ({purchaseCurrency}) *</Label>
-                  <Input
-                    id="unitPrice"
-                    type="number"
-                    step="0.01"
-                    value={currentItem.unitPrice}
-                    onChange={(e) => setCurrentItem({...currentItem, unitPrice: parseFloat(e.target.value) || 0})}
-                    data-testid="input-unit-price"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">{t('weight')} (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.01"
-                    value={currentItem.weight}
-                    onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        document.getElementById('dimensions')?.focus();
-                      }
-                    }}
-                    data-testid="input-weight"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dimensions">{t('dimensions')}</Label>
-                  <Input
-                    id="dimensions"
-                    value={currentItem.dimensions}
-                    onChange={(e) => setCurrentItem({...currentItem, dimensions: e.target.value})}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (!showVariants || variants.length === 0) {
-                          addItem();
-                        }
-                      }
-                    }}
-                    placeholder={t('dimensionsPlaceholder')}
-                    data-testid="input-dimensions"
-                  />
                 </div>
               </div>
               
-              {/* Multi-unit conversion helper - only show when bulk unit is selected */}
-              {selectedProduct?.bulkUnitName && currentItem.unitType === 'bulk' && selectedProduct?.bulkUnitQty && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-                  <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm text-blue-700 dark:text-blue-300">
-                    {t('conversionHelper', {
-                      qty: currentItem.quantity || 1,
-                      bulkUnit: selectedProduct.bulkUnitName,
-                      totalQty: (currentItem.quantity || 1) * selectedProduct.bulkUnitQty,
-                      sellingUnit: selectedProduct.sellingUnitName || t('sellingUnit')
-                    })}
-                  </span>
+              {/* Additional Details Section */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  {t('additionalDetails')}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="binLocation" className="text-xs">{t('storageLocation')}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="binLocation"
+                        value={currentItem.binLocation || ""}
+                        onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
+                        placeholder={t('storageLocationExample')}
+                        className="h-9 flex-1"
+                        data-testid="input-bin-location"
+                      />
+                      <Button
+                        type="button"
+                        onClick={suggestStorageLocation}
+                        disabled={!currentItem.name || suggestingLocation}
+                        variant="outline"
+                        size="sm"
+                        className="h-9 gap-1.5 px-2.5"
+                        data-testid="button-suggest-location"
+                      >
+                        {suggestingLocation ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                        <span className="hidden sm:inline">{t('aiSuggest')}</span>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="itemNotes" className="text-xs">{t('itemNotes')}</Label>
+                    <Input
+                      id="itemNotes"
+                      value={currentItem.notes}
+                      onChange={(e) => setCurrentItem({...currentItem, notes: e.target.value})}
+                      placeholder={t('optionalNotes')}
+                      className="h-9"
+                      data-testid="input-item-notes"
+                    />
+                  </div>
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="itemNotes">{t('itemNotes')}</Label>
-                <Input
-                  id="itemNotes"
-                  value={currentItem.notes}
-                  onChange={(e) => setCurrentItem({...currentItem, notes: e.target.value})}
-                  placeholder={t('optionalNotes')}
-                  data-testid="input-item-notes"
-                />
-              </div>
-              
-              {/* AI Storage Location Suggestion */}
-              <div className="space-y-2">
-                <Label htmlFor="binLocation">{t('storageLocation')}</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="binLocation"
-                    value={currentItem.binLocation || ""}
-                    onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
-                    placeholder={t('storageLocationExample')}
-                    data-testid="input-bin-location"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={suggestStorageLocation}
-                    disabled={!currentItem.name || suggestingLocation}
-                    variant="outline"
-                    className="gap-2"
-                    data-testid="button-suggest-location"
-                  >
-                    {suggestingLocation ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t('aiSuggesting')}...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4" />
-                        {t('aiSuggest')}
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t('aiStorageLocationDescription')}
-                </p>
               </div>
               
               {/* Variants Toggle */}

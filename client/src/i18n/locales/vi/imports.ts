@@ -1856,6 +1856,19 @@ const imports = {
   csvLandingCostUnit: 'Chi phí nhập/Đơn vị',
   csvWarnings: 'Cảnh báo',
   
+  // Product Selection Improvements
+  currentStock: 'Tồn kho hiện tại',
+  cartonsOptional: 'Số thùng (tùy chọn)',
+  cartonsPlaceholder: 'Số lượng thùng',
+  productInfo: 'Thông tin sản phẩm',
+  selectExistingProduct: 'Chọn sản phẩm có sẵn hoặc nhập tên mới',
+  unitsPerCarton: '{{qty}} {{unit}}/{{carton}}',
+  productSelectionInfo: 'Tìm và chọn sản phẩm hoặc nhập tên mới',
+  quantityAndPricing: 'Số lượng & Giá',
+  physicalProperties: 'Thuộc tính vật lý',
+  additionalDetails: 'Chi tiết bổ sung',
+  lastImportCost: 'Giá nhập lần cuối',
+  
 } as const;
 
 export default imports;

@@ -2089,6 +2089,19 @@ const imports = {
   csvLandingCostUnit: 'Landing Cost/Unit',
   csvWarnings: 'Warnings',
   
+  // Product Selection Improvements
+  currentStock: 'Current Stock',
+  cartonsOptional: 'Cartons (optional)',
+  cartonsPlaceholder: 'Number of cartons',
+  productInfo: 'Product Info',
+  selectExistingProduct: 'Select an existing product or enter a new name',
+  unitsPerCarton: '{{qty}} {{unit}}/{{carton}}',
+  productSelectionInfo: 'Search and select a product or type a new name',
+  quantityAndPricing: 'Quantity & Pricing',
+  physicalProperties: 'Physical Properties',
+  additionalDetails: 'Additional Details',
+  lastImportCost: 'Last Import Cost',
+  
 } as const;
 
 export default imports;
