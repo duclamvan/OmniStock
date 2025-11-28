@@ -1729,12 +1729,15 @@ export default function CreatePurchase() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => navigate('/products/add')}
+                                onClick={() => {
+                                  const productName = encodeURIComponent(currentItem.name || '');
+                                  window.open(`/inventory/add?name=${productName}`, '_blank');
+                                }}
                                 className="w-full"
                                 data-testid="button-add-new-product"
                               >
                                 <Plus className="mr-2 h-4 w-4" />
-                                {t('goToProductsPage')} "{currentItem.name}"
+                                {t('createNewProduct')} "{currentItem.name}"
                               </Button>
                             </div>
                           )}

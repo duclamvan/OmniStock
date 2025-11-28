@@ -309,9 +309,10 @@ export default function ProductForm() {
   const variantConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const importCostUpdatingRef = useRef<string | null>(null);
 
-  // Get categoryId from URL query parameters (for add mode)
+  // Get query parameters from URL (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
   const categoryIdFromUrl = searchParams.get('categoryId');
+  const nameFromUrl = searchParams.get('name');
 
   // Fetch product data if in edit mode
   const { data: product, isLoading: productLoading, isSuccess: productLoaded } = useQuery<any>({
@@ -367,8 +368,9 @@ export default function ProductForm() {
       lowStockAlert: lowStockThreshold || 10,
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
       warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
+      name: isEditMode ? undefined : (nameFromUrl || undefined),
     };
-  }, [lowStockThreshold, categoryIdFromUrl, defaultWarehouse, isEditMode]);
+  }, [lowStockThreshold, categoryIdFromUrl, defaultWarehouse, isEditMode, nameFromUrl]);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -393,6 +395,7 @@ export default function ProductForm() {
           lowStockThreshold,
           defaultWarehouse,
           categoryIdFromUrl,
+          nameFromUrl,
         });
       }
       form.reset(buildDefaultValues());
