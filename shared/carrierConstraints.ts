@@ -197,15 +197,28 @@ export function getCarrierConstraints(carrierCode: string): CarrierConstraints |
 }
 
 export function normalizeCarrierCode(carrier: string): string {
+  // Normalize: trim whitespace, replace hyphens with space, uppercase
+  const normalized = carrier.trim().toUpperCase().replace(/[-_]+/g, ' ');
+  
   const map: Record<string, string> = {
+    // DHL variations
     'PPL': 'PPL CZ',
     'GLS': 'GLS DE',
     'DHL': 'DHL DE',
     'PPL CZ': 'PPL CZ',
     'GLS DE': 'GLS DE',
     'DHL DE': 'DHL DE',
+    'DHLDE': 'DHL DE',
+    'DHL GERMANY': 'DHL DE',
+    'DHL PAKET': 'DHL DE',
+    // PPL variations
+    'PPLCZ': 'PPL CZ',
+    'PPL CZECH': 'PPL CZ',
+    // GLS variations
+    'GLSDE': 'GLS DE',
+    'GLS GERMANY': 'GLS DE',
   };
-  return map[carrier] || carrier;
+  return map[normalized] || carrier;
 }
 
 export function findBestParcelSize(
