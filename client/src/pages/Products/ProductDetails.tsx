@@ -223,7 +223,7 @@ export default function ProductDetails() {
             {productImages.length > 1 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                 {productImages.map((img, idx) => {
-                  const config = IMAGE_PURPOSE_CONFIG[img.purpose as keyof typeof IMAGE_PURPOSE_CONFIG];
+                  const config = IMAGE_PURPOSE_ICONS[img.purpose as keyof typeof IMAGE_PURPOSE_ICONS];
                   const Icon = config?.icon || ImageIcon;
                   return (
                     <button
