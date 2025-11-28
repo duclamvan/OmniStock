@@ -474,6 +474,17 @@ const products = {
     productPartFallback: 'PROD',
   },
   
+  // Supplier Details Labels (for ProductForm)
+  supplierDetails: {
+    email: 'Email',
+    phone: 'Phone',
+    country: 'Country',
+    website: 'Website',
+    viewLink: 'View Link',
+    address: 'Address',
+    viewSupplierDetails: 'View Supplier Details',
+  },
+  
 } as const;
 
 export default products;

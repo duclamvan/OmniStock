@@ -581,6 +581,17 @@ const products = {
     productPartFallback: 'SP',
   },
   
+  // Supplier Details Labels (for ProductForm)
+  supplierDetails: {
+    email: 'Email',
+    phone: 'Điện thoại',
+    country: 'Quốc gia',
+    website: 'Website',
+    viewLink: 'Xem liên kết',
+    address: 'Địa chỉ',
+    viewSupplierDetails: 'Xem chi tiết nhà cung cấp',
+  },
+  
 } as const;
 
 export default products;

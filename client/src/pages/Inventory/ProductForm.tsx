@@ -2800,7 +2800,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <Mail className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Email</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.email')}</p>
                                   <a 
                                     href={`mailto:${selectedSupplier.email}`}
                                     className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -2817,7 +2817,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <Phone className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Phone</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.phone')}</p>
                                   <a 
                                     href={`tel:${selectedSupplier.phone}`}
                                     className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -2834,7 +2834,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <Globe className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Country</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.country')}</p>
                                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-supplier-country">
                                     {selectedSupplier.country}
                                   </p>
@@ -2847,7 +2847,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2">
                                 <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Website</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.website')}</p>
                                   <a 
                                     href={selectedSupplier.website}
                                     target="_blank"
@@ -2875,7 +2875,7 @@ export default function ProductForm() {
                                     className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                                     data-testid="link-supplier-link"
                                   >
-                                    View Link
+                                    {t('products:supplierDetails.viewLink')}
                                     <ExternalLink className="h-3 w-3" />
                                   </a>
                                 </div>
@@ -2887,7 +2887,7 @@ export default function ProductForm() {
                               <div className="flex items-start gap-2 md:col-span-2">
                                 <MapPin className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">Address</p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.address')}</p>
                                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-supplier-address">
                                     {selectedSupplier.address}
                                   </p>
@@ -2906,14 +2906,14 @@ export default function ProductForm() {
                       <Link href={`/suppliers/${supplierId}`}>
                         <Button type="button" variant="outline" size="sm" data-testid="button-view-supplier">
                           <Building className="h-4 w-4 mr-2" />
-                          View Supplier Details
+                          {t('products:supplierDetails.viewSupplierDetails')}
                         </Button>
                       </Link>
                     )}
                     <Link href="/suppliers/new">
                       <Button type="button" variant="outline" size="sm" data-testid="button-add-supplier">
                         <Plus className="h-4 w-4 mr-2" />
-                        Add New Supplier
+                        {t('products:addNewSupplier')}
                       </Button>
                     </Link>
                   </div>
@@ -2943,7 +2943,7 @@ export default function ProductForm() {
                       <DialogTrigger asChild>
                         <Button type="button" size="sm" data-testid="button-add-variant">
                           <Plus className="h-4 w-4 mr-2" />
-                          Add Variant
+                          {t('products:addVariant')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
