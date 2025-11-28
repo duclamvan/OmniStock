@@ -11989,6 +11989,7 @@ Important:
   app.get('/api/orders/:orderId/recommend-carton', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
+      const { carrierCode, shippingCountry } = req.query;
 
       const order = await storage.getOrderById(orderId);
       if (!order) {
@@ -12011,7 +12012,10 @@ Important:
         })
       );
 
-      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, packingCartons);
+      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, packingCartons, {
+        carrierCode: carrierCode as string | undefined,
+        shippingCountry: (shippingCountry as string) || order.country || undefined
+      });
 
       res.json({
         suggestions: packingPlan.cartons,
@@ -12020,7 +12024,11 @@ Important:
         reasoning: packingPlan.reasoning,
         totalWeightKg: packingPlan.totalWeightKg,
         avgUtilization: packingPlan.avgUtilization,
-        optimizationSuggestions: packingPlan.suggestions
+        optimizationSuggestions: packingPlan.suggestions,
+        carrierCode: packingPlan.carrierCode,
+        carrierConstraints: packingPlan.carrierConstraints,
+        estimatedShippingCost: packingPlan.estimatedShippingCost,
+        shippingCurrency: packingPlan.shippingCurrency
       });
     } catch (error) {
       console.error('Error recommending carton:', error);
@@ -12115,7 +12123,7 @@ Important:
   app.post('/api/orders/:orderId/recalculate-carton-plan', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
-      const { selectedCartonTypes } = req.body;
+      const { selectedCartonTypes, carrierCode, shippingCountry } = req.body;
 
       if (!selectedCartonTypes || !Array.isArray(selectedCartonTypes)) {
         return res.status(400).json({ error: 'selectedCartonTypes array is required' });
@@ -12150,7 +12158,10 @@ Important:
         })
       );
 
-      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, selectedCartons);
+      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, selectedCartons, {
+        carrierCode,
+        shippingCountry: shippingCountry || order.country || undefined
+      });
 
       res.json({
         suggestions: packingPlan.cartons,
@@ -12159,7 +12170,11 @@ Important:
         reasoning: packingPlan.reasoning,
         totalWeightKg: packingPlan.totalWeightKg,
         avgUtilization: packingPlan.avgUtilization,
-        optimizationSuggestions: packingPlan.suggestions
+        optimizationSuggestions: packingPlan.suggestions,
+        carrierCode: packingPlan.carrierCode,
+        carrierConstraints: packingPlan.carrierConstraints,
+        estimatedShippingCost: packingPlan.estimatedShippingCost,
+        shippingCurrency: packingPlan.shippingCurrency
       });
     } catch (error) {
       console.error('Error recalculating carton plan:', error);
@@ -12408,7 +12423,7 @@ Important:
   // Optimize packing without saving (on-the-fly optimization)
   app.post('/api/packing/optimize', isAuthenticated, async (req, res) => {
     try {
-      const { items, shippingCountry } = req.body;
+      const { items, shippingCountry, carrierCode, preferBulkWrapping } = req.body;
 
       if (!items || items.length === 0) {
         return res.status(400).json({ message: 'No items provided for optimization' });
@@ -12435,18 +12450,13 @@ Important:
         return res.status(400).json({ message: 'No packing cartons configured' });
       }
 
-      // Call optimization service
-      console.log(`Optimizing carton packing for ${enrichedItems.length} items (shipping to ${shippingCountry})`);
-      const packingPlan = await optimizeCartonPacking(enrichedItems, cartons);
-
-      // Calculate estimated shipping cost based on total weight and cartons
-      let estimatedShippingCost = 0;
-      for (const carton of packingPlan.cartons) {
-        const cartonInfo = cartons.find(c => c.id === carton.cartonId);
-        if (cartonInfo && cartonInfo.costAmount) {
-          estimatedShippingCost += parseFloat(cartonInfo.costAmount.toString());
-        }
-      }
+      // Call optimization service with carrier constraints
+      console.log(`Optimizing carton packing for ${enrichedItems.length} items (shipping to ${shippingCountry}, carrier: ${carrierCode || 'none'})`);
+      const packingPlan = await optimizeCartonPacking(enrichedItems, cartons, {
+        carrierCode,
+        shippingCountry,
+        preferBulkWrapping
+      });
 
       // Return the optimization plan without saving to database
       res.json({
@@ -12456,7 +12466,11 @@ Important:
         reasoning: packingPlan.reasoning,
         totalWeightKg: packingPlan.totalWeightKg,
         avgUtilization: packingPlan.avgUtilization,
-        optimizationSuggestions: packingPlan.suggestions
+        optimizationSuggestions: packingPlan.suggestions,
+        carrierCode: packingPlan.carrierCode,
+        carrierConstraints: packingPlan.carrierConstraints,
+        estimatedShippingCost: packingPlan.estimatedShippingCost,
+        shippingCurrency: packingPlan.shippingCurrency
       });
     } catch (error) {
       console.error('Error optimizing packing:', error);
