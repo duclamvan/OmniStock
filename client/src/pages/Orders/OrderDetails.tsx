@@ -298,7 +298,7 @@ export default function OrderDetails() {
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
               background: white;
               padding: 0;
-              width: 430px;
+              width: 480px;
             }
             .invoice-card {
               background: white;
@@ -406,9 +406,8 @@ export default function OrderDetails() {
               font-weight: 600;
               color: #0f172a;
               margin-bottom: 2px;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
+              line-height: 1.3;
+              word-break: break-word;
             }
             .item-sku {
               font-size: 12px;
@@ -498,9 +497,9 @@ export default function OrderDetails() {
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 55%;">${t('orders:product')}</th>
-                  <th style="width: 15%; text-align: center;">${t('orders:qty')}</th>
-                  <th style="width: 30%;">${t('orders:price')}</th>
+                  <th style="width: 60%;">${t('orders:product')}</th>
+                  <th style="width: 12%; text-align: center;">${t('orders:qty')}</th>
+                  <th style="width: 28%;">${t('orders:price')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -581,7 +580,7 @@ export default function OrderDetails() {
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
-      iframe.style.width = '430px';
+      iframe.style.width = '480px';
       iframe.style.height = '3000px';
       document.body.appendChild(iframe);
 
