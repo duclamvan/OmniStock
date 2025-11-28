@@ -1353,7 +1353,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 0);
       };
 
-      // Calculate profit in EUR (Profit = Grand Total - Total Import Cost - Tax Amount - Discount Value)
+      // Calculate profit in EUR using landing cost snapshots (Profit = Grand Total - Total Import Cost - Tax Amount - Discount Value)
+      // CRITICAL: Uses stored landingCost snapshot from order items (captured at sale time) for accurate historical profit
+      // Falls back to current product cost only for legacy orders without snapshots
       const calculateProfitInEur = async (orders: any[]) => {
         let totalProfit = 0;
 
@@ -1371,24 +1373,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let totalImportCost = 0;
 
           for (const item of orderItems) {
-            const product = await storage.getProductById(item.productId);
-            if (product) {
-              const quantity = parseInt(item.quantity || '0');
-              let importCost = 0;
+            const quantity = parseInt(String(item.quantity) || '0');
+            let importCost = 0;
 
-              // Use import cost based on order currency
-              if (order.currency === 'CZK' && product.importCostCzk) {
-                importCost = parseFloat(product.importCostCzk);
-              } else if (order.currency === 'EUR' && product.importCostEur) {
-                importCost = parseFloat(product.importCostEur);
-              } else if (product.importCostUsd) {
-                // Convert USD to order currency, then to EUR
-                const importCostUsd = parseFloat(product.importCostUsd);
-                importCost = convertToEur(importCostUsd, 'USD');
+            // Priority 1: Use stored landing cost snapshot (immutable cost at time of sale)
+            if (item.landingCost) {
+              importCost = parseFloat(item.landingCost);
+            } else if (item.productId) {
+              // Fallback for legacy orders without snapshot: fetch current product cost
+              const product = await storage.getProductById(item.productId);
+              if (product) {
+                // Use import cost based on order currency
+                if (order.currency === 'CZK' && product.importCostCzk) {
+                  importCost = parseFloat(product.importCostCzk);
+                } else if (order.currency === 'EUR' && product.importCostEur) {
+                  importCost = parseFloat(product.importCostEur);
+                } else if (product.importCostUsd) {
+                  // Convert USD to order currency, then to EUR
+                  const importCostUsd = parseFloat(product.importCostUsd);
+                  importCost = convertToEur(importCostUsd, 'USD');
+                }
               }
-
-              totalImportCost += importCost * quantity;
             }
+
+            totalImportCost += importCost * quantity;
           }
 
           // Profit = Revenue - Import Costs - Tax - Discount
@@ -7269,13 +7277,37 @@ Important:
 
       const order = await storage.createOrder(data);
 
-      // Create order items
+      // Create order items with landing cost snapshot
       if (items && items.length > 0) {
         console.log('Creating order items, items received:', JSON.stringify(items));
         console.log('Order ID:', order.id, 'Order Currency:', order.currency);
         for (const item of items) {
           // Map frontend price field to schema fields
           const price = item.price || 0; // Default to 0 if price is undefined
+          
+          // CRITICAL: Capture landing cost snapshot at time of sale for accurate profit calculation
+          // This ensures historical orders maintain their correct profit even when product costs change
+          let landingCostSnapshot = null;
+          if (item.productId) {
+            try {
+              const product = await storage.getProductById(item.productId);
+              if (product) {
+                // Priority: latestLandingCost (includes freight/duty) > importCost by currency
+                if (product.latestLandingCost) {
+                  landingCostSnapshot = parseFloat(product.latestLandingCost);
+                } else if (order.currency === 'CZK' && product.importCostCzk) {
+                  landingCostSnapshot = parseFloat(product.importCostCzk);
+                } else if (order.currency === 'EUR' && product.importCostEur) {
+                  landingCostSnapshot = parseFloat(product.importCostEur);
+                } else if (product.importCostUsd) {
+                  landingCostSnapshot = parseFloat(product.importCostUsd);
+                }
+              }
+            } catch (err) {
+              console.error('Failed to fetch product for landing cost snapshot:', err);
+            }
+          }
+          
           const orderItem = {
             orderId: order.id,
             productId: item.productId,
@@ -7293,6 +7325,7 @@ Important:
             tax: String(item.tax || 0),
             total: String(item.total || price),
             image: item.image || null,
+            landingCost: landingCostSnapshot ? String(landingCostSnapshot) : null, // Cost snapshot at sale time
           };
           console.log('Creating order item:', JSON.stringify(orderItem));
           try {
