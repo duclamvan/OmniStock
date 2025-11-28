@@ -1,21 +1,44 @@
 import type { PackingCarton } from '@shared/schema';
 import { inferProductWeightDimensions } from './aiWeightInferenceService';
+import { 
+  getCarrierConstraints, 
+  findBestParcelSize, 
+  validateCartonForCarrier,
+  type ParcelSizeCategory,
+  type CarrierConstraints
+} from '@shared/carrierConstraints';
 
 export interface PackingPlanItem {
   productId: string;
+  productName?: string;
   quantity: number;
   weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   aiEstimated: boolean;
+  isBulkWrappable?: boolean;
 }
 
 export interface PackingPlanCarton {
   cartonId: string;
   cartonNumber: number;
+  cartonName?: string;
   items: PackingPlanItem[];
   totalWeightKg: number;
+  payloadWeightKg?: number;
   volumeUtilization: number;
   fillingWeightKg: number;
   unusedVolumeCm3: number;
+  innerLengthCm?: number;
+  innerWidthCm?: number;
+  innerHeightCm?: number;
+  recommendedParcelSize?: ParcelSizeCategory | null;
+  carrierValidation?: {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  };
 }
 
 export interface NylonWrapItem {
@@ -33,10 +56,15 @@ export interface PackingPlan {
   avgUtilization: number;
   suggestions: string[];
   reasoning: string;
+  carrierCode?: string;
+  carrierConstraints?: CarrierConstraints | null;
+  estimatedShippingCost?: number;
+  shippingCurrency?: string;
 }
 
 interface OrderItemWithDimensions {
   productId: string;
+  productName?: string;
   quantity: number;
   product: any;
   weightKg: number;
@@ -45,6 +73,13 @@ interface OrderItemWithDimensions {
   heightCm: number;
   volumeCm3: number;
   aiEstimated: boolean;
+  isBulkWrappable?: boolean;
+}
+
+export interface PackingOptions {
+  carrierCode?: string;
+  shippingCountry?: string;
+  preferBulkWrapping?: boolean;
 }
 
 interface PartialCarton {
@@ -93,10 +128,17 @@ export function classifyItemsByPackaging(orderItems: any[]): {
 
 export async function optimizeCartonPacking(
   orderItems: any[],
-  packingCartons: PackingCarton[]
+  packingCartons: PackingCarton[],
+  options: PackingOptions = {}
 ): Promise<PackingPlan> {
   try {
+    const { carrierCode, shippingCountry, preferBulkWrapping = true } = options;
+    const carrierConstraints = carrierCode ? getCarrierConstraints(carrierCode) : null;
+    
     console.log(`Starting carton packing optimization for ${orderItems.length} items with ${packingCartons.length} carton types`);
+    if (carrierCode) {
+      console.log(`Carrier: ${carrierCode}, Constraints: ${carrierConstraints ? 'Found' : 'Not found'}`);
+    }
 
     if (!orderItems || orderItems.length === 0) {
       console.warn('No order items provided for packing');
@@ -169,9 +211,20 @@ export async function optimizeCartonPacking(
       }
 
       const volumeCm3 = lengthCm * widthCm * heightCm;
+      
+      const isBulkWrappable = preferBulkWrapping && (
+        product.bulkUnitName || 
+        product.packagingRequirement === 'outer_carton' ||
+        (product.name && (
+          product.name.toLowerCase().includes('box') ||
+          product.name.toLowerCase().includes('carton') ||
+          product.name.toLowerCase().includes('case')
+        ))
+      );
 
       itemsWithDimensions.push({
         productId: product.id,
+        productName: product.name || orderItem.productName,
         quantity: orderItem.quantity,
         product,
         weightKg,
@@ -179,7 +232,8 @@ export async function optimizeCartonPacking(
         widthCm,
         heightCm,
         volumeCm3,
-        aiEstimated
+        aiEstimated,
+        isBulkWrappable
       });
     }
 
@@ -234,9 +288,14 @@ export async function optimizeCartonPacking(
         
         const allItems: PackingPlanItem[] = itemsWithDimensions.map(item => ({
           productId: item.productId,
+          productName: item.productName,
           quantity: item.quantity,
           weightKg: item.weightKg * item.quantity,
-          aiEstimated: item.aiEstimated
+          lengthCm: item.lengthCm,
+          widthCm: item.widthCm,
+          heightCm: item.heightCm,
+          aiEstimated: item.aiEstimated,
+          isBulkWrappable: item.isBulkWrappable
         }));
         
         partialCartons.push({
@@ -285,9 +344,14 @@ export async function optimizeCartonPacking(
           if (newTotalVolume <= cartonVolume && newTotalWeight <= maxWeight) {
             partial.items.push({
               productId: item.productId,
+              productName: item.productName,
               quantity: item.quantity,
               weightKg: item.weightKg * item.quantity,
-              aiEstimated: item.aiEstimated
+              lengthCm: item.lengthCm,
+              widthCm: item.widthCm,
+              heightCm: item.heightCm,
+              aiEstimated: item.aiEstimated,
+              isBulkWrappable: item.isBulkWrappable
             });
             partial.totalWeightKg = newTotalWeight;
             partial.totalVolumeCm3 = newTotalVolume;
@@ -326,9 +390,14 @@ export async function optimizeCartonPacking(
             cartonNumber: cartonCounter++,
             items: [{
               productId: item.productId,
+              productName: item.productName,
               quantity: item.quantity,
               weightKg: itemTotalWeight,
-              aiEstimated: item.aiEstimated
+              lengthCm: item.lengthCm,
+              widthCm: item.widthCm,
+              heightCm: item.heightCm,
+              aiEstimated: item.aiEstimated,
+              isBulkWrappable: item.isBulkWrappable
             }],
             totalWeightKg: itemTotalWeight,
             totalVolumeCm3: itemTotalVolume
@@ -341,26 +410,54 @@ export async function optimizeCartonPacking(
     }
 
     const cartons: PackingPlanCarton[] = partialCartons.map(partial => {
-      const cartonVolume = parseFloat(partial.carton.innerLengthCm.toString()) *
-                          parseFloat(partial.carton.innerWidthCm.toString()) *
-                          parseFloat(partial.carton.innerHeightCm.toString());
+      const innerLengthCm = parseFloat(partial.carton.innerLengthCm.toString());
+      const innerWidthCm = parseFloat(partial.carton.innerWidthCm.toString());
+      const innerHeightCm = parseFloat(partial.carton.innerHeightCm.toString());
+      const cartonVolume = innerLengthCm * innerWidthCm * innerHeightCm;
       const volumeUtilization = (partial.totalVolumeCm3 / cartonVolume) * 100;
       const tareWeight = parseFloat(partial.carton.tareWeightKg.toString());
       
-      // Calculate unused volume and filling weight
       const unusedVolumeCm3 = Math.max(0, cartonVolume - partial.totalVolumeCm3);
-      // Filling material density: ~0.015 kg per liter (15g per 1000 cm³)
-      // Common materials: bubble wrap, air pillows, paper filling
       const fillingWeightKg = (unusedVolumeCm3 / 1000) * 0.015;
+      
+      const totalWeightKg = partial.totalWeightKg + tareWeight + fillingWeightKg;
+      
+      let recommendedParcelSize = null;
+      let carrierValidation = undefined;
+      
+      if (carrierCode) {
+        recommendedParcelSize = findBestParcelSize(
+          carrierCode,
+          totalWeightKg,
+          innerLengthCm,
+          innerWidthCm,
+          innerHeightCm
+        );
+        
+        carrierValidation = validateCartonForCarrier(
+          carrierCode,
+          totalWeightKg,
+          innerLengthCm,
+          innerWidthCm,
+          innerHeightCm
+        );
+      }
       
       return {
         cartonId: partial.carton.id,
         cartonNumber: partial.cartonNumber,
+        cartonName: partial.carton.name,
         items: partial.items,
-        totalWeightKg: partial.totalWeightKg + tareWeight + fillingWeightKg,
+        totalWeightKg: Math.round(totalWeightKg * 100) / 100,
+        payloadWeightKg: Math.round(partial.totalWeightKg * 100) / 100,
         volumeUtilization: Math.round(volumeUtilization * 100) / 100,
         fillingWeightKg: Math.round(fillingWeightKg * 1000) / 1000,
-        unusedVolumeCm3: Math.round(unusedVolumeCm3)
+        unusedVolumeCm3: Math.round(unusedVolumeCm3),
+        innerLengthCm,
+        innerWidthCm,
+        innerHeightCm,
+        recommendedParcelSize,
+        carrierValidation
       };
     });
 
@@ -394,6 +491,34 @@ export async function optimizeCartonPacking(
     if (overweightCartons.length > 0) {
       suggestions.push(`WARNING: ${overweightCartons.length} carton(s) exceed weight limit and need to be redistributed`);
     }
+    
+    if (carrierCode && carrierConstraints) {
+      const invalidCartons = cartons.filter(c => c.carrierValidation && !c.carrierValidation.valid);
+      if (invalidCartons.length > 0) {
+        suggestions.push(`⚠ ${invalidCartons.length} carton(s) exceed ${carrierConstraints.carrierName} limits`);
+      }
+      
+      const parcelSizes = cartons.map(c => c.recommendedParcelSize?.name).filter(Boolean);
+      if (parcelSizes.length > 0) {
+        const uniqueSizes = [...new Set(parcelSizes)];
+        suggestions.push(`📦 Recommended ${carrierConstraints.carrierName} sizes: ${uniqueSizes.join(', ')}`);
+      }
+      
+      const bulkItems = itemsWithDimensions.filter(item => item.isBulkWrappable);
+      if (bulkItems.length > 0) {
+        suggestions.push(`💡 ${bulkItems.length} item(s) can be bulk-wrapped together for efficiency`);
+      }
+    }
+    
+    let estimatedShippingCost = 0;
+    let shippingCurrency = 'EUR';
+    
+    for (const carton of cartons) {
+      if (carton.recommendedParcelSize?.costEstimate) {
+        estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
+        shippingCurrency = carton.recommendedParcelSize.currency || 'EUR';
+      }
+    }
 
     console.log(`✅ Packing optimization complete: ${totalCartons} carton(s), ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
 
@@ -416,7 +541,11 @@ export async function optimizeCartonPacking(
       totalWeightKg: Math.round(totalWeightKg * 100) / 100,
       avgUtilization: Math.round(avgUtilization * 100) / 100,
       suggestions,
-      reasoning
+      reasoning,
+      carrierCode,
+      carrierConstraints,
+      estimatedShippingCost: Math.round(estimatedShippingCost * 100) / 100,
+      shippingCurrency
     };
 
   } catch (error) {
