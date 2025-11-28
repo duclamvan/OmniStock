@@ -93,6 +93,11 @@ const imports = {
   receivedQuantity: 'Received Quantity',
   dimensionsPlaceholder: 'L×W×H',
   itemNamePlaceholder: 'Item name',
+  
+  // Multi-unit purchasing
+  purchaseUnit: 'Purchase Unit',
+  sellingUnit: 'piece',
+  conversionHelper: '{{qty}} {{bulkUnit}}(s) = {{totalQty}} {{sellingUnit}}(s) for inventory',
 
   // Costs & Financial
   productValue: 'Product Value',

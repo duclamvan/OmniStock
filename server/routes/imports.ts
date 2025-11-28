@@ -582,6 +582,8 @@ router.post("/purchases", async (req, res) => {
         dimensions: item.dimensions || null,
         notes: item.notes || null,
         status: "ordered",
+        unitType: item.unitType || 'selling',
+        quantityInSellingUnits: parseInt(item.quantityInSellingUnits) || parseInt(item.quantity) || 1,
         createdAt: new Date(),
         updatedAt: new Date()
       }));
@@ -688,6 +690,8 @@ router.patch("/purchases/:id", async (req, res) => {
           weight: item.weight || 0,
           dimensions: item.dimensions || null,
           notes: item.notes || null,
+          unitType: item.unitType || 'selling',
+          quantityInSellingUnits: parseInt(item.quantityInSellingUnits) || parseInt(item.quantity) || 1,
           createdAt: new Date(),
           updatedAt: new Date()
         }));

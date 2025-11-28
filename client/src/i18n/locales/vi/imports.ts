@@ -104,6 +104,11 @@ const imports = {
   receivedQuantity: 'Số lượng đã nhận',
   dimensionsPlaceholder: 'DxRxC',
   itemNamePlaceholder: 'Tên sản phẩm',
+  
+  // Multi-unit purchasing
+  purchaseUnit: 'Đơn vị mua',
+  sellingUnit: 'chiếc',
+  conversionHelper: '{{qty}} {{bulkUnit}} = {{totalQty}} {{sellingUnit}} trong kho',
 
   // Costs & Financial
   productValue: 'Giá trị hàng',

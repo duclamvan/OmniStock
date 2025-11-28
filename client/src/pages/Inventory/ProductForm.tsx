@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -77,7 +78,8 @@ import {
   ChevronsUpDown,
   Weight,
   Edit,
-  ListPlus
+  ListPlus,
+  Layers
 } from "lucide-react";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
@@ -137,6 +139,14 @@ const productSchema = z.object({
   height: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
   packingMaterialId: z.string().optional(),
+  // Multi-unit fields
+  sellingUnitName: z.string().optional().default('piece'),
+  bulkUnitName: z.string().optional(),
+  bulkUnitQty: z.coerce.number().min(1).optional(),
+  bulkPriceCzk: z.coerce.number().min(0).optional(),
+  bulkPriceEur: z.coerce.number().min(0).optional(),
+  allowBulkSales: z.boolean().optional().default(false),
+  unitContentsInfo: z.string().optional(),
 });
 
 const tieredPricingSchema = z.object({
@@ -270,7 +280,7 @@ export default function ProductForm() {
   const [packingMaterials, setPackingMaterials] = useState<Array<{id: string, name: string, quantity?: number}>>([]);
   
   // All available sections
-  const ALL_SECTIONS = ["images", "basic", "stock", "pricing", "supplier", "variants", "packing", "files"];
+  const ALL_SECTIONS = ["images", "basic", "stock", "pricing", "units", "supplier", "variants", "packing", "files"];
   
   // Load expanded sections from localStorage or default to all expanded
   const [expandedSections, setExpandedSections] = useState<string[]>(() => {
@@ -758,6 +768,14 @@ export default function ProductForm() {
         weight: product.weight ? parseFloat(product.weight) : undefined,
         warehouseLocation: product.warehouseLocation || '',
         packingMaterialId: product.packingMaterialId || '',
+        // Multi-unit fields
+        sellingUnitName: product.sellingUnitName || 'piece',
+        bulkUnitName: product.bulkUnitName || '',
+        bulkUnitQty: product.bulkUnitQty ? parseInt(product.bulkUnitQty) : undefined,
+        bulkPriceCzk: product.bulkPriceCzk ? parseFloat(product.bulkPriceCzk) : undefined,
+        bulkPriceEur: product.bulkPriceEur ? parseFloat(product.bulkPriceEur) : undefined,
+        allowBulkSales: product.allowBulkSales || false,
+        unitContentsInfo: product.unitContentsInfo || '',
       });
       
       setPackingInstructionsTexts(product.packingInstructionsTexts || []);
@@ -2485,6 +2503,184 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
 
+            {/* Packaging & Units */}
+            <AccordionItem value="units" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                    <Package className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:unitsSection')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:unitsSectionDesc')}</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {/* Selling Unit */}
+                  <div>
+                    <Label htmlFor="sellingUnitName" className="text-sm font-medium">{t('products:sellingUnitName')}</Label>
+                    <Input
+                      id="sellingUnitName"
+                      {...form.register('sellingUnitName')}
+                      placeholder={t('products:sellingUnitNamePlaceholder')}
+                      className="mt-1"
+                      data-testid="input-selling-unit-name"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">{t('products:sellingUnitNameHelp')}</p>
+                  </div>
+
+                  {/* Enable Bulk Unit Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Package className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                      <div>
+                        <Label htmlFor="enableBulkUnit" className="text-sm font-medium cursor-pointer">
+                          {t('products:enableBulkUnit')}
+                        </Label>
+                        <p className="text-xs text-slate-500">{t('products:enableBulkUnitHelp')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="enableBulkUnit"
+                      checked={!!form.watch('bulkUnitName')}
+                      onCheckedChange={(checked) => {
+                        if (!checked) {
+                          form.setValue('bulkUnitName', '');
+                          form.setValue('bulkUnitQty', undefined);
+                          form.setValue('bulkPriceCzk', undefined);
+                          form.setValue('bulkPriceEur', undefined);
+                          form.setValue('allowBulkSales', false);
+                          form.setValue('unitContentsInfo', '');
+                        }
+                      }}
+                      data-testid="switch-enable-bulk-unit"
+                    />
+                  </div>
+
+                  {/* Bulk Unit Fields (shown when enabled) */}
+                  {form.watch('bulkUnitName') !== undefined && form.watch('bulkUnitName') !== '' || form.watch('bulkUnitQty') ? (
+                    <div className="space-y-4 p-4 bg-teal-50 dark:bg-teal-950 rounded-lg border border-teal-200 dark:border-teal-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Bulk Unit Name */}
+                        <div>
+                          <Label htmlFor="bulkUnitName" className="text-sm font-medium">{t('products:bulkUnitName')}</Label>
+                          <Input
+                            id="bulkUnitName"
+                            {...form.register('bulkUnitName')}
+                            placeholder={t('products:bulkUnitNamePlaceholder')}
+                            className="mt-1"
+                            data-testid="input-bulk-unit-name"
+                          />
+                        </div>
+
+                        {/* Bulk Unit Qty */}
+                        <div>
+                          <Label htmlFor="bulkUnitQty" className="text-sm font-medium">{t('products:bulkUnitQty')}</Label>
+                          <Input
+                            id="bulkUnitQty"
+                            type="number"
+                            min={1}
+                            {...form.register('bulkUnitQty', { valueAsNumber: true })}
+                            placeholder="12"
+                            className="mt-1"
+                            data-testid="input-bulk-unit-qty"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">{t('products:bulkUnitQtyHelp')}</p>
+                        </div>
+                      </div>
+
+                      {/* Bulk Pricing */}
+                      <div>
+                        <Label className="text-sm font-medium">{t('products:bulkPricing')}</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                          <div>
+                            <div className="relative">
+                              <Input
+                                id="bulkPriceCzk"
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                {...form.register('bulkPriceCzk', { valueAsNumber: true })}
+                                placeholder="0.00"
+                                className="pl-12"
+                                data-testid="input-bulk-price-czk"
+                              />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">CZK</span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="relative">
+                              <Input
+                                id="bulkPriceEur"
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                {...form.register('bulkPriceEur', { valueAsNumber: true })}
+                                placeholder="0.00"
+                                className="pl-12"
+                                data-testid="input-bulk-price-eur"
+                              />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">EUR</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Allow Bulk Sales Toggle */}
+                      <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+                        <div>
+                          <Label htmlFor="allowBulkSales" className="text-sm font-medium cursor-pointer">
+                            {t('products:allowBulkSales')}
+                          </Label>
+                          <p className="text-xs text-slate-500">{t('products:allowBulkSalesHelp')}</p>
+                        </div>
+                        <Switch
+                          id="allowBulkSales"
+                          checked={form.watch('allowBulkSales') || false}
+                          onCheckedChange={(checked) => form.setValue('allowBulkSales', checked)}
+                          data-testid="switch-allow-bulk-sales"
+                        />
+                      </div>
+
+                      {/* Unit Contents Info */}
+                      <div>
+                        <Label htmlFor="unitContentsInfo" className="text-sm font-medium">{t('products:unitContentsInfo')}</Label>
+                        <Input
+                          id="unitContentsInfo"
+                          {...form.register('unitContentsInfo')}
+                          placeholder={t('products:unitContentsInfoPlaceholder')}
+                          className="mt-1"
+                          data-testid="input-unit-contents-info"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">{t('products:unitContentsInfoHelp')}</p>
+                      </div>
+
+                      {/* Conversion Preview */}
+                      {form.watch('bulkUnitQty') && form.watch('bulkUnitName') && form.watch('sellingUnitName') && (
+                        <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-teal-300 dark:border-teal-700">
+                          <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">{t('products:unitConversionPreview')}</h4>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline" className="bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300">
+                              1 {form.watch('bulkUnitName')}
+                            </Badge>
+                            <span className="text-slate-500">=</span>
+                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                              {form.watch('bulkUnitQty')} {form.watch('sellingUnitName')}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-2">
+                            {t('products:inventoryTrackedIn')} <strong>{form.watch('sellingUnitName')}</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
             {/* Supplier Information */}
             <AccordionItem value="supplier" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
@@ -3392,6 +3588,184 @@ export default function ProductForm() {
                       <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('products:variants.noVariantsHelper')}</p>
                     </div>
                   )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Packaging & Units - Only show if needed */}
+            <AccordionItem value="units" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
+                    <Layers className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:units.title', 'Packaging & Units')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:units.description', 'Configure selling and bulk units for inventory and purchasing')}</p>
+                  </div>
+                  {form.watch('bulkUnitName') && (
+                    <Badge variant="secondary" className="ml-auto bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300">
+                      {t('products:units.bulkConfigured', 'Bulk configured')}
+                    </Badge>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-6 pt-2">
+                  {/* Selling Unit */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Box className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:units.sellingUnit', 'Selling Unit')}</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="sellingUnitName" className="text-sm font-medium">{t('products:units.sellingUnitName', 'Unit Name')}</Label>
+                        <Select
+                          value={form.watch('sellingUnitName') || 'piece'}
+                          onValueChange={(value) => form.setValue('sellingUnitName', value)}
+                        >
+                          <SelectTrigger className="mt-1" data-testid="select-selling-unit">
+                            <SelectValue placeholder={t('products:units.selectUnit', 'Select unit')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="piece">{t('products:units.unitPiece', 'Piece')}</SelectItem>
+                            <SelectItem value="box">{t('products:units.unitBox', 'Box')}</SelectItem>
+                            <SelectItem value="jar">{t('products:units.unitJar', 'Jar')}</SelectItem>
+                            <SelectItem value="bottle">{t('products:units.unitBottle', 'Bottle')}</SelectItem>
+                            <SelectItem value="pack">{t('products:units.unitPack', 'Pack')}</SelectItem>
+                            <SelectItem value="set">{t('products:units.unitSet', 'Set')}</SelectItem>
+                            <SelectItem value="pair">{t('products:units.unitPair', 'Pair')}</SelectItem>
+                            <SelectItem value="tube">{t('products:units.unitTube', 'Tube')}</SelectItem>
+                            <SelectItem value="bag">{t('products:units.unitBag', 'Bag')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">{t('products:units.sellingUnitHelp', 'The base unit used for inventory tracking and sales')}</p>
+                      </div>
+                      <div>
+                        <Label htmlFor="unitContentsInfo" className="text-sm font-medium">{t('products:units.unitContentsInfo', 'Unit Contents (optional)')}</Label>
+                        <Input 
+                          {...form.register('unitContentsInfo')} 
+                          placeholder={t('products:units.unitContentsPlaceholder', 'e.g., 12 packs of 10 tablets')}
+                          className="mt-1"
+                          data-testid="input-unit-contents"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">{t('products:units.unitContentsHelp', 'Additional info about what the unit contains')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Bulk Unit (Optional) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:units.bulkUnit', 'Bulk Unit (Optional)')}</h4>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">{t('products:units.bulkUnitHelp', 'Configure a larger unit for purchasing (e.g., cartons containing multiple boxes)')}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="bulkUnitName" className="text-sm font-medium">{t('products:units.bulkUnitName', 'Bulk Unit Name')}</Label>
+                        <Select
+                          value={form.watch('bulkUnitName') || ''}
+                          onValueChange={(value) => form.setValue('bulkUnitName', value === 'none' ? '' : value)}
+                        >
+                          <SelectTrigger className="mt-1" data-testid="select-bulk-unit">
+                            <SelectValue placeholder={t('products:units.noBulkUnit', 'No bulk unit')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t('products:units.noBulkUnit', 'No bulk unit')}</SelectItem>
+                            <SelectItem value="carton">{t('products:units.unitCarton', 'Carton')}</SelectItem>
+                            <SelectItem value="case">{t('products:units.unitCase', 'Case')}</SelectItem>
+                            <SelectItem value="pallet">{t('products:units.unitPallet', 'Pallet')}</SelectItem>
+                            <SelectItem value="master_carton">{t('products:units.unitMasterCarton', 'Master Carton')}</SelectItem>
+                            <SelectItem value="bundle">{t('products:units.unitBundle', 'Bundle')}</SelectItem>
+                            <SelectItem value="crate">{t('products:units.unitCrate', 'Crate')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {form.watch('bulkUnitName') && (
+                        <>
+                          <div>
+                            <Label htmlFor="bulkUnitQty" className="text-sm font-medium">{t('products:units.bulkUnitQty', 'Qty per Bulk Unit')}</Label>
+                            <Input 
+                              type="number"
+                              min="1"
+                              {...form.register('bulkUnitQty')} 
+                              placeholder="50"
+                              className="mt-1"
+                              data-testid="input-bulk-qty"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            {form.watch('bulkUnitQty') && (
+                              <div className="bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-lg px-3 py-2 w-full">
+                                <p className="text-sm font-medium text-cyan-700 dark:text-cyan-300">
+                                  1 {form.watch('bulkUnitName')} = {form.watch('bulkUnitQty')} {form.watch('sellingUnitName') || 'pieces'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Bulk Pricing & Sales Options */}
+                    {form.watch('bulkUnitName') && form.watch('bulkUnitQty') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label htmlFor="bulkPriceCzk" className="text-sm font-medium">{t('products:units.bulkPriceCzk', 'Bulk Price (CZK)')}</Label>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">Kč</span>
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...form.register('bulkPriceCzk')} 
+                                placeholder="0.00"
+                                className="pl-10"
+                                data-testid="input-bulk-price-czk"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:units.bulkPriceHelp', 'Optional special price per bulk unit')}</p>
+                          </div>
+                          <div>
+                            <Label htmlFor="bulkPriceEur" className="text-sm font-medium">{t('products:units.bulkPriceEur', 'Bulk Price (EUR)')}</Label>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...form.register('bulkPriceEur')} 
+                                placeholder="0.00"
+                                className="pl-8"
+                                data-testid="input-bulk-price-eur"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 pt-6">
+                            <Checkbox 
+                              id="allowBulkSales"
+                              checked={form.watch('allowBulkSales') || false}
+                              onCheckedChange={(checked) => form.setValue('allowBulkSales', !!checked)}
+                              data-testid="checkbox-allow-bulk-sales"
+                            />
+                            <div>
+                              <Label htmlFor="allowBulkSales" className="text-sm font-medium cursor-pointer">{t('products:units.allowBulkSales', 'Allow bulk sales')}</Label>
+                              <p className="text-xs text-muted-foreground">{t('products:units.allowBulkSalesHelp', 'Enable bulk unit option in orders/POS')}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

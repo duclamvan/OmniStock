@@ -55,6 +55,8 @@ interface PurchaseItem {
   imageFile?: File | null;
   binLocation?: string;
   processingTimeDays?: number;
+  unitType?: 'selling' | 'bulk';
+  quantityInSellingUnits?: number;
 }
 
 interface Supplier {
@@ -80,6 +82,11 @@ interface Product {
   category?: string;
   imageUrl?: string;
   warehouseLocation?: string;
+  sellingUnitName?: string;
+  bulkUnitName?: string | null;
+  bulkUnitQty?: number | null;
+  bulkUnitPrice?: string | null;
+  allowBulkSales?: boolean;
 }
 
 export default function CreatePurchase() {
@@ -212,7 +219,8 @@ export default function CreatePurchase() {
     weight: 0,
     dimensions: "",
     notes: "",
-    binLocation: "TBA"
+    binLocation: "TBA",
+    unitType: 'selling'
   });
   
   // Variants state
@@ -478,7 +486,8 @@ export default function CreatePurchase() {
       dimensions: product.dimensions || currentItem.dimensions || "",
       barcode: product.barcode || "",
       categoryId: product.categoryId,
-      category: (product as any).categoryName || product.category || ""
+      category: (product as any).categoryName || product.category || "",
+      unitType: 'selling'
     });
     setSelectedProduct(product);
     setProductImageFile(null);
@@ -528,7 +537,8 @@ export default function CreatePurchase() {
       notes: "",
       totalPrice: 0,
       costWithShipping: 0,
-      binLocation: "TBA"
+      binLocation: "TBA",
+      unitType: 'selling'
     });
   };
 
@@ -646,7 +656,9 @@ export default function CreatePurchase() {
           notes: String(item.notes || ""),
           totalPrice: Number(item.quantity) * Number(item.unitPrice),
           costWithShipping: 0,
-          processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined
+          processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined,
+          unitType: item.unitType || 'selling',
+          quantityInSellingUnits: item.quantityInSellingUnits || Number(item.quantity)
         }));
         setItems(loadedItems);
         
@@ -673,6 +685,15 @@ export default function CreatePurchase() {
       return;
     }
 
+    // Calculate quantity in selling units based on unit type
+    const quantity = currentItem.quantity || 1;
+    const unitType = currentItem.unitType || 'selling';
+    let quantityInSellingUnits = quantity;
+    
+    if (unitType === 'bulk' && selectedProduct?.bulkUnitQty) {
+      quantityInSellingUnits = quantity * selectedProduct.bulkUnitQty;
+    }
+
     const newItem: PurchaseItem = {
       id: Date.now().toString(),
       name: currentItem.name || "",
@@ -691,7 +712,9 @@ export default function CreatePurchase() {
       productId: selectedProduct?.id,
       imageUrl: selectedProduct?.imageUrl,
       imageFile: productImageFile,
-      binLocation: currentItem.binLocation || "TBA"
+      binLocation: currentItem.binLocation || "TBA",
+      unitType: unitType,
+      quantityInSellingUnits: quantityInSellingUnits
     };
 
     const updatedItems = [...items, newItem];
@@ -712,7 +735,8 @@ export default function CreatePurchase() {
       weight: 0,
       dimensions: "",
       notes: "",
-      binLocation: "TBA"
+      binLocation: "TBA",
+      unitType: 'selling'
     });
   };
 
@@ -1064,7 +1088,9 @@ export default function CreatePurchase() {
         weight: item.weight,
         dimensions: item.dimensions || null,
         notes: item.notes || null,
-        processingTimeDays: item.processingTimeDays
+        processingTimeDays: item.processingTimeDays,
+        unitType: item.unitType || 'selling',
+        quantityInSellingUnits: item.quantityInSellingUnits || item.quantity
       }))
     };
 
@@ -1701,6 +1727,27 @@ export default function CreatePurchase() {
                     data-testid="input-quantity"
                   />
                 </div>
+                {selectedProduct?.bulkUnitName && (
+                  <div className="space-y-2">
+                    <Label htmlFor="unitType">{t('purchaseUnit')}</Label>
+                    <Select
+                      value={currentItem.unitType || 'selling'}
+                      onValueChange={(value: 'selling' | 'bulk') => setCurrentItem({...currentItem, unitType: value})}
+                    >
+                      <SelectTrigger id="unitType" data-testid="select-unit-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="selling">
+                          {selectedProduct?.sellingUnitName || t('sellingUnit')}
+                        </SelectItem>
+                        <SelectItem value="bulk">
+                          {selectedProduct?.bulkUnitName}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="unitPrice">{t('unitPrice')} ({purchaseCurrency}) *</Label>
                   <Input
@@ -1748,6 +1795,21 @@ export default function CreatePurchase() {
                   />
                 </div>
               </div>
+              
+              {/* Multi-unit conversion helper - only show when bulk unit is selected */}
+              {selectedProduct?.bulkUnitName && currentItem.unitType === 'bulk' && selectedProduct?.bulkUnitQty && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                  <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-700 dark:text-blue-300">
+                    {t('conversionHelper', {
+                      qty: currentItem.quantity || 1,
+                      bulkUnit: selectedProduct.bulkUnitName,
+                      totalQty: (currentItem.quantity || 1) * selectedProduct.bulkUnitQty,
+                      sellingUnit: selectedProduct.sellingUnitName || t('sellingUnit')
+                    })}
+                  </span>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="itemNotes">{t('itemNotes')}</Label>
                 <Input

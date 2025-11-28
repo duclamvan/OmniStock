@@ -88,7 +88,7 @@ const products = {
   bundleComponents: 'Thành phần combo',
   
   // Product Images
-  images: 'Hình ảnh',
+  imagesLabel: 'Hình ảnh',
   productImage: 'Hình ảnh sản phẩm',
   mainImage: 'Hình ảnh chính',
   additionalImages: 'Hình ảnh bổ sung',
@@ -232,6 +232,30 @@ const products = {
   variantsSectionDesc: 'Quản lý biến thể và mã vạch sản phẩm',
   packingSection: 'Hướng dẫn đóng gói',
   filesSection: 'Tệp đính kèm',
+  unitsSection: 'Đóng gói & Đơn vị',
+  unitsSectionDesc: 'Cấu hình đơn vị bán, đóng gói số lượng lớn và tỷ lệ chuyển đổi',
+  
+  // Multi-Unit Fields
+  sellingUnitName: 'Đơn vị bán',
+  sellingUnitNamePlaceholder: 'VD: cái, chai, hộp',
+  sellingUnitNameHelp: 'Đơn vị nhỏ nhất để bán sản phẩm này',
+  enableBulkUnit: 'Bật đơn vị số lượng lớn',
+  enableBulkUnitHelp: 'Cho phép bán theo đơn vị đóng gói lớn hơn (VD: thùng, kiện)',
+  bulkUnitName: 'Tên đơn vị lớn',
+  bulkUnitNamePlaceholder: 'VD: thùng, kiện, hộp',
+  bulkUnitQty: 'Số đơn vị bán trong một đơn vị lớn',
+  bulkUnitQtyHelp: 'Số đơn vị bán trong một đơn vị lớn',
+  bulkPriceCzk: 'Giá lớn (CZK)',
+  bulkPriceEur: 'Giá lớn (EUR)',
+  allowBulkSales: 'Cho phép bán số lượng lớn',
+  allowBulkSalesHelp: 'Cho phép khách hàng mua theo đơn vị lớn',
+  unitContentsInfo: 'Mô tả nội dung gói',
+  unitContentsInfoPlaceholder: 'VD: 12 chai/thùng',
+  unitContentsInfoHelp: 'Hiển thị cho khách hàng để rõ ràng',
+  unitConversionPreview: 'Chuyển đổi đơn vị',
+  perBulkUnit: 'mỗi',
+  inventoryTrackedIn: 'Tồn kho theo dõi bằng',
+  bulkPricing: 'Giá số lượng lớn',
   
   // ProductForm - Basic Fields
   vietnameseName: 'Tên tiếng Việt',

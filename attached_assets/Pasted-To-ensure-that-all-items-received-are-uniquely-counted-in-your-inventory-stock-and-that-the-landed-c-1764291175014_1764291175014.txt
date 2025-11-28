@@ -1,0 +1,52 @@
+To ensure that all items received are uniquely counted in your inventory stock and that the landed cost is properly added to the average landed cost for each product item, you would want to conduct a thorough review and implement checks in your existing WMS (Warehouse Management System).
+
+Steps to Validate Inventory and Cost Calculations
+Verify Inventory Count:
+
+Ensure that each received item is logged into the inventory without duplicates. You can add logic to check if an item already exists before inserting.
+Calculate Landed Costs:
+
+Make sure that your landed cost calculation includes any additional shipping or custom costs and is averaged properly across all received items. Modify the logic that updates costs to ensure it includes new receipts.
+Sample Code Snippets
+Here are some modifications and checks you might implement in your imports.ts:
+
+Check for Unique Inventory Count
+// Assuming you have a function to add items to inventory
+const addItemToInventory = async (item) => {
+    const existingItem = await db
+        .select()
+        .from(inventory)
+        .where(eq(inventory.itemId, item.itemId))
+        .limit(1);
+    if (!existingItem.length) {
+        // Item doesn't exist, proceed to add
+        await db.insert(inventory).values(item);
+    } else {
+        console.log(`Item ${item.itemId} already exists in inventory.`);
+    }
+};
+Calculate Average Landed Cost
+Modify or add to your function that handles landed cost updates:
+
+const updateAverageLandedCost = async (itemId: number) => {
+    const items = await db
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.itemId, itemId));
+    const totalCost = items.reduce((acc, item) => acc + item.landingCost, 0);
+    const averageCost = totalCost / items.length;
+    await db.update(products)
+        .set({ averageLandedCost: averageCost })
+        .where(eq(products.id, itemId));
+};
+Integrating in Your Workflow
+Ensure that the above checks are called when processing new receipts or purchase orders.
+Verify and log outputs for auditability.
+Implement transaction checks if needed to ensure that either all updates or none are successful.
+Final Checks
+Review your current inventory routes and modify them to call these functions where appropriate. This will help ensure that all newly received stock is counted uniquely, and that the average landed cost is calculated based on the most recent data.
+
+If you have existing tests, consider adding new ones to verify these functionalities as well. This will help catch any issues early in the process.
+
+Summary
+By implementing these checks and calculations, you can maintain the integrity of your inventory counts and accurately manage your product costs, enhancing your overall WMS functionality. If you need specific paths updated or more detailed implementations, please let me know!
