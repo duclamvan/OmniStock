@@ -1374,29 +1374,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           for (const item of orderItems) {
             const quantity = parseInt(String(item.quantity) || '0');
-            let importCost = 0;
+            let importCostInOrderCurrency = 0;
 
-            // Priority 1: Use stored landing cost snapshot (immutable cost at time of sale)
+            // Priority 1: Use stored landing cost snapshot (immutable cost at time of sale - in order currency)
             if (item.landingCost) {
-              importCost = parseFloat(item.landingCost);
+              importCostInOrderCurrency = parseFloat(item.landingCost);
             } else if (item.productId) {
               // Fallback for legacy orders without snapshot: fetch current product cost
               const product = await storage.getProductById(item.productId);
               if (product) {
-                // Use import cost based on order currency
+                // Use import cost matching order currency, or convert to order currency
                 if (order.currency === 'CZK' && product.importCostCzk) {
-                  importCost = parseFloat(product.importCostCzk);
+                  importCostInOrderCurrency = parseFloat(product.importCostCzk);
                 } else if (order.currency === 'EUR' && product.importCostEur) {
-                  importCost = parseFloat(product.importCostEur);
+                  importCostInOrderCurrency = parseFloat(product.importCostEur);
                 } else if (product.importCostUsd) {
-                  // Convert USD to order currency, then to EUR
+                  // Convert USD to order currency first, not to EUR
                   const importCostUsd = parseFloat(product.importCostUsd);
-                  importCost = convertToEur(importCostUsd, 'USD');
+                  if (order.currency === 'CZK') {
+                    // USD to CZK conversion (approximate rate from EUR rates)
+                    const usdToEur = 1 / (exchangeRates.rates?.USD || 1.1);
+                    const eurToCzk = exchangeRates.rates?.CZK || 25.0;
+                    importCostInOrderCurrency = importCostUsd * usdToEur * eurToCzk;
+                  } else {
+                    // Default: convert to EUR
+                    importCostInOrderCurrency = importCostUsd * (1 / (exchangeRates.rates?.USD || 1.1));
+                  }
                 }
               }
             }
 
-            totalImportCost += importCost * quantity;
+            totalImportCost += importCostInOrderCurrency * quantity;
           }
 
           // Profit = Revenue - Import Costs - Tax - Discount
