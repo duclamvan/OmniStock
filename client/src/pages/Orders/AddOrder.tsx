@@ -10,6 +10,7 @@ import { FixedSizeList as List } from "react-window";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MathInput } from "@/components/ui/math-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -3468,22 +3469,19 @@ export default function AddOrder() {
                             </TableCell>
                             <TableCell className="text-center align-middle">
                               <div className="flex justify-center">
-                                <Input
-                                  type="number"
-                                  min="1"
+                                <MathInput
+                                  min={1}
                                   value={item.quantity}
-                                  onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                  onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
+                                  isInteger={true}
                                   className="w-20 h-10 text-center"
                                   data-testid={`input-quantity-${item.id}`}
-                                  onFocus={(e) => e.target.select()}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
-                                      // Enter: Save and go back to product search for next item
                                       productSearchRef.current?.focus();
                                     } else if (e.key === 'Tab') {
                                       e.preventDefault();
-                                      // Tab: Go to shipping cost
                                       const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
                                       shippingCostInput?.focus();
                                     }
@@ -3493,59 +3491,25 @@ export default function AddOrder() {
                             </TableCell>
                             <TableCell className="text-right align-middle">
                               <div className="flex justify-end">
-                                <Input
-                                  type="number"
-                                  step="0.01"
+                                <MathInput
+                                  min={0}
+                                  step={0.01}
                                   value={item.price}
-                                  onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                  onChange={(val) => updateOrderItem(item.id, 'price', val)}
                                   className="w-28 h-10 text-right"
                                   data-testid={`input-price-${item.id}`}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === 'Tab') {
-                                    e.preventDefault();
-                                    const nextInput = showDiscountColumn
-                                      ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
-                                      : showVatColumn
-                                      ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                      : null;
-                                    
-                                    if (nextInput) {
-                                      (nextInput as HTMLInputElement).focus();
-                                    } else {
-                                      // Move to next row's quantity input
-                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                      if (currentIndex < orderItems.length - 1) {
-                                        const nextItem = orderItems[currentIndex + 1];
-                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                        nextRowInput?.focus();
-                                      }
-                                    }
-                                  }
-                                }}
-                              />
-                              </div>
-                            </TableCell>
-                            {showDiscountColumn && (
-                              <TableCell className="text-right align-middle">
-                                <div className="flex justify-end">
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={item.discount}
-                                    onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                    className="w-28 h-10 text-right"
-                                    data-testid={`input-discount-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
-                                      const nextInput = showVatColumn
+                                      const nextInput = showDiscountColumn
+                                        ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
+                                        : showVatColumn
                                         ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
                                         : null;
                                       
                                       if (nextInput) {
                                         (nextInput as HTMLInputElement).focus();
                                       } else {
-                                        // Move to next row's quantity input
                                         const currentIndex = orderItems.findIndex(i => i.id === item.id);
                                         if (currentIndex < orderItems.length - 1) {
                                           const nextItem = orderItems[currentIndex + 1];
@@ -3555,6 +3519,38 @@ export default function AddOrder() {
                                       }
                                     }
                                   }}
+                                />
+                              </div>
+                            </TableCell>
+                            {showDiscountColumn && (
+                              <TableCell className="text-right align-middle">
+                                <div className="flex justify-end">
+                                  <MathInput
+                                    min={0}
+                                    step={0.01}
+                                    value={item.discount}
+                                    onChange={(val) => updateOrderItem(item.id, 'discount', val)}
+                                    className="w-28 h-10 text-right"
+                                    data-testid={`input-discount-${item.id}`}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === 'Tab') {
+                                        e.preventDefault();
+                                        const nextInput = showVatColumn
+                                          ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                          : null;
+                                        
+                                        if (nextInput) {
+                                          (nextInput as HTMLInputElement).focus();
+                                        } else {
+                                          const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                          if (currentIndex < orderItems.length - 1) {
+                                            const nextItem = orderItems[currentIndex + 1];
+                                            const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                            nextRowInput?.focus();
+                                          }
+                                        }
+                                      }
+                                    }}
                                   />
                                 </div>
                               </TableCell>
@@ -3562,26 +3558,25 @@ export default function AddOrder() {
                             {showVatColumn && (
                               <TableCell className="text-right align-middle">
                                 <div className="flex justify-end">
-                                  <Input
-                                    type="number"
-                                    step="0.01"
+                                  <MathInput
+                                    min={0}
+                                    step={0.01}
                                     value={item.tax}
-                                    onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                    onChange={(val) => updateOrderItem(item.id, 'tax', val)}
                                     className="w-28 h-10 text-right"
                                     data-testid={`input-vat-${item.id}`}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === 'Tab') {
-                                      e.preventDefault();
-                                      // Move to next row's quantity input
-                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                      if (currentIndex < orderItems.length - 1) {
-                                        const nextItem = orderItems[currentIndex + 1];
-                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                        nextRowInput?.focus();
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === 'Tab') {
+                                        e.preventDefault();
+                                        const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                        if (currentIndex < orderItems.length - 1) {
+                                          const nextItem = orderItems[currentIndex + 1];
+                                          const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                          nextRowInput?.focus();
+                                        }
                                       }
-                                    }
-                                  }}
-                                />
+                                    }}
+                                  />
                                 </div>
                               </TableCell>
                             )}
@@ -3718,12 +3713,12 @@ export default function AddOrder() {
                             <Label htmlFor={`mobile-qty-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                               Quantity
                             </Label>
-                            <Input
+                            <MathInput
                               id={`mobile-qty-${item.id}`}
-                              type="number"
-                              min="1"
+                              min={1}
                               value={item.quantity}
-                              onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                              onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
+                              isInteger={true}
                               className="h-11 text-base"
                               data-testid={`mobile-input-quantity-${item.id}`}
                             />
@@ -3732,12 +3727,12 @@ export default function AddOrder() {
                             <Label htmlFor={`mobile-price-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                               Price ({form.watch('currency')})
                             </Label>
-                            <Input
+                            <MathInput
                               id={`mobile-price-${item.id}`}
-                              type="number"
-                              step="0.01"
+                              min={0}
+                              step={0.01}
                               value={item.price}
-                              onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                              onChange={(val) => updateOrderItem(item.id, 'price', val)}
                               className="h-11 text-base"
                               data-testid={`mobile-input-price-${item.id}`}
                             />
@@ -3752,12 +3747,12 @@ export default function AddOrder() {
                                 <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                   Discount ({form.watch('currency')})
                                 </Label>
-                                <Input
+                                <MathInput
                                   id={`mobile-discount-${item.id}`}
-                                  type="number"
-                                  step="0.01"
+                                  min={0}
+                                  step={0.01}
                                   value={item.discount}
-                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                  onChange={(val) => updateOrderItem(item.id, 'discount', val)}
                                   className="h-11 text-base"
                                   data-testid={`mobile-input-discount-${item.id}`}
                                 />
@@ -3768,12 +3763,12 @@ export default function AddOrder() {
                                 <Label htmlFor={`mobile-vat-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                   VAT ({form.watch('currency')})
                                 </Label>
-                                <Input
+                                <MathInput
                                   id={`mobile-vat-${item.id}`}
-                                  type="number"
-                                  step="0.01"
+                                  min={0}
+                                  step={0.01}
                                   value={item.tax}
-                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                  onChange={(val) => updateOrderItem(item.id, 'tax', val)}
                                   className="h-11 text-base"
                                   data-testid={`mobile-input-vat-${item.id}`}
                                 />
