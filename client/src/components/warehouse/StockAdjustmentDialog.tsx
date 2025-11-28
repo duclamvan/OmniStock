@@ -468,6 +468,29 @@ export default function StockAdjustmentDialog({
             <Label htmlFor="adjustment-notes" className="text-xs">
               {t('warehouse:reasonForAdjustmentRequired')}
             </Label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {[
+                { key: 'move', label: t('warehouse:adjustmentReasonMove'), icon: '📦' },
+                { key: 'missing', label: t('warehouse:adjustmentReasonMissing'), icon: '❓' },
+                { key: 'damaged', label: t('warehouse:adjustmentReasonDamaged'), icon: '💔' },
+                { key: 'found', label: t('warehouse:adjustmentReasonFound'), icon: '✅' },
+                { key: 'correction', label: t('warehouse:adjustmentReasonCorrection'), icon: '🔧' },
+              ].map((preset) => (
+                <Button
+                  key={preset.key}
+                  type="button"
+                  variant={notes.toLowerCase().includes(preset.key) ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => setNotes(preset.label)}
+                  disabled={createRequestMutation.isPending}
+                  data-testid={`button-reason-${preset.key}`}
+                >
+                  <span className="mr-1">{preset.icon}</span>
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
             <Textarea
               ref={notesInputRef}
               id="adjustment-notes"
@@ -476,7 +499,7 @@ export default function StockAdjustmentDialog({
               placeholder={t('warehouse:reasonPlaceholder')}
               disabled={createRequestMutation.isPending}
               data-testid="input-adjustment-notes"
-              className="h-20"
+              className="h-16"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {t('warehouse:requestWillBeSentForApproval')}
