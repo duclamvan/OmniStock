@@ -919,8 +919,6 @@ const imports = {
   allTypes: 'All types',
   expressAirDDP: 'Express Air (DDP)',
   sensitiveExpressAir: 'Sensitive Express Air (DDP)',
-  generalAirDDP: 'General Air (DDP)',
-  sensitiveAirDDP: 'Sensitive Air (DDP)',
   endCarrierEuropeanCourier: 'End Carrier (European Courier)',
   noShipmentsFound: 'No shipments found',
   addFirstShipmentToTrack: 'Add your first shipment to track internationally',
@@ -1010,8 +1008,6 @@ const imports = {
   takePhoto: 'Take Photo',
   reportIssue: 'Report Issue',
   addVoiceNote: 'Add Voice Note',
-  complete: 'Complete',
-  scanning: 'Scanning',
   scanItems: 'Scan Items',
   enterSkuOrScanBarcode: 'Enter SKU or scan barcode',
   addNotesAboutItem: 'Add notes about this item...',
@@ -1167,7 +1163,6 @@ const imports = {
   unmatched: 'Unmatched',
   parcelsByOrder: 'Parcels by Order',
   parcel: 'parcel',
-  parcels: 'parcels',
   unmatchedTrackingNumbers: 'Unmatched Tracking Numbers',
   viewAllScanned: 'View All Scanned',
   trackingNotFound: 'Not found',
@@ -1181,7 +1176,6 @@ const imports = {
   showIssues: 'Show issues',
   activeReceipts: 'Active Receipts',
   receipt: 'Receipt',
-  searchProducts: 'Search products...',
   
   // ReceivingList - Actions
   decreaseQuantity: 'Decrease quantity',
@@ -1252,19 +1246,10 @@ const imports = {
   receiptNumber: 'Receipt Number',
   receivedBy: 'Received By',
   receivedAt: 'Received At',
-  parcels: 'Parcels',
   scannedParcels: 'Scanned Parcels',
   damageNotes: 'Damage Notes',
-  expected: 'Expected',
-  received: 'Received',
-  damaged: 'Damaged',
-  missing: 'Missing',
-  partial: 'Partial',
-  totalItems: 'Total Items',
   noPhotos: 'No photos available',
-  photos: 'Photos',
   labels: 'Labels',
-  selectAll: 'Select All',
   selected: 'selected',
   printLabels: 'Print Labels',
   warehouseLabels: 'Warehouse Labels',
@@ -1296,8 +1281,6 @@ const imports = {
   addAnyAdditionalNotesAboutReceivingProcess: 'Add any additional notes about this receiving process...',
   allItemsCompletedSwitchToShowAll: 'All items completed. Switch to "Show All" to see them.',
   clickAddPhotosToUpload: 'Click "Add Photos" to upload images of the shipment',
-  pallets: 'Pallets',
-  parcels: 'Parcels',
   
   // StartReceiving - Toast Messages
   preScannedDataLoaded: 'Pre-scanned Data Loaded',
@@ -1305,11 +1288,7 @@ const imports = {
   pleaseTryAgain: 'Please try again',
   invalidTrackingNumber: 'Invalid Tracking Number',
   alreadyScanned: 'Already Scanned',
-  itemNotFound: 'Item Not Found',
   thisSkuNotInCurrentShipment: 'This SKU is not in the current shipment',
-  updateFailed: 'Update Failed',
-  failedToSaveStatusUpdate: 'Failed to save status update. Please try again.',
-  failedToSaveNotes: 'Failed to save notes. Please try again.',
   successfullyUpdatedReceivingProcess: 'Successfully updated the receiving process',
   failedToUpdateReceipt: 'Failed to update receipt',
   successfullyStartedReceivingProcess: 'Successfully started the receiving process',
@@ -1327,7 +1306,6 @@ const imports = {
   photoRemoved: 'Photo Removed',
   photoDeleted: 'Photo deleted',
   autoReceiveComplete: 'Auto-Receive Complete',
-  cleared: 'Cleared',
   allTrackingNumbersCleared: 'All tracking numbers have been cleared',
   
   // ReviewApprove - Page & Headers
@@ -1336,15 +1314,10 @@ const imports = {
   hasDiscrepancies: 'Has Discrepancies',
   noIssues: 'No Issues',
   shipmentInformation: 'Shipment Information',
-  shipmentName: 'Shipment Name',
   parcelCount: 'Parcel Count',
   deliveredDate: 'Delivered Date',
   receivingNotes: 'Receiving Notes:',
   receivedItems: 'Received Items',
-  itemDetails: 'Item Details',
-  expected: 'Expected',
-  damaged: 'damaged',
-  missing: 'missing',
   
   // ReviewApprove - Dialog Content
   addNotesAboutShipmentOptional: 'Add any notes about this shipment (optional)...',
@@ -1388,7 +1361,6 @@ const imports = {
   manualUndoByUser: 'Manual undo by user',
   
   // ReceiptDetails - Toast Messages
-  itemUpdated: 'Item Updated',
   itemVerificationSaved: 'Item verification has been saved',
   verificationComplete: 'Verification Complete',
   receiptSentForApproval: 'Receipt has been sent for approval',
@@ -1443,14 +1415,10 @@ const imports = {
   addLocation: 'Add Location',
   startCamera: 'Start Camera',
   stopCamera: 'Stop Camera',
-  scanning: 'Scanning',
   
   // ItemsToStore & StoreItems - Allocation Methods
-  auto: 'AUTO',
   weightLabel: 'WEIGHT',
   valueLabel: 'VALUE',
-  unitsLabel: 'UNITS',
-  hybrid: 'HYBRID',
   eurLabel: 'EUR (€)',
   czkLabel: 'CZK (Kč)',
   
@@ -1469,8 +1437,6 @@ const imports = {
   noItemsToStore: 'No items to store',
   noReceiptSelected: 'No receipt selected',
   failedToSaveStorage: 'Failed to save storage',
-  noMoreItemsToScan: 'No more items to scan',
-  na: 'N/A',
   
   // LandingCostDetails - Page & Headers
   landedCostPerItem: 'Landed Cost Per Item',
@@ -1500,50 +1466,27 @@ const imports = {
   unsavedChanges: 'unsaved changes',
   notInInventory: 'Not in inventory',
   
-  // InternationalTransit - Toast Messages
+  // InternationalTransit - Toast Messages (unique keys only)
   success: 'Success',
-  movedBackToWarehouse: 'Items have been moved back to warehouse',
-  failedToMoveBack: 'Failed to move back to warehouse',
-  quickShipCompleted: 'Quick ship completed - shipment created and moved to receiving',
-  shipmentCreated: 'Shipment created successfully',
-  failedToCreateShipment: 'Failed to create shipment',
-  shipmentNameRegenerated: 'Shipment name has been regenerated',
-  failedToRegenerateName: 'Failed to regenerate shipment name',
-  shipmentMovedBackToPending: 'Shipment moved back to pending',
-  trackingUpdated: 'Tracking information updated',
-  failedToUpdateTracking: 'Failed to update tracking',
-  shipmentUpdated: 'Shipment updated successfully',
-  failedToUpdateShipment: 'Failed to update shipment',
-  aiPredictionFailed: 'AI prediction failed',
-  copied: 'Copied',
-  trackingNumberCopied: 'Tracking number copied to clipboard',
-  failedToCopy: 'Failed to copy to clipboard',
   
-  // Common Loading States
+  // Common Loading States (unique keys only)
   loadingShipmentDetails: 'Loading shipment details...',
   failedToLoadShipmentDetails: 'Failed to load shipment details',
-  loadingOrderDetails: 'Loading order details...',
   
-  // InternationalTransit - Additional UI
+  // InternationalTransit - Additional UI (unique keys only)
   regenerateNameBasedOnContents: 'Regenerate name based on contents',
   generateNameFromItems: 'Generate name from items',
-  filterByType: 'Filter by type',
-  sortBy: 'Sort',
   
-  // InternationalTransit - Time-related labels
+  // InternationalTransit - Time-related labels (unique keys only)
   calculating: 'Calculating...',
-  delayed: 'Delayed',
-  today: 'Today',
   oneDay: '1 day',
   oneWeek: '1 week',
   oneMonth: '1 month',
   
-  // InternationalTransit - Filter and Sort Labels
+  // InternationalTransit - Filter and Sort Labels (unique keys only)
   allShipmentsFilter: 'All Shipments',
   allStatus: 'All Status',
   deliveryDate: 'Delivery Date',
-  shipmentTracking: 'Shipment Tracking',
-  monitorAllInternationalShipments: 'Monitor all international shipments with AI-powered delivery predictions',
   filterByTypeLabel: 'Filter by type',
   
   // InternationalTransit - Shipment Type Labels (Detailed)
@@ -1575,21 +1518,12 @@ const imports = {
   trackingAction: 'Tracking',
   contentsLabel: 'Contents',
   
-  // InternationalTransit - Allocation Methods
-  chargeableWeight: 'Chargeable Weight',
-  weight: 'Weight',
-  units: 'Units',
-  value: 'Value',
-  
-  // InternationalTransit - Table and Detail Labels
-  local: 'Local',
+  // InternationalTransit - Table and Detail Labels (unique keys only)
   timelineLabel: 'Timeline',
   createdLabel: 'Created',
-  notesLabel: 'Notes',
   
-  // InternationalTransit - Allocation Explanations
+  // InternationalTransit - Allocation Explanations (unique keys only)
   shippingCostAllocatedAcross: 'Shipping cost allocated across',
-  unitsLabel: 'units',
   using: 'using',
   autoSelected: '(auto-selected)',
   landingCostsConverted: 'Landing costs converted to EUR and CZK.',
@@ -1599,25 +1533,8 @@ const imports = {
   balancedAllocation: 'Balanced allocation: 60% by chargeable weight + 40% by value for fair distribution.',
   equalDistributionPerUnit: 'Equal distribution per unit regardless of weight or value.',
   
-  // InternationalTransit - Empty States
-  noShipmentsToTrack: 'No shipments to track',
+  // InternationalTransit - Empty States (unique keys only)
   createFirstShipmentDesc: 'Add your first shipment to track internationally',
-  
-  // InternationalTransit - Search & Filters
-  foundShipmentsMatching: 'Found {{count}} shipment and {{pending}} pending consolidation matching "{{query}}"',
-  foundShipmentsMatchingPlural: 'Found {{count}} shipments and {{pending}} pending consolidations matching "{{query}}"',
-  clear: 'Clear',
-  
-  // InternationalTransit - Table & Details
-  itemNumber: 'Item {{number}}',
-  totals: 'Totals',
-  trackingNumbers: 'Tracking Numbers',
-  twoCarriers: '2 carriers',
-  endCarrier: 'End Carrier',
-  localCourier: 'Local Courier',
-  standardCarrier: 'Standard Carrier',
-  shipment: 'Shipment',
-  editShipment: 'Edit Shipment',
   
   // InternationalTransit - Location Defaults
   czechRepublicPrague: 'Czech Republic, Prague',
@@ -1625,11 +1542,8 @@ const imports = {
   usaNewYork: 'USA, New York',
   ukLondon: 'UK, London',
   
-  // CreatePurchase, SupplierProcessing, AtWarehouse - Placeholders (to be expanded)
-  
-  // ReceiptDetails - Receipt Tasks & Verification
+  // ReceiptDetails - Receipt Tasks & Verification (unique keys only)
   receiptTasks: 'Receipt Tasks',
-  allItemsVerified: 'All Items Verified',
   verifyAllItems: 'Verify All Items',
   itemsVerified: 'items verified',
   required: 'Required',
@@ -1638,7 +1552,6 @@ const imports = {
   verifiedByUnknown: 'Verified by Unknown',
   submitVerificationToSendForApproval: 'Submit verification to send for approval',
   nextStep: 'Next Step',
-  receiptApproved: 'Receipt Approved',
   readyForApproval: 'Ready for Approval',
   awaitingApproval: 'Awaiting Approval',
   approvedByUnknown: 'Approved by Unknown',
@@ -1652,100 +1565,61 @@ const imports = {
   allTasksCompleted: 'All tasks completed',
   undoApproval: 'Undo Approval',
   
-  // ReceiptDetails - Item Verification Dialog
+  // ReceiptDetails - Item Verification Dialog (unique keys only)
   verifyItem: 'Verify Item',
   expectedQuantity: 'Expected Quantity',
   damagedQuantity: 'Damaged Quantity',
   barcode: 'Barcode',
-  condition: 'Condition',
   good: 'Good',
-  damaged: 'Damaged',
-  partial: 'Partial',
   warehouseLocation: 'Warehouse Location',
   additionalLocation: 'Additional Location',
   egA123: 'e.g., A-12-3',
   egShelf2: 'e.g., Shelf 2',
   storageInstructions: 'Storage Instructions',
-  cancel: 'Cancel',
   saveVerification: 'Save Verification',
   
-  // ReceiptDetails - Approval Dialog
+  // ReceiptDetails - Approval Dialog (unique keys only)
   sendThisReceiptForFounderApproval: 'Send this receipt for founder approval',
-  verifiedBy: 'Verified By',
   damageReport: 'Damage Report (if any)',
   damageReportPlaceholder: 'Describe any damage or issues found...',
   approveReceipt: 'Approve Receipt',
   approveThisReceiptAndAddToInventory: 'Approve this receipt and add items to inventory',
-  approvedBy: 'Approved By',
   
-  // ReceiptDetails - Photo Preview
+  // ReceiptDetails - Photo Preview (unique keys only)
   photoPreview: 'Photo Preview',
-  of: 'of',
   useArrowKeysToNavigate: 'Use arrow keys to navigate',
   download: 'Download',
-  close: 'Close',
   
-  // StartReceiving - Scanning & Updates
-  parcelScanned: 'Parcel Scanned',
+  // StartReceiving - Scanning & Updates (unique keys only)
   scannedXofY: 'Scanned {{scanned}} of {{total}} parcels',
   scannedX: 'Scanned: {{count}}',
-  quantityUpdated: 'Quantity updated',
-  itemNotFound: 'Item not found',
   thisSkuIsNotInCurrentShipment: 'This SKU is not in the current shipment',
-  updateFailed: 'Update Failed',
-  failedToSaveStatusUpdate: 'Failed to save status update. Please try again.',
-  failedToSaveNotes: 'Failed to save notes. Please try again.',
-  successfullyUpdatedReceivingProcess: 'Successfully updated the receiving process',
-  failedToUpdateReceipt: 'Failed to update receipt',
-  successfullyStartedReceivingProcess: 'Successfully started the receiving process',
-  failedToCreateReceipt: 'Failed to create receipt',
-  shipmentSuccessfullyReceived: 'The shipment has been successfully received and is now ready for storage',
-  failedToCompleteReceiving: 'Failed to complete receiving',
   alreadyCompleted: 'This receipt has already been completed and is awaiting approval.',
-  cannotComplete: 'Cannot Complete',
-  incompleteItems: 'Incomplete Items',
   pleaseProcessAllItemsBeforeCompleting: 'Please process all items before completing. {{count}} items are still pending.',
   xItemsStillPending: '{{count}} items are still pending',
   
-  // ItemsToStore - General
-  done: 'Done',
-  unknownCarrier: 'Unknown Carrier',
-  receiptNumber: 'Receipt #{{number}}',
+  // ItemsToStore - General (unique keys only)
   selectShipmentToWorkOn: 'Select Shipment to Work On',
   pendingParens: 'Pending ({{count}})',
   completedParens: 'Completed ({{count}})',
   tba: 'TBA',
-  location: 'Location:',
-  qty: 'Qty:',
+  locationLabel: 'Location:',
   landing: 'Landing:',
   landingCostPending: 'Landing cost pending',
   newLocationsCount: '{{count}} new location(s)',
-  existing: 'existing',
+  existingLabel: 'existing',
   primary: 'Primary',
   aiReasoning: 'AI Reasoning',
   sessionLocations: 'Session Locations',
   unallocated: 'Unallocated',
   
   // Additional placeholders and fields
-  scanOrEnterBarcode: 'Scan or enter barcode',
-  specialStorageRequirements: 'Special storage requirements...',
-  yourName: 'Your name',
-  
-  // StartReceiving - Additional toast messages
-  preScannedDataLoaded: 'Pre-scanned Data Loaded',
   loadedXTrackingNumbers: 'Loaded {{count}} pre-scanned tracking number(s)',
-  trackingNumbersAlreadyScanned: 'Tracking Numbers Already Scanned',
   allXTrackingNumbersAlreadyRecorded: 'All {{count}} tracking numbers were already recorded',
-  invalidTrackingNumber: 'Invalid Tracking Number',
   trackingNumberNotInShipment: '{{value}} is not in this shipment\'s tracking list',
-  alreadyScanned: 'Already Scanned',
   trackingNumberAlreadyScanned: 'Tracking number {{value}} has already been scanned',
   shipmentNotInReceivingStatus: 'This shipment is not in receiving status (current: {{status}}). Please work on a shipment that is currently being received.',
   allItemsReceived: '✨ All items received',
-  greatJobShipmentFullyReceived: 'Great job! The shipment is fully received.',
-  saveFailed: 'Save Failed',
-  photosUploadedButFailedToSave: 'Photos uploaded but failed to save. They will be saved with next update.',
-  photosUploaded: 'Photos Uploaded',
   successfullyUploadedXPhotos: 'Successfully uploaded {{count}} photo(s){{reduction, select, 0{} other{ ({{reduction}}% smaller)}}} • Thumbnails: {{thumbnailSize}}KB total',
   
   // StartReceiving - Additional UI labels
@@ -1753,14 +1627,12 @@ const imports = {
   itemChecklist: 'Item Checklist',
   verification: 'Verification',
   inProgress: 'In Progress',
-  receivedBy: 'Received By',
   receiveAll: 'Receive All',
   allUnitsAutoReceived: 'All {{count}} {{units}} have been automatically received',
   allUnitsVerified: 'All {{units}} verified!',
   scannedTrackingNumbers: 'Scanned Tracking Numbers',
   clearAll: 'Clear All',
   scanOrTypeTracking: 'Scan or type {{unit}} tracking number...',
-  parcel: 'Parcel',
   scannerActive: 'Scanner Active - Point camera at barcode or type manually',
   initialNotes: 'Initial Notes',
   initialNotesPlaceholder: 'Any initial observations...',
@@ -1769,13 +1641,9 @@ const imports = {
   showActive: 'Show Active',
   scanned: 'Scanned',
   verified: 'Verified',
-  pleaseTryAgain: 'Please try again',
   invalidTrackingNumberDesc: 'Invalid tracking number: {{value}}',
   uploadFailed: 'Upload Failed',
-  failedToProcessPhotos: 'Failed to process photos. Please try again.',
   failedToSavePhotoChanges: 'Failed to save photo changes. The photos have been restored.',
-  photoRemoved: 'Photo Removed',
-  photoDeleted: 'Photo deleted',
   palletScanned: 'Pallet Scanned',
   
   // ItemsToStore - Additional UI labels
@@ -1790,13 +1658,9 @@ const imports = {
   costAllocationMethod: 'Cost Allocation Method',
   howShippingCostsDistributed: 'How shipping costs are distributed',
   autoSelect: 'Auto-Select',
-  cannotSaveLocationNoReceipt: 'Cannot save location: No receipt selected',
-  failedToSaveLocation: 'Failed to save location',
   allItemsProcessed: '✓ All items processed',
-  noMoreItemsToScan: 'No more items to scan',
   locationsApplied: '✓ Locations Applied',
   locationsAddedSuccessfully: '{{count}} location{{count, plural, one {} other{s}}} added successfully',
-  setAsPrimaryLocation: 'Set as primary location',
   
   // Additional hardcoded string translations
   orderUnpackedSuccessfully: 'Purchase order has been unpacked successfully',
@@ -1834,12 +1698,9 @@ const imports = {
   none: 'None',
   generalGoods: 'General Goods',
   sensitiveGoods: 'Sensitive Goods',
-  kg: 'kg',
   deletePurchaseAction: 'Delete Purchase',
   allLocations: 'All Locations',
-  addSpecialInstructions: 'Add any special instructions or notes...',
   selectNewStatus: 'Select new status',
-  itemsMovedToConsolidation: '{{count}} item(s) moved to {{name}}',
   enterConsolidationNamePlaceholder: 'Enter consolidation name',
   
   // AddCostModal
@@ -1861,7 +1722,6 @@ const imports = {
   customsFee: 'Customs Fee',
   insurance: 'Insurance',
   packaging: 'Packaging',
-  other: 'Other',
   shippingMode: 'Shipping Mode',
   selectShippingMode: 'Select shipping mode',
   airFreight: 'Air Freight',
@@ -1872,7 +1732,6 @@ const imports = {
   volumetricWeightHelper: 'Used to calculate volumetric weight',
   volumetricStandard: 'Standard: Air=6000, Sea=1000000, Courier=5000',
   amount: 'Amount',
-  selectCurrency: 'Select currency',
   exchangeRate: 'Exchange Rate (1 {{currency}} = ? EUR)',
   fetch: 'Fetch',
   leaveBlankAutoFetch: 'Leave blank to auto-fetch current rate',
@@ -1880,8 +1739,6 @@ const imports = {
   notesOptional: 'Notes (Optional)',
   addRelevantNotes: 'Add any relevant notes about this cost...',
   additionalCostInfo: 'Any additional information about this cost',
-  cancel: 'Cancel',
-  saving: 'Saving...',
   updateCost: 'Update Cost',
   amountMustBePositive: 'Amount must be a positive number',
   currencyRequired: 'Currency is required',
@@ -1896,28 +1753,20 @@ const imports = {
   failedToLoadAllocationPreview: 'Failed to load allocation preview. Please try again.',
   noItemsToDisplay: 'No items to display',
   addCostsAndItems: 'Add costs and items to see allocation preview',
-  allocationMethod: 'Allocation Method:',
   manualOverride: 'Manual Override',
-  auto: 'Auto',
   whyThisMethod: 'Why this method?',
   weightBasedOptimal: 'Weight-based allocation is optimal for freight costs as heavier items consume more shipping resources.',
   manualOverrideLabel: 'Manual override',
   resetToAuto: 'Reset to Auto',
-  units: 'Units',
-  totalCost: 'Total Cost',
   avgPerUnit: 'Avg/Unit',
   warnings: 'Warnings',
   debugInfo: 'Debug Info (Raw Data Values)',
   rawDataValues: 'Raw Data Values',
   baseCurrency: 'Base Currency:',
-  totalItems: 'Total Items:',
   sampleItemData: 'Sample Item Data (First Item):',
   costAllocationDetails: 'Cost Allocation Details ({{count}} items)',
-  item: 'Item',
   actualWeight: 'Actual Weight (kg)',
   volumetricWeight: 'Volumetric Weight (kg)',
-  chargeableWeight: 'Chargeable Weight (kg)',
-  customs: 'Customs',
   otherFees: 'Other Fees',
   totalAllocated: 'Total Allocated',
   landingCostUnit: 'Landing Cost/Unit',
@@ -1946,14 +1795,10 @@ const imports = {
   costDeletedAndRecalculated: 'Cost deleted and landing costs recalculated',
   warning: 'Warning',
   costDeletedButFailed: 'Cost deleted but calculation failed: {{error}}. Please try refreshing the page.',
-  landingCosts: 'Landing Costs',
   pendingStatus: 'Pending ⚠️',
-  noCosts: 'No Costs',
   displayCurrency: 'Display Currency',
   lastCalculated: 'Last Calculated',
-  overview: 'Overview',
   allocation: 'Allocation',
-  cartons: 'Cartons',
   details: 'Details',
   noCostsLabel: 'No costs',
   detailedViewOfCostLines: 'Detailed view of all cost lines',
@@ -1971,26 +1816,16 @@ const imports = {
   unableToLoadShipmentInfo: 'Unable to load shipment information',
   cartonSummary: 'Carton Summary',
   shipmentPackagingInfo: 'Shipment packaging and weight information for cost calculations',
-  totalUnits: 'Total Units',
-  unitType: 'Unit Type',
   actualWeightUsedForCostCalc: 'Actual weight is used for landing cost calculations and allocation across items.',
-  units: 'Units',
-  boxes: 'Boxes',
-  pallets: 'Pallets',
-  bags: 'Bags',
-  crates: 'Crates',
   container20gp: '20GP Container',
   container40gp: '40GP Container',
   container40hq: '40HQ Container',
   container45hq: '45HQ Container',
-  lclShipment: 'LCL Shipment',
   
   // PriceSettingModal
   setSellingPricesBeforeApproval: 'Set Selling Prices Before Approval',
   columns: 'Columns',
   showHideColumns: 'Show/Hide Columns',
-  landingCostCZK: 'Landing Cost CZK',
-  landingCostEUR: 'Landing Cost EUR',
   eurToCzkExchangeRate: 'EUR to CZK Exchange Rate:',
   czkAutoFillsWhenEurEntered: '(CZK auto-fills when EUR is entered)',
   autoFilledWithExistingPrices: 'auto-filled with existing inventory prices (green highlighted)',
@@ -2001,7 +1836,6 @@ const imports = {
   priceEUR: 'Price EUR',
   exists: 'Exists',
   newItems: 'New items:',
-  existing: 'Existing:',
   totalUnitsLabel: 'Total units:',
   approverName: 'Approver Name',
   enterYourName: 'Enter your name',
@@ -2010,27 +1844,19 @@ const imports = {
   processingReceiptApproval: 'Processing Receipt Approval...',
   updatingProductsInInventory: 'Updating {{count}} products in inventory...',
   settingPricesUpdatingCosts: 'Setting prices • Updating costs • Creating inventory records',
-  failedToApproveReceipt: 'Failed to approve receipt',
   receiptApprovedSuccessfully: 'Receipt Approved Successfully',
   approvedByLabel: 'Approved by:',
   pricesUpdatedLabel: 'Prices Updated:',
   existingProducts: 'Existing products:',
   newProducts: 'New products:',
   inventoryChanges: 'Inventory Changes:',
-  productsUpdated: 'Products updated:',
-  newProductsCreated: 'New products created:',
   totalProductsProcessed: 'Total: {{total}} products processed',
-  approvalFailed: 'Approval Failed',
   failedToApproveReceiptTryAgain: 'Failed to approve receipt. Please try again.',
   
   // Currency display
   viewIn: 'View in',
   purchase: 'purchase',
   payment: 'payment',
-  
-  // Allocation Method
-  manualOverride: 'Manual Override',
-  resetToAuto: 'Reset to Auto',
   
   // StartReceiving placeholders
   scanItemBarcodePlaceholder: 'Scan item barcode here...',
@@ -2039,34 +1865,17 @@ const imports = {
   
   // AllocationPreview - Component Strings
   allocationMethodLabel: 'Allocation Method:',
-  auto: 'Auto',
   autoSelection: 'Auto-selection:',
-  units: 'Units',
-  weight: 'Weight',
-  totalCost: 'Total Cost',
   avgUnit: 'Avg/Unit',
-  warnings: 'Warnings',
-  export: 'Export',
-  debugInfo: 'Debug Info (Raw Data Values)',
-  baseCurrency: 'Base Currency:',
-  totalItems: 'Total Items:',
-  sampleItemData: 'Sample Item Data (First Item):',
-  costAllocationDetails: 'Cost Allocation Details',
-  items: 'items',
-  product: 'Product',
   purchPrice: 'Purch. Price',
   chgKg: 'Chg kg',
-  freight: 'Freight',
   duty: 'Duty',
-  other: 'Other',
-  costBreakdown: 'Cost Breakdown',
   freightLabel: 'Freight:',
   dutyLabel: 'Duty:',
   customsFeeLabel: 'Customs Fee:',
   insuranceLabel: 'Insurance:',
   packagingLabel: 'Packaging:',
   otherLabel: 'Other:',
-  totalAllocated: 'Total Allocated:',
   perUnitCost: 'Per Unit Cost:',
   methodUsed: 'Method Used:',
   warningsLabel: 'Warnings:',
