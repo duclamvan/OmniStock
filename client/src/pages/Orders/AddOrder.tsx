@@ -297,7 +297,7 @@ export default function AddOrder() {
   const { canAccessFinancialData } = useAuth();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers } = useSettings();
-  const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
+  const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
