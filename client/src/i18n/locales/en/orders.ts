@@ -671,7 +671,11 @@ const orders = {
   saveDraft: 'Save Draft',
   marginAnalysis: 'Margin Analysis',
   totalCost: 'Total Cost',
+  totalCostColon: 'Total Cost:',
+  totalProfitColon: 'Total Profit:',
   margin: 'Margin',
+  chooseVariantsFor: 'Choose variants and quantities for:',
+  addShippingNotesDescription: 'Add shipping notes or special instructions for this item',
   
   // New Customer Form
   newCustomerDetails: 'New Customer Details',

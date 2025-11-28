@@ -4535,7 +4535,7 @@ export default function AddOrder() {
                             <SelectItem value="pay_later">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                                Pay Later
+                                {t('orders:payLater')}
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -4550,7 +4550,7 @@ export default function AddOrder() {
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Calculator className="h-4 w-4 text-blue-600" />
-                        Order Summary
+                        {t('orders:orderSummary')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
@@ -4571,7 +4571,7 @@ export default function AddOrder() {
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm font-medium flex items-center gap-1">
                                 <TrendingUp className="h-4 w-4 text-green-600" />
-                                Margin Analysis
+                                {t('orders:marginAnalysis')}
                               </span>
                               <MarginPill
                                 sellingPrice={totalSellingPrice}
@@ -4583,11 +4583,11 @@ export default function AddOrder() {
                             </div>
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Total Cost:</span>
+                                <span className="text-gray-500">{t('orders:totalCostColon')}</span>
                                 <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
                               </div>
                               <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Total Profit:</span>
+                                <span className="text-gray-500">{t('orders:totalProfitColon')}</span>
                                 <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
                                   {formatCurrency(totalProfit, form.watch('currency'))}
                                 </span>
@@ -4600,22 +4600,22 @@ export default function AddOrder() {
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="text-gray-600">{t('orders:subtotalColon')}</span>
                         <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
                       </div>
                       {showTaxInvoice && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
+                          <span className="text-gray-600">{t('orders:taxWithRate', { rate: form.watch('taxRate') || 0 })}</span>
                           <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Shipping:</span>
+                        <span className="text-gray-600">{t('orders:shippingColon')}</span>
                         <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">
-                          Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                          {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
                         </span>
                         <span className="font-medium text-green-600">
                           -{formatCurrency(
@@ -4974,7 +4974,7 @@ export default function AddOrder() {
             <DialogHeader>
               <DialogTitle>{t('orders:selectProductVariants')}</DialogTitle>
               <DialogDescription>
-                Choose variants and quantities for: <span className="font-semibold">{selectedProductForVariant?.name}</span>
+                {t('orders:chooseVariantsFor')} <span className="font-semibold">{selectedProductForVariant?.name}</span>
               </DialogDescription>
             </DialogHeader>
             <div className="max-h-[400px] overflow-y-auto">
@@ -4982,9 +4982,9 @@ export default function AddOrder() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('orders:variantName')}</TableHead>
-                    <TableHead>Barcode</TableHead>
-                    <TableHead className="text-right">Stock</TableHead>
-                    <TableHead className="text-right w-[120px]">Quantity</TableHead>
+                    <TableHead>{t('orders:barcode')}</TableHead>
+                    <TableHead className="text-right">{t('orders:stock')}</TableHead>
+                    <TableHead className="text-right w-[120px]">{t('orders:quantity')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -5043,7 +5043,7 @@ export default function AddOrder() {
                   setVariantQuantities({});
                 }}
               >
-                Cancel
+                {t('orders:cancel')}
               </Button>
               <Button
                 type="button"
@@ -5051,7 +5051,7 @@ export default function AddOrder() {
                 data-testid="button-add-variants"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Selected Variants
+                {t('orders:addSelectedVariants')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -5068,7 +5068,7 @@ export default function AddOrder() {
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">{t('orders:shippingNotes')}</DialogTitle>
               <DialogDescription className="text-sm">
-                Add shipping notes or special instructions for this item
+                {t('orders:addShippingNotesDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">

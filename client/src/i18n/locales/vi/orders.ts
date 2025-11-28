@@ -656,7 +656,11 @@ const orders = {
   saveDraft: 'Lưu nháp',
   marginAnalysis: 'Phân tích biên lợi nhuận',
   totalCost: 'Tổng chi phí',
+  totalCostColon: 'Tổng chi phí:',
+  totalProfitColon: 'Tổng lợi nhuận:',
   margin: 'Biên',
+  chooseVariantsFor: 'Chọn biến thể và số lượng cho:',
+  addShippingNotesDescription: 'Thêm ghi chú vận chuyển hoặc hướng dẫn đặc biệt cho sản phẩm này',
   
   // New Customer Form
   newCustomerDetails: 'Thông tin khách hàng mới',
