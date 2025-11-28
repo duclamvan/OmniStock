@@ -4608,19 +4608,21 @@ export default function AddOrder() {
                         <span className="text-gray-600">{t('orders:shippingColon')}</span>
                         <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
-                        </span>
-                        <span className="font-medium text-green-600">
-                          -{formatCurrency(
-                            form.watch('discountType') === 'rate' 
-                              ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
-                              : Number(form.watch('discountValue')) || 0, 
-                            form.watch('currency')
-                          )}
-                        </span>
-                      </div>
+                      {(() => {
+                        const discountAmount = form.watch('discountType') === 'rate' 
+                          ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
+                          : Number(form.watch('discountValue')) || 0;
+                        return discountAmount > 0 ? (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">
+                              {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                            </span>
+                            <span className="font-medium text-green-600">
+                              -{formatCurrency(discountAmount, form.watch('currency'))}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
                       {totals.storeCreditApplied > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 flex items-center gap-1">
@@ -4828,19 +4830,21 @@ export default function AddOrder() {
                   <span className="text-gray-600">{t('orders:shippingColon')}</span>
                   <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
-                  </span>
-                  <span className="font-medium text-green-600">
-                    -{formatCurrency(
-                      form.watch('discountType') === 'rate' 
-                        ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
-                        : Number(form.watch('discountValue')) || 0, 
-                      form.watch('currency')
-                    )}
-                  </span>
-                </div>
+                {(() => {
+                  const discountAmount = form.watch('discountType') === 'rate' 
+                    ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
+                    : Number(form.watch('discountValue')) || 0;
+                  return discountAmount > 0 ? (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        {t('orders:discountLabel')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                      </span>
+                      <span className="font-medium text-green-600">
+                        -{formatCurrency(discountAmount, form.watch('currency'))}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
                 {totals.storeCreditApplied > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 flex items-center gap-1">
