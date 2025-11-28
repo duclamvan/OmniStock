@@ -554,14 +554,14 @@ export default function StockAdjustmentDialog({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>{t('warehouse:requestStockAdjustment')}</DrawerTitle>
             <DrawerDescription>
               {t('warehouse:requestStockAdjustmentDesc')}
             </DrawerDescription>
           </DrawerHeader>
-          <div className="px-4">{content}</div>
+          <div className="px-4 overflow-y-auto flex-1">{content}</div>
           <DrawerFooter className="flex-row gap-2">{footer}</DrawerFooter>
         </DrawerContent>
       </Drawer>
@@ -570,15 +570,15 @@ export default function StockAdjustmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{t('warehouse:requestStockAdjustment')}</DialogTitle>
           <DialogDescription>
             {t('warehouse:requestStockAdjustmentDesc')}
           </DialogDescription>
         </DialogHeader>
-        {content}
-        <DialogFooter>{footer}</DialogFooter>
+        <div className="overflow-y-auto flex-1 -mx-6 px-6">{content}</div>
+        <DialogFooter className="flex-shrink-0">{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
