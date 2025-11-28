@@ -1024,7 +1024,6 @@ const imports = {
   takePhoto: 'Chụp ảnh',
   reportIssue: 'Báo vấn đề',
   addVoiceNote: 'Thêm ghi chú giọng nói',
-  complete: 'Hoàn tất',
   scanning: 'Đang quét',
   scanItems: 'Quét sản phẩm',
   enterSkuOrScanBarcode: 'Nhập SKU hoặc quét mã vạch',
@@ -1266,16 +1265,8 @@ const imports = {
   receivedAt: 'Thời gian nhận',
   scannedParcels: 'Kiện đã quét',
   damageNotes: 'Ghi chú hư hỏng',
-  expected: 'Dự kiến',
-  received: 'Đã nhận',
-  damaged: 'Hư hỏng',
-  missing: 'Thiếu',
-  partial: 'Một phần',
-  totalItems: 'Tổng sản phẩm',
   noPhotos: 'Không có ảnh',
-  photos: 'Ảnh',
   labels: 'Nhãn',
-  selectAll: 'Chọn tất cả',
   selected: 'đã chọn',
   printLabels: 'In nhãn',
   warehouseLabels: 'Nhãn kho',
@@ -1307,7 +1298,6 @@ const imports = {
   addAnyAdditionalNotesAboutReceivingProcess: 'Thêm ghi chú bổ sung về quy trình nhận hàng...',
   allItemsCompletedSwitchToShowAll: 'Tất cả sản phẩm đã hoàn tất. Chuyển sang "Hiện tất cả" để xem.',
   clickAddPhotosToUpload: 'Nhấp "Thêm ảnh" để tải ảnh lên của lô hàng',
-  parcels: 'Kiện hàng',
   
   // StartReceiving - Toast Messages
   preScannedDataLoaded: 'Đã tải dữ liệu quét trước',
@@ -1347,8 +1337,6 @@ const imports = {
   deliveredDate: 'Ngày giao hàng',
   receivingNotes: 'Ghi chú nhận hàng:',
   receivedItems: 'Sản phẩm đã nhận',
-  expected: 'Dự kiến',
-  missing: 'thiếu',
   
   // ReviewApprove - Dialog Content
   addNotesAboutShipmentOptional: 'Thêm ghi chú về lô hàng này (không bắt buộc)...',
@@ -1446,7 +1434,6 @@ const imports = {
   addLocation: 'Thêm vị trí',
   startCamera: 'Bật Camera',
   stopCamera: 'Tắt Camera',
-  scanning: 'Đang quét',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'TRỌNG LƯỢNG',
@@ -1577,8 +1564,6 @@ const imports = {
   successfullyUploadedXPhotos: 'Đã tải lên thành công {{count}} ảnh{{reduction, select, 0{} other{ (nhỏ hơn {{reduction}}%)}}} • Hình thu nhỏ: {{thumbnailSize}}KB tổng',
   
   // ItemsToStore - General
-  unknownCarrier: 'Nhà vận chuyển không xác định',
-  receiptNumber: 'Phiếu nhận #{{number}}',
   selectShipmentToWorkOn: 'Chọn lô hàng để làm việc',
   pendingParens: 'Chờ xử lý ({{count}})',
   completedParens: 'Đã hoàn thành ({{count}})',
@@ -1591,14 +1576,12 @@ const imports = {
   itemChecklist: 'Danh sách sản phẩm',
   verification: 'Xác minh',
   inProgress: 'Đang xử lý',
-  receivedBy: 'Người nhận',
   receiveAll: 'Nhận tất cả',
   allUnitsAutoReceived: 'Tất cả {{count}} {{units}} đã được nhận tự động',
   allUnitsVerified: 'Tất cả {{units}} đã được xác minh!',
   scannedTrackingNumbers: 'Mã vận đơn đã quét',
   clearAll: 'Xóa tất cả',
   scanOrTypeTracking: 'Quét hoặc nhập mã vận đơn {{unit}}...',
-  parcel: 'Kiện hàng',
   scannerActive: 'Đang quét - Hướng camera vào mã vạch hoặc nhập thủ công',
   initialNotes: 'Ghi chú ban đầu',
   initialNotesPlaceholder: 'Ghi chú quan sát ban đầu...',
@@ -1866,8 +1849,35 @@ const imports = {
   productSelectionInfo: 'Tìm và chọn sản phẩm hoặc nhập tên mới',
   quantityAndPricing: 'Số lượng & Giá',
   physicalProperties: 'Thuộc tính vật lý',
-  additionalDetails: 'Chi tiết bổ sung',
   lastImportCost: 'Giá nhập lần cuối',
+  
+  // Order Details Card Section Headers
+  currencyAndPayment: 'Tiền tệ & Thanh toán',
+  supplierDetails: 'Chi tiết nhà cung cấp',
+  timelineSection: 'Thời gian',
+  optionsSection: 'Tùy chọn',
+  
+  // Bulk Selection & Enhanced Table
+  selectedItems: 'Đã chọn {{count}} sản phẩm',
+  confirmDeleteItems: 'Bạn có chắc muốn xóa {{count}} sản phẩm đã chọn?',
+  weightColumn: 'Trọng lượng (kg)',
+  totalWeightColumn: 'Tổng trọng lượng',
+  expandDetails: 'Xem chi tiết',
+  collapseDetails: 'Thu gọn',
+  bulkUnit: '{{cartons}} thùng → {{quantity}} chiếc',
+  confirmDelete: 'Xác nhận xóa',
+  
+  // Summary Panel Enhancements
+  currencyComparison: 'So sánh tiền tệ',
+  landedCostBreakdown: 'Phân tích chi phí nhập kho',
+  avgCostPerUnit: 'Giá trung bình/đơn vị',
+  shippingPercentage: 'Vận chuyển: {{percent}}% tổng',
+  exchangeRates: 'Tỷ giá',
+  paymentProgress: 'Tiến độ thanh toán',
+  percentPaid: 'Đã thanh toán {{percent}}%',
+  remainingBalance: 'Số còn lại',
+  productCostPercent: 'Sản phẩm: {{percent}}%',
+  shippingCostPercent: 'Vận chuyển: {{percent}}%',
   
 } as const;
 

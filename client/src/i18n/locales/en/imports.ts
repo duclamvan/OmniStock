@@ -2070,7 +2070,6 @@ const imports = {
   perUnitCost: 'Per Unit Cost:',
   methodUsed: 'Method Used:',
   warningsLabel: 'Warnings:',
-  total: 'TOTAL',
   
   // AllocationPreview - CSV Headers
   csvSku: 'SKU',
@@ -2099,8 +2098,35 @@ const imports = {
   productSelectionInfo: 'Search and select a product or type a new name',
   quantityAndPricing: 'Quantity & Pricing',
   physicalProperties: 'Physical Properties',
-  additionalDetails: 'Additional Details',
   lastImportCost: 'Last Import Cost',
+  
+  // Order Details Card Section Headers
+  currencyAndPayment: 'Currency & Payment',
+  supplierDetails: 'Supplier Details',
+  timelineSection: 'Timeline',
+  optionsSection: 'Options',
+  
+  // Bulk Selection & Enhanced Table
+  selectedItems: '{{count}} items selected',
+  confirmDeleteItems: 'Are you sure you want to delete {{count}} selected items?',
+  weightColumn: 'Weight (kg)',
+  totalWeightColumn: 'Total Weight',
+  expandDetails: 'Expand details',
+  collapseDetails: 'Collapse details',
+  bulkUnit: '{{cartons}} cartons → {{quantity}} pcs',
+  confirmDelete: 'Confirm Delete',
+  
+  // Summary Panel Enhancements
+  currencyComparison: 'Currency Comparison',
+  landedCostBreakdown: 'Landed Cost Breakdown',
+  avgCostPerUnit: 'Avg. Cost per Unit',
+  shippingPercentage: 'Shipping: {{percent}}% of total',
+  exchangeRates: 'Exchange Rates',
+  paymentProgress: 'Payment Progress',
+  percentPaid: '{{percent}}% Paid',
+  remainingBalance: 'Remaining Balance',
+  productCostPercent: 'Product: {{percent}}%',
+  shippingCostPercent: 'Shipping: {{percent}}%',
   
 } as const;
 

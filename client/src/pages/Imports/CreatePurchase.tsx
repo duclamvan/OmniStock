@@ -29,9 +29,12 @@ import { useTranslation } from "react-i18next";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
-  Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, Upload, ImageIcon
+  Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
+  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, Upload, ImageIcon, Settings, Scale
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 interface PurchaseItem {
@@ -272,6 +275,13 @@ export default function CreatePurchase() {
   
   // AI storage location suggestion state
   const [suggestingLocation, setSuggestingLocation] = useState(false);
+  
+  // Bulk selection state
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  
+  // Mobile card expand state
+  const [expandedCards, setExpandedCards] = useState<string[]>([]);
 
   // Set default purchase date to now
   useEffect(() => {
@@ -756,6 +766,44 @@ export default function CreatePurchase() {
   const removeItem = (id: string) => {
     const updatedItems = items.filter(item => item.id !== id);
     updateItemsWithShipping(updatedItems);
+    setSelectedItems(prev => prev.filter(itemId => itemId !== id));
+  };
+  
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (selectedItems.length === items.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(items.map(item => item.id));
+    }
+  };
+  
+  const toggleSelectItem = (id: string) => {
+    setSelectedItems(prev => 
+      prev.includes(id) 
+        ? prev.filter(itemId => itemId !== id)
+        : [...prev, id]
+    );
+  };
+  
+  const deleteSelectedItems = () => {
+    const updatedItems = items.filter(item => !selectedItems.includes(item.id));
+    updateItemsWithShipping(updatedItems);
+    setSelectedItems([]);
+    setDeleteConfirmOpen(false);
+    toast({
+      title: t('itemRemoved'),
+      description: t('selectedItems', { count: selectedItems.length }) + ' ' + t('deleted'),
+    });
+  };
+  
+  // Mobile card expand/collapse handlers
+  const toggleCardExpand = (id: string) => {
+    setExpandedCards(prev =>
+      prev.includes(id)
+        ? prev.filter(cardId => cardId !== id)
+        : [...prev, id]
+    );
   };
   
   // Save new category
@@ -1190,47 +1238,52 @@ export default function CreatePurchase() {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
         {/* Left Column - Form */}
         <div className="space-y-6">
-          {/* Supplier Information */}
+          {/* Order Details */}
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>{t('supplierInformation')}</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle>{t('orderDetails')}</CardTitle>
               <CardDescription>{t('basicDetailsSupplier')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="purchase-currency">{t('currency')} *</Label>
-                  <Select value={purchaseCurrency} onValueChange={(value) => {
-                    if (value === "add-new") {
-                      setAddingCurrency(true);
-                    } else {
-                      setPurchaseCurrency(value);
-                    }
-                  }}>
-                    <SelectTrigger data-testid="select-purchase-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
-                      <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
-                      <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
-                      <SelectItem value="VND">{t('currencyVND')}</SelectItem>
-                      <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
-                      {customCurrencies.map(currency => (
-                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
-                      ))}
-                      <div className="border-t">
-                        <SelectItem value="add-new">
-                          <Plus className="mr-2 h-4 w-4 inline" />
-                          {t('addNewCurrency')}
-                        </SelectItem>
-                      </div>
-                    </SelectContent>
-                  </Select>
+            <CardContent className="space-y-6">
+              {/* Currency & Payment Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <span>{t('currencyAndPayment')}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="payment-currency">{t('paymentCurrency')} *</Label>
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase-currency" className="text-xs text-muted-foreground">{t('currency')} *</Label>
+                    <Select value={purchaseCurrency} onValueChange={(value) => {
+                      if (value === "add-new") {
+                        setAddingCurrency(true);
+                      } else {
+                        setPurchaseCurrency(value);
+                      }
+                    }}>
+                      <SelectTrigger data-testid="select-purchase-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
+                        <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
+                        <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
+                        <SelectItem value="VND">{t('currencyVND')}</SelectItem>
+                        <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
+                        {customCurrencies.map(currency => (
+                          <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                        ))}
+                        <div className="border-t">
+                          <SelectItem value="add-new">
+                            <Plus className="mr-2 h-4 w-4 inline" />
+                            {t('addNewCurrency')}
+                          </SelectItem>
+                        </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-currency" className="text-xs text-muted-foreground">{t('paymentCurrency')} *</Label>
                     <Select value={paymentCurrency} onValueChange={(value) => {
                       if (value === "add-new") {
                         setAddingCurrency(true);
@@ -1239,7 +1292,7 @@ export default function CreatePurchase() {
                         setPaymentCurrencyManuallySet(true);
                       }
                     }}>
-                      <SelectTrigger className="flex-1" data-testid="select-payment-currency">
+                      <SelectTrigger data-testid="select-payment-currency">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1259,12 +1312,16 @@ export default function CreatePurchase() {
                         </div>
                       </SelectContent>
                     </Select>
-                    <div className="relative w-36">
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="total-paid" className="text-xs text-muted-foreground">{t('totalPaid')}</Label>
+                    <div className="relative">
                       <Input
+                        id="total-paid"
                         type="number"
                         value={totalPaid}
                         onChange={(e) => setTotalPaid(parseFloat(e.target.value) || 0)}
-                        placeholder={t('totalPaid')}
+                        placeholder="0.00"
                         className="pl-8"
                         step="0.01"
                         min="0"
@@ -1274,49 +1331,62 @@ export default function CreatePurchase() {
                         {getCurrencySymbol(paymentCurrency)}
                       </span>
                     </div>
+                    {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {t('grandTotalIn')} {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
+                      </div>
+                    )}
                   </div>
-                  {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      {t('grandTotalIn')} {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
-                    </div>
-                  )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <Separator />
+
+              {/* Supplier Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <User className="h-4 w-4 text-primary" />
+                  <span>{t('supplierDetails')}</span>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="supplier">{t('supplierName')} *</Label>
+                  <Label htmlFor="supplier" className="text-xs text-muted-foreground">{t('supplierName')} *</Label>
                   <div className="relative" ref={supplierDropdownRef}>
-                    <Input
-                      id="supplier"
-                      value={supplier}
-                      onChange={(e) => {
-                        setSupplier(e.target.value);
-                        setSupplierId(null);
-                        setSupplierDropdownOpen(true);
-                      }}
-                      onFocus={() => setSupplierDropdownOpen(true)}
-                      placeholder={t('typeToSearchSuppliers')}
-                      data-testid="input-supplier"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="supplier"
+                        value={supplier}
+                        onChange={(e) => {
+                          setSupplier(e.target.value);
+                          setSupplierId(null);
+                          setSupplierDropdownOpen(true);
+                        }}
+                        onFocus={() => setSupplierDropdownOpen(true)}
+                        placeholder={t('typeToSearchSuppliers')}
+                        className="pl-10"
+                        data-testid="input-supplier"
+                      />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
                     {supplierDropdownOpen && (
                       <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-80 overflow-auto">
                         {/* Show frequent suppliers when no search term */}
                         {!supplier && enhancedFrequentSuppliers.length > 0 && (
                           <>
-                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
+                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0 flex items-center gap-2">
+                              <Clock className="h-3 w-3" />
                               {t('frequentSuppliers')}
                             </div>
                             {enhancedFrequentSuppliers.slice(0, 5).map((s) => (
                               <button
                                 key={`freq-${s.name}`}
-                                className="w-full px-3 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                                className="w-full px-3 py-3 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
                                 onClick={() => {
                                   setSupplier(s.name);
                                   if (s.id) setSupplierId(s.id);
                                   setSupplierDropdownOpen(false);
                                 }}
                               >
-                                <span className="text-xl flex-shrink-0">{getCountryFlag(s.country)}</span>
+                                <span className="text-2xl flex-shrink-0 w-10 h-10 bg-muted rounded-lg flex items-center justify-center">{getCountryFlag(s.country)}</span>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-sm truncate">{s.name}</div>
                                   {s.country && (
@@ -1324,7 +1394,7 @@ export default function CreatePurchase() {
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                                  <span className="text-xs font-medium text-primary">{s.count} {t('orders')}</span>
+                                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">{s.count} {t('orders')}</span>
                                   <span className="text-[10px] text-muted-foreground">
                                     {new Date(s.lastUsed).toLocaleDateString()}
                                   </span>
@@ -1341,7 +1411,7 @@ export default function CreatePurchase() {
                               filteredSuppliers.map((s) => (
                                 <button
                                   key={s.id}
-                                  className="w-full px-3 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                                  className="w-full px-3 py-3 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
                                   onClick={() => {
                                     setSupplier(s.name);
                                     setSupplierId(s.id);
@@ -1354,7 +1424,7 @@ export default function CreatePurchase() {
                                       supplierId === s.id ? "opacity-100 text-primary" : "opacity-0"
                                     )}
                                   />
-                                  <span className="text-xl flex-shrink-0">{getCountryFlag(s.country)}</span>
+                                  <span className="text-2xl flex-shrink-0 w-10 h-10 bg-muted rounded-lg flex items-center justify-center">{getCountryFlag(s.country)}</span>
                                   <div className="flex-1 min-w-0">
                                     <div className="font-medium text-sm truncate">{s.name}</div>
                                     {s.country && (
@@ -1364,8 +1434,8 @@ export default function CreatePurchase() {
                                 </button>
                               ))
                             ) : (
-                              <div className="p-3">
-                                <p className="text-sm text-muted-foreground mb-2">{t('noSupplierFound')}</p>
+                              <div className="p-4">
+                                <p className="text-sm text-muted-foreground mb-3">{t('noSupplierFound')}</p>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1386,47 +1456,65 @@ export default function CreatePurchase() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="purchase-date">{t('purchaseDate')} *</Label>
-                  <Input
-                    id="purchase-date"
-                    type="datetime-local"
-                    value={purchaseDate}
-                    onChange={(e) => setPurchaseDate(e.target.value)}
-                    data-testid="input-purchase-date"
-                  />
+
+              <Separator />
+
+              {/* Timeline Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span>{t('timelineSection')}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="processing">{t('processingTime')}</Label>
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase-date" className="text-xs text-muted-foreground">{t('purchaseDate')} *</Label>
                     <Input
-                      id="processing"
-                      type="number"
-                      min="0"
-                      value={processingTime}
-                      onChange={(e) => setProcessingTime(e.target.value)}
-                      placeholder="0"
-                      className="flex-1"
-                      data-testid="input-processing-time"
+                      id="purchase-date"
+                      type="datetime-local"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                      data-testid="input-purchase-date"
                     />
-                    <Select value={processingUnit} onValueChange={setProcessingUnit}>
-                      <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="days">{t('days')}</SelectItem>
-                        <SelectItem value="weeks">{t('weeks')}</SelectItem>
-                        <SelectItem value="months">{t('months')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="processing" className="text-xs text-muted-foreground">{t('processingTime')}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="processing"
+                        type="number"
+                        min="0"
+                        value={processingTime}
+                        onChange={(e) => setProcessingTime(e.target.value)}
+                        placeholder="0"
+                        className="flex-1"
+                        data-testid="input-processing-time"
+                      />
+                      <Select value={processingUnit} onValueChange={setProcessingUnit}>
+                        <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">{t('days')}</SelectItem>
+                          <SelectItem value="weeks">{t('weeks')}</SelectItem>
+                          <SelectItem value="months">{t('months')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid grid-cols-2 gap-2">
+
+              <Separator />
+
+              {/* Shipping Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span>{t('shippingDetails')}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="shipping-currency">{t('shippingCurrency')}</Label>
+                    <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
                     <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
                       <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
                         <SelectValue />
@@ -1441,7 +1529,7 @@ export default function CreatePurchase() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="shipping">{t('shippingCost')}</Label>
+                    <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
                       <Input
@@ -1456,49 +1544,58 @@ export default function CreatePurchase() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tracking" className="text-xs text-muted-foreground">{t('trackingNumber')}</Label>
+                    <Input
+                      id="tracking"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder={t('optionalTracking')}
+                      data-testid="input-tracking"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Options Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Settings className="h-4 w-4 text-primary" />
+                  <span>{t('optionsSection')}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="consolidation" className="text-xs text-muted-foreground">{t('consolidation')}?</Label>
+                    <Select 
+                      value={consolidation} 
+                      onValueChange={setConsolidation}
+                    >
+                      <SelectTrigger id="consolidation" data-testid="select-consolidation">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Yes">{t('yes')}</SelectItem>
+                        <SelectItem value="No">{t('no')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {purchaseCurrency === "EUR" && (
+                      <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tracking">{t('trackingNumber')}</Label>
-                  <Input
-                    id="tracking"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder={t('optionalTracking')}
-                    data-testid="input-tracking"
+                  <Label htmlFor="notes" className="text-xs text-muted-foreground">{t('notes')}</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={t('additionalNotes')}
+                    rows={3}
+                    data-testid="textarea-notes"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="consolidation">{t('consolidation')}?</Label>
-                  <Select 
-                    value={consolidation} 
-                    onValueChange={setConsolidation}
-                  >
-                    <SelectTrigger id="consolidation" data-testid="select-consolidation">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yes">{t('yes')}</SelectItem>
-                      <SelectItem value="No">{t('no')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {purchaseCurrency === "EUR" && (
-                    <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
-                  )}
-                </div>
-                <div></div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t('notes')}</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('additionalNotes')}
-                  rows={3}
-                  data-testid="textarea-notes"
-                />
               </div>
             </CardContent>
           </Card>
@@ -2171,155 +2268,267 @@ export default function CreatePurchase() {
           {items.length > 0 && (
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle>{t('orderItems')}</CardTitle>
-                <CardDescription>{t('reviewManageItems')}</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('orderItems')}</CardTitle>
+                    <CardDescription>{t('reviewManageItems')}</CardDescription>
+                  </div>
+                  {selectedItems.length > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                      <span className="text-sm font-medium text-primary">
+                        {t('selectedItems', { count: selectedItems.length })}
+                      </span>
+                      <div className="flex items-center gap-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedItems([])}
+                          className="h-7 px-2 text-xs"
+                          data-testid="button-clear-selection"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          {t('clearSelection')}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteConfirmOpen(true)}
+                          className="h-7 px-2 text-xs"
+                          data-testid="button-delete-selected"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          {t('deleteSelected')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0 lg:p-6">
                 {/* Mobile/Tablet View - Card Layout */}
                 <div className="lg:hidden">
                   <div className="divide-y">
-                    {items.map((item) => (
-                      <div key={item.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex gap-3">
-                          {/* Product Image */}
-                          <div className="flex-shrink-0">
-                            <div className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                              {item.imageUrl ? (
-                                <img 
-                                  src={item.imageUrl} 
-                                  alt={item.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Package className="h-6 w-6 text-muted-foreground" />
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Product Details */}
-                          <div className="flex-1 space-y-2">
-                            {/* Name and Delete */}
-                            <div className="flex items-start justify-between">
-                              <Input
-                                value={item.name}
-                                onChange={(e) => {
-                                  const updatedItems = items.map(i => 
-                                    i.id === item.id ? {...i, name: e.target.value} : i
-                                  );
-                                  setItems(updatedItems);
-                                }}
-                                className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input focus:px-2 focus:py-1"
-                                placeholder={t('itemNamePlaceholder')}
+                    {items.map((item, index) => (
+                      <Collapsible 
+                        key={item.id}
+                        open={expandedCards.includes(item.id)}
+                        onOpenChange={() => toggleCardExpand(item.id)}
+                      >
+                        <div className={cn(
+                          "p-4 transition-colors",
+                          index % 2 === 1 && "bg-muted/30",
+                          "hover:bg-muted/50"
+                        )}>
+                          <div className="flex gap-3">
+                            {/* Checkbox */}
+                            <div className="flex-shrink-0 pt-1">
+                              <Checkbox
+                                checked={selectedItems.includes(item.id)}
+                                onCheckedChange={() => toggleSelectItem(item.id)}
+                                data-testid={`checkbox-item-mobile-${item.id}`}
                               />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 -mr-2 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeItem(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
                             </div>
                             
-                            {/* SKU and Category */}
-                            <div className="flex items-center gap-2 text-sm">
-                              {item.sku && (
-                                <span className="text-muted-foreground">SKU: {item.sku}</span>
-                              )}
-                              <Select
-                                value={item.categoryId?.toString() || ""}
-                                onValueChange={(value) => {
-                                  if (value === "add-new") {
-                                    setNewCategoryDialogOpen(true);
-                                  } else {
-                                    const categoryId = parseInt(value);
-                                    const category = categories.find(c => c.id === categoryId);
-                                    const updatedItems = items.map(i => 
-                                      i.id === item.id 
-                                        ? {...i, categoryId, category: category?.name || category?.name_en || ""} 
-                                        : i
-                                    );
-                                    setItems(updatedItems);
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input text-sm px-2">
-                                  <SelectValue placeholder={t('category')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {categories.map((category) => (
-                                    <SelectItem key={category.id} value={category.id.toString()}>
-                                      {category.name || category.name_en}
-                                    </SelectItem>
-                                  ))}
-                                  <SelectItem value="add-new" className="text-primary">
-                                    <div className="flex items-center">
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      {t('addNewCategory')}
-                                    </div>
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {/* Quantity and Price Row */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-sm text-muted-foreground">{t('qty')}:</span>
-                                <Input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) => {
-                                    const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
-                                    );
-                                    updateItemsWithShipping(updatedItems);
-                                  }}
-                                  className="h-7 w-16 text-sm text-center border bg-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  min="1"
-                                />
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <div className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Package className="h-6 w-6 text-muted-foreground" />
+                                )}
                               </div>
-                              
-                              <div className="flex items-center gap-1">
-                                <span className="text-sm text-muted-foreground">{t('price')}:</span>
-                                <div className="flex items-center gap-1">
+                            </div>
+                            
+                            {/* Product Details */}
+                            <div className="flex-1 space-y-2">
+                              {/* Name and Actions */}
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
                                   <Input
-                                    type="number"
-                                    value={item.unitPrice}
+                                    value={item.name}
                                     onChange={(e) => {
                                       const updatedItems = items.map(i => 
-                                        i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                        i.id === item.id ? {...i, name: e.target.value} : i
+                                      );
+                                      setItems(updatedItems);
+                                    }}
+                                    className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input focus:px-2 focus:py-1 focus:ring-2 focus:ring-primary/20"
+                                    placeholder={t('itemNamePlaceholder')}
+                                  />
+                                  {item.unitType === 'bulk' && item.cartons && item.bulkUnitQty && (
+                                    <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                                      {t('bulkUnit', { cartons: item.cartons, quantity: item.cartons * item.bulkUnitQty })}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CollapsibleTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground"
+                                      data-testid={`button-expand-${item.id}`}
+                                    >
+                                      {expandedCards.includes(item.id) ? (
+                                        <ChevronUp className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={() => removeItem(item.id)}
+                                    data-testid={`button-remove-item-mobile-${item.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            
+                              {/* Quantity and Price Row - Always Visible */}
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm text-muted-foreground">{t('qty')}:</span>
+                                  <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                      const updatedItems = items.map(i => 
+                                        i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
                                       );
                                       updateItemsWithShipping(updatedItems);
                                     }}
-                                    className="h-7 w-20 text-sm text-right border bg-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    step="0.01"
-                                    min="0"
+                                    className="h-7 w-16 text-sm text-center border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    min="1"
                                   />
-                                  <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
+                                </div>
+                              
+                                <div className="ml-auto text-right">
+                                  <div className="text-sm font-medium">
+                                    {item.totalPrice.toFixed(2)} {purchaseCurrency}
+                                  </div>
+                                  <div className="text-xs text-green-600">
+                                    +ship: {item.costWithShipping.toFixed(2)} {purchaseCurrency}
+                                  </div>
                                 </div>
                               </div>
                               
-                              <div className="ml-auto text-right">
-                                <div className="text-sm font-medium">
-                                  {item.totalPrice.toFixed(2)} {purchaseCurrency}
+                              {/* Collapsible Content - Extended Details */}
+                              <CollapsibleContent className="space-y-3 pt-2">
+                                {/* SKU and Category */}
+                                <div className="flex items-center gap-2 text-sm flex-wrap">
+                                  {item.sku && (
+                                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded">SKU: {item.sku}</span>
+                                  )}
+                                  <Select
+                                    value={item.categoryId?.toString() || ""}
+                                    onValueChange={(value) => {
+                                      if (value === "add-new") {
+                                        setNewCategoryDialogOpen(true);
+                                      } else {
+                                        const categoryId = parseInt(value);
+                                        const category = categories.find(c => c.id === categoryId);
+                                        const updatedItems = items.map(i => 
+                                          i.id === item.id 
+                                            ? {...i, categoryId, category: category?.name || category?.name_en || ""} 
+                                            : i
+                                        );
+                                        setItems(updatedItems);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input text-sm px-2">
+                                      <SelectValue placeholder={t('category')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {categories.map((category) => (
+                                        <SelectItem key={category.id} value={category.id.toString()}>
+                                          {category.name || category.name_en}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="add-new" className="text-primary">
+                                        <div className="flex items-center">
+                                          <Plus className="h-3 w-3 mr-1" />
+                                          {t('addNewCategory')}
+                                        </div>
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
-                                <div className="text-xs text-green-600">
-                                  +ship: {item.costWithShipping.toFixed(2)} {purchaseCurrency}
+                                
+                                {/* Price Edit */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm text-muted-foreground">{t('price')}:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={item.unitPrice}
+                                      onChange={(e) => {
+                                        const updatedItems = items.map(i => 
+                                          i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                        );
+                                        updateItemsWithShipping(updatedItems);
+                                      }}
+                                      className="h-7 w-20 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                    />
+                                    <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                                
+                                {/* Weight */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm text-muted-foreground">{t('weight')}:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={item.weight}
+                                      onChange={(e) => {
+                                        const updatedItems = items.map(i => 
+                                          i.id === item.id ? {...i, weight: parseFloat(e.target.value) || 0} : i
+                                        );
+                                        setItems(updatedItems);
+                                      }}
+                                      className="h-7 w-16 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                    />
+                                    <span className="text-xs text-muted-foreground">kg</span>
+                                    {item.weight > 0 && item.quantity > 1 && (
+                                      <span className="text-xs text-muted-foreground ml-1">
+                                        (= {(item.weight * item.quantity).toFixed(2)} kg total)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                             
-                            {/* Notes and Dimensions */}
-                            {(item.notes || item.dimensions) && (
-                              <div className="text-xs text-muted-foreground space-y-0.5">
-                                {item.notes && <div>{item.notes}</div>}
-                                {item.dimensions && <div>{t('dimensions')}: {item.dimensions}</div>}
-                              </div>
-                            )}
+                                {/* Dimensions */}
+                                {item.dimensions && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {t('dimensions')}: {item.dimensions}
+                                  </div>
+                                )}
+                                
+                                {/* Notes */}
+                                {item.notes && (
+                                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                                    {item.notes}
+                                  </div>
+                                )}
+                              </CollapsibleContent>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Collapsible>
                     ))}
                     
                     {/* Mobile Totals */}
@@ -2352,10 +2561,19 @@ export default function CreatePurchase() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[40px]">
+                          <Checkbox
+                            checked={selectedItems.length === items.length && items.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label={t('selectAll')}
+                            data-testid="checkbox-select-all"
+                          />
+                        </TableHead>
                         <TableHead className="w-[48px]">{t('image')}</TableHead>
                         <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
-                        <TableHead className="w-[180px]">{t('category')}</TableHead>
+                        <TableHead className="w-[160px]">{t('category')}</TableHead>
                         <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
+                        <TableHead className="w-[100px] text-center">{t('weightColumn')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('total')}</TableHead>
                         <TableHead className="w-[140px] text-right">{t('costWithShipping')}</TableHead>
@@ -2363,8 +2581,25 @@ export default function CreatePurchase() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.id} className="hover:bg-muted/50">
+                      {items.map((item, index) => (
+                        <TableRow 
+                          key={item.id} 
+                          className={cn(
+                            "hover:bg-muted/50 transition-colors",
+                            index % 2 === 1 && "bg-muted/20",
+                            selectedItems.includes(item.id) && "bg-primary/5"
+                          )}
+                          data-testid={`table-row-${item.id}`}
+                        >
+                          {/* Checkbox Column */}
+                          <TableCell className="p-2">
+                            <Checkbox
+                              checked={selectedItems.includes(item.id)}
+                              onCheckedChange={() => toggleSelectItem(item.id)}
+                              data-testid={`checkbox-item-${item.id}`}
+                            />
+                          </TableCell>
+                          
                           {/* Image Column */}
                           <TableCell className="p-2">
                             <div className="w-12 h-12 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
@@ -2391,14 +2626,19 @@ export default function CreatePurchase() {
                                   );
                                   setItems(updatedItems);
                                 }}
-                                className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input px-2"
+                                className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 px-2 rounded transition-all"
                                 placeholder={t('itemName')}
                               />
+                              {item.unitType === 'bulk' && item.cartons && item.bulkUnitQty && (
+                                <span className="inline-flex items-center ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                                  {t('bulkUnit', { cartons: item.cartons, quantity: item.cartons * item.bulkUnitQty })}
+                                </span>
+                              )}
                               {item.sku && (
                                 <div className="text-xs text-muted-foreground px-2">SKU: {item.sku}</div>
                               )}
                               {item.notes && (
-                                <div className="text-xs text-muted-foreground px-2">{item.notes}</div>
+                                <div className="text-xs text-muted-foreground px-2 truncate max-w-[180px]" title={item.notes}>{item.notes}</div>
                               )}
                               {item.dimensions && (
                                 <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
@@ -2455,9 +2695,37 @@ export default function CreatePurchase() {
                                 );
                                 updateItemsWithShipping(updatedItems);
                               }}
-                              className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               min="1"
                             />
+                          </TableCell>
+                          
+                          {/* Weight */}
+                          <TableCell className="text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={item.weight}
+                                  onChange={(e) => {
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id ? {...i, weight: parseFloat(e.target.value) || 0} : i
+                                    );
+                                    setItems(updatedItems);
+                                  }}
+                                  className="h-7 w-14 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  step="0.01"
+                                  min="0"
+                                  data-testid={`input-weight-${item.id}`}
+                                />
+                                <span className="text-xs text-muted-foreground">kg</span>
+                              </div>
+                              {item.weight > 0 && item.quantity > 1 && (
+                                <span className="text-[10px] text-muted-foreground mt-0.5">
+                                  = {(item.weight * item.quantity).toFixed(2)} kg
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           
                           {/* Unit Price */}
@@ -2568,8 +2836,11 @@ export default function CreatePurchase() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={3} className="font-bold">{t('totals')}</TableCell>
+                        <TableCell colSpan={4} className="font-bold">{t('totals')}</TableCell>
                         <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
+                        <TableCell className="text-center font-bold">
+                          {items.reduce((sum, item) => sum + (item.weight * item.quantity), 0).toFixed(2)} kg
+                        </TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold">
                           {subtotal.toFixed(2)} {purchaseCurrency}
@@ -2731,7 +3002,7 @@ export default function CreatePurchase() {
                 )}
               </div>
               
-              {/* Payment Section */}
+              {/* Payment Section with Progress */}
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('totalPaid')} ({paymentCurrency})</span>
@@ -2748,6 +3019,191 @@ export default function CreatePurchase() {
                     </span>
                   </div>
                 )}
+                
+                {/* Payment Progress Indicator */}
+                {grandTotal > 0 && (
+                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-medium text-blue-800 dark:text-blue-200">{t('paymentProgress')}</span>
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        totalPaid >= grandTotal ? "text-green-600 dark:text-green-400" : 
+                        totalPaid > 0 ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"
+                      )}>
+                        {t('percentPaid', { percent: Math.min(100, Math.round((totalPaid / grandTotal) * 100)) })}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={Math.min(100, (totalPaid / grandTotal) * 100)} 
+                      className={cn(
+                        "h-2",
+                        totalPaid >= grandTotal ? "[&>div]:bg-green-500" : 
+                        totalPaid > 0 ? "[&>div]:bg-blue-500" : "[&>div]:bg-amber-500"
+                      )}
+                      data-testid="progress-payment"
+                    />
+                    {grandTotal > totalPaid && (
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-blue-700 dark:text-blue-300">{t('remainingBalance')}</span>
+                        <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                          {getCurrencySymbol(paymentCurrency)}{(grandTotal - totalPaid).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Landed Cost Breakdown */}
+              {totalQuantity > 0 && grandTotal > 0 && (
+                <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Scale className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">{t('landedCostBreakdown')}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-purple-700 dark:text-purple-300">{t('avgCostPerUnit')}</span>
+                      <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                        {displayCurrencySymbol}{(displayGrandTotal / totalQuantity).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-purple-700 dark:text-purple-300">{t('shippingPerUnit')}</span>
+                      <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                        {displayCurrencySymbol}{(displayShippingCost / totalQuantity).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {/* Visual Cost Breakdown */}
+                    <div className="mt-3 pt-2 border-t border-purple-200 dark:border-purple-700">
+                      <div className="flex h-3 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900">
+                        <div 
+                          className="bg-purple-500 dark:bg-purple-400 transition-all"
+                          style={{ width: `${grandTotal > 0 ? (subtotal / grandTotal) * 100 : 100}%` }}
+                        />
+                        <div 
+                          className="bg-pink-400 dark:bg-pink-500 transition-all"
+                          style={{ width: `${grandTotal > 0 ? (shippingCost / grandTotal) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center mt-2 text-xs">
+                        <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300">
+                          <span className="h-2 w-2 rounded-full bg-purple-500" />
+                          {t('productCostPercent', { percent: grandTotal > 0 ? Math.round((subtotal / grandTotal) * 100) : 100 })}
+                        </span>
+                        <span className="flex items-center gap-1 text-pink-600 dark:text-pink-400">
+                          <span className="h-2 w-2 rounded-full bg-pink-400" />
+                          {t('shippingCostPercent', { percent: grandTotal > 0 ? Math.round((shippingCost / grandTotal) * 100) : 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Exchange Rates Section */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-muted">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('exchangeRates')}</span>
+                </div>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>1 USD =</span>
+                    <span>{exchangeRates['EUR']?.toFixed(4) || '0.92'} EUR</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>1 USD =</span>
+                    <span>{exchangeRates['CZK']?.toFixed(2) || '23.00'} CZK</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>1 USD =</span>
+                    <span>{exchangeRates['VND']?.toFixed(0) || '24500'} VND</span>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-muted text-xs text-muted-foreground/70">
+                  {t('lastUpdated')}: {new Date().toLocaleDateString()}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Multi-Currency Comparison Card */}
+          <Card className="shadow-sm" data-testid="card-currency-comparison">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                {t('currencyComparison')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2">
+                {/* USD Column */}
+                <div className={cn(
+                  "p-3 rounded-lg border text-center transition-all",
+                  purchaseCurrency === "USD" || paymentCurrency === "USD" 
+                    ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 ring-2 ring-green-500/20" 
+                    : "bg-muted/30 border-muted"
+                )}>
+                  <div className="text-lg mb-1">🇺🇸</div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">USD</div>
+                  <div className="text-sm font-bold text-foreground">
+                    ${(grandTotal / (exchangeRates['USD'] || 1) * (exchangeRates[purchaseCurrency] || 1)).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Ship: ${(shippingCost / (exchangeRates['USD'] || 1) * (exchangeRates[shippingCurrency] || 1)).toFixed(2)}
+                  </div>
+                  {(purchaseCurrency === "USD" || paymentCurrency === "USD") && (
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                      {purchaseCurrency === "USD" ? t('purchase') : t('payment')}
+                    </div>
+                  )}
+                </div>
+                
+                {/* EUR Column */}
+                <div className={cn(
+                  "p-3 rounded-lg border text-center transition-all",
+                  purchaseCurrency === "EUR" || paymentCurrency === "EUR" 
+                    ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 ring-2 ring-green-500/20" 
+                    : "bg-muted/30 border-muted"
+                )}>
+                  <div className="text-lg mb-1">🇪🇺</div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">EUR</div>
+                  <div className="text-sm font-bold text-foreground">
+                    €{(grandTotal / (exchangeRates['EUR'] || 0.92) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Ship: €{(shippingCost / (exchangeRates['EUR'] || 0.92) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(2)}
+                  </div>
+                  {(purchaseCurrency === "EUR" || paymentCurrency === "EUR") && (
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                      {purchaseCurrency === "EUR" ? t('purchase') : t('payment')}
+                    </div>
+                  )}
+                </div>
+                
+                {/* CZK Column */}
+                <div className={cn(
+                  "p-3 rounded-lg border text-center transition-all",
+                  purchaseCurrency === "CZK" || paymentCurrency === "CZK" 
+                    ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 ring-2 ring-green-500/20" 
+                    : "bg-muted/30 border-muted"
+                )}>
+                  <div className="text-lg mb-1">🇨🇿</div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">CZK</div>
+                  <div className="text-sm font-bold text-foreground">
+                    Kč{(grandTotal / (exchangeRates['CZK'] || 23) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(0)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Ship: Kč{(shippingCost / (exchangeRates['CZK'] || 23) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(0)}
+                  </div>
+                  {(purchaseCurrency === "CZK" || paymentCurrency === "CZK") && (
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                      {purchaseCurrency === "CZK" ? t('purchase') : t('payment')}
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -3024,6 +3480,30 @@ export default function CreatePurchase() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Selected Items Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteItems', { count: selectedItems.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={deleteSelectedItems}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {t('deleteSelected')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </div>
   );
