@@ -3816,6 +3816,18 @@ export default function AddOrder() {
           </CardContent>
         </Card>
 
+        {/* AI Carton Packing Optimization Panel */}
+        {aiCartonPackingEnabled && (
+          <AICartonPackingPanel
+            packingPlan={packingPlan}
+            onRunOptimization={runPackingOptimization}
+            isLoading={isPackingOptimizationLoading}
+            currency={form.watch('currency')}
+            orderItems={orderItems}
+            onAddManualCarton={handleAddManualCarton}
+          />
+        )}
+
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">
           <CardHeader className="p-3 border-b">
@@ -4288,18 +4300,6 @@ export default function AddOrder() {
           onDocumentSelectionChange={useCallback((ids: string[]) => setSelectedDocumentIds(ids), [])}
           customerId={selectedCustomer?.id}
         />
-
-        {/* AI Carton Packing Optimization Panel */}
-        {aiCartonPackingEnabled && (
-          <AICartonPackingPanel
-            packingPlan={packingPlan}
-            onRunOptimization={runPackingOptimization}
-            isLoading={isPackingOptimizationLoading}
-            currency={form.watch('currency')}
-            orderItems={orderItems}
-            onAddManualCarton={handleAddManualCarton}
-          />
-        )}
 
         {/* Files Section */}
         {orderItems.length > 0 && (
