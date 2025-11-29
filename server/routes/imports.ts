@@ -3382,9 +3382,13 @@ router.get("/shipments/storage", async (req, res) => {
   }
 });
 
-// Get completed shipments
+// Get completed shipments (completed within last 2 days)
 router.get("/shipments/completed", async (req, res) => {
   try {
+    // Calculate date 2 days ago
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
     const shipmentsWithStatus = await db
       .select({
         shipment: shipments,
@@ -3392,7 +3396,12 @@ router.get("/shipments/completed", async (req, res) => {
       })
       .from(shipments)
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
-      .where(eq(shipments.receivingStatus, 'completed'))
+      .where(
+        and(
+          eq(shipments.receivingStatus, 'completed'),
+          gte(shipments.updatedAt, twoDaysAgo)
+        )
+      )
       .orderBy(desc(shipments.updatedAt))
       .limit(50);
 
@@ -3400,6 +3409,8 @@ router.get("/shipments/completed", async (req, res) => {
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+      // Use updatedAt as completedAt for countdown timer in UI
+      completedAt: shipment.updatedAt
     }));
 
     // Load consolidation items for each shipment
@@ -3478,9 +3489,13 @@ router.get("/shipments/completed", async (req, res) => {
   }
 });
 
-// Get archived shipments
+// Get archived shipments (explicitly archived OR completed more than 2 days ago)
 router.get("/shipments/archived", async (req, res) => {
   try {
+    // Calculate date 2 days ago
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
     const shipmentsWithStatus = await db
       .select({
         shipment: shipments,
@@ -3488,7 +3503,15 @@ router.get("/shipments/archived", async (req, res) => {
       })
       .from(shipments)
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
-      .where(eq(shipments.receivingStatus, 'archived'))
+      .where(
+        or(
+          eq(shipments.receivingStatus, 'archived'),
+          and(
+            eq(shipments.receivingStatus, 'completed'),
+            sql`${shipments.updatedAt} < ${twoDaysAgo.toISOString()}`
+          )
+        )
+      )
       .orderBy(desc(shipments.updatedAt))
       .limit(50);
 
@@ -3496,6 +3519,8 @@ router.get("/shipments/archived", async (req, res) => {
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+      // Use updatedAt as completedAt for countdown timer in UI
+      completedAt: shipment.updatedAt
     }));
 
     // Load consolidation items for each shipment
