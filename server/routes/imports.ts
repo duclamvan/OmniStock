@@ -6909,67 +6909,68 @@ router.get('/receipts/:id/report', async (req, res) => {
       };
       let productPrices: any = null;
       let warehouseLocations: any[] = [];
+      let resolvedItemType = item.itemType;
       
-      if (item.itemType === 'purchase') {
-        // Get purchase item details
-        const [purchaseItem] = await db
-          .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.id, item.itemId));
+      // ALWAYS try to find purchase item first, regardless of itemType
+      // (itemType may be incorrectly set to 'custom' even for purchase-backed items)
+      const [purchaseItem] = await db
+        .select()
+        .from(purchaseItems)
+        .where(eq(purchaseItems.id, item.itemId));
+      
+      if (purchaseItem) {
+        // Found purchase item - use its name as the primary source
+        resolvedItemType = 'purchase';
+        productInfo = {
+          productId: null,
+          productName: purchaseItem.name,
+          sku: purchaseItem.sku || item.sku,
+          barcode: item.barcode,
+          imageUrl: purchaseItem.imageUrl || null
+        };
         
-        if (purchaseItem) {
-          // Update productInfo with purchase item name - this is the primary source
+        // Try to find matching product by SKU or barcode for prices and locations
+        const [product] = await db
+          .select()
+          .from(products)
+          .where(
+            or(
+              eq(products.sku, purchaseItem.sku || ''),
+              eq(products.barcode, item.barcode || '')
+            )
+          )
+          .limit(1);
+        
+        if (product) {
           productInfo = {
-            productId: null,
-            productName: purchaseItem.name,
-            sku: purchaseItem.sku || item.sku,
-            barcode: item.barcode,
-            imageUrl: purchaseItem.imageUrl || null
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            barcode: product.barcode,
+            imageUrl: product.imageUrl
           };
           
-          // Try to find matching product by SKU or barcode
-          const [product] = await db
-            .select()
-            .from(products)
-            .where(
-              or(
-                eq(products.sku, purchaseItem.sku || ''),
-                eq(products.barcode, item.barcode || '')
-              )
-            )
-            .limit(1);
+          productPrices = {
+            priceCzk: product.priceCzk,
+            priceEur: product.priceEur,
+            priceUsd: product.priceUsd
+          };
           
-          if (product) {
-            productInfo = {
-              productId: product.id,
-              productName: product.name,
-              sku: product.sku,
-              barcode: product.barcode,
-              imageUrl: product.imageUrl
-            };
-            
-            productPrices = {
-              priceCzk: product.priceCzk,
-              priceEur: product.priceEur,
-              priceUsd: product.priceUsd
-            };
-            
-            // Get all warehouse locations for this product
-            warehouseLocations = await db
-              .select({
-                id: productLocations.id,
-                locationCode: productLocations.locationCode,
-                locationType: productLocations.locationType,
-                quantity: productLocations.quantity,
-                isPrimary: productLocations.isPrimary,
-                notes: productLocations.notes
-              })
-              .from(productLocations)
-              .where(eq(productLocations.productId, product.id));
-          }
+          // Get all warehouse locations for this product
+          warehouseLocations = await db
+            .select({
+              id: productLocations.id,
+              locationCode: productLocations.locationCode,
+              locationType: productLocations.locationType,
+              quantity: productLocations.quantity,
+              isPrimary: productLocations.isPrimary,
+              notes: productLocations.notes
+            })
+            .from(productLocations)
+            .where(eq(productLocations.productId, product.id));
         }
       } else if (item.itemType === 'custom') {
-        // Get custom item details
+        // Only treat as custom if no purchase item was found AND itemType says custom
         const [customItem] = await db
           .select()
           .from(consolidationItems)
@@ -6997,7 +6998,7 @@ router.get('/receipts/:id/report', async (req, res) => {
       return {
         receiptItemId: item.id,
         itemId: item.itemId,
-        itemType: item.itemType,
+        itemType: resolvedItemType,
         expectedQuantity: item.expectedQuantity,
         receivedQuantity: item.receivedQuantity,
         damagedQuantity: item.damagedQuantity || 0,
@@ -7112,67 +7113,68 @@ router.get('/shipments/:id/report', async (req, res) => {
       };
       let productPrices: any = null;
       let warehouseLocations: any[] = [];
+      let resolvedItemType = item.itemType;
       
-      if (item.itemType === 'purchase') {
-        // Get purchase item details
-        const [purchaseItem] = await db
-          .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.id, item.itemId));
+      // ALWAYS try to find purchase item first, regardless of itemType
+      // (itemType may be incorrectly set to 'custom' even for purchase-backed items)
+      const [purchaseItem] = await db
+        .select()
+        .from(purchaseItems)
+        .where(eq(purchaseItems.id, item.itemId));
+      
+      if (purchaseItem) {
+        // Found purchase item - use its name as the primary source
+        resolvedItemType = 'purchase';
+        productInfo = {
+          productId: null,
+          productName: purchaseItem.name,
+          sku: purchaseItem.sku || item.sku,
+          barcode: item.barcode,
+          imageUrl: purchaseItem.imageUrl || null
+        };
         
-        if (purchaseItem) {
-          // Update productInfo with purchase item name - this is the primary source
+        // Try to find matching product by SKU or barcode for prices and locations
+        const [product] = await db
+          .select()
+          .from(products)
+          .where(
+            or(
+              eq(products.sku, purchaseItem.sku || ''),
+              eq(products.barcode, item.barcode || '')
+            )
+          )
+          .limit(1);
+        
+        if (product) {
           productInfo = {
-            productId: null,
-            productName: purchaseItem.name,
-            sku: purchaseItem.sku || item.sku,
-            barcode: item.barcode,
-            imageUrl: purchaseItem.imageUrl || null
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            barcode: product.barcode,
+            imageUrl: product.imageUrl
           };
           
-          // Try to find matching product by SKU or barcode
-          const [product] = await db
-            .select()
-            .from(products)
-            .where(
-              or(
-                eq(products.sku, purchaseItem.sku || ''),
-                eq(products.barcode, item.barcode || '')
-              )
-            )
-            .limit(1);
+          productPrices = {
+            priceCzk: product.priceCzk,
+            priceEur: product.priceEur,
+            priceUsd: product.priceUsd
+          };
           
-          if (product) {
-            productInfo = {
-              productId: product.id,
-              productName: product.name,
-              sku: product.sku,
-              barcode: product.barcode,
-              imageUrl: product.imageUrl
-            };
-            
-            productPrices = {
-              priceCzk: product.priceCzk,
-              priceEur: product.priceEur,
-              priceUsd: product.priceUsd
-            };
-            
-            // Get all warehouse locations for this product
-            warehouseLocations = await db
-              .select({
-                id: productLocations.id,
-                locationCode: productLocations.locationCode,
-                locationType: productLocations.locationType,
-                quantity: productLocations.quantity,
-                isPrimary: productLocations.isPrimary,
-                notes: productLocations.notes
-              })
-              .from(productLocations)
-              .where(eq(productLocations.productId, product.id));
-          }
+          // Get all warehouse locations for this product
+          warehouseLocations = await db
+            .select({
+              id: productLocations.id,
+              locationCode: productLocations.locationCode,
+              locationType: productLocations.locationType,
+              quantity: productLocations.quantity,
+              isPrimary: productLocations.isPrimary,
+              notes: productLocations.notes
+            })
+            .from(productLocations)
+            .where(eq(productLocations.productId, product.id));
         }
       } else if (item.itemType === 'custom') {
-        // Get custom item details
+        // Only treat as custom if no purchase item was found AND itemType says custom
         const [customItem] = await db
           .select()
           .from(consolidationItems)
@@ -7200,7 +7202,7 @@ router.get('/shipments/:id/report', async (req, res) => {
       return {
         receiptItemId: item.id,
         itemId: item.itemId,
-        itemType: item.itemType,
+        itemType: resolvedItemType,
         expectedQuantity: item.expectedQuantity,
         receivedQuantity: item.receivedQuantity,
         damagedQuantity: item.damagedQuantity || 0,
