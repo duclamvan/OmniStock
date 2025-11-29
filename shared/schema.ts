@@ -828,6 +828,22 @@ export const stockAdjustmentRequests = pgTable('stock_adjustment_requests', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Stock adjustment history table - records all completed stock adjustments for reporting
+export const stockAdjustmentHistory = pgTable('stock_adjustment_history', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  locationId: varchar('location_id').notNull().references(() => productLocations.id, { onDelete: 'cascade' }),
+  adjustmentType: text('adjustment_type').notNull(), // 'add', 'remove', 'set'
+  previousQuantity: integer('previous_quantity').notNull(), // quantity before adjustment
+  adjustedQuantity: integer('adjusted_quantity').notNull(), // the amount added/removed, or final quantity for 'set'
+  newQuantity: integer('new_quantity').notNull(), // quantity after adjustment
+  reason: text('reason').notNull(),
+  source: text('source').notNull(), // 'direct', 'approved_request', 'receiving', 'order_fulfillment'
+  referenceId: varchar('reference_id'), // optional: links to source record (e.g., stockAdjustmentRequest.id, receivingOrder.id)
+  adjustedBy: varchar('adjusted_by').references(() => users.id), // user who made the adjustment
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
 // AI-powered carton packing tables
 export const packingCartons = pgTable('packing_cartons', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1569,6 +1585,20 @@ export type ProductLocation = typeof productLocations.$inferSelect;
 export type InsertProductLocation = z.infer<typeof insertProductLocationSchema>;
 export type StockAdjustmentRequest = typeof stockAdjustmentRequests.$inferSelect;
 export type InsertStockAdjustmentRequest = z.infer<typeof insertStockAdjustmentRequestSchema>;
+
+// Stock Adjustment History schemas
+export const insertStockAdjustmentHistorySchema = createInsertSchema(stockAdjustmentHistory)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    adjustmentType: z.enum(['add', 'remove', 'set']),
+    source: z.enum(['direct', 'approved_request', 'receiving', 'order_fulfillment']),
+    previousQuantity: z.number().int().min(0),
+    adjustedQuantity: z.number().int(),
+    newQuantity: z.number().int().min(0),
+    reason: z.string().min(1, 'Reason is required')
+  });
+export type StockAdjustmentHistory = typeof stockAdjustmentHistory.$inferSelect;
+export type InsertStockAdjustmentHistory = z.infer<typeof insertStockAdjustmentHistorySchema>;
 
 // Tickets (Customer Support System)
 export const tickets = pgTable('tickets', {
