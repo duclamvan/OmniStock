@@ -6899,7 +6899,14 @@ router.get('/receipts/:id/report', async (req, res) => {
     
     // For each item, get product details including prices and locations
     const itemsWithDetails = await Promise.all(receiptItemsList.map(async (item) => {
-      let productInfo: any = null;
+      // Initialize with defaults - always have a product name fallback
+      let productInfo: any = {
+        productId: null,
+        productName: item.sku || `Item #${item.id}`,
+        sku: item.sku,
+        barcode: item.barcode,
+        imageUrl: null
+      };
       let productPrices: any = null;
       let warehouseLocations: any[] = [];
       
@@ -6911,6 +6918,15 @@ router.get('/receipts/:id/report', async (req, res) => {
           .where(eq(purchaseItems.id, item.itemId));
         
         if (purchaseItem) {
+          // Update productInfo with purchase item name as fallback
+          productInfo = {
+            productId: null,
+            productName: purchaseItem.name || item.sku || `Item #${item.itemId}`,
+            sku: purchaseItem.sku || item.sku,
+            barcode: item.barcode,
+            imageUrl: null
+          };
+          
           // Try to find matching product by SKU or barcode
           const [product] = await db
             .select()
@@ -6950,13 +6966,6 @@ router.get('/receipts/:id/report', async (req, res) => {
               })
               .from(productLocations)
               .where(eq(productLocations.productId, product.id));
-          } else {
-            productInfo = {
-              productId: null,
-              productName: purchaseItem.name || `Item #${item.itemId}`,
-              sku: purchaseItem.sku,
-              barcode: item.barcode
-            };
           }
         }
       } else if (item.itemType === 'custom') {
@@ -6966,14 +6975,13 @@ router.get('/receipts/:id/report', async (req, res) => {
           .from(consolidationItems)
           .where(eq(consolidationItems.id, item.itemId));
         
-        if (customItem) {
-          productInfo = {
-            productId: null,
-            productName: `Custom Item #${item.itemId}`,
-            sku: null,
-            barcode: item.barcode
-          };
-        }
+        productInfo = {
+          productId: null,
+          productName: customItem ? `Custom: ${customItem.notes || item.id}` : `Custom Item #${item.itemId}`,
+          sku: item.sku,
+          barcode: item.barcode,
+          imageUrl: null
+        };
       }
       
       // Calculate status based on quantities
@@ -7094,7 +7102,14 @@ router.get('/shipments/:id/report', async (req, res) => {
     
     // For each item, get product details including prices and locations
     const itemsWithDetails = await Promise.all(receiptItemsList.map(async (item) => {
-      let productInfo: any = null;
+      // Initialize with defaults - always have a product name fallback
+      let productInfo: any = {
+        productId: null,
+        productName: item.sku || `Item #${item.id}`,
+        sku: item.sku,
+        barcode: item.barcode,
+        imageUrl: null
+      };
       let productPrices: any = null;
       let warehouseLocations: any[] = [];
       
@@ -7106,6 +7121,15 @@ router.get('/shipments/:id/report', async (req, res) => {
           .where(eq(purchaseItems.id, item.itemId));
         
         if (purchaseItem) {
+          // Update productInfo with purchase item name as fallback
+          productInfo = {
+            productId: null,
+            productName: purchaseItem.name || item.sku || `Item #${item.itemId}`,
+            sku: purchaseItem.sku || item.sku,
+            barcode: item.barcode,
+            imageUrl: null
+          };
+          
           // Try to find matching product by SKU or barcode
           const [product] = await db
             .select()
@@ -7145,13 +7169,6 @@ router.get('/shipments/:id/report', async (req, res) => {
               })
               .from(productLocations)
               .where(eq(productLocations.productId, product.id));
-          } else {
-            productInfo = {
-              productId: null,
-              productName: purchaseItem.name || `Item #${item.itemId}`,
-              sku: purchaseItem.sku,
-              barcode: item.barcode
-            };
           }
         }
       } else if (item.itemType === 'custom') {
@@ -7161,14 +7178,13 @@ router.get('/shipments/:id/report', async (req, res) => {
           .from(consolidationItems)
           .where(eq(consolidationItems.id, item.itemId));
         
-        if (customItem) {
-          productInfo = {
-            productId: null,
-            productName: `Custom Item #${item.itemId}`,
-            sku: null,
-            barcode: item.barcode
-          };
-        }
+        productInfo = {
+          productId: null,
+          productName: customItem ? `Custom: ${customItem.notes || item.id}` : `Custom Item #${item.itemId}`,
+          sku: item.sku,
+          barcode: item.barcode,
+          imageUrl: null
+        };
       }
       
       // Calculate status based on quantities
