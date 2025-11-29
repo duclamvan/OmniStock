@@ -1,15 +1,23 @@
 // Shipping cost calculator based on method and country
 
-// PPL shipping rate tier type
-export interface PPLRateTier {
-  maxWeight: number;
-  price: number;
+// PPL country rate type (flat rate per kg)
+export interface PPLCountryRate {
+  ratePerKg: number;
+  baseFee: number;
+  currency: string;
+}
+
+export interface PPLCODFee {
+  fee: number;
   currency: string;
 }
 
 export interface PPLShippingRates {
-  domestic?: PPLRateTier[];
-  eu?: PPLRateTier[];
+  countries?: Record<string, PPLCountryRate>;
+  codFees?: {
+    cash?: PPLCODFee;
+    card?: PPLCODFee;
+  };
 }
 
 // Default flat shipping costs (fallback when no weight-based rates are configured)
@@ -98,57 +106,70 @@ function isDomestic(country: string): boolean {
   return ['cz', 'czech republic', 'czechia', 'česko', 'česká republika', 'cesko', 'ceska republika'].includes(normalized);
 }
 
-// Calculate PPL shipping cost based on weight and configured rates
+// Normalize country name to ISO code
+function normalizeCountryToCode(country: string): string {
+  const normalized = country.toLowerCase().trim();
+  const countryMap: Record<string, string> = {
+    'cz': 'CZ', 'czech republic': 'CZ', 'czechia': 'CZ', 'česko': 'CZ', 'česká republika': 'CZ',
+    'sk': 'SK', 'slovakia': 'SK', 'slovensko': 'SK', 'slovenská republika': 'SK',
+    'pl': 'PL', 'poland': 'PL', 'polska': 'PL', 'polsko': 'PL',
+    'at': 'AT', 'austria': 'AT', 'österreich': 'AT', 'rakousko': 'AT',
+    'de': 'DE', 'germany': 'DE', 'deutschland': 'DE', 'německo': 'DE',
+    'hu': 'HU', 'hungary': 'HU', 'magyarország': 'HU', 'maďarsko': 'HU',
+  };
+  return countryMap[normalized] || country.toUpperCase();
+}
+
+// Calculate PPL shipping cost based on flat rate per kg
 export function calculatePPLShippingCostByWeight(
   weight: number,
   country: string,
   pplRates?: PPLShippingRates,
-  targetCurrency: string = 'CZK'
-): { cost: number; usedRateTier: PPLRateTier | null } {
+  targetCurrency: string = 'CZK',
+  paymentMethod?: string
+): { cost: number; countryRate: PPLCountryRate | null; codFee: number } {
   if (!pplRates || !weight) {
-    return { cost: 0, usedRateTier: null };
+    return { cost: 0, countryRate: null, codFee: 0 };
   }
 
-  const domestic = isDomestic(country);
-  const rates = domestic ? pplRates.domestic : pplRates.eu;
+  const countryCode = normalizeCountryToCode(country);
+  const countryRate = pplRates.countries?.[countryCode];
   
-  if (!rates || rates.length === 0) {
-    return { cost: 0, usedRateTier: null };
+  if (!countryRate) {
+    return { cost: 0, countryRate: null, codFee: 0 };
   }
 
-  // Sort rates by maxWeight ascending
-  const sortedRates = [...rates].sort((a, b) => a.maxWeight - b.maxWeight);
+  // Calculate base shipping cost: baseFee + (ratePerKg * weight)
+  let cost = countryRate.baseFee + (countryRate.ratePerKg * weight);
   
-  // Find the applicable rate tier
-  let applicableRate: PPLRateTier | null = null;
-  for (const rate of sortedRates) {
-    if (weight <= rate.maxWeight) {
-      applicableRate = rate;
-      break;
+  // Add COD fee if payment method is COD
+  let codFee = 0;
+  const normalizedPayment = paymentMethod?.toLowerCase() || '';
+  const isCOD = normalizedPayment.includes('cod') || normalizedPayment.includes('dobirka') || normalizedPayment.includes('dobírka') || normalizedPayment.includes('cash on delivery');
+  
+  if (isCOD && pplRates.codFees) {
+    // Check if card payment COD or cash payment COD
+    const isCardPayment = normalizedPayment.includes('card') || normalizedPayment.includes('karta') || normalizedPayment.includes('kartou');
+    if (isCardPayment && pplRates.codFees.card) {
+      codFee = pplRates.codFees.card.fee;
+    } else if (pplRates.codFees.cash) {
+      codFee = pplRates.codFees.cash.fee;
     }
+    cost += codFee;
   }
-  
-  // If weight exceeds all tiers, use the highest tier
-  if (!applicableRate && sortedRates.length > 0) {
-    applicableRate = sortedRates[sortedRates.length - 1];
-  }
-  
-  if (!applicableRate) {
-    return { cost: 0, usedRateTier: null };
-  }
-
-  let cost = applicableRate.price;
   
   // Currency conversion if needed
-  if (applicableRate.currency !== targetCurrency) {
-    if (applicableRate.currency === 'CZK' && targetCurrency === 'EUR') {
+  if (countryRate.currency !== targetCurrency) {
+    if (countryRate.currency === 'CZK' && targetCurrency === 'EUR') {
       cost = cost / 25;
-    } else if (applicableRate.currency === 'EUR' && targetCurrency === 'CZK') {
+      codFee = codFee / 25;
+    } else if (countryRate.currency === 'EUR' && targetCurrency === 'CZK') {
       cost = cost * 25;
+      codFee = codFee * 25;
     }
   }
   
-  return { cost, usedRateTier: applicableRate };
+  return { cost, countryRate, codFee };
 }
 
 // Main shipping cost calculation function
@@ -159,6 +180,7 @@ export function calculateShippingCost(
   options?: {
     weight?: number;
     pplRates?: PPLShippingRates;
+    paymentMethod?: string;
   }
 ): number {
   if (!shippingMethod || !country) return 0;
@@ -167,13 +189,14 @@ export function calculateShippingCost(
   const normalizedMethod = shippingMethod.replace(/\s+/g, ' ').trim();
   const isPPL = normalizedMethod === 'PPL' || normalizedMethod === 'PPL CZ';
 
-  // If PPL and weight-based rates are available, use them
+  // If PPL and flat rate per kg rates are available, use them
   if (isPPL && options?.pplRates && options?.weight) {
     const { cost } = calculatePPLShippingCostByWeight(
       options.weight,
       country,
       options.pplRates,
-      currency
+      currency,
+      options.paymentMethod
     );
     if (cost > 0) {
       return cost;
@@ -204,8 +227,14 @@ export function calculateShippingCost(
   }
 }
 
-// Helper to get the rate tier description
-export function getRateTierDescription(rateTier: PPLRateTier | null): string {
-  if (!rateTier) return '';
-  return `Up to ${rateTier.maxWeight}kg: ${rateTier.price} ${rateTier.currency}`;
+// Helper to get the PPL rate description
+export function getPPLRateDescription(countryRate: PPLCountryRate | null, weight?: number): string {
+  if (!countryRate) return '';
+  const base = `Base: ${countryRate.baseFee} ${countryRate.currency}`;
+  const perKg = `+ ${countryRate.ratePerKg} ${countryRate.currency}/kg`;
+  if (weight) {
+    const total = countryRate.baseFee + (countryRate.ratePerKg * weight);
+    return `${base} ${perKg} = ${total.toFixed(0)} ${countryRate.currency} for ${weight}kg`;
+  }
+  return `${base} ${perKg}`;
 }

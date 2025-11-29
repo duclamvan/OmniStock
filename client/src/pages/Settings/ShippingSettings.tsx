@@ -31,21 +31,16 @@ const normalizeCarrier = (value: string): string => {
   return map[value] || value;
 };
 
-// Default PPL shipping rates structure
+// Default PPL shipping rates structure - flat rate per kg + COD fees
 const DEFAULT_PPL_RATES = {
-  domestic: [
-    { maxWeight: 5, price: 99, currency: 'CZK' },
-    { maxWeight: 10, price: 129, currency: 'CZK' },
-    { maxWeight: 20, price: 159, currency: 'CZK' },
-    { maxWeight: 31.5, price: 199, currency: 'CZK' },
-    { maxWeight: 50, price: 299, currency: 'CZK' },
-  ],
-  eu: [
-    { maxWeight: 5, price: 12.90, currency: 'EUR' },
-    { maxWeight: 10, price: 15.90, currency: 'EUR' },
-    { maxWeight: 20, price: 22.90, currency: 'EUR' },
-    { maxWeight: 31.5, price: 32.90, currency: 'EUR' },
-  ],
+  countries: {
+    CZ: { ratePerKg: 25, baseFee: 50, currency: 'CZK' },
+    SK: { ratePerKg: 35, baseFee: 80, currency: 'CZK' },
+  },
+  codFees: {
+    cash: { fee: 30, currency: 'CZK' },
+    card: { fee: 50, currency: 'CZK' },
+  },
 };
 
 const formSchema = z.object({
@@ -444,7 +439,7 @@ export default function ShippingSettings() {
                   PPL Shipping Rates
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Configure shipping rates by weight tier for domestic (CZ) and EU shipments
+                  Configure flat rate per kg for each country + COD (dobírka) fees
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-4">
@@ -454,155 +449,168 @@ export default function ShippingSettings() {
                   render={({ field }) => {
                     const parsedRates = (() => {
                       try {
-                        return typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                        const parsed = typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                        if (!parsed.countries) parsed.countries = {};
+                        if (!parsed.codFees) parsed.codFees = { cash: { fee: 0, currency: 'CZK' }, card: { fee: 0, currency: 'CZK' } };
+                        return parsed;
                       } catch {
-                        return { domestic: [], eu: [] };
+                        return { countries: {}, codFees: { cash: { fee: 0, currency: 'CZK' }, card: { fee: 0, currency: 'CZK' } } };
                       }
                     })();
                     
-                    const updateRate = (zone: 'domestic' | 'eu', index: number, key: 'maxWeight' | 'price', value: number) => {
+                    const updateCountryRate = (countryCode: string, key: 'ratePerKg' | 'baseFee', value: number) => {
                       const newRates = { ...parsedRates };
-                      if (!newRates[zone]) newRates[zone] = [];
-                      if (newRates[zone][index]) {
-                        newRates[zone][index] = { ...newRates[zone][index], [key]: value };
+                      if (!newRates.countries[countryCode]) {
+                        newRates.countries[countryCode] = { ratePerKg: 0, baseFee: 0, currency: 'CZK' };
                       }
+                      newRates.countries[countryCode] = { ...newRates.countries[countryCode], [key]: value };
                       field.onChange(JSON.stringify(newRates, null, 2));
                     };
                     
-                    const addRate = (zone: 'domestic' | 'eu') => {
+                    const updateCodFee = (type: 'cash' | 'card', value: number) => {
                       const newRates = { ...parsedRates };
-                      if (!newRates[zone]) newRates[zone] = [];
-                      const currency = zone === 'domestic' ? 'CZK' : 'EUR';
-                      const lastMaxWeight = newRates[zone].length > 0 
-                        ? newRates[zone][newRates[zone].length - 1].maxWeight 
-                        : 0;
-                      newRates[zone].push({ maxWeight: lastMaxWeight + 5, price: 0, currency });
+                      newRates.codFees[type] = { fee: value, currency: 'CZK' };
                       field.onChange(JSON.stringify(newRates, null, 2));
                     };
                     
-                    const removeRate = (zone: 'domestic' | 'eu', index: number) => {
+                    const addCountry = (countryCode: string) => {
                       const newRates = { ...parsedRates };
-                      newRates[zone].splice(index, 1);
+                      if (!newRates.countries[countryCode]) {
+                        newRates.countries[countryCode] = { ratePerKg: 0, baseFee: 0, currency: 'CZK' };
+                        field.onChange(JSON.stringify(newRates, null, 2));
+                      }
+                    };
+                    
+                    const removeCountry = (countryCode: string) => {
+                      const newRates = { ...parsedRates };
+                      delete newRates.countries[countryCode];
                       field.onChange(JSON.stringify(newRates, null, 2));
                     };
+                    
+                    const countryFlags: Record<string, string> = {
+                      CZ: '🇨🇿', SK: '🇸🇰', PL: '🇵🇱', AT: '🇦🇹', DE: '🇩🇪', HU: '🇭🇺'
+                    };
+                    const countryNames: Record<string, string> = {
+                      CZ: 'Czech Republic', SK: 'Slovakia', PL: 'Poland', AT: 'Austria', DE: 'Germany', HU: 'Hungary'
+                    };
+                    const availableCountries = ['CZ', 'SK', 'PL', 'AT', 'DE', 'HU'];
+                    const configuredCountries = Object.keys(parsedRates.countries || {});
+                    const unconfiguredCountries = availableCountries.filter(c => !configuredCountries.includes(c));
                     
                     return (
                       <FormItem>
                         <div className="space-y-6">
-                          {/* Domestic Rates (CZ) */}
+                          {/* Country Rates */}
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-medium flex items-center gap-2">
-                                <span className="text-lg">🇨🇿</span> Domestic (CZ) - CZK
-                              </h4>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addRate('domestic')}
-                                data-testid="button-add-domestic-rate"
-                              >
-                                + Add Tier
-                              </Button>
+                              <h4 className="font-medium">Country Shipping Rates (CZK)</h4>
+                              {unconfiguredCountries.length > 0 && (
+                                <Select onValueChange={(v) => addCountry(v)}>
+                                  <SelectTrigger className="w-40" data-testid="select-add-country">
+                                    <SelectValue placeholder="+ Add Country" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {unconfiguredCountries.map(code => (
+                                      <SelectItem key={code} value={code}>
+                                        {countryFlags[code]} {countryNames[code]}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
                             <div className="space-y-2">
-                              {(parsedRates.domestic || []).map((rate: any, index: number) => (
-                                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                                  <span className="text-sm text-muted-foreground whitespace-nowrap">Up to</span>
-                                  <Input
-                                    type="number"
-                                    value={rate.maxWeight}
-                                    onChange={(e) => updateRate('domestic', index, 'maxWeight', parseFloat(e.target.value) || 0)}
-                                    className="w-20"
-                                    min="0"
-                                    step="0.5"
-                                    data-testid={`input-domestic-weight-${index}`}
-                                  />
-                                  <span className="text-sm text-muted-foreground">kg →</span>
-                                  <Input
-                                    type="number"
-                                    value={rate.price}
-                                    onChange={(e) => updateRate('domestic', index, 'price', parseFloat(e.target.value) || 0)}
-                                    className="w-24"
-                                    min="0"
-                                    step="1"
-                                    data-testid={`input-domestic-price-${index}`}
-                                  />
-                                  <span className="text-sm font-medium">CZK</span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="ml-auto text-destructive hover:text-destructive"
-                                    onClick={() => removeRate('domestic', index)}
-                                    data-testid={`button-remove-domestic-${index}`}
-                                  >
-                                    ✕
-                                  </Button>
-                                </div>
-                              ))}
-                              {(!parsedRates.domestic || parsedRates.domestic.length === 0) && (
-                                <p className="text-sm text-muted-foreground italic p-3">No domestic rates configured</p>
+                              {configuredCountries.map((code) => {
+                                const rate = parsedRates.countries[code];
+                                return (
+                                  <div key={code} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                                    <span className="text-lg w-8">{countryFlags[code] || '🌍'}</span>
+                                    <span className="text-sm font-medium w-24">{countryNames[code] || code}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground">Base:</span>
+                                      <Input
+                                        type="number"
+                                        value={rate?.baseFee || 0}
+                                        onChange={(e) => updateCountryRate(code, 'baseFee', parseFloat(e.target.value) || 0)}
+                                        className="w-20"
+                                        min="0"
+                                        step="1"
+                                        data-testid={`input-${code}-basefee`}
+                                      />
+                                      <span className="text-xs text-muted-foreground">CZK</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground">+ per kg:</span>
+                                      <Input
+                                        type="number"
+                                        value={rate?.ratePerKg || 0}
+                                        onChange={(e) => updateCountryRate(code, 'ratePerKg', parseFloat(e.target.value) || 0)}
+                                        className="w-20"
+                                        min="0"
+                                        step="1"
+                                        data-testid={`input-${code}-rateperkg`}
+                                      />
+                                      <span className="text-xs text-muted-foreground">CZK/kg</span>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="ml-auto text-destructive hover:text-destructive"
+                                      onClick={() => removeCountry(code)}
+                                      data-testid={`button-remove-${code}`}
+                                    >
+                                      ✕
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                              {configuredCountries.length === 0 && (
+                                <p className="text-sm text-muted-foreground italic p-3">No countries configured. Add a country to set rates.</p>
                               )}
                             </div>
                           </div>
                           
-                          {/* EU Rates */}
+                          {/* COD Fees */}
                           <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium flex items-center gap-2">
-                                <span className="text-lg">🇪🇺</span> EU Countries - EUR
-                              </h4>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addRate('eu')}
-                                data-testid="button-add-eu-rate"
-                              >
-                                + Add Tier
-                              </Button>
-                            </div>
-                            <div className="space-y-2">
-                              {(parsedRates.eu || []).map((rate: any, index: number) => (
-                                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                                  <span className="text-sm text-muted-foreground whitespace-nowrap">Up to</span>
+                            <h4 className="font-medium">Dobírka (COD) Fees</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="p-3 rounded-lg border bg-muted/30">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-lg">💵</span>
+                                  <span className="text-sm font-medium flex-1">Cash Payment</span>
                                   <Input
                                     type="number"
-                                    value={rate.maxWeight}
-                                    onChange={(e) => updateRate('eu', index, 'maxWeight', parseFloat(e.target.value) || 0)}
-                                    className="w-20"
-                                    min="0"
-                                    step="0.5"
-                                    data-testid={`input-eu-weight-${index}`}
-                                  />
-                                  <span className="text-sm text-muted-foreground">kg →</span>
-                                  <Input
-                                    type="number"
-                                    value={rate.price}
-                                    onChange={(e) => updateRate('eu', index, 'price', parseFloat(e.target.value) || 0)}
+                                    value={parsedRates.codFees?.cash?.fee || 0}
+                                    onChange={(e) => updateCodFee('cash', parseFloat(e.target.value) || 0)}
                                     className="w-24"
                                     min="0"
-                                    step="0.1"
-                                    data-testid={`input-eu-price-${index}`}
+                                    step="1"
+                                    data-testid="input-cod-cash-fee"
                                   />
-                                  <span className="text-sm font-medium">EUR</span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="ml-auto text-destructive hover:text-destructive"
-                                    onClick={() => removeRate('eu', index)}
-                                    data-testid={`button-remove-eu-${index}`}
-                                  >
-                                    ✕
-                                  </Button>
+                                  <span className="text-sm">CZK</span>
                                 </div>
-                              ))}
-                              {(!parsedRates.eu || parsedRates.eu.length === 0) && (
-                                <p className="text-sm text-muted-foreground italic p-3">No EU rates configured</p>
-                              )}
+                              </div>
+                              <div className="p-3 rounded-lg border bg-muted/30">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-lg">💳</span>
+                                  <span className="text-sm font-medium flex-1">Card Payment</span>
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.codFees?.card?.fee || 0}
+                                    onChange={(e) => updateCodFee('card', parseFloat(e.target.value) || 0)}
+                                    className="w-24"
+                                    min="0"
+                                    step="1"
+                                    data-testid="input-cod-card-fee"
+                                  />
+                                  <span className="text-sm">CZK</span>
+                                </div>
+                              </div>
                             </div>
+                            <p className="text-xs text-muted-foreground">
+                              These fees are added when the order payment method is COD (dobírka)
+                            </p>
                           </div>
                         </div>
                         <FormMessage />

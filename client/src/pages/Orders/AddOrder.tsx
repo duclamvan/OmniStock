@@ -956,17 +956,18 @@ export default function AddOrder() {
 
     const orderWeight = calculateOrderWeight();
     const pplRates = shippingSettings?.pplShippingRates;
+    const paymentMethod = form.getValues('paymentMethod');
 
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
       selectedCustomer.country,
       watchedCurrency,
-      { weight: orderWeight, pplRates }
+      { weight: orderWeight, pplRates, paymentMethod }
     );
 
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates]);
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, form.watch('paymentMethod')]);
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
