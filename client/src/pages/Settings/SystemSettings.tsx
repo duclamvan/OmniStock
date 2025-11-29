@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,12 +23,31 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2 } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import { format } from "date-fns";
+
+interface BackupRecord {
+  id: number;
+  backupType: 'manual' | 'auto_daily' | 'auto_weekly' | 'auto_monthly';
+  status: 'in_progress' | 'completed' | 'failed';
+  fileName: string;
+  filePath: string;
+  fileSize: number | null;
+  recordCount: number | null;
+  tablesIncluded: string[] | null;
+  triggeredBy: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+  errorMessage: string | null;
+}
 
 const formSchema = z.object({
   app_name: z.string().optional(),
@@ -603,6 +622,9 @@ export default function SystemSettings() {
               </CardContent>
             </Card>
 
+            {/* Backup History Card */}
+            <BackupHistoryCard />
+
             {/* Factory Reset Card */}
             <Card className="border-red-200 dark:border-red-900">
               <CardHeader className="p-4 sm:p-6 bg-red-50 dark:bg-red-950/30">
@@ -1086,5 +1108,282 @@ export default function SystemSettings() {
         </DialogContent>
       </Dialog>
     </Form>
+  );
+}
+
+function BackupHistoryCard() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [backupToDelete, setBackupToDelete] = useState<BackupRecord | null>(null);
+
+  const { data: backups = [], isLoading, refetch } = useQuery<BackupRecord[]>({
+    queryKey: ['/api/backups'],
+  });
+
+  const createBackupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/backups');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t('settings:backupCreated'),
+        description: t('settings:backupCreatedDescription'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/backups'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('settings:backupFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteBackupMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/backups/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: t('settings:backupDeleted'),
+        description: t('settings:backupDeletedDescription'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/backups'] });
+      setShowDeleteDialog(false);
+      setBackupToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('settings:backupDeleteFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/backups/cleanup');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t('settings:cleanupComplete'),
+        description: t('settings:cleanupDescription', { count: data.deletedCount }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/backups'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('settings:cleanupFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '-';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="default" className="bg-green-500">{t('settings:backupStatusCompleted')}</Badge>;
+      case 'in_progress':
+        return <Badge variant="secondary">{t('settings:backupStatusInProgress')}</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">{t('settings:backupStatusFailed')}</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getBackupTypeBadge = (type: string) => {
+    switch (type) {
+      case 'manual':
+        return <Badge variant="outline">{t('settings:backupTypeManual')}</Badge>;
+      case 'auto_daily':
+        return <Badge variant="secondary">{t('settings:backupTypeDaily')}</Badge>;
+      case 'auto_weekly':
+        return <Badge variant="secondary">{t('settings:backupTypeWeekly')}</Badge>;
+      case 'auto_monthly':
+        return <Badge variant="secondary">{t('settings:backupTypeMonthly')}</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
+    }
+  };
+
+  const handleDownload = (backup: BackupRecord) => {
+    window.open(`/api/backups/${backup.id}/download`, '_blank');
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <HardDrive className="h-4 w-4 sm:h-5 sm:w-5" />
+                {t('settings:backupHistory')}
+              </CardTitle>
+              <CardDescription className="text-sm">{t('settings:backupHistoryDescription')}</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                data-testid="button-refresh-backups"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => cleanupMutation.mutate()}
+                disabled={cleanupMutation.isPending}
+                data-testid="button-cleanup-backups"
+              >
+                {cleanupMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Archive className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                onClick={() => createBackupMutation.mutate()}
+                disabled={createBackupMutation.isPending}
+                data-testid="button-create-backup"
+              >
+                {createBackupMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('settings:creatingBackup')}
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('settings:createBackup')}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : backups.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <HardDrive className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>{t('settings:noBackups')}</p>
+              <p className="text-sm mt-2">{t('settings:noBackupsHint')}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('settings:backupDate')}</TableHead>
+                    <TableHead>{t('settings:backupType')}</TableHead>
+                    <TableHead>{t('settings:backupStatus')}</TableHead>
+                    <TableHead>{t('settings:backupSize')}</TableHead>
+                    <TableHead>{t('settings:backupRecords')}</TableHead>
+                    <TableHead>{t('settings:backupExpires')}</TableHead>
+                    <TableHead className="text-right">{t('common:actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {backups.map((backup) => (
+                    <TableRow key={backup.id}>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          {format(new Date(backup.createdAt), 'dd/MM/yyyy HH:mm')}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getBackupTypeBadge(backup.backupType)}</TableCell>
+                      <TableCell>{getStatusBadge(backup.status)}</TableCell>
+                      <TableCell>{formatFileSize(backup.fileSize)}</TableCell>
+                      <TableCell>{backup.recordCount?.toLocaleString() || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(backup.expiresAt), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {backup.status === 'completed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(backup)}
+                              data-testid={`button-download-backup-${backup.id}`}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setBackupToDelete(backup);
+                              setShowDeleteDialog(true);
+                            }}
+                            data-testid={`button-delete-backup-${backup.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings:deleteBackupTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('settings:deleteBackupDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setBackupToDelete(null);
+              }}
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => backupToDelete && deleteBackupMutation.mutate(backupToDelete.id)}
+              disabled={deleteBackupMutation.isPending}
+            >
+              {deleteBackupMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t('common:delete')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
