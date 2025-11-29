@@ -74,8 +74,11 @@ import {
   Award,
   Clock,
   Settings,
-  MoreVertical
+  MoreVertical,
+  Globe,
+  Store
 } from "lucide-react";
+import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
 import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
@@ -4559,12 +4562,46 @@ export default function AddOrder() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3">
-                      <Input
-                        placeholder={t('orders:orderLocationPlaceholder')}
-                        value={form.watch('orderLocation') || ''}
-                        onChange={(e) => form.setValue('orderLocation', e.target.value)}
-                        data-testid="input-order-location"
-                      />
+                      <Select 
+                        value={form.watch('orderLocation') || ''} 
+                        onValueChange={(value) => form.setValue('orderLocation', value)}
+                      >
+                        <SelectTrigger className="h-9" data-testid="select-order-location">
+                          <SelectValue placeholder={t('orders:selectOrderLocation')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="online">
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-blue-500" />
+                              {t('orders:locationOnline')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="in_store">
+                            <div className="flex items-center gap-2">
+                              <Store className="h-4 w-4 text-green-500" />
+                              {t('orders:locationInStore')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="phone">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-purple-500" />
+                              {t('orders:locationPhone')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="facebook">
+                            <div className="flex items-center gap-2">
+                              <SiFacebook className="h-4 w-4 text-blue-600" />
+                              {t('orders:locationFacebook')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="other">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-gray-500" />
+                              {t('orders:locationOther')}
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </CardContent>
                   </Card>
 
