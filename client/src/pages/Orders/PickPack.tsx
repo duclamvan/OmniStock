@@ -1441,15 +1441,15 @@ function PickingListView({
   const { t } = useTranslation('orders');
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Overall Progress Header */}
-      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4 shadow-sm">
+      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             {t('pickingProgress')}
           </h3>
-          <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-base px-3 py-1">
+          <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
             {order.pickedItems} / {order.totalItems}
           </Badge>
         </div>
@@ -1459,320 +1459,133 @@ function PickingListView({
             style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
           />
         </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+          {Math.round((order.pickedItems / order.totalItems) * 100)}% {t('complete') || 'complete'}
+        </p>
       </div>
 
-      {/* List View - Scrollable Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden shadow-md">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16">
-                  #
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-20">
-                  {t('image')}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  {t('product')}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-32">
-                  SKU
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-32">
-                  {t('location')}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-48">
-                  {t('quantity')}
-                </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-24">
-                  {t('status')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {order.items.map((item, index) => {
-                const isPicked = item.pickedQuantity >= item.quantity;
-                const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
-                const isCurrent = currentItem?.id === item.id;
-                const isRecentlyScanned = recentlyScannedItemId === item.id;
-                const progress = (item.pickedQuantity / item.quantity) * 100;
-                
-                // Determine row background color
-                let rowBgClass = 'bg-white dark:bg-gray-900';
-                if (isPicked) {
-                  rowBgClass = 'bg-green-50 dark:bg-green-900/20';
-                } else if (isPartial) {
-                  rowBgClass = 'bg-yellow-50 dark:bg-yellow-900/20';
-                }
-                
-                // Add highlight for current/recently scanned
-                if (isCurrent || isRecentlyScanned) {
-                  rowBgClass = 'bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500 dark:ring-blue-400';
-                }
-                
-                return (
-                  <tr
-                    key={item.id}
-                    className={`
-                      ${rowBgClass}
-                      cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 
-                      transition-all duration-200 transform hover:scale-[1.01]
-                      ${isRecentlyScanned ? 'animate-pulse' : ''}
-                    `}
-                    onClick={() => { 
-                      onToggleFullPick(item); 
-                      onItemClick(index); 
-                    }}
-                    data-testid={`list-row-${index}`}
-                  >
-                    {/* Item Number */}
-                    <td className="px-3 py-4">
-                      <div className="flex items-center justify-center">
-                        {isPicked ? (
-                          <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
-                            <CheckCircle className="h-5 w-5 text-white" />
-                          </div>
-                        ) : isCurrent ? (
-                          <div className="w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                            {index + 1}
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold text-sm">
-                            {index + 1}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    {/* Product Image */}
-                    <td className="px-3 py-4">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.productName}
-                          className="h-12 w-12 object-cover rounded border border-gray-200 dark:border-gray-700"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                    </td>
-                    
-                    {/* Product Name */}
-                    <td className="px-3 py-4">
-                      <div className="space-y-1">
-                        <p className={`font-semibold text-sm ${
-                          isPicked ? 'text-green-700 dark:text-green-300 line-through' : 
-                          'text-gray-900 dark:text-gray-100'
-                        }`}>
-                          {item.productName}
-                        </p>
-                        {item.barcode && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                            <ScanLine className="h-3 w-3" />
-                            <span className="font-mono">{item.barcode}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    {/* SKU */}
-                    <td className="px-3 py-4">
-                      <span className="font-mono text-sm text-gray-700 dark:text-gray-300 font-semibold">
-                        {item.sku}
-                      </span>
-                    </td>
-                    
-                    {/* Warehouse Location */}
-                    <td className="px-3 py-4">
-                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg font-mono text-sm font-bold ${
-                        isCurrent 
-                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700' 
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
-                      }`}>
-                        📍 {item.warehouseLocation}
-                      </div>
-                    </td>
-                    
-                    {/* Quantity with Progress Bar */}
-                    <td className="px-3 py-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`text-sm font-bold ${
-                            isPicked ? 'text-green-600 dark:text-green-400' : 
-                            isPartial ? 'text-yellow-600 dark:text-yellow-400' : 
-                            'text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {item.pickedQuantity} / {item.quantity}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {Math.round(progress)}%
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-300 ${
-                              isPicked ? 'bg-green-500 dark:bg-green-600' : 
-                              isPartial ? 'bg-yellow-500 dark:bg-yellow-600' : 
-                              'bg-gray-400 dark:bg-gray-600'
-                            }`}
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Status Badge */}
-                    <td className="px-3 py-4 text-center">
-                      {isPicked ? (
-                        <Badge className="bg-green-500 dark:bg-green-600 text-white font-bold">
-                          ✓ {t('picked')}
-                        </Badge>
-                      ) : isPartial ? (
-                        <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white font-bold">
-                          {t('partial')}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400">
-                          {t('pending')}
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {/* Mobile-friendly Cards for smaller screens */}
-      <div className="lg:hidden space-y-3">
+      {/* Mobile-First Checklist */}
+      <div className="space-y-2">
         {order.items.map((item, index) => {
           const isPicked = item.pickedQuantity >= item.quantity;
           const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
           const isCurrent = currentItem?.id === item.id;
           const isRecentlyScanned = recentlyScannedItemId === item.id;
-          const progress = (item.pickedQuantity / item.quantity) * 100;
           
-          let cardBgClass = 'bg-white dark:bg-gray-900';
+          // Determine background color
+          let bgClass = 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700';
           if (isPicked) {
-            cardBgClass = 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700';
+            bgClass = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-600';
           } else if (isPartial) {
-            cardBgClass = 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700';
+            bgClass = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600';
           }
           
-          if (isCurrent || isRecentlyScanned) {
-            cardBgClass = 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 ring-2 ring-blue-500 dark:ring-blue-400';
-          }
+          // Current item highlight (blue ring)
+          const currentHighlight = isCurrent ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1' : '';
+          
+          // Recently scanned animation
+          const scanAnimation = isRecentlyScanned ? 'animate-pulse ring-2 ring-blue-400 dark:ring-blue-300' : '';
           
           return (
             <div
               key={item.id}
               role="button"
               tabIndex={0}
-              className={`cursor-pointer ${cardBgClass} hover:shadow-lg transition-all duration-200 border-2 ${isRecentlyScanned ? 'animate-pulse' : ''} rounded-lg p-4`}
+              className={`
+                ${bgClass} 
+                ${currentHighlight} 
+                ${scanAnimation}
+                border-2 rounded-xl p-3 
+                cursor-pointer 
+                active:scale-[0.98] 
+                transition-all duration-200
+                hover:shadow-md
+              `}
               onClick={() => { 
                 onToggleFullPick(item); 
                 onItemClick(index); 
               }}
-              data-testid={`mobile-list-row-${index}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onToggleFullPick(item);
+                  onItemClick(index);
+                }
+              }}
+              data-testid={`picking-item-${index}`}
             >
-              <div className="flex gap-3">
-                {/* Item Number */}
+              {/* Row 1: Checkbox + Product Name + Quantity Badge */}
+              <div className="flex items-center gap-3">
+                {/* Large Tappable Checkbox */}
                 <div className="flex-shrink-0">
-                    {isPicked ? (
-                      <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
-                        <CheckCircle className="h-6 w-6 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold">
-                        {index + 1}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Product Image */}
-                  <div className="flex-shrink-0">
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.productName}
-                        className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-gray-700"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                        <Package className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Item Details */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <p className={`font-semibold text-sm ${
-                      isPicked ? 'text-green-700 dark:text-green-300 line-through' : 
-                      'text-gray-900 dark:text-gray-100'
+                  {isPicked ? (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center shadow-md">
+                      <Check className="h-6 w-6 sm:h-7 sm:w-7 text-white" strokeWidth={3} />
+                    </div>
+                  ) : isPartial ? (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-yellow-500 dark:bg-yellow-600 flex items-center justify-center shadow-md">
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-white rounded-sm bg-yellow-500 dark:bg-yellow-600" />
+                    </div>
+                  ) : (
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-3 flex items-center justify-center ${
+                      isCurrent 
+                        ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30' 
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
                     }`}>
-                      {item.productName}
-                    </p>
-                    
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                        <span className="font-mono font-semibold">SKU: {item.sku}</span>
-                      </div>
-                      
-                      {item.barcode && (
-                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          <ScanLine className="h-3 w-3" />
-                          <span className="font-mono">{item.barcode}</span>
-                        </div>
-                      )}
-                      
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-mono font-bold">
-                        📍 {item.warehouseLocation}
-                      </div>
+                      <Circle className={`h-5 w-5 sm:h-6 sm:w-6 ${isCurrent ? 'text-blue-400' : 'text-gray-300 dark:text-gray-600'}`} />
                     </div>
-                    
-                    {/* Quantity and Progress */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className={`text-sm font-bold ${
-                          isPicked ? 'text-green-600 dark:text-green-400' : 
-                          isPartial ? 'text-yellow-600 dark:text-yellow-400' : 
-                          'text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {item.pickedQuantity} / {item.quantity}
-                        </span>
-                        {isPicked ? (
-                          <Badge className="bg-green-500 dark:bg-green-600 text-white font-bold text-xs">
-                            ✓ {t('picked')}
-                          </Badge>
-                        ) : isPartial ? (
-                          <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white font-bold text-xs">
-                            {t('partial')}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 text-xs">
-                            {t('pending')}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-300 ${
-                            isPicked ? 'bg-green-500 dark:bg-green-600' : 
-                            isPartial ? 'bg-yellow-500 dark:bg-yellow-600' : 
-                            'bg-gray-400 dark:bg-gray-600'
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  )}
+                </div>
+                
+                {/* Product Name (truncated) */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold text-base sm:text-lg leading-tight truncate ${
+                    isPicked 
+                      ? 'text-green-700 dark:text-green-300 line-through' 
+                      : 'text-gray-900 dark:text-gray-100'
+                  }`}>
+                    {item.productName}
+                  </p>
+                </div>
+                
+                {/* Quantity Badge */}
+                <div className="flex-shrink-0">
+                  <Badge 
+                    className={`text-base sm:text-lg font-bold px-2.5 sm:px-3 py-1 ${
+                      isPicked 
+                        ? 'bg-green-600 dark:bg-green-700 text-white' 
+                        : isPartial 
+                          ? 'bg-yellow-500 dark:bg-yellow-600 text-white' 
+                          : 'bg-gray-700 dark:bg-gray-600 text-white'
+                    }`}
+                  >
+                    ×{item.quantity}
+                  </Badge>
                 </div>
               </div>
+              
+              {/* Row 2: Location Badge (Most Important Info) */}
+              <div className="mt-2 ml-13 sm:ml-15">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm sm:text-base font-mono font-bold ${
+                  isCurrent 
+                    ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+                }`}>
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>{item.warehouseLocation || t('noLocation') || 'No location'}</span>
+                </div>
+              </div>
+              
+              {/* Row 3: SKU (small text) */}
+              <div className="mt-1.5 ml-13 sm:ml-15 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-mono">{item.sku}</span>
+                {isPartial && (
+                  <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                    ({item.pickedQuantity}/{item.quantity} {t('picked') || 'picked'})
+                  </span>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -2364,6 +2177,9 @@ export default function PickPack() {
     const isActiveMode = !!(activePickingOrder || activePackingOrder);
     sessionStorage.setItem('pickpack-active-mode', isActiveMode ? 'true' : 'false');
     
+    // Dispatch custom event so MobileHeader can react
+    window.dispatchEvent(new Event('pickpack-mode-changed'));
+    
     // Also add a class to the body for CSS targeting
     if (isActiveMode) {
       document.body.classList.add('pickpack-active-mode');
@@ -2375,6 +2191,7 @@ export default function PickPack() {
     return () => {
       sessionStorage.removeItem('pickpack-active-mode');
       document.body.classList.remove('pickpack-active-mode');
+      window.dispatchEvent(new Event('pickpack-mode-changed'));
     };
   }, [activePickingOrder, activePackingOrder]);
 

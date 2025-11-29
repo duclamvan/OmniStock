@@ -173,9 +173,33 @@ export function MobileHeader({
   // Determine if header should be collapsed
   const isCollapsed = scrollDir === 'down' && isPastThreshold && !isAtTop && !isSearchExpanded;
   
-  // Hide header during active pick/pack mode
-  const shouldHideHeader = location.includes('/orders/pick-pack') && 
-    sessionStorage.getItem('pickpack-active-mode') === 'true';
+  // Hide header during active pick/pack mode - track with state for reactivity
+  const [pickpackModeActive, setPickpackModeActive] = useState(() => 
+    sessionStorage.getItem('pickpack-active-mode') === 'true'
+  );
+  
+  // Listen for pickpack mode changes (custom event from PickPack component)
+  useEffect(() => {
+    const handlePickpackModeChange = () => {
+      const isActive = sessionStorage.getItem('pickpack-active-mode') === 'true';
+      setPickpackModeActive(isActive);
+    };
+    
+    // Check initial state
+    handlePickpackModeChange();
+    
+    // Listen for custom event from PickPack
+    window.addEventListener('pickpack-mode-changed', handlePickpackModeChange);
+    
+    // Also check on route changes
+    handlePickpackModeChange();
+    
+    return () => {
+      window.removeEventListener('pickpack-mode-changed', handlePickpackModeChange);
+    };
+  }, [location]); // Re-check when location changes
+  
+  const shouldHideHeader = location.includes('/orders/pick-pack') && pickpackModeActive;
   
   // Track breakpoint changes
   useEffect(() => {
