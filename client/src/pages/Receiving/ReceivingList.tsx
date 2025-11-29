@@ -3500,8 +3500,8 @@ function ShipmentReportDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
         {/* Fixed Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-background sticky top-0 z-10">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center shrink-0">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
               </div>
@@ -3514,12 +3514,23 @@ function ShipmentReportDialog({
                 </DialogDescription>
               </div>
             </div>
-            {reportData && (
-              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 shrink-0">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">{t('completed')}</span>
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {reportData && (
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  <span className="hidden sm:inline">{t('completed')}</span>
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={() => onOpenChange(false)}
+                data-testid="button-close-report"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -3531,35 +3542,35 @@ function ShipmentReportDialog({
             </div>
           ) : reportData ? (
             <div className="px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
-              {/* Summary Stats - Always visible */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                <Card className="p-3 sm:p-4 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
-                    <span className="text-[10px] sm:text-xs font-medium text-green-700 dark:text-green-300">{t('received')}</span>
+              {/* Summary Stats - Compact for mobile */}
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+                <Card className="p-2 sm:p-4 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 truncate">{t('received')}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
                 </Card>
-                <Card className="p-3 sm:p-4 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
-                    <span className="text-[10px] sm:text-xs font-medium text-red-700 dark:text-red-300">{t('damaged')}</span>
+                <Card className="p-2 sm:p-4 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
+                    <span className="text-[9px] sm:text-xs font-medium text-red-700 dark:text-red-300 truncate">{t('damaged')}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
                 </Card>
-                <Card className="p-3 sm:p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
-                    <span className="text-[10px] sm:text-xs font-medium text-orange-700 dark:text-orange-300">{t('missing')}</span>
+                <Card className="p-2 sm:p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-[9px] sm:text-xs font-medium text-orange-700 dark:text-orange-300 truncate">{t('missing')}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
                 </Card>
-                <Card className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-[10px] sm:text-xs font-medium text-blue-700 dark:text-blue-300">{t('totalItems')}</span>
+                <Card className="p-2 sm:p-4 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 truncate">{t('totalItems')}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{reportData.summary.totalItems}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{reportData.summary.totalItems}</div>
                 </Card>
               </div>
               
