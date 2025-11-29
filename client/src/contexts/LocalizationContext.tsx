@@ -97,15 +97,61 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       const dateObj = typeof date === 'string' ? new Date(date) : date;
       if (isNaN(dateObj.getTime())) return '-';
       
-      const dateFormatStr = getDateFnsFormat();
-      const timeFormatStr = getTimeFnsFormat();
-      const formatStr = includeTime ? `${dateFormatStr} ${timeFormatStr}` : dateFormatStr;
+      // Use Intl.DateTimeFormat with timezone support, but manually construct the output
+      // to respect the exact date format order regardless of locale
+      const locale = settings.language === 'vi' ? 'vi-VN' : 'en-US';
       
-      return dateFnsFormat(dateObj, formatStr, { locale: getLocale() });
+      // Get date parts with timezone applied
+      const dateOptions: Intl.DateTimeFormatOptions = {
+        timeZone: settings.timezone,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      };
+      
+      const dateFormatter = new Intl.DateTimeFormat(locale, dateOptions);
+      const dateParts = dateFormatter.formatToParts(dateObj);
+      
+      const year = dateParts.find(p => p.type === 'year')?.value || '';
+      const month = dateParts.find(p => p.type === 'month')?.value || '';
+      const day = dateParts.find(p => p.type === 'day')?.value || '';
+      
+      // Build date string in the exact format selected by user
+      let dateStr: string;
+      switch (settings.dateFormat) {
+        case 'DD/MM/YYYY':
+          dateStr = `${day}/${month}/${year}`;
+          break;
+        case 'MM/DD/YYYY':
+          dateStr = `${month}/${day}/${year}`;
+          break;
+        case 'YYYY-MM-DD':
+          dateStr = `${year}-${month}-${day}`;
+          break;
+        default:
+          dateStr = `${day}/${month}/${year}`;
+      }
+      
+      if (includeTime) {
+        // Get time parts with timezone applied
+        const timeOptions: Intl.DateTimeFormatOptions = {
+          timeZone: settings.timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: settings.timeFormat === '12-hour',
+        };
+        
+        const timeFormatter = new Intl.DateTimeFormat(locale, timeOptions);
+        const timeStr = timeFormatter.format(dateObj);
+        
+        return `${dateStr} ${timeStr}`;
+      }
+      
+      return dateStr;
     } catch {
       return '-';
     }
-  }, [getDateFnsFormat, getTimeFnsFormat, getLocale]);
+  }, [settings.dateFormat, settings.timeFormat, settings.timezone, settings.language]);
 
   const formatTime = useCallback((date: Date | string | null | undefined): string => {
     if (!date) return '-';
@@ -114,11 +160,21 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       const dateObj = typeof date === 'string' ? new Date(date) : date;
       if (isNaN(dateObj.getTime())) return '-';
       
-      return dateFnsFormat(dateObj, getTimeFnsFormat(), { locale: getLocale() });
+      // Use Intl.DateTimeFormat with timezone support
+      const locale = settings.language === 'vi' ? 'vi-VN' : 'en-US';
+      
+      const timeOptions: Intl.DateTimeFormatOptions = {
+        timeZone: settings.timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: settings.timeFormat === '12-hour',
+      };
+      
+      return new Intl.DateTimeFormat(locale, timeOptions).format(dateObj);
     } catch {
       return '-';
     }
-  }, [getTimeFnsFormat, getLocale]);
+  }, [settings.timezone, settings.timeFormat, settings.language]);
 
   const formatNumber = useCallback((value: number | string | null | undefined, decimals = 2): string => {
     if (value === null || value === undefined || value === '') return '-';
