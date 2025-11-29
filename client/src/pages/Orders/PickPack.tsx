@@ -7977,8 +7977,8 @@ export default function PickPack() {
                       </div>
                       
                       {/* Package Size Cards - GLS Style */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {['S', 'M', 'L'].map((size) => (
+                      <div className="grid grid-cols-2 gap-2">
+                        {['XS', 'S'].map((size) => (
                           <div
                             key={size}
                             className={`p-3 rounded-lg border-2 text-center cursor-pointer transition-all ${
