@@ -4119,16 +4119,13 @@ router.get("/receipts/recent", async (req, res) => {
     const recentReceipts = await db
       .select({
         id: receipts.id,
-        receiptNumber: receipts.receiptNumber,
-        supplierName: receipts.supplierName,
         status: receipts.status,
         receivedAt: receipts.receivedAt,
         approvedAt: receipts.approvedAt,
         approvedBy: receipts.approvedBy,
         shipmentId: receipts.shipmentId,
-        referenceNumber: receipts.referenceNumber,
-        totalCartons: receipts.totalCartons,
-        totalLines: receipts.totalLines,
+        parcelCount: receipts.parcelCount,
+        receivedParcels: receipts.receivedParcels,
         notes: receipts.notes,
         receivedBy: receipts.receivedBy
       })
@@ -4911,40 +4908,68 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
         }
       }
 
-      // Step 5: Fetch and apply landing cost allocations from costAllocations table
-      // For custom items, look up from costAllocations table (keyed by customItemId)
-      // For purchase items, the landing cost should already be in purchaseItems.landingCostUnitBase
+      // Step 5: Apply landing cost allocations using the existing costAllocations table
+      // For custom items, look up allocations directly; for purchase items, use their stored landingCostUnitBase
       if (receipt.shipmentId) {
-        const allocations = await tx
-          .select()
-          .from(costAllocations)
-          .where(eq(costAllocations.shipmentId, receipt.shipmentId));
-        
-        // Group allocations by customItemId and sum up all cost types
-        const allocationsByCustomItemId = new Map<number, number>();
-        for (const alloc of allocations) {
-          const current = allocationsByCustomItemId.get(alloc.customItemId) || 0;
-          allocationsByCustomItemId.set(alloc.customItemId, current + parseFloat(alloc.amountAllocatedBase));
-        }
-        
-        // Update product landing costs for custom items that have allocations
-        for (const item of items) {
-          if (item.itemType === 'custom' && item.itemId) {
-            const totalAllocated = allocationsByCustomItemId.get(item.itemId) || 0;
-            const landingCostPerUnit = item.receivedQuantity > 0 ? totalAllocated / item.receivedQuantity : 0;
+        try {
+          // Get existing cost allocations from the costAllocations table (populated by landing cost page)
+          const existingAllocations = await tx
+            .select()
+            .from(costAllocations)
+            .where(eq(costAllocations.shipmentId, receipt.shipmentId));
+          
+          if (existingAllocations.length > 0) {
+            // Group allocations by customItemId and sum up all cost types
+            const allocationsByCustomItemId = new Map<number, number>();
+            for (const alloc of existingAllocations) {
+              const current = allocationsByCustomItemId.get(alloc.customItemId) || 0;
+              allocationsByCustomItemId.set(alloc.customItemId, current + parseFloat(alloc.amountAllocatedBase || '0'));
+            }
             
-            if (landingCostPerUnit > 0) {
-              // Update the product's landing cost if we have a valid allocation
+            // Update product landing costs for items that have allocations
+            // Track which SKUs have been updated to avoid double-counting
+            const updatedSkus = new Set<string>();
+            
+            for (const item of items) {
               const sku = item.sku || `SKU-${item.itemId}`;
-              await tx
-                .update(products)
-                .set({
-                  latestLandingCost: landingCostPerUnit.toFixed(4),
-                  updatedAt: new Date()
-                })
-                .where(eq(products.sku, sku));
+              
+              // Skip if already updated this SKU
+              if (updatedSkus.has(sku)) continue;
+              
+              let landingCostPerUnit = 0;
+              
+              if (item.itemType === 'custom' && item.itemId) {
+                // For custom items, look up from costAllocations
+                const totalAllocated = allocationsByCustomItemId.get(item.itemId) || 0;
+                landingCostPerUnit = item.receivedQuantity > 0 ? totalAllocated / item.receivedQuantity : 0;
+              } else if (item.itemType === 'purchase' && item.itemId) {
+                // For purchase items, use the landingCostUnitBase from the purchaseItems table
+                const [purchaseItem] = await tx
+                  .select()
+                  .from(purchaseItems)
+                  .where(eq(purchaseItems.id, item.itemId));
+                
+                if (purchaseItem?.landingCostUnitBase) {
+                  landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
+                }
+              }
+              
+              if (landingCostPerUnit > 0) {
+                await tx
+                  .update(products)
+                  .set({
+                    latestLandingCost: landingCostPerUnit.toFixed(4),
+                    updatedAt: new Date()
+                  })
+                  .where(eq(products.sku, sku));
+                
+                updatedSkus.add(sku);
+              }
             }
           }
+        } catch (allocationError) {
+          console.error('Error applying landing cost allocations:', allocationError);
+          // Continue with approval even if landing cost allocation fails
         }
       }
 
@@ -5336,6 +5361,71 @@ router.post("/receipts/approve/:id", async (req, res) => {
             method: 'initial_import',
             computedAt: new Date()
           });
+        }
+      }
+      
+      // Apply landing cost allocations using the existing costAllocations table
+      // For custom items, look up allocations directly; for purchase items, use their stored landingCostUnitBase
+      if (receipt.shipmentId) {
+        try {
+          // Get existing cost allocations from the costAllocations table (populated by landing cost page)
+          const existingAllocations = await tx
+            .select()
+            .from(costAllocations)
+            .where(eq(costAllocations.shipmentId, receipt.shipmentId));
+          
+          if (existingAllocations.length > 0) {
+            // Group allocations by customItemId and sum up all cost types
+            const allocationsByCustomItemId = new Map<number, number>();
+            for (const alloc of existingAllocations) {
+              const current = allocationsByCustomItemId.get(alloc.customItemId) || 0;
+              allocationsByCustomItemId.set(alloc.customItemId, current + parseFloat(alloc.amountAllocatedBase || '0'));
+            }
+            
+            // Update product landing costs for items that have allocations
+            // Track which SKUs have been updated to avoid double-counting
+            const updatedSkus = new Set<string>();
+            
+            for (const item of items) {
+              const sku = item.sku || `SKU-${item.itemId}`;
+              
+              // Skip if already updated this SKU
+              if (updatedSkus.has(sku)) continue;
+              
+              let landingCostPerUnit = 0;
+              
+              if (item.itemType === 'custom' && item.itemId) {
+                // For custom items, look up from costAllocations
+                const totalAllocated = allocationsByCustomItemId.get(item.itemId) || 0;
+                landingCostPerUnit = item.receivedQuantity > 0 ? totalAllocated / item.receivedQuantity : 0;
+              } else if (item.itemType === 'purchase' && item.itemId) {
+                // For purchase items, use the landingCostUnitBase from the purchaseItems table
+                const [purchaseItem] = await tx
+                  .select()
+                  .from(purchaseItems)
+                  .where(eq(purchaseItems.id, item.itemId));
+                
+                if (purchaseItem?.landingCostUnitBase) {
+                  landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
+                }
+              }
+              
+              if (landingCostPerUnit > 0) {
+                await tx
+                  .update(products)
+                  .set({
+                    latestLandingCost: landingCostPerUnit.toFixed(4),
+                    updatedAt: new Date()
+                  })
+                  .where(eq(products.sku, sku));
+                
+                updatedSkus.add(sku);
+              }
+            }
+          }
+        } catch (allocationError) {
+          console.error('Error applying landing cost allocations:', allocationError);
+          // Continue with approval even if landing cost allocation fails
         }
       }
       
