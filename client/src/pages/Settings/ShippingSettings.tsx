@@ -31,12 +31,30 @@ const normalizeCarrier = (value: string): string => {
   return map[value] || value;
 };
 
+// Default PPL shipping rates structure
+const DEFAULT_PPL_RATES = {
+  domestic: [
+    { maxWeight: 5, price: 99, currency: 'CZK' },
+    { maxWeight: 10, price: 129, currency: 'CZK' },
+    { maxWeight: 20, price: 159, currency: 'CZK' },
+    { maxWeight: 31.5, price: 199, currency: 'CZK' },
+    { maxWeight: 50, price: 299, currency: 'CZK' },
+  ],
+  eu: [
+    { maxWeight: 5, price: 12.90, currency: 'EUR' },
+    { maxWeight: 10, price: 15.90, currency: 'EUR' },
+    { maxWeight: 20, price: 22.90, currency: 'EUR' },
+    { maxWeight: 31.5, price: 32.90, currency: 'EUR' },
+  ],
+};
+
 const formSchema = z.object({
   // PPL CZ Settings
   ppl_default_sender_address: z.string().default(''),
   ppl_enable_auto_label: z.boolean().default(false),
   ppl_max_package_weight_kg: z.coerce.number().min(0).default(50),
   ppl_max_package_dimensions_cm: z.string().default('200x80x60'),
+  ppl_shipping_rates: z.string().default(JSON.stringify(DEFAULT_PPL_RATES)),
   
   // Country Carrier Mapping (JSON string for country code -> carrier)
   country_carrier_mapping: z.string().default('{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}'),
@@ -109,6 +127,7 @@ export default function ShippingSettings() {
       ppl_enable_auto_label: false,
       ppl_max_package_weight_kg: 50,
       ppl_max_package_dimensions_cm: '200x80x60',
+      ppl_shipping_rates: JSON.stringify(DEFAULT_PPL_RATES),
       country_carrier_mapping: '{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}',
       gls_default_sender_address: '',
       gls_enable_manual_labels: false,
@@ -157,6 +176,7 @@ export default function ShippingSettings() {
         ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel,
         ppl_max_package_weight_kg: shippingSettings.pplMaxPackageWeightKg ?? 50,
         ppl_max_package_dimensions_cm: shippingSettings.pplMaxPackageDimensionsCm ?? '200x80x60',
+        ppl_shipping_rates: toJsonString(shippingSettings.pplShippingRates || DEFAULT_PPL_RATES),
         country_carrier_mapping: toJsonString(shippingSettings.countryCarrierMapping || {"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}),
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
@@ -413,6 +433,183 @@ export default function ShippingSettings() {
                     )}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* PPL Shipping Rates */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                  PPL Shipping Rates
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure shipping rates by weight tier for domestic (CZ) and EU shipments
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="ppl_shipping_rates"
+                  render={({ field }) => {
+                    const parsedRates = (() => {
+                      try {
+                        return typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                      } catch {
+                        return { domestic: [], eu: [] };
+                      }
+                    })();
+                    
+                    const updateRate = (zone: 'domestic' | 'eu', index: number, key: 'maxWeight' | 'price', value: number) => {
+                      const newRates = { ...parsedRates };
+                      if (!newRates[zone]) newRates[zone] = [];
+                      if (newRates[zone][index]) {
+                        newRates[zone][index] = { ...newRates[zone][index], [key]: value };
+                      }
+                      field.onChange(JSON.stringify(newRates, null, 2));
+                    };
+                    
+                    const addRate = (zone: 'domestic' | 'eu') => {
+                      const newRates = { ...parsedRates };
+                      if (!newRates[zone]) newRates[zone] = [];
+                      const currency = zone === 'domestic' ? 'CZK' : 'EUR';
+                      const lastMaxWeight = newRates[zone].length > 0 
+                        ? newRates[zone][newRates[zone].length - 1].maxWeight 
+                        : 0;
+                      newRates[zone].push({ maxWeight: lastMaxWeight + 5, price: 0, currency });
+                      field.onChange(JSON.stringify(newRates, null, 2));
+                    };
+                    
+                    const removeRate = (zone: 'domestic' | 'eu', index: number) => {
+                      const newRates = { ...parsedRates };
+                      newRates[zone].splice(index, 1);
+                      field.onChange(JSON.stringify(newRates, null, 2));
+                    };
+                    
+                    return (
+                      <FormItem>
+                        <div className="space-y-6">
+                          {/* Domestic Rates (CZ) */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium flex items-center gap-2">
+                                <span className="text-lg">🇨🇿</span> Domestic (CZ) - CZK
+                              </h4>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addRate('domestic')}
+                                data-testid="button-add-domestic-rate"
+                              >
+                                + Add Tier
+                              </Button>
+                            </div>
+                            <div className="space-y-2">
+                              {(parsedRates.domestic || []).map((rate: any, index: number) => (
+                                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                                  <span className="text-sm text-muted-foreground whitespace-nowrap">Up to</span>
+                                  <Input
+                                    type="number"
+                                    value={rate.maxWeight}
+                                    onChange={(e) => updateRate('domestic', index, 'maxWeight', parseFloat(e.target.value) || 0)}
+                                    className="w-20"
+                                    min="0"
+                                    step="0.5"
+                                    data-testid={`input-domestic-weight-${index}`}
+                                  />
+                                  <span className="text-sm text-muted-foreground">kg →</span>
+                                  <Input
+                                    type="number"
+                                    value={rate.price}
+                                    onChange={(e) => updateRate('domestic', index, 'price', parseFloat(e.target.value) || 0)}
+                                    className="w-24"
+                                    min="0"
+                                    step="1"
+                                    data-testid={`input-domestic-price-${index}`}
+                                  />
+                                  <span className="text-sm font-medium">CZK</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-auto text-destructive hover:text-destructive"
+                                    onClick={() => removeRate('domestic', index)}
+                                    data-testid={`button-remove-domestic-${index}`}
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              ))}
+                              {(!parsedRates.domestic || parsedRates.domestic.length === 0) && (
+                                <p className="text-sm text-muted-foreground italic p-3">No domestic rates configured</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* EU Rates */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium flex items-center gap-2">
+                                <span className="text-lg">🇪🇺</span> EU Countries - EUR
+                              </h4>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addRate('eu')}
+                                data-testid="button-add-eu-rate"
+                              >
+                                + Add Tier
+                              </Button>
+                            </div>
+                            <div className="space-y-2">
+                              {(parsedRates.eu || []).map((rate: any, index: number) => (
+                                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                                  <span className="text-sm text-muted-foreground whitespace-nowrap">Up to</span>
+                                  <Input
+                                    type="number"
+                                    value={rate.maxWeight}
+                                    onChange={(e) => updateRate('eu', index, 'maxWeight', parseFloat(e.target.value) || 0)}
+                                    className="w-20"
+                                    min="0"
+                                    step="0.5"
+                                    data-testid={`input-eu-weight-${index}`}
+                                  />
+                                  <span className="text-sm text-muted-foreground">kg →</span>
+                                  <Input
+                                    type="number"
+                                    value={rate.price}
+                                    onChange={(e) => updateRate('eu', index, 'price', parseFloat(e.target.value) || 0)}
+                                    className="w-24"
+                                    min="0"
+                                    step="0.1"
+                                    data-testid={`input-eu-price-${index}`}
+                                  />
+                                  <span className="text-sm font-medium">EUR</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-auto text-destructive hover:text-destructive"
+                                    onClick={() => removeRate('eu', index)}
+                                    data-testid={`button-remove-eu-${index}`}
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              ))}
+                              {(!parsedRates.eu || parsedRates.eu.length === 0) && (
+                                <p className="text-sm text-muted-foreground italic p-3">No EU rates configured</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>

@@ -156,6 +156,10 @@ export interface ShippingSettings {
   pplEnableAutoLabel?: boolean;
   pplMaxPackageWeightKg?: number;
   pplMaxPackageDimensionsCm?: string;
+  pplShippingRates?: {
+    domestic?: Array<{ maxWeight: number; price: number; currency: string }>;
+    eu?: Array<{ maxWeight: number; price: number; currency: string }>;
+  };
   countryCarrierMapping?: Record<string, string>;
   glsDefaultSenderAddress?: string | object;
   glsEnableManualLabels?: boolean;
