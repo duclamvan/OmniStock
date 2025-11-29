@@ -35,9 +35,11 @@ const formSchema = z.object({
   // PPL CZ Settings
   ppl_default_sender_address: z.string().default(''),
   ppl_enable_auto_label: z.boolean().default(false),
-  ppl_default_service: z.string().default(''),
   ppl_max_package_weight_kg: z.coerce.number().min(0).default(50),
   ppl_max_package_dimensions_cm: z.string().default('200x80x60'),
+  
+  // Country Carrier Mapping (JSON string for country code -> carrier)
+  country_carrier_mapping: z.string().default('{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}'),
   
   // GLS DE Settings
   gls_default_sender_address: z.string().default(''),
@@ -105,9 +107,9 @@ export default function ShippingSettings() {
     defaultValues: {
       ppl_default_sender_address: '',
       ppl_enable_auto_label: false,
-      ppl_default_service: '',
       ppl_max_package_weight_kg: 50,
       ppl_max_package_dimensions_cm: '200x80x60',
+      country_carrier_mapping: '{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}',
       gls_default_sender_address: '',
       gls_enable_manual_labels: false,
       gls_max_package_weight_kg: 40,
@@ -153,9 +155,9 @@ export default function ShippingSettings() {
       const snapshot = {
         ppl_default_sender_address: toJsonString(shippingSettings.pplDefaultSenderAddress),
         ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel,
-        ppl_default_service: shippingSettings.pplDefaultService,
         ppl_max_package_weight_kg: shippingSettings.pplMaxPackageWeightKg ?? 50,
         ppl_max_package_dimensions_cm: shippingSettings.pplMaxPackageDimensionsCm ?? '200x80x60',
+        country_carrier_mapping: toJsonString(shippingSettings.countryCarrierMapping || {"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}),
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
         gls_max_package_weight_kg: shippingSettings.glsMaxPackageWeightKg ?? 40,
@@ -202,8 +204,8 @@ export default function ShippingSettings() {
       const savePromises = changedEntries.map(([key, value]) => {
         let processedValue = (value === '' || value === undefined) ? null : value;
         
-        // Parse JSON for address fields
-        if (key.includes('address') && typeof processedValue === 'string' && processedValue.trim()) {
+        // Parse JSON for address fields and country_carrier_mapping
+        if ((key.includes('address') || key === 'country_carrier_mapping') && typeof processedValue === 'string' && processedValue.trim()) {
           try {
             processedValue = JSON.parse(processedValue);
           } catch (e) {
@@ -297,21 +299,6 @@ export default function ShippingSettings() {
                 <CardDescription className="text-sm">Configure PPL Czech Republic carrier settings</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <FormField
-                  control={form.control}
-                  name="ppl_default_service"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Service</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., PPL Parcel CZ Private" data-testid="input-ppl_default_service" />
-                      </FormControl>
-                      <FormDescription>Default PPL service type for shipments</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="ppl_enable_auto_label"
@@ -700,6 +687,133 @@ export default function ShippingSettings() {
 
           {/* General Tab */}
           <TabsContent value="general" className="space-y-4">
+            {/* Default Carrier for Country */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Default Carrier for Country
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Map countries to default carriers. When adding a new order, the carrier will be auto-selected based on the customer's country.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <FormField
+                  control={form.control}
+                  name="country_carrier_mapping"
+                  render={({ field }) => {
+                    const parsedMapping = (() => {
+                      try {
+                        return typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                      } catch {
+                        return {};
+                      }
+                    })();
+                    
+                    const updateMapping = (country: string, carrier: string) => {
+                      const newMapping = { ...parsedMapping, [country]: carrier };
+                      field.onChange(JSON.stringify(newMapping, null, 2));
+                    };
+                    
+                    const removeMapping = (country: string) => {
+                      const newMapping = { ...parsedMapping };
+                      delete newMapping[country];
+                      field.onChange(JSON.stringify(newMapping, null, 2));
+                    };
+                    
+                    const countries = [
+                      { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿' },
+                      { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+                      { code: 'AT', name: 'Austria', flag: '🇦🇹' },
+                      { code: 'SK', name: 'Slovakia', flag: '🇸🇰' },
+                      { code: 'PL', name: 'Poland', flag: '🇵🇱' },
+                      { code: 'HU', name: 'Hungary', flag: '🇭🇺' },
+                      { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
+                      { code: 'BE', name: 'Belgium', flag: '🇧🇪' },
+                      { code: 'FR', name: 'France', flag: '🇫🇷' },
+                      { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+                      { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+                      { code: 'PT', name: 'Portugal', flag: '🇵🇹' },
+                      { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+                      { code: 'CH', name: 'Switzerland', flag: '🇨🇭' },
+                      { code: 'SI', name: 'Slovenia', flag: '🇸🇮' },
+                      { code: 'HR', name: 'Croatia', flag: '🇭🇷' },
+                      { code: 'RO', name: 'Romania', flag: '🇷🇴' },
+                      { code: 'BG', name: 'Bulgaria', flag: '🇧🇬' },
+                    ];
+                    
+                    const carriers = ['PPL CZ', 'GLS DE', 'DHL DE'];
+                    const usedCountries = Object.keys(parsedMapping);
+                    const availableCountries = countries.filter(c => !usedCountries.includes(c.code));
+                    
+                    return (
+                      <FormItem>
+                        <div className="space-y-3">
+                          {Object.entries(parsedMapping).map(([countryCode, carrier]) => {
+                            const country = countries.find(c => c.code === countryCode);
+                            return (
+                              <div key={countryCode} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                                <span className="text-xl">{country?.flag || '🌍'}</span>
+                                <span className="font-medium min-w-[120px]">{country?.name || countryCode}</span>
+                                <span className="text-muted-foreground">→</span>
+                                <Select 
+                                  value={carrier as string} 
+                                  onValueChange={(value) => updateMapping(countryCode, value)}
+                                >
+                                  <SelectTrigger className="w-[140px]" data-testid={`select-country-carrier-${countryCode}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {carriers.map(c => (
+                                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-auto text-destructive hover:text-destructive"
+                                  onClick={() => removeMapping(countryCode)}
+                                  data-testid={`button-remove-country-${countryCode}`}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            );
+                          })}
+                          
+                          {availableCountries.length > 0 && (
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed">
+                              <Select
+                                onValueChange={(countryCode) => updateMapping(countryCode, 'PPL CZ')}
+                              >
+                                <SelectTrigger className="w-full" data-testid="select-add-country">
+                                  <SelectValue placeholder="+ Add country..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableCountries.map(c => (
+                                    <SelectItem key={c.code} value={c.code}>
+                                      {c.flag} {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                        <FormDescription className="mt-3">
+                          When a customer from a mapped country is selected, the order's carrier will automatically be set.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </CardContent>
+            </Card>
+
             {/* Quick Select Buttons */}
             <Card>
               <CardHeader className="p-4 sm:p-6">

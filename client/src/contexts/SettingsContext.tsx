@@ -154,9 +154,9 @@ export interface ShippingSettings {
   defaultShippingMethod?: string;
   pplDefaultSenderAddress?: string | object;
   pplEnableAutoLabel?: boolean;
-  pplDefaultService?: string;
   pplMaxPackageWeightKg?: number;
   pplMaxPackageDimensionsCm?: string;
+  countryCarrierMapping?: Record<string, string>;
   glsDefaultSenderAddress?: string | object;
   glsEnableManualLabels?: boolean;
   glsMaxPackageWeightKg?: number;
