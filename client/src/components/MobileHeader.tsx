@@ -301,12 +301,12 @@ export function MobileHeader({
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+            <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] max-w-80 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DropdownMenuLabel className="font-normal">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('common:notifications')}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{t('common:notifications')}</span>
                   {unreadCount > 0 && (
-                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                       {t('common:newNotifications', { count: unreadCount })}
                     </span>
                   )}
@@ -324,26 +324,26 @@ export function MobileHeader({
                         <DropdownMenuItem 
                           key={group.key}
                           className={cn(
-                            "flex flex-col items-start p-3 cursor-pointer relative overflow-hidden",
+                            "flex flex-col items-start p-3 cursor-pointer relative",
                             group.hasUnread 
                               ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:bg-blue-100 dark:focus:bg-blue-900/50" 
                               : "bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
                           )}
                           data-testid={`notification-group-${group.latestNotificationId}`}
                         >
-                          {/* Faded background icon */}
+                          {/* Faded background icon - positioned inside bounds */}
                           <BackgroundIcon className={cn(
-                            "absolute -right-2 top-1/2 -translate-y-1/2 h-16 w-16 pointer-events-none",
+                            "absolute right-2 top-1/2 -translate-y-1/2 h-12 w-12 pointer-events-none opacity-30",
                             group.hasUnread
-                              ? "text-blue-200 dark:text-blue-800/50"
-                              : "text-gray-100 dark:text-gray-700/50"
+                              ? "text-blue-300 dark:text-blue-700"
+                              : "text-gray-200 dark:text-gray-600"
                           )} />
                           
-                          <div className="flex items-start gap-2 w-full relative z-10">
+                          <div className="flex items-start gap-2 w-full relative z-10 pr-10">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className={cn(
-                                  "text-sm truncate flex-1",
+                                  "text-sm truncate",
                                   group.hasUnread 
                                     ? "font-semibold text-blue-900 dark:text-blue-100" 
                                     : "font-medium text-gray-900 dark:text-gray-100"
