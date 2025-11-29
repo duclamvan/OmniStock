@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +32,8 @@ import {
   User,
   Package,
   Search,
-  UserPlus
+  UserPlus,
+  Bell
 } from "lucide-react";
 import {
   Select,
@@ -58,6 +61,28 @@ import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 import { getCountryFlag } from "@/lib/countries";
 
+// Common timezones for the selector
+const COMMON_TIMEZONES = [
+  'Europe/Prague',
+  'Europe/London',
+  'Europe/Berlin',
+  'Europe/Paris',
+  'Europe/Rome',
+  'Europe/Madrid',
+  'Europe/Amsterdam',
+  'Europe/Vienna',
+  'Europe/Warsaw',
+  'Europe/Budapest',
+  'America/New_York',
+  'America/Chicago',
+  'America/Los_Angeles',
+  'Asia/Ho_Chi_Minh',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Australia/Sydney',
+  'UTC',
+];
+
 // Note: We'll use t() for error messages in the component, not in the schema
 // The schema uses English by default and we translate in the form errors display
 const formSchema = insertPreOrderSchema.extend({
@@ -70,6 +95,14 @@ const formSchema = insertPreOrderSchema.extend({
       quantity: z.coerce.number().min(1),
     })
   ).min(1),
+  reminderEnabled: z.boolean().default(false),
+  reminderChannel: z.enum(['sms', 'email', 'both']).default('sms'),
+  reminderDaysBefore: z.array(z.number()).default([1, 3]),
+  reminderTimeUtc: z.string().default('09:00'),
+  reminderTimezone: z.string().default('Europe/Prague'),
+  reminderPhone: z.string().optional(),
+  reminderEmail: z.string().email().optional().or(z.literal('')),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
 }).omit({ expectedDate: true }).extend({
   expectedDate: z.date().optional(),
 });
@@ -113,6 +146,14 @@ export default function AddPreOrder() {
       notes: '',
       expectedDate: undefined,
       items: [{ itemName: "", quantity: 1 }],
+      reminderEnabled: false,
+      reminderChannel: 'sms',
+      reminderDaysBefore: [1, 3],
+      reminderTimeUtc: '09:00',
+      reminderTimezone: 'Europe/Prague',
+      reminderPhone: '',
+      reminderEmail: '',
+      priority: 'normal',
     },
   });
 
@@ -281,6 +322,14 @@ export default function AddPreOrder() {
         itemDescription: item.itemDescription || null,
         quantity: item.quantity,
       })),
+      reminderEnabled: data.reminderEnabled,
+      reminderChannel: data.reminderChannel,
+      reminderDaysBefore: data.reminderDaysBefore,
+      reminderTimeUtc: data.reminderTimeUtc,
+      reminderTimezone: data.reminderTimezone,
+      reminderPhone: data.reminderPhone || null,
+      reminderEmail: data.reminderEmail || null,
+      priority: data.priority,
     };
 
     await createPreOrderMutation.mutateAsync(preOrderData);
@@ -467,6 +516,206 @@ export default function AddPreOrder() {
                 data-testid="textarea-notes"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Reminder Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              <Bell className="h-5 w-5" />
+              {t('reminderSettings')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Enable Reminders Switch */}
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="reminderEnabled" className="text-base font-medium">
+                  {t('enableReminders')}
+                </Label>
+                <p className="text-sm text-slate-500">
+                  {t('enableRemindersDescription')}
+                </p>
+              </div>
+              <Switch
+                id="reminderEnabled"
+                checked={form.watch("reminderEnabled")}
+                onCheckedChange={(checked) => form.setValue("reminderEnabled", checked)}
+                data-testid="switch-reminder-enabled"
+              />
+            </div>
+
+            {/* Priority Selector - Always Visible */}
+            <div>
+              <Label htmlFor="priority" className="text-sm font-medium text-slate-700">
+                {t('priority')}
+              </Label>
+              <Select
+                value={form.watch("priority")}
+                onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => form.setValue("priority", value)}
+              >
+                <SelectTrigger className="mt-1.5" data-testid="select-priority">
+                  <SelectValue placeholder={t('priorityNormal')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low" data-testid="option-priority-low">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-slate-400" />
+                      {t('priorityLow')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="normal" data-testid="option-priority-normal">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      {t('priorityNormal')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="high" data-testid="option-priority-high">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-500" />
+                      {t('priorityHigh')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="urgent" data-testid="option-priority-urgent">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      {t('priorityUrgent')}
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Conditional Reminder Options */}
+            {form.watch("reminderEnabled") && (
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                {/* Reminder Channel */}
+                <div>
+                  <Label htmlFor="reminderChannel" className="text-sm font-medium text-slate-700">
+                    {t('reminderChannel')}
+                  </Label>
+                  <Select
+                    value={form.watch("reminderChannel")}
+                    onValueChange={(value: 'sms' | 'email' | 'both') => form.setValue("reminderChannel", value)}
+                  >
+                    <SelectTrigger className="mt-1.5" data-testid="select-reminder-channel">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sms" data-testid="option-channel-sms">{t('sms')}</SelectItem>
+                      <SelectItem value="email" data-testid="option-channel-email">{t('email')}</SelectItem>
+                      <SelectItem value="both" data-testid="option-channel-both">{t('smsBothEmail')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Days Before - Multi-select with Checkboxes */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t('reminderDaysBefore')}
+                  </Label>
+                  <p className="text-xs text-slate-500 mb-2">{t('reminderDaysBeforeHint')}</p>
+                  <div className="flex flex-wrap gap-4">
+                    {[1, 3, 7].map((day) => (
+                      <div key={day} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`day-${day}`}
+                          checked={form.watch("reminderDaysBefore")?.includes(day)}
+                          onCheckedChange={(checked) => {
+                            const current = form.watch("reminderDaysBefore") || [];
+                            if (checked) {
+                              form.setValue("reminderDaysBefore", [...current, day].sort((a, b) => a - b));
+                            } else {
+                              form.setValue("reminderDaysBefore", current.filter((d: number) => d !== day));
+                            }
+                          }}
+                          data-testid={`checkbox-days-${day}`}
+                        />
+                        <Label htmlFor={`day-${day}`} className="text-sm font-normal">
+                          {t('daysBefore', { count: day })}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reminder Time and Timezone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="reminderTimeUtc" className="text-sm font-medium text-slate-700">
+                      {t('reminderTime')}
+                    </Label>
+                    <p className="text-xs text-slate-500 mb-1.5">{t('reminderTimeHint')}</p>
+                    <Input
+                      id="reminderTimeUtc"
+                      type="time"
+                      value={form.watch("reminderTimeUtc")}
+                      onChange={(e) => form.setValue("reminderTimeUtc", e.target.value)}
+                      className="mt-1"
+                      data-testid="input-reminder-time"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reminderTimezone" className="text-sm font-medium text-slate-700">
+                      {t('reminderTimezone')}
+                    </Label>
+                    <Select
+                      value={form.watch("reminderTimezone")}
+                      onValueChange={(value) => form.setValue("reminderTimezone", value)}
+                    >
+                      <SelectTrigger className="mt-1.5" data-testid="select-reminder-timezone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMMON_TIMEZONES.map((tz) => (
+                          <SelectItem key={tz} value={tz} data-testid={`option-timezone-${tz}`}>
+                            {tz}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Override Phone/Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="reminderPhone" className="text-sm font-medium text-slate-700">
+                      {t('reminderPhone')}
+                    </Label>
+                    <p className="text-xs text-slate-500 mb-1.5">{t('reminderPhoneHint')}</p>
+                    <Input
+                      id="reminderPhone"
+                      type="tel"
+                      placeholder="+420 123 456 789"
+                      value={form.watch("reminderPhone") || ""}
+                      onChange={(e) => form.setValue("reminderPhone", e.target.value)}
+                      data-testid="input-reminder-phone"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reminderEmail" className="text-sm font-medium text-slate-700">
+                      {t('reminderEmail')}
+                    </Label>
+                    <p className="text-xs text-slate-500 mb-1.5">{t('reminderEmailHint')}</p>
+                    <Input
+                      id="reminderEmail"
+                      type="email"
+                      placeholder="customer@example.com"
+                      value={form.watch("reminderEmail") || ""}
+                      onChange={(e) => form.setValue("reminderEmail", e.target.value)}
+                      data-testid="input-reminder-email"
+                    />
+                    {form.formState.errors.reminderEmail && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.reminderEmail.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

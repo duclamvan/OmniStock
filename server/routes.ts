@@ -9393,17 +9393,33 @@ Important:
     }
   });
 
-  app.post('/api/pre-orders/:id/send-reminder', isAuthenticated, async (req: any, res) => {
+  app.post('/api/pre-orders/:id/send-reminder', isAuthenticated, smsRateLimiter, async (req: any, res) => {
     try {
-      const preOrder = await storage.getPreOrder(req.params.id);
+      const preOrder = await storage.getPreOrder(req.params.id) as any;
       if (!preOrder) {
         return res.status(404).json({ message: "Pre-order not found" });
       }
       
-      const { channel = 'sms' } = req.body;
+      if (!preOrder.reminderEnabled) {
+        return res.status(400).json({ message: "Reminders are not enabled for this pre-order" });
+      }
+      
+      const { channel } = req.body;
+      
+      const validChannels = ['sms', 'email', 'both'];
+      if (!validChannels.includes(channel)) {
+        return res.status(400).json({ message: "Invalid channel. Must be 'sms', 'email', or 'both'" });
+      }
+      
+      const allowedChannel = preOrder.reminderChannel || 'sms';
+      if (channel !== allowedChannel && channel !== 'both' && allowedChannel !== 'both') {
+        return res.status(400).json({ 
+          message: `Channel '${channel}' is not enabled for this pre-order. Configured channel: ${allowedChannel}` 
+        });
+      }
       
       const { sendPreOrderReminder } = await import('./services/preOrderNotificationService');
-      const result = await sendPreOrderReminder(req.params.id, channel);
+      const result = await sendPreOrderReminder(req.params.id, allowedChannel);
       
       res.json({ 
         success: result.sms?.success || result.email?.success,

@@ -12,7 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search, FileDown, FileText, User } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search, FileDown, FileText, User, Bell, BellOff, Send, AlertTriangle, Flag } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -59,6 +59,11 @@ interface PreOrder {
     name: string;
   } | null;
   itemsCount: number;
+  reminderEnabled: boolean;
+  reminderChannel: string | null;
+  priority: string | null;
+  lastReminderSentAt: string | null;
+  lastReminderStatus: string | null;
 }
 
 export default function AllPreOrders() {
@@ -85,11 +90,50 @@ export default function AllPreOrders() {
       className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800",
     },
   };
+
+  const priorityConfig = {
+    low: {
+      label: t('priorityLow'),
+      className: "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700",
+      icon: null,
+    },
+    normal: {
+      label: t('priorityNormal'),
+      className: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800",
+      icon: null,
+    },
+    high: {
+      label: t('priorityHigh'),
+      className: "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800",
+      icon: Flag,
+    },
+    urgent: {
+      label: t('priorityUrgent'),
+      className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800",
+      icon: AlertTriangle,
+    },
+  };
+
+  const reminderStatusConfig = {
+    sent: {
+      label: t('reminderStatusSent'),
+      className: "text-emerald-600 dark:text-emerald-400",
+    },
+    pending: {
+      label: t('reminderStatusPending'),
+      className: "text-amber-600 dark:text-amber-400",
+    },
+    failed: {
+      label: t('reminderStatusFailed'),
+      className: "text-red-600 dark:text-red-400",
+    },
+  };
+
   const [deletePreOrderId, setDeletePreOrderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('preOrdersVisibleColumns');
     if (saved) {
@@ -103,12 +147,12 @@ export default function AllPreOrders() {
       customer: true,
       itemsCount: true,
       status: true,
+      reminderStatus: true,
       expectedDate: true,
       createdAt: true,
     };
   });
 
-  // Toggle column visibility
   const toggleColumnVisibility = (columnKey: string) => {
     const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
     setVisibleColumns(newVisibility);
@@ -140,6 +184,31 @@ export default function AllPreOrders() {
     },
   });
 
+  const sendReminderMutation = useMutation({
+    mutationFn: async ({ id, channel }: { id: string; channel: string }) => {
+      return await apiRequest('POST', `/api/pre-orders/${id}/send-reminder`, { channel });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
+      toast({
+        title: tCommon('success'),
+        description: t('reminderSent'),
+      });
+    },
+    onError: () => {
+      toast({
+        title: tCommon('error'),
+        description: t('reminderFailed'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendReminder = (preOrder: PreOrder) => {
+    const channel = preOrder.reminderChannel || 'sms';
+    sendReminderMutation.mutate({ id: preOrder.id, channel });
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
     try {
@@ -149,7 +218,6 @@ export default function AllPreOrders() {
     }
   };
 
-  // Export handlers
   const handleExportXLSX = () => {
     try {
       if (!filteredPreOrders || filteredPreOrders.length === 0) {
@@ -166,6 +234,8 @@ export default function AllPreOrders() {
         [t('customerColumn')]: preOrder.customer?.name || t('unknownCustomer'),
         [t('itemsColumn')]: preOrder.itemsCount,
         [t('statusColumn')]: statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
+        [t('priority')]: priorityConfig[(preOrder.priority || 'normal') as keyof typeof priorityConfig]?.label || preOrder.priority,
+        [t('reminderStatus')]: preOrder.reminderEnabled ? t('enabled') : t('disabled'),
         [t('createdDateColumn')]: formatDate(preOrder.createdAt),
         [t('expectedDeliveryColumn')]: formatDate(preOrder.expectedDate),
         [t('notesColumn')]: preOrder.notes || '',
@@ -232,10 +302,8 @@ export default function AllPreOrders() {
     }
   };
 
-  // Filter pre-orders based on search query and filters
   let filteredPreOrders = preOrders || [];
 
-  // Apply search filter
   if (searchQuery) {
     filteredPreOrders = fuzzySearch(filteredPreOrders, searchQuery, {
       fields: ['customer.name', 'notes'],
@@ -245,12 +313,14 @@ export default function AllPreOrders() {
     }).map(r => r.item);
   }
 
-  // Apply status filter
   if (statusFilter !== "all") {
     filteredPreOrders = filteredPreOrders.filter(p => p.status === statusFilter);
   }
 
-  // Calculate stats
+  if (priorityFilter !== "all") {
+    filteredPreOrders = filteredPreOrders.filter(p => (p.priority || 'normal') === priorityFilter);
+  }
+
   const totalPreOrders = preOrders.length;
   const activePreOrders = preOrders.filter(p => p.status === 'pending' || p.status === 'partially_arrived').length;
   const pendingArrival = preOrders.filter(p => p.status === 'pending').length;
@@ -272,8 +342,26 @@ export default function AllPreOrders() {
             <div className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-customer-name-${preOrder.id}`}>
               {preOrder.customer?.name || t('unknownCustomer')}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              ID: {preOrder.id.slice(0, 8)}
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <span>ID: {preOrder.id.slice(0, 8)}</span>
+              {(preOrder.priority === 'high' || preOrder.priority === 'urgent') && (
+                <Badge 
+                  variant="outline" 
+                  className={`${priorityConfig[preOrder.priority as keyof typeof priorityConfig]?.className} text-xs px-1.5 py-0`}
+                >
+                  {priorityConfig[preOrder.priority as keyof typeof priorityConfig]?.icon && (
+                    <span className="mr-1">
+                      {priorityConfig[preOrder.priority as keyof typeof priorityConfig].icon && 
+                        (() => {
+                          const Icon = priorityConfig[preOrder.priority as keyof typeof priorityConfig].icon;
+                          return Icon ? <Icon className="h-3 w-3 inline" /> : null;
+                        })()
+                      }
+                    </span>
+                  )}
+                  {priorityConfig[preOrder.priority as keyof typeof priorityConfig]?.label}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -308,6 +396,58 @@ export default function AllPreOrders() {
           >
             {config.label}
           </Badge>
+        );
+      },
+    },
+    {
+      key: "reminderStatus",
+      header: t('reminderStatus'),
+      sortable: true,
+      sortKey: "reminderEnabled",
+      className: "text-center min-w-[120px]",
+      cell: (preOrder) => {
+        const lastStatus = preOrder.lastReminderStatus as keyof typeof reminderStatusConfig;
+        const statusStyle = reminderStatusConfig[lastStatus] || null;
+        
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center gap-2" data-testid={`reminder-status-${preOrder.id}`}>
+                  {preOrder.reminderEnabled ? (
+                    <div className="flex items-center gap-1.5">
+                      <Bell className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      {preOrder.lastReminderStatus && statusStyle && (
+                        <span className={`text-xs font-medium ${statusStyle.className}`}>
+                          {statusStyle.label}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <BellOff className="h-4 w-4 text-slate-400" />
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {preOrder.reminderEnabled ? (
+                  <div className="text-xs">
+                    <p className="font-medium">{t('reminderEnabled')}</p>
+                    {preOrder.reminderChannel && (
+                      <p>{t('reminderChannel')}: {preOrder.reminderChannel.toUpperCase()}</p>
+                    )}
+                    {preOrder.lastReminderSentAt && (
+                      <p>{t('lastSent')}: {formatDate(preOrder.lastReminderSentAt)}</p>
+                    )}
+                    {preOrder.expectedDate && (
+                      <p>{t('nextReminderBefore')}: {formatDate(preOrder.expectedDate)}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs">{t('reminderNotConfigured')}</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       },
     },
@@ -376,6 +516,15 @@ export default function AllPreOrders() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              onClick={() => handleSendReminder(preOrder)}
+              disabled={sendReminderMutation.isPending}
+              data-testid={`action-send-reminder-${preOrder.id}`}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {t('sendReminder')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
               onClick={() => setDeletePreOrderId(preOrder.id)}
               className="text-red-600 focus:text-red-600"
               data-testid={`action-delete-${preOrder.id}`}
@@ -389,7 +538,6 @@ export default function AllPreOrders() {
     },
   ];
 
-  // Filter columns based on visibility
   const visibleColumnsFiltered = columns.filter(col => 
     col.key === 'actions' || visibleColumns[col.key] !== false
   );
@@ -546,7 +694,7 @@ export default function AllPreOrders() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div>
               <div className="relative">
@@ -564,7 +712,10 @@ export default function AllPreOrders() {
             {/* Status Filter */}
             <div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500">
+                <SelectTrigger 
+                  className="h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
+                  data-testid="select-status-filter"
+                >
                   <SelectValue placeholder={t('filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -576,10 +727,29 @@ export default function AllPreOrders() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Priority Filter */}
+            <div>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger 
+                  className="h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
+                  data-testid="select-priority-filter"
+                >
+                  <SelectValue placeholder={t('filterByPriority')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('allPriorities')}</SelectItem>
+                  <SelectItem value="low">{t('priorityLow')}</SelectItem>
+                  <SelectItem value="normal">{t('priorityNormal')}</SelectItem>
+                  <SelectItem value="high">{t('priorityHigh')}</SelectItem>
+                  <SelectItem value="urgent">{t('priorityUrgent')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Active Filters Display */}
-          {(searchQuery || statusFilter !== "all") && (
+          {(searchQuery || statusFilter !== "all" || priorityFilter !== "all") && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <span className="text-sm text-slate-600 dark:text-slate-400">{t('activeFilters')}</span>
               {searchQuery && (
@@ -590,6 +760,11 @@ export default function AllPreOrders() {
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
                   {tCommon('status')}: {statusFilter}
+                </Badge>
+              )}
+              {priorityFilter !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  {t('priority')}: {priorityFilter}
                 </Badge>
               )}
             </div>
@@ -620,6 +795,7 @@ export default function AllPreOrders() {
                 { key: 'customer', label: t('customer') },
                 { key: 'itemsCount', label: t('items') },
                 { key: 'status', label: tCommon('status') },
+                { key: 'reminderStatus', label: t('reminderStatus') },
                 { key: 'expectedDate', label: t('expectedDate') },
                 { key: 'createdAt', label: t('createdDate') },
               ].map((col) => (
@@ -642,7 +818,7 @@ export default function AllPreOrders() {
             <div className="flex flex-col items-center justify-center py-12 px-4">
               <ShoppingCart className="h-12 w-12 text-slate-400 mb-4" />
               <p className="text-slate-500 text-center" data-testid="text-no-pre-orders">
-                {searchQuery || statusFilter !== "all" 
+                {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
                   ? t('noPreOrdersMatchFilters')
                   : t('noPreOrdersYetClickAdd')}
               </p>
@@ -653,6 +829,10 @@ export default function AllPreOrders() {
               <div className="sm:hidden space-y-3 p-3">
                 {filteredPreOrders.map((preOrder) => {
                   const config = statusConfig[preOrder.status as keyof typeof statusConfig] || statusConfig.pending;
+                  const priority = (preOrder.priority || 'normal') as keyof typeof priorityConfig;
+                  const priorityInfo = priorityConfig[priority];
+                  const showPriorityBadge = priority === 'high' || priority === 'urgent';
+                  
                   return (
                     <div 
                       key={preOrder.id} 
@@ -660,7 +840,7 @@ export default function AllPreOrders() {
                       data-testid={`card-pre-order-${preOrder.id}`}
                     >
                       <div className="space-y-3">
-                        {/* Top Row - Pre-Order ID, Date, Status, Actions */}
+                        {/* Top Row - Pre-Order ID, Date, Status, Priority, Actions */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div 
@@ -676,6 +856,21 @@ export default function AllPreOrders() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Priority Badge */}
+                            {showPriorityBadge && (
+                              <Badge 
+                                variant="outline" 
+                                className={`${priorityInfo.className} font-medium text-xs px-2 py-0.5`}
+                                data-testid={`badge-priority-mobile-${preOrder.id}`}
+                              >
+                                {priorityInfo.icon && (() => {
+                                  const Icon = priorityInfo.icon;
+                                  return <Icon className="h-3 w-3 mr-1 inline" />;
+                                })()}
+                                {priorityInfo.label}
+                              </Badge>
+                            )}
+                            {/* Status Badge */}
                             <Badge 
                               variant="outline" 
                               className={`${config.className} font-medium text-xs px-2 py-0.5`}
@@ -711,6 +906,15 @@ export default function AllPreOrders() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
+                                  onClick={() => handleSendReminder(preOrder)}
+                                  disabled={sendReminderMutation.isPending}
+                                  data-testid={`action-send-reminder-mobile-${preOrder.id}`}
+                                >
+                                  <Send className="h-4 w-4 mr-2" />
+                                  {t('sendReminder')}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
                                   onClick={() => setDeletePreOrderId(preOrder.id)}
                                   className="text-red-600 focus:text-red-600"
                                   data-testid={`action-delete-mobile-${preOrder.id}`}
@@ -723,13 +927,13 @@ export default function AllPreOrders() {
                           </div>
                         </div>
 
-                        {/* Customer Info */}
+                        {/* Customer Info with Avatar */}
                         <div 
-                          className="flex items-center gap-2 p-2 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg cursor-pointer hover:shadow-sm transition-shadow"
+                          className="flex items-center gap-3 p-2 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg cursor-pointer hover:shadow-sm transition-shadow"
                           onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}`)}
                         >
-                          <div className="p-1.5 rounded bg-white dark:bg-slate-800">
-                            <User className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                          <div className="p-2 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                            <User className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-slate-600 dark:text-slate-400">{t('customer')}</p>
@@ -737,6 +941,26 @@ export default function AllPreOrders() {
                               {preOrder.customer?.name || t('unknownCustomer')}
                             </p>
                           </div>
+                          {/* Reminder Status Indicator */}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div 
+                                  className={`p-1.5 rounded-full ${preOrder.reminderEnabled ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}
+                                  data-testid={`reminder-indicator-mobile-${preOrder.id}`}
+                                >
+                                  {preOrder.reminderEnabled ? (
+                                    <Bell className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                  ) : (
+                                    <BellOff className="h-4 w-4 text-slate-400" />
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {preOrder.reminderEnabled ? t('reminderEnabled') : t('reminderNotConfigured')}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
 
                         {/* Key Details Grid */}
@@ -789,11 +1013,12 @@ export default function AllPreOrders() {
                             size="sm"
                             variant="outline"
                             className="flex-1"
-                            onClick={() => setLocation(`/orders/pre-orders/edit/${preOrder.id}`)}
-                            data-testid={`button-edit-mobile-${preOrder.id}`}
+                            onClick={() => handleSendReminder(preOrder)}
+                            disabled={sendReminderMutation.isPending}
+                            data-testid={`button-send-reminder-mobile-${preOrder.id}`}
                           >
-                            <Edit className="h-3.5 w-3.5 mr-1.5" />
-                            {tCommon('edit')}
+                            <Send className="h-3.5 w-3.5 mr-1.5" />
+                            {t('sendReminder')}
                           </Button>
                         </div>
                       </div>
