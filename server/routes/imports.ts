@@ -4911,6 +4911,118 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
         }
       }
 
+      // Step 5: Fetch and apply landing cost allocations from costAllocations table
+      // For custom items, look up from costAllocations table (keyed by customItemId)
+      // For purchase items, the landing cost should already be in purchaseItems.landingCostUnitBase
+      if (receipt.shipmentId) {
+        const allocations = await tx
+          .select()
+          .from(costAllocations)
+          .where(eq(costAllocations.shipmentId, receipt.shipmentId));
+        
+        // Group allocations by customItemId and sum up all cost types
+        const allocationsByCustomItemId = new Map<number, number>();
+        for (const alloc of allocations) {
+          const current = allocationsByCustomItemId.get(alloc.customItemId) || 0;
+          allocationsByCustomItemId.set(alloc.customItemId, current + parseFloat(alloc.amountAllocatedBase));
+        }
+        
+        // Update product landing costs for custom items that have allocations
+        for (const item of items) {
+          if (item.itemType === 'custom' && item.itemId) {
+            const totalAllocated = allocationsByCustomItemId.get(item.itemId) || 0;
+            const landingCostPerUnit = item.receivedQuantity > 0 ? totalAllocated / item.receivedQuantity : 0;
+            
+            if (landingCostPerUnit > 0) {
+              // Update the product's landing cost if we have a valid allocation
+              const sku = item.sku || `SKU-${item.itemId}`;
+              await tx
+                .update(products)
+                .set({
+                  latestLandingCost: landingCostPerUnit.toFixed(4),
+                  updatedAt: new Date()
+                })
+                .where(eq(products.sku, sku));
+            }
+          }
+        }
+      }
+
+      // Step 6: Mark purchase items as delivered and update purchase order status
+      const purchaseItemIds = items
+        .filter(item => item.itemType === 'purchase' && item.itemId)
+        .map(item => item.itemId);
+      
+      if (purchaseItemIds.length > 0) {
+        // Mark all purchase items from this receipt as delivered
+        await tx
+          .update(purchaseItems)
+          .set({
+            status: 'delivered',
+            updatedAt: new Date()
+          })
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        // Get the unique purchase IDs to check if all items are delivered
+        const purchaseItemsData = await tx
+          .select()
+          .from(purchaseItems)
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        const uniquePurchaseIds = [...new Set(purchaseItemsData.map(pi => pi.purchaseId))];
+        
+        // For each purchase order, check if all items are now delivered
+        for (const purchaseId of uniquePurchaseIds) {
+          const allPurchaseItems = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.purchaseId, purchaseId));
+          
+          const allDelivered = allPurchaseItems.every(pi => pi.status === 'delivered');
+          
+          if (allDelivered) {
+            // All items delivered - mark the purchase order as delivered
+            await tx
+              .update(importPurchases)
+              .set({
+                status: 'delivered',
+                updatedAt: new Date()
+              })
+              .where(eq(importPurchases.id, purchaseId));
+          }
+        }
+      }
+
+      // Step 7: Update any in-transit shipments linked to this receipt's shipment
+      if (receipt.shipmentId) {
+        // Mark the shipment as delivered
+        await tx
+          .update(shipments)
+          .set({
+            status: 'delivered',
+            receivingStatus: 'completed',
+            deliveredAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(shipments.id, receipt.shipmentId));
+        
+        // Also update related consolidation if exists
+        const [shipment] = await tx
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, receipt.shipmentId));
+        
+        if (shipment?.consolidationId) {
+          await tx
+            .update(consolidations)
+            .set({
+              status: 'completed',
+              updatedAt: new Date()
+            })
+            .where(eq(consolidations.id, shipment.consolidationId));
+        }
+      }
+
       return {
         receipt,
         inventoryItems,
@@ -5128,7 +5240,7 @@ router.post("/receipts/approve/:id", async (req, res) => {
           // Record cost history
           await tx.insert(productCostHistory).values({
             productId: updatedProduct.id,
-            purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+            customItemId: item.itemType === 'custom' ? item.itemId : null,
             landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : avgCostUsd).toFixed(4),
             method: 'weighted_average',
             computedAt: new Date()
@@ -5219,11 +5331,86 @@ router.post("/receipts/approve/:id", async (req, res) => {
           // Record initial cost history
           await tx.insert(productCostHistory).values({
             productId: createdProduct.id,
-            purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+            customItemId: item.itemType === 'custom' ? item.itemId : null,
             landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : parseFloat(newProduct.importCostUsd)).toFixed(4),
             method: 'initial_import',
             computedAt: new Date()
           });
+        }
+      }
+      
+      // Mark purchase items as delivered and update purchase order status
+      const purchaseItemIds = items
+        .filter(item => item.itemType === 'purchase' && item.itemId)
+        .map(item => item.itemId);
+      
+      if (purchaseItemIds.length > 0) {
+        // Mark all purchase items from this receipt as delivered
+        await tx
+          .update(purchaseItems)
+          .set({
+            status: 'delivered',
+            updatedAt: new Date()
+          })
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        // Get the unique purchase IDs to check if all items are delivered
+        const purchaseItemsData = await tx
+          .select()
+          .from(purchaseItems)
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        const uniquePurchaseIds = [...new Set(purchaseItemsData.map(pi => pi.purchaseId))];
+        
+        // For each purchase order, check if all items are now delivered
+        for (const purchaseId of uniquePurchaseIds) {
+          const allPurchaseItems = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.purchaseId, purchaseId));
+          
+          const allDelivered = allPurchaseItems.every(pi => pi.status === 'delivered');
+          
+          if (allDelivered) {
+            // All items delivered - mark the purchase order as delivered
+            await tx
+              .update(importPurchases)
+              .set({
+                status: 'delivered',
+                updatedAt: new Date()
+              })
+              .where(eq(importPurchases.id, purchaseId));
+          }
+        }
+      }
+
+      // Update shipment and consolidation status
+      if (receipt.shipmentId) {
+        // Mark the shipment as delivered
+        await tx
+          .update(shipments)
+          .set({
+            status: 'delivered',
+            receivingStatus: 'completed',
+            deliveredAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(shipments.id, receipt.shipmentId));
+        
+        // Also update related consolidation if exists
+        const [shipment] = await tx
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, receipt.shipmentId));
+        
+        if (shipment?.consolidationId) {
+          await tx
+            .update(consolidations)
+            .set({
+              status: 'completed',
+              updatedAt: new Date()
+            })
+            .where(eq(consolidations.id, shipment.consolidationId));
         }
       }
       
