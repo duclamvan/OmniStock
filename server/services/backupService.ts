@@ -47,6 +47,7 @@ interface BackupResult {
   error?: string;
   recordCount?: number;
   fileSize?: number;
+  tablesSkipped?: string[];
 }
 
 interface BackupSettings {
@@ -141,6 +142,8 @@ export async function createBackup(
     const backupData: Record<string, any[]> = {};
     let totalRecords = 0;
     const tablesIncluded: string[] = [];
+    const tablesSkipped: string[] = [];
+    const exportErrors: string[] = [];
     
     for (const { name, table } of TABLES_TO_BACKUP) {
       try {
@@ -149,9 +152,34 @@ export async function createBackup(
         totalRecords += data.length;
         tablesIncluded.push(name);
         console.log(`  ✓ ${name}: ${data.length} records`);
-      } catch (error) {
-        console.warn(`  ⚠ Skipping ${name}: ${error}`);
+      } catch (error: any) {
+        const errorMsg = error.message || String(error);
+        tablesSkipped.push(name);
+        exportErrors.push(`${name}: ${errorMsg}`);
+        console.error(`  ✗ Failed to export ${name}: ${errorMsg}`);
       }
+    }
+    
+    if (tablesSkipped.length > 0) {
+      const errorMessage = `Failed to export ${tablesSkipped.length} table(s): ${exportErrors.join('; ')}`;
+      console.error(`❌ Backup incomplete: ${errorMessage}`);
+      
+      await db.update(databaseBackups)
+        .set({
+          status: 'failed',
+          errorMessage,
+          tablesIncluded,
+          recordCount: totalRecords,
+          completedAt: new Date(),
+        })
+        .where(eq(databaseBackups.id, backupRecord.id));
+      
+      return {
+        success: false,
+        backupId: backupRecord.id,
+        error: errorMessage,
+        tablesSkipped,
+      };
     }
     
     const backupJson = JSON.stringify({
