@@ -221,6 +221,11 @@ const financial = {
   noServicesYet: 'No services yet',
   manageYourServices: 'Manage your services',
   createFirstService: 'Create your first service',
+  selectedService: 'Selected Service',
+  selectService: 'Select a service...',
+  searchOrTypeService: 'Search or type service name...',
+  noServiceFound: 'No service found',
+  useCustomName: 'Use custom name',
   
   // Expenses
   expenses: 'Expenses',

@@ -118,8 +118,39 @@ export default function AddService() {
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [serviceTypeOpen, setServiceTypeOpen] = useState(false);
+  const [serviceTypeSearch, setServiceTypeSearch] = useState("");
   const [productSearchTerms, setProductSearchTerms] = useState<{ [key: number]: string }>({});
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
+
+  // Predefined service types for the dropdown
+  const serviceTypes = [
+    { id: 'hand_drill_repair', name: 'Hand Drill Repair' },
+    { id: 'led_light_bulb_repair', name: 'LED Light Bulb Repair' },
+    { id: 'nail_lamp_repair', name: 'Nail Lamp Repair' },
+    { id: 'nail_drill_repair', name: 'Nail Drill Repair' },
+    { id: 'uv_lamp_repair', name: 'UV Lamp Repair' },
+    { id: 'electric_file_repair', name: 'Electric File Repair' },
+    { id: 'sterilizer_repair', name: 'Sterilizer Repair' },
+    { id: 'wax_warmer_repair', name: 'Wax Warmer Repair' },
+    { id: 'pedicure_chair_repair', name: 'Pedicure Chair Repair' },
+    { id: 'massage_chair_repair', name: 'Massage Chair Repair' },
+    { id: 'vacuum_cleaner_repair', name: 'Vacuum Cleaner Repair' },
+    { id: 'air_purifier_repair', name: 'Air Purifier Repair' },
+    { id: 'general_equipment_repair', name: 'General Equipment Repair' },
+    { id: 'installation_service', name: 'Installation Service' },
+    { id: 'maintenance_service', name: 'Maintenance Service' },
+    { id: 'consultation', name: 'Consultation' },
+    { id: 'custom_service', name: 'Custom Service' },
+  ];
+
+  // Filter service types based on search
+  const filteredServiceTypes = useMemo(() => {
+    if (!serviceTypeSearch) return serviceTypes;
+    return serviceTypes.filter(s => 
+      s.name.toLowerCase().includes(serviceTypeSearch.toLowerCase())
+    );
+  }, [serviceTypeSearch]);
 
   const { data: existingService, isLoading: loadingService } = useQuery({
     queryKey: ['/api/services', params.id],
@@ -662,19 +693,78 @@ export default function AddService() {
                   
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="name" className="text-sm font-medium mb-2">
-                        {t('financial:serviceName')} <span className="text-red-500">*</span>
+                      <Label className="text-sm font-medium mb-2">
+                        {t('financial:selectedService')} <span className="text-red-500">*</span>
                       </Label>
-                      <Input
-                        id="name"
-                        placeholder={t('financial:serviceNamePlaceholder')}
-                        {...form.register("name")}
-                        data-testid="input-service-name"
-                        className={cn(
-                          "text-base",
-                          form.formState.errors.name ? "border-red-500" : ""
-                        )}
-                      />
+                      <Popover open={serviceTypeOpen} onOpenChange={setServiceTypeOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={serviceTypeOpen}
+                            className={cn(
+                              "w-full justify-between bg-white dark:bg-slate-900 text-base",
+                              form.formState.errors.name ? "border-red-500" : ""
+                            )}
+                            data-testid="button-select-service-type"
+                          >
+                            {form.watch('name') || t('financial:selectService')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder={t('financial:searchOrTypeService')} 
+                              value={serviceTypeSearch}
+                              onValueChange={setServiceTypeSearch}
+                            />
+                            <CommandEmpty>
+                              <div className="p-2">
+                                <p className="text-sm text-slate-500 mb-2">{t('financial:noServiceFound')}</p>
+                                {serviceTypeSearch && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => {
+                                      form.setValue('name', serviceTypeSearch);
+                                      setServiceTypeSearch("");
+                                      setServiceTypeOpen(false);
+                                    }}
+                                    data-testid="button-use-custom-service"
+                                  >
+                                    {t('financial:useCustomName')}: "{serviceTypeSearch}"
+                                  </Button>
+                                )}
+                              </div>
+                            </CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto">
+                              {filteredServiceTypes.map((service) => (
+                                <CommandItem
+                                  key={service.id}
+                                  value={service.name}
+                                  onSelect={() => {
+                                    form.setValue('name', service.name);
+                                    setServiceTypeSearch("");
+                                    setServiceTypeOpen(false);
+                                  }}
+                                  data-testid={`option-service-${service.id}`}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      form.watch('name') === service.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {service.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {form.formState.errors.name && (
                         <p className="text-sm text-red-500 mt-1">
                           {t('financial:serviceNameRequired')}

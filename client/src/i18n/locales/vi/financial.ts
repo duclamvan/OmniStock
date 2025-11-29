@@ -221,6 +221,11 @@ const financial = {
   noServicesYet: 'Chưa có dịch vụ',
   manageYourServices: 'Quản lý dịch vụ của bạn',
   createFirstService: 'Tạo dịch vụ đầu tiên',
+  selectedService: 'Dịch vụ đã chọn',
+  selectService: 'Chọn dịch vụ...',
+  searchOrTypeService: 'Tìm hoặc nhập tên dịch vụ...',
+  noServiceFound: 'Không tìm thấy dịch vụ',
+  useCustomName: 'Dùng tên tùy chỉnh',
   
   // Expenses
   expenses: 'Chi phí',
