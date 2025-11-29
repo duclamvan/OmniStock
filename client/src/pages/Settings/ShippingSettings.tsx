@@ -43,7 +43,7 @@ const formSchema = z.object({
   gls_default_sender_address: z.string().default(''),
   gls_enable_manual_labels: z.boolean().default(false),
   gls_max_package_weight_kg: z.coerce.number().min(0).default(40),
-  gls_max_package_dimensions_cm: z.string().default('200x80x60'),
+  gls_max_girth_cm: z.coerce.number().min(0).default(300),
   
   // DHL DE Settings
   dhl_default_sender_address: z.string().default(''),
@@ -111,7 +111,7 @@ export default function ShippingSettings() {
       gls_default_sender_address: '',
       gls_enable_manual_labels: false,
       gls_max_package_weight_kg: 40,
-      gls_max_package_dimensions_cm: '200x80x60',
+      gls_max_girth_cm: 300,
       dhl_default_sender_address: '',
       dhl_enable_auto_label: false,
       dhl_max_package_weight_kg: 31.5,
@@ -159,7 +159,7 @@ export default function ShippingSettings() {
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
         gls_max_package_weight_kg: shippingSettings.glsMaxPackageWeightKg ?? 40,
-        gls_max_package_dimensions_cm: shippingSettings.glsMaxPackageDimensionsCm ?? '200x80x60',
+        gls_max_girth_cm: shippingSettings.glsMaxGirthCm ?? 300,
         dhl_default_sender_address: toJsonString(shippingSettings.dhlDefaultSenderAddress),
         dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel,
         dhl_max_package_weight_kg: shippingSettings.dhlMaxPackageWeightKg ?? 31.5,
@@ -514,7 +514,7 @@ export default function ShippingSettings() {
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                   GLS DE Package Limits
                 </CardTitle>
-                <CardDescription className="text-sm">Maximum package weight and dimensions for GLS Germany (max 40kg, girth + longest side ≤ 300cm)</CardDescription>
+                <CardDescription className="text-sm">Maximum package weight and girth constraint for GLS Germany</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -543,14 +543,22 @@ export default function ShippingSettings() {
 
                   <FormField
                     control={form.control}
-                    name="gls_max_package_dimensions_cm"
+                    name="gls_max_girth_cm"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Maximum Dimensions (cm)</FormLabel>
+                        <FormLabel>Maximum Girth + Longest Side (cm)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="200x80x60" data-testid="input-gls_max_package_dimensions_cm" />
+                          <Input
+                            {...field}
+                            type="number"
+                            min="0"
+                            max="300"
+                            step="1"
+                            placeholder="300"
+                            data-testid="input-gls_max_girth_cm"
+                          />
                         </FormControl>
-                        <FormDescription>L×W×H (Girth + longest side ≤ 300cm)</FormDescription>
+                        <FormDescription>Girth (2×W + 2×H) + longest side (GLS max: 300cm)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

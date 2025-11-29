@@ -160,7 +160,7 @@ export interface ShippingSettings {
   glsDefaultSenderAddress?: string | object;
   glsEnableManualLabels?: boolean;
   glsMaxPackageWeightKg?: number;
-  glsMaxPackageDimensionsCm?: string;
+  glsMaxGirthCm?: number;
   dhlDefaultSenderAddress?: string | object;
   dhlEnableAutoLabel?: boolean;
   dhlMaxPackageWeightKg?: number;
