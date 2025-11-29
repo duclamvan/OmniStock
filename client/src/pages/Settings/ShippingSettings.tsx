@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +60,7 @@ const formSchema = z.object({
   gls_enable_manual_labels: z.boolean().default(false),
   gls_max_package_weight_kg: z.coerce.number().min(0).default(40),
   gls_max_girth_cm: z.coerce.number().min(0).default(300),
+  gls_shipping_rates: z.string().default(JSON.stringify({ paketXS: 4.59, paketS: 5.19 })),
   
   // DHL DE Settings
   dhl_default_sender_address: z.string().default(''),
@@ -128,6 +130,7 @@ export default function ShippingSettings() {
       gls_enable_manual_labels: false,
       gls_max_package_weight_kg: 40,
       gls_max_girth_cm: 300,
+      gls_shipping_rates: JSON.stringify({ paketXS: 4.59, paketS: 5.19 }),
       dhl_default_sender_address: '',
       dhl_enable_auto_label: false,
       dhl_max_package_weight_kg: 31.5,
@@ -177,6 +180,7 @@ export default function ShippingSettings() {
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
         gls_max_package_weight_kg: shippingSettings.glsMaxPackageWeightKg ?? 40,
         gls_max_girth_cm: shippingSettings.glsMaxGirthCm ?? 300,
+        gls_shipping_rates: toJsonString(shippingSettings.glsShippingRates || { paketXS: 4.59, paketS: 5.19 }),
         dhl_default_sender_address: toJsonString(shippingSettings.dhlDefaultSenderAddress),
         dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel,
         dhl_max_package_weight_kg: shippingSettings.dhlMaxPackageWeightKg ?? 31.5,
@@ -219,8 +223,8 @@ export default function ShippingSettings() {
       const savePromises = changedEntries.map(([key, value]) => {
         let processedValue = (value === '' || value === undefined) ? null : value;
         
-        // Parse JSON for address fields and country_carrier_mapping
-        if ((key.includes('address') || key === 'country_carrier_mapping') && typeof processedValue === 'string' && processedValue.trim()) {
+        // Parse JSON for address fields, country_carrier_mapping, and shipping_rates
+        if ((key.includes('address') || key === 'country_carrier_mapping' || key.includes('shipping_rates')) && typeof processedValue === 'string' && processedValue.trim()) {
           try {
             processedValue = JSON.parse(processedValue);
           } catch (e) {
@@ -624,11 +628,169 @@ export default function ShippingSettings() {
 
           {/* GLS DE Tab */}
           <TabsContent value="gls-de" className="space-y-4">
-            {/* Carrier Configuration */}
+            {/* GLS DE Package Limits & Shipping Rates - Combined Card */}
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  GLS DE Package Limits & Rates
+                </CardTitle>
+                <CardDescription className="text-sm">Package constraints and shipping rates for GLS Germany</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-6">
+                {/* Package Limits */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Package Limits</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="gls_max_package_weight_kg"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              max="40"
+                              step="0.1"
+                              placeholder="40"
+                              data-testid="input-gls_max_package_weight_kg"
+                            />
+                          </FormControl>
+                          <FormDescription>GLS max: 40kg</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="gls_max_girth_cm"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Girth + Longest Side (cm)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              max="300"
+                              step="1"
+                              placeholder="300"
+                              data-testid="input-gls_max_girth_cm"
+                            />
+                          </FormControl>
+                          <FormDescription>Girth (2×W + 2×H) + longest side (GLS max: 300cm)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Shipping Rates */}
+                <div className="space-y-3 pt-4 border-t">
+                  <h4 className="text-sm font-medium text-muted-foreground">Shipping Rates (EUR)</h4>
+                  <FormField
+                    control={form.control}
+                    name="gls_shipping_rates"
+                    render={({ field }) => {
+                      const parsedRates = (() => {
+                        try {
+                          return typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                        } catch {
+                          return { paketXS: 4.59, paketS: 5.19 };
+                        }
+                      })();
+
+                      const updateRate = (size: string, value: number) => {
+                        const newRates = { ...parsedRates, [size]: value };
+                        field.onChange(JSON.stringify(newRates));
+                      };
+
+                      return (
+                        <FormItem>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Paket XS</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={parsedRates.paketXS || 4.59}
+                                  onChange={(e) => updateRate('paketXS', parseFloat(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid="input-gls-rate-xs"
+                                />
+                                <span className="text-sm text-muted-foreground">EUR</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Paket S</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={parsedRates.paketS || 5.19}
+                                  onChange={(e) => updateRate('paketS', parseFloat(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid="input-gls-rate-s"
+                                />
+                                <span className="text-sm text-muted-foreground">EUR</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Paket M</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={parsedRates.paketM || 0}
+                                  onChange={(e) => updateRate('paketM', parseFloat(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid="input-gls-rate-m"
+                                />
+                                <span className="text-sm text-muted-foreground">EUR</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Paket L</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={parsedRates.paketL || 0}
+                                  onChange={(e) => updateRate('paketL', parseFloat(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid="input-gls-rate-l"
+                                />
+                                <span className="text-sm text-muted-foreground">EUR</span>
+                              </div>
+                            </div>
+                          </div>
+                          <FormDescription className="mt-2">
+                            GLS package size rates for German domestic shipping
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Carrier Configuration */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
                   GLS DE Carrier Configuration
                 </CardTitle>
                 <CardDescription className="text-sm">Configure GLS Germany carrier settings</CardDescription>
@@ -655,66 +817,6 @@ export default function ShippingSettings() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-
-            {/* GLS DE Package Limits */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  GLS DE Package Limits
-                </CardTitle>
-                <CardDescription className="text-sm">Maximum package weight and girth constraint for GLS Germany</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="gls_max_package_weight_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Maximum Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min="0"
-                            max="40"
-                            step="0.1"
-                            placeholder="40"
-                            data-testid="input-gls_max_package_weight_kg"
-                          />
-                        </FormControl>
-                        <FormDescription>GLS max: 40kg</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="gls_max_girth_cm"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Maximum Girth + Longest Side (cm)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min="0"
-                            max="300"
-                            step="1"
-                            placeholder="300"
-                            data-testid="input-gls_max_girth_cm"
-                          />
-                        </FormControl>
-                        <FormDescription>Girth (2×W + 2×H) + longest side (GLS max: 300cm)</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </CardContent>
             </Card>
 
