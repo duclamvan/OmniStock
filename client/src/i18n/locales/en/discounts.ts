@@ -205,6 +205,16 @@ const discounts = {
   
   // Column visibility
   toggleColumns: 'Toggle Columns',
+  
+  // Additional display fields (used in AllDiscounts card view)
+  usageLimit: 'Usage Limit',
+  usesCount: '{{count}} uses',
+  none: 'None',
+  restrictions: 'Restrictions',
+  noDiscountsFound: 'No discounts found',
+  tryAdjustingSearch: 'Try adjusting your search or filters',
+  deleteDiscounts: 'Delete Discounts',
+  confirmDelete: 'Are you sure you want to delete {{count}} discount(s)?',
 } as const;
 
 export default discounts;

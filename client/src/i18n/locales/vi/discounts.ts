@@ -205,6 +205,16 @@ const discounts = {
   
   // Column visibility
   toggleColumns: 'Hiển thị cột',
+  
+  // Additional display fields (used in AllDiscounts card view)
+  usageLimit: 'Giới hạn sử dụng',
+  usesCount: '{{count}} lần sử dụng',
+  none: 'Không có',
+  restrictions: 'Hạn chế',
+  noDiscountsFound: 'Không tìm thấy giảm giá',
+  tryAdjustingSearch: 'Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc',
+  deleteDiscounts: 'Xóa Giảm giá',
+  confirmDelete: 'Bạn có chắc chắn muốn xóa {{count}} giảm giá?',
 } as const;
 
 export default discounts;
