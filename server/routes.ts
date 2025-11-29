@@ -7678,18 +7678,19 @@ Important:
 
           // Deduct inventory for each order item
           for (const item of orderItems) {
-            const quantity = parseInt(String(item.quantity) || '0');
-            if (quantity <= 0) continue;
+            // Use packedQuantity if available (completed packing), otherwise use quantity
+            const shippedQty = Number(item.packedQuantity) || Number(item.quantity) || 0;
+            if (shippedQty <= 0) continue;
 
-            // Deduct from product quantity
+            // Deduct from product quantity (use Number() to safely convert DB numeric types)
             if (item.productId) {
               const product = await storage.getProduct(item.productId);
               if (product) {
-                const currentQty = product.quantity || 0;
-                const newQty = Math.max(0, currentQty - quantity);
+                const currentQty = Number(product.quantity) || 0;
+                const newQty = Math.max(0, currentQty - shippedQty);
                 await storage.updateProduct(item.productId, { quantity: newQty });
-                inventoryDeductions.push({ productId: item.productId, quantity, orderId });
-                console.log(`Deducted ${quantity} from product ${item.productId} (${currentQty} -> ${newQty})`);
+                inventoryDeductions.push({ productId: item.productId, quantity: shippedQty, orderId });
+                console.log(`Deducted ${shippedQty} from product ${item.productId} (${currentQty} -> ${newQty})`);
               }
             }
 
@@ -7698,11 +7699,11 @@ Important:
               const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
               const variant = variants.find(v => v.id === item.variantId);
               if (variant) {
-                const currentQty = variant.quantity || 0;
-                const newQty = Math.max(0, currentQty - quantity);
+                const currentQty = Number(variant.quantity) || 0;
+                const newQty = Math.max(0, currentQty - shippedQty);
                 await storage.updateProductVariant(item.variantId, { quantity: newQty });
-                inventoryDeductions.push({ productId: item.productId || '', variantId: item.variantId, quantity, orderId });
-                console.log(`Deducted ${quantity} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
+                inventoryDeductions.push({ productId: item.productId || '', variantId: item.variantId, quantity: shippedQty, orderId });
+                console.log(`Deducted ${shippedQty} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
               }
             }
           }
@@ -7811,17 +7812,18 @@ Important:
           const orderItems = await storage.getOrderItems(req.params.id);
           
           for (const item of orderItems) {
-            const quantity = parseInt(String(item.quantity) || '0');
-            if (quantity <= 0) continue;
+            // Use packedQuantity if available (completed packing), otherwise use quantity
+            const shippedQty = Number(item.packedQuantity) || Number(item.quantity) || 0;
+            if (shippedQty <= 0) continue;
 
-            // Deduct from product quantity
+            // Deduct from product quantity (use Number() to safely convert DB numeric types)
             if (item.productId) {
               const product = await storage.getProduct(item.productId);
               if (product) {
-                const currentQty = product.quantity || 0;
-                const newQty = Math.max(0, currentQty - quantity);
+                const currentQty = Number(product.quantity) || 0;
+                const newQty = Math.max(0, currentQty - shippedQty);
                 await storage.updateProduct(item.productId, { quantity: newQty });
-                console.log(`Status endpoint: Deducted ${quantity} from product ${item.productId} (${currentQty} -> ${newQty})`);
+                console.log(`Status endpoint: Deducted ${shippedQty} from product ${item.productId} (${currentQty} -> ${newQty})`);
               }
             }
 
@@ -7830,10 +7832,10 @@ Important:
               const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
               const variant = variants.find(v => v.id === item.variantId);
               if (variant) {
-                const currentQty = variant.quantity || 0;
-                const newQty = Math.max(0, currentQty - quantity);
+                const currentQty = Number(variant.quantity) || 0;
+                const newQty = Math.max(0, currentQty - shippedQty);
                 await storage.updateProductVariant(item.variantId, { quantity: newQty });
-                console.log(`Status endpoint: Deducted ${quantity} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
+                console.log(`Status endpoint: Deducted ${shippedQty} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
               }
             }
           }
