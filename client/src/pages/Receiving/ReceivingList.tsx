@@ -4119,8 +4119,8 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
 
 function ArchivedShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
-  const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showReport, setShowReport] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
 
@@ -4143,10 +4143,10 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
                 <Package className="h-4 w-4" />
                 <span>{itemCount} {t('items')}</span>
               </div>
-              {shipment.archivedAt && (
+              {shipment.completedAt && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>{t('archived')} {format(new Date(shipment.archivedAt), 'MMM dd, yyyy')}</span>
+                  <span>{t('archived')} {format(new Date(shipment.completedAt), 'MMM dd, yyyy')}</span>
                 </div>
               )}
             </div>
@@ -4190,15 +4190,24 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
               size="lg"
               variant="outline"
               className="w-full h-12 text-base"
-              onClick={() => navigate(`/receiving/receipt/${shipment.id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReport(true);
+              }}
               data-testid={`button-view-details-${shipment.id}`}
             >
-              <Eye className="h-5 w-5 mr-2" />
-              View Details
+              <FileText className="h-5 w-5 mr-2" />
+              {t('viewReport')}
             </Button>
           </div>
         </CardContent>
       )}
+      
+      <ShipmentReportDialog
+        shipmentId={shipment.id}
+        open={showReport}
+        onOpenChange={setShowReport}
+      />
     </Card>
   );
 }
