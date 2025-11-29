@@ -20,6 +20,7 @@ import {
   orderFiles,
   productLocations,
   stockAdjustmentRequests,
+  stockAdjustmentHistory,
   productTieredPricing,
   productBundles,
   bundleItems,
@@ -101,6 +102,8 @@ import {
   type InsertProductLocation,
   type StockAdjustmentRequest,
   type InsertStockAdjustmentRequest,
+  type StockAdjustmentHistory,
+  type InsertStockAdjustmentHistory,
   type ProductTieredPricing,
   type InsertProductTieredPricing,
   type ProductBundle,
@@ -370,6 +373,11 @@ export interface IStorage {
   createStockAdjustmentRequest(request: InsertStockAdjustmentRequest): Promise<StockAdjustmentRequest>;
   approveStockAdjustmentRequest(id: string, approvedBy: string): Promise<StockAdjustmentRequest | undefined>;
   rejectStockAdjustmentRequest(id: string, approvedBy: string, reason: string): Promise<StockAdjustmentRequest | undefined>;
+
+  // Stock Adjustment History
+  getStockAdjustmentHistory(options?: { productId?: string; startDate?: Date; endDate?: Date; limit?: number; offset?: number }): Promise<StockAdjustmentHistory[]>;
+  getStockAdjustmentHistoryCount(options?: { productId?: string; startDate?: Date; endDate?: Date }): Promise<number>;
+  createStockAdjustmentHistory(history: InsertStockAdjustmentHistory): Promise<StockAdjustmentHistory>;
 
   // Over-Allocated Inventory
   getOverAllocatedItems(): Promise<any[]>;
@@ -2774,6 +2782,98 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error rejecting stock adjustment request:', error);
       return undefined;
+    }
+  }
+
+  // Stock Adjustment History Implementation
+  async getStockAdjustmentHistory(options?: { 
+    productId?: string; 
+    startDate?: Date; 
+    endDate?: Date; 
+    limit?: number; 
+    offset?: number 
+  }): Promise<StockAdjustmentHistory[]> {
+    try {
+      const conditions = [];
+      
+      if (options?.productId) {
+        conditions.push(eq(stockAdjustmentHistory.productId, options.productId));
+      }
+      if (options?.startDate) {
+        conditions.push(gte(stockAdjustmentHistory.createdAt, options.startDate));
+      }
+      if (options?.endDate) {
+        conditions.push(lte(stockAdjustmentHistory.createdAt, options.endDate));
+      }
+
+      let query = db
+        .select()
+        .from(stockAdjustmentHistory)
+        .orderBy(desc(stockAdjustmentHistory.createdAt));
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as typeof query;
+      }
+
+      if (options?.limit) {
+        query = query.limit(options.limit) as typeof query;
+      }
+      if (options?.offset) {
+        query = query.offset(options.offset) as typeof query;
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Error fetching stock adjustment history:', error);
+      return [];
+    }
+  }
+
+  async getStockAdjustmentHistoryCount(options?: { 
+    productId?: string; 
+    startDate?: Date; 
+    endDate?: Date 
+  }): Promise<number> {
+    try {
+      const conditions = [];
+      
+      if (options?.productId) {
+        conditions.push(eq(stockAdjustmentHistory.productId, options.productId));
+      }
+      if (options?.startDate) {
+        conditions.push(gte(stockAdjustmentHistory.createdAt, options.startDate));
+      }
+      if (options?.endDate) {
+        conditions.push(lte(stockAdjustmentHistory.createdAt, options.endDate));
+      }
+
+      let query = db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(stockAdjustmentHistory);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as typeof query;
+      }
+
+      const [result] = await query;
+      return result?.count || 0;
+    } catch (error) {
+      console.error('Error counting stock adjustment history:', error);
+      return 0;
+    }
+  }
+
+  async createStockAdjustmentHistory(history: InsertStockAdjustmentHistory): Promise<StockAdjustmentHistory> {
+    try {
+      const [newHistory] = await db
+        .insert(stockAdjustmentHistory)
+        .values(history)
+        .returning();
+      return newHistory;
+    } catch (error) {
+      console.error('Error creating stock adjustment history:', error);
+      throw error;
     }
   }
 
