@@ -9377,6 +9377,56 @@ Important:
     }
   });
 
+  // Pre-Order Reminders endpoints
+  app.get('/api/pre-orders/:id/reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const preOrder = await storage.getPreOrder(req.params.id);
+      if (!preOrder) {
+        return res.status(404).json({ message: "Pre-order not found" });
+      }
+      
+      const reminders = await storage.getPreOrderReminders(req.params.id);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching pre-order reminders:", error);
+      res.status(500).json({ message: "Failed to fetch reminders" });
+    }
+  });
+
+  app.post('/api/pre-orders/:id/send-reminder', isAuthenticated, async (req: any, res) => {
+    try {
+      const preOrder = await storage.getPreOrder(req.params.id);
+      if (!preOrder) {
+        return res.status(404).json({ message: "Pre-order not found" });
+      }
+      
+      const { channel = 'sms' } = req.body;
+      
+      const { sendPreOrderReminder } = await import('./services/preOrderNotificationService');
+      const result = await sendPreOrderReminder(req.params.id, channel);
+      
+      res.json({ 
+        success: result.sms?.success || result.email?.success,
+        sms: result.sms,
+        email: result.email
+      });
+    } catch (error) {
+      console.error("Error sending pre-order reminder:", error);
+      res.status(500).json({ message: "Failed to send reminder" });
+    }
+  });
+
+  app.post('/api/pre-orders/process-scheduled-reminders', isAuthenticated, requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const { processScheduledReminders } = await import('./services/preOrderNotificationService');
+      const result = await processScheduledReminders();
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing scheduled reminders:", error);
+      res.status(500).json({ message: "Failed to process scheduled reminders" });
+    }
+  });
+
   // Sales/Discounts endpoints
   app.get('/api/discounts', isAuthenticated, async (req, res) => {
     try {
