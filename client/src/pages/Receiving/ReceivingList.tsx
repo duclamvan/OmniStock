@@ -3682,6 +3682,27 @@ function ShipmentReportDialog({
                 </CardContent>
               </Card>
               
+              {/* Photos Section */}
+              {reportData.receipt.photos && reportData.receipt.photos.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2 sm:pb-3">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" />
+                      {t('photos')} ({reportData.receipt.photos.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {reportData.receipt.photos.map((photo, idx) => (
+                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                          <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {/* Receipt Details Section */}
               <Card>
                 <CardHeader className="pb-2 sm:pb-3">
@@ -3733,27 +3754,6 @@ function ShipmentReportDialog({
                   )}
                 </CardContent>
               </Card>
-              
-              {/* Photos Section */}
-              {reportData.receipt.photos && reportData.receipt.photos.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2 sm:pb-3">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" />
-                      {t('photos')} ({reportData.receipt.photos.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {reportData.receipt.photos.map((photo, idx) => (
-                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                          <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
               
               {/* Scanned Parcels Section */}
               {reportData.receipt.scannedParcels && reportData.receipt.scannedParcels.length > 0 && (
