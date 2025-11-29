@@ -35,6 +35,7 @@ import {
   serviceItems,
   preOrders,
   preOrderItems,
+  preOrderReminders,
   packingCartons,
   orderCartonPlans,
   orderCartonItems,
@@ -130,6 +131,8 @@ import {
   type InsertPreOrder,
   type PreOrderItem,
   type InsertPreOrderItem,
+  type PreOrderReminder,
+  type InsertPreOrderReminder,
   type PackingCarton,
   type InsertPackingCarton,
   type OrderCartonPlan,
@@ -531,6 +534,11 @@ export interface IStorage {
   createPreOrderItem(item: InsertPreOrderItem): Promise<PreOrderItem>;
   updatePreOrderItem(id: string, item: Partial<InsertPreOrderItem>): Promise<PreOrderItem>;
   deletePreOrderItem(id: string): Promise<boolean>;
+  
+  // Pre-Order Reminders
+  getPreOrderReminders(preOrderId: string): Promise<PreOrderReminder[]>;
+  createPreOrderReminder(reminder: InsertPreOrderReminder): Promise<PreOrderReminder>;
+  updatePreOrderReminderStatus(id: number, status: string, errorMessage?: string): Promise<PreOrderReminder | undefined>;
 
   // Purchases
   getPurchases(): Promise<Purchase[]>;
@@ -4710,6 +4718,39 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting pre-order item:', error);
       return false;
     }
+  }
+
+  async getPreOrderReminders(preOrderId: string): Promise<PreOrderReminder[]> {
+    return await db
+      .select()
+      .from(preOrderReminders)
+      .where(eq(preOrderReminders.preOrderId, preOrderId))
+      .orderBy(desc(preOrderReminders.createdAt));
+  }
+
+  async createPreOrderReminder(reminder: InsertPreOrderReminder): Promise<PreOrderReminder> {
+    const [newReminder] = await db
+      .insert(preOrderReminders)
+      .values(reminder)
+      .returning();
+    return newReminder;
+  }
+
+  async updatePreOrderReminderStatus(
+    id: number, 
+    status: string, 
+    errorMessage?: string
+  ): Promise<PreOrderReminder | undefined> {
+    const [updated] = await db
+      .update(preOrderReminders)
+      .set({ 
+        status, 
+        errorMessage: errorMessage || null,
+        sentAt: status === 'sent' ? new Date() : null
+      })
+      .where(eq(preOrderReminders.id, id))
+      .returning();
+    return updated;
   }
 
   async getPurchases(): Promise<Purchase[]> { return []; }
