@@ -316,13 +316,12 @@ export default function StockAdjustmentDialog({
     setAdjustmentAmount(prev => prev + 1);
     setBarcodeInput(""); // Clear for next scan
     
-    // Show appropriate feedback
+    // Show appropriate feedback - duplicates are allowed but highlighted with warning
     if (isDuplicate) {
       toast({
-        title: t('warehouse:duplicateBarcodeDetected'),
-        description: t('warehouse:barcodeScannedTimes', { barcode, count: existingCount + 1 }),
-        variant: "default",
-        duration: 2000,
+        title: `⚠️ ${t('warehouse:duplicateBarcodeDetected')}`,
+        description: t('warehouse:barcodeScannedTimes', { barcode: barcode.slice(-8), count: existingCount + 1 }),
+        duration: 2500,
       });
     } else {
       toast({
