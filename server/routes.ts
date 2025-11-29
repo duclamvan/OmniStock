@@ -13417,6 +13417,142 @@ Important:
   });
 
   // ============================================================================
+  // DATABASE BACKUP ROUTES
+  // ============================================================================
+  
+  const {
+    createBackup,
+    listBackups,
+    getBackupById,
+    deleteBackup,
+    getBackupStats,
+    getSchedulerStatus,
+    cleanupExpiredBackups,
+  } = await import('./services/backupService');
+
+  // Get all backups
+  app.get('/api/backups', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const backups = await listBackups();
+      res.json(backups);
+    } catch (error) {
+      console.error('Error fetching backups:', error);
+      res.status(500).json({ message: 'Failed to fetch backups' });
+    }
+  });
+
+  // Get backup statistics
+  app.get('/api/backups/stats', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const stats = await getBackupStats();
+      const scheduler = getSchedulerStatus();
+      res.json({ ...stats, scheduler });
+    } catch (error) {
+      console.error('Error fetching backup stats:', error);
+      res.status(500).json({ message: 'Failed to fetch backup statistics' });
+    }
+  });
+
+  // Create manual backup
+  app.post('/api/backups', isAuthenticated, requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const result = await createBackup('manual', userId);
+      
+      if (result.success) {
+        res.status(201).json({
+          message: 'Backup created successfully',
+          backup: result,
+        });
+      } else {
+        res.status(500).json({
+          message: 'Backup failed',
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ message: 'Failed to create backup' });
+    }
+  });
+
+  // Get specific backup
+  app.get('/api/backups/:id', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const backup = await getBackupById(id);
+      
+      if (!backup) {
+        return res.status(404).json({ message: 'Backup not found' });
+      }
+      
+      res.json(backup);
+    } catch (error) {
+      console.error('Error fetching backup:', error);
+      res.status(500).json({ message: 'Failed to fetch backup' });
+    }
+  });
+
+  // Download backup file
+  app.get('/api/backups/:id/download', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const backup = await getBackupById(id);
+      
+      if (!backup) {
+        return res.status(404).json({ message: 'Backup not found' });
+      }
+      
+      if (backup.status !== 'completed' || !backup.filePath) {
+        return res.status(400).json({ message: 'Backup file not available' });
+      }
+      
+      const fsSync = await import('fs');
+      if (!fsSync.existsSync(backup.filePath)) {
+        return res.status(404).json({ message: 'Backup file not found on disk' });
+      }
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${backup.fileName}"`);
+      res.sendFile(backup.filePath, { root: process.cwd() });
+    } catch (error) {
+      console.error('Error downloading backup:', error);
+      res.status(500).json({ message: 'Failed to download backup' });
+    }
+  });
+
+  // Delete backup
+  app.delete('/api/backups/:id', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await deleteBackup(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: 'Backup not found' });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+      res.status(500).json({ message: 'Failed to delete backup' });
+    }
+  });
+
+  // Manually trigger cleanup of expired backups
+  app.post('/api/backups/cleanup', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const deletedCount = await cleanupExpiredBackups();
+      res.json({ 
+        message: `Cleaned up ${deletedCount} expired backup(s)`,
+        deletedCount,
+      });
+    } catch (error) {
+      console.error('Error cleaning up backups:', error);
+      res.status(500).json({ message: 'Failed to cleanup backups' });
+    }
+  });
+
+  // ============================================================================
   // INVOICE ROUTES
   // ============================================================================
 

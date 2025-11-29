@@ -96,7 +96,16 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, async () => {
     log(`serving on port ${port}`);
+    
+    // Start automatic backup scheduler
+    try {
+      const { startBackupScheduler } = await import('./services/backupService');
+      await startBackupScheduler();
+      log('Backup scheduler started');
+    } catch (error) {
+      console.error('Failed to start backup scheduler:', error);
+    }
   });
 })();
