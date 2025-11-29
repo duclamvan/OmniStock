@@ -1047,8 +1047,33 @@ export const preOrders = pgTable('pre_orders', {
   status: varchar('status').notNull().default('pending'), // pending, partially_arrived, fully_arrived, cancelled
   notes: text('notes'),
   expectedDate: date('expected_date'),
+  reminderEnabled: boolean('reminder_enabled').notNull().default(false),
+  reminderChannel: varchar('reminder_channel').default('sms'), // sms, email, both
+  reminderDaysBefore: integer('reminder_days_before').array().default([1, 3]),
+  reminderTimeUtc: varchar('reminder_time_utc').default('09:00'),
+  reminderTimezone: varchar('reminder_timezone').default('Europe/Prague'),
+  lastReminderSentAt: timestamp('last_reminder_sent_at'),
+  lastReminderStatus: varchar('last_reminder_status'), // sent, failed, pending
+  reminderPhone: varchar('reminder_phone'),
+  reminderEmail: varchar('reminder_email'),
+  priority: varchar('priority').default('normal'), // low, normal, high, urgent
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Pre-order reminders log table for tracking sent reminders
+export const preOrderReminders = pgTable('pre_order_reminders', {
+  id: serial('id').primaryKey(),
+  preOrderId: varchar('pre_order_id').notNull().references(() => preOrders.id, { onDelete: 'cascade' }),
+  channel: varchar('channel').notNull(), // sms, email
+  scheduledFor: timestamp('scheduled_for').notNull(),
+  sentAt: timestamp('sent_at'),
+  status: varchar('status').notNull().default('pending'), // pending, sent, failed, cancelled
+  errorMessage: text('error_message'),
+  recipientPhone: varchar('recipient_phone'),
+  recipientEmail: varchar('recipient_email'),
+  messageContent: text('message_content'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
 // Pre-order items
@@ -1458,8 +1483,9 @@ export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: tru
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceItemSchema = createInsertSchema(serviceItems).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true, updatedAt: true, lastReminderSentAt: true, lastReminderStatus: true });
 export const insertPreOrderItemSchema = createInsertSchema(preOrderItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPreOrderReminderSchema = createInsertSchema(preOrderReminders).omit({ id: true, createdAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 
 // Landing Cost Tracking Schemas
@@ -1637,6 +1663,8 @@ export type PreOrder = typeof preOrders.$inferSelect;
 export type InsertPreOrder = z.infer<typeof insertPreOrderSchema>;
 export type PreOrderItem = typeof preOrderItems.$inferSelect;
 export type InsertPreOrderItem = z.infer<typeof insertPreOrderItemSchema>;
+export type PreOrderReminder = typeof preOrderReminders.$inferSelect;
+export type InsertPreOrderReminder = z.infer<typeof insertPreOrderReminderSchema>;
 export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 
