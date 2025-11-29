@@ -389,153 +389,279 @@ export default function Employees() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('system:employeeId')}</TableHead>
-                    <TableHead>{t('common:name')}</TableHead>
-                    <TableHead>{t('system:userAccount')}</TableHead>
-                    <TableHead>{t('system:position')}</TableHead>
-                    <TableHead>{t('system:department')}</TableHead>
-                    <TableHead>{t('system:hireDate')}</TableHead>
-                    <TableHead>{t('system:salary')}</TableHead>
-                    <TableHead>{t('common:status')}</TableHead>
-                    <TableHead className="w-[150px]">{t('common:actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
-                      <TableCell data-testid={`text-id-${employee.id}`}>
-                        <div className="font-mono text-sm">{employee.employeeId}</div>
-                      </TableCell>
-                      <TableCell data-testid={`text-name-${employee.id}`}>
-                        <div className="font-medium">
-                          {employee.firstName} {employee.lastName}
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3">
+                {employees.map((employee) => (
+                  <div 
+                    key={employee.id} 
+                    className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4"
+                    data-testid={`card-employee-${employee.id}`}
+                  >
+                    <div className="space-y-3">
+                      {/* Top Row - Name, Status, Actions */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <p className="font-bold text-base text-gray-900 dark:text-gray-100 truncate">
+                              {employee.firstName} {employee.lastName}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {getStatusBadge(employee.status)}
+                            <Badge variant="outline" className="text-xs font-mono">
+                              {employee.employeeId}
+                            </Badge>
+                          </div>
                         </div>
-                        {employee.email && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                            <Mail className="h-3 w-3" />
-                            {employee.email}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10"
+                            onClick={() => handleEditEmployee(employee)}
+                            data-testid={`button-edit-${employee.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {employee.userId && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-10 w-10"
+                              onClick={() => setLocation(`/activity-log/${employee.userId}`)}
+                              data-testid={`button-activity-log-${employee.id}`}
+                            >
+                              <ClipboardList className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10"
+                            onClick={() => handleDeleteEmployee(employee)}
+                            data-testid={`button-delete-${employee.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Position & Department */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Building2 className="h-4 w-4" />
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{employee.position}</span>
+                        <span>•</span>
+                        <span>{employee.department}</span>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-gray-100 dark:border-slate-800">
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('system:salary')}</p>
+                          <div className="flex items-center gap-1 font-medium text-gray-900 dark:text-gray-100">
+                            {getCurrencyIcon(employee.currency)}
+                            <span>{formatSalary(employee.salary, employee.currency)}</span>
                           </div>
-                        )}
-                        {employee.phone && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Phone className="h-3 w-3" />
-                            {employee.phone}
+                          <p className="text-xs text-muted-foreground">{t(`system:${employee.paymentFrequency}`)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('system:hireDate')}</p>
+                          <div className="flex items-center gap-1 font-medium text-gray-900 dark:text-gray-100">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatDate(employee.hireDate)}</span>
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {employee.userId ? (
-                          (() => {
+                        </div>
+                      </div>
+
+                      {/* Contact Info */}
+                      {(employee.email || employee.phone) && (
+                        <div className="pt-2 border-t border-gray-100 dark:border-slate-800 space-y-1">
+                          {employee.email && (
+                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate">{employee.email}</span>
+                            </div>
+                          )}
+                          {employee.phone && (
+                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                              <Phone className="h-3 w-3" />
+                              <span>{employee.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* User Account */}
+                      {employee.userId && (
+                        <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">{t('system:userAccount')}</p>
+                          {(() => {
                             const assignedUser = users.find(u => u.id === employee.userId);
                             return assignedUser ? (
-                              <div className="text-sm">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {assignedUser.firstName} {assignedUser.lastName}
-                              </div>
+                              </p>
                             ) : (
-                              <Badge variant="outline">{t('system:notAssigned')}</Badge>
+                              <Badge variant="outline" className="text-xs">{t('system:notAssigned')}</Badge>
                             );
-                          })()
-                        ) : (
-                          <Badge variant="outline">{t('system:notAssigned')}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell data-testid={`text-position-${employee.id}`}>
-                        {employee.position}
-                      </TableCell>
-                      <TableCell data-testid={`text-department-${employee.id}`}>
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-muted-foreground" />
-                          {employee.department}
+                          })()}
                         </div>
-                      </TableCell>
-                      <TableCell data-testid={`text-hire-date-${employee.id}`}>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {formatDate(employee.hireDate)}
-                        </div>
-                      </TableCell>
-                      <TableCell data-testid={`text-salary-${employee.id}`}>
-                        <div className="flex items-center gap-1">
-                          {getCurrencyIcon(employee.currency)}
-                          <span className="font-medium">
-                            {formatSalary(employee.salary, employee.currency)}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {t(`system:${employee.paymentFrequency}`)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(employee.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditEmployee(employee)}
-                                  data-testid={`button-edit-${employee.id}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{t('common:edit')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          {employee.userId && (
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('system:employeeId')}</TableHead>
+                      <TableHead>{t('common:name')}</TableHead>
+                      <TableHead>{t('system:userAccount')}</TableHead>
+                      <TableHead>{t('system:position')}</TableHead>
+                      <TableHead>{t('system:department')}</TableHead>
+                      <TableHead>{t('system:hireDate')}</TableHead>
+                      <TableHead>{t('system:salary')}</TableHead>
+                      <TableHead>{t('common:status')}</TableHead>
+                      <TableHead className="w-[150px]">{t('common:actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {employees.map((employee) => (
+                      <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
+                        <TableCell data-testid={`text-id-${employee.id}`}>
+                          <div className="font-mono text-sm">{employee.employeeId}</div>
+                        </TableCell>
+                        <TableCell data-testid={`text-name-${employee.id}`}>
+                          <div className="font-medium">
+                            {employee.firstName} {employee.lastName}
+                          </div>
+                          {employee.email && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <Mail className="h-3 w-3" />
+                              {employee.email}
+                            </div>
+                          )}
+                          {employee.phone && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              {employee.phone}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {employee.userId ? (
+                            (() => {
+                              const assignedUser = users.find(u => u.id === employee.userId);
+                              return assignedUser ? (
+                                <div className="text-sm">
+                                  {assignedUser.firstName} {assignedUser.lastName}
+                                </div>
+                              ) : (
+                                <Badge variant="outline">{t('system:notAssigned')}</Badge>
+                              );
+                            })()
+                          ) : (
+                            <Badge variant="outline">{t('system:notAssigned')}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell data-testid={`text-position-${employee.id}`}>
+                          {employee.position}
+                        </TableCell>
+                        <TableCell data-testid={`text-department-${employee.id}`}>
+                          <div className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3 text-muted-foreground" />
+                            {employee.department}
+                          </div>
+                        </TableCell>
+                        <TableCell data-testid={`text-hire-date-${employee.id}`}>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {formatDate(employee.hireDate)}
+                          </div>
+                        </TableCell>
+                        <TableCell data-testid={`text-salary-${employee.id}`}>
+                          <div className="flex items-center gap-1">
+                            {getCurrencyIcon(employee.currency)}
+                            <span className="font-medium">
+                              {formatSalary(employee.salary, employee.currency)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t(`system:${employee.paymentFrequency}`)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(employee.status)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setLocation(`/activity-log/${employee.userId}`)}
-                                    data-testid={`button-activity-log-${employee.id}`}
+                                    onClick={() => handleEditEmployee(employee)}
+                                    data-testid={`button-edit-${employee.id}`}
                                   >
-                                    <ClipboardList className="h-4 w-4" />
+                                    <Pencil className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{t('system:viewActivityLog')}</p>
+                                  <p>{t('common:edit')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          )}
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteEmployee(employee)}
-                                  data-testid={`button-delete-${employee.id}`}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{t('common:delete')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                            
+                            {employee.userId && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setLocation(`/activity-log/${employee.userId}`)}
+                                      data-testid={`button-activity-log-${employee.id}`}
+                                    >
+                                      <ClipboardList className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{t('system:viewActivityLog')}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteEmployee(employee)}
+                                    data-testid={`button-delete-${employee.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t('common:delete')}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
