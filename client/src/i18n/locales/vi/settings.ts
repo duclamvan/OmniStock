@@ -823,6 +823,7 @@ const settings = {
   savingSettings: 'Đang lưu...',
   saveAllSettings: 'Lưu tất cả cài đặt',
   settingsSavedSuccess: 'Đã lưu cài đặt thành công!',
+  localizationApplied: 'Cài đặt địa phương đã được áp dụng ngay lập tức!',
   settingsSaveError: 'Lưu cài đặt thất bại',
   loadingSettings: 'Đang tải cài đặt...',
   errorLoadingSettings: 'Lỗi khi tải cài đặt',

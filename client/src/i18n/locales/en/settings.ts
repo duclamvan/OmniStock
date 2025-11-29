@@ -825,6 +825,7 @@ const settings = {
   savingSettings: 'Saving...',
   saveAllSettings: 'Save All Settings',
   settingsSavedSuccess: 'Settings saved successfully!',
+  localizationApplied: 'Localization settings applied immediately!',
   settingsSaveError: 'Failed to save settings',
   loadingSettings: 'Loading settings...',
   errorLoadingSettings: 'Error loading settings',
