@@ -658,47 +658,6 @@ export default function ShippingSettings() {
               </CardContent>
             </Card>
 
-            {/* Sender Address */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  GLS DE Sender Address
-                </CardTitle>
-                <CardDescription className="text-sm">Default sender address for GLS shipments (JSON format)</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <FormField
-                  control={form.control}
-                  name="gls_default_sender_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sender Address (JSON)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder={`{
-  "name": "Company Name",
-  "street": "Straße",
-  "city": "Stadt",
-  "zip": "12345",
-  "country": "DE",
-  "phone": "+49123456789",
-  "email": "sender@example.de"
-}`}
-                          className="font-mono text-sm min-h-[200px]"
-                          data-testid="textarea-gls_default_sender_address"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Enter sender address in JSON format. Will be used as default for all GLS shipments.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
             {/* GLS DE Package Limits */}
             <Card>
               <CardHeader className="p-4 sm:p-6">
@@ -758,6 +717,47 @@ export default function ShippingSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* GLS DE Sender Address - Always at bottom */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  GLS DE Sender Address
+                </CardTitle>
+                <CardDescription className="text-sm">Default sender address for GLS shipments (JSON format)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="gls_default_sender_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Address (JSON)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder={`{
+  "name": "Company Name",
+  "street": "Straße",
+  "city": "Stadt",
+  "zip": "12345",
+  "country": "DE",
+  "phone": "+49123456789",
+  "email": "sender@example.de"
+}`}
+                          className="font-mono text-sm min-h-[200px]"
+                          data-testid="textarea-gls_default_sender_address"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Enter sender address in JSON format. Will be used as default for all GLS shipments.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* DHL DE Tab */}
@@ -790,47 +790,6 @@ export default function ShippingSettings() {
                           Automatically generate DHL labels when order is marked ready to ship
                         </FormDescription>
                       </div>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Sender Address */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  DHL DE Sender Address
-                </CardTitle>
-                <CardDescription className="text-sm">Default sender address for DHL shipments (JSON format)</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <FormField
-                  control={form.control}
-                  name="dhl_default_sender_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sender Address (JSON)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder={`{
-  "name": "Company Name",
-  "street": "Straße",
-  "city": "Stadt",
-  "zip": "12345",
-  "country": "DE",
-  "phone": "+49123456789",
-  "email": "sender@example.de"
-}`}
-                          className="font-mono text-sm min-h-[200px]"
-                          data-testid="textarea-dhl_default_sender_address"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Enter sender address in JSON format. Will be used as default for all DHL shipments.
-                      </FormDescription>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -886,6 +845,47 @@ export default function ShippingSettings() {
                     )}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* DHL DE Sender Address - Always at bottom */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  DHL DE Sender Address
+                </CardTitle>
+                <CardDescription className="text-sm">Default sender address for DHL shipments (JSON format)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="dhl_default_sender_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Address (JSON)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder={`{
+  "name": "Company Name",
+  "street": "Straße",
+  "city": "Stadt",
+  "zip": "12345",
+  "country": "DE",
+  "phone": "+49123456789",
+  "email": "sender@example.de"
+}`}
+                          className="font-mono text-sm min-h-[200px]"
+                          data-testid="textarea-dhl_default_sender_address"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Enter sender address in JSON format. Will be used as default for all DHL shipments.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </TabsContent>
