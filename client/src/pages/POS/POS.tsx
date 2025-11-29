@@ -223,11 +223,6 @@ export default function POS() {
         imageUrl: item.imageUrl,
       }]);
     }
-    
-    toast({
-      title: t('financial:addedToCart'),
-      description: item.name,
-    });
   };
 
   // Update quantity
