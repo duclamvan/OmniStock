@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import i18n from "@/i18n/i18n";
 import { useTranslation } from 'react-i18next';
@@ -120,6 +121,7 @@ export default function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
   const { generalSettings, isLoading } = useSettings();
+  const { applySettings } = useLocalization();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
   const WEEKDAYS = getWeekdays(t);
 
@@ -250,9 +252,17 @@ export default function GeneralSettings() {
       return values;
     },
     onSuccess: async (values) => {
-      console.log('💾 Settings saved! Checking language change...', {
-        desiredLanguage: values.default_language,
-        currentI18nLanguage: i18n.language,
+      console.log('💾 Settings saved! Applying localization settings immediately...');
+      
+      // Apply all localization settings immediately through the LocalizationContext
+      applySettings({
+        language: values.default_language,
+        dateFormat: values.default_date_format,
+        timeFormat: values.default_time_format,
+        timezone: values.default_timezone,
+        numberFormat: values.number_format,
+        currency: values.default_currency,
+        currencyDisplay: values.currency_display,
       });
       
       // CRITICAL: Change language if the desired language differs from current i18n language
@@ -263,12 +273,11 @@ export default function GeneralSettings() {
           await i18n.changeLanguage(values.default_language);
           // Persist to localStorage immediately
           localStorage.setItem('app_language', values.default_language);
+          localStorage.setItem('i18nextLng', values.default_language);
           console.log('✅ Language changed successfully to:', i18n.language);
         } catch (error) {
           console.error('❌ Failed to change language:', error);
         }
-      } else {
-        console.log('⏭️ Language already matches desired setting');
       }
       
       // Invalidate ALL settings caches to ensure changes take effect immediately
@@ -277,7 +286,7 @@ export default function GeneralSettings() {
       // The useEffect will automatically update originalSettings when new data loads
       toast({
         title: t('settings:settingsSaved'),
-        description: t('settings:settingsSavedSuccess'),
+        description: t('settings:localizationApplied'),
       });
     },
     onError: (error: any) => {

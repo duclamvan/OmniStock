@@ -9,6 +9,7 @@ import { useLanguageSync } from "@/hooks/useLanguageSync";
 import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { LocalizationProvider } from "@/contexts/LocalizationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
@@ -455,9 +456,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
-        <TooltipProvider>
-          <AppContent />
-        </TooltipProvider>
+        <LocalizationProvider>
+          <TooltipProvider>
+            <AppContent />
+          </TooltipProvider>
+        </LocalizationProvider>
       </SettingsProvider>
     </QueryClientProvider>
   );
