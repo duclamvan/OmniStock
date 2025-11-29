@@ -4951,6 +4951,48 @@ Important:
     }
   });
 
+  // Unified Stock Inconsistencies API - combines over-allocated and under-allocated
+  app.get('/api/stock-inconsistencies', isAuthenticated, async (req: any, res) => {
+    try {
+      const [overAllocated, underAllocated] = await Promise.all([
+        storage.getOverAllocatedItems(),
+        storage.getUnderAllocatedItems()
+      ]);
+      
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      
+      // Add inconsistency type to each item
+      const overItems = filterFinancialData(overAllocated, userRole).map((item: any) => ({
+        ...item,
+        inconsistencyType: 'over_allocated',
+        discrepancy: item.availableStock - item.totalOrdered, // negative = over-allocated
+        expectedQuantity: item.availableStock,
+        actualDemand: item.totalOrdered
+      }));
+      
+      const underItems = filterFinancialData(underAllocated, userRole).map((item: any) => ({
+        ...item,
+        inconsistencyType: 'under_allocated',
+        discrepancy: item.locationQuantity - item.recordedQuantity, // negative = under-allocated
+        expectedQuantity: item.recordedQuantity,
+        actualQuantity: item.locationQuantity
+      }));
+      
+      res.json({
+        items: [...overItems, ...underItems],
+        summary: {
+          total: overItems.length + underItems.length,
+          overAllocated: overItems.length,
+          underAllocated: underItems.length
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching stock inconsistencies:", error);
+      res.status(500).json({ message: "Failed to fetch stock inconsistencies" });
+    }
+  });
+
   app.post('/api/stock-adjustment-requests', isAuthenticated, async (req: any, res) => {
     try {
       // Get user ID (fallback to test-user if auth is disabled)
