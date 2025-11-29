@@ -496,7 +496,6 @@ const inventory = {
   noStockInconsistencies: 'No stock inconsistencies found',
   allStockConsistent: 'All stock levels are consistent and properly allocated',
   quickFix: 'Quick Fix',
-  adjustStock: 'Adjust Stock',
   stockLookup: 'Stock Lookup',
   stockAdjustmentApprovals: 'Stock Adjustment Approvals',
   adjustmentApproved: 'Adjustment approved successfully',

@@ -592,7 +592,6 @@ const inventory = {
   noStockInconsistencies: 'Không tìm thấy tồn kho không nhất quán',
   allStockConsistent: 'Tất cả mức tồn kho đều nhất quán và được phân bổ đúng cách',
   quickFix: 'Sửa nhanh',
-  adjustStock: 'Điều chỉnh tồn kho',
   stockLookup: 'Tra cứu tồn kho',
   stockAdjustmentApprovals: 'Duyệt điều chỉnh tồn kho',
   adjustmentApproved: 'Duyệt điều chỉnh thành công',

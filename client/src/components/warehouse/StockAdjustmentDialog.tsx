@@ -81,6 +81,7 @@ export default function StockAdjustmentDialog({
   const [barcodeScanMode, setBarcodeScanMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [scanCount, setScanCount] = useState(0);
+  const [scannedBarcodes, setScannedBarcodes] = useState<Record<string, number>>({});
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -90,6 +91,7 @@ export default function StockAdjustmentDialog({
       setBarcodeScanMode(false);
       setBarcodeInput("");
       setScanCount(0);
+      setScannedBarcodes({});
       
       // Use initial values if provided
       if (initialValues) {
@@ -131,7 +133,7 @@ export default function StockAdjustmentDialog({
     mutationFn: async (data: { 
       productId: string;
       locationId: string;
-      requestedBy: string;
+      requestedBy?: string;
       adjustmentType: 'add' | 'remove' | 'set';
       currentQuantity: number;
       requestedQuantity: number;
@@ -299,17 +301,36 @@ export default function StockAdjustmentDialog({
   const handleBarcodeScan = () => {
     if (!barcodeInput.trim()) return;
     
+    const barcode = barcodeInput.trim();
+    const existingCount = scannedBarcodes[barcode] || 0;
+    const isDuplicate = existingCount > 0;
+    
+    // Update scanned barcodes tracking
+    setScannedBarcodes(prev => ({
+      ...prev,
+      [barcode]: existingCount + 1
+    }));
+    
     // Increment the count and adjustment amount
     setScanCount(prev => prev + 1);
     setAdjustmentAmount(prev => prev + 1);
     setBarcodeInput(""); // Clear for next scan
     
-    // Show success feedback
-    toast({
-      title: t('warehouse:itemScanned'),
-      description: t('warehouse:totalItems', { count: scanCount + 1 }),
-      duration: 1000,
-    });
+    // Show appropriate feedback
+    if (isDuplicate) {
+      toast({
+        title: t('warehouse:duplicateBarcodeDetected'),
+        description: t('warehouse:barcodeScannedTimes', { barcode, count: existingCount + 1 }),
+        variant: "default",
+        duration: 2000,
+      });
+    } else {
+      toast({
+        title: t('warehouse:itemScanned'),
+        description: t('warehouse:totalItems', { count: scanCount + 1 }),
+        duration: 1000,
+      });
+    }
     
     // Refocus the barcode input
     setTimeout(() => {

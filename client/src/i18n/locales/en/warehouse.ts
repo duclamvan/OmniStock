@@ -828,6 +828,8 @@ const warehouse = {
   failedToAdjustStock: 'Failed to adjust stock',
   itemScanned: 'Item Scanned',
   totalItems: 'Total: {{count}} items',
+  duplicateBarcodeDetected: 'Duplicate Barcode Detected',
+  barcodeScannedTimes: 'Barcode "{{barcode}}" scanned {{count}} times',
   productLabel: 'Product: {{name}}',
   currentLabel: 'Current: {{quantity}} units',
   newLabel: 'New: {{quantity}} units',
