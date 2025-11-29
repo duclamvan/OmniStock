@@ -6918,13 +6918,13 @@ router.get('/receipts/:id/report', async (req, res) => {
           .where(eq(purchaseItems.id, item.itemId));
         
         if (purchaseItem) {
-          // Update productInfo with purchase item name as fallback
+          // Update productInfo with purchase item name - this is the primary source
           productInfo = {
             productId: null,
-            productName: purchaseItem.name || item.sku || `Item #${item.itemId}`,
+            productName: purchaseItem.name,
             sku: purchaseItem.sku || item.sku,
             barcode: item.barcode,
-            imageUrl: null
+            imageUrl: purchaseItem.imageUrl || null
           };
           
           // Try to find matching product by SKU or barcode
@@ -7121,13 +7121,13 @@ router.get('/shipments/:id/report', async (req, res) => {
           .where(eq(purchaseItems.id, item.itemId));
         
         if (purchaseItem) {
-          // Update productInfo with purchase item name as fallback
+          // Update productInfo with purchase item name - this is the primary source
           productInfo = {
             productId: null,
-            productName: purchaseItem.name || item.sku || `Item #${item.itemId}`,
+            productName: purchaseItem.name,
             sku: purchaseItem.sku || item.sku,
             barcode: item.barcode,
-            imageUrl: null
+            imageUrl: purchaseItem.imageUrl || null
           };
           
           // Try to find matching product by SKU or barcode
