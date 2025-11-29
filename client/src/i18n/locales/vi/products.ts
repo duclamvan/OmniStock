@@ -557,6 +557,42 @@ const products = {
     infoMessage: 'Vị trí kho có thể được thêm sau khi tạo sản phẩm.',
   },
   
+  // ProductForm Accordion Sections
+  formSections: {
+    basicInfo: {
+      title: 'Thông tin cơ bản',
+      description: 'Tên sản phẩm, SKU và danh mục',
+    },
+    stockInventory: {
+      title: 'Tồn kho & Kho hàng',
+      description: 'Số lượng, cảnh báo và vị trí kho',
+    },
+    pricing: {
+      title: 'Giá cả & Chi phí',
+      description: 'Giá bán và chi phí nhập khẩu',
+    },
+  },
+  
+  // Form field labels
+  formLabels: {
+    productName: 'Tên sản phẩm',
+    productNamePlaceholder: 'Nhập tên sản phẩm',
+    vietnameseName: 'Tên tiếng Việt',
+    vietnameseNamePlaceholder: 'Nhập tên sản phẩm tiếng Việt',
+    sku: 'Mã SKU',
+    skuPlaceholder: 'Nhập mã SKU',
+    descriptionLabel: 'Mô tả',
+    descriptionPlaceholder: 'Nhập mô tả sản phẩm',
+    quantity: 'Số lượng',
+    lowStockAlert: 'Cảnh báo tồn kho thấp',
+    barcode: 'Mã vạch',
+    barcodePlaceholder: 'Nhập hoặc quét mã vạch',
+    salesPrices: 'Giá bán',
+    autoConvertHelper: 'Tiền tệ tự động chuyển đổi khi rời khỏi ô',
+    importCosts: 'Chi phí nhập khẩu',
+    autoConvertRealtime: 'Tiền tệ tự động chuyển đổi theo thời gian thực',
+  },
+  
   // CostHistoryChart Component
   noCostHistoryData: 'Không có dữ liệu lịch sử giá',
   trendIncreasing: '+{{percent}}% xu hướng',

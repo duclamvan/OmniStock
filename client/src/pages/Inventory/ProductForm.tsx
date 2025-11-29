@@ -105,6 +105,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 import PackingMaterialsSelector from "@/components/PackingMaterialsSelector";
 import ProductFiles from "@/components/ProductFiles";
@@ -1983,8 +1984,8 @@ export default function ProductForm() {
                     <Box className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:basicInformation.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:basicInformation.description')}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:formSections.basicInfo.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:formSections.basicInfo.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -1993,10 +1994,10 @@ export default function ProductForm() {
                   {/* Product Name & English Name */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name" className="text-sm font-medium">{t('products:basicInformation.productName')} *</Label>
+                      <Label htmlFor="name" className="text-sm font-medium">{t('products:formLabels.productName')} *</Label>
                       <Input
                         {...form.register('name')}
-                        placeholder={t('products:basicInformation.productNamePlaceholder')}
+                        placeholder={t('products:formLabels.productNamePlaceholder')}
                         data-testid="input-name"
                         className="mt-1"
                       />
@@ -2006,10 +2007,10 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="vietnameseName" className="text-sm font-medium">{t('products:basicInformation.vietnameseName')}</Label>
+                      <Label htmlFor="vietnameseName" className="text-sm font-medium">{t('products:formLabels.vietnameseName')}</Label>
                       <Input
                         {...form.register('vietnameseName')}
-                        placeholder={t('products:basicInformation.vietnameseNamePlaceholder')}
+                        placeholder={t('products:formLabels.vietnameseNamePlaceholder')}
                         data-testid="input-vietnamese-name"
                         className="mt-1"
                       />
@@ -2019,11 +2020,11 @@ export default function ProductForm() {
                   {/* SKU & Category */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="sku" className="text-sm font-medium">{t('products:basicInformation.sku')} *</Label>
+                      <Label htmlFor="sku" className="text-sm font-medium">{t('products:formLabels.sku')} *</Label>
                       <div className="flex gap-2 mt-1">
                         <Input
                           {...form.register('sku')}
-                          placeholder={t('products:basicInformation.skuPlaceholder')}
+                          placeholder={t('products:formLabels.skuPlaceholder')}
                           data-testid="input-sku"
                           className="flex-1"
                         />
@@ -2037,7 +2038,7 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="categoryId" className="text-sm font-medium">{t('products:basicInformation.category')}</Label>
+                      <Label htmlFor="categoryId" className="text-sm font-medium">{t('products:category')}</Label>
                       <Select value={categoryId} onValueChange={(value) => form.setValue('categoryId', value)}>
                         <SelectTrigger data-testid="select-category" className="mt-1">
                           <SelectValue placeholder={t('common:select')} />
@@ -2055,10 +2056,10 @@ export default function ProductForm() {
 
                   {/* Description */}
                   <div>
-                    <Label htmlFor="description" className="text-sm font-medium">{t('products:basicInformation.description')}</Label>
+                    <Label htmlFor="description" className="text-sm font-medium">{t('products:formLabels.descriptionLabel')}</Label>
                     <Textarea
                       {...form.register('description')}
-                      placeholder={t('products:basicInformation.descriptionPlaceholder')}
+                      placeholder={t('products:formLabels.descriptionPlaceholder')}
                       rows={3}
                       data-testid="input-description"
                       className="mt-1"
@@ -2076,8 +2077,8 @@ export default function ProductForm() {
                     <BarChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:stockInventory.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:stockInventory.description')}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:formSections.stockInventory.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:formSections.stockInventory.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -2085,7 +2086,7 @@ export default function ProductForm() {
                 <div className="space-y-4 pt-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="quantity" className="text-sm font-medium">{t('products:stockInventory.quantity')}</Label>
+                      <Label htmlFor="quantity" className="text-sm font-medium">{t('products:formLabels.quantity')}</Label>
                       <Input
                         type="number"
                         min="0"
@@ -2096,7 +2097,7 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">{t('products:stockInventory.lowStockAlert')}</Label>
+                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">{t('products:formLabels.lowStockAlert')}</Label>
                       <Input
                         type="number"
                         min="0"
@@ -2108,11 +2109,11 @@ export default function ProductForm() {
                   </div>
 
                   <div>
-                    <Label htmlFor="barcode" className="text-sm font-medium">{t('products:stockInventory.barcode')}</Label>
+                    <Label htmlFor="barcode" className="text-sm font-medium">{t('products:formLabels.barcode')}</Label>
                     <div className="flex gap-2 mt-1">
                       <Input
                         {...form.register('barcode')}
-                        placeholder={t('products:stockInventory.barcodePlaceholder')}
+                        placeholder={t('products:formLabels.barcodePlaceholder')}
                         data-testid="input-barcode"
                         className="flex-1"
                       />
@@ -2170,8 +2171,8 @@ export default function ProductForm() {
                     <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:pricing.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:pricing.description')}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:formSections.pricing.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:formSections.pricing.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -2179,7 +2180,7 @@ export default function ProductForm() {
                 <div className="space-y-4 pt-2">
                   {/* Sales Prices */}
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">{t('products:pricing.salesPrices')}</Label>
+                    <Label className="text-sm font-medium mb-2 block">{t('products:formLabels.salesPrices')}</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="priceCzk" className="text-xs text-slate-500">CZK</Label>
@@ -2220,14 +2221,14 @@ export default function ProductForm() {
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {t('products:pricing.autoConvertHelper')}
+                      {t('products:formLabels.autoConvertHelper')}
                     </p>
                   </div>
 
                   {/* Import Costs */}
                   {canAccessFinancialData && (
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">{t('products:pricing.importCosts')}</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t('products:formLabels.importCosts')}</Label>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
@@ -2299,7 +2300,7 @@ export default function ProductForm() {
                         </div>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        {t('products:pricing.autoConvertRealtime')}
+                        {t('products:formLabels.autoConvertRealtime')}
                       </p>
                     </div>
                   )}
@@ -2309,7 +2310,7 @@ export default function ProductForm() {
                     <div className="pt-2">
                       <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-amber-600" />
-                        {t('products:pricing.costHistory')}
+                        {t('products:costHistory')}
                       </Label>
                       <CostHistoryChart data={costHistory} />
                     </div>

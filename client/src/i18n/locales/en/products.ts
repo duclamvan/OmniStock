@@ -450,6 +450,42 @@ const products = {
     infoMessage: 'Warehouse locations can be added after creating the product.',
   },
   
+  // ProductForm Accordion Sections
+  formSections: {
+    basicInfo: {
+      title: 'Basic Information',
+      description: 'Product name, SKU, and category',
+    },
+    stockInventory: {
+      title: 'Stock & Inventory',
+      description: 'Quantity, alerts, and warehouse locations',
+    },
+    pricing: {
+      title: 'Pricing & Costs',
+      description: 'Sales prices and import costs',
+    },
+  },
+  
+  // Form field labels
+  formLabels: {
+    productName: 'Product Name',
+    productNamePlaceholder: 'Enter product name',
+    vietnameseName: 'Vietnamese Name',
+    vietnameseNamePlaceholder: 'Enter Vietnamese product name',
+    sku: 'SKU',
+    skuPlaceholder: 'Enter SKU code',
+    descriptionLabel: 'Description',
+    descriptionPlaceholder: 'Enter product description',
+    quantity: 'Quantity',
+    lowStockAlert: 'Low Stock Alert',
+    barcode: 'Barcode',
+    barcodePlaceholder: 'Enter or scan barcode',
+    salesPrices: 'Sales Prices',
+    autoConvertHelper: 'Currency auto-converts on blur',
+    importCosts: 'Import Costs',
+    autoConvertRealtime: 'Currency auto-converts in real-time',
+  },
+  
   // CostHistoryChart Component
   noCostHistoryData: 'No cost history data available',
   trendIncreasing: '+{{percent}}% trend',
