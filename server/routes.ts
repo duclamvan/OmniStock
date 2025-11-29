@@ -13258,6 +13258,17 @@ Important:
   app.post('/api/settings', isAuthenticated, async (req, res) => {
     try {
       const data = insertAppSettingSchema.parse(req.body);
+      
+      // Check if setting already exists - upsert behavior
+      const existing = await storage.getAppSettingByKey(data.key);
+      if (existing) {
+        const updated = await storage.updateAppSetting(data.key, {
+          value: data.value,
+          category: data.category || existing.category
+        });
+        return res.json(updated);
+      }
+      
       const setting = await storage.createAppSetting(data);
       res.status(201).json(setting);
     } catch (error) {
