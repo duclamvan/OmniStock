@@ -7637,6 +7637,7 @@ Important:
   });
 
   // Batch update order status - Optimized for multiple orders
+  // CRITICAL: This endpoint deducts inventory when orders are shipped
   app.post('/api/orders/batch-ship', isAuthenticated, async (req: any, res) => {
     try {
       const { orderIds } = req.body;
@@ -7646,17 +7647,67 @@ Important:
       }
 
       const shippedAt = new Date();
-      const results = [];
-      const errors = [];
+      const results: any[] = [];
+      const errors: any[] = [];
+      const inventoryDeductions: { productId: string; variantId?: string; quantity: number; orderId: string }[] = [];
 
-      // Process all orders in parallel for better performance
-      const updatePromises = orderIds.map(async (orderId) => {
+      // Process all orders sequentially to ensure proper inventory deduction
+      for (const orderId of orderIds) {
         try {
           // Skip mock orders
           if (orderId.startsWith('mock-')) {
-            return { id: orderId, success: true, message: 'Mock order shipped' };
+            results.push({ id: orderId, success: true, message: 'Mock order shipped' });
+            continue;
           }
 
+          // Get current order to check if already shipped (idempotency check)
+          const existingOrder = await storage.getOrder(orderId);
+          if (!existingOrder) {
+            errors.push({ id: orderId, success: false, error: 'Order not found' });
+            continue;
+          }
+
+          // IDEMPOTENCY: Skip if order is already shipped to prevent double inventory deduction
+          if (existingOrder.orderStatus === 'shipped') {
+            results.push({ id: orderId, success: true, message: 'Order already shipped', skippedInventory: true });
+            continue;
+          }
+
+          // Get order items for inventory deduction
+          const orderItems = await storage.getOrderItems(orderId);
+
+          // Deduct inventory for each order item
+          for (const item of orderItems) {
+            const quantity = parseInt(String(item.quantity) || '0');
+            if (quantity <= 0) continue;
+
+            // Deduct from product quantity
+            if (item.productId) {
+              const product = await storage.getProduct(item.productId);
+              if (product) {
+                const currentQty = product.quantity || 0;
+                const newQty = Math.max(0, currentQty - quantity);
+                await storage.updateProduct(item.productId, { quantity: newQty });
+                inventoryDeductions.push({ productId: item.productId, quantity, orderId });
+                console.log(`Deducted ${quantity} from product ${item.productId} (${currentQty} -> ${newQty})`);
+              }
+            }
+
+            // Also deduct from variant quantity if variant is specified
+            if (item.variantId) {
+              const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
+              const variant = variants.find(v => v.id === item.variantId);
+              if (variant) {
+                const currentQty = variant.quantity || 0;
+                const newQty = Math.max(0, currentQty - quantity);
+                await storage.updateProductVariant(item.variantId, { quantity: newQty });
+                inventoryDeductions.push({ productId: item.productId || '', variantId: item.variantId, quantity, orderId });
+                console.log(`Deducted ${quantity} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
+              }
+            }
+          }
+
+          // Update order status to shipped
           const updates = {
             orderStatus: 'shipped' as const,
             packStatus: 'completed' as const,
@@ -7670,32 +7721,20 @@ Important:
             await storage.createPickPackLog({
               orderId: orderId,
               activityType: 'order_shipped',
-              userId: "test-user",
-              userName: 'System',
-              notes: `Order ${order.orderId} marked as shipped`,
+              userId: req.user?.claims?.sub || "system",
+              userName: req.user?.claims?.first_name || 'System',
+              notes: `Order ${order.orderId} marked as shipped. Inventory deducted for ${orderItems.length} items.`,
             });
 
-            return { id: orderId, success: true, order };
+            results.push({ id: orderId, success: true, order, itemsDeducted: orderItems.length });
           } else {
-            return { id: orderId, success: false, error: 'Order not found' };
+            errors.push({ id: orderId, success: false, error: 'Failed to update order' });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error shipping order ${orderId}:`, error);
-          return { id: orderId, success: false, error: error.message || 'Unknown error' };
+          errors.push({ id: orderId, success: false, error: error.message || 'Unknown error' });
         }
-      });
-
-      // Wait for all updates to complete
-      const allResults = await Promise.all(updatePromises);
-
-      // Separate successful and failed updates
-      allResults.forEach(result => {
-        if (result.success) {
-          results.push(result);
-        } else {
-          errors.push(result);
-        }
-      });
+      }
 
       res.json({
         success: true,
@@ -7703,7 +7742,8 @@ Important:
         failed: errors.length,
         results,
         errors,
-        message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
+        inventoryDeductions: inventoryDeductions.length,
+        message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}. Inventory deducted for ${inventoryDeductions.length} items.`
       });
 
     } catch (error) {
@@ -7759,6 +7799,46 @@ Important:
       // Check if this is a mock order (skip database update)
       if (req.params.id.startsWith('mock-')) {
         return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
+      }
+
+      // CRITICAL: Deduct inventory when order is marked as shipped
+      let inventoryDeducted = false;
+      if (updates.orderStatus === 'shipped') {
+        // Check if order is already shipped (idempotency check)
+        const existingOrder = await storage.getOrder(req.params.id);
+        if (existingOrder && existingOrder.orderStatus !== 'shipped') {
+          // Get order items and deduct inventory
+          const orderItems = await storage.getOrderItems(req.params.id);
+          
+          for (const item of orderItems) {
+            const quantity = parseInt(String(item.quantity) || '0');
+            if (quantity <= 0) continue;
+
+            // Deduct from product quantity
+            if (item.productId) {
+              const product = await storage.getProduct(item.productId);
+              if (product) {
+                const currentQty = product.quantity || 0;
+                const newQty = Math.max(0, currentQty - quantity);
+                await storage.updateProduct(item.productId, { quantity: newQty });
+                console.log(`Status endpoint: Deducted ${quantity} from product ${item.productId} (${currentQty} -> ${newQty})`);
+              }
+            }
+
+            // Also deduct from variant quantity if variant is specified
+            if (item.variantId) {
+              const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
+              const variant = variants.find(v => v.id === item.variantId);
+              if (variant) {
+                const currentQty = variant.quantity || 0;
+                const newQty = Math.max(0, currentQty - quantity);
+                await storage.updateProductVariant(item.variantId, { quantity: newQty });
+                console.log(`Status endpoint: Deducted ${quantity} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
+              }
+            }
+          }
+          inventoryDeducted = true;
+        }
       }
 
       const order = await storage.updateOrder(req.params.id, updates);
