@@ -296,7 +296,7 @@ export function validateCartonForCarrier(
     valid: errors.length === 0,
     errors,
     warnings,
-    recommendedSize
+    recommendedSize: recommendedSize ?? undefined
   };
 }
 

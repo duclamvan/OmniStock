@@ -514,7 +514,7 @@ export default function ShippingSettings() {
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                   GLS DE Package Limits
                 </CardTitle>
-                <CardDescription className="text-sm">Maximum package weight and dimensions for GLS Germany (max 40kg, 200×80×60cm)</CardDescription>
+                <CardDescription className="text-sm">Maximum package weight and dimensions for GLS Germany (max 40kg, girth + longest side ≤ 300cm)</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -550,7 +550,7 @@ export default function ShippingSettings() {
                         <FormControl>
                           <Input {...field} placeholder="200x80x60" data-testid="input-gls_max_package_dimensions_cm" />
                         </FormControl>
-                        <FormDescription>L×W×H (GLS max: 200×80×60)</FormDescription>
+                        <FormDescription>L×W×H (Girth + longest side ≤ 300cm)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
