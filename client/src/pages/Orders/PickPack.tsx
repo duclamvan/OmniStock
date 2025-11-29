@@ -8137,14 +8137,53 @@ export default function PickPack() {
                       cartonCount={cartons.length}
                     />
 
-                    {/* Copyable Fields */}
+                    {/* Paketgröße Section - GLS Web Style */}
+                    <div className="space-y-3 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <h3 className="text-xl font-bold text-black dark:text-white">Paketgröße</h3>
+                      
+                      {/* Country/Zielland - Emphasized */}
+                      <div 
+                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-indigo-400 transition-colors"
+                        onClick={() => copyField(germanCountry, 'Country')}
+                      >
+                        <span className="text-3xl">{getCountryFlag(germanCountry)}</span>
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Zielland</div>
+                          <div className="text-lg font-semibold text-black dark:text-white">{germanCountry}</div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Copy className="h-4 w-4 text-gray-500" />
+                        </Button>
+                      </div>
+                      
+                      {/* Package Size Cards - GLS Style */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {['S', 'M', 'L'].map((size) => (
+                          <div
+                            key={size}
+                            className={`p-3 rounded-lg border-2 text-center cursor-pointer transition-all ${
+                              size === 'S'
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-400'
+                            }`}
+                            onClick={() => copyField(size, 'Paket size')}
+                          >
+                            <div className="text-2xl font-bold">{size}</div>
+                            <div className={`text-xs mt-0.5 ${size === 'S' ? 'text-indigo-100' : 'text-gray-500'}`}>
+                              {size === 'S' ? 'Selected' : 'Paket'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        <span>Längste + kürzeste Seite max. <strong className="text-black dark:text-white">35 cm</strong>. Bis 40 kg.</span>
+                      </div>
+                    </div>
+                    
+                    {/* Recipient Details */}
                     <div className="space-y-0.5">
-                      <CompactCopyField label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
-                      <CompactCopyField label="Paket size:" value="S" />
-                      
-                      {/* Divider */}
-                      <Separator className="my-3" />
-                      
                       <CompactCopyField label="First Name:" value={firstName} />
                       <CompactCopyField label="Last Name:" value={lastName} />
                       <CompactCopyField label="Full Address:" value={fullAddress} />
