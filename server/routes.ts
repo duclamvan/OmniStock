@@ -5088,6 +5088,19 @@ Important:
       // Perform the stock adjustment
       await storage.updateProductLocationQuantity(locationId, newQuantity);
 
+      // Create stock adjustment history record for reports
+      await storage.createStockAdjustmentHistory({
+        productId,
+        locationId,
+        adjustmentType,
+        previousQuantity: location.quantity,
+        adjustedQuantity: adjustmentType === 'set' ? newQuantity : quantity,
+        newQuantity,
+        reason,
+        source: 'direct',
+        adjustedBy: userId,
+      });
+
       // Create audit trail with real user ID
       await storage.createUserActivity({
         userId: userId,

@@ -2731,6 +2731,22 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(productLocations.id, request.locationId));
 
+        // Create stock adjustment history record for reports
+        await tx
+          .insert(stockAdjustmentHistory)
+          .values({
+            productId: request.productId,
+            locationId: request.locationId,
+            adjustmentType: request.adjustmentType,
+            previousQuantity: location.quantity,
+            adjustedQuantity: request.requestedQuantity,
+            newQuantity,
+            reason: request.reason,
+            source: 'approved_request',
+            referenceId: request.id,
+            adjustedBy: approvedBy,
+          });
+
         // Mark request as approved
         const [updatedRequest] = await tx
           .update(stockAdjustmentRequests)
