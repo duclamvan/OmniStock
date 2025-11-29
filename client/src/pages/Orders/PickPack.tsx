@@ -5822,6 +5822,9 @@ export default function PickPack() {
     setPackingTimer(0);
     setIsPackingTimerRunning(true);
     
+    // Reset scroll position to top when entering packing mode
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
     // Generate AI packing recommendation using database cartons (only if AI is enabled)
     let recommendation = null;
     if (aiCartonPackingEnabled) {
