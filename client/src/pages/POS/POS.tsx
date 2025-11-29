@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   ShoppingCart, 
   Plus, 
@@ -16,17 +19,29 @@ import {
   Check,
   X,
   FileText,
-  CreditCard
+  CreditCard,
+  Scan,
+  ChevronDown,
+  ChevronUp,
+  User,
+  StickyNote,
+  Printer,
+  QrCode,
+  Clock,
+  AlertTriangle,
+  Banknote,
+  Building2
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
-import type { Product } from '@shared/schema';
+import type { Product, Customer } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from 'react-i18next';
+import { soundEffects } from '@/utils/soundEffects';
 
 interface CartItem {
   id: string;
@@ -38,7 +53,171 @@ interface CartItem {
   quantity: number;
   type: 'product' | 'variant' | 'bundle';
   sku?: string;
+  barcode?: string;
   imageUrl?: string;
+}
+
+interface ReceiptData {
+  orderId: string;
+  items: CartItem[];
+  subtotal: number;
+  total: number;
+  currency: string;
+  paymentMethod: string;
+  customerName: string;
+  notes: string;
+  date: Date;
+}
+
+type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'pay_later' | 'qr_czk';
+
+function generateQRCodeSVG(data: string, size: number = 200): string {
+  const encodedData = encodeURIComponent(data);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=svg`;
+}
+
+function QRCodeCZK({ amount, orderId, scanLabel }: { amount: number; orderId: string; scanLabel?: string }) {
+  const spdString = `SPD*1.0*ACC:CZ6508000000192000145399*AM:${amount.toFixed(2)}*CC:CZK*MSG:POS Sale ${orderId}`;
+  const qrUrl = generateQRCodeSVG(spdString, 200);
+  
+  return (
+    <div className="flex flex-col items-center gap-4 p-4 bg-white rounded-lg">
+      <img 
+        src={qrUrl} 
+        alt="Czech Payment QR Code" 
+        className="w-48 h-48 border-2 border-gray-200 rounded"
+        data-testid="img-qr-code-czk"
+      />
+      <div className="text-center space-y-1">
+        <p className="text-sm font-medium text-gray-700">{scanLabel || 'Scan to pay with Czech bank transfer'}</p>
+        <p className="text-lg font-bold text-primary">CZK {amount.toFixed(2)}</p>
+        <p className="text-xs text-gray-500 break-all max-w-[200px]">{spdString}</p>
+      </div>
+    </div>
+  );
+}
+
+function ThermalReceipt({ data, onClose }: { data: ReceiptData; onClose: () => void }) {
+  const { t } = useTranslation(['common', 'financial']);
+  
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const paymentMethodLabels: Record<PaymentMethod, string> = {
+    cash: t('financial:cash'),
+    card: t('financial:creditCard'),
+    bank_transfer: t('financial:bankTransfer'),
+    pay_later: t('financial:payLater'),
+    qr_czk: t('financial:qrCodeCzk')
+  };
+
+  return (
+    <div className="relative">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .thermal-receipt, .thermal-receipt * {
+            visibility: visible;
+          }
+          .thermal-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            padding: 5mm;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            background: white;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+      
+      <div className="thermal-receipt bg-white p-4 max-w-[300px] mx-auto font-mono text-sm">
+        <div className="text-center border-b-2 border-dashed border-gray-300 pb-3 mb-3">
+          <h2 className="text-lg font-bold">DAVIE SUPPLY</h2>
+          <p className="text-xs text-gray-600">Point of Sale Receipt</p>
+        </div>
+        
+        <div className="space-y-1 text-xs border-b border-dashed border-gray-300 pb-3 mb-3">
+          <div className="flex justify-between">
+            <span>Date:</span>
+            <span>{data.date.toLocaleDateString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Time:</span>
+            <span>{data.date.toLocaleTimeString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Order:</span>
+            <span>{data.orderId}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Customer:</span>
+            <span>{data.customerName}</span>
+          </div>
+        </div>
+        
+        <div className="border-b border-dashed border-gray-300 pb-3 mb-3">
+          <div className="font-bold mb-2">Items:</div>
+          {data.items.map((item, idx) => (
+            <div key={idx} className="flex justify-between text-xs mb-1">
+              <span className="flex-1 truncate pr-2">
+                {item.quantity}x {item.name}
+              </span>
+              <span className="whitespace-nowrap">
+                {data.currency} {(item.price * item.quantity).toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+        
+        <div className="space-y-1 text-xs border-b border-dashed border-gray-300 pb-3 mb-3">
+          <div className="flex justify-between">
+            <span>{t('financial:subtotal')}:</span>
+            <span>{data.currency} {data.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-sm">
+            <span>{t('financial:total')}:</span>
+            <span>{data.currency} {data.total.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>{t('financial:paymentMethod')}:</span>
+            <span>{paymentMethodLabels[data.paymentMethod as PaymentMethod] || data.paymentMethod}</span>
+          </div>
+          {data.notes && (
+            <div className="mt-2">
+              <span className="font-medium">Notes:</span>
+              <p className="text-gray-600 mt-1">{data.notes}</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="text-center mt-4 pt-3 border-t-2 border-dashed border-gray-300">
+          <p className="text-xs text-gray-600">Thank you for your purchase!</p>
+        </div>
+      </div>
+      
+      <div className="no-print flex gap-2 justify-center mt-4">
+        <Button onClick={handlePrint} data-testid="button-print-receipt">
+          <Printer className="h-4 w-4 mr-2" />
+          Print Receipt
+        </Button>
+        <Button variant="outline" onClick={onClose} data-testid="button-close-receipt">
+          {t('common:close')}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export default function POS() {
@@ -48,14 +227,29 @@ export default function POS() {
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [barcodeInput, setBarcodeInput] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'bank_transfer'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(() => {
     return localStorage.getItem('pos_warehouse') || '';
   });
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [orderNotes, setOrderNotes] = useState('');
+  const [notesOpen, setNotesOpen] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string | null>(null);
+  const [scanFeedback, setScanFeedback] = useState<'success' | 'error' | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
+  
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch products
+  useEffect(() => {
+    if (barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  }, []);
+
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     queryFn: async () => {
@@ -65,7 +259,6 @@ export default function POS() {
     },
   });
 
-  // Fetch product variants
   const { data: productVariants = [] } = useQuery<any[]>({
     queryKey: ['/api/variants'],
     queryFn: async () => {
@@ -75,12 +268,19 @@ export default function POS() {
     },
   });
 
-  // Fetch bundles
   const { data: bundles = [] } = useQuery<any[]>({
     queryKey: ['/api/bundles']
   });
 
-  // Fetch warehouses
+  const { data: customers = [] } = useQuery<Customer[]>({
+    queryKey: ['/api/customers'],
+    queryFn: async () => {
+      const response = await fetch('/api/customers');
+      if (!response.ok) throw new Error('Failed to fetch customers');
+      return response.json();
+    },
+  });
+
   const warehousesQuery = useQuery({
     queryKey: ['/api/warehouses'],
     queryFn: async () => {
@@ -91,7 +291,6 @@ export default function POS() {
   });
   const warehouses = warehousesQuery.data || [];
 
-  // Fetch POS settings (returns object with defaults)
   const posSettingsQuery = useQuery({
     queryKey: ['/api/settings/pos'],
     queryFn: async () => {
@@ -104,8 +303,7 @@ export default function POS() {
   });
   const posSettings = posSettingsQuery.data;
 
-  // Combine products, variants, and bundles
-  const allItems = [
+  const allItems = useMemo(() => [
     ...products.map((p: any) => ({ ...p, itemType: 'product' as const })),
     ...productVariants.map((v: any) => ({ 
       id: v.id,
@@ -128,9 +326,8 @@ export default function POS() {
       bundleId: b.bundleId,
       itemType: 'bundle' as const
     }))
-  ];
+  ], [products, productVariants, bundles]);
 
-  // Fuzzy search
   const searchResults = searchQuery.trim()
     ? fuzzySearch(allItems, searchQuery, {
         fields: ['name', 'sku', 'barcode'],
@@ -142,16 +339,50 @@ export default function POS() {
 
   const displayProducts = searchResults.map(r => r.item);
 
-  // Auto-select warehouse from POS settings or first warehouse (with deterministic fallback)
-  // Wait for BOTH queries to complete before attempting auto-selection
+  const selectedCustomer = useMemo(() => {
+    return customers.find(c => c.id === selectedCustomerId);
+  }, [customers, selectedCustomerId]);
+
+  const handleBarcodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const barcode = barcodeInput.trim();
+    if (!barcode) return;
+
+    const barcodeResults = fuzzySearch(allItems, barcode, {
+      fields: ['barcode', 'sku'],
+      threshold: 0.1,
+      fuzzy: false,
+      vietnameseNormalization: false,
+    });
+
+    if (barcodeResults.length > 0 && barcodeResults[0].score < 0.3) {
+      const foundItem = barcodeResults[0].item;
+      addToCart(foundItem);
+      await soundEffects.playSuccessBeep();
+      setScanFeedback('success');
+      toast({
+        title: t('financial:addedToCart'),
+        description: foundItem.name,
+      });
+    } else {
+      await soundEffects.playErrorBeep();
+      setScanFeedback('error');
+      toast({
+        title: 'Product not found',
+        description: `No product with barcode "${barcode}"`,
+        variant: 'destructive',
+      });
+    }
+
+    setBarcodeInput('');
+    setTimeout(() => setScanFeedback(null), 500);
+    barcodeInputRef.current?.focus();
+  };
+
   useEffect(() => {
-    // Skip if either query is still loading
     if (posSettingsQuery.isLoading || warehousesQuery.isLoading) return;
-    
-    // Skip if warehouses data is not available yet
     if (!warehouses || warehouses.length === 0) return;
     
-    // Auto-select warehouse only if none is currently selected
     if (!selectedWarehouse) {
       const defaultId = posSettings?.defaultWarehouseId;
       const warehouseToSelect = defaultId 
@@ -161,20 +392,16 @@ export default function POS() {
     }
   }, [posSettings, posSettingsQuery.isLoading, warehousesQuery.isLoading, selectedWarehouse, warehouses]);
 
-  // Save warehouse to localStorage
   useEffect(() => {
     if (selectedWarehouse) {
       localStorage.setItem('pos_warehouse', selectedWarehouse);
     }
   }, [selectedWarehouse]);
 
-  // Recalculate cart prices when currency changes to maintain currency-specific totals
   useEffect(() => {
     if (cart.length === 0) return;
 
-    // Update all cart item prices based on new currency
     setCart(prevCart => prevCart.map(cartItem => {
-      // Find the original item in allItems
       const originalItem = allItems.find(item => 
         item.id === cartItem.id && 
         (item.itemType || 'product') === cartItem.type
@@ -182,20 +409,17 @@ export default function POS() {
 
       if (!originalItem) return cartItem;
 
-      // Get the price for the current currency
       const newPrice = currency === 'EUR' 
         ? parseFloat(originalItem.priceEur || '0') 
         : parseFloat(originalItem.priceCzk || '0');
 
-      // Return updated cart item with new price
       return {
         ...cartItem,
         price: newPrice
       };
     }));
-  }, [currency]); // Only run when currency changes
+  }, [currency]);
 
-  // Add to cart
   const addToCart = (item: any) => {
     const price = currency === 'EUR' ? parseFloat(item.priceEur || '0') : parseFloat(item.priceCzk || '0');
     const itemType = item.itemType || 'product';
@@ -220,12 +444,12 @@ export default function POS() {
         quantity: 1,
         type: itemType,
         sku: item.sku,
+        barcode: item.barcode,
         imageUrl: item.imageUrl,
       }]);
     }
   };
 
-  // Update quantity
   const updateQuantity = (id: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id);
@@ -236,35 +460,38 @@ export default function POS() {
     }
   };
 
-  // Remove from cart
   const removeFromCart = (id: string) => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  // Clear cart
   const clearCart = () => {
     setCart([]);
     setCartOpen(false);
+    setOrderNotes('');
+    setSelectedCustomerId('');
   };
 
-  // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const total = subtotal;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Create order mutation
+  const customerName = selectedCustomer 
+    ? `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() || selectedCustomer.company || 'Customer'
+    : t('financial:walkInCustomer');
+
   const createOrderMutation = useMutation({
     mutationFn: async () => {
       if (!selectedWarehouse) {
         throw new Error(t('financial:pleaseSelectWarehouse'));
       }
 
+      const isPayLater = paymentMethod === 'pay_later';
       const orderData = {
-        customerId: null,
+        customerId: selectedCustomerId || null,
         warehouseId: selectedWarehouse,
         currency: currency,
         orderStatus: 'completed',
-        paymentStatus: 'paid',
+        paymentStatus: isPayLater ? 'unpaid' : 'paid',
         orderType: 'pos',
         items: cart.map(item => ({
           productId: item.productId,
@@ -278,9 +505,10 @@ export default function POS() {
         grandTotal: total.toFixed(2),
         paymentMethod: paymentMethod,
         fulfillmentStage: 'completed',
-        customerEmail: 'walkin@pos.local',
-        customerName: t('financial:walkInCustomer'),
-        customerPhone: '+420000000000',
+        customerEmail: selectedCustomer?.email || 'walkin@pos.local',
+        customerName: customerName,
+        customerPhone: selectedCustomer?.phone || '+420000000000',
+        notes: orderNotes || undefined,
       };
 
       return await apiRequest('POST', '/api/orders', orderData);
@@ -291,6 +519,26 @@ export default function POS() {
         description: t('financial:saleCompletedSuccessfully'),
       });
       setLastSaleId(data.id);
+      
+      const newReceiptData: ReceiptData = {
+        orderId: data.id,
+        items: [...cart],
+        subtotal,
+        total,
+        currency,
+        paymentMethod,
+        customerName,
+        notes: orderNotes,
+        date: new Date(),
+      };
+      setReceiptData(newReceiptData);
+      
+      if (paymentMethod === 'qr_czk') {
+        setShowQRCode(true);
+      } else {
+        setShowReceipt(true);
+      }
+      
       clearCart();
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
@@ -303,25 +551,19 @@ export default function POS() {
     },
   });
 
-  // Generate invoice mutation with proper schema validation
   const generateInvoiceMutation = useMutation({
     mutationFn: async () => {
       if (!lastSaleId) {
         throw new Error('No recent sale to generate invoice for');
       }
 
-      // Prepare invoice data with proper fields from schema
-      // Status must be one of: 'draft', 'generated', 'sent'
-      // pdfUrl is optional and omitted here (will be generated server-side if needed)
       const invoiceData = {
-        posSaleId: lastSaleId, // Use posSaleId for POS sales
+        posSaleId: lastSaleId,
         status: 'generated' as const,
         invoiceNumber: `INV-${Date.now()}`,
       };
 
-      // Validate using insertInvoiceSchema before sending
       const validatedData = insertInvoiceSchema.parse(invoiceData);
-
       return await apiRequest('POST', '/api/invoices', validatedData);
     },
     onSuccess: () => {
@@ -363,7 +605,17 @@ export default function POS() {
     createOrderMutation.mutate();
   };
 
-  // Reusable Cart Content Component
+  const getPaymentMethodIcon = (method: PaymentMethod) => {
+    switch (method) {
+      case 'cash': return <Banknote className="h-4 w-4" />;
+      case 'card': return <CreditCard className="h-4 w-4" />;
+      case 'bank_transfer': return <Building2 className="h-4 w-4" />;
+      case 'pay_later': return <Clock className="h-4 w-4" />;
+      case 'qr_czk': return <QrCode className="h-4 w-4" />;
+      default: return null;
+    }
+  };
+
   const CartContent = ({ showHeader = true }: { showHeader?: boolean }) => (
     <>
       {showHeader && (
@@ -386,6 +638,15 @@ export default function POS() {
         </div>
       )}
 
+      {selectedCustomer && (
+        <div className="mb-3 p-2 bg-primary/5 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-primary" />
+            <span className="font-medium">{customerName}</span>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3 flex-1">
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -393,28 +654,25 @@ export default function POS() {
             <p>{t('financial:cartIsEmpty')}</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] lg:h-[calc(100vh-320px)]">
+          <ScrollArea className="h-[calc(100vh-450px)] lg:h-[calc(100vh-500px)]">
             <div className="space-y-2 pr-4">
               {cart.map((item) => (
                 <Card key={item.id} className="p-3">
                   <div className="flex gap-3">
-                    {/* Product Image */}
                     {item.imageUrl ? (
                       <img
                         src={item.imageUrl}
                         alt={item.name}
-                        className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shrink-0"
+                        className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shrink-0"
                         data-testid={`img-cart-item-${item.id}`}
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
-                        <Package className="h-8 w-8 text-gray-400" />
+                      <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                        <Package className="h-6 w-6 text-gray-400" />
                       </div>
                     )}
                     
-                    {/* Item Info & Controls */}
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      {/* Product Name - Full Display */}
+                    <div className="flex-1 min-w-0 space-y-1">
                       <div>
                         <h4 className="font-semibold text-xs leading-tight break-words">{item.name}</h4>
                         {item.sku && (
@@ -422,9 +680,7 @@ export default function POS() {
                         )}
                       </div>
 
-                      {/* Price & Quantity Row */}
                       <div className="flex items-center justify-between gap-2">
-                        {/* Unit Price */}
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t('financial:unit')}: </span>
                           <span className="font-semibold text-primary">
@@ -432,7 +688,6 @@ export default function POS() {
                           </span>
                         </div>
 
-                        {/* Quantity Controls */}
                         <div className="flex items-center gap-1">
                           <Button
                             variant="outline"
@@ -458,7 +713,6 @@ export default function POS() {
                         </div>
                       </div>
 
-                      {/* Subtotal & Remove */}
                       <div className="flex items-center justify-between pt-1 border-t">
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t('financial:subtotal')}: </span>
@@ -486,22 +740,109 @@ export default function POS() {
         )}
       </div>
 
-      {/* Total and Checkout */}
       {cart.length > 0 && (
-        <div className="pt-3 border-t space-y-2 mt-3">
-          {/* Payment Method Selector */}
+        <div className="pt-3 border-t space-y-3 mt-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <User className="h-3 w-3" />
+              Customer
+            </label>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="w-full h-9 text-sm" data-testid="select-customer">
+                <SelectValue placeholder={t('financial:walkInCustomer')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">
+                  <span className="text-muted-foreground">{t('financial:walkInCustomer')}</span>
+                </SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Collapsible open={notesOpen} onOpenChange={setNotesOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between h-8 px-2" data-testid="button-toggle-notes">
+                <span className="flex items-center gap-1 text-xs">
+                  <StickyNote className="h-3 w-3" />
+                  Order Notes
+                  {orderNotes && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">Has notes</Badge>}
+                </span>
+                {notesOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <Textarea
+                placeholder="Add notes for this order..."
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+                className="min-h-[60px] text-sm"
+                data-testid="textarea-order-notes"
+              />
+            </CollapsibleContent>
+          </Collapsible>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">{t('financial:selectPaymentMethod')}</label>
-            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'cash' | 'card' | 'bank_transfer')}>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
               <SelectTrigger className="w-full h-9 text-sm" data-testid="select-payment-method">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cash">{t('financial:cash')}</SelectItem>
-                <SelectItem value="card">{t('financial:card')}</SelectItem>
-                <SelectItem value="bank_transfer">{t('financial:bankTransfer')}</SelectItem>
+                <SelectItem value="cash">
+                  <span className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4" />
+                    {t('financial:cash')}
+                  </span>
+                </SelectItem>
+                <SelectItem value="card">
+                  <span className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    {t('financial:creditCard')}
+                  </span>
+                </SelectItem>
+                <SelectItem value="bank_transfer">
+                  <span className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {t('financial:bankTransfer')}
+                  </span>
+                </SelectItem>
+                <SelectItem value="pay_later">
+                  <span className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Pay Later
+                  </span>
+                </SelectItem>
+                <SelectItem value="qr_czk">
+                  <span className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    QR Code CZK
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
+            
+            {paymentMethod === 'pay_later' && (
+              <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <span className="text-xs text-yellow-700 dark:text-yellow-300">
+                  This will create an unpaid order
+                </span>
+              </div>
+            )}
+            
+            {paymentMethod === 'qr_czk' && currency !== 'CZK' && (
+              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <QrCode className="h-4 w-4 text-blue-600" />
+                <span className="text-xs text-blue-700 dark:text-blue-300">
+                  QR Code will show amount in CZK
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-base font-bold pt-2">
@@ -520,31 +861,42 @@ export default function POS() {
               t('common:processing')
             ) : (
               <>
-                <Check className="mr-2 h-4 w-4" />
-                {t('financial:completeSale')}
+                {getPaymentMethodIcon(paymentMethod)}
+                <span className="ml-2">{t('financial:completeSale')}</span>
               </>
             )}
           </Button>
 
-          {/* Invoice Generation Button */}
           {lastSaleId && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-9"
-              onClick={() => generateInvoiceMutation.mutate()}
-              disabled={generateInvoiceMutation.isPending}
-              data-testid="button-generate-invoice"
-            >
-              {generateInvoiceMutation.isPending ? (
-                t('common:processing')
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  {t('financial:generateInvoice')}
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9"
+                onClick={() => setShowReceipt(true)}
+                data-testid="button-print-receipt-open"
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Print Receipt
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9"
+                onClick={() => generateInvoiceMutation.mutate()}
+                disabled={generateInvoiceMutation.isPending}
+                data-testid="button-generate-invoice"
+              >
+                {generateInvoiceMutation.isPending ? (
+                  t('common:processing')
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {t('financial:generateInvoice')}
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -553,17 +905,26 @@ export default function POS() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
-      {/* Left Panel: Products (Mobile: full screen, Desktop: 2/3 width) */}
-      <div className="flex flex-col flex-1 lg:flex-[2] overflow-hidden">
-        {/* Header */}
+      <div className="flex flex-col flex-1 lg:w-[70%] overflow-hidden">
         <div className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
-          <div className="p-4 space-y-3">
-            {/* Title and Currency */}
+          <div className="p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h1 className="text-lg font-bold">{t('financial:pos')}</h1>
               <div className="flex items-center gap-2">
+                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                  <SelectTrigger className="w-32 h-8 bg-primary-foreground text-primary border-0 text-xs" data-testid="select-warehouse">
+                    <SelectValue placeholder="Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((warehouse: any) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
-                  <SelectTrigger className="w-16 h-8 bg-primary-foreground text-primary border-0 text-sm">
+                  <SelectTrigger className="w-16 h-8 bg-primary-foreground text-primary border-0 text-sm" data-testid="select-currency">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -574,24 +935,48 @@ export default function POS() {
               </div>
             </div>
 
-            {/* Search */}
+            <form onSubmit={handleBarcodeSubmit} className="relative">
+              <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                ref={barcodeInputRef}
+                placeholder="Scan barcode or enter SKU..."
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                className={cn(
+                  "pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-2 transition-all duration-200",
+                  scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
+                  scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
+                  !scanFeedback && "border-transparent"
+                )}
+                data-testid="input-barcode"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                variant="ghost"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-9 w-9 text-primary"
+                data-testid="button-scan-submit"
+              >
+                <Check className="h-5 w-5" />
+              </Button>
+            </form>
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder={t('products:searchItems')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 bg-white dark:bg-slate-800 border-0"
+                className="pl-10 h-10 bg-white dark:bg-slate-800 border-0"
                 data-testid="input-search"
               />
             </div>
           </div>
         </div>
 
-        {/* Products Grid */}
         <ScrollArea className="flex-1">
           <div className="p-2 pb-28 lg:pb-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-10 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
             {displayProducts.map((product: any) => {
               const cartItem = cart.find(item => item.id === product.id);
               const isInCart = !!cartItem;
@@ -610,47 +995,46 @@ export default function POS() {
                   onClick={() => addToCart(product)}
                   data-testid={`card-product-${product.id}`}
                 >
-                  {/* Type Badge */}
                   {product.itemType === 'variant' && (
-                    <div className="absolute top-0.5 left-0.5 bg-purple-600 text-white rounded px-1 py-0.5 text-[9px] font-semibold z-10">
+                    <div className="absolute top-1 left-1 bg-purple-600 text-white rounded px-1.5 py-0.5 text-[10px] font-semibold z-10">
                       V
                     </div>
                   )}
                   {product.itemType === 'bundle' && (
-                    <div className="absolute top-0.5 left-0.5 bg-orange-600 text-white rounded px-1 py-0.5 text-[9px] font-semibold z-10">
+                    <div className="absolute top-1 left-1 bg-orange-600 text-white rounded px-1.5 py-0.5 text-[10px] font-semibold z-10">
                       B
                     </div>
                   )}
 
-                  {/* Quantity Badge */}
                   {isInCart && cartItem && (
-                    <div className="absolute top-0.5 right-0.5 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold z-10">
+                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-10">
                       {cartItem.quantity}
                     </div>
                   )}
                   
                   <CardContent className="p-0">
-                    {/* Image */}
-                    <div className="relative h-16 sm:h-20 bg-muted/30 border-b">
+                    <div className="relative h-24 sm:h-28 lg:h-32 bg-muted/30 border-b">
                       {product.imageUrl ? (
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
-                          className="w-full h-full object-contain p-0.5"
+                          className="w-full h-full object-contain p-1"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/30" />
+                          <Package className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground/30" />
                         </div>
                       )}
                     </div>
                     
-                    {/* Details */}
-                    <div className="p-1.5 space-y-0.5">
-                      <h3 className="font-medium text-[10px] sm:text-xs leading-tight line-clamp-2 min-h-[1.5rem]">
+                    <div className="p-2 space-y-1">
+                      <h3 className="font-medium text-xs sm:text-sm leading-tight line-clamp-2 min-h-[2rem]">
                         {product.name}
                       </h3>
-                      <p className="text-xs sm:text-sm font-bold text-primary">
+                      {product.sku && (
+                        <p className="text-[10px] text-muted-foreground truncate">{product.sku}</p>
+                      )}
+                      <p className="text-sm sm:text-base font-bold text-primary">
                         {currency} {price.toFixed(2)}
                       </p>
                     </div>
@@ -663,8 +1047,7 @@ export default function POS() {
         </ScrollArea>
       </div>
 
-      {/* Right Panel: Desktop Cart (Hidden on Mobile, Visible on lg+) */}
-      <div className="hidden lg:flex lg:flex-col lg:flex-1 border-l bg-card">
+      <div className="hidden lg:flex lg:flex-col lg:w-[30%] border-l bg-card sticky top-0 h-screen">
         <div className="p-4 border-b bg-primary text-primary-foreground">
           <h2 className="text-xl font-bold">{t('financial:cart')}</h2>
         </div>
@@ -673,10 +1056,8 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Fixed Bottom Cart Bar - Mobile Only (Hidden on Desktop) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-lg z-50">
         <div className="p-3 space-y-2">
-          {/* Cart Summary */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-primary" />
@@ -687,7 +1068,6 @@ export default function POS() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-2">
             <Sheet open={cartOpen} onOpenChange={setCartOpen}>
               <SheetTrigger asChild>
@@ -701,7 +1081,7 @@ export default function POS() {
                   {t('financial:viewCart')}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh]">
+              <SheetContent side="bottom" className="h-[85vh]">
                 <SheetHeader>
                   <SheetTitle className="flex items-center justify-between">
                     <span>{t('financial:cart')} ({totalItems} {t('common:items')})</span>
@@ -711,7 +1091,7 @@ export default function POS() {
                         size="sm"
                         onClick={clearCart}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                        data-testid="button-clear-cart"
+                        data-testid="button-clear-cart-mobile"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         {t('common:clear')}
@@ -720,7 +1100,7 @@ export default function POS() {
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="mt-4 flex flex-col h-[calc(80vh-120px)]">
+                <div className="mt-4 flex flex-col h-[calc(85vh-120px)]">
                   <CartContent showHeader={false} />
                 </div>
               </SheetContent>
@@ -745,6 +1125,64 @@ export default function POS() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('financial:receipt')}</DialogTitle>
+            <DialogDescription>
+              {t('financial:printOrSaveReceipt')}
+            </DialogDescription>
+          </DialogHeader>
+          {receiptData && (
+            <ThermalReceipt 
+              data={receiptData} 
+              onClose={() => setShowReceipt(false)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('financial:qrCodeCzk')}</DialogTitle>
+            <DialogDescription>
+              {t('financial:qrCodeCzkDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          {receiptData && (
+            <div className="flex flex-col items-center gap-4">
+              <QRCodeCZK 
+                amount={currency === 'CZK' ? receiptData.total : financialHelpers.convertCurrency(receiptData.total, 'EUR', 'CZK')} 
+                orderId={receiptData.orderId}
+                scanLabel={t('financial:scanQrToPay')}
+              />
+              <div className="flex gap-2 w-full">
+                <Button 
+                  className="flex-1" 
+                  onClick={() => {
+                    setShowQRCode(false);
+                    setShowReceipt(true);
+                  }}
+                  data-testid="button-show-receipt-from-qr"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  {t('common:print')}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowQRCode(false)}
+                  data-testid="button-close-qr"
+                >
+                  {t('common:close')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

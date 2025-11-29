@@ -111,6 +111,12 @@ const financial = {
   debitCard: 'Thẻ ghi nợ',
   cod: 'COD',
   onlinePayment: 'Thanh toán trực tuyến',
+  payLater: 'Trả sau',
+  qrCodeCzk: 'Mã QR CZK',
+  payLaterDescription: 'Khách thanh toán sau - tạo đơn chưa thanh toán',
+  qrCodeCzkDescription: 'Thanh toán QR chuyển khoản ngân hàng Séc',
+  unpaidOrderWarning: 'Đây sẽ tạo đơn hàng chưa thanh toán',
+  scanQrToPay: 'Quét để thanh toán qua chuyển khoản ngân hàng Séc',
   
   // Accounting
   accounting: 'Kế toán',
@@ -245,6 +251,7 @@ const financial = {
   pendingApproval: 'Chờ phê duyệt',
   vendor: 'Nhà cung cấp',
   receipt: 'Biên lai',
+  printOrSaveReceipt: 'In hoặc lưu biên lai này để lưu trữ',
   status: 'Trạng thái',
   actions: 'Thao tác',
   paid: 'Đã thanh toán',

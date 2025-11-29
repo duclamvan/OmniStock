@@ -111,6 +111,12 @@ const financial = {
   debitCard: 'Debit Card',
   cod: 'COD',
   onlinePayment: 'Online Payment',
+  payLater: 'Pay Later',
+  qrCodeCzk: 'QR Code CZK',
+  payLaterDescription: 'Customer pays later - creates unpaid order',
+  qrCodeCzkDescription: 'QR payment for Czech bank transfer',
+  unpaidOrderWarning: 'This will create an unpaid order',
+  scanQrToPay: 'Scan to pay with Czech bank transfer',
   
   // Accounting
   accounting: 'Accounting',
@@ -245,6 +251,7 @@ const financial = {
   pendingApproval: 'Pending Approval',
   vendor: 'Vendor',
   receipt: 'Receipt',
+  printOrSaveReceipt: 'Print or save this receipt for your records',
   status: 'Status',
   actions: 'Actions',
   paid: 'Paid',
