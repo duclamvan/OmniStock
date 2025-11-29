@@ -296,7 +296,7 @@ export default function AddOrder() {
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
-  const { generalSettings, financialHelpers } = useSettings();
+  const { generalSettings, financialHelpers, shippingSettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -989,6 +989,33 @@ export default function AddOrder() {
     watchedAdjustment
   ]); // Recalculates on any value change including adjustment
 
+  // Helper to convert country name to ISO code
+  const getCountryCode = (countryName: string | null | undefined): string | null => {
+    if (!countryName) return null;
+    const normalized = countryName.toLowerCase().trim();
+    const countryMap: Record<string, string> = {
+      'czechia': 'CZ', 'czech republic': 'CZ', 'česko': 'CZ', 'česká republika': 'CZ', 'cesko': 'CZ', 'ceska republika': 'CZ', 'cz': 'CZ',
+      'germany': 'DE', 'deutschland': 'DE', 'německo': 'DE', 'nemecko': 'DE', 'de': 'DE',
+      'austria': 'AT', 'österreich': 'AT', 'osterreich': 'AT', 'rakousko': 'AT', 'at': 'AT',
+      'slovakia': 'SK', 'slovensko': 'SK', 'slowakei': 'SK', 'sk': 'SK',
+      'poland': 'PL', 'polska': 'PL', 'polsko': 'PL', 'polen': 'PL', 'pl': 'PL',
+      'hungary': 'HU', 'magyarország': 'HU', 'magyarorszag': 'HU', 'maďarsko': 'HU', 'madarsko': 'HU', 'ungarn': 'HU', 'hu': 'HU',
+      'netherlands': 'NL', 'nederland': 'NL', 'holandsko': 'NL', 'niederlande': 'NL', 'nl': 'NL',
+      'belgium': 'BE', 'belgie': 'BE', 'belgien': 'BE', 'be': 'BE',
+      'france': 'FR', 'francie': 'FR', 'frankreich': 'FR', 'fr': 'FR',
+      'italy': 'IT', 'italia': 'IT', 'itálie': 'IT', 'italie': 'IT', 'italien': 'IT', 'it': 'IT',
+      'spain': 'ES', 'españa': 'ES', 'espana': 'ES', 'španělsko': 'ES', 'spanelsko': 'ES', 'spanien': 'ES', 'es': 'ES',
+      'portugal': 'PT', 'portugalsko': 'PT', 'pt': 'PT',
+      'united kingdom': 'GB', 'uk': 'GB', 'britain': 'GB', 'great britain': 'GB', 'velká británie': 'GB', 'velka britanie': 'GB', 'gb': 'GB',
+      'switzerland': 'CH', 'schweiz': 'CH', 'švýcarsko': 'CH', 'svycarsko': 'CH', 'suisse': 'CH', 'ch': 'CH',
+      'slovenia': 'SI', 'slovinsko': 'SI', 'slowenien': 'SI', 'si': 'SI',
+      'croatia': 'HR', 'chorvatsko': 'HR', 'kroatien': 'HR', 'hrvatska': 'HR', 'hr': 'HR',
+      'romania': 'RO', 'rumunsko': 'RO', 'rumänien': 'RO', 'rumanien': 'RO', 'ro': 'RO',
+      'bulgaria': 'BG', 'bulharsko': 'BG', 'bulgarien': 'BG', 'bg': 'BG',
+    };
+    return countryMap[normalized] || normalized.toUpperCase().slice(0, 2);
+  };
+
   // Auto-fill currency from customer preference
   useEffect(() => {
     if (!selectedCustomer) return;
@@ -998,6 +1025,32 @@ export default function AddOrder() {
       form.setValue('currency', selectedCustomer.preferredCurrency);
     }
   }, [selectedCustomer]);
+
+  // Auto-select carrier based on customer's country
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    
+    // Get the customer's country (from customer record or shipping address)
+    const customerCountry = selectedShippingAddress?.country || selectedCustomer.country;
+    if (!customerCountry) return;
+    
+    // Get the country carrier mapping from settings
+    const countryCarrierMapping = shippingSettings?.countryCarrierMapping as Record<string, string> | undefined;
+    if (!countryCarrierMapping || Object.keys(countryCarrierMapping).length === 0) return;
+    
+    // Convert country name to ISO code
+    const countryCode = getCountryCode(customerCountry);
+    if (!countryCode) return;
+    
+    // Look up the carrier for this country
+    const mappedCarrier = countryCarrierMapping[countryCode];
+    if (mappedCarrier) {
+      form.setValue('shippingMethod', mappedCarrier as any);
+      if (import.meta.env.DEV) {
+        console.log(`[AddOrder] Auto-selected carrier ${mappedCarrier} for country ${customerCountry} (${countryCode})`);
+      }
+    }
+  }, [selectedCustomer, selectedShippingAddress, shippingSettings?.countryCarrierMapping]);
 
   // Track previous currency to detect manual tax rate overrides
   const prevCurrencyRef = useRef<string>(watchedCurrency);
