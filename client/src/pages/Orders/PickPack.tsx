@@ -7984,12 +7984,12 @@ export default function PickPack() {
                             className={`p-3 rounded-lg border-2 text-center cursor-pointer transition-all ${
                               size === 'S'
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-400'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-indigo-400 opacity-50'
                             }`}
                             onClick={() => copyField(size, 'Paket size')}
                           >
                             <div className="text-2xl font-bold">{size}</div>
-                            <div className={`text-xs mt-0.5 ${size === 'S' ? 'text-indigo-100' : 'text-gray-500'}`}>
+                            <div className={`text-xs mt-0.5 ${size === 'S' ? 'text-indigo-100' : 'text-gray-400'}`}>
                               {size === 'S' ? 'Selected' : 'Paket'}
                             </div>
                           </div>
