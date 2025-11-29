@@ -275,6 +275,19 @@ const orders = {
   totalShipmentWeight: 'Tổng trọng lượng lô hàng',
   standard: 'Tiêu chuẩn',
   
+  // Shipping Categories (by Carrier)
+  pplCzCarrier: 'PPL CZ',
+  pplCzSubtitle: 'CH Séc & SK',
+  glsDeCarrier: 'GLS DE',
+  glsDeSubtitle: 'Các nước EU',
+  dhlDeCarrier: 'DHL DE',
+  dhlDeSubtitle: 'Đức + Thụy Sĩ + Nachnahme',
+  czechiaSlovakia: 'CH Séc & Slovakia',
+  germanyEU: 'Đức & EU',
+  personalDelivery: 'Giao tận tay',
+  customerPickup: 'Khách tự lấy',
+  otherDestinations: 'Điểm đến khác',
+  
   // Order Items Table
   landingCost: 'Giá nhập',
   itemNotes: 'Ghi chú sản phẩm',
@@ -1192,7 +1205,7 @@ const orders = {
   unableToDisplayItemDetails: 'Không thể hiển thị chi tiết sản phẩm. Vui lòng điều hướng bằng các nút Trước/Sau.',
   ordersCompletedToday: 'Đơn hàng hoàn thành hôm nay',
   ordersPickedAndReadyToPack: 'Đơn hàng đã lấy và sẵn sàng để đóng gói',
-  ordersOrganizedByDestination: 'Đơn hàng được tổ chức theo điểm đến',
+  ordersOrganizedByDestination: 'Đơn hàng được tổ chức theo nhà vận chuyển',
   
   // Confirmation messages
   deleteLabelConfirm: 'Xóa nhãn #{{labelNumber}}?\n\nĐiều này sẽ hủy vận chuyển với PPL.',

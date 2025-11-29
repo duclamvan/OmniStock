@@ -13964,13 +13964,31 @@ export default function PickPack() {
                         return '';
                       };
                       
-                      // Define carrier mappings (normalized)
-                      const czechCarriers = ['ppl', 'ppl cz', 'ppl czech', 'gls cz', 'gls czech'];
-                      const euCarriers = ['gls de', 'gls germany', 'dhl de', 'dhl germany'];
+                      // Define carrier mappings (normalized) - organized by carrier
+                      const pplCarriers = ['ppl', 'ppl cz', 'ppl czech'];
+                      const glsCarriers = ['gls', 'gls de', 'gls germany', 'gls cz', 'gls czech'];
+                      const dhlCarriers = ['dhl', 'dhl de', 'dhl germany', 'dhl nachnahme', 'dhl swiss', 'dhl schweiz', 'dhl switzerland'];
                       const personalDeliveryMethods = ['personal delivery', 'hand delivery', 'personal'];
                       const pickupMethods = ['customer pickup', 'store pickup', 'pickup', 'collect'];
                       
-                      // Categorize each order - priority order: method first, then country, then fallbacks
+                      // EU countries that can use GLS DE (including CZ/SK which can use either PPL or GLS)
+                      const glsEuCountries = ['DE', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SI', 'SK', 'ES', 'SE', 'GB', 'NO'];
+                      // DHL countries (CH for Swiss, LI for Liechtenstein)
+                      const dhlCountries = ['CH', 'LI'];
+                      // PPL CZ preferred countries (only when carrier is explicitly PPL)
+                      const pplCountries = ['CZ', 'SK'];
+                      
+                      // Helper to check if method explicitly mentions a carrier
+                      const hasExplicitCarrier = (method: string, carriers: string[]): boolean => {
+                        return carriers.some(carrier => 
+                          method === carrier || 
+                          method.startsWith(carrier + ' ') || 
+                          method.endsWith(' ' + carrier) ||
+                          method.includes(' ' + carrier + ' ')
+                        );
+                      };
+                      
+                      // Categorize each order - CARRIER FIRST, then country fallback
                       const categorizedOrders = readyOrders.map(order => {
                         const method = (order.shippingMethod || '').toLowerCase().trim();
                         const orderId = (order.orderId || '').toLowerCase();
@@ -13990,80 +14008,120 @@ export default function PickPack() {
                           return { order, category: 'pickup' };
                         }
                         
-                        // 3. Check carrier-based categorization
-                        // PPL, GLS CZ → Czechia & Slovakia
-                        if (czechCarriers.some(carrier => method.includes(carrier)) ||
-                            method === 'ppl' || method.startsWith('ppl ') ||
-                            (method.includes('gls') && (method.includes('cz') || countryCode === 'CZ' || countryCode === 'SK'))) {
-                          return { order, category: 'czechia' };
+                        // 3. EXPLICIT CARRIER DETECTION (priority over country)
+                        // PPL - only when explicitly PPL carrier
+                        if (hasExplicitCarrier(method, pplCarriers)) {
+                          return { order, category: 'ppl_cz' };
                         }
                         
-                        // GLS DE, DHL → Germany & EU
-                        if (euCarriers.some(carrier => method.includes(carrier)) ||
-                            (method.includes('gls') && (method.includes('de') || countryCode === 'DE')) ||
-                            (method.includes('dhl') && countryCode !== 'CZ' && countryCode !== 'SK')) {
-                          return { order, category: 'germany' };
+                        // DHL - only when explicitly DHL carrier or Nachnahme
+                        if (hasExplicitCarrier(method, dhlCarriers) || method.includes('nachnahme')) {
+                          return { order, category: 'dhl_de' };
                         }
                         
-                        // 4. Fallback to order ID prefix
-                        if (orderId.includes('-cz')) {
-                          return { order, category: 'czechia' };
-                        }
-                        if (orderId.includes('-de')) {
-                          return { order, category: 'germany' };
+                        // GLS - when explicitly GLS carrier (including GLS CZ which goes to GLS DE bucket)
+                        if (hasExplicitCarrier(method, glsCarriers)) {
+                          return { order, category: 'gls_de' };
                         }
                         
-                        // 5. Fallback to country code
-                        if (countryCode === 'CZ' || countryCode === 'SK') {
-                          return { order, category: 'czechia' };
+                        // 4. COUNTRY-BASED FALLBACK (when no explicit carrier in method)
+                        // DHL countries: Switzerland, Liechtenstein
+                        if (dhlCountries.includes(countryCode)) {
+                          return { order, category: 'dhl_de' };
                         }
                         
-                        // 6. Fallback to address string matching
+                        // PPL countries: CZ, SK (default carrier when no method specified)
+                        if (pplCountries.includes(countryCode)) {
+                          return { order, category: 'ppl_cz' };
+                        }
+                        
+                        // GLS EU countries
+                        if (glsEuCountries.includes(countryCode)) {
+                          return { order, category: 'gls_de' };
+                        }
+                        
+                        // 5. ORDER ID FALLBACK
+                        if (orderId.includes('-cz') || orderId.includes('-sk')) {
+                          return { order, category: 'ppl_cz' };
+                        }
+                        if (orderId.includes('-de') || orderId.includes('-eu')) {
+                          return { order, category: 'gls_de' };
+                        }
+                        if (orderId.includes('-ch') || orderId.includes('-dhl')) {
+                          return { order, category: 'dhl_de' };
+                        }
+                        
+                        // 6. ADDRESS STRING FALLBACK
+                        // DHL countries by address
+                        if (address.includes('switzerland') || address.includes('schweiz') || address.includes('suisse') ||
+                            address.includes('liechtenstein')) {
+                          return { order, category: 'dhl_de' };
+                        }
+                        
+                        // PPL countries by address
                         if (address.includes('czech') || address.includes('česk') || 
                             address.includes('slovakia') || address.includes('slovensk') ||
                             address.includes('prague') || address.includes('praha') || 
                             address.includes('bratislava') || address.includes('brno')) {
-                          return { order, category: 'czechia' };
+                          return { order, category: 'ppl_cz' };
                         }
                         
+                        // GLS EU countries by address
                         if (address.includes('germany') || address.includes('deutschland') ||
                             address.includes('berlin') || address.includes('munich') ||
                             address.includes('vienna') || address.includes('austria') ||
-                            address.includes('switzerland') || address.includes('france') ||
-                            address.includes('italy') || address.includes('spain') ||
-                            address.includes('poland') || address.includes('belgium')) {
-                          return { order, category: 'germany' };
+                            address.includes('france') || address.includes('italy') ||
+                            address.includes('spain') || address.includes('poland') ||
+                            address.includes('belgium') || address.includes('netherlands') ||
+                            address.includes('portugal') || address.includes('denmark') ||
+                            address.includes('sweden') || address.includes('finland') ||
+                            address.includes('norway') || address.includes('united kingdom') ||
+                            address.includes('ireland') || address.includes('greece')) {
+                          return { order, category: 'gls_de' };
                         }
                         
-                        // 7. Default to other
+                        // 7. Default to GLS DE for unknown EU-like destinations, otherwise other
                         return { order, category: 'other' };
                       });
                       
-                      // Group orders by category
-                      const czechiaSlovakia = categorizedOrders.filter(c => c.category === 'czechia').map(c => c.order);
-                      const germanyEU = categorizedOrders.filter(c => c.category === 'germany').map(c => c.order);
+                      // Group orders by carrier category
+                      const pplCzOrders = categorizedOrders.filter(c => c.category === 'ppl_cz').map(c => c.order);
+                      const glsDeOrders = categorizedOrders.filter(c => c.category === 'gls_de').map(c => c.order);
+                      const dhlDeOrders = categorizedOrders.filter(c => c.category === 'dhl_de').map(c => c.order);
                       const personalDelivery = categorizedOrders.filter(c => c.category === 'personal').map(c => c.order);
                       const pickup = categorizedOrders.filter(c => c.category === 'pickup').map(c => c.order);
                       const otherOrders = categorizedOrders.filter(c => c.category === 'other').map(c => c.order);
                       
                       const sections = [
                         { 
-                          title: t('czechiaSlovakia'), 
-                          icon: MapPin,
-                          color: 'bg-teal-50 border-teal-200',
-                          headerColor: 'from-teal-50 dark:from-teal-900/30 via-teal-50 dark:via-teal-900/30 to-white dark:to-gray-900',
-                          iconBg: 'from-white dark:from-gray-900 to-teal-50 dark:to-teal-900/30 border-teal-200 dark:border-teal-700',
-                          buttonColor: 'bg-teal-600 hover:bg-teal-700',
-                          orders: czechiaSlovakia 
+                          title: t('pplCzCarrier'), 
+                          subtitle: t('pplCzSubtitle'),
+                          icon: Truck,
+                          color: 'bg-blue-50 border-blue-200',
+                          headerColor: 'from-blue-50 dark:from-blue-900/30 via-blue-50 dark:via-blue-900/30 to-white dark:to-gray-900',
+                          iconBg: 'from-white dark:from-gray-900 to-blue-50 dark:to-blue-900/30 border-blue-200 dark:border-blue-700',
+                          buttonColor: 'bg-blue-600 hover:bg-blue-700',
+                          orders: pplCzOrders 
                         },
                         { 
-                          title: t('germanyEU'), 
+                          title: t('glsDeCarrier'), 
+                          subtitle: t('glsDeSubtitle'),
                           icon: Globe,
-                          color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700',
-                          headerColor: 'from-purple-50 dark:from-purple-900/30 via-purple-50 to-white',
-                          iconBg: 'from-white to-purple-50 dark:to-purple-900/30 border-purple-200 dark:border-purple-700',
-                          buttonColor: 'bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600',
-                          orders: germanyEU 
+                          color: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700',
+                          headerColor: 'from-amber-50 dark:from-amber-900/30 via-amber-50 to-white',
+                          iconBg: 'from-white to-amber-50 dark:to-amber-900/30 border-amber-200 dark:border-amber-700',
+                          buttonColor: 'bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600',
+                          orders: glsDeOrders 
+                        },
+                        { 
+                          title: t('dhlDeCarrier'), 
+                          subtitle: t('dhlDeSubtitle'),
+                          icon: Package,
+                          color: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700',
+                          headerColor: 'from-yellow-50 dark:from-yellow-900/30 via-yellow-50 to-white',
+                          iconBg: 'from-white to-yellow-50 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-700',
+                          buttonColor: 'bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-600',
+                          orders: dhlDeOrders 
                         },
                         { 
                           title: t('personalDelivery'), 
@@ -14085,11 +14143,11 @@ export default function PickPack() {
                         },
                         { 
                           title: t('otherDestinations'), 
-                          icon: Package,
-                          color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
-                          headerColor: 'from-blue-50 dark:from-blue-900/30 via-blue-50 to-white',
-                          iconBg: 'from-white to-blue-50 dark:to-blue-900/30 border-blue-200 dark:border-blue-700',
-                          buttonColor: 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600',
+                          icon: MapPin,
+                          color: 'bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700',
+                          headerColor: 'from-gray-50 dark:from-gray-900/30 via-gray-50 to-white',
+                          iconBg: 'from-white to-gray-50 dark:to-gray-900/30 border-gray-200 dark:border-gray-700',
+                          buttonColor: 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600',
                           orders: otherOrders 
                         },
                       ].filter(section => section.orders.length > 0);
@@ -14109,9 +14167,16 @@ export default function PickPack() {
                                     <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-wide uppercase">
-                                      {section.title}
-                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-wide uppercase">
+                                        {section.title}
+                                      </h3>
+                                      {'subtitle' in section && section.subtitle && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                                          ({section.subtitle})
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
                                       {section.orders.length} {section.orders.length === 1 ? t('orderReady') : t('ordersReady')}
                                     </p>

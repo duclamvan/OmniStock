@@ -283,7 +283,13 @@ const orders = {
   totalShipmentWeight: 'Total Shipment Weight',
   standard: 'Standard',
   
-  // Shipping Categories
+  // Shipping Categories (by Carrier)
+  pplCzCarrier: 'PPL CZ',
+  pplCzSubtitle: 'CZ & SK',
+  glsDeCarrier: 'GLS DE',
+  glsDeSubtitle: 'EU Countries',
+  dhlDeCarrier: 'DHL DE',
+  dhlDeSubtitle: 'DE + Swiss + Nachnahme',
   czechiaSlovakia: 'Czechia & Slovakia',
   germanyEU: 'Germany & EU',
   personalDelivery: 'Personal Delivery',
@@ -1271,7 +1277,7 @@ const orders = {
   unableToDisplayItemDetails: 'Unable to displayItemDetails. Please navigate using the Previous/Next buttons.',
   ordersCompletedToday: 'Orders Completed Today',
   ordersPickedAndReadyToPack: 'Orders that have been picked and ready to pack',
-  ordersOrganizedByDestination: 'Orders organized by shipping destination',
+  ordersOrganizedByDestination: 'Orders organized by shipping carrier',
   
   // Confirmation messages
   deleteLabelConfirm: 'Delete label #{{labelNumber}}?\n\nThis will cancel the shipment with PPL.',
