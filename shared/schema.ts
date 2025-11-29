@@ -2083,3 +2083,39 @@ export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+
+// Database Backups - for automatic and manual backup tracking
+export const databaseBackups = pgTable('database_backups', {
+  id: serial('id').primaryKey(),
+  backupType: varchar('backup_type', { length: 20 }).notNull().default('manual'), // manual, auto_daily, auto_weekly, auto_monthly
+  status: varchar('status', { length: 20 }).notNull().default('in_progress'), // in_progress, completed, failed
+  fileName: varchar('file_name', { length: 255 }),
+  filePath: text('file_path'),
+  fileSize: integer('file_size'), // Size in bytes
+  tablesIncluded: text('tables_included').array(), // List of table names backed up
+  recordCount: integer('record_count'), // Total number of records backed up
+  triggeredBy: varchar('triggered_by').references(() => users.id), // User who triggered manual backup (null for auto)
+  errorMessage: text('error_message'), // Error details if failed
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at'),
+  expiresAt: timestamp('expires_at') // When backup should be automatically deleted based on retention
+});
+
+export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups, {
+  backupType: z.enum(['manual', 'auto_daily', 'auto_weekly', 'auto_monthly']).default('manual'),
+  status: z.enum(['in_progress', 'completed', 'failed']).default('in_progress'),
+  fileName: z.string().optional(),
+  filePath: z.string().optional(),
+  fileSize: z.number().optional(),
+  tablesIncluded: z.array(z.string()).optional(),
+  recordCount: z.number().optional(),
+  triggeredBy: z.string().optional(),
+  errorMessage: z.string().optional(),
+}).omit({
+  id: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export type DatabaseBackup = typeof databaseBackups.$inferSelect;
+export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
