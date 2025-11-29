@@ -155,10 +155,16 @@ export interface ShippingSettings {
   pplDefaultSenderAddress?: string | object;
   pplEnableAutoLabel?: boolean;
   pplDefaultService?: string;
+  pplMaxPackageWeightKg?: number;
+  pplMaxPackageDimensionsCm?: string;
   glsDefaultSenderAddress?: string | object;
   glsEnableManualLabels?: boolean;
+  glsMaxPackageWeightKg?: number;
+  glsMaxPackageDimensionsCm?: string;
   dhlDefaultSenderAddress?: string | object;
   dhlEnableAutoLabel?: boolean;
+  dhlMaxPackageWeightKg?: number;
+  dhlMaxPackageDimensionsCm?: string;
   availableCarriers?: string;
   defaultCarrier?: string;
   enableCarrierRateShopping?: boolean;
@@ -177,8 +183,6 @@ export interface ShippingSettings {
   defaultShippingCost?: number;
   shippingCostCurrency?: 'CZK' | 'EUR' | 'USD';
   volumetricWeightDivisor?: number;
-  maxPackageWeightKg?: number;
-  maxPackageDimensionsCm?: string;
   autoGenerateLabels?: boolean;
   defaultLabelFormat?: 'A4' | 'thermal';
   trackingNotifications?: boolean;

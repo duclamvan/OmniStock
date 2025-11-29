@@ -36,14 +36,20 @@ const formSchema = z.object({
   ppl_default_sender_address: z.string().default(''),
   ppl_enable_auto_label: z.boolean().default(false),
   ppl_default_service: z.string().default(''),
+  ppl_max_package_weight_kg: z.coerce.number().min(0).default(50),
+  ppl_max_package_dimensions_cm: z.string().default('200x80x60'),
   
   // GLS DE Settings
   gls_default_sender_address: z.string().default(''),
   gls_enable_manual_labels: z.boolean().default(false),
+  gls_max_package_weight_kg: z.coerce.number().min(0).default(40),
+  gls_max_package_dimensions_cm: z.string().default('200x80x60'),
   
   // DHL DE Settings
   dhl_default_sender_address: z.string().default(''),
   dhl_enable_auto_label: z.boolean().default(false),
+  dhl_max_package_weight_kg: z.coerce.number().min(0).default(31.5),
+  dhl_max_package_dimensions_cm: z.string().default('120x60x60'),
   
   // General Settings
   quick_select_czk: z.string().default('0,100,150,250'),
@@ -57,10 +63,6 @@ const formSchema = z.object({
   default_shipping_cost: z.coerce.number().min(0).default(0),
   shipping_cost_currency: z.enum(['CZK', 'EUR', 'USD']).default('CZK'),
   volumetric_weight_divisor: z.coerce.number().min(1).default(5000),
-  
-  // Package Limits
-  max_package_weight_kg: z.coerce.number().min(0).default(30),
-  max_package_dimensions_cm: z.string().default('120x80x80'),
   
   // Label Generation
   default_label_size: z.enum(['A4', 'A5', '4x6', '10x15cm']).default('A4'),
@@ -104,10 +106,16 @@ export default function ShippingSettings() {
       ppl_default_sender_address: '',
       ppl_enable_auto_label: false,
       ppl_default_service: '',
+      ppl_max_package_weight_kg: 50,
+      ppl_max_package_dimensions_cm: '200x80x60',
       gls_default_sender_address: '',
       gls_enable_manual_labels: false,
+      gls_max_package_weight_kg: 40,
+      gls_max_package_dimensions_cm: '200x80x60',
       dhl_default_sender_address: '',
       dhl_enable_auto_label: false,
+      dhl_max_package_weight_kg: 31.5,
+      dhl_max_package_dimensions_cm: '120x60x60',
       quick_select_czk: '0,100,150,250',
       quick_select_eur: '0,5,10,13,15,20',
       default_shipping_method: 'PPL CZ',
@@ -117,8 +125,6 @@ export default function ShippingSettings() {
       default_shipping_cost: 0,
       shipping_cost_currency: 'CZK',
       volumetric_weight_divisor: 5000,
-      max_package_weight_kg: 30,
-      max_package_dimensions_cm: '120x80x80',
       default_label_size: 'A4',
       label_format: 'PDF',
       auto_print_labels: false,
@@ -148,10 +154,16 @@ export default function ShippingSettings() {
         ppl_default_sender_address: toJsonString(shippingSettings.pplDefaultSenderAddress),
         ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel,
         ppl_default_service: shippingSettings.pplDefaultService,
+        ppl_max_package_weight_kg: shippingSettings.pplMaxPackageWeightKg ?? 50,
+        ppl_max_package_dimensions_cm: shippingSettings.pplMaxPackageDimensionsCm ?? '200x80x60',
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
+        gls_max_package_weight_kg: shippingSettings.glsMaxPackageWeightKg ?? 40,
+        gls_max_package_dimensions_cm: shippingSettings.glsMaxPackageDimensionsCm ?? '200x80x60',
         dhl_default_sender_address: toJsonString(shippingSettings.dhlDefaultSenderAddress),
         dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel,
+        dhl_max_package_weight_kg: shippingSettings.dhlMaxPackageWeightKg ?? 31.5,
+        dhl_max_package_dimensions_cm: shippingSettings.dhlMaxPackageDimensionsCm ?? '120x60x60',
         quick_select_czk: shippingSettings.quickSelectCzk,
         quick_select_eur: shippingSettings.quickSelectEur,
         default_shipping_method: normalizeCarrier(shippingSettings.defaultShippingMethod || 'PPL CZ'),
@@ -161,8 +173,6 @@ export default function ShippingSettings() {
         default_shipping_cost: shippingSettings.defaultShippingCost,
         shipping_cost_currency: shippingSettings.shippingCostCurrency,
         volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor,
-        max_package_weight_kg: shippingSettings.maxPackageWeightKg,
-        max_package_dimensions_cm: shippingSettings.maxPackageDimensionsCm,
         default_label_size: shippingSettings.defaultLabelSize,
         label_format: shippingSettings.labelFormat,
         auto_print_labels: shippingSettings.autoPrintLabels,
@@ -366,6 +376,58 @@ export default function ShippingSettings() {
                 />
               </CardContent>
             </Card>
+
+            {/* PPL CZ Package Limits */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  PPL CZ Package Limits
+                </CardTitle>
+                <CardDescription className="text-sm">Maximum package weight and dimensions for PPL Czech Republic (max 50kg, 200×80×60cm)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="ppl_max_package_weight_kg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            min="0"
+                            max="50"
+                            step="0.1"
+                            placeholder="50"
+                            data-testid="input-ppl_max_package_weight_kg"
+                          />
+                        </FormControl>
+                        <FormDescription>PPL max: 50kg</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="ppl_max_package_dimensions_cm"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Dimensions (cm)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="200x80x60" data-testid="input-ppl_max_package_dimensions_cm" />
+                        </FormControl>
+                        <FormDescription>L×W×H (PPL max: 200×80×60)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* GLS DE Tab */}
@@ -444,6 +506,58 @@ export default function ShippingSettings() {
                 />
               </CardContent>
             </Card>
+
+            {/* GLS DE Package Limits */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  GLS DE Package Limits
+                </CardTitle>
+                <CardDescription className="text-sm">Maximum package weight and dimensions for GLS Germany (max 40kg, 200×80×60cm)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="gls_max_package_weight_kg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            min="0"
+                            max="40"
+                            step="0.1"
+                            placeholder="40"
+                            data-testid="input-gls_max_package_weight_kg"
+                          />
+                        </FormControl>
+                        <FormDescription>GLS max: 40kg</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="gls_max_package_dimensions_cm"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Dimensions (cm)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="200x80x60" data-testid="input-gls_max_package_dimensions_cm" />
+                        </FormControl>
+                        <FormDescription>L×W×H (GLS max: 200×80×60)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* DHL DE Tab */}
@@ -520,6 +634,58 @@ export default function ShippingSettings() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* DHL DE Package Limits */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  DHL DE Package Limits
+                </CardTitle>
+                <CardDescription className="text-sm">Maximum package weight and dimensions for DHL Germany (max 31.5kg, 120×60×60cm)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="dhl_max_package_weight_kg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            min="0"
+                            max="31.5"
+                            step="0.1"
+                            placeholder="31.5"
+                            data-testid="input-dhl_max_package_weight_kg"
+                          />
+                        </FormControl>
+                        <FormDescription>DHL max: 31.5kg</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dhl_max_package_dimensions_cm"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Dimensions (cm)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="120x60x60" data-testid="input-dhl_max_package_dimensions_cm" />
+                        </FormControl>
+                        <FormDescription>L×W×H (DHL max: 120×60×60)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -726,57 +892,6 @@ export default function ShippingSettings() {
                       </FormControl>
                       <FormDescription>
                         Divisor for volumetric weight calculation (Length × Width × Height / Divisor)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Package Limits */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Package Limits
-                </CardTitle>
-                <CardDescription className="text-sm">Configure maximum package weight and dimensions</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <FormField
-                  control={form.control}
-                  name="max_package_weight_kg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Package Weight (kg)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          placeholder="30"
-                          data-testid="input-max_package_weight_kg"
-                        />
-                      </FormControl>
-                      <FormDescription>Maximum weight per package in kilograms</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="max_package_dimensions_cm"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Package Dimensions (cm)</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="120x80x80" data-testid="input-max_package_dimensions_cm" />
-                      </FormControl>
-                      <FormDescription>
-                        Maximum dimensions in format: Length×Width×Height (in cm)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
