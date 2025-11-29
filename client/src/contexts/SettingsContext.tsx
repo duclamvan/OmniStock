@@ -170,6 +170,7 @@ export interface ShippingSettings {
   dhlEnableAutoLabel?: boolean;
   dhlMaxPackageWeightKg?: number;
   dhlMaxPackageDimensionsCm?: string;
+  dhlShippingRates?: string | object;
   availableCarriers?: string;
   defaultCarrier?: string;
   enableCarrierRateShopping?: boolean;

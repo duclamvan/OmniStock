@@ -67,6 +67,14 @@ const formSchema = z.object({
   dhl_enable_auto_label: z.boolean().default(false),
   dhl_max_package_weight_kg: z.coerce.number().min(0).default(31.5),
   dhl_max_package_dimensions_cm: z.string().default('120x60x60'),
+  dhl_shipping_rates: z.string().default(JSON.stringify({
+    paket2kg: { price: 6.19, maxWeight: 2, dimensions: '60x30x15' },
+    paket5kg: { price: 7.69, maxWeight: 5, dimensions: '120x60x60' },
+    paket10kg: { price: 10.49, maxWeight: 10, dimensions: '120x60x60' },
+    paket20kg: { price: 18.99, maxWeight: 20, dimensions: '120x60x60' },
+    paket31kg: { price: 23.99, maxWeight: 31.5, dimensions: '120x60x60' },
+    nachnahme: { fee: 8.99 }
+  })),
   
   // General Settings
   quick_select_czk: z.string().default('0,100,150,250'),
@@ -135,6 +143,14 @@ export default function ShippingSettings() {
       dhl_enable_auto_label: false,
       dhl_max_package_weight_kg: 31.5,
       dhl_max_package_dimensions_cm: '120x60x60',
+      dhl_shipping_rates: JSON.stringify({
+        paket2kg: { price: 6.19, maxWeight: 2, dimensions: '60x30x15' },
+        paket5kg: { price: 7.69, maxWeight: 5, dimensions: '120x60x60' },
+        paket10kg: { price: 10.49, maxWeight: 10, dimensions: '120x60x60' },
+        paket20kg: { price: 18.99, maxWeight: 20, dimensions: '120x60x60' },
+        paket31kg: { price: 23.99, maxWeight: 31.5, dimensions: '120x60x60' },
+        nachnahme: { fee: 8.99 }
+      }),
       quick_select_czk: '0,100,150,250',
       quick_select_eur: '0,5,10,13,15,20',
       default_shipping_method: 'PPL CZ',
@@ -185,6 +201,14 @@ export default function ShippingSettings() {
         dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel,
         dhl_max_package_weight_kg: shippingSettings.dhlMaxPackageWeightKg ?? 31.5,
         dhl_max_package_dimensions_cm: shippingSettings.dhlMaxPackageDimensionsCm ?? '120x60x60',
+        dhl_shipping_rates: toJsonString(shippingSettings.dhlShippingRates || {
+          paket2kg: { price: 6.19, maxWeight: 2, dimensions: '60x30x15' },
+          paket5kg: { price: 7.69, maxWeight: 5, dimensions: '120x60x60' },
+          paket10kg: { price: 10.49, maxWeight: 10, dimensions: '120x60x60' },
+          paket20kg: { price: 18.99, maxWeight: 20, dimensions: '120x60x60' },
+          paket31kg: { price: 23.99, maxWeight: 31.5, dimensions: '120x60x60' },
+          nachnahme: { fee: 8.99 }
+        }),
         quick_select_czk: shippingSettings.quickSelectCzk,
         quick_select_eur: shippingSettings.quickSelectEur,
         default_shipping_method: normalizeCarrier(shippingSettings.defaultShippingMethod || 'PPL CZ'),
@@ -864,6 +888,117 @@ export default function ShippingSettings() {
 
           {/* DHL DE Tab */}
           <TabsContent value="dhl-de" className="space-y-4">
+            {/* DHL DE Package Rates & Limits */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  DHL DE Package Rates & Limits
+                </CardTitle>
+                <CardDescription className="text-sm">Package sizes with weight limits, dimensions, and prices for DHL Germany</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-6">
+                {/* Package Rates */}
+                <FormField
+                  control={form.control}
+                  name="dhl_shipping_rates"
+                  render={({ field }) => {
+                    const parsedRates = (() => {
+                      try {
+                        return typeof field.value === 'string' ? JSON.parse(field.value || '{}') : (field.value || {});
+                      } catch {
+                        return {
+                          paket2kg: { price: 6.19, maxWeight: 2, dimensions: '60x30x15' },
+                          paket5kg: { price: 7.69, maxWeight: 5, dimensions: '120x60x60' },
+                          paket10kg: { price: 10.49, maxWeight: 10, dimensions: '120x60x60' },
+                          paket20kg: { price: 18.99, maxWeight: 20, dimensions: '120x60x60' },
+                          paket31kg: { price: 23.99, maxWeight: 31.5, dimensions: '120x60x60' },
+                          nachnahme: { fee: 8.99 }
+                        };
+                      }
+                    })();
+
+                    const updateRate = (size: string, key: string, value: number | string) => {
+                      const newRates = { 
+                        ...parsedRates, 
+                        [size]: { ...parsedRates[size], [key]: value } 
+                      };
+                      field.onChange(JSON.stringify(newRates));
+                    };
+
+                    const packageSizes = [
+                      { key: 'paket2kg', label: '2 kg - Paket', defaultPrice: 6.19, defaultWeight: 2, defaultDim: '60x30x15' },
+                      { key: 'paket5kg', label: '5 kg - Paket', defaultPrice: 7.69, defaultWeight: 5, defaultDim: '120x60x60', topseller: true },
+                      { key: 'paket10kg', label: '10 kg - Paket', defaultPrice: 10.49, defaultWeight: 10, defaultDim: '120x60x60' },
+                      { key: 'paket20kg', label: '20 kg - Paket', defaultPrice: 18.99, defaultWeight: 20, defaultDim: '120x60x60' },
+                      { key: 'paket31kg', label: '31.5 kg - Paket', defaultPrice: 23.99, defaultWeight: 31.5, defaultDim: '120x60x60' },
+                    ];
+
+                    return (
+                      <FormItem>
+                        <div className="space-y-4">
+                          {/* Package Size Cards */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                            {packageSizes.map((pkg) => (
+                              <div 
+                                key={pkg.key} 
+                                className={`p-3 rounded-lg border ${pkg.topseller ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : 'bg-muted/30'}`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm font-medium">{pkg.label}</span>
+                                  {pkg.topseller && <span className="text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded">TOP</span>}
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={parsedRates[pkg.key]?.price ?? pkg.defaultPrice}
+                                      onChange={(e) => updateRate(pkg.key, 'price', parseFloat(e.target.value) || 0)}
+                                      className="w-20 h-8 text-sm"
+                                      min="0"
+                                      step="0.01"
+                                      data-testid={`input-dhl-rate-${pkg.key}`}
+                                    />
+                                    <span className="text-xs text-muted-foreground">EUR</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    max. {parsedRates[pkg.key]?.dimensions || pkg.defaultDim} cm
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Nachnahme (COD) Fee */}
+                          <div className="pt-4 border-t">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-3">Nachnahme (COD) Fee</h4>
+                            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 w-fit">
+                              <span className="text-sm font-medium">Nachnahme</span>
+                              <span className="text-muted-foreground">+</span>
+                              <Input
+                                type="number"
+                                value={parsedRates.nachnahme?.fee ?? 8.99}
+                                onChange={(e) => updateRate('nachnahme', 'fee', parseFloat(e.target.value) || 0)}
+                                className="w-20 h-8 text-sm"
+                                min="0"
+                                step="0.01"
+                                data-testid="input-dhl-nachnahme-fee"
+                              />
+                              <span className="text-sm text-muted-foreground">EUR</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Fee added for cash on delivery shipments
+                            </p>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </CardContent>
+            </Card>
+
             {/* Carrier Configuration */}
             <Card>
               <CardHeader className="p-4 sm:p-6">
@@ -895,58 +1030,6 @@ export default function ShippingSettings() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-
-            {/* DHL DE Package Limits */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  DHL DE Package Limits
-                </CardTitle>
-                <CardDescription className="text-sm">Maximum package weight and dimensions for DHL Germany (max 31.5kg, 120×60×60cm)</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="dhl_max_package_weight_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Maximum Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min="0"
-                            max="31.5"
-                            step="0.1"
-                            placeholder="31.5"
-                            data-testid="input-dhl_max_package_weight_kg"
-                          />
-                        </FormControl>
-                        <FormDescription>DHL max: 31.5kg</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="dhl_max_package_dimensions_cm"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Maximum Dimensions (cm)</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="120x60x60" data-testid="input-dhl_max_package_dimensions_cm" />
-                        </FormControl>
-                        <FormDescription>L×W×H (DHL max: 120×60×60)</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </CardContent>
             </Card>
 
