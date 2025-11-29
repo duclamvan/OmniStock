@@ -5164,6 +5164,35 @@ Important:
     }
   });
 
+  // Stock Adjustment History endpoints
+  app.get('/api/stock-adjustment-history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { productId, startDate, endDate, limit, offset } = req.query;
+      
+      const options: { 
+        productId?: string; 
+        startDate?: Date; 
+        endDate?: Date; 
+        limit?: number; 
+        offset?: number;
+      } = {};
+      
+      if (productId) options.productId = productId as string;
+      if (startDate) options.startDate = new Date(startDate as string);
+      if (endDate) options.endDate = new Date(endDate as string);
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
+
+      const history = await storage.getStockAdjustmentHistory(options);
+      const total = await storage.getStockAdjustmentHistoryCount(options);
+      
+      res.json({ history, total });
+    } catch (error: any) {
+      console.error("Error fetching stock adjustment history:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch stock adjustment history" });
+    }
+  });
+
   // Packing Materials endpoints
   app.get('/api/packing-materials', isAuthenticated, async (req, res) => {
     try {
