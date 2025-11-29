@@ -410,7 +410,7 @@ export function MobileHeader({
                               </p>
                             </div>
                             {group.hasUnread && (
-                              <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1 animate-pulse" />
+                              <div className="absolute right-2 top-1/2 -translate-y-1/2 h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse" />
                             )}
                           </div>
                         </DropdownMenuItem>
