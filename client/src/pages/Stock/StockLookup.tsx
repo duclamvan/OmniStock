@@ -149,19 +149,17 @@ export default function StockLookup() {
     queryKey: ['/api/categories'],
   });
 
-  // Fetch over-allocated items
-  const { data: overAllocatedItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/over-allocated-items'],
+  // Fetch stock inconsistencies (unified: over-allocated + under-allocated)
+  const { data: stockInconsistencies } = useQuery<{
+    items: any[];
+    summary: { total: number; overAllocated: number; underAllocated: number };
+  }>({
+    queryKey: ['/api/stock-inconsistencies'],
     staleTime: 0,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
-  // Fetch under-allocated items
-  const { data: underAllocatedItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/under-allocated-items'],
-    staleTime: 0,
-    refetchInterval: 60000, // Refresh every minute
-  });
+  const inconsistenciesCount = stockInconsistencies?.summary?.total || 0;
 
 
   // Create warehouse lookup map
@@ -550,34 +548,34 @@ export default function StockLookup() {
         </div>
       </div>
 
-      {/* Over-Allocated Items Warning */}
-      {overAllocatedItems.length > 0 && (
+      {/* Stock Inconsistencies Warning */}
+      {inconsistenciesCount > 0 && !isFromUnderAllocated && (
         <div className="px-3 pt-3">
-          <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-300 dark:border-red-700">
+          <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-300 dark:border-orange-700">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div className="flex-shrink-0 p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                    {t('overAllocated')}
+                  <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                    {t('stockInconsistencies')}
                   </h3>
-                  <p className="text-sm text-red-800 dark:text-red-200 mb-3">
-                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('itemsWithMoreOrderedThanAvailable').toLowerCase()}
+                  <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
+                    <span className="font-bold">{inconsistenciesCount}</span> {inconsistenciesCount === 1 ? t('itemHas') : t('itemsHave')} {t('stockDiscrepancies').toLowerCase()}
                   </p>
-                  <Link href="/stock/over-allocated">
+                  <Link href="/stock/inconsistencies">
                     <Button 
                       size="sm" 
-                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
-                      data-testid="button-view-over-allocated"
+                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
+                      data-testid="button-view-inconsistencies"
                     >
                       {t('viewAndResolveIssues')}
                     </Button>
                   </Link>
                 </div>
-                <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
-                  {overAllocatedItems.length}
+                <Badge className="bg-orange-600 text-white text-sm font-bold flex-shrink-0">
+                  {inconsistenciesCount}
                 </Badge>
               </div>
             </CardContent>
@@ -585,59 +583,24 @@ export default function StockLookup() {
         </div>
       )}
 
-      {/* Under-Allocated Items Warning */}
-      {underAllocatedItems.length > 0 && !isFromUnderAllocated && (
-        <div className={`px-3 ${overAllocatedItems.length > 0 ? 'pt-2' : 'pt-3'}`}>
-          <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                    {t('underAllocated')}
-                  </h3>
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('itemsWithMoreRecordedThanLocation').toLowerCase()}
-                  </p>
-                  <Link href="/stock/under-allocated">
-                    <Button 
-                      size="sm" 
-                      className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white"
-                      data-testid="button-view-under-allocated"
-                    >
-                      {t('viewAndResolveIssues')}
-                    </Button>
-                  </Link>
-                </div>
-                <Badge className="bg-yellow-600 text-white text-sm font-bold flex-shrink-0">
-                  {underAllocatedItems.length}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Under-Allocated Filter Banner */}
+      {/* Stock Inconsistencies Filter Banner */}
       {isFromUnderAllocated && filteredProducts.length > 0 && (
         <div className="px-3 pt-3">
-          <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
+          <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-300 dark:border-orange-700">
             <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
-                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 dark:text-yellow-400" />
+                <div className="flex-shrink-0 p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base text-yellow-900 dark:text-yellow-100 mb-0.5">
-                    {t('showingUnderAllocatedItems')}
+                  <h3 className="font-semibold text-sm sm:text-base text-orange-900 dark:text-orange-100 mb-0.5">
+                    {t('showingInconsistentItems')}
                   </h3>
-                  <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
+                  <p className="text-xs sm:text-sm text-orange-800 dark:text-orange-200">
                     {t('discrepanciesBetweenRecorded')}
                   </p>
                 </div>
-                <Badge className="bg-yellow-600 text-white text-xs sm:text-sm font-bold flex-shrink-0">
+                <Badge className="bg-orange-600 text-white text-xs sm:text-sm font-bold flex-shrink-0">
                   {filteredProducts.length}
                 </Badge>
               </div>

@@ -98,8 +98,7 @@ import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
-import OverAllocated from "@/pages/Stock/OverAllocated";
-import UnderAllocated from "@/pages/Stock/UnderAllocated";
+import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -320,8 +319,9 @@ function Router() {
         </Route>
         <Route path="/stock" component={StockLookup} />
         <Route path="/stock/approvals" component={StockAdjustmentApprovals} />
-        <Route path="/stock/over-allocated" component={OverAllocated} />
-        <Route path="/stock/under-allocated" component={UnderAllocated} />
+        <Route path="/stock/inconsistencies" component={StockInconsistencies} />
+        <Route path="/stock/over-allocated" component={StockInconsistencies} />
+        <Route path="/stock/under-allocated" component={StockInconsistencies} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/shipping/labels" component={ShipmentLabels} />
