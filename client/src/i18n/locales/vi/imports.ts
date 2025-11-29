@@ -552,6 +552,9 @@ const imports = {
   collapseAll: 'Thu gọn tất cả',
   selectAll: 'Chọn tất cả',
   deselectAll: 'Bỏ chọn tất cả',
+  addSelectedToInventory: 'Thêm mục đã chọn vào tồn kho',
+  addAllToInventory: 'Thêm tất cả vào tồn kho',
+  savePrices: 'Lưu giá',
   
   // AtWarehouse - Statuses
   unpacked: 'Đã mở kiện',

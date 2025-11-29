@@ -545,6 +545,9 @@ const imports = {
   collapseAll: 'Collapse All',
   selectAll: 'Select All',
   deselectAll: 'Deselect All',
+  addSelectedToInventory: 'Add Selected to Inventory',
+  addAllToInventory: 'Add All to Inventory',
+  savePrices: 'Save Prices',
   
   // AtWarehouse - Statuses
   unpacked: 'Unpacked',

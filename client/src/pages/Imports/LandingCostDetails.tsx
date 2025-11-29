@@ -481,38 +481,16 @@ export default function LandingCostDetails() {
         <Card className="mb-4">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3">
+              {/* Title Row */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={
-                        landingCostPreview.items.filter(item => !productsBySKU[item.sku]).length > 0 &&
-                        landingCostPreview.items.filter(item => !productsBySKU[item.sku]).every(item => selectedItems.has(item.sku))
-                      }
-                      onCheckedChange={(checked) => {
-                        const newSelected = new Set<string>();
-                        if (checked) {
-                          landingCostPreview.items.forEach(item => {
-                            if (!productsBySKU[item.sku]) {
-                              newSelected.add(item.sku);
-                            }
-                          });
-                        }
-                        setSelectedItems(newSelected);
-                      }}
-                      data-testid="checkbox-select-all"
-                    />
-                    <Label className="text-xs cursor-pointer">{t('selectAll') || 'Select All'}</Label>
-                  </div>
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      {t('landedCostPerItem') || 'Landed Cost Per Item'} ({landingCostPreview.items.length})
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {t('viewLandedCostsSetPrices') || 'View landed costs and set selling prices'}
-                    </CardDescription>
-                  </div>
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    {t('landedCostPerItem') || 'Landed Cost Per Item'} ({landingCostPreview.items.length})
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {t('viewLandedCostsSetPrices') || 'View landed costs and set selling prices'}
+                  </CardDescription>
                 </div>
                 <Button
                   size="sm"
@@ -567,6 +545,29 @@ export default function LandingCostDetails() {
                     : `${t('savePrices') || 'Save Prices'} (${changedPricesCount})`
                   }
                 </Button>
+              </div>
+              
+              {/* Select All Checkbox - Below Buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Checkbox
+                  checked={
+                    landingCostPreview.items.filter(item => !productsBySKU[item.sku]).length > 0 &&
+                    landingCostPreview.items.filter(item => !productsBySKU[item.sku]).every(item => selectedItems.has(item.sku))
+                  }
+                  onCheckedChange={(checked) => {
+                    const newSelected = new Set<string>();
+                    if (checked) {
+                      landingCostPreview.items.forEach(item => {
+                        if (!productsBySKU[item.sku]) {
+                          newSelected.add(item.sku);
+                        }
+                      });
+                    }
+                    setSelectedItems(newSelected);
+                  }}
+                  data-testid="checkbox-select-all"
+                />
+                <Label className="text-xs cursor-pointer">{t('selectAll') || 'Select All'}</Label>
               </div>
             </div>
           </CardHeader>
