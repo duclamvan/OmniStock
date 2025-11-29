@@ -326,7 +326,7 @@ export default function InventoryReports() {
       case 'direct': return t('direct');
       case 'approved_request': return t('approvedRequest');
       case 'receiving': return t('receiving');
-      case 'order_fulfillment': return t('orderFulfillment');
+      case 'order_fulfillment': return t('fulfillment');
       default: return source;
     }
   };

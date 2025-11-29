@@ -194,6 +194,9 @@ const reports = {
   customers: 'Khách hàng',
   cost: 'Chi phí',
   expenses: 'Chi phí',
+  financial: 'Tài chính',
+  sales: 'Bán hàng',
+  inventory: 'Tồn kho',
   totalCost: 'Tổng chi phí',
   totalExpenses: 'Tổng chi phí',
   totalCustomers: 'Tổng khách hàng',
@@ -463,15 +466,7 @@ const reports = {
   peakHour: 'Giờ cao điểm',
   bestMonth: 'Tháng tốt nhất',
   avgProfitMargin: 'Lợi nhuận TB',
-  yearlyProfit: 'Lợi nhuận năm',
-  yearlyRevenue: 'Doanh thu năm',
   salesByDayOfWeek: 'Doanh số theo ngày trong tuần',
-  
-  // Time period tabs
-  daily: 'Hàng ngày',
-  weekly: 'Hàng tuần',
-  monthly: 'Hàng tháng',
-  yearly: 'Hàng năm',
   
   // Daily reports
   dailySalesLast30Days: 'Doanh số hàng ngày - 30 ngày qua',
@@ -536,7 +531,6 @@ const reports = {
   
   // Enhanced Order Reports
   avgProcessingTime: 'Thời gian xử lý TB',
-  fulfillmentRate: 'Tỷ lệ hoàn thành',
   orderValueDistribution: 'Phân phối giá trị đơn hàng',
   orderVolumeByDay: 'Khối lượng đơn hàng theo ngày',
   orderPerformance: 'Hiệu suất đơn hàng',
@@ -549,7 +543,6 @@ const reports = {
   lowValue: 'Giá trị thấp',
   
   // Enhanced Customer Reports
-  customerRetention: 'Giữ chân khách hàng',
   customerAcquisition: 'Thu hút khách hàng',
   customerLifetimeValueTrend: 'Xu hướng giá trị vòng đời KH',
   churnRisk: 'Rủi ro mất khách',
@@ -585,10 +578,8 @@ const reports = {
   // Additional report keys
   retentionMetrics: 'Chỉ số giữ chân',
   retentionRate: 'Tỷ lệ giữ chân',
-  returningCustomers: 'Khách quay lại',
   newCustomersThisMonth: 'Khách mới tháng này',
   customerTypeSplit: 'Phân loại khách hàng',
-  newCustomers: 'Khách mới',
   customersAtRiskDesc: 'Khách hàng không có đơn hàng trong 90 ngày qua',
   noCustomersAtRisk: 'Không có khách hàng có rủi ro',
   customerAcquisitionTrend: 'Xu hướng thu hút khách hàng',
@@ -623,7 +614,7 @@ const reports = {
   direct: 'Trực tiếp',
   approvedRequest: 'Yêu cầu đã duyệt',
   receiving: 'Nhập hàng',
-  orderFulfillment: 'Xử lý đơn hàng',
+  fulfillment: 'Xử lý đơn',
   noAdjustmentHistory: 'Không tìm thấy lịch sử điều chỉnh tồn kho',
   stockHistoryExportedXlsx: 'Đã xuất lịch sử điều chỉnh tồn kho sang XLSX',
   stockHistoryExportedPdf: 'Đã xuất lịch sử điều chỉnh tồn kho sang PDF',

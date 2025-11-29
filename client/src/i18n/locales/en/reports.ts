@@ -194,6 +194,9 @@ const reports = {
   customers: 'Customers',
   cost: 'Cost',
   expenses: 'Expenses',
+  financial: 'Financial',
+  sales: 'Sales',
+  inventory: 'Inventory',
   totalCost: 'Total Cost',
   totalExpenses: 'Total Expenses',
   totalCustomers: 'Total Customers',
@@ -463,15 +466,7 @@ const reports = {
   peakHour: 'Peak Sales Hour',
   bestMonth: 'Best Month',
   avgProfitMargin: 'Avg. Profit Margin',
-  yearlyProfit: 'Yearly Profit',
-  yearlyRevenue: 'Yearly Revenue',
   salesByDayOfWeek: 'Sales by Day of Week',
-  
-  // Time period tabs
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  yearly: 'Yearly',
   
   // Daily reports
   dailySalesLast30Days: 'Daily Sales - Last 30 Days',
@@ -536,7 +531,6 @@ const reports = {
   
   // Enhanced Order Reports
   avgProcessingTime: 'Avg Processing Time',
-  fulfillmentRate: 'Fulfillment Rate',
   orderValueDistribution: 'Order Value Distribution',
   orderVolumeByDay: 'Order Volume by Day',
   orderPerformance: 'Order Performance',
@@ -549,7 +543,6 @@ const reports = {
   lowValue: 'Low Value',
   
   // Enhanced Customer Reports
-  customerRetention: 'Customer Retention',
   customerAcquisition: 'Customer Acquisition',
   customerLifetimeValueTrend: 'Customer Lifetime Value Trend',
   churnRisk: 'Churn Risk',
@@ -585,10 +578,8 @@ const reports = {
   // Additional report keys
   retentionMetrics: 'Retention Metrics',
   retentionRate: 'Retention Rate',
-  returningCustomers: 'Returning Customers',
   newCustomersThisMonth: 'New Customers This Month',
   customerTypeSplit: 'Customer Type Split',
-  newCustomers: 'New Customers',
   customersAtRiskDesc: 'Customers with no orders in the last 90 days',
   noCustomersAtRisk: 'No customers at risk',
   customerAcquisitionTrend: 'Customer Acquisition Trend',
@@ -623,7 +614,7 @@ const reports = {
   direct: 'Direct',
   approvedRequest: 'Approved Request',
   receiving: 'Receiving',
-  orderFulfillment: 'Order Fulfillment',
+  fulfillment: 'Fulfillment',
   noAdjustmentHistory: 'No stock adjustment history found',
   stockHistoryExportedXlsx: 'Stock adjustment history exported to XLSX',
   stockHistoryExportedPdf: 'Stock adjustment history exported to PDF',
