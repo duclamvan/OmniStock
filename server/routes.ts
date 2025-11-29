@@ -2654,7 +2654,8 @@ Important:
         maxRacks: warehouse.maxRacks || 10,
         maxLevels: warehouse.maxLevels || 5,
         maxBins: warehouse.maxBins || 5,
-        aisleConfigs: warehouse.aisleConfigs || {}
+        aisleConfigs: warehouse.aisleConfigs || {},
+        zones: warehouse.zones || {}
       });
     } catch (error) {
       console.error("Error fetching warehouse map config:", error);
@@ -2665,11 +2666,17 @@ Important:
   // Update warehouse map configuration
   app.put('/api/warehouses/:id/map-config', isAuthenticated, async (req: any, res) => {
     try {
+      const zoneConfigSchema = z.object({
+        aisleCount: z.number().int().min(0).max(50),
+        defaultStorageType: z.enum(['bin', 'pallet']).optional()
+      });
+
       const warehouseConfigSchema = z.object({
         totalAisles: z.number().int().min(1).max(50),
         maxRacks: z.number().int().min(1).max(100),
         maxLevels: z.number().int().min(1).max(20),
-        maxBins: z.number().int().min(1).max(20)
+        maxBins: z.number().int().min(1).max(20),
+        zones: z.record(zoneConfigSchema).optional()
       });
 
       const validationResult = warehouseConfigSchema.safeParse(req.body);
@@ -2684,13 +2691,14 @@ Important:
         });
       }
 
-      const { totalAisles, maxRacks, maxLevels, maxBins } = validationResult.data;
+      const { totalAisles, maxRacks, maxLevels, maxBins, zones } = validationResult.data;
 
       const warehouse = await storage.updateWarehouse(req.params.id, {
         totalAisles,
         maxRacks,
         maxLevels,
-        maxBins
+        maxBins,
+        zones: zones || {}
       });
 
       if (!warehouse) {
@@ -2709,7 +2717,8 @@ Important:
         totalAisles: warehouse.totalAisles,
         maxRacks: warehouse.maxRacks,
         maxLevels: warehouse.maxLevels,
-        maxBins: warehouse.maxBins
+        maxBins: warehouse.maxBins,
+        zones: warehouse.zones || {}
       });
     } catch (error) {
       console.error("Error updating warehouse map config:", error);
@@ -2723,7 +2732,8 @@ Important:
       const aisleConfigSchema = z.object({
         maxRacks: z.number().int().min(1).max(100),
         maxLevels: z.number().int().min(1).max(20),
-        maxBins: z.number().int().min(1).max(20)
+        maxBins: z.number().int().min(1).max(20),
+        storageType: z.enum(['bin', 'pallet']).optional()
       });
 
       const validationResult = aisleConfigSchema.safeParse(req.body);
@@ -2739,7 +2749,7 @@ Important:
       }
 
       const { aisleId } = req.params;
-      const { maxRacks, maxLevels, maxBins } = validationResult.data;
+      const { maxRacks, maxLevels, maxBins, storageType } = validationResult.data;
 
       // Get current warehouse
       const warehouse = await storage.getWarehouse(req.params.id);
@@ -2749,7 +2759,7 @@ Important:
 
       // Update aisle configs
       const aisleConfigs = (warehouse.aisleConfigs as any) || {};
-      aisleConfigs[aisleId] = { maxRacks, maxLevels, maxBins };
+      aisleConfigs[aisleId] = { maxRacks, maxLevels, maxBins, storageType: storageType || 'bin' };
 
       // Save back to warehouse
       const updatedWarehouse = await storage.updateWarehouse(req.params.id, {
@@ -2770,7 +2780,7 @@ Important:
 
       res.json({
         aisleId,
-        config: { maxRacks, maxLevels, maxBins },
+        config: { maxRacks, maxLevels, maxBins, storageType },
         aisleConfigs: updatedWarehouse.aisleConfigs
       });
     } catch (error) {

@@ -452,8 +452,10 @@ export const warehouses = pgTable('warehouses', {
   maxRacks: integer('max_racks').default(10),
   maxLevels: integer('max_levels').default(5),
   maxBins: integer('max_bins').default(5),
-  // Per-aisle configuration: { "A01": { maxRacks: 10, maxLevels: 4, maxBins: 5 }, ... }
-  aisleConfigs: jsonb('aisle_configs')
+  // Per-aisle configuration: { "A01": { maxRacks: 10, maxLevels: 4, maxBins: 5, storageType: 'bin' }, ... }
+  aisleConfigs: jsonb('aisle_configs'),
+  // Zone configuration: { "A": { aisleCount: 6, defaultStorageType: 'bin' }, "B": { aisleCount: 3, defaultStorageType: 'pallet' } }
+  zones: jsonb('zones')
 });
 
 export const warehouseFiles = pgTable('warehouse_files', {
