@@ -605,6 +605,37 @@ const reports = {
   
   // Order report keys
   monthlyOrderTrends: 'Monthly Order Trends',
+  
+  // Stock Adjustment History
+  stockAdjustmentHistory: 'Stock Adjustment History',
+  stockAdjustmentHistoryDesc: 'Track all stock adjustments across locations',
+  adjustmentType: 'Type',
+  previousQty: 'Previous Qty',
+  change: 'Change',
+  newQty: 'New Qty',
+  reason: 'Reason',
+  source: 'Source',
+  adjustedBy: 'Adjusted By',
+  locationCode: 'Location',
+  add: 'Add',
+  remove: 'Remove',
+  set: 'Set',
+  direct: 'Direct',
+  approvedRequest: 'Approved Request',
+  receiving: 'Receiving',
+  orderFulfillment: 'Order Fulfillment',
+  noAdjustmentHistory: 'No stock adjustment history found',
+  stockHistoryExportedXlsx: 'Stock adjustment history exported to XLSX',
+  stockHistoryExportedPdf: 'Stock adjustment history exported to PDF',
+  failedToExportStockHistory: 'Failed to export stock adjustment history',
+  showing: 'Showing',
+  of: 'of',
+  records: 'records',
+  previous: 'Previous',
+  next: 'Next',
+  unknownUser: 'Unknown User',
+  unknownProduct: 'Unknown Product',
+  unknownLocation: 'Unknown Location',
 } as const;
 
 export default reports;

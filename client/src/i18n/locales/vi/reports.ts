@@ -605,6 +605,37 @@ const reports = {
   
   // Order report keys
   monthlyOrderTrends: 'Xu hướng đơn hàng hàng tháng',
+  
+  // Stock Adjustment History
+  stockAdjustmentHistory: 'Lịch sử điều chỉnh tồn kho',
+  stockAdjustmentHistoryDesc: 'Theo dõi tất cả các điều chỉnh tồn kho tại các vị trí',
+  adjustmentType: 'Loại',
+  previousQty: 'SL trước',
+  change: 'Thay đổi',
+  newQty: 'SL mới',
+  reason: 'Lý do',
+  source: 'Nguồn',
+  adjustedBy: 'Người điều chỉnh',
+  locationCode: 'Vị trí',
+  add: 'Thêm',
+  remove: 'Bớt',
+  set: 'Đặt',
+  direct: 'Trực tiếp',
+  approvedRequest: 'Yêu cầu đã duyệt',
+  receiving: 'Nhập hàng',
+  orderFulfillment: 'Xử lý đơn hàng',
+  noAdjustmentHistory: 'Không tìm thấy lịch sử điều chỉnh tồn kho',
+  stockHistoryExportedXlsx: 'Đã xuất lịch sử điều chỉnh tồn kho sang XLSX',
+  stockHistoryExportedPdf: 'Đã xuất lịch sử điều chỉnh tồn kho sang PDF',
+  failedToExportStockHistory: 'Không thể xuất lịch sử điều chỉnh tồn kho',
+  showing: 'Hiển thị',
+  of: 'trong',
+  records: 'bản ghi',
+  previous: 'Trước',
+  next: 'Sau',
+  unknownUser: 'Người dùng không xác định',
+  unknownProduct: 'Sản phẩm không xác định',
+  unknownLocation: 'Vị trí không xác định',
 } as const;
 
 export default reports;

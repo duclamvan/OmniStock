@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Package, AlertTriangle, TrendingDown, Coins, Clock, Mail, Palette } from "lucide-react";
+import { Package, AlertTriangle, TrendingDown, Coins, Clock, Mail, Palette, History, ChevronLeft, ChevronRight, FileSpreadsheet, FileText } from "lucide-react";
 import { calculateInventoryMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -30,6 +30,10 @@ export default function InventoryReports() {
   const [deadStockDays, setDeadStockDays] = useState(200);
   const [colorTrendsStartDate, setColorTrendsStartDate] = useState('');
   const [colorTrendsEndDate, setColorTrendsEndDate] = useState('');
+  const [adjustmentHistoryStartDate, setAdjustmentHistoryStartDate] = useState('');
+  const [adjustmentHistoryEndDate, setAdjustmentHistoryEndDate] = useState('');
+  const [adjustmentHistoryOffset, setAdjustmentHistoryOffset] = useState(0);
+  const ADJUSTMENT_HISTORY_LIMIT = 20;
 
   const { data: products = [], isLoading: productsLoading } = useQuery({ queryKey: ['/api/products'] });
   const { data: categories = [] } = useQuery({ queryKey: ['/api/categories'] });
@@ -62,6 +66,35 @@ export default function InventoryReports() {
     },
     enabled: true
   });
+
+  const { data: users = [] } = useQuery({ queryKey: ['/api/users'] });
+  
+  const { data: productLocations = [] } = useQuery({ 
+    queryKey: ['/api/product-locations'],
+    queryFn: async () => {
+      const response = await fetch('/api/product-locations');
+      if (!response.ok) throw new Error('Failed to fetch product locations');
+      return response.json();
+    }
+  });
+
+  const { data: stockAdjustmentHistoryData, isLoading: adjustmentHistoryLoading } = useQuery({ 
+    queryKey: ['/api/stock-adjustment-history', adjustmentHistoryStartDate, adjustmentHistoryEndDate, adjustmentHistoryOffset, ADJUSTMENT_HISTORY_LIMIT],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        limit: ADJUSTMENT_HISTORY_LIMIT.toString(),
+        offset: adjustmentHistoryOffset.toString(),
+        ...(adjustmentHistoryStartDate && { startDate: adjustmentHistoryStartDate }),
+        ...(adjustmentHistoryEndDate && { endDate: adjustmentHistoryEndDate })
+      });
+      const response = await fetch(`/api/stock-adjustment-history?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch stock adjustment history');
+      return response.json();
+    }
+  });
+
+  const stockAdjustmentHistory = stockAdjustmentHistoryData?.history || [];
+  const stockAdjustmentHistoryTotal = stockAdjustmentHistoryData?.total || 0;
 
   const inventoryMetrics = useMemo(() => {
     return calculateInventoryMetrics(products as any[]);
@@ -109,6 +142,24 @@ export default function InventoryReports() {
       .sort((a, b) => b.totalValue - a.totalValue)
       .slice(0, 10);
   }, [products]);
+
+  const productLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (products as any[]).forEach((p: any) => map.set(p.id, p.name));
+    return map;
+  }, [products]);
+
+  const userLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (users as any[]).forEach((u: any) => map.set(u.id, u.username || u.email || u.firstName || 'Unknown'));
+    return map;
+  }, [users]);
+
+  const locationLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (productLocations as any[]).forEach((loc: any) => map.set(loc.id, loc.locationCode));
+    return map;
+  }, [productLocations]);
 
   const handleExportExcel = () => {
     try {
@@ -170,6 +221,113 @@ export default function InventoryReports() {
         description: t('failedToExportInventoryReportPdf'),
         variant: "destructive",
       });
+    }
+  };
+
+  const handleExportStockHistoryExcel = () => {
+    try {
+      const exportData = stockAdjustmentHistory.map((item: any) => ({
+        [t('date')]: format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm'),
+        [t('product')]: productLookup.get(item.productId) || t('unknownProduct'),
+        [t('locationCode')]: locationLookup.get(item.locationId) || t('unknownLocation'),
+        [t('adjustmentType')]: item.adjustmentType,
+        [t('previousQty')]: item.previousQuantity,
+        [t('change')]: item.adjustmentType === 'set' 
+          ? item.adjustedQuantity 
+          : (item.adjustmentType === 'add' ? `+${item.adjustedQuantity}` : `-${item.adjustedQuantity}`),
+        [t('newQty')]: item.newQuantity,
+        [t('reason')]: item.reason,
+        [t('source')]: item.source,
+        [t('adjustedBy')]: item.adjustedBy ? (userLookup.get(item.adjustedBy) || t('unknownUser')) : '',
+      }));
+
+      exportToXLSX(exportData, `Stock_Adjustment_History_${format(new Date(), 'yyyy-MM-dd')}`, t('stockAdjustmentHistory'));
+      
+      toast({
+        title: t('exportSuccessful'),
+        description: t('stockHistoryExportedXlsx'),
+      });
+    } catch (error) {
+      toast({
+        title: t('exportFailed'),
+        description: t('failedToExportStockHistory'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportStockHistoryPDF = () => {
+    try {
+      const exportData = stockAdjustmentHistory.map((item: any) => ({
+        date: format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm'),
+        product: productLookup.get(item.productId) || t('unknownProduct'),
+        location: locationLookup.get(item.locationId) || t('unknownLocation'),
+        type: item.adjustmentType,
+        prevQty: item.previousQuantity?.toString() || '0',
+        change: item.adjustmentType === 'set' 
+          ? item.adjustedQuantity?.toString() 
+          : (item.adjustmentType === 'add' ? `+${item.adjustedQuantity}` : `-${item.adjustedQuantity}`),
+        newQty: item.newQuantity?.toString() || '0',
+        reason: item.reason || '',
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'date', header: t('date') },
+        { key: 'product', header: t('product') },
+        { key: 'location', header: t('locationCode') },
+        { key: 'type', header: t('adjustmentType') },
+        { key: 'prevQty', header: t('previousQty') },
+        { key: 'change', header: t('change') },
+        { key: 'newQty', header: t('newQty') },
+        { key: 'reason', header: t('reason') },
+      ];
+
+      exportToPDF(
+        t('stockAdjustmentHistory'),
+        exportData,
+        columns,
+        `Stock_Adjustment_History_${format(new Date(), 'yyyy-MM-dd')}`
+      );
+
+      toast({
+        title: t('exportSuccessful'),
+        description: t('stockHistoryExportedPdf'),
+      });
+    } catch (error) {
+      toast({
+        title: t('exportFailed'),
+        description: t('failedToExportStockHistory'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getAdjustmentTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case 'add': return 'default';
+      case 'remove': return 'destructive';
+      case 'set': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getSourceBadgeVariant = (source: string) => {
+    switch (source) {
+      case 'direct': return 'outline';
+      case 'approved_request': return 'default';
+      case 'receiving': return 'secondary';
+      case 'order_fulfillment': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const formatSourceLabel = (source: string) => {
+    switch (source) {
+      case 'direct': return t('direct');
+      case 'approved_request': return t('approvedRequest');
+      case 'receiving': return t('receiving');
+      case 'order_fulfillment': return t('orderFulfillment');
+      default: return source;
     }
   };
 
@@ -593,6 +751,182 @@ export default function InventoryReports() {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Stock Adjustment History */}
+      <Card data-testid="card-stock-adjustment-history">
+        <CardHeader>
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-blue-600" />
+                  {t('stockAdjustmentHistory')}
+                </CardTitle>
+                <CardDescription className="mt-1">{t('stockAdjustmentHistoryDesc')}</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportStockHistoryExcel}
+                  data-testid="button-export-history-excel"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  XLSX
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportStockHistoryPDF}
+                  data-testid="button-export-history-pdf"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="history-start-date" className="text-sm">{t('startDate')}:</Label>
+                <Input
+                  id="history-start-date"
+                  type="date"
+                  value={adjustmentHistoryStartDate}
+                  onChange={(e) => {
+                    setAdjustmentHistoryStartDate(e.target.value);
+                    setAdjustmentHistoryOffset(0);
+                  }}
+                  className="w-40"
+                  data-testid="input-history-start-date"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="history-end-date" className="text-sm">{t('endDate')}:</Label>
+                <Input
+                  id="history-end-date"
+                  type="date"
+                  value={adjustmentHistoryEndDate}
+                  onChange={(e) => {
+                    setAdjustmentHistoryEndDate(e.target.value);
+                    setAdjustmentHistoryOffset(0);
+                  }}
+                  className="w-40"
+                  data-testid="input-history-end-date"
+                />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {adjustmentHistoryLoading ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : stockAdjustmentHistory.length === 0 ? (
+            <div className="text-center py-8 text-slate-500" data-testid="text-no-adjustment-history">
+              {t('noAdjustmentHistory')}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('date')}</TableHead>
+                      <TableHead>{t('product')}</TableHead>
+                      <TableHead>{t('locationCode')}</TableHead>
+                      <TableHead>{t('adjustmentType')}</TableHead>
+                      <TableHead className="text-right">{t('previousQty')}</TableHead>
+                      <TableHead className="text-right">{t('change')}</TableHead>
+                      <TableHead className="text-right">{t('newQty')}</TableHead>
+                      <TableHead>{t('reason')}</TableHead>
+                      <TableHead>{t('source')}</TableHead>
+                      <TableHead>{t('adjustedBy')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stockAdjustmentHistory.map((item: any, index: number) => (
+                      <TableRow key={item.id} data-testid={`row-adjustment-history-${index}`}>
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {productLookup.get(item.productId) || t('unknownProduct')}
+                        </TableCell>
+                        <TableCell>
+                          {locationLookup.get(item.locationId) || t('unknownLocation')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getAdjustmentTypeBadgeVariant(item.adjustmentType) as any}>
+                            {item.adjustmentType === 'add' ? t('add') : 
+                             item.adjustmentType === 'remove' ? t('remove') : t('set')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{item.previousQuantity}</TableCell>
+                        <TableCell className="text-right">
+                          {item.adjustmentType === 'set' 
+                            ? item.adjustedQuantity 
+                            : (item.adjustmentType === 'add' 
+                                ? <span className="text-green-600">+{item.adjustedQuantity}</span>
+                                : <span className="text-red-600">-{item.adjustedQuantity}</span>
+                              )
+                          }
+                        </TableCell>
+                        <TableCell className="text-right">{item.newQuantity}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={item.reason}>
+                          {item.reason}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getSourceBadgeVariant(item.source) as any}>
+                            {formatSourceLabel(item.source)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.adjustedBy 
+                            ? (userLookup.get(item.adjustedBy) || t('unknownUser'))
+                            : '-'
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="text-sm text-slate-500">
+                  {t('showing')} {adjustmentHistoryOffset + 1}-{Math.min(adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT, stockAdjustmentHistoryTotal)} {t('of')} {stockAdjustmentHistoryTotal} {t('records')}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAdjustmentHistoryOffset(Math.max(0, adjustmentHistoryOffset - ADJUSTMENT_HISTORY_LIMIT))}
+                    disabled={adjustmentHistoryOffset === 0}
+                    data-testid="button-history-previous"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    {t('previous')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAdjustmentHistoryOffset(adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT)}
+                    disabled={adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT >= stockAdjustmentHistoryTotal}
+                    data-testid="button-history-next"
+                  >
+                    {t('next')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             </div>
           )}
