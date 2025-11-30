@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, 
   Package, 
@@ -18,10 +18,8 @@ import {
   PackageOpen,
   FileType,
   DollarSign,
-  Building,
   MapPin,
   Barcode,
-  Hash,
   Box,
   Euro,
   Warehouse,
@@ -37,17 +35,21 @@ import {
   Truck,
   AlertTriangle,
   CheckCircle,
+  RefreshCw,
+  Info,
+  Tag,
   Repeat,
-  RefreshCw
+  ChevronRight,
+  Grid3X3,
+  Settings2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
-import { format } from "date-fns";
 import CostHistoryChart from "@/components/products/CostHistoryChart";
 import ProductFiles from "@/components/ProductFiles";
 import ProductLocations from "@/components/ProductLocations";
 import ProductVariants from "@/components/ProductVariants";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
@@ -59,13 +61,24 @@ const IMAGE_PURPOSE_ICONS = {
   label: { icon: FileType, color: 'text-cyan-600', labelKey: 'labelBarcode' },
 };
 
+interface NavSection {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
 export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { canAccessFinancialData } = useAuth();
   const { t } = useTranslation(['products', 'common']);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState('overview');
   const { toast } = useToast();
+  
+  // Store observer reference
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const { data: product, isLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
@@ -119,11 +132,81 @@ export default function ProductDetails() {
     },
   });
 
+  // Build navigation sections dynamically
+  const navSections: NavSection[] = [
+    { id: 'overview', label: t('products:overview', 'Overview'), icon: Info },
+    { id: 'stock', label: t('products:stockInventory', 'Stock & Inventory'), icon: Box },
+    { id: 'pricing', label: t('products:pricingInformation', 'Pricing'), icon: Euro },
+    { id: 'details', label: t('products:productDetails', 'Details'), icon: Tag },
+    { id: 'warehouse', label: t('common:warehouseLocation', 'Warehouse'), icon: Warehouse },
+    ...(variants.length > 0 ? [{ id: 'variants', label: t('products:variantsTab', 'Variants'), icon: Sparkles }] : []),
+    ...(tieredPricing.length > 0 ? [{ id: 'tiered', label: t('products:tieredPricing', 'Tiered Pricing'), icon: BarChart3 }] : []),
+    { id: 'packing', label: t('products:packingInstructions', 'Packing'), icon: Package },
+    { id: 'files', label: t('products:productFiles', 'Files'), icon: FileText },
+  ];
+
+  // Create intersection observer once on mount
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -60% 0px' }
+    );
+
+    // Observe any sections that were already mounted before observer was created
+    // (handles case when data is cached and component renders synchronously)
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref && observerRef.current) {
+        observerRef.current.observe(ref);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Ref callback to register sections with observer when they mount
+  const setSectionRef = useCallback((sectionId: string) => (el: HTMLElement | null) => {
+    const prevRef = sectionRefs.current[sectionId];
+    
+    // Unobserve previous element if it exists
+    if (prevRef && observerRef.current) {
+      observerRef.current.unobserve(prevRef);
+    }
+    
+    sectionRefs.current[sectionId] = el;
+    
+    // Observe new element if it exists and observer is ready
+    if (el && observerRef.current) {
+      observerRef.current.observe(el);
+    }
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = sectionRefs.current[sectionId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
         <Skeleton className="h-96 w-full" />
       </div>
     );
@@ -174,7 +257,7 @@ export default function ProductDetails() {
   const primaryMargin = marginEur || marginCzk || '0';
 
   // Stock status
-  const stockStatus = product.quantity <= (product.lowStockAlert || 5) ? 'critical' : product.quantity <= (product.lowStockAlert || 5) * 2 ? 'low' : 'healthy';
+  const stockStatus = product.quantity <= 0 ? 'out' : product.quantity <= (product.lowStockAlert || 5) ? 'critical' : product.quantity <= (product.lowStockAlert || 5) * 2 ? 'low' : 'healthy';
 
   // Parse packing instructions
   let packingInstructions: any[] = [];
@@ -187,608 +270,784 @@ export default function ProductDetails() {
     }));
   } catch {}
 
+  // Bundles containing this product
+  const productBundles = bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id));
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="shrink-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">{product.name}</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">SKU: {product.sku}</p>
+    <div className="min-h-screen bg-background">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="w-full px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => window.history.back()} 
+                className="shrink-0 h-9 w-9"
+                data-testid="button-back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold truncate">{product.name}</h1>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-mono">{product.sku}</span>
+                  {product.barcode && (
+                    <>
+                      <span className="text-border">•</span>
+                      <span className="font-mono text-xs">{product.barcode}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Link href={`/inventory/${id}/edit`}>
+              <Button size="sm" className="shrink-0" data-testid="button-edit-product">
+                <Edit className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">{t('products:editProduct')}</span>
+                <span className="sm:hidden">{t('common:edit')}</span>
+              </Button>
+            </Link>
           </div>
         </div>
-        <Link href={`/inventory/${id}/edit`}>
-          <Button className="shrink-0">
-            <Edit className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('products:editProduct')}</span>
-          </Button>
-        </Link>
-      </div>
-
-      {/* Hero Section - Image & Key Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Product Image */}
-        <Card className="lg:col-span-1">
-          <CardContent className="p-6">
-            <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-4">
-              {displayImage ? (
-                <img src={displayImage} alt={product.name} className="w-full h-full object-contain" />
-              ) : (
-                <ImagePlaceholder className="w-full h-full" />
-              )}
+        
+        {/* Mobile Navigation Pills */}
+        <div className="lg:hidden border-t">
+          <ScrollArea className="w-full">
+            <div className="flex gap-1 p-2">
+              {navSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+                      activeSection === section.id 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                    }`}
+                    data-testid={`nav-mobile-${section.id}`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {section.label}
+                  </button>
+                );
+              })}
             </div>
-            {productImages.length > 1 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {productImages.map((img, idx) => {
-                  const config = IMAGE_PURPOSE_ICONS[img.purpose as keyof typeof IMAGE_PURPOSE_ICONS];
-                  const Icon = config?.icon || ImageIcon;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`aspect-square rounded border-2 overflow-hidden ${
-                        idx === selectedImageIndex ? 'border-primary' : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      {img.url ? (
-                        <img src={img.url} alt="" className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Key Stats Cards */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{t('products:stockQty')}</CardTitle>
-                <Box className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{product.quantity || 0}</div>
-              {stockStatus === 'critical' && (
-                <Badge variant="destructive" className="mt-2">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {t('products:outOfStock')}
-                </Badge>
-              )}
-              {stockStatus === 'low' && (
-                <Badge variant="outline" className="mt-2 border-orange-500 text-orange-700">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {t('products:lowStock')}
-                </Badge>
-              )}
-              {stockStatus === 'healthy' && (
-                <Badge className="mt-2 bg-green-100 text-green-800 hover:bg-green-100">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {t('products:inStock')}
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:totalSold')}</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{totalSold}</div>
-              <p className="text-xs text-muted-foreground mt-2">{t('common:allTime')}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:totalRevenue')}</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{formatCurrency(totalRevenue, 'CZK')}</div>
-              <p className="text-xs text-muted-foreground mt-2">{t('common:allTime')}</p>
-            </CardContent>
-          </Card>
-
-          {canAccessFinancialData && (
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{t('products:margin')}</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-3xl font-bold ${parseFloat(primaryMargin) > 30 ? 'text-green-600' : parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {primaryMargin}%
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">{t('common:perUnit')}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{t('common:reorderRate')}</CardTitle>
-                <Repeat className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {product.reorderRate !== null && product.reorderRate !== undefined ? `${parseFloat(product.reorderRate).toFixed(1)}%` : t('common:na')}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <p className="text-xs text-muted-foreground">{t('common:oneYearRepeatRate')}</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => recalculateReorderRate.mutate()}
-                  disabled={recalculateReorderRate.isPending}
-                  className="h-6 px-2"
-                  data-testid="button-recalculate-reorder-rate"
-                >
-                  <RefreshCw className={`h-3 w-3 ${recalculateReorderRate.isPending ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left Column */}
-        <div className="space-y-4">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                {t('products:basicInformation')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground">{t('products:productName')}</p>
-                  <p className="font-medium">{product.name}</p>
+      <div className="flex">
+        {/* Desktop Sidebar Navigation */}
+        <aside className="hidden lg:block w-56 shrink-0 sticky top-[73px] h-[calc(100vh-73px)] border-r bg-muted/30">
+          <nav className="p-3 space-y-1">
+            {navSections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === section.id 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid={`nav-desktop-${section.id}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{section.label}</span>
+                  {activeSection === section.id && (
+                    <ChevronRight className="h-4 w-4 ml-auto shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-6 space-y-8">
+          
+          {/* HERO: Location, Stock & Packaging Emphasis */}
+          <section 
+            id="overview" 
+            ref={setSectionRef('overview')}
+            className="scroll-mt-32"
+          >
+            {/* Primary Stats - Location, Stock, Packaging */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {/* Location Code - EMPHASIZED */}
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                <div className="absolute top-0 right-0 opacity-10">
+                  <MapPin className="h-24 w-24 -mt-4 -mr-4" />
                 </div>
-                <div>
-                  <p className="text-muted-foreground">{t('products:sku')}</p>
-                  <p className="font-medium font-mono">{product.sku}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">{t('products:category')}</p>
-                  <p className="font-medium">{category?.name || t('common:uncategorized')}</p>
-                </div>
-                {product.vietnameseName && (
-                  <div>
-                    <p className="text-muted-foreground">{t('products:vietnameseName')}</p>
-                    <p className="font-medium">{product.vietnameseName}</p>
-                  </div>
-                )}
-                {product.barcode && (
-                  <div>
-                    <p className="text-muted-foreground">{t('products:barcode')}</p>
-                    <p className="font-medium font-mono">{product.barcode}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-muted-foreground">{t('products:lowStockThreshold')}</p>
-                  <p className="font-medium">{product.lowStockAlert || 5} {t('common:units')}</p>
+                <div className="relative">
+                  <p className="text-blue-100 text-sm font-medium mb-1">{t('common:locationCode')}</p>
+                  <p className="text-3xl sm:text-4xl font-bold font-mono tracking-wider">
+                    {product.warehouseLocation || '—'}
+                  </p>
+                  <p className="text-blue-200 text-xs mt-2">{warehouse?.name || t('common:notAssigned')}</p>
                 </div>
               </div>
-              {product.description && (
-                <div className="pt-2 border-t">
-                  <p className="text-muted-foreground text-sm mb-1">{t('products:description')}</p>
-                  <p className="text-sm">{product.description}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Pricing & Costs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Euro className="h-5 w-5" />
-                {t('products:pricingInformation')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Selling Prices */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    {t('common:sellingPrice')}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="p-2 rounded bg-muted/50">
-                      <p className="text-muted-foreground text-xs">CZK</p>
-                      <p className="font-bold text-lg">{formatCurrency(priceCzk, 'CZK')}</p>
-                    </div>
-                    <div className="p-2 rounded bg-muted/50">
-                      <p className="text-muted-foreground text-xs">EUR</p>
-                      <p className="font-bold text-lg">{formatCurrency(priceEur, 'EUR')}</p>
-                    </div>
+              {/* Stock Quantity - EMPHASIZED */}
+              <div className={`relative overflow-hidden rounded-xl p-5 text-white shadow-lg ${
+                stockStatus === 'out' ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                stockStatus === 'critical' ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
+                stockStatus === 'low' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
+                'bg-gradient-to-br from-emerald-500 to-emerald-600'
+              }`}>
+                <div className="absolute top-0 right-0 opacity-10">
+                  <Box className="h-24 w-24 -mt-4 -mr-4" />
+                </div>
+                <div className="relative">
+                  <p className={`text-sm font-medium mb-1 ${
+                    stockStatus === 'out' ? 'text-red-100' :
+                    stockStatus === 'critical' ? 'text-orange-100' :
+                    stockStatus === 'low' ? 'text-yellow-100' :
+                    'text-emerald-100'
+                  }`}>{t('products:stockQty')}</p>
+                  <p className="text-3xl sm:text-4xl font-bold">{product.quantity || 0}</p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {stockStatus === 'out' && <AlertTriangle className="h-3.5 w-3.5" />}
+                    {stockStatus === 'critical' && <AlertTriangle className="h-3.5 w-3.5" />}
+                    {stockStatus === 'low' && <AlertTriangle className="h-3.5 w-3.5" />}
+                    {stockStatus === 'healthy' && <CheckCircle className="h-3.5 w-3.5" />}
+                    <span className="text-xs">
+                      {stockStatus === 'out' ? t('products:outOfStock') :
+                       stockStatus === 'critical' ? t('products:criticalStock') :
+                       stockStatus === 'low' ? t('products:lowStock') :
+                       t('products:inStock')}
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Import Costs */}
+              {/* Packaging Unit - EMPHASIZED */}
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-5 text-white shadow-lg">
+                <div className="absolute top-0 right-0 opacity-10">
+                  <Package className="h-24 w-24 -mt-4 -mr-4" />
+                </div>
+                <div className="relative">
+                  <p className="text-purple-100 text-sm font-medium mb-1">{t('products:packingMaterial')}</p>
+                  <p className="text-xl sm:text-2xl font-bold truncate">
+                    {packingMaterial?.name || t('common:notAssigned')}
+                  </p>
+                  {packingMaterial?.dimensions && (
+                    <p className="text-purple-200 text-xs mt-2 font-mono">{packingMaterial.dimensions}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Product Image & Quick Info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Product Image */}
+              <div className="md:col-span-1">
+                <div className="aspect-square bg-muted rounded-xl overflow-hidden border">
+                  {displayImage ? (
+                    <img src={displayImage} alt={product.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <ImagePlaceholder className="w-full h-full" />
+                  )}
+                </div>
+                {productImages.length > 1 && (
+                  <div className="grid grid-cols-5 gap-2 mt-3">
+                    {productImages.slice(0, 5).map((img, idx) => {
+                      const config = IMAGE_PURPOSE_ICONS[img.purpose as keyof typeof IMAGE_PURPOSE_ICONS];
+                      const Icon = config?.icon || ImageIcon;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedImageIndex(idx)}
+                          className={`aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                            idx === selectedImageIndex 
+                              ? 'border-primary ring-2 ring-primary/20' 
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                          data-testid={`image-thumb-${idx}`}
+                        >
+                          {img.url ? (
+                            <img src={img.url} alt="" className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Icon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Stats Grid */}
+              <div className="md:col-span-2 grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">{t('common:totalSold')}</span>
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-2xl font-bold">{totalSold}</p>
+                  <p className="text-xs text-muted-foreground">{t('common:allTime')}</p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">{t('common:totalRevenue')}</span>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue, 'CZK')}</p>
+                  <p className="text-xs text-muted-foreground">{t('common:allTime')}</p>
+                </div>
+
                 {canAccessFinancialData && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      {t('products:importCost')}
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      {product.importCostUsd && (
-                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                          <p className="text-muted-foreground text-xs">USD</p>
-                          <p className="font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
-                        </div>
-                      )}
-                      {landingCostCzk > 0 && (
-                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                          <p className="text-muted-foreground text-xs">CZK</p>
-                          <p className="font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
-                        </div>
-                      )}
-                      {landingCostEur > 0 && (
-                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                          <p className="text-muted-foreground text-xs">EUR</p>
-                          <p className="font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
-                        </div>
-                      )}
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">{t('products:margin')}</span>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </div>
+                    <p className={`text-2xl font-bold ${
+                      parseFloat(primaryMargin) > 30 ? 'text-green-600' : 
+                      parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {primaryMargin}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t('common:perUnit')}</p>
                   </div>
                 )}
 
-                {/* Profit Margins */}
-                {canAccessFinancialData && (marginEur || marginCzk) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      {t('products:margin')}
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      {marginCzk && (
-                        <div className="p-2 rounded bg-green-50 dark:bg-green-950/30">
-                          <p className="text-muted-foreground text-xs">{t('common:marginCzk')}</p>
-                          <p className="font-bold text-green-700 dark:text-green-400">{marginCzk}%</p>
-                        </div>
-                      )}
-                      {marginEur && (
-                        <div className="p-2 rounded bg-green-50 dark:bg-green-950/30">
-                          <p className="text-muted-foreground text-xs">{t('common:marginEur')}</p>
-                          <p className="font-bold text-green-700 dark:text-green-400">{marginEur}%</p>
-                        </div>
-                      )}
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">{t('common:reorderRate')}</span>
+                    <div className="flex items-center gap-1">
+                      <Repeat className="h-4 w-4 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => recalculateReorderRate.mutate()}
+                        disabled={recalculateReorderRate.isPending}
+                        className="h-6 w-6"
+                        data-testid="button-recalculate-reorder-rate"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${recalculateReorderRate.isPending ? 'animate-spin' : ''}`} />
+                      </Button>
                     </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Dimensions & Weight */}
-          {(product.length || product.width || product.height || product.weight) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Ruler className="h-5 w-5" />
-                  {t('products:physicalAttributes')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {product.length && (
-                    <div>
-                      <p className="text-muted-foreground">{t('products:length')}</p>
-                      <p className="font-medium">{product.length} {t('common:cm')}</p>
-                    </div>
-                  )}
-                  {product.width && (
-                    <div>
-                      <p className="text-muted-foreground">{t('products:width')}</p>
-                      <p className="font-medium">{product.width} {t('common:cm')}</p>
-                    </div>
-                  )}
-                  {product.height && (
-                    <div>
-                      <p className="text-muted-foreground">{t('products:height')}</p>
-                      <p className="font-medium">{product.height} {t('common:cm')}</p>
-                    </div>
-                  )}
-                  {product.weight && (
-                    <div>
-                      <p className="text-muted-foreground">{t('products:weight')}</p>
-                      <p className="font-medium">{parseFloat(product.weight).toFixed(3)} {t('common:kg')}</p>
-                    </div>
-                  )}
+                  <p className="text-2xl font-bold">
+                    {product.reorderRate !== null && product.reorderRate !== undefined 
+                      ? `${parseFloat(product.reorderRate).toFixed(1)}%` 
+                      : t('common:na')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t('common:oneYearRepeatRate')}</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Warehouse & Location */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Warehouse className="h-5 w-5" />
-                {t('common:warehouseLocation')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">{t('products:category')}</span>
+                    <Grid3X3 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-semibold truncate">{category?.name || t('common:uncategorized')}</p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">{t('products:lowStockThreshold')}</span>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-semibold">{product.lowStockAlert || 5} {t('common:units')}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* Stock & Inventory Section */}
+          <section 
+            id="stock" 
+            ref={setSectionRef('stock')}
+            className="scroll-mt-32 space-y-4"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Box className="h-5 w-5" />
+              {t('products:stockInventory', 'Stock & Inventory')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card">
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-muted-foreground">{t('common:warehouse')}</p>
-                  <p className="font-medium">{warehouse?.name || t('common:notAssigned')}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:currentStock')}</p>
+                  <p className="text-2xl font-bold">{product.quantity || 0}</p>
                 </div>
-                {product.warehouseLocation && (
-                  <div>
-                    <p className="text-muted-foreground">{t('common:locationCode')}</p>
-                    <p className="font-medium font-mono">{product.warehouseLocation}</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:lowStockThreshold')}</p>
+                  <p className="text-2xl font-bold">{product.lowStockAlert || 5}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:reservedStock', 'Reserved')}</p>
+                  <p className="text-2xl font-bold">{product.reservedQuantity || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:availableStock', 'Available')}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {(product.quantity || 0) - (product.reservedQuantity || 0)}
+                  </p>
+                </div>
               </div>
-              {product.shipmentNotes && (
-                <div className="pt-2 border-t">
-                  <p className="text-muted-foreground text-sm mb-1">{t('common:shipmentNotes')}</p>
-                  <p className="text-sm">{product.shipmentNotes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              
+              {/* Product Locations */}
+              <Separator />
+              <div className="p-4">
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <MapPinned className="h-4 w-4" />
+                  {t('products:productLocations')}
+                </h3>
+                <ProductLocations productId={id!} />
+              </div>
+            </div>
+          </section>
 
-          {/* Supplier Information */}
-          {supplier && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  {t('products:supplierSection')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">{t('products:supplier')}</p>
-                    <p className="font-medium">{supplier.name}</p>
+          <Separator />
+
+          {/* Pricing Section */}
+          <section 
+            id="pricing" 
+            ref={setSectionRef('pricing')}
+            className="scroll-mt-32 space-y-4"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Euro className="h-5 w-5" />
+              {t('products:pricingInformation')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card p-4 space-y-6">
+              {/* Selling Prices */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  {t('common:sellingPrice')}
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">CZK</p>
+                    <p className="text-2xl font-bold">{formatCurrency(priceCzk, 'CZK')}</p>
                   </div>
-                  {supplier.country && (
-                    <div>
-                      <p className="text-muted-foreground">{t('common:country')}</p>
-                      <p className="font-medium">{supplier.country}</p>
-                    </div>
-                  )}
-                  {supplier.contactPerson && (
-                    <div>
-                      <p className="text-muted-foreground">{t('common:contactPerson')}</p>
-                      <p className="font-medium">{supplier.contactPerson}</p>
-                    </div>
-                  )}
-                  {supplier.email && (
-                    <div>
-                      <p className="text-muted-foreground">{t('common:email')}</p>
-                      <p className="font-medium">{supplier.email}</p>
-                    </div>
-                  )}
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">EUR</p>
+                    <p className="text-2xl font-bold">{formatCurrency(priceEur, 'EUR')}</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
 
-          {/* Packing Material */}
-          {packingMaterial && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  {t('products:packingMaterial')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  {packingMaterial.imageUrl && (
-                    <img src={packingMaterial.imageUrl} alt="" className="w-16 h-16 object-contain rounded border" />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium">{packingMaterial.name}</p>
-                    {packingMaterial.dimensions && (
-                      <p className="text-sm text-muted-foreground">{packingMaterial.dimensions}</p>
+              {/* Import Costs */}
+              {canAccessFinancialData && (landingCostEur > 0 || landingCostCzk > 0 || product.importCostUsd) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    {t('products:importCost')}
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {product.importCostUsd && (
+                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-xs text-muted-foreground mb-1">USD</p>
+                        <p className="text-lg font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
+                      </div>
+                    )}
+                    {landingCostCzk > 0 && (
+                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-xs text-muted-foreground mb-1">CZK</p>
+                        <p className="text-lg font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
+                      </div>
+                    )}
+                    {landingCostEur > 0 && (
+                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-xs text-muted-foreground mb-1">EUR</p>
+                        <p className="text-lg font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
+                      </div>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              )}
 
-        {/* Right Column */}
-        <div className="space-y-4">
-          {/* Packing Instructions */}
-          {packingInstructions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  {t('products:packingInstructions')} ({packingInstructions.length} {t('common:steps')})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {packingInstructions.map((instruction, index) => (
-                    <div key={index} className="border rounded-lg p-3 bg-muted/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">{t('common:step')} {index + 1}</Badge>
+              {/* Margins */}
+              {canAccessFinancialData && (marginEur || marginCzk) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    {t('products:margin')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {marginCzk && (
+                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <p className="text-xs text-muted-foreground mb-1">{t('common:marginCzk')}</p>
+                        <p className="text-xl font-bold text-green-600">{marginCzk}%</p>
                       </div>
-                      {instruction.image && (
-                        <img src={instruction.image} alt={`${t('common:step')} ${index + 1}`} className="w-full h-32 object-contain rounded border mb-2" />
-                      )}
-                      {instruction.text && (
-                        <p className="text-sm">{instruction.text}</p>
-                      )}
+                    )}
+                    {marginEur && (
+                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <p className="text-xs text-muted-foreground mb-1">{t('common:marginEur')}</p>
+                        <p className="text-xl font-bold text-green-600">{marginEur}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Cost History Chart */}
+              {canAccessFinancialData && costHistory.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    {t('products:costHistory')}
+                  </h3>
+                  <CostHistoryChart data={costHistory} />
+                </div>
+              )}
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* Product Details Section */}
+          <section 
+            id="details" 
+            ref={setSectionRef('details')}
+            className="scroll-mt-32 space-y-4"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              {t('products:productDetails', 'Product Details')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:productName')}</p>
+                  <p className="font-medium">{product.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('products:sku')}</p>
+                  <p className="font-medium font-mono">{product.sku}</p>
+                </div>
+                {product.barcode && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{t('products:barcode')}</p>
+                    <p className="font-medium font-mono">{product.barcode}</p>
+                  </div>
+                )}
+                {product.vietnameseName && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{t('products:vietnameseName')}</p>
+                    <p className="font-medium">{product.vietnameseName}</p>
+                  </div>
+                )}
+                {supplier && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{t('products:supplier')}</p>
+                    <p className="font-medium">{supplier.name}</p>
+                  </div>
+                )}
+              </div>
+
+              {product.description && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">{t('products:description')}</p>
+                  <p className="text-sm">{product.description}</p>
+                </div>
+              )}
+
+              {/* Physical Dimensions */}
+              {(product.length || product.width || product.height || product.weight) && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Ruler className="h-4 w-4" />
+                    {t('products:physicalAttributes')}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {product.length && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:length')}</p>
+                        <p className="font-semibold">{product.length} {t('common:cm')}</p>
+                      </div>
+                    )}
+                    {product.width && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:width')}</p>
+                        <p className="font-semibold">{product.width} {t('common:cm')}</p>
+                      </div>
+                    )}
+                    {product.height && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:height')}</p>
+                        <p className="font-semibold">{product.height} {t('common:cm')}</p>
+                      </div>
+                    )}
+                    {product.weight && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:weight')}</p>
+                        <p className="font-semibold">{parseFloat(product.weight).toFixed(3)} {t('common:kg')}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* Warehouse Section */}
+          <section 
+            id="warehouse" 
+            ref={setSectionRef('warehouse')}
+            className="scroll-mt-32 space-y-4"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Warehouse className="h-5 w-5" />
+              {t('common:warehouseLocation')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card p-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('common:warehouse')}</p>
+                  <p className="font-medium">{warehouse?.name || t('common:notAssigned')}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t('common:locationCode')}</p>
+                  <p className="font-bold font-mono text-lg text-primary">
+                    {product.warehouseLocation || '—'}
+                  </p>
+                </div>
+              </div>
+              
+              {product.shipmentNotes && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">{t('common:shipmentNotes')}</p>
+                  <p className="text-sm bg-yellow-50 dark:bg-yellow-950/30 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    {product.shipmentNotes}
+                  </p>
+                </div>
+              )}
+
+              {/* Supplier Info */}
+              {supplier && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    {t('products:supplierSection')}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">{t('products:supplier')}</p>
+                      <p className="font-medium">{supplier.name}</p>
+                    </div>
+                    {supplier.country && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('common:country')}</p>
+                        <p className="font-medium">{supplier.country}</p>
+                      </div>
+                    )}
+                    {supplier.contactPerson && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('common:contactPerson')}</p>
+                        <p className="font-medium">{supplier.contactPerson}</p>
+                      </div>
+                    )}
+                    {supplier.email && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('common:email')}</p>
+                        <p className="font-medium text-sm truncate">{supplier.email}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Variants Section */}
+          {variants.length > 0 && (
+            <>
+              <Separator />
+              <section 
+                id="variants" 
+                ref={setSectionRef('variants')}
+                className="scroll-mt-32 space-y-4"
+              >
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  {t('products:variantsTab')} ({variants.length})
+                </h2>
+                
+                <div className="rounded-xl border bg-card p-4">
+                  <ProductVariants productId={id!} />
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* Tiered Pricing Section */}
+          {tieredPricing.length > 0 && (
+            <>
+              <Separator />
+              <section 
+                id="tiered" 
+                ref={setSectionRef('tiered')}
+                className="scroll-mt-32 space-y-4"
+              >
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  {t('products:tieredPricing')}
+                </h2>
+                
+                <div className="rounded-xl border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('products:quantityRange')}</TableHead>
+                        <TableHead className="text-right">{t('products:priceCzk')}</TableHead>
+                        <TableHead className="text-right">{t('products:priceEur')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tieredPricing.map((tier: any) => (
+                        <TableRow key={tier.id}>
+                          <TableCell className="font-medium">
+                            {tier.minQuantity}+ {t('common:units')}
+                          </TableCell>
+                          <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+            </>
+          )}
+
+          <Separator />
+
+          {/* Packing Section */}
+          <section 
+            id="packing" 
+            ref={setSectionRef('packing')}
+            className="scroll-mt-32 space-y-4"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {t('products:packingInstructions')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card p-4 space-y-4">
+              {/* Packing Material */}
+              {packingMaterial && (
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                  {packingMaterial.imageUrl && (
+                    <img src={packingMaterial.imageUrl} alt="" className="w-16 h-16 object-contain rounded-lg border bg-white" />
+                  )}
+                  <div>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('products:packingMaterial')}</p>
+                    <p className="font-bold text-lg">{packingMaterial.name}</p>
+                    {packingMaterial.dimensions && (
+                      <p className="text-sm text-muted-foreground font-mono">{packingMaterial.dimensions}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Instructions */}
+              {packingInstructions.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">
+                    {t('common:steps')} ({packingInstructions.length})
+                  </h3>
+                  {packingInstructions.map((instruction, index) => (
+                    <div key={index} className="flex gap-3 p-3 rounded-lg border bg-muted/30">
+                      <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        {instruction.image && (
+                          <img 
+                            src={instruction.image} 
+                            alt={`${t('common:step')} ${index + 1}`} 
+                            className="w-full max-w-xs h-32 object-contain rounded border mb-2 bg-white" 
+                          />
+                        )}
+                        {instruction.text && (
+                          <p className="text-sm">{instruction.text}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  {t('products:noPackingInstructions', 'No packing instructions available')}
+                </p>
+              )}
 
-          {/* Product Variants */}
-          {variants.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  {t('products:variantsTab')} ({variants.length})
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">{t('common:multipleVariantsAvailable')}</p>
-              </CardHeader>
-              <CardContent>
-                <ProductVariants productId={id!} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Bundles Containing This Product */}
-          {bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  {t('common:includedInBundles')} ({bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).map((bundle: any) => {
-                    const bundleItem = bundle.items?.find((item: any) => item.productId === id);
-                    return (
-                      <div key={bundle.id} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
-                        {bundle.imageUrl && (
-                          <img src={bundle.imageUrl} alt={bundle.name} className="w-12 h-12 object-contain rounded border" />
-                        )}
-                        <div className="flex-1">
-                          <Link href={`/inventory/bundles/${bundle.id}`}>
-                            <p className="font-medium text-blue-600 hover:text-blue-800 hover:underline">{bundle.name}</p>
-                          </Link>
-                          {bundleItem && (
-                            <p className="text-sm text-muted-foreground">
-                              {t('common:quantityInBundle')}: {bundleItem.quantity}× {bundleItem.variantName ? `(${bundleItem.variantName})` : ''}
-                            </p>
+              {/* Bundles containing this product */}
+              {productBundles.length > 0 && (
+                <div className="pt-4 border-t">
+                  <h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    {t('common:includedInBundles')} ({productBundles.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {productBundles.map((bundle: any) => {
+                      const bundleItem = bundle.items?.find((item: any) => item.productId === id);
+                      return (
+                        <div key={bundle.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                          {bundle.imageUrl && (
+                            <img src={bundle.imageUrl} alt={bundle.name} className="w-10 h-10 object-contain rounded border bg-white" />
                           )}
-                        </div>
-                        <div className="text-right">
+                          <div className="flex-1 min-w-0">
+                            <Link href={`/inventory/bundles/${bundle.id}`}>
+                              <p className="font-medium text-primary hover:underline truncate">{bundle.name}</p>
+                            </Link>
+                            {bundleItem && (
+                              <p className="text-xs text-muted-foreground">
+                                {t('common:quantityInBundle')}: {bundleItem.quantity}×
+                              </p>
+                            )}
+                          </div>
                           {bundle.priceEur && (
-                            <p className="font-semibold text-sm">{formatCurrency(parseFloat(bundle.priceEur), 'EUR')}</p>
-                          )}
-                          {bundle.priceCzk && (
-                            <p className="text-xs text-muted-foreground">{formatCurrency(parseFloat(bundle.priceCzk), 'CZK')}</p>
+                            <p className="text-sm font-semibold shrink-0">{formatCurrency(parseFloat(bundle.priceEur), 'EUR')}</p>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </div>
+          </section>
 
-          {/* Tiered Pricing */}
-          {tieredPricing.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  {t('products:tieredPricing')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('products:quantityRange')}</TableHead>
-                      <TableHead className="text-right">{t('products:priceCzk')}</TableHead>
-                      <TableHead className="text-right">{t('products:priceEur')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tieredPricing.map((tier: any) => (
-                      <TableRow key={tier.id}>
-                        <TableCell className="font-medium">
-                          {tier.minQuantity}+ {t('common:units')}
-                        </TableCell>
-                        <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <Separator />
 
-          {/* Cost History Chart */}
-          {canAccessFinancialData && costHistory.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  {t('products:costHistory')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CostHistoryChart data={costHistory} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Product Locations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MapPinned className="h-5 w-5" />
-                {t('products:productLocations')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProductLocations productId={id!} />
-            </CardContent>
-          </Card>
-
-          {/* Product Files */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {t('products:productFiles')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Files Section */}
+          <section 
+            id="files" 
+            ref={setSectionRef('files')}
+            className="scroll-mt-32 space-y-4 pb-8"
+          >
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t('products:productFiles')}
+            </h2>
+            
+            <div className="rounded-xl border bg-card p-4">
               <ProductFiles productId={id!} />
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   );
