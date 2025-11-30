@@ -84,6 +84,20 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Shimmer animation for progress bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 @keyframes ripple-effect {
   0% {
     background: radial-gradient(circle at center, rgba(23, 23, 23, 0.2) 0%, transparent 0%);

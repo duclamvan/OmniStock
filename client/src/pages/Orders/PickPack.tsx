@@ -125,7 +125,12 @@ import {
   Download,
   Star,
   BookmarkCheck,
-  ShoppingBasket
+  ShoppingBasket,
+  Trophy,
+  Flame,
+  Target,
+  Lock,
+  Sparkles
 } from "lucide-react";
 
 interface BundleItem {
@@ -12978,73 +12983,212 @@ export default function PickPack() {
 
           {/* Overview Tab - Mobile Optimized */}
           <TabsContent value="overview" className="mt-4 sm:mt-6">
-            {/* Performance Stats Modal */}
-            {showPerformanceStats && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 text-white p-4 sm:p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        <h2 className="text-lg sm:text-xl font-bold">{t('performanceStatistics')}</h2>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-white hover:bg-white/20"
-                        onClick={() => setShowPerformanceStats(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                          {transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length}
+            {/* Performance Stats Modal - Gamified Experience */}
+            {showPerformanceStats && (() => {
+              const completedToday = transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length;
+              const totalItems = transformedOrders.reduce((sum, o) => sum + (o.items?.reduce((s, i) => s + (i.pickedQuantity || 0), 0) || 0), 0);
+              const dailyTarget = 25;
+              const progressPercent = Math.min((completedToday / dailyTarget) * 100, 100);
+              const streak = 7; // This would come from user stats
+              const level = Math.floor(completedToday / 5) + 1;
+              const xpCurrent = (completedToday * 100) % 500;
+              const xpNeeded = 500;
+              const rank = completedToday >= 20 ? 'legend' : completedToday >= 15 ? 'master' : completedToday >= 10 ? 'expert' : completedToday >= 5 ? 'skilled' : 'rookie';
+              const rankColors: Record<string, string> = {
+                rookie: 'from-gray-500 to-gray-600',
+                skilled: 'from-green-500 to-emerald-600',
+                expert: 'from-blue-500 to-indigo-600',
+                master: 'from-purple-500 to-violet-600',
+                legend: 'from-amber-500 via-orange-500 to-red-500'
+              };
+              const rankLabels: Record<string, string> = {
+                rookie: t('rankRookie', 'Rookie Picker'),
+                skilled: t('rankSkilled', 'Skilled Handler'),
+                expert: t('rankExpert', 'Expert Fulfiller'),
+                master: t('rankMaster', 'Master Packer'),
+                legend: t('rankLegend', 'Warehouse Legend')
+              };
+              
+              return (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700">
+                    {/* Header with Gradient */}
+                    <div className={`bg-gradient-to-r ${rankColors[rank]} p-5 sm:p-6 relative overflow-hidden`}>
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/40">
+                            <Trophy className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white">{t('performanceCenter', 'Performance Center')}</h2>
+                            <p className="text-white/80 text-sm sm:text-base flex items-center gap-2">
+                              <Flame className="h-4 w-4 text-orange-300" />
+                              {streak} {t('dayStreak', 'day streak')}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('ordersCompletedToday')}</p>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="text-white hover:bg-white/20 h-10 w-10"
+                          onClick={() => setShowPerformanceStats(false)}
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">
-                          {Math.floor(Math.random() * 90 + 10)}%
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('pickingAccuracy')}</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
-                          {Math.floor(Math.random() * 20 + 5)}
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('avgItemsPerOrder')}</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">
-                          {Math.floor(Math.random() * 10 + 5)}m
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('avgPickTime')}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="my-6 border-t border-gray-200"></div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t('dailyTarget')}</span>
-                        <span className="text-sm text-gray-600">{t('ordersTarget', { completed: 15, target: 20 })}</span>
-                      </div>
-                      <Progress value={75} className="h-2" />
                       
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t('efficiencyScore')}</span>
-                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">{t('excellent')}</Badge>
+                      {/* Rank Badge */}
+                      <div className="mt-4 flex items-center gap-3">
+                        <div className="bg-white/20 backdrop-blur rounded-full px-4 py-1.5 flex items-center gap-2">
+                          <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
+                          <span className="text-white font-semibold text-sm">{rankLabels[rank]}</span>
+                        </div>
+                        <div className="bg-white/20 backdrop-blur rounded-full px-4 py-1.5 flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-yellow-300" />
+                          <span className="text-white font-semibold text-sm">Level {level}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                      {/* XP Progress Bar */}
+                      <div className="mb-6 bg-gray-100 dark:bg-slate-800 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                            {t('experiencePoints', 'Experience Points')}
+                          </span>
+                          <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{xpCurrent} / {xpNeeded} XP</span>
+                        </div>
+                        <div className="relative h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                            style={{ width: `${(xpCurrent / xpNeeded) * 100}%` }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                          {xpNeeded - xpCurrent} XP {t('toNextLevel', 'to next level')}
+                        </p>
+                      </div>
+                      
+                      {/* Daily Challenge */}
+                      <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                              <Target className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900 dark:text-white">{t('dailyChallenge', 'Daily Challenge')}</h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{t('completeOrders', 'Complete {{target}} orders today', { target: dailyTarget })}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{completedToday}</span>
+                            <span className="text-gray-500 dark:text-gray-400">/{dailyTarget}</span>
+                          </div>
+                        </div>
+                        <div className="relative h-4 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ${
+                              progressPercent >= 100 
+                                ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+                                : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                            }`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                        {progressPercent >= 100 && (
+                          <div className="mt-2 flex items-center gap-2 text-green-600 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-semibold">{t('challengeCompleted', 'Challenge Completed! +200 XP')}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-2">
+                            <Package className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{completedToday}</div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('ordersToday', 'Orders Today')}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 text-center border border-green-100 dark:border-green-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-2">
+                            <TrendingUp className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">98%</div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('accuracy', 'Accuracy')}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mx-auto mb-2">
+                            <Box className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{totalItems}</div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('itemsPicked', 'Items Picked')}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 text-center border border-orange-100 dark:border-orange-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-2">
+                            <Clock className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">4.2m</div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('avgTime', 'Avg Time')}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Achievements */}
+                      <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <Award className="h-5 w-5 text-amber-500" />
+                          {t('recentAchievements', 'Recent Achievements')}
+                        </h3>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+                              <Zap className="h-5 w-5 text-white" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-900 dark:text-white">{t('speedDemon', 'Speed Demon')}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('under3min', '<3 min order')}</p>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                              <Target className="h-5 w-5 text-white" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-900 dark:text-white">{t('perfectPicker', 'Perfect Picker')}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('noErrors', 'No errors')}</p>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600 opacity-50">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                              <Lock className="h-5 w-5 text-gray-500" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('locked', 'Locked')}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('complete50', '50 orders')}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Motivational Footer */}
+                      <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {completedToday === 0 
+                            ? t('letsGetStarted', "Let's get started! Pick your first order 💪") 
+                            : completedToday < 10 
+                              ? t('keepGoing', "You're doing great! Keep up the momentum 🔥")
+                              : t('amazingWork', "Amazing work today! You're a warehouse superstar ⭐")}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Quick Actions */}
@@ -13113,13 +13257,23 @@ export default function PickPack() {
                         {t('optimizePickRoute')}
                       </Button>
                       <Button 
-                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                        className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
+                          showPerformanceStats 
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0' 
+                            : 'hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 group'
+                        }`}
                         variant={showPerformanceStats ? "default" : "outline"} 
                         size="lg"
                         onClick={togglePerformanceStats}
                       >
-                        <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        <Trophy className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showPerformanceStats ? 'text-white' : 'text-amber-500 group-hover:text-amber-600'}`} />
                         {showPerformanceStats ? t('hideStats') : t('viewPerformanceStats')}
+                        {!showPerformanceStats && (
+                          <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                            <Flame className="h-3 w-3" />
+                            <span className="hidden sm:inline">{t('checkYourScore', 'Check Score')}</span>
+                          </span>
+                        )}
                       </Button>
                     </>
                   )}
