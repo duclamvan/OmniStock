@@ -76,7 +76,9 @@ import {
   Settings,
   MoreVertical,
   Globe,
-  Store
+  Store,
+  ShoppingBag,
+  Building2
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -163,7 +165,7 @@ const addOrderSchema = z.object({
   codAmount: z.coerce.number().min(0).optional().nullable(),
   codCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
   notes: z.string().optional(),
-  orderLocation: z.string().optional(),
+  saleType: z.enum(['retail', 'wholesale']).default('retail'),
 });
 
 interface OrderItem {
@@ -591,7 +593,7 @@ export default function AddOrder() {
       shippingCost: 0,
       actualShippingCost: 0,
       adjustment: 0,
-      orderLocation: '',
+      saleType: 'retail',
     };
   }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, financialHelpers]);
 
@@ -618,26 +620,6 @@ export default function AddOrder() {
     }
   }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form]);
 
-  // Auto-fill order location based on device type or stored preference
-  useEffect(() => {
-    const currentLocation = form.getValues('orderLocation');
-    if (!currentLocation) {
-      // Check for stored device location (for POS devices)
-      const storedDeviceLocation = localStorage.getItem('deviceLocation');
-      const storedWarehouse = localStorage.getItem('warehouseName');
-      
-      if (storedDeviceLocation) {
-        // Use stored device location (e.g., "Prague POS Terminal", "Main Store - Device 1")
-        form.setValue('orderLocation', storedDeviceLocation);
-      } else if (storedWarehouse) {
-        // Use warehouse name if available
-        form.setValue('orderLocation', storedWarehouse);
-      } else {
-        // Default to "Online" for web orders
-        form.setValue('orderLocation', 'Online');
-      }
-    }
-  }, []);
 
   // Debounce search inputs for better performance
   useEffect(() => {
@@ -1542,15 +1524,31 @@ export default function AddOrder() {
           }
         }
 
-        // If no customer price found, use default product price
+        // If no customer price found, use default product price (considering sale type)
         if (productPrice === 0) {
-          if (selectedCurrency === 'CZK' && product.priceCzk) {
-            productPrice = parseFloat(product.priceCzk);
-          } else if (selectedCurrency === 'EUR' && product.priceEur) {
-            productPrice = parseFloat(product.priceEur);
-          } else {
-            // Fallback to any available price if specific currency price is not available
-            productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          const currentSaleType = form.watch('saleType') || 'retail';
+          
+          if (currentSaleType === 'wholesale') {
+            // Use bulk/wholesale prices if available
+            if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+              productPrice = parseFloat(product.bulkPriceCzk);
+            } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+              productPrice = parseFloat(product.bulkPriceEur);
+            } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+              productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+            }
+          }
+          
+          // Fallback to retail prices if no wholesale price or retail mode
+          if (productPrice === 0) {
+            if (selectedCurrency === 'CZK' && product.priceCzk) {
+              productPrice = parseFloat(product.priceCzk);
+            } else if (selectedCurrency === 'EUR' && product.priceEur) {
+              productPrice = parseFloat(product.priceEur);
+            } else {
+              // Fallback to any available price if specific currency price is not available
+              productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+            }
           }
         }
 
@@ -1598,14 +1596,30 @@ export default function AddOrder() {
       const variant = productVariants.find(v => v.id === variantId);
       if (!variant) continue;
       
-      // Use product's price since variants don't have their own selling price
+      // Use product's price since variants don't have their own selling price (considering sale type)
       let productPrice = 0;
-      if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
-        productPrice = parseFloat(selectedProductForVariant.priceCzk);
-      } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
-        productPrice = parseFloat(selectedProductForVariant.priceEur);
-      } else {
-        productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+      const currentSaleType = form.watch('saleType') || 'retail';
+      
+      if (currentSaleType === 'wholesale') {
+        // Use bulk/wholesale prices if available
+        if (selectedCurrency === 'CZK' && selectedProductForVariant.bulkPriceCzk) {
+          productPrice = parseFloat(selectedProductForVariant.bulkPriceCzk);
+        } else if (selectedCurrency === 'EUR' && selectedProductForVariant.bulkPriceEur) {
+          productPrice = parseFloat(selectedProductForVariant.bulkPriceEur);
+        } else if (selectedProductForVariant.bulkPriceEur || selectedProductForVariant.bulkPriceCzk) {
+          productPrice = parseFloat(selectedProductForVariant.bulkPriceEur || selectedProductForVariant.bulkPriceCzk || '0');
+        }
+      }
+      
+      // Fallback to retail prices if no wholesale price or retail mode
+      if (productPrice === 0) {
+        if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
+          productPrice = parseFloat(selectedProductForVariant.priceCzk);
+        } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
+          productPrice = parseFloat(selectedProductForVariant.priceEur);
+        } else {
+          productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+        }
       }
       
       const newItem: OrderItem = {
@@ -1656,6 +1670,69 @@ export default function AddOrder() {
   const removeOrderItem = (id: string) => {
     setOrderItems(items => items.filter(item => item.id !== id));
   };
+
+  // Recalculate all item prices when switching between retail and wholesale
+  const recalculatePricesForSaleType = useCallback(async (newSaleType: 'retail' | 'wholesale') => {
+    if (orderItems.length === 0) return;
+    
+    const selectedCurrency = form.watch('currency') || 'EUR';
+    const productIds = orderItems.filter(item => item.productId).map(item => item.productId);
+    
+    if (productIds.length === 0) return;
+    
+    try {
+      // Fetch all products to get their prices
+      const response = await fetch('/api/products');
+      if (!response.ok) return;
+      
+      const allProducts = await response.json();
+      const productMap = new Map(allProducts.map((p: any) => [p.id, p]));
+      
+      setOrderItems(items => items.map(item => {
+        if (!item.productId) return item; // Skip services
+        
+        const product = productMap.get(item.productId);
+        if (!product) return item;
+        
+        let newPrice = 0;
+        
+        if (newSaleType === 'wholesale') {
+          // Use bulk/wholesale prices if available
+          if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+            newPrice = parseFloat(product.bulkPriceCzk);
+          } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+            newPrice = parseFloat(product.bulkPriceEur);
+          } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+            newPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+          }
+        }
+        
+        // Fallback to retail prices if no wholesale price or retail mode
+        if (newPrice === 0) {
+          if (selectedCurrency === 'CZK' && product.priceCzk) {
+            newPrice = parseFloat(product.priceCzk);
+          } else if (selectedCurrency === 'EUR' && product.priceEur) {
+            newPrice = parseFloat(product.priceEur);
+          } else {
+            newPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          }
+        }
+        
+        return {
+          ...item,
+          price: newPrice,
+          total: (item.quantity * newPrice) - item.discount
+        };
+      }));
+      
+      toast({
+        title: newSaleType === 'wholesale' ? t('orders:wholesalePricesApplied') : t('orders:retailPricesApplied'),
+        description: t('orders:pricesUpdatedForSaleType'),
+      });
+    } catch (error) {
+      console.error('Error recalculating prices:', error);
+    }
+  }, [orderItems, form, toast, t]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -1929,21 +2006,40 @@ export default function AddOrder() {
           <div className="space-y-4 sm:space-y-6">
             {/* Mobile-Only Settings (at top) */}
             <div className="lg:hidden space-y-4">
-              {/* Order Location */}
+              {/* Order Type (Retail/Wholesale) */}
               <Card className="shadow-sm">
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                    <MapPin className="h-4 w-4 text-blue-600" />
-                    {t('orders:orderLocation')}
+                    <Store className="h-4 w-4 text-blue-600" />
+                    {t('orders:saleType')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
-                  <Input
-                    placeholder={t('orders:orderLocationPlaceholder')}
-                    value={form.watch('orderLocation') || ''}
-                    onChange={(e) => form.setValue('orderLocation', e.target.value)}
-                    data-testid="input-order-location"
-                  />
+                  <Select 
+                    value={form.watch('saleType') || 'retail'} 
+                    onValueChange={(value: 'retail' | 'wholesale') => {
+                      form.setValue('saleType', value);
+                      recalculatePricesForSaleType(value);
+                    }}
+                  >
+                    <SelectTrigger className="h-9" data-testid="select-sale-type-mobile">
+                      <SelectValue placeholder={t('orders:selectSaleType')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="retail">
+                        <div className="flex items-center gap-2">
+                          <ShoppingBag className="h-4 w-4 text-green-600" />
+                          {t('orders:retail')}
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="wholesale">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-blue-600" />
+                          {t('orders:wholesale')}
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
 
@@ -4553,55 +4649,46 @@ export default function AddOrder() {
               <div className="hidden lg:block space-y-4">
                 <div className="sticky top-4 space-y-4">
                   
-                  {/* Order Location - Desktop Only */}
+                  {/* Order Type (Retail/Wholesale) - Desktop Only */}
                   <Card className="shadow-sm">
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                        <MapPin className="h-4 w-4 text-blue-600" />
-                        {t('orders:orderLocation')}
+                        <Store className="h-4 w-4 text-blue-600" />
+                        {t('orders:saleType')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3">
                       <Select 
-                        value={form.watch('orderLocation') || ''} 
-                        onValueChange={(value) => form.setValue('orderLocation', value)}
+                        value={form.watch('saleType') || 'retail'} 
+                        onValueChange={(value: 'retail' | 'wholesale') => {
+                          form.setValue('saleType', value);
+                          recalculatePricesForSaleType(value);
+                        }}
                       >
-                        <SelectTrigger className="h-9" data-testid="select-order-location">
-                          <SelectValue placeholder={t('orders:selectOrderLocation')} />
+                        <SelectTrigger className="h-9" data-testid="select-sale-type">
+                          <SelectValue placeholder={t('orders:selectSaleType')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="online">
+                          <SelectItem value="retail">
                             <div className="flex items-center gap-2">
-                              <Globe className="h-4 w-4 text-blue-500" />
-                              {t('orders:locationOnline')}
+                              <ShoppingBag className="h-4 w-4 text-green-600" />
+                              {t('orders:retail')}
                             </div>
                           </SelectItem>
-                          <SelectItem value="in_store">
+                          <SelectItem value="wholesale">
                             <div className="flex items-center gap-2">
-                              <Store className="h-4 w-4 text-green-500" />
-                              {t('orders:locationInStore')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="phone">
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-purple-500" />
-                              {t('orders:locationPhone')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="facebook">
-                            <div className="flex items-center gap-2">
-                              <SiFacebook className="h-4 w-4 text-blue-600" />
-                              {t('orders:locationFacebook')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="other">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-gray-500" />
-                              {t('orders:locationOther')}
+                              <Building2 className="h-4 w-4 text-blue-600" />
+                              {t('orders:wholesale')}
                             </div>
                           </SelectItem>
                         </SelectContent>
                       </Select>
+                      {form.watch('saleType') === 'wholesale' && (
+                        <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {t('orders:wholesalePricesApplied')}
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
 
