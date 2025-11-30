@@ -1367,6 +1367,14 @@ const orders = {
   business: 'Business',
   retail: 'Retail',
   
+  // Sale Type (Order Type - Retail/Wholesale)
+  saleType: 'Sale Type',
+  retailOrder: 'Retail Order',
+  wholesaleOrder: 'Wholesale Order',
+  wholesalePricesApplied: 'Wholesale Prices Applied',
+  retailPricesApplied: 'Retail Prices Applied',
+  pricesUpdatedForSaleType: 'Item prices have been updated based on the selected sale type',
+  
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Picking Started',
   picked: 'Picked',

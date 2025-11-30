@@ -1295,6 +1295,14 @@ const orders = {
   business: 'Doanh nghiệp',
   retail: 'Bán lẻ',
   
+  // Sale Type (Order Type - Retail/Wholesale)
+  saleType: 'Loại bán hàng',
+  retailOrder: 'Đơn bán lẻ',
+  wholesaleOrder: 'Đơn bán sỉ',
+  wholesalePricesApplied: 'Đã áp dụng giá sỉ',
+  retailPricesApplied: 'Đã áp dụng giá lẻ',
+  pricesUpdatedForSaleType: 'Giá sản phẩm đã được cập nhật theo loại bán hàng',
+  
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Bắt đầu lấy hàng',
   picked: 'Đã lấy',

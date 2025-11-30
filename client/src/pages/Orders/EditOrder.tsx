@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, Fragment } from "react";
+import { useState, useEffect, useMemo, useRef, Fragment, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
@@ -67,7 +67,9 @@ import {
   Pencil,
   Star,
   MoreVertical,
-  StickyNote
+  StickyNote,
+  Store,
+  ShoppingBag
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
@@ -128,6 +130,7 @@ const normalizeCarrier = (value: string): string => {
 const editOrderSchema = z.object({
   customerId: z.string().optional(),
   orderType: z.enum(['pos', 'ord', 'web', 'tel']).default('ord'),
+  saleType: z.enum(['retail', 'wholesale']).default('retail'),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
@@ -571,6 +574,7 @@ export default function EditOrder() {
     resolver: zodResolver(editOrderSchema),
     defaultValues: {
       orderType: 'ord',
+      saleType: 'retail',
       currency: 'EUR',
       priority: 'medium',
       orderStatus: 'pending',
@@ -733,6 +737,7 @@ export default function EditOrder() {
     form.reset({
       customerId: order.customerId,
       orderType: order.orderType || 'ord',
+      saleType: order.saleType || 'retail',
       currency: order.currency,
       priority: order.priority,
       orderStatus: order.orderStatus,
@@ -1636,15 +1641,31 @@ export default function EditOrder() {
         }
       }
 
-      // If no customer price found, use default product price
+      // If no customer price found, use default product price (considering sale type)
       if (productPrice === 0) {
-        if (selectedCurrency === 'CZK' && product.priceCzk) {
-          productPrice = parseFloat(product.priceCzk);
-        } else if (selectedCurrency === 'EUR' && product.priceEur) {
-          productPrice = parseFloat(product.priceEur);
-        } else {
-          // Fallback to any available price if specific currency price is not available
-          productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        const currentSaleType = form.watch('saleType') || 'retail';
+        
+        if (currentSaleType === 'wholesale') {
+          // Use bulk/wholesale prices if available
+          if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+            productPrice = parseFloat(product.bulkPriceCzk);
+          } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+            productPrice = parseFloat(product.bulkPriceEur);
+          } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+            productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+          }
+        }
+        
+        // Fallback to retail prices if no wholesale price or retail mode
+        if (productPrice === 0) {
+          if (selectedCurrency === 'CZK' && product.priceCzk) {
+            productPrice = parseFloat(product.priceCzk);
+          } else if (selectedCurrency === 'EUR' && product.priceEur) {
+            productPrice = parseFloat(product.priceEur);
+          } else {
+            // Fallback to any available price if specific currency price is not available
+            productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          }
         }
       }
 
@@ -1717,14 +1738,30 @@ export default function EditOrder() {
         );
         updatedCount++;
       } else {
-        // Use product's price since variants don't have their own selling price
+        // Use product's price since variants don't have their own selling price (considering sale type)
         let productPrice = 0;
-        if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
-          productPrice = parseFloat(selectedProductForVariant.priceCzk);
-        } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
-          productPrice = parseFloat(selectedProductForVariant.priceEur);
-        } else {
-          productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+        const currentSaleType = form.watch('saleType') || 'retail';
+        
+        if (currentSaleType === 'wholesale') {
+          // Use bulk/wholesale prices if available
+          if (selectedCurrency === 'CZK' && selectedProductForVariant.bulkPriceCzk) {
+            productPrice = parseFloat(selectedProductForVariant.bulkPriceCzk);
+          } else if (selectedCurrency === 'EUR' && selectedProductForVariant.bulkPriceEur) {
+            productPrice = parseFloat(selectedProductForVariant.bulkPriceEur);
+          } else if (selectedProductForVariant.bulkPriceEur || selectedProductForVariant.bulkPriceCzk) {
+            productPrice = parseFloat(selectedProductForVariant.bulkPriceEur || selectedProductForVariant.bulkPriceCzk || '0');
+          }
+        }
+        
+        // Fallback to retail prices if no wholesale price or retail mode
+        if (productPrice === 0) {
+          if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
+            productPrice = parseFloat(selectedProductForVariant.priceCzk);
+          } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
+            productPrice = parseFloat(selectedProductForVariant.priceEur);
+          } else {
+            productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+          }
         }
         
         const newItem: OrderItem = {
@@ -1782,6 +1819,69 @@ export default function EditOrder() {
   const removeOrderItem = (id: string) => {
     setOrderItems(items => items.filter(item => item.id !== id));
   };
+
+  // Recalculate all item prices when switching between retail and wholesale
+  const recalculatePricesForSaleType = useCallback(async (newSaleType: 'retail' | 'wholesale') => {
+    if (orderItems.length === 0) return;
+    
+    const selectedCurrency = form.watch('currency') || 'EUR';
+    const productIds = orderItems.filter(item => item.productId).map(item => item.productId);
+    
+    if (productIds.length === 0) return;
+    
+    try {
+      // Fetch all products to get their prices
+      const response = await fetch('/api/products');
+      if (!response.ok) return;
+      
+      const products = await response.json();
+      const productMap = new Map(products.map((p: any) => [p.id, p]));
+      
+      setOrderItems(items => items.map(item => {
+        if (!item.productId) return item; // Skip services
+        
+        const product = productMap.get(item.productId);
+        if (!product) return item;
+        
+        let newPrice = 0;
+        
+        if (newSaleType === 'wholesale') {
+          // Use bulk/wholesale prices if available
+          if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+            newPrice = parseFloat(product.bulkPriceCzk);
+          } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+            newPrice = parseFloat(product.bulkPriceEur);
+          } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+            newPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+          }
+        }
+        
+        // Fallback to retail prices if no wholesale price or retail mode
+        if (newPrice === 0) {
+          if (selectedCurrency === 'CZK' && product.priceCzk) {
+            newPrice = parseFloat(product.priceCzk);
+          } else if (selectedCurrency === 'EUR' && product.priceEur) {
+            newPrice = parseFloat(product.priceEur);
+          } else {
+            newPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          }
+        }
+        
+        return {
+          ...item,
+          price: newPrice,
+          total: (item.quantity * newPrice) - item.discount
+        };
+      }));
+      
+      toast({
+        title: newSaleType === 'wholesale' ? t('wholesalePricesApplied') : t('retailPricesApplied'),
+        description: t('pricesUpdatedForSaleType'),
+      });
+    } catch (error) {
+      console.error('Error recalculating prices:', error);
+    }
+  }, [orderItems, form, toast, t]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -2201,22 +2301,44 @@ export default function EditOrder() {
 
         <form id="edit-order-form" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-4 sm:space-y-6">
-            {/* Order Location - Mobile Only (at top) */}
+            {/* Sale Type - Mobile Only (at top) */}
             <Card className="lg:hidden shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800">
               <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  {t('orderLocation')}
+                  {form.watch('saleType') === 'wholesale' ? (
+                    <ShoppingBag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  ) : (
+                    <Store className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  )}
+                  {t('saleType')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3">
-                <Input
-                  placeholder={t('orderLocationPlaceholder')}
-                  value={form.watch('orderLocation') || ''}
-                  onChange={(e) => form.setValue('orderLocation', e.target.value)}
-                  data-testid="input-order-location"
-                  className="border-gray-200 dark:border-gray-700"
-                />
+                <Select
+                  value={form.watch('saleType') || 'retail'}
+                  onValueChange={(value: 'retail' | 'wholesale') => {
+                    form.setValue('saleType', value);
+                    recalculatePricesForSaleType(value);
+                  }}
+                >
+                  <SelectTrigger className="border-gray-200 dark:border-gray-700" data-testid="select-sale-type-mobile">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="retail" data-testid="select-sale-type-retail">
+                      <div className="flex items-center gap-2">
+                        <Store className="h-4 w-4 text-blue-600" />
+                        {t('retailOrder')}
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="wholesale" data-testid="select-sale-type-wholesale">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4 text-purple-600" />
+                        {t('wholesaleOrder')}
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
 
@@ -4659,21 +4781,44 @@ export default function EditOrder() {
               <div className="hidden lg:block space-y-4">
                 <div className="sticky top-4 space-y-4">
                   
-                  {/* Order Location - Desktop Only */}
+                  {/* Sale Type - Desktop Only */}
                   <Card className="shadow-sm">
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                        <MapPin className="h-4 w-4 text-blue-600" />
-                        {t('orderLocation')}
+                        {form.watch('saleType') === 'wholesale' ? (
+                          <ShoppingBag className="h-4 w-4 text-purple-600" />
+                        ) : (
+                          <Store className="h-4 w-4 text-blue-600" />
+                        )}
+                        {t('saleType')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3">
-                      <Input
-                        placeholder={t('locationPlaceholder')}
-                        value={form.watch('orderLocation') || ''}
-                        onChange={(e) => form.setValue('orderLocation', e.target.value)}
-                        data-testid="input-order-location"
-                      />
+                      <Select
+                        value={form.watch('saleType') || 'retail'}
+                        onValueChange={(value: 'retail' | 'wholesale') => {
+                          form.setValue('saleType', value);
+                          recalculatePricesForSaleType(value);
+                        }}
+                      >
+                        <SelectTrigger data-testid="select-sale-type-desktop">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="retail">
+                            <div className="flex items-center gap-2">
+                              <Store className="h-4 w-4 text-blue-600" />
+                              {t('retailOrder')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="wholesale">
+                            <div className="flex items-center gap-2">
+                              <ShoppingBag className="h-4 w-4 text-purple-600" />
+                              {t('wholesaleOrder')}
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </CardContent>
                   </Card>
 
