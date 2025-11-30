@@ -11612,6 +11612,7 @@ export default function PickPack() {
     const allItemsPicked = activePickingOrder.items.every(item => item.pickedQuantity >= item.quantity);
 
     return (
+      <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         {/* Header - Ultra Compact for Mobile */}
         <div className="bg-gradient-to-r from-blue-700 dark:from-blue-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
@@ -12548,171 +12549,51 @@ export default function PickPack() {
                     </div>
                   )}
                 </div>
-              ) : allItemsPicked && showPickingCompletionModal ? (
-              <div className="max-w-3xl mx-auto px-3 lg:px-0">
-                <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30">
-                  <div className="bg-gradient-to-r from-green-50 dark:from-green-900/300 to-emerald-50 dark:to-emerald-900/300 p-1 lg:p-2"></div>
-                  <CardContent className="p-6 sm:p-10 lg:p-16 text-center">
-                    <div className="bg-gradient-to-br from-green-400 dark:from-green-500 to-emerald-400 dark:to-emerald-500 rounded-full w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mx-auto mb-4 lg:mb-8 flex items-center justify-center shadow-xl animate-bounce">
-                      <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 text-white" />
+              ) : allItemsPicked ? (
+              /* All items picked - Show completion prompt with Complete button */
+              <div className="h-full flex flex-col bg-gradient-to-br from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20">
+                <div className="flex-1 p-4 flex items-center justify-center">
+                  <div className="text-center max-w-md">
+                    <div className="bg-gradient-to-br from-green-400 dark:from-green-500 to-emerald-400 dark:to-emerald-500 rounded-full w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 flex items-center justify-center shadow-xl">
+                      <CheckCircle className="h-14 w-14 sm:h-20 sm:w-20 text-white" />
                     </div>
-                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 lg:mb-4 text-gray-800">
+                    <h2 className="text-2xl sm:text-3xl font-black mb-3 text-gray-800 dark:text-gray-100">
                       🎉 All Items Picked!
                     </h2>
-                    <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-4 lg:mb-8">
-                      Excellent work! You've successfully picked all {activePickingOrder.totalItems} items for order {activePickingOrder.orderId}
+                    <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6">
+                      You've picked all {activePickingOrder.totalItems} items for order {activePickingOrder.orderId}
                     </p>
                     
-                    <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
-                      <div className="grid grid-cols-3 gap-2 lg:gap-4">
+                    {/* Stats Summary */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-md border border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">{t('time')}</p>
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
                         </div>
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">{t('items')}</p>
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">{activePickingOrder.totalItems}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{activePickingOrder.totalItems}</p>
                         </div>
                         <div>
-                          <p className="text-xs lg:text-sm text-gray-500">{t('score')}</p>
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 dark:text-purple-400">100%</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
+                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">100%</p>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="space-y-3">
-                      <Button 
-                        size="lg" 
-                        onClick={async () => {
-                          // Store order data before clearing
-                          const orderTopack = {
-                            ...activePickingOrder,
-                            pickStatus: 'completed' as const,
-                            pickEndTime: new Date().toISOString(),
-                          };
-                          
-                          // Immediately transition to packing without delay
-                          setShowPickingCompletionModal(false);
-                          window.scrollTo(0, 0);
-                          setActivePickingOrder(null);
-                          setPickingTimer(0);
-                          setManualItemIndex(0);
-                          
-                          // Start packing immediately (no setTimeout delay)
-                          startPacking(orderTopack);
-                          
-                          // Complete picking in background (non-blocking)
-                          // Don't set packStatus since startPacking() already sets it to 'in_progress'
-                          completePicking(false).catch(console.error);
-                          
-                          // Switch tab after starting packing
-                          setSelectedTab('packing');
-                        }}
-                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white shadow-xl transform hover:scale-105 transition-all"
-                      >
-                        <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                        PROCEED TO PACKING
-                      </Button>
-                      
-                      <Button 
-                        size="lg" 
-                        variant="outline"
-                        onClick={async () => {
-                          // Store the current order ID to exclude it from next order search
-                          const justCompletedOrderId = activePickingOrder?.id;
-                          
-                          // Hide modal immediately and reset state
-                          setShowPickingCompletionModal(false);
-                          window.scrollTo(0, 0);
-                          setActivePickingOrder(null);
-                          setPickingTimer(0);
-                          setManualItemIndex(0);
-                          
-                          // Find next order immediately from existing data, excluding the just-completed order
-                          const pendingOrders = transformedOrders.filter(o => 
-                            o.id !== justCompletedOrderId && // Exclude the order we just completed
-                            o.pickStatus === 'not_started' && 
-                            o.status === 'to_fulfill'
-                          );
-                          
-                          // Use smart scoring to select the best next order
-                          const nextOrder = pendingOrders
-                            .map(order => ({
-                              order,
-                              score: calculateOrderScore(order)
-                            }))
-                            .sort((a, b) => b.score - a.score)
-                            .map(item => item.order)[0];
-                          
-                          if (nextOrder) {
-                            console.log('Starting next order:', nextOrder, 'Score:', calculateOrderScore(nextOrder));
-                            // Start picking the next order immediately
-                            startPicking(nextOrder);
-                            
-                            // Complete the previous order in background (non-blocking)
-                            completePicking().catch(console.error);
-                            
-                            // Invalidate queries in background to refresh data (non-blocking)
-                            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                          } else {
-                            console.log('No pending orders available to pick');
-                            // Only switch to pending tab if no orders available
-                            setSelectedTab('pending');
-                            
-                            // Complete picking in background
-                            completePicking().catch(console.error);
-                            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                          }
-                        }}
-                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:bg-blue-900/30 shadow-lg"
-                      >
-                        <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                        PICK NEXT ORDER
-                      </Button>
-                      
-                      <Button 
-                        size="lg" 
-                        variant="outline"
-                        onClick={async () => {
-                          // Complete picking and move to packing stage
-                          try {
-                            if (!activePickingOrder.id.startsWith('mock-')) {
-                              await apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
-                                pickStatus: 'completed',
-                                pickEndTime: new Date().toISOString(),
-                                packStatus: 'not_started',
-                                orderStatus: 'to_fulfill'
-                              });
-                            }
-                          } catch (error) {
-                            console.error('Error completing picking:', error);
-                          }
-                          
-                          // Exit picking mode and return to the tab where user started
-                          window.scrollTo(0, 0);
-                          setActivePickingOrder(null);
-                          setIsTimerRunning(false);
-                          if (activePickingOrder) {
-                            clearPickedProgress(activePickingOrder.id);
-                          }
-                          
-                          // Return to the tab the user was on when they started picking
-                          setSelectedTab(originatingTab);
-                          
-                          // Clear header hiding
-                          sessionStorage.removeItem('pickpack-active-mode');
-                          
-                          // Refresh data
-                          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                        }}
-                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-gray-400 text-gray-600 hover:bg-gray-50 shadow-lg"
-                      >
-                        <Home className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                        BACK TO OVERVIEW
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    {/* Complete Button - Opens the completion modal for double-checking */}
+                    <Button 
+                      size="lg" 
+                      onClick={() => setShowPickingCompletionModal(true)}
+                      className="w-full h-14 sm:h-16 text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white shadow-xl transform hover:scale-[1.02] transition-all animate-pulse"
+                      data-testid="button-complete-picking"
+                    >
+                      <CheckCircle className="h-6 w-6 sm:h-7 sm:w-7 mr-3" />
+                      {t('complete') || 'Complete'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
               // Show current item view if we have a current item but not all items are picked
@@ -12906,6 +12787,151 @@ export default function PickPack() {
           </div>
         </div>
       </div>
+      
+      {/* Picking Completion Modal - Overlays on top for final confirmation */}
+      <Dialog open={showPickingCompletionModal} onOpenChange={setShowPickingCompletionModal}>
+        <DialogContent className="max-w-lg sm:max-w-xl p-0 gap-0 overflow-hidden bg-gradient-to-br from-green-50 dark:from-green-900/40 to-emerald-50 dark:to-emerald-900/40 border-0 shadow-2xl">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-4 sm:p-6 text-white text-center relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+              onClick={() => setShowPickingCompletionModal(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <div className="bg-white/20 rounded-full w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 flex items-center justify-center">
+              <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black">🎉 {t('allItemsPicked') || 'All Items Picked!'}</h2>
+            <p className="text-sm sm:text-base text-white/90 mt-1">
+              {t('orderComplete', { orderId: activePickingOrder.orderId }) || `Order ${activePickingOrder.orderId} complete`}
+            </p>
+          </div>
+          
+          {/* Stats */}
+          <div className="p-4 sm:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-5 shadow-md border border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400">{activePickingOrder.totalItems}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">100%</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button 
+                size="lg" 
+                onClick={async () => {
+                  const orderTopack = {
+                    ...activePickingOrder,
+                    pickStatus: 'completed' as const,
+                    pickEndTime: new Date().toISOString(),
+                  };
+                  setShowPickingCompletionModal(false);
+                  window.scrollTo(0, 0);
+                  setActivePickingOrder(null);
+                  setPickingTimer(0);
+                  setManualItemIndex(0);
+                  startPacking(orderTopack);
+                  completePicking(false).catch(console.error);
+                  setSelectedTab('packing');
+                }}
+                className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+                data-testid="button-proceed-packing"
+              >
+                <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                {t('proceedToPacking') || 'PROCEED TO PACKING'}
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={async () => {
+                  const justCompletedOrderId = activePickingOrder?.id;
+                  setShowPickingCompletionModal(false);
+                  window.scrollTo(0, 0);
+                  setActivePickingOrder(null);
+                  setPickingTimer(0);
+                  setManualItemIndex(0);
+                  
+                  const pendingOrders = transformedOrders.filter(o => 
+                    o.id !== justCompletedOrderId && 
+                    o.pickStatus === 'not_started' && 
+                    o.status === 'to_fulfill'
+                  );
+                  
+                  const nextOrder = pendingOrders
+                    .map(order => ({ order, score: calculateOrderScore(order) }))
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.order)[0];
+                  
+                  if (nextOrder) {
+                    startPicking(nextOrder);
+                    completePicking().catch(console.error);
+                    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                  } else {
+                    setSelectedTab('pending');
+                    completePicking().catch(console.error);
+                    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                  }
+                }}
+                className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold border-2 border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                data-testid="button-pick-next"
+              >
+                <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                {t('pickNextOrder') || 'PICK NEXT ORDER'}
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    if (!activePickingOrder.id.startsWith('mock-')) {
+                      await apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+                        pickStatus: 'completed',
+                        pickEndTime: new Date().toISOString(),
+                        packStatus: 'not_started',
+                        orderStatus: 'to_fulfill'
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error completing picking:', error);
+                  }
+                  setShowPickingCompletionModal(false);
+                  window.scrollTo(0, 0);
+                  setActivePickingOrder(null);
+                  setIsTimerRunning(false);
+                  if (activePickingOrder) {
+                    clearPickedProgress(activePickingOrder.id);
+                  }
+                  setSelectedTab(originatingTab);
+                  sessionStorage.removeItem('pickpack-active-mode');
+                  queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                }}
+                className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                data-testid="button-back-overview"
+              >
+                <Home className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                {t('backToOverview') || 'Back to Overview'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 
