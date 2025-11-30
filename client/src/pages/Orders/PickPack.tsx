@@ -8065,6 +8065,53 @@ export default function PickPack() {
                       <CompactCopyField label="Full Address:" value={fullAddress} />
                       <CompactCopyField label="E-mail:" value={recipientData.email || ''} />
                     </div>
+
+                    {/* Sender Details - Collapsible */}
+                    {senderData && (
+                      <Collapsible defaultOpen={false} className="mt-3">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800"
+                          >
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <span className="font-medium">Sender Details (Absender)</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-2">
+                          <div className="space-y-0.5 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            {senderData.name && (
+                              <CompactCopyField label="Name:" value={senderData.name} />
+                            )}
+                            {senderData.company && (
+                              <CompactCopyField label="Company:" value={senderData.company} />
+                            )}
+                            {(senderData.street || senderData.houseNumber) && (
+                              <CompactCopyField 
+                                label="Street:" 
+                                value={`${senderData.street} ${senderData.houseNumber}`.trim()} 
+                              />
+                            )}
+                            {(senderData.postalCode || senderData.city) && (
+                              <CompactCopyField 
+                                label="City:" 
+                                value={`${senderData.postalCode} ${senderData.city}`.trim()} 
+                              />
+                            )}
+                            {senderData.email && (
+                              <CompactCopyField label="Email:" value={senderData.email} />
+                            )}
+                            {senderData.phone && (
+                              <CompactCopyField label="Phone:" value={senderData.phone} />
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
                   </div>
                 );
               })()}

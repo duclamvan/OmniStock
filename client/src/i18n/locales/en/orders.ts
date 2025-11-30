@@ -228,8 +228,6 @@ const orders = {
   labelsSentToPrinter: 'Labels Sent to Printer',
   
   // Toast Messages - Clipboard/Copy
-  copied: 'Copied!',
-  copiedToClipboard: 'Copied to clipboard',
   copyFailed: 'Copy failed',
   
   // Toast Messages - Label Generation
@@ -675,7 +673,6 @@ const orders = {
   
   // AddOrder Page - Order Summary
   clickToEnter: 'Click to enter',
-  clickToEditOrRoundUp: 'Click to edit or Round Up',
   formValidationErrors: 'Form Validation Errors',
   formValidationErrorsCount: 'Form Validation Errors ({{count}})',
   invalidValue: 'Invalid value',
@@ -747,7 +744,6 @@ const orders = {
   totalRoundedUp: 'Total Rounded Up',
   adjustmentAmount: 'Adjustment: {{amount}}',
   totalAlreadyWhole: 'Total is already a whole number',
-  itemTotal: 'Item Total:',
   
   // Toast Messages - Additional
   orderCreatedWithPacking: 'Order created successfully with packing plan',
@@ -773,7 +769,6 @@ const orders = {
   fileRemovedFromList: 'File has been removed from the upload list',
   pleaseAddAtLeastOneItem: 'Please add at least one item to the order',
   addressCopiedToClipboard: 'Address copied to clipboard',
-  addressSavedWithCustomer: 'Address saved (will be created with customer)',
   editShippingAddress: 'Edit Shipping Address',
   addShippingAddress: 'Add Shipping Address',
   updateShippingAddressDetails: 'Update the shipping address details',
@@ -811,7 +806,6 @@ const orders = {
   expectedDate: 'Expected Date',
   createdDate: 'Created Date',
   viewDetails: 'View Details',
-  unknownCustomer: 'Unknown Customer',
   loadingPreOrders: 'Loading pre-orders...',
   
   // PreOrders - Toast Messages
@@ -878,7 +872,6 @@ const orders = {
   noPreOrdersMatchFilters: 'No pre-orders match your filters',
   noPreOrdersYetClickAdd: 'No pre-orders yet. Click "Add Pre-Order" to create one.',
   itemsOrdered: 'Items Ordered',
-  item: 'item',
   notSet: 'Not set',
   
   // PreOrders - Notifications
@@ -887,7 +880,6 @@ const orders = {
   enableRemindersDescription: 'Send SMS or email reminders to the customer before the expected arrival date',
   reminderChannel: 'Notification Channel',
   sms: 'SMS',
-  email: 'Email',
   smsBothEmail: 'SMS & Email',
   reminderDaysBefore: 'Days Before Arrival',
   reminderDaysBeforeHint: 'Select when to send reminders',
@@ -900,7 +892,6 @@ const orders = {
   reminderPhoneHint: 'Override customer phone for this reminder',
   reminderEmail: 'Email Address',
   reminderEmailHint: 'Override customer email for this reminder',
-  priority: 'Priority',
   priorityLow: 'Low',
   priorityNormal: 'Normal',
   priorityHigh: 'High',
@@ -966,12 +957,9 @@ const orders = {
   manualEntry: 'Manual Entry',
   barcodeScanner: 'Barcode Scanner',
   scanBarcodeToVerifyItems: 'Scan barcode to verify items...',
-  hideBarcodeScanner: 'Hide barcode scanner',
-  showBarcodeScanner: 'Show barcode scanner',
   
   // Product Info
   productName: 'Product Name',
-  location: 'Location',
   pickStatus: 'Pick Status',
   barcode: 'Barcode',
   
@@ -1000,10 +988,7 @@ const orders = {
   
   // Carton & Packing
   addToCarton: 'Add to Carton',
-  cartonNumber: 'Carton #{{number}}',
-  cartonType: 'Carton Type',
   packageWeight: 'Package Weight',
-  dimensions: 'Dimensions',
   packingMaterials: 'Packing Materials',
   weight: 'Weight',
   weightKg: 'Weight (kg)',
@@ -1014,7 +999,6 @@ const orders = {
   wrongProductScanned: 'Wrong product scanned',
   quantityMismatch: 'Quantity mismatch',
   itemAlreadyPicked: 'Item already picked',
-  weightLimitExceeded: 'Weight Limit Exceeded',
   weightLimitExceededDesc: 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.',
   
   // Instructions
@@ -1022,8 +1006,6 @@ const orders = {
   packItemsIntoCarton: 'Pack items into carton',
   verifyQuantities: 'Verify quantities',
   clickToMinimize: 'Click to minimize',
-  clickToUnverifyAllItems: 'Click to unverify all items',
-  clickToMarkAllItemsAsVerified: 'Click to mark all items as verified',
   
   // Progress
   itemsPicked: 'Items Picked',
@@ -1038,27 +1020,21 @@ const orders = {
   
   // Loading States
   loadingOrder: 'Loading order...',
-  processing: 'Processing...',
   generatingLabel: 'Generating label...',
   loadingDocuments: 'Loading documents...',
   loadingFiles: 'Loading files...',
   
   // Empty States
   noItemsToPick: 'No items to pick',
+  noLocation: 'No location',
   orderComplete: 'Order complete',
   noFilesAttachedToOrder: 'No files attached to this order',
   
   // Documents & Labels
-  packingList: 'Packing List',
-  filesSent: 'Files Sent',
-  productDocuments: 'Product Documents',
   orderFiles: 'Order Files',
   documentsCount: 'Product Documents ({{count}})',
-  documentsSentToPrinter: 'Documents Sent to Printer',
-  printError: 'Print Error',
   
   // Service Items
-  service: 'Service',
   serviceItemNoLocation: 'Pick last - No physical location',
   note: 'Note',
   
@@ -1071,41 +1047,23 @@ const orders = {
   promotionalMaterials: 'Promotional Materials',
   
   // Error Messages
-  error: 'Error',
   failedToCreateCartons: 'Failed to create AI-suggested cartons',
-  errorCreatingCarton: 'Error Creating Carton',
   failedToCreateCarton: 'Failed to create carton',
-  failedToSave: 'Failed to Save',
   failedToUpdateTrackingNumber: 'Failed to update tracking number',
   failedToCreateLabels: 'Failed to create PPL labels',
   failedToCancelLabels: 'Failed to cancel PPL labels',
   failedToDeleteLabels: 'Failed to delete PPL labels',
   failedToRetrieveLabel: 'Failed to retrieve PPL label',
-  labelRetrievalFailed: 'Label Retrieval Failed',
-  failedToRecalculateCartons: 'Failed to recalculate cartons',
-  failedToInitiateRepacking: 'Failed to initiate repacking',
   failedToSaveTrackingNumbers: 'Failed to save tracking numbers. Please try again.',
-  cannotCompletePacking: 'Cannot Complete Packing',
-  failedToShipOrder: 'Failed to ship order',
   failedToShipSomeOrders: 'Failed to ship some orders',
-  failedToUndoShipment: 'Failed to undo shipment',
   
   // Success Messages
   shippingLabelsCancelled: 'Shipping labels have been cancelled with PPL',
   labelDataRemoved: 'Label data has been removed from the order',
-  orderReset: 'Order Reset',
   allPickedQuantitiesCleared: 'All picked quantities have been cleared.',
-  ordersShipped: 'Orders Shipped',
-  shipmentUndone: 'Shipment Undone',
-  ordersReturnedToReady: 'Orders returned to ready status',
-  copiedToClipboard: 'Copied to clipboard',
-  copyFailed: 'Copy failed',
-  pleaseTryAgain: 'Please try again',
   
   // Repacking
-  repackingOrder: 'Repacking Order',
   orderSentForRepacking: 'Order has been sent for repacking',
-  recalculateCartonsBasedOnCurrentItems: 'Recalculate cartons based on current items',
   
   // Tracking Numbers
   enterTrackingNumber: 'Enter tracking number...',
@@ -1113,11 +1071,7 @@ const orders = {
   enterGLSTrackingNumber: 'Enter GLS tracking number...',
   
   // Copy Fields
-  copied: 'Copied!',
-  country: 'Country',
   paketSize: 'Paket size',
-  firstName: 'First Name',
-  lastName: 'Last Name',
   fullAddress: 'Full Address',
   
   // Mute/Unmute
@@ -1125,11 +1079,8 @@ const orders = {
   unmuteSounds: 'Unmute sounds',
   
   // Bundle Items
-  hideBundleItems: 'Hide bundle items',
-  showBundleItems: 'Show bundle items',
   
   // Packing Instructions
-  packingInstructions: 'Packing instructions',
 
   // Pick & Pack - PickPack Component Labels
   skuLabel: 'SKU:',
@@ -1142,7 +1093,6 @@ const orders = {
   // Export Columns (Pre-Orders)
   preOrderIdColumn: 'Pre-Order ID',
   customerColumn: 'Customer',
-  unknownCustomer: 'Unknown',
   itemsColumn: 'Items',
   statusColumn: 'Status',
   createdDateColumn: 'Created Date',
@@ -1150,7 +1100,6 @@ const orders = {
   notesColumn: 'Notes',
 
   // Validation Messages (Pre-Orders)
-  itemNameRequired: 'Item name is required',
   quantityMinOne: 'Quantity must be at least 1',
   atLeastOneItemRequired: 'At least one item is required',
 
@@ -1159,15 +1108,12 @@ const orders = {
   enterCustomPrice: 'Enter custom price',
   enterDhlTrackingNumber: 'Enter DHL tracking number...',
   enterGlsTrackingNumber: 'Enter GLS tracking number...',
-  enterTrackingNumber: 'Enter tracking number...',
   
   // Order Document Selector
-  productDocuments: 'Product Documents',
   selectDocumentsToInclude: 'Select documents to include with this order',
   available: 'available',
   documentsPreviouslySent: 'document(s) previously sent (marked with',
   documentSelected: '{{count}} selected',
-  documentsSelected: '{{count}} selected',
   documentWillBeIncluded: '{{count}} document will be included',
   documentsWillBeIncluded: '{{count}} documents will be included',
   
@@ -1195,24 +1141,16 @@ const orders = {
 
   // PickPack.tsx - Comprehensive Translation Keys
   // Default values & placeholders
-  walkInCustomer: 'Walk-in Customer',
   weightPlaceholder: '0.000',
   
   // UI Labels & Headers
   exit: 'Exit',
   closeModal: 'CLOSE',
   time: 'Time',
-  cartons: 'Cartons',
-  weight: 'Weight',
-  weightKg: 'Weight (kg)',
   score: 'Score',
-  clickToMinimize: 'Click to minimize',
-  service: 'Service',
-  orderItems: 'Order Items',
   trackYourPickingProgress: 'Track your picking progress',
   pickPackWorkflow: 'Pick & Pack Workflow',
   manageOrderFulfillment: 'Manage order fulfillment from picking to shipping',
-  orderProgress: 'Order Progress',
   swipeToView: 'Swipe to view →',
   orderLabel: 'Order:',
   
@@ -1240,17 +1178,12 @@ const orders = {
   
   // PPL Label Management
   noCarton: 'No Carton',
-  cancelled: 'CANCELLED',
-  noTrackingNumber: 'No tracking number',
-  printed: 'Printed',
-  print: 'Print',
   addCartonLabel: 'Add Carton Label',
   
   // GLS Shipping
   glsShipping: 'GLS Shipping ({{count}} {{unit}})',
   carton: 'carton',
   cartonsPlural: 'cartons',
-  totalWeight: 'Total weight: {{weight}} kg',
   noCartonsAddedToGls: 'No cartons added to GLS yet. Use the button below to add cartons for cost-effective shipping.',
   empfanger: 'Empfänger (Recipient)',
   absender: 'Absender (Sender)',
@@ -1270,8 +1203,6 @@ const orders = {
   errorTitle: 'Error',
   failedToPrintLabel: 'Failed to print label',
   failedToGenerateLabel: 'Failed to generate label',
-  failedToAddCartonLabel: 'Failed to add carton label',
-  cartonDataPreserved: 'Carton data preserved. You can regenerate the label if needed.',
   failedToDeleteLabel: 'Failed to delete label',
   creatingShippingLabelFromPPL: 'Creating shipping label from PPL API',
   labelPdfNotAvailable: 'Label PDF not available. The label might still be processing.',
@@ -1291,7 +1222,6 @@ const orders = {
   // Additional UI Labels
   pickingItem: 'Picking Item',
   nextItem: 'Next Item',
-  previous: 'Previous',
   bundleItems: 'Bundle Items',
   pickingAccuracy: 'Picking Accuracy',
   avgItemsPerOrder: 'Avg. Items/Order',
@@ -1332,27 +1262,15 @@ const orders = {
   uncategorized: 'Uncategorized',
   
   // EditOrder.tsx - UI Labels
-  parseFill: 'Parse & Fill',
-  scanModeOn: 'Scan Mode: ON',
-  scanModeOff: 'Scan Mode: OFF',
   itemAdded: 'item added',
-  itemsAdded: 'items added',
-  noItemsYet: 'No items yet',
-  noItemsAddedYet: 'No items added to order yet',
   searchSelectProductsAbove: 'Search and select products above to add them',
-  paymentDetails: 'Payment Details',
   configurePricingNotes: 'Configure pricing and notes',
-  quickSelect: 'Quick select:',
   shippingCostLabel: 'Shipping Cost',
   actualShippingCostLabel: 'Actual Shipping Cost',
-  grandTotalLabel: 'Grand Total',
-  taxInvoiceInformation: 'Tax Invoice Information',
   rounding: 'Rounding',
   total: 'Total',
   products: 'Products',
   requiredFieldsMissing: 'Required fields missing:',
-  orderSummary: 'Order Summary',
-  margin: 'Margin',
   
   // OrderDetails.tsx - Additional Status/Priority Labels
   unknown: 'Unknown',
@@ -1377,7 +1295,6 @@ const orders = {
   
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Picking Started',
-  picked: 'Picked',
   pickedItem: 'Picked: {{product}}',
   pickingCompleted: 'Picking Completed',
   packingStarted: 'Packing Started',
@@ -1403,10 +1320,8 @@ const orders = {
   // OrderDetails.tsx - Actions & Dialogs
   edit: 'Edit',
   export: 'Export',
-  cancel: 'Cancel',
   returnThisItem: 'Return this item',
   makeCustomPrice: 'Make custom price',
-  save: 'Save',
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Picking Progress',
@@ -1423,11 +1338,9 @@ const orders = {
   itemsWithTotal: 'item(s) with a total of',
   units: 'unit(s)',
   totalReturnValue: 'Total Return Value:',
-  pleaseProvideReturnReason: 'Please provide a reason for the return',
   
   // OrderDetails.tsx - Custom Price Dialog
   currentPrice: 'Current Price:',
-  enterCustomPrice: 'Enter custom price',
   validToOptional: 'Valid To (Optional)',
   originalPrice: 'Original Price:',
   customPriceLabel: 'Custom Price:',
@@ -1469,14 +1382,8 @@ const orders = {
   dhlNachnahme: 'DHL - Nachnahme',
   
   // PickPack.tsx - Main Workflow
-  pickPackWorkflow: 'Pick & Pack Workflow',
-  manageOrderFulfillment: 'Manage order fulfillment from picking to shipping',
   
   // PickPack.tsx - Tab Labels
-  all: 'All',
-  overview: 'Overview',
-  pend: 'Pend',
-  ready: 'Ready',
   
   // PickPack.tsx - Quick Actions Section
   quickActions: 'Quick Actions',
@@ -1489,10 +1396,6 @@ const orders = {
   
   // PickPack.tsx - Performance Statistics Dialog
   performanceStatistics: 'Performance Statistics',
-  ordersCompletedToday: 'Orders Completed Today',
-  pickingAccuracy: 'Picking Accuracy',
-  avgItemsPerOrder: 'Avg. Items/Order',
-  avgPickTime: 'Avg. Pick Time',
   dailyTarget: 'Daily Target',
   efficiencyScore: 'Efficiency Score',
   excellent: 'Excellent',
@@ -1506,7 +1409,6 @@ const orders = {
   // PickPack.tsx - Batch Picking
   batchPickingModeActive: 'Batch Picking Mode Active',
   ordersSelected: '{{count}} orders selected',
-  selectAll: 'Select All',
   clearSelection: 'Clear Selection',
   startBatchPick: 'Start Batch Pick ({{count}})',
   ordersReadyToPick: 'Orders Ready to Pick ({{count}})',
@@ -1519,9 +1421,7 @@ const orders = {
   startPacking: 'Start Packing',
   resumePicking: 'Resume Picking',
   start: 'Start',
-  complete: 'Complete',
   confirmShipment: 'Confirm Shipment',
-  resetOrder: 'Reset Order',
   putOrderOnHold: 'Put Order On Hold',
   putOnHold: 'Put On Hold',
   cancelOrder: 'Cancel Order',
@@ -1550,49 +1450,22 @@ const orders = {
   repackOrder: 'Repack Order',
   returnToPacking: 'Return to Packing',
   packedBy: 'Packed by {{name}}',
-  tracking: 'Tracking: {{number}}',
   
   // PickPack.tsx - Carton & Packing
-  cartons: 'Cartons',
   cartonWithCount: 'Cartons ({{count}})',
   cartonOf: 'Carton {{current}} of {{total}}',
   dhlNachnahmeWithCOD: 'DHL Nachnahme (with COD)',
-  duplicate: 'Duplicate',
   recalculateCartonsTooltip: 'Recalculate cartons based on current items',
   
   // PickPack.tsx - Navigation & Controls
   focusBarcode: 'Focus Barcode',
-  nextItem: 'Next Item',
-  previous: 'Previous',
-  bundleItems: 'Bundle Items',
   quickPickAllBundleItems: 'Quick Pick All Bundle Items',
-  picked: 'picked',
-  tel: 'Tel',
-  email: 'Email',
-  qty: 'Qty',
   shipTo: 'Ship To',
   noAddressProvided: 'No address provided',
-  orderDetails: 'Order Details',
-  subtotal: 'Subtotal',
-  total: 'Total',
   goToThisItem: 'Go to This Item',
   close: 'Close',
-  cancel: 'Cancel',
-  confirmShipment: 'Confirm Shipment',
   confirmShipmentAction: 'Confirm Shipment',
-  putOrderOnHold: 'Put Order On Hold',
-  putOnHold: 'Put On Hold',
-  cancelOrder: 'Cancel Order',
-  shippingLabel: 'Shipping Label',
-  tracking: 'Tracking',
-  complete: 'Complete',
-  inProgress: 'In Progress',
-  notStarted: 'Not Started',
   continuePicking: 'Continue Picking',
-  expandAll: 'Expand All',
-  collapseAll: 'Collapse All',
-  printLabel: 'Print Label',
-  print: 'Print',
   scan: 'Scan',
   done: 'Done',
   resume: 'Resume',
@@ -1600,9 +1473,7 @@ const orders = {
   esc: 'Esc',
   
   // PickPack.tsx - Time & Progress
-  time: 'Time',
   progress: 'Progress',
-  score: 'Score',
   elapsed: 'Elapsed',
   elapsedTime: 'Elapsed Time',
   pickingTime: 'Picking Time',
@@ -1613,10 +1484,6 @@ const orders = {
   // PickPack.tsx - Details & Information
   details: 'Details',
   viewFullDetails: 'View Full Details',
-  viewOrderDetails: 'View Order Details',
-  warehouseLocation: 'Warehouse Location',
-  packingInstructions: 'PACKING INSTRUCTIONS',
-  shippingNotes: 'SHIPPING NOTES',
   specialHandling: 'SPECIAL HANDLING',
   shippingDetails: 'Shipping Details',
   
@@ -1624,30 +1491,13 @@ const orders = {
   paket: 'Paket',
   paketAndPaymentDetails: 'Paket & Zahlungsdetails',
   paketgrosse: 'Paketgröße*',
-  absender: 'Absender (Sender)',
-  empfanger: 'Empfänger (Recipient)',
   dobirka: 'Dobírka (COD)',
-  country: 'Country:',
-  paketSize: 'Paket size:',
-  firstName: 'First Name:',
-  lastName: 'Last Name:',
-  fullAddress: 'Full Address:',
-  eMail: 'E-mail:',
-  land: 'Land*',
-  firma: 'Firma',
-  telefon: 'Telefon',
-  name: 'Name*',
   iban: 'IBAN*',
   bic: 'BIC*',
   kontoinhaber: 'Kontoinhaber*',
   betragInEUR: 'Betrag in EUR*',
   verwendungszweck: 'Verwendungszweck*',
-  vorUndNachname: 'Vor- und Nachname*',
   adresszusatz: 'Adresszusatz',
-  plz: 'PLZ*',
-  wohnort: 'Wohnort*',
-  strasse: 'Straße*',
-  hausnummer: 'Hausnummer*',
   eMailDesEmpfangers: 'E-Mail des Empfängers*',
   eMailDesAbsenders: 'E-Mail des Absenders*',
   
@@ -1655,7 +1505,6 @@ const orders = {
   updateTrackingFromBarcode: 'Update tracking number from label barcode',
   creatingShippingLabel: 'Creating shipping label from PPL API',
   pplLabelCreatedSuccess: 'PPL shipping label created successfully',
-  labelRemovedSuccessfully: 'Label removed successfully.',
   shippingLabelTitle: 'Shipping Label - {{orderId}}',
   cartonDataPreservedCanRegenerate: 'Carton data preserved. You can regenerate the label if needed.',
   
@@ -1670,71 +1519,48 @@ const orders = {
   cancelOrderDialogDetailed: 'Are you sure you want to cancel order {{orderId}}? This action will mark the order as cancelled.',
   downloadPDF: 'Download PDF',
   deleteAllLabelsConfirm: 'Delete all {{count}} shipping labels?\\n\\nThis will cancel all shipments with PPL. Your carton data (weight, dimensions) will be preserved.\\n\\nAfter deletion, you can regenerate labels using the "Generate All Labels" button.',
-  deleteLabelConfirm: 'Delete label #{{number}}?\\n\\nThis will cancel the shipment with PPL. Your carton data will be preserved.',
   deleteThisLabelConfirm: 'Delete this label?\\n\\nThis will cancel the shipment with PPL. Your carton data will be preserved.',
   deleteLabelConfirmShort: 'Delete label #{{number}}?\\n\\nThis will cancel the shipment with PPL.',
   
   // PickPack.tsx - Image & Visual Elements
   packingInstructionsImage: 'Packing instructions',
   clickToExpand: 'Click to expand image',
-  clickToMinimize: 'Click to minimize',
   hideBarcode: 'Hide barcode scanner',
   showBarcode: 'Show barcode scanner',
-  hideBundleItems: 'Hide bundle items',
-  showBundleItems: 'Show bundle items',
   clickToMarkVerified: 'Click to mark all items as verified',
   clickToUnverifyAll: 'Click to unverify all items',
   
   // PickPack.tsx - Status & Totals
-  customer: 'Customer:',
   date: 'Date:',
-  note: 'Note:',
-  subtotal: 'Subtotal:',
   totalCartons: 'Total Cartons:',
   totalLabels: 'Total Labels:',
-  totalWeight: 'Total Weight:',
-  pickingItem: 'Picking Item',
   forMaterial: 'For: {{name}}',
-  cartonNumber: 'Carton #{{number}}',
   glsShippingLabelsCount: 'GLS Shipping Labels ({{count}})',
   pickedBy: 'Picked by {{name}}',
-  packedBy: 'Packed by {{name}}',
   trackingLabel: 'Tracking: {{number}}',
-  skuLabel: 'SKU: {{sku}}',
   forCartonNumber: 'For Carton #{{number}}',
   shippingLabelNumber: 'Shipping Label #{{number}}',
-  all: 'ALL',
   orderPrefix: 'Order {{orderId}}',
-  orderSentForRepacking: 'Order has been sent for repacking',
   
   // PickPack.tsx - Notes & Instructions Headers
-  shippingNotes: 'SHIPPING NOTES',
-  specialHandling: 'SPECIAL HANDLING',
   packingInstructionsHeader: 'PACKING INSTRUCTIONS',
   
   // PickPack.tsx - Shipping Labels
   dhlShippingLabel: 'DHL Shipping Label',
-  shippingDetails: 'Shipping Details',
-  noLabelGeneratedYet: 'No label generated yet',
   
   // PickPack.tsx - Error Messages
-  failedToCreateCarton: 'Failed to create carton',
   failedToUpdateTracking: 'Failed to update tracking number',
   failedToCancelPPLLabels: 'Failed to cancel PPL labels',
   failedToDeletePPLLabels: 'Failed to delete PPL labels',
   failedToGenerateLabels: 'Failed to generate labels',
-  failedToDeleteLabels: 'Failed to delete labels',
-  failedToPrintLabel: 'Failed to print label',
   
   // OrderDetails.tsx - Page Elements
-  orderDetails: 'Order Details',
   noTicketsForThisOrder: 'No tickets for this order',
   
   // AddOrder.tsx - Mobile Order Summary
   shippingMethod: 'Shipping Method',
   subtotalColon: 'Subtotal:',
   shippingColon: 'Shipping:',
-  discountLabel: 'Discount',
   taxWithRate: 'Tax ({{rate}}%):',
   creatingOrder: 'Creating...',
   

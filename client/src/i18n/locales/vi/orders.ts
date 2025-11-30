@@ -993,6 +993,7 @@ const orders = {
   wrongProductScanned: 'Quét sai sản phẩm',
   quantityMismatch: 'Số lượng không khớp',
   itemAlreadyPicked: 'Sản phẩm đã được lấy',
+  weightLimitExceededDesc: 'Lô hàng GLS không được vượt quá 40kg mỗi thùng. Vui lòng giảm trọng lượng hoặc chia thành nhiều thùng.',
   
   // Instructions
   scanEachProductToPick: 'Quét từng sản phẩm để lấy hàng',
@@ -1019,6 +1020,7 @@ const orders = {
   
   // Empty States
   noItemsToPick: 'Không có sản phẩm để lấy',
+  noLocation: 'Không có vị trí',
   orderComplete: 'Đơn hàng đã hoàn thành',
   noFilesAttachedToOrder: 'Không có tệp đính kèm trong đơn hàng này',
   
