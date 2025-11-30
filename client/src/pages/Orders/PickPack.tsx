@@ -1542,15 +1542,20 @@ function PickingListView({
                   )}
                 </div>
                 
-                {/* Product Name (truncated) */}
+                {/* Product Name (full, max 2 lines) */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-base sm:text-lg leading-tight truncate ${
+                  <p className={`font-semibold text-base sm:text-lg leading-snug line-clamp-2 ${
                     isPicked 
                       ? 'text-green-700 dark:text-green-300 line-through' 
                       : 'text-gray-900 dark:text-gray-100'
                   }`}>
                     {item.productName}
                   </p>
+                  {item.colorNumber && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                      #{item.colorNumber}
+                    </span>
+                  )}
                 </div>
                 
                 {/* Quantity Badge */}
@@ -13696,14 +13701,31 @@ export default function PickPack() {
                                 <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
                               </div>
                             </div>
-                            {/* Compact product list */}
+                            {/* Comprehensive product list */}
                             {order.items && order.items.length > 0 && (
                               <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                   {order.items.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                      <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
-                                      <span className="truncate">{item.productName}</span>
+                                    <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
+                                      <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+                                        {item.quantity}x
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                          {item.productName}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                          {item.sku && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
+                                          )}
+                                          {item.warehouseLocation && (
+                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                              <MapPin className="h-3 w-3" />
+                                              {item.warehouseLocation}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -13857,14 +13879,31 @@ export default function PickPack() {
                                   <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
-                              {/* Compact product list */}
+                              {/* Comprehensive product list */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                        <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
-                                        <span className="truncate">{item.productName}</span>
+                                      <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
+                                        <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+                                          {item.quantity}x
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                            {item.productName}
+                                          </p>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            {item.sku && (
+                                              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
+                                            )}
+                                            {item.warehouseLocation && (
+                                              <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                                <MapPin className="h-3 w-3" />
+                                                {item.warehouseLocation}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -14025,14 +14064,31 @@ export default function PickPack() {
                                   <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
-                              {/* Compact product list */}
+                              {/* Comprehensive product list */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                        <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
-                                        <span className="truncate">{item.productName}</span>
+                                      <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
+                                        <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+                                          {item.quantity}x
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                            {item.productName}
+                                          </p>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            {item.sku && (
+                                              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
+                                            )}
+                                            {item.warehouseLocation && (
+                                              <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                                <MapPin className="h-3 w-3" />
+                                                {item.warehouseLocation}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -14523,14 +14579,26 @@ export default function PickPack() {
                                             <span className="text-blue-600 dark:text-blue-400 font-medium">{t('tracking', { number: order.trackingNumber })}</span>
                                           </div>
                                         )}
-                                        {/* Compact product list */}
+                                        {/* Comprehensive product list */}
                                         {order.items && order.items.length > 0 && (
                                           <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-700">
-                                            <div className="space-y-0.5">
+                                            <div className="space-y-1.5">
                                               {order.items.map((item, idx) => (
-                                                <div key={idx} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
-                                                  <span className="w-4 text-center text-gray-400 dark:text-gray-500">{item.quantity}x</span>
-                                                  <span className="truncate">{item.productName}</span>
+                                                <div key={idx} className="flex items-start gap-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 rounded p-1.5">
+                                                  <span className="flex-shrink-0 w-6 h-6 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-700 dark:text-gray-200">
+                                                    {item.quantity}x
+                                                  </span>
+                                                  <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                      {item.productName}
+                                                    </p>
+                                                    {item.warehouseLocation && (
+                                                      <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
+                                                        <MapPin className="h-2.5 w-2.5" />
+                                                        {item.warehouseLocation}
+                                                      </span>
+                                                    )}
+                                                  </div>
                                                 </div>
                                               ))}
                                             </div>
