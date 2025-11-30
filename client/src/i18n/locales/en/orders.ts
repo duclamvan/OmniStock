@@ -1026,7 +1026,7 @@ const orders = {
   clickToMarkAllItemsAsVerified: 'Click to mark all items as verified',
   
   // Progress
-  itemsPicked: '{{picked}} of {{total}} items picked',
+  itemsPicked: 'Items Picked',
   percentComplete: '{{percent}}% complete',
   remainingItems: '{{count}} remaining items',
   
@@ -1410,7 +1410,6 @@ const orders = {
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Picking Progress',
-  itemsPicked: '{{picked}} of {{total}} items picked',
   allItemsPickedReady: 'All items picked! Ready to ship.',
   markAllPicked: 'Mark All Picked',
   clearAll: 'Clear All',

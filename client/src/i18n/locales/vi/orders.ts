@@ -1001,7 +1001,7 @@ const orders = {
   clickToMinimize: 'Nhấp để thu nhỏ',
   
   // Progress
-  itemsPicked: 'Đã lấy {{picked}} / {{total}} sản phẩm',
+  itemsPicked: 'Sản phẩm đã lấy',
   percentComplete: 'Hoàn thành {{percent}}%',
   remainingItems: 'Còn {{count}} sản phẩm',
   
