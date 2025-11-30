@@ -1402,7 +1402,6 @@ const orders = {
   manageOrderFulfillment: 'Quản lý xử lý đơn hàng từ lấy hàng đến giao vận',
   
   // PickPack.tsx - Tab Labels
-  all: 'Tất cả',
   overview: 'Tổng quan',
   pend: 'Chờ',
   ready: 'Sẵn sàng',
@@ -1501,7 +1500,6 @@ const orders = {
   qty: 'SL',
   shipTo: 'Gửi đến',
   noAddressProvided: 'Chưa có địa chỉ',
-  orderDetails: 'Chi tiết đơn hàng',
   subtotal: 'Tạm tính',
   total: 'Tổng cộng',
   goToThisItem: 'Đi tới sản phẩm này',
@@ -1543,7 +1541,6 @@ const orders = {
   viewOrderDetails: 'Xem chi tiết đơn hàng',
   warehouseLocation: 'Vị trí kho',
   packingInstructions: 'HƯỚNG DẪN ĐÓNG GÓI',
-  shippingNotes: 'GHI CHÚ VẬN CHUYỂN',
   specialHandling: 'XỬ LÝ ĐẶC BIỆT',
   shippingDetails: 'Chi tiết vận chuyển',
   
@@ -1624,46 +1621,32 @@ const orders = {
   totalWeight: 'Tổng trọng lượng:',
   pickingItem: 'Đang lấy sản phẩm',
   forMaterial: 'Cho: {{name}}',
-  cartonNumber: 'Thùng #{{number}}',
   glsShippingLabelsCount: 'Nhãn vận chuyển GLS ({{count}})',
   pickedBy: 'Được lấy bởi {{name}}',
-  packedBy: 'Được đóng gói bởi {{name}}',
   trackingLabel: 'Theo dõi: {{number}}',
-  skuLabel: 'SKU: {{sku}}',
   forCartonNumber: 'Cho thùng #{{number}}',
   shippingLabelNumber: 'Nhãn vận chuyển #{{number}}',
-  all: 'TẤT CẢ',
   orderPrefix: 'Đơn hàng {{orderId}}',
-  orderSentForRepacking: 'Đơn hàng đã được gửi để đóng gói lại',
   
   // PickPack.tsx - Notes & Instructions Headers
-  shippingNotes: 'GHI CHÚ VẬN CHUYỂN',
-  specialHandling: 'XỬ LÝ ĐẶC BIỆT',
   packingInstructionsHeader: 'HƯỚNG DẪN ĐÓNG GÓI',
   
   // PickPack.tsx - Shipping Labels
   dhlShippingLabel: 'Nhãn vận chuyển DHL',
-  shippingDetails: 'Chi tiết vận chuyển',
-  noLabelGeneratedYet: 'Chưa tạo nhãn',
   
   // PickPack.tsx - Error Messages
-  failedToCreateCarton: 'Không thể tạo thùng',
   failedToUpdateTracking: 'Không thể cập nhật mã vận đơn',
   failedToCancelPPLLabels: 'Không thể hủy nhãn PPL',
   failedToDeletePPLLabels: 'Không thể xóa nhãn PPL',
   failedToGenerateLabels: 'Không thể tạo nhãn',
-  failedToDeleteLabels: 'Không thể xóa nhãn',
-  failedToPrintLabel: 'Không thể in nhãn',
   
   // OrderDetails.tsx - Page Elements
-  orderDetails: 'Chi tiết đơn hàng',
   noTicketsForThisOrder: 'Không có ticket cho đơn hàng này',
   
   // AddOrder.tsx - Mobile Order Summary
   shippingMethod: 'Phương thức vận chuyển',
   subtotalColon: 'Tạm tính:',
   shippingColon: 'Vận chuyển:',
-  discountLabel: 'Giảm giá',
   taxWithRate: 'Thuế ({{rate}}%):',
   creatingOrder: 'Đang tạo...',
   

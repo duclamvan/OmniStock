@@ -6852,15 +6852,50 @@ Important:
 
       await storage.updateOrder(req.params.id, updateData);
 
-      // Process packing materials - decrease stock and create usage records
+      // Process carton stock deduction - count actual usage from cartons array
+      if (cartons && Array.isArray(cartons) && cartons.length > 0) {
+        // Count how many of each cartonId was used
+        const cartonUsageCount: Record<string, number> = {};
+        for (const carton of cartons) {
+          const cartonId = carton.cartonId;
+          if (cartonId && !carton.isNonCompany) { // Only count company cartons (not customer-provided)
+            cartonUsageCount[cartonId] = (cartonUsageCount[cartonId] || 0) + 1;
+          }
+        }
+
+        // Deduct stock for each carton type based on actual usage
+        for (const [cartonId, count] of Object.entries(cartonUsageCount)) {
+          try {
+            console.log(`[Pack Complete] Deducting ${count} carton(s) of ID ${cartonId}`);
+            await storage.decreasePackingMaterialStock(cartonId, count);
+
+            // Create usage record with actual quantity
+            await storage.createPackingMaterialUsage({
+              orderId: req.params.id,
+              materialId: cartonId,
+              quantity: count,
+              notes: `Carton used during packing (${count}x)`
+            });
+          } catch (stockError) {
+            console.error(`Error updating stock for carton ${cartonId}:`, stockError);
+          }
+        }
+      }
+
+      // Process non-carton packing materials (tape, bubble wrap, etc.) - these are still boolean
       if (packingMaterialsApplied && typeof packingMaterialsApplied === 'object') {
+        // Get IDs of cartons already processed above
+        const processedCartonIds = new Set(
+          (cartons || []).map((c: any) => c.cartonId).filter(Boolean)
+        );
+
         const appliedMaterialIds = Object.keys(packingMaterialsApplied).filter(
-          (materialId) => packingMaterialsApplied[materialId] === true
+          (materialId) => packingMaterialsApplied[materialId] === true && !processedCartonIds.has(materialId)
         );
 
         for (const materialId of appliedMaterialIds) {
           try {
-            // Decrease stock quantity by 1 for each applied material
+            // Decrease stock quantity by 1 for each applied non-carton material
             await storage.decreasePackingMaterialStock(materialId, 1);
 
             // Create usage record

@@ -1465,7 +1465,6 @@ const imports = {
   // LandingCostDetails - Page & Headers
   landedCostPerItem: 'Chi phí nhập hàng từng sản phẩm',
   viewLandedCostsSetPrices: 'Xem chi phí nhập hàng và đặt giá bán cho từng sản phẩm',
-  savePrices: 'Lưu giá',
   saving: 'Đang lưu...',
   purchasePrice: 'Giá mua',
   landedCostEUR: 'Chi phí nhập hàng (EUR)',

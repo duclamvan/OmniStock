@@ -899,8 +899,6 @@ const warehouse = {
   pallets: 'Pallets',
   locationCode: 'Location Code',
   aisle: 'Aisle',
-  rack: 'Rack',
-  bin: 'Bin',
   pallet: 'Pallet',
   
   // Mockup Warehouse Layout

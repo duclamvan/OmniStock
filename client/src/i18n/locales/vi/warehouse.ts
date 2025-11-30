@@ -31,6 +31,9 @@ const warehouse = {
     main: 'Kho chính',
     branch: 'Kho chi nhánh',
     temporary: 'Kho tạm',
+    fulfillment: 'Thực hiện đơn hàng',
+    storage: 'Lưu trữ',
+    transit: 'Vận chuyển',
   },
   
   // Add/Edit Warehouse
@@ -93,7 +96,6 @@ const warehouse = {
   tip4: 'Đặt trạng thái "Không hoạt động" nếu chưa vận hành',
   
   // Edit Warehouse
-  editWarehouse: 'Chỉnh sửa kho',
   editWarehouseDesc: 'Cập nhật chi tiết kho và quản lý tệp đính kèm',
   warehouseNotFound: 'Không tìm thấy kho',
   warehouseNotFoundDesc: 'Kho bạn đang tìm kiếm không tồn tại.',
@@ -231,11 +233,6 @@ const warehouse = {
   deleteFileConfirm: 'Bạn có chắc chắn muốn xóa',
   thisActionCannotBeUndone: 'Hành động này không thể hoàn tác.',
   
-  type: {
-    fulfillment: 'Thực hiện đơn hàng',
-    storage: 'Lưu trữ',
-    transit: 'Vận chuyển',
-  },
   
   // Pick & Pack
   pickAndPack: 'Lấy hàng & Đóng gói',
@@ -343,7 +340,6 @@ const warehouse = {
   // Warehouse Locations
   locations: 'Vị trí',
   location: 'Vị trí',
-  locationCode: 'Mã vị trí',
   locationType: 'Loại vị trí',
   zone: 'Khu vực',
   aisle: 'Lối đi',
@@ -405,7 +401,6 @@ const warehouse = {
   changeWarehouse: 'Đổi kho',
   warehouseAssigned: 'Đã gán kho',
   noWarehouseSelected: 'Chưa chọn kho',
-  selectWarehouse: 'Chọn kho',
   
   // Statuses
   available: 'Khả dụng',
@@ -483,7 +478,6 @@ const warehouse = {
   noSupplier: 'Chưa có nhà cung cấp',
   
   // Actions & Buttons
-  purchase: 'Mua hàng',
   copyNames: 'Sao chép tên',
   changeCategory: 'Đổi danh mục',
   export: 'Xuất',
@@ -493,7 +487,6 @@ const warehouse = {
   addMaterial: 'Thêm vật liệu',
   updateMaterial: 'Cập nhật vật liệu',
   deleteMaterial: 'Xóa vật liệu',
-  saveChanges: 'Lưu thay đổi',
   cancel: 'Hủy',
   purchaseFromSupplier: 'Mua từ nhà cung cấp',
   clearAll: 'Xóa tất cả',
@@ -501,7 +494,6 @@ const warehouse = {
   
   // Form Sections
   materialInformation: 'Thông tin vật liệu',
-  basicInformation: 'Thông tin cơ bản',
   materialIdentificationNaming: 'Nhận diện và đặt tên vật liệu',
   dimensionsSpecifications: 'Kích thước & Thông số',
   physicalMeasurementsWeight: 'Kích thước vật lý và trọng lượng',
@@ -538,7 +530,6 @@ const warehouse = {
   purchaseLinkPlaceholder: 'https://top-obaly.cz',
   supplierName: 'Tên nhà cung cấp',
   supplierNamePlaceholder: 'Tự động tạo từ liên kết',
-  description: 'Mô tả',
   descriptionPlaceholder: 'Thêm ghi chú hoặc thông số vật liệu...',
   fragile: 'Dễ vỡ',
   fragileDescription: 'Xử lý cẩn thận, cần đóng gói đặc biệt',
@@ -623,7 +614,6 @@ const warehouse = {
   totalAislesDescription: 'Số lượng lối đi (A01, A02, ...) sẽ tạo trong kho này',
   failedToSaveWarehouseConfig: 'Không thể lưu cấu hình kho.',
   aisleLabel: 'Lối đi {{aisleId}}',
-  saving: 'Đang lưu...',
   racks: 'Giá đỡ',
   levels: 'Tầng',
   bins: 'Ngăn',
@@ -642,7 +632,6 @@ const warehouse = {
   moveInventory: 'Di chuyển hàng tồn kho',
   transferInventoryBetweenLocations: 'Chuyển hàng tồn kho giữa các vị trí trong kho',
   movingFrom: 'Di chuyển từ',
-  available: 'Có sẵn',
   moveToLocation: 'Di chuyển đến vị trí',
   selectDestinationLocation: 'Chọn vị trí đích',
   noOtherLocationsAvailable: 'Không có vị trí khác',
@@ -651,7 +640,6 @@ const warehouse = {
   product: 'Sản phẩm',
   afterMove: 'Sau khi chuyển',
   unitsRemaining: 'đơn vị còn lại',
-  moving: 'Đang chuyển...',
   inventoryMovedSuccessfully: 'Đã di chuyển hàng tồn kho thành công',
   failedToMoveInventory: 'Không thể di chuyển hàng tồn kho',
   cannotMoveMoreThanAvailable: 'Không thể chuyển nhiều hơn số lượng có sẵn',
@@ -666,7 +654,6 @@ const warehouse = {
   // Stock Adjustment Dialog
   requestStockAdjustment: 'Yêu cầu điều chỉnh tồn kho',
   requestStockAdjustmentDesc: 'Gửi yêu cầu điều chỉnh số lượng hàng tồn kho (cần phê duyệt)',
-  currentStock: 'Tồn kho hiện tại',
   currentStockUnits: 'Tồn kho hiện tại: {{quantity}} đơn vị',
   adjustmentType: 'Loại điều chỉnh',
   adjustmentTypeRequired: 'Loại điều chỉnh *',
@@ -704,11 +691,9 @@ const warehouse = {
   coordinates: 'Tọa độ',
   
   // Bin Details Panel
-  binDetails: 'Chi tiết ngăn',
   binType: 'ngăn',
   occupancy: 'Mức sử dụng',
   percentOccupied: '% đã sử dụng',
-  capacity: 'Sức chứa',
   inventory: 'Tồn kho',
   productsInThisBin: 'Sản phẩm trong ngăn này',
   noProductsStoredInBin: 'Không có sản phẩm nào trong ngăn này',
@@ -724,10 +709,8 @@ const warehouse = {
   failedToUpdateLocation: 'Không thể cập nhật vị trí.',
   
   // Putaway Mini
-  scanProduct: 'Quét sản phẩm',
   productCodeBarcode: 'Mã sản phẩm / Mã vạch',
   scanOrEnterCode: 'Quét hoặc nhập mã',
-  currentStock: 'Tồn kho hiện tại',
   currentLocation: 'Vị trí hiện tại',
   suggestedLocations: 'Vị trí đề xuất',
   aiSuggestion: 'Gợi ý AI',
@@ -763,7 +746,6 @@ const warehouse = {
   failedToCreateRequest: 'Không thể tạo yêu cầu điều chỉnh',
   failedToAdjustStock: 'Không thể điều chỉnh tồn kho',
   itemScanned: 'Đã quét mục',
-  totalItems: 'Tổng: {{count}} mục',
   duplicateBarcodeDetected: 'Phát hiện mã vạch trùng lặp',
   barcodeScannedTimes: 'Mã vạch "{{barcode}}" đã quét {{count}} lần',
   productLabel: 'Sản phẩm: {{name}}',
@@ -863,14 +845,11 @@ const warehouse = {
   createAllCartons: 'Tạo tất cả thùng carton',
   cartonsCreatedSuccess: 'Đã tạo thành công {{count}} thùng carton',
   someCartonsFailed: '{{failed}} thùng carton không thể tạo',
-  backToPackingMaterials: 'Quay lại vật liệu đóng gói',
   noCartonsToCreate: 'Không có thùng carton nào để tạo',
   addAtLeastOneCarton: 'Vui lòng thêm ít nhất một thùng carton',
   creatingCartons: 'Đang tạo thùng carton...',
   supplierUrlPlaceholder: 'vd: https://obalove-materialy.cz/product-page',
   cartonNamePlaceholder: 'vd: Thùng carton vận chuyển trung bình',
-  unitCost: 'Đơn giá',
-  stockQty: 'SL tồn',
   presetSizes: 'Kích thước có sẵn',
   addPresetCarton: 'Thêm thùng có sẵn',
 } as const;
