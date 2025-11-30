@@ -6852,13 +6852,18 @@ Important:
 
       await storage.updateOrder(req.params.id, updateData);
 
+      // Track all material IDs that have been processed to avoid duplicates
+      const processedMaterialIds = new Set<string>();
+
       // Process carton stock deduction - count actual usage from cartons array
       if (cartons && Array.isArray(cartons) && cartons.length > 0) {
-        // Count how many of each cartonId was used
+        // Count how many of each cartonId was used (only for company cartons with valid IDs)
         const cartonUsageCount: Record<string, number> = {};
         for (const carton of cartons) {
           const cartonId = carton.cartonId;
-          if (cartonId && !carton.isNonCompany) { // Only count company cartons (not customer-provided)
+          const isNonCompany = carton.isNonCompany || carton.cartonType === 'non-company';
+          
+          if (cartonId && !isNonCompany) {
             cartonUsageCount[cartonId] = (cartonUsageCount[cartonId] || 0) + 1;
           }
         }
@@ -6868,6 +6873,7 @@ Important:
           try {
             console.log(`[Pack Complete] Deducting ${count} carton(s) of ID ${cartonId}`);
             await storage.decreasePackingMaterialStock(cartonId, count);
+            processedMaterialIds.add(cartonId);
 
             // Create usage record with actual quantity
             await storage.createPackingMaterialUsage({
@@ -6882,32 +6888,41 @@ Important:
         }
       }
 
-      // Process non-carton packing materials (tape, bubble wrap, etc.) - these are still boolean
+      // Process packing materials from packingMaterialsApplied map
+      // This handles both non-carton materials and cartons that weren't in the cartons array
+      // Supports both boolean (true) and numeric quantities
       if (packingMaterialsApplied && typeof packingMaterialsApplied === 'object') {
-        // Get IDs of cartons already processed above
-        const processedCartonIds = new Set(
-          (cartons || []).map((c: any) => c.cartonId).filter(Boolean)
-        );
+        for (const [materialId, value] of Object.entries(packingMaterialsApplied)) {
+          // Skip if already processed from cartons array
+          if (processedMaterialIds.has(materialId)) {
+            continue;
+          }
 
-        const appliedMaterialIds = Object.keys(packingMaterialsApplied).filter(
-          (materialId) => packingMaterialsApplied[materialId] === true && !processedCartonIds.has(materialId)
-        );
+          // Determine quantity: support both boolean (true = 1) and numeric values
+          let quantity = 0;
+          if (typeof value === 'number' && value > 0) {
+            quantity = Math.floor(value); // Use the numeric quantity
+          } else if (value === true) {
+            quantity = 1; // Boolean true means 1 unit
+          }
 
-        for (const materialId of appliedMaterialIds) {
-          try {
-            // Decrease stock quantity by 1 for each applied non-carton material
-            await storage.decreasePackingMaterialStock(materialId, 1);
+          if (quantity > 0) {
+            try {
+              console.log(`[Pack Complete] Deducting ${quantity} unit(s) of material ${materialId}`);
+              await storage.decreasePackingMaterialStock(materialId, quantity);
+              processedMaterialIds.add(materialId);
 
-            // Create usage record
-            await storage.createPackingMaterialUsage({
-              orderId: req.params.id,
-              materialId: materialId,
-              quantity: 1,
-              notes: 'Applied during packing completion'
-            });
-          } catch (stockError) {
-            console.error(`Error updating stock for material ${materialId}:`, stockError);
-            // Continue with other materials even if one fails
+              // Create usage record
+              await storage.createPackingMaterialUsage({
+                orderId: req.params.id,
+                materialId: materialId,
+                quantity: quantity,
+                notes: quantity > 1 ? `Applied during packing (${quantity}x)` : 'Applied during packing completion'
+              });
+            } catch (stockError) {
+              console.error(`Error updating stock for material ${materialId}:`, stockError);
+              // Continue with other materials even if one fails
+            }
           }
         }
       }
