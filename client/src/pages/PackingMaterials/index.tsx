@@ -595,6 +595,15 @@ export default function PackingMaterials() {
             </DropdownMenuContent>
           </DropdownMenu>
           
+          {/* Bulk Add Cartons Button */}
+          <Link href="/packing-materials/bulk-add" className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto" data-testid="button-bulk-add-cartons">
+              <Boxes className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{t('bulkAddCartons')}</span>
+              <span className="sm:hidden">{t('addRow')}</span>
+            </Button>
+          </Link>
+          
           {/* Add Material Button */}
           <Link href="/packing-materials/add" className="flex-1 sm:flex-none">
             <Button className="w-full sm:w-auto" data-testid="button-add-material">

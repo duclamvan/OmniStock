@@ -74,6 +74,7 @@ import ShipmentLabels from "@/pages/Shipping/ShipmentLabels";
 import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
 import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
+import BulkAddCartons from "@/pages/PackingMaterials/BulkAddCartons";
 import Files from "@/pages/Files/Files";
 // Import pages
 import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
@@ -209,6 +210,9 @@ function Router() {
         </Route>
         <Route path="/packing-materials/edit/:id">
           {() => <ProtectedRoute requireAdmin><EditPackingMaterial /></ProtectedRoute>}
+        </Route>
+        <Route path="/packing-materials/bulk-add">
+          {() => <ProtectedRoute requireAdmin><BulkAddCartons /></ProtectedRoute>}
         </Route>
         <Route path="/warehouse-dashboard">
           {() => <ProtectedRoute><WarehouseDashboard /></ProtectedRoute>}

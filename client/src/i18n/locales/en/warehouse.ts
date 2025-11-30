@@ -948,6 +948,27 @@ const warehouse = {
   updateMaterialsInventory: 'Update packing material details',
   materialUpdatedWithoutImage: 'The material will be updated without changing the image',
   activeDescription: 'Material is available for use',
+  
+  // Bulk Add Cartons
+  bulkAddCartons: 'Bulk Add Cartons',
+  addMultipleCartonsAtOnce: 'Add multiple cartons from the same supplier',
+  supplierForAllCartons: 'Supplier for All Cartons',
+  cartonEntries: 'Carton Entries',
+  addRow: 'Add Row',
+  removeRow: 'Remove',
+  createAllCartons: 'Create All Cartons',
+  cartonsCreatedSuccess: '{{count}} cartons created successfully',
+  someCartonsFailed: '{{failed}} cartons failed to create',
+  backToPackingMaterials: 'Back to Packing Materials',
+  noCartonsToCreate: 'No cartons to create',
+  addAtLeastOneCarton: 'Please add at least one carton entry',
+  creatingCartons: 'Creating cartons...',
+  supplierUrlPlaceholder: 'e.g., https://obalove-materialy.cz/product-page',
+  cartonNamePlaceholder: 'e.g., Medium Shipping Carton',
+  unitCost: 'Unit Cost',
+  stockQty: 'Stock Qty',
+  presetSizes: 'Preset Sizes',
+  addPresetCarton: 'Add Preset Carton',
 } as const;
 
 export default warehouse;

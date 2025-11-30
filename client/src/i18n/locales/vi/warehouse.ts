@@ -852,6 +852,27 @@ const warehouse = {
   updateMaterialsInventory: 'Cập nhật chi tiết vật liệu đóng gói',
   materialUpdatedWithoutImage: 'Vật liệu sẽ được cập nhật mà không thay đổi hình ảnh',
   activeDescription: 'Vật liệu có sẵn để sử dụng',
+  
+  // Bulk Add Cartons
+  bulkAddCartons: 'Thêm nhiều thùng carton',
+  addMultipleCartonsAtOnce: 'Thêm nhiều thùng carton từ cùng một nhà cung cấp',
+  supplierForAllCartons: 'Nhà cung cấp cho tất cả thùng carton',
+  cartonEntries: 'Danh sách thùng carton',
+  addRow: 'Thêm hàng',
+  removeRow: 'Xóa',
+  createAllCartons: 'Tạo tất cả thùng carton',
+  cartonsCreatedSuccess: 'Đã tạo thành công {{count}} thùng carton',
+  someCartonsFailed: '{{failed}} thùng carton không thể tạo',
+  backToPackingMaterials: 'Quay lại vật liệu đóng gói',
+  noCartonsToCreate: 'Không có thùng carton nào để tạo',
+  addAtLeastOneCarton: 'Vui lòng thêm ít nhất một thùng carton',
+  creatingCartons: 'Đang tạo thùng carton...',
+  supplierUrlPlaceholder: 'vd: https://obalove-materialy.cz/product-page',
+  cartonNamePlaceholder: 'vd: Thùng carton vận chuyển trung bình',
+  unitCost: 'Đơn giá',
+  stockQty: 'SL tồn',
+  presetSizes: 'Kích thước có sẵn',
+  addPresetCarton: 'Thêm thùng có sẵn',
 } as const;
 
 export default warehouse;

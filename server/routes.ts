@@ -36,6 +36,7 @@ import {
   insertAppSettingSchema,
   insertNotificationSchema,
   insertActivityLogSchema,
+  insertPackingMaterialSchema,
   warehouseTasks,
   insertWarehouseTaskSchema,
   productCostHistory,
@@ -5355,6 +5356,57 @@ Important:
     } catch (error) {
       console.error("Error bulk updating packing materials:", error);
       res.status(500).json({ message: "Failed to bulk update packing materials" });
+    }
+  });
+
+  // Bulk create packing materials (for bulk add cartons feature)
+  app.post('/api/packing-materials/bulk', isAuthenticated, async (req: any, res) => {
+    try {
+      const { materials } = req.body;
+
+      if (!Array.isArray(materials) || materials.length === 0) {
+        return res.status(400).json({ message: "Invalid request: materials array required" });
+      }
+
+      // Validate each material with the schema
+      const validatedMaterials = [];
+      const errors = [];
+      
+      for (let i = 0; i < materials.length; i++) {
+        try {
+          const validated = insertPackingMaterialSchema.parse(materials[i]);
+          validatedMaterials.push(validated);
+        } catch (validationError: any) {
+          errors.push({ index: i, error: validationError.message || "Validation failed" });
+        }
+      }
+
+      if (validatedMaterials.length === 0) {
+        return res.status(400).json({ 
+          message: "All materials failed validation", 
+          errors 
+        });
+      }
+
+      // Create all validated materials in bulk
+      const createdMaterials = await storage.createPackingMaterialsBulk(validatedMaterials);
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'packing_material',
+        entityId: createdMaterials.map(m => m.id).join(','),
+        description: `Bulk created ${createdMaterials.length} packing material(s)`,
+      });
+
+      res.status(201).json({ 
+        created: createdMaterials,
+        createdCount: createdMaterials.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error("Error bulk creating packing materials:", error);
+      res.status(500).json({ message: "Failed to bulk create packing materials" });
     }
   });
 

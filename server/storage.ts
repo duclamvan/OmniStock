@@ -596,6 +596,7 @@ export interface IStorage {
   getPackingMaterials(): Promise<PackingMaterial[]>;
   getPackingMaterial(id: string): Promise<PackingMaterial | undefined>;
   createPackingMaterial(material: any): Promise<PackingMaterial>;
+  createPackingMaterialsBulk(materials: InsertPackingMaterial[]): Promise<PackingMaterial[]>;
   updatePackingMaterial(id: string, material: any): Promise<PackingMaterial | undefined>;
   deletePackingMaterial(id: string): Promise<boolean>;
   decreasePackingMaterialStock(materialId: string, quantity: number): Promise<void>;
@@ -5065,6 +5066,22 @@ export class DatabaseStorage implements IStorage {
       return newMaterial;
     } catch (error) {
       console.error('Error creating packing material:', error);
+      throw error;
+    }
+  }
+
+  async createPackingMaterialsBulk(materials: InsertPackingMaterial[]): Promise<PackingMaterial[]> {
+    try {
+      if (materials.length === 0) {
+        return [];
+      }
+      const newMaterials = await db
+        .insert(packingMaterials)
+        .values(materials)
+        .returning();
+      return newMaterials;
+    } catch (error) {
+      console.error('Error bulk creating packing materials:', error);
       throw error;
     }
   }
