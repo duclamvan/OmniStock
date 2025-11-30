@@ -45,6 +45,7 @@ const system = {
   ticket: 'Ticket',
   supportTickets: 'Support Tickets',
   createTicket: 'Create Ticket',
+  updateTicket: 'Update Ticket',
   ticketNumber: 'Ticket Number',
   ticketStatus: 'Ticket Status',
   ticketPriority: 'Ticket Priority',

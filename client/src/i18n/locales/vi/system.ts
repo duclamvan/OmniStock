@@ -45,6 +45,7 @@ const system = {
   ticket: 'Phiếu',
   supportTickets: 'Phiếu hỗ trợ',
   createTicket: 'Tạo phiếu',
+  updateTicket: 'Cập nhật phiếu',
   ticketNumber: 'Số phiếu',
   ticketStatus: 'Trạng thái phiếu',
   ticketPriority: 'Độ ưu tiên phiếu',
