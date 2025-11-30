@@ -6,7 +6,7 @@ import i18n from '@/i18n/i18n';
 
 export interface LocalizationSettings {
   language: 'en' | 'vi';
-  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD' | 'DD.MM.YYYY' | 'D.M.YYYY' | 'DD-MM-YYYY';
   timeFormat: '12-hour' | '24-hour';
   timezone: string;
   numberFormat: '1,000.00' | '1.000,00';
@@ -43,6 +43,9 @@ const DATE_FORMAT_MAP: Record<string, string> = {
   'DD/MM/YYYY': 'dd/MM/yyyy',
   'MM/DD/YYYY': 'MM/dd/yyyy',
   'YYYY-MM-DD': 'yyyy-MM-dd',
+  'DD.MM.YYYY': 'dd.MM.yyyy',
+  'D.M.YYYY': 'd.M.yyyy',
+  'DD-MM-YYYY': 'dd-MM-yyyy',
 };
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -118,6 +121,10 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       
       // Build date string in the exact format selected by user
       let dateStr: string;
+      // For short formats (D.M.YYYY), remove leading zeros
+      const dayShort = parseInt(day, 10).toString();
+      const monthShort = parseInt(month, 10).toString();
+      
       switch (settings.dateFormat) {
         case 'DD/MM/YYYY':
           dateStr = `${day}/${month}/${year}`;
@@ -127,6 +134,15 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
           break;
         case 'YYYY-MM-DD':
           dateStr = `${year}-${month}-${day}`;
+          break;
+        case 'DD.MM.YYYY':
+          dateStr = `${day}.${month}.${year}`;
+          break;
+        case 'D.M.YYYY':
+          dateStr = `${dayShort}.${monthShort}.${year}`;
+          break;
+        case 'DD-MM-YYYY':
+          dateStr = `${day}-${month}-${year}`;
           break;
         default:
           dateStr = `${day}/${month}/${year}`;

@@ -43,7 +43,7 @@ const formSchema = z.object({
 
   // Localization
   default_language: z.enum(['en', 'vi']).default('en'),
-  default_date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).default('DD/MM/YYYY'),
+  default_date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD.MM.YYYY', 'D.M.YYYY', 'DD-MM-YYYY']).default('DD/MM/YYYY'),
   default_time_format: z.enum(['12-hour', '24-hour']).default('24-hour'),
   default_timezone: z.string().default('Europe/Prague'),
   number_format: z.enum(['1,000.00', '1.000,00']).default('1,000.00'),
@@ -661,9 +661,12 @@ export default function GeneralSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY ({t('settings:dateFormatUK')})</SelectItem>
+                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY ({t('settings:dateFormatUS')})</SelectItem>
+                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD ({t('settings:dateFormatISO')})</SelectItem>
+                            <SelectItem value="DD.MM.YYYY">DD.MM.YYYY ({t('settings:dateFormatEU')})</SelectItem>
+                            <SelectItem value="D.M.YYYY">D.M.YYYY ({t('settings:dateFormatEUShort')})</SelectItem>
+                            <SelectItem value="DD-MM-YYYY">DD-MM-YYYY ({t('settings:dateFormatNL')})</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:dateFormatDescription')}</FormDescription>
