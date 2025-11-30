@@ -1835,12 +1835,12 @@ export default function EditOrder() {
       if (!response.ok) return;
       
       const products = await response.json();
-      const productMap = new Map(products.map((p: any) => [p.id, p]));
+      const productMap = new Map<string, any>(products.map((p: any) => [p.id, p]));
       
       setOrderItems(items => items.map(item => {
         if (!item.productId) return item; // Skip services
         
-        const product = productMap.get(item.productId);
+        const product: any = productMap.get(item.productId);
         if (!product) return item;
         
         let newPrice = 0;
