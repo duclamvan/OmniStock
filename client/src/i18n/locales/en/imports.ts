@@ -1444,7 +1444,6 @@ const imports = {
   // LandingCostDetails - Page & Headers
   landedCostPerItem: 'Landed Cost Per Item',
   viewLandedCostsSetPrices: 'View landed costs and set selling prices for each product',
-  savePrices: 'Save Prices',
   saving: 'Saving...',
   purchasePrice: 'Purchase Price',
   landedCostEUR: 'Landed Cost (EUR)',
@@ -1939,6 +1938,28 @@ const imports = {
   remainingBalance: 'Remaining Balance',
   productCostPercent: 'Product: {{percent}}%',
   shippingCostPercent: 'Shipping: {{percent}}%',
+  
+  // Purchase Order Edit/Add Page - Additional Translations
+  paymentCurrency: 'Payment Currency',
+  purchaseDate: 'Purchase Date',
+  processingTime: 'Processing Time',
+  shippingCurrency: 'Shipping Currency',
+  addProductsToPurchase: 'Add Products to Purchase',
+  costWithShipping: 'Cost with Shipping',
+  image: 'Image',
+  orderStatus: 'Order Status',
+  orderSummary: 'Order Summary',
+  itemsCount: 'Items Count',
+  perItemShipping: 'Per Item Shipping',
+  grandTotal: 'Grand Total',
+  grandTotalIn: 'Grand Total in',
+  original: 'Original',
+  frequentSuppliers: 'Frequent Suppliers',
+  orders: 'orders',
+  barcodeExample: 'e.g. 1234567890123',
+  storageLocationExample: 'e.g. A-01-02',
+  aiSuggest: 'AI Suggest',
+  addVariants: 'Add Variants',
   
 } as const;
 

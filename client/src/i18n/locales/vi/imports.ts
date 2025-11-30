@@ -1881,6 +1881,28 @@ const imports = {
   productCostPercent: 'Sản phẩm: {{percent}}%',
   shippingCostPercent: 'Vận chuyển: {{percent}}%',
   
+  // Purchase Order Edit/Add Page - Additional Translations
+  paymentCurrency: 'Tiền thanh toán',
+  purchaseDate: 'Ngày mua',
+  processingTime: 'Thời gian xử lý',
+  shippingCurrency: 'Tiền vận chuyển',
+  addProductsToPurchase: 'Thêm sản phẩm vào đơn mua',
+  costWithShipping: 'Giá gồm phí ship',
+  image: 'Hình ảnh',
+  orderStatus: 'Trạng thái đơn hàng',
+  orderSummary: 'Tóm tắt đơn hàng',
+  itemsCount: 'Số sản phẩm',
+  perItemShipping: 'Phí ship/sản phẩm',
+  grandTotal: 'Tổng cộng',
+  grandTotalIn: 'Tổng cộng bằng',
+  original: 'Gốc',
+  frequentSuppliers: 'Nhà cung cấp thường xuyên',
+  orders: 'đơn hàng',
+  barcodeExample: 'VD: 1234567890123',
+  storageLocationExample: 'VD: A-01-02',
+  aiSuggest: 'AI Gợi ý',
+  addVariants: 'Thêm biến thể',
+  
 } as const;
 
 export default imports;

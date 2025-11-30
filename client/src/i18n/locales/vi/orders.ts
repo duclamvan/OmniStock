@@ -667,7 +667,6 @@ const orders = {
   
   // AddOrder Page - Order Summary
   clickToEnter: 'Nhấp để nhập',
-  clickToEditOrRoundUp: 'Nhấp để sửa hoặc Làm tròn lên',
   formValidationErrors: 'Lỗi xác thực biểu mẫu',
   formValidationErrorsCount: 'Lỗi xác thực biểu mẫu ({{count}})',
   invalidValue: 'Giá trị không hợp lệ',
@@ -739,7 +738,6 @@ const orders = {
   totalRoundedUp: 'Đã làm tròn lên tổng',
   adjustmentAmount: 'Điều chỉnh: {{amount}}',
   totalAlreadyWhole: 'Tổng đã là số nguyên',
-  itemTotal: 'Tổng sản phẩm:',
   
   // Toast Messages - Additional
   orderCreatedWithPacking: 'Đơn hàng đã được tạo thành công với kế hoạch đóng gói',
@@ -802,7 +800,6 @@ const orders = {
   expectedDate: 'Ngày dự kiến',
   createdDate: 'Ngày tạo',
   viewDetails: 'Xem chi tiết',
-  unknownCustomer: 'Khách hàng chưa xác định',
   loadingPreOrders: 'Đang tải đơn đặt trước...',
   
   // PreOrders - Toast Messages
@@ -877,7 +874,6 @@ const orders = {
   enableRemindersDescription: 'Gửi SMS hoặc email nhắc nhở cho khách hàng trước ngày dự kiến về hàng',
   reminderChannel: 'Kênh thông báo',
   sms: 'SMS',
-  email: 'Email',
   smsBothEmail: 'SMS & Email',
   reminderDaysBefore: 'Số ngày trước khi hàng về',
   reminderDaysBeforeHint: 'Chọn thời điểm gửi nhắc nhở',
@@ -890,7 +886,6 @@ const orders = {
   reminderPhoneHint: 'Ghi đè số điện thoại khách hàng cho nhắc nhở này',
   reminderEmail: 'Địa chỉ email',
   reminderEmailHint: 'Ghi đè email khách hàng cho nhắc nhở này',
-  priority: 'Mức độ ưu tiên',
   priorityLow: 'Thấp',
   priorityNormal: 'Bình thường',
   priorityHigh: 'Cao',
@@ -956,8 +951,6 @@ const orders = {
   manualEntry: 'Nhập thủ công',
   barcodeScanner: 'Máy quét mã vạch',
   scanBarcodeToVerifyItems: 'Quét mã vạch để xác minh sản phẩm...',
-  hideBarcodeScanner: 'Ẩn máy quét mã vạch',
-  showBarcodeScanner: 'Hiện máy quét mã vạch',
   
   // Product Info
   productName: 'Tên sản phẩm',
@@ -1006,8 +999,6 @@ const orders = {
   packItemsIntoCarton: 'Đóng gói sản phẩm vào thùng',
   verifyQuantities: 'Xác minh số lượng',
   clickToMinimize: 'Nhấp để thu nhỏ',
-  clickToUnverifyAllItems: 'Nhấp để bỏ xác minh tất cả',
-  clickToMarkAllItemsAsVerified: 'Nhấp để đánh dấu tất cả đã xác minh',
   
   // Progress
   itemsPicked: 'Đã lấy {{picked}} / {{total}} sản phẩm',
@@ -1065,7 +1056,6 @@ const orders = {
   
   // Repacking
   orderSentForRepacking: 'Đơn hàng đã được gửi để đóng gói lại',
-  recalculateCartonsBasedOnCurrentItems: 'Tính lại thùng dựa trên sản phẩm hiện tại',
   
   // Tracking Numbers
   enterTrackingNumber: 'Nhập mã vận đơn...',
@@ -1081,11 +1071,8 @@ const orders = {
   unmuteSounds: 'Bật tiếng',
   
   // Bundle Items
-  hideBundleItems: 'Ẩn sản phẩm combo',
-  showBundleItems: 'Hiện sản phẩm combo',
   
   // Packing Instructions
-  packingInstructions: 'Hướng dẫn đóng gói',
 
   // Pick & Pack - PickPack Component Labels
   skuLabel: 'SKU:',
@@ -1123,24 +1110,16 @@ const orders = {
 
   // PickPack.tsx - Comprehensive Translation Keys
   // Default values & placeholders
-  walkInCustomer: 'Khách vãng lai',
   weightPlaceholder: '0.000',
   
   // UI Labels & Headers
   exit: 'Thoát',
   closeModal: 'ĐÓNG',
   time: 'Thời gian',
-  cartons: 'Thùng',
-  weight: 'Trọng lượng',
-  weightKg: 'Trọng lượng (kg)',
   score: 'Điểm',
-  clickToMinimize: 'Nhấp để thu nhỏ',
-  service: 'Dịch vụ',
-  orderItems: 'Sản phẩm trong đơn',
   trackYourPickingProgress: 'Theo dõi tiến độ lấy hàng',
   pickPackWorkflow: 'Quy trình Lấy & Đóng gói',
   manageOrderFulfillment: 'Quản lý thực hiện đơn hàng từ lấy hàng đến vận chuyển',
-  orderProgress: 'Tiến độ đơn hàng',
   swipeToView: 'Vuốt để xem →',
   orderLabel: 'Đơn hàng:',
   
@@ -1168,17 +1147,12 @@ const orders = {
   
   // PPL Label Management
   noCarton: 'Không có thùng',
-  cancelled: 'ĐÃ HỦY',
-  noTrackingNumber: 'Không có mã vận đơn',
-  printed: 'Đã in',
-  print: 'In',
   addCartonLabel: 'Thêm nhãn thùng',
   
   // GLS Shipping
   glsShipping: 'Vận chuyển GLS ({{count}} {{unit}})',
   carton: 'thùng',
   cartonsPlural: 'thùng',
-  totalWeight: 'Tổng trọng lượng: {{weight}} kg',
   noCartonsAddedToGls: 'Chưa thêm thùng vào GLS. Sử dụng nút bên dưới để thêm thùng cho vận chuyển tiết kiệm.',
   empfanger: 'Empfänger (Người nhận)',
   absender: 'Absender (Người gửi)',
@@ -1198,8 +1172,6 @@ const orders = {
   errorTitle: 'Lỗi',
   failedToPrintLabel: 'Không thể in nhãn',
   failedToGenerateLabel: 'Không thể tạo nhãn',
-  failedToAddCartonLabel: 'Không thể thêm nhãn thùng',
-  cartonDataPreserved: 'Dữ liệu thùng đã được giữ lại. Bạn có thể tạo lại nhãn nếu cần.',
   failedToDeleteLabel: 'Không thể xóa nhãn',
   creatingShippingLabelFromPPL: 'Đang tạo nhãn vận chuyển từ PPL API',
   labelPdfNotAvailable: 'PDF nhãn không khả dụng. Nhãn có thể vẫn đang được xử lý.',
@@ -1219,7 +1191,6 @@ const orders = {
   // Additional UI Labels
   pickingItem: 'Lấy sản phẩm',
   nextItem: 'Sản phẩm tiếp theo',
-  previous: 'Trước',
   bundleItems: 'Sản phẩm combo',
   pickingAccuracy: 'Độ chính xác lấy hàng',
   avgItemsPerOrder: 'TB sản phẩm/Đơn',
@@ -1260,27 +1231,15 @@ const orders = {
   uncategorized: 'Chưa phân loại',
   
   // EditOrder.tsx - UI Labels
-  parseFill: 'Phân tích & Điền',
-  scanModeOn: 'Chế độ quét: BẬT',
-  scanModeOff: 'Chế độ quét: TẮT',
   itemAdded: 'sản phẩm đã thêm',
-  itemsAdded: 'sản phẩm đã thêm',
-  noItemsYet: 'Chưa có sản phẩm',
-  noItemsAddedYet: 'Chưa có sản phẩm nào được thêm vào đơn hàng',
   searchSelectProductsAbove: 'Tìm kiếm và chọn sản phẩm ở trên để thêm vào',
-  paymentDetails: 'Chi tiết thanh toán',
   configurePricingNotes: 'Cấu hình giá và ghi chú',
-  quickSelect: 'Chọn nhanh:',
   shippingCostLabel: 'Phí vận chuyển',
   actualShippingCostLabel: 'Phí vận chuyển thực tế',
-  grandTotalLabel: 'Tổng cộng',
-  taxInvoiceInformation: 'Thông tin hóa đơn thuế',
   rounding: 'Làm tròn',
   total: 'Tổng',
   products: 'Sản phẩm',
   requiredFieldsMissing: 'Thiếu trường bắt buộc:',
-  orderSummary: 'Tóm tắt đơn hàng',
-  margin: 'Biên lợi nhuận',
   
   // OrderDetails.tsx - Additional Status/Priority Labels
   unknown: 'Không rõ',
@@ -1305,7 +1264,6 @@ const orders = {
   
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Bắt đầu lấy hàng',
-  picked: 'Đã lấy',
   pickedItem: 'Đã lấy: {{product}}',
   pickingCompleted: 'Hoàn thành lấy hàng',
   packingStarted: 'Bắt đầu đóng gói',
@@ -1331,14 +1289,11 @@ const orders = {
   // OrderDetails.tsx - Actions & Dialogs
   edit: 'Sửa',
   export: 'Xuất',
-  cancel: 'Hủy',
   returnThisItem: 'Trả lại sản phẩm này',
   makeCustomPrice: 'Tạo giá tùy chỉnh',
-  save: 'Lưu',
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Tiến trình lấy hàng',
-  itemsPicked: '{{picked}} / {{total}} sản phẩm đã lấy',
   allItemsPickedReady: 'Đã lấy tất cả sản phẩm! Sẵn sàng gửi hàng.',
   markAllPicked: 'Đánh dấu tất cả đã lấy',
   clearAll: 'Xóa tất cả',
@@ -1352,11 +1307,9 @@ const orders = {
   itemsWithTotal: 'sản phẩm với tổng số',
   units: 'đơn vị',
   totalReturnValue: 'Tổng giá trị trả lại:',
-  pleaseProvideReturnReason: 'Vui lòng cung cấp lý do trả hàng',
   
   // OrderDetails.tsx - Custom Price Dialog
   currentPrice: 'Giá hiện tại:',
-  enterCustomPrice: 'Nhập giá tùy chỉnh',
   validToOptional: 'Có hiệu lực đến (Tùy chọn)',
   originalPrice: 'Giá gốc:',
   customPriceLabel: 'Giá tùy chỉnh:',
@@ -1398,13 +1351,8 @@ const orders = {
   dhlNachnahme: 'DHL - Nachnahme',
   
   // PickPack.tsx - Main Workflow
-  pickPackWorkflow: 'Quy trình lấy hàng & đóng gói',
-  manageOrderFulfillment: 'Quản lý xử lý đơn hàng từ lấy hàng đến giao vận',
   
   // PickPack.tsx - Tab Labels
-  overview: 'Tổng quan',
-  pend: 'Chờ',
-  ready: 'Sẵn sàng',
   
   // PickPack.tsx - Quick Actions Section
   quickActions: 'Thao tác nhanh',
@@ -1417,10 +1365,6 @@ const orders = {
   
   // PickPack.tsx - Performance Statistics Dialog
   performanceStatistics: 'Thống kê hiệu suất',
-  ordersCompletedToday: 'Đơn hàng hoàn thành hôm nay',
-  pickingAccuracy: 'Độ chính xác lấy hàng',
-  avgItemsPerOrder: 'TB sản phẩm/Đơn',
-  avgPickTime: 'Thời gian lấy TB',
   dailyTarget: 'Mục tiêu hàng ngày',
   efficiencyScore: 'Điểm hiệu suất',
   excellent: 'Xuất sắc',
@@ -1434,7 +1378,6 @@ const orders = {
   // PickPack.tsx - Batch Picking
   batchPickingModeActive: 'Chế độ lấy hàng loạt đang bật',
   ordersSelected: '{{count}} đơn được chọn',
-  selectAll: 'Chọn tất cả',
   clearSelection: 'Bỏ chọn',
   startBatchPick: 'Bắt đầu lấy hàng loạt ({{count}})',
   ordersReadyToPick: 'Đơn hàng sẵn sàng lấy ({{count}})',
@@ -1447,9 +1390,7 @@ const orders = {
   startPacking: 'Bắt đầu đóng gói',
   resumePicking: 'Tiếp tục lấy hàng',
   start: 'Bắt đầu',
-  complete: 'Hoàn thành',
   confirmShipment: 'Xác nhận giao vận',
-  resetOrder: 'Đặt lại đơn hàng',
   putOrderOnHold: 'Tạm giữ đơn hàng',
   putOnHold: 'Tạm giữ',
   cancelOrder: 'Hủy đơn hàng',
@@ -1478,48 +1419,22 @@ const orders = {
   repackOrder: 'Đóng gói lại',
   returnToPacking: 'Trả về đóng gói',
   packedBy: 'Đóng gói bởi {{name}}',
-  tracking: 'Mã vận đơn: {{number}}',
   
   // PickPack.tsx - Carton & Packing
-  cartons: 'Thùng',
   cartonWithCount: 'Thùng ({{count}})',
   cartonOf: 'Thùng {{current}} / {{total}}',
   dhlNachnahmeWithCOD: 'DHL Nachnahme (COD)',
-  duplicate: 'Nhân bản',
   recalculateCartonsTooltip: 'Tính lại thùng dựa trên sản phẩm hiện tại',
   
   // PickPack.tsx - Navigation & Controls
   focusBarcode: 'Focus Barcode',
-  nextItem: 'Sản phẩm tiếp',
-  previous: 'Trước',
-  bundleItems: 'Sản phẩm combo',
   quickPickAllBundleItems: 'Lấy nhanh tất cả sản phẩm combo',
-  picked: 'đã lấy',
-  tel: 'SĐT',
-  email: 'Email',
-  qty: 'SL',
   shipTo: 'Gửi đến',
   noAddressProvided: 'Chưa có địa chỉ',
-  subtotal: 'Tạm tính',
-  total: 'Tổng cộng',
   goToThisItem: 'Đi tới sản phẩm này',
   close: 'Đóng',
-  cancel: 'Hủy',
-  confirmShipment: 'Xác nhận giao hàng',
   confirmShipmentAction: 'Xác nhận giao hàng',
-  putOrderOnHold: 'Tạm giữ đơn hàng',
-  putOnHold: 'Tạm giữ',
-  cancelOrder: 'Hủy đơn hàng',
-  shippingLabel: 'Nhãn vận chuyển',
-  tracking: 'Vận đơn',
-  complete: 'Hoàn thành',
-  inProgress: 'Đang xử lý',
-  notStarted: 'Chưa bắt đầu',
   continuePicking: 'Tiếp tục lấy hàng',
-  expandAll: 'Mở rộng tất cả',
-  collapseAll: 'Thu gọn tất cả',
-  printLabel: 'In nhãn',
-  print: 'In',
   scan: 'Quét',
   done: 'Xong',
   resume: 'Tiếp tục',
@@ -1527,9 +1442,7 @@ const orders = {
   esc: 'Esc',
   
   // PickPack.tsx - Time & Progress
-  time: 'Thời gian',
   progress: 'Tiến độ',
-  score: 'Điểm',
   elapsed: 'Đã trôi qua',
   elapsedTime: 'Thời gian đã trôi',
   pickingTime: 'Thời gian lấy hàng',
@@ -1538,9 +1451,6 @@ const orders = {
   // PickPack.tsx - Details & Information
   details: 'Chi tiết',
   viewFullDetails: 'Xem chi tiết đầy đủ',
-  viewOrderDetails: 'Xem chi tiết đơn hàng',
-  warehouseLocation: 'Vị trí kho',
-  packingInstructions: 'HƯỚNG DẪN ĐÓNG GÓI',
   specialHandling: 'XỬ LÝ ĐẶC BIỆT',
   shippingDetails: 'Chi tiết vận chuyển',
   
@@ -1548,30 +1458,13 @@ const orders = {
   paket: 'Paket',
   paketAndPaymentDetails: 'Paket & Chi tiết thanh toán',
   paketgrosse: 'Paketgröße*',
-  absender: 'Absender (Người gửi)',
-  empfanger: 'Empfänger (Người nhận)',
   dobirka: 'Dobírka (COD)',
-  country: 'Quốc gia:',
-  paketSize: 'Kích thước paket:',
-  firstName: 'Tên:',
-  lastName: 'Họ:',
-  fullAddress: 'Địa chỉ đầy đủ:',
-  eMail: 'E-mail:',
-  land: 'Land*',
-  firma: 'Firma',
-  telefon: 'Telefon',
-  name: 'Name*',
   iban: 'IBAN*',
   bic: 'BIC*',
   kontoinhaber: 'Kontoinhaber*',
   betragInEUR: 'Betrag in EUR*',
   verwendungszweck: 'Verwendungszweck*',
-  vorUndNachname: 'Vor- und Nachname*',
   adresszusatz: 'Adresszusatz',
-  plz: 'PLZ*',
-  wohnort: 'Wohnort*',
-  strasse: 'Straße*',
-  hausnummer: 'Hausnummer*',
   eMailDesEmpfangers: 'E-Mail des Empfängers*',
   eMailDesAbsenders: 'E-Mail des Absenders*',
   
@@ -1579,7 +1472,6 @@ const orders = {
   updateTrackingFromBarcode: 'Cập nhật mã vận đơn từ barcode nhãn',
   creatingShippingLabel: 'Đang tạo nhãn vận chuyển từ PPL API',
   pplLabelCreatedSuccess: 'Nhãn vận chuyển PPL đã được tạo thành công',
-  labelRemovedSuccessfully: 'Nhãn đã được xóa thành công.',
   shippingLabelTitle: 'Nhãn vận chuyển - {{orderId}}',
   cartonDataPreservedCanRegenerate: 'Dữ liệu thùng đã được bảo toàn. Bạn có thể tạo lại nhãn nếu cần.',
   
@@ -1594,32 +1486,23 @@ const orders = {
   cancelOrderDialogDetailed: 'Bạn có chắc muốn hủy đơn hàng {{orderId}}? Thao tác này sẽ đánh dấu đơn hàng là đã hủy.',
   downloadPDF: 'Tải PDF',
   deleteAllLabelsConfirm: 'Xóa tất cả {{count}} nhãn vận chuyển?\\n\\nThao tác này sẽ hủy tất cả lô hàng với PPL. Dữ liệu thùng (trọng lượng, kích thước) sẽ được giữ lại.\\n\\nSau khi xóa, bạn có thể tạo lại nhãn bằng nút "Tạo tất cả nhãn".',
-  deleteLabelConfirm: 'Xóa nhãn #{{number}}?\\n\\nThao tác này sẽ hủy lô hàng với PPL. Dữ liệu thùng sẽ được giữ lại.',
   deleteThisLabelConfirm: 'Xóa nhãn này?\\n\\nThao tác này sẽ hủy lô hàng với PPL. Dữ liệu thùng sẽ được giữ lại.',
   deleteLabelConfirmShort: 'Xóa nhãn #{{number}}?\\n\\nThao tác này sẽ hủy lô hàng với PPL.',
   
   // PickPack.tsx - Image & Visual Elements
   packingInstructionsImage: 'Hướng dẫn đóng gói',
   clickToExpand: 'Nhấp để mở rộng ảnh',
-  clickToMinimize: 'Nhấp để thu nhỏ',
   hideBarcode: 'Ẩn máy quét barcode',
   showBarcode: 'Hiện máy quét barcode',
-  hideBundleItems: 'Ẩn sản phẩm combo',
-  showBundleItems: 'Hiện sản phẩm combo',
   clickToMarkVerified: 'Nhấp để đánh dấu tất cả đã xác minh',
   clickToUnverifyAll: 'Nhấp để bỏ xác minh tất cả',
   completePackingReadyForShipping: 'Hoàn tất đóng gói - Sẵn sàng vận chuyển',
   completeAllStepsToFinishPacking: 'Hoàn thành tất cả các bước để kết thúc đóng gói',
   
   // PickPack.tsx - Status & Totals
-  customer: 'Khách hàng:',
   date: 'Ngày:',
-  note: 'Ghi chú:',
-  subtotal: 'Tạm tính:',
   totalCartons: 'Tổng số thùng:',
   totalLabels: 'Tổng số nhãn:',
-  totalWeight: 'Tổng trọng lượng:',
-  pickingItem: 'Đang lấy sản phẩm',
   forMaterial: 'Cho: {{name}}',
   glsShippingLabelsCount: 'Nhãn vận chuyển GLS ({{count}})',
   pickedBy: 'Được lấy bởi {{name}}',
