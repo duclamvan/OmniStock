@@ -927,6 +927,27 @@ const warehouse = {
   
   // Print Labels Dialog
   selectLocationTypes: 'Select Location Types',
+  
+  // Carton Presets & Mobile Form
+  cartonSizePresets: 'Quick Size Presets',
+  cartonPresetSmall: 'Small (30×20×15)',
+  cartonPresetMedium: 'Medium (40×30×25)',
+  cartonPresetLarge: 'Large (60×40×40)',
+  cartonPresetExtraLarge: 'Extra Large (80×60×50)',
+  cartonPresetFlat: 'Flat (50×40×10)',
+  addAnotherCarton: 'Add Another Carton',
+  addAnotherCartonDesc: 'Clear form and add another carton',
+  generateCodeFromDimensions: 'Auto-generate code from dimensions',
+  suggestedCode: 'Suggested code',
+  useThisCode: 'Use this code',
+  expandSection: 'Expand',
+  collapseSection: 'Collapse',
+  validUrl: 'Valid URL',
+  invalidUrl: 'Invalid URL format',
+  saveMaterial: 'Save Material',
+  updateMaterialsInventory: 'Update packing material details',
+  materialUpdatedWithoutImage: 'The material will be updated without changing the image',
+  activeDescription: 'Material is available for use',
 } as const;
 
 export default warehouse;

@@ -831,6 +831,27 @@ const warehouse = {
   
   // Print Labels Dialog
   selectLocationTypes: 'Chọn loại vị trí',
+  
+  // Carton Presets & Mobile Form
+  cartonSizePresets: 'Kích thước nhanh',
+  cartonPresetSmall: 'Nhỏ (30×20×15)',
+  cartonPresetMedium: 'Vừa (40×30×25)',
+  cartonPresetLarge: 'Lớn (60×40×40)',
+  cartonPresetExtraLarge: 'Cực lớn (80×60×50)',
+  cartonPresetFlat: 'Dẹt (50×40×10)',
+  addAnotherCarton: 'Thêm thùng khác',
+  addAnotherCartonDesc: 'Xóa form và thêm thùng mới',
+  generateCodeFromDimensions: 'Tự động tạo mã từ kích thước',
+  suggestedCode: 'Mã gợi ý',
+  useThisCode: 'Sử dụng mã này',
+  expandSection: 'Mở rộng',
+  collapseSection: 'Thu gọn',
+  validUrl: 'URL hợp lệ',
+  invalidUrl: 'Định dạng URL không hợp lệ',
+  saveMaterial: 'Lưu vật liệu',
+  updateMaterialsInventory: 'Cập nhật chi tiết vật liệu đóng gói',
+  materialUpdatedWithoutImage: 'Vật liệu sẽ được cập nhật mà không thay đổi hình ảnh',
+  activeDescription: 'Vật liệu có sẵn để sử dụng',
 } as const;
 
 export default warehouse;
