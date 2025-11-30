@@ -15,6 +15,7 @@ import reportsEN from './locales/en/reports';
 import systemEN from './locales/en/system';
 import discountsEN from './locales/en/discounts';
 import importsEN from './locales/en/imports';
+import dashboardEN from './locales/en/dashboard';
 
 import commonVI from './locales/vi/common';
 import ordersVI from './locales/vi/orders';
@@ -29,6 +30,7 @@ import reportsVI from './locales/vi/reports';
 import systemVI from './locales/vi/system';
 import discountsVI from './locales/vi/discounts';
 import importsVI from './locales/vi/imports';
+import dashboardVI from './locales/vi/dashboard';
 
 export const defaultNS = 'common';
 
@@ -47,6 +49,7 @@ export const resources = {
     system: systemEN,
     discounts: discountsEN,
     imports: importsEN,
+    dashboard: dashboardEN,
   },
   vi: {
     common: commonVI,
@@ -62,6 +65,7 @@ export const resources = {
     system: systemVI,
     discounts: discountsVI,
     imports: importsVI,
+    dashboard: dashboardVI,
   },
 } as const;
 

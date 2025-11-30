@@ -1,26 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { 
   Package, 
   ShoppingCart, 
   TrendingUp, 
   AlertTriangle, 
   Truck, 
-  Warehouse, 
   Users,
   Clock,
-  CheckCircle2,
   XCircle,
-  ArrowRight,
   Plus,
   PackageCheck,
   DollarSign,
   ClipboardCheck,
-  ChevronRight
+  ChevronRight,
+  Target,
+  BarChart3,
+  Layers,
+  ClipboardList,
+  Activity,
+  Zap,
+  CircleDollarSign,
+  Wallet,
+  BadgeCheck
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
@@ -51,13 +59,24 @@ interface RecentOrder {
     imageUrl?: string;
   };
   status: string;
+  paymentStatus?: string;
   grandTotal: string;
   currency: string;
   createdAt: string;
 }
 
+interface OrderStatusCounts {
+  pending: number;
+  to_fulfill: number;
+  picking: number;
+  packed: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+}
+
 export default function Home() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'dashboard']);
   
   // Fetch dashboard metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -75,7 +94,7 @@ export default function Home() {
   });
 
   // Fetch unpaid orders
-  const { data: unpaidOrders = [] } = useQuery({
+  const { data: unpaidOrders = [] } = useQuery<any[]>({
     queryKey: ['/api/orders/unpaid'],
   });
 
@@ -84,29 +103,61 @@ export default function Home() {
     queryKey: ['/api/stock-adjustment-requests'],
     staleTime: 0,
     refetchInterval: 30000,
-    refetchOnWindowFocus: true,
+  });
+
+  // Fetch shipments waiting to be received
+  const { data: shipmentsToReceive = [] } = useQuery<any[]>({
+    queryKey: ['/api/imports/shipments/to-receive'],
+  });
+
+  // Fetch shipments currently being received
+  const { data: shipmentsReceiving = [] } = useQuery<any[]>({
+    queryKey: ['/api/imports/shipments/receiving'],
+  });
+
+  // Fetch customers for insights
+  const { data: customers = [] } = useQuery<any[]>({
+    queryKey: ['/api/customers'],
+  });
+
+  // Fetch products for insights
+  const { data: products = [] } = useQuery<any[]>({
+    queryKey: ['/api/products'],
   });
 
   const pendingAdjustments = stockAdjustmentRequests.filter(req => req.status === 'pending');
+  const pendingReceivingCount = (shipmentsToReceive?.length || 0) + (shipmentsReceiving?.length || 0);
 
-  // Fetch over-allocated items
-  const { data: overAllocatedItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/over-allocated-items'],
-    staleTime: 0,
-    refetchInterval: 60000,
-  });
+  // Calculate order pipeline counts from recent orders
+  const orderStatusCounts: OrderStatusCounts = {
+    pending: recentOrders.filter((o: RecentOrder) => o.status === 'pending').length,
+    to_fulfill: recentOrders.filter((o: RecentOrder) => o.status === 'to_fulfill').length,
+    picking: recentOrders.filter((o: RecentOrder) => o.status === 'picking').length,
+    packed: recentOrders.filter((o: RecentOrder) => o.status === 'packed').length,
+    shipped: recentOrders.filter((o: RecentOrder) => o.status === 'shipped').length,
+    delivered: recentOrders.filter((o: RecentOrder) => o.status === 'delivered').length,
+    cancelled: recentOrders.filter((o: RecentOrder) => o.status === 'cancelled').length,
+  };
 
-  // Fetch under-allocated items
-  const { data: underAllocatedItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/under-allocated-items'],
-    staleTime: 0,
-    refetchInterval: 60000,
-  });
+  // Calculate payment stats
+  const paidOrders = recentOrders.filter((o: RecentOrder) => o.paymentStatus === 'paid');
+  const paymentRate = recentOrders.length > 0 ? (paidOrders.length / recentOrders.length) * 100 : 0;
+
+  // Calculate total unpaid amount from unpaid orders API
+  const totalUnpaidAmount = Array.isArray(unpaidOrders) 
+    ? unpaidOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || '0'), 0) 
+    : 0;
+
+  // Calculate fulfillment rate
+  const fulfilledOrders = recentOrders.filter((o: RecentOrder) => ['shipped', 'delivered'].includes(o.status));
+  const fulfillmentRate = recentOrders.length > 0 ? (fulfilledOrders.length / recentOrders.length) * 100 : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
-      case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'to_fulfill': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'picking': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'packed': return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
       case 'shipped': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'delivered': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -114,463 +165,582 @@ export default function Home() {
     }
   };
 
+  const profitMargin = metrics && metrics.thisMonthRevenue > 0 
+    ? ((metrics.thisMonthProfit / metrics.thisMonthRevenue) * 100).toFixed(1) 
+    : '0';
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
+      {/* Header with Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {t('warehouseManagementDashboard')}
+            {t('dashboard:title')}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            {t('realTimeOverview')}
+            {t('dashboard:subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-          <Link href="/orders/add" className="flex-1 sm:flex-initial min-w-[140px]">
-            <Button size="sm" className="w-full sm:w-auto min-h-[44px]">
+          <Link href="/orders/add" className="flex-1 sm:flex-initial min-w-[120px]">
+            <Button size="sm" className="w-full sm:w-auto min-h-[44px]" data-testid="button-new-order">
               <Plus className="h-4 w-4 mr-2" />
               {t('newOrder')}
             </Button>
           </Link>
-          <Link href="/inventory/add" className="flex-1 sm:flex-initial min-w-[140px]">
-            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('addProduct')}
+          <Link href="/orders/pick-pack" className="flex-1 sm:flex-initial min-w-[120px]">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" data-testid="button-pick-pack">
+              <PackageCheck className="h-4 w-4 mr-2" />
+              {t('pickAndPack')}
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stock Adjustment Approvals Notice */}
-      {pendingAdjustments.length > 0 && (
-        <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-300 dark:border-orange-700">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg shrink-0">
-                  <ClipboardCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
-                    {t('pendingStockAdjustmentApprovals')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    <span className="font-bold text-orange-600 dark:text-orange-400">{pendingAdjustments.length}</span> {pendingAdjustments.length === 1 ? t('stockAdjustmentRequest') : t('stockAdjustmentRequests')} {t('waitingForAdminApproval')}
-                  </p>
-                  <Link href="/stock/approvals">
-                    <Button 
-                      size="sm" 
-                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white min-h-[44px]"
-                      data-testid="button-view-pending-approvals"
-                    >
-                      {t('reviewApprovals')}
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </Link>
-                </div>
+      {/* Critical Alerts Banner */}
+      {(pendingAdjustments.length > 0 || lowStockProducts.length > 5) && (
+        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200 dark:border-orange-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
-              <Badge variant="destructive" className="text-xs sm:text-sm font-bold shrink-0 self-start">
-                {pendingAdjustments.length} {t('pending')}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Over-Allocated Items Warning */}
-      {overAllocatedItems.length > 0 && (
-        <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-300 dark:border-red-700">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1 text-sm sm:text-base">
-                    {t('overAllocatedInventory')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-red-800 dark:text-red-200 mb-3">
-                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('moreQuantityOrderedThanAvailable')}
-                  </p>
-                  <Link href="/stock/over-allocated">
-                    <Button 
-                      size="sm" 
-                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white min-h-[44px]"
-                      data-testid="button-view-over-allocated"
-                    >
-                      {t('viewResolveIssues')}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <Badge variant="destructive" className="text-xs sm:text-sm font-bold shrink-0 self-start">
-                {overAllocatedItems.length}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Under-Allocated Items Warning */}
-      {underAllocatedItems.length > 0 && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1 text-sm sm:text-base">
-                    {t('underAllocatedInventory')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? t('itemHas') : t('itemsHave')} {t('moreQuantityInRecordThanInStock')}
-                  </p>
-                  <Link href="/stock/under-allocated">
-                    <Button 
-                      size="sm" 
-                      className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white min-h-[44px]"
-                      data-testid="button-view-under-allocated"
-                    >
-                      {t('viewResolveIssues')}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <Badge className="bg-yellow-600 text-white text-xs sm:text-sm font-bold shrink-0 self-start">
-                {underAllocatedItems.length}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        {/* Today's Orders */}
-        <Card className="border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            {metricsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-16" />
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('todaysOrders')}</p>
-                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{metrics?.totalOrdersToday || 0}</p>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                    {metrics?.fulfillOrdersToday || 0} {t('toFulfillLowercase')}
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Today's Revenue */}
-        <Card className="border-blue-200 dark:border-blue-800">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            {metricsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-24" />
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('todaysRevenue')}</p>
-                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('profit')}: {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 dark:text-white text-sm">
+                  {t('dashboard:attentionRequired')}
                 </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Low Stock Alerts */}
-        <Card className="border-amber-200 dark:border-amber-800">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            {stockLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-16" />
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {pendingAdjustments.length > 0 && `${pendingAdjustments.length} ${t('dashboard:pendingApprovals')}`}
+                  {pendingAdjustments.length > 0 && lowStockProducts.length > 5 && ' • '}
+                  {lowStockProducts.length > 5 && `${lowStockProducts.length} ${t('dashboard:lowStockItems')}`}
+                </p>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('lowStock')}</p>
-                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{lowStockProducts.length}</p>
-                  <p className="text-sm text-muted-foreground">{t('products')}</p>
-                </div>
-                {lowStockProducts.length > 0 && (
-                  <Link href="/inventory">
-                    <Button variant="link" className="h-auto p-0 text-xs mt-1">
-                      {t('viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
+              <div className="flex gap-2">
+                {pendingAdjustments.length > 0 && (
+                  <Link href="/stock/approvals">
+                    <Button size="sm" variant="outline" className="min-h-[36px]" data-testid="button-view-approvals">
+                      {t('dashboard:reviewApprovals')}
                     </Button>
                   </Link>
                 )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pending Payments */}
-        <Card className="border-red-200 dark:border-red-800">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('pendingPayments')}</p>
-              <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-600 dark:text-red-400" />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {Array.isArray(unpaidOrders) ? unpaidOrders.length : 0}
-              </p>
-              <p className="text-sm text-muted-foreground">{t('orders')}</p>
-            </div>
-            {Array.isArray(unpaidOrders) && unpaidOrders.length > 0 && (
-              <Link href="/orders/pay-later">
-                <Button variant="link" className="h-auto p-0 text-xs mt-1">
-                  {t('viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg">{t('quickActions')}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-            <Link href="/orders/add">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <Plus className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('newOrder')}</span>
-              </Button>
-            </Link>
-            <Link href="/orders/pick-pack">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <PackageCheck className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('pickAndPack')}</span>
-              </Button>
-            </Link>
-            <Link href="/inventory/add">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <Package className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('addProduct')}</span>
-              </Button>
-            </Link>
-            <Link href="/customers/add">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <Users className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('addCustomer')}</span>
-              </Button>
-            </Link>
-            <Link href="/receiving">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <Truck className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('receiveGoods')}</span>
-              </Button>
-            </Link>
-            <Link href="/warehouses">
-              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
-                <Warehouse className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
-                <span className="truncate">{t('warehouses')}</span>
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Low Stock Products */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0" />
-              <span className="truncate">{t('lowStockAlert')}</span>
-            </CardTitle>
-            <Link href="/inventory" className="shrink-0">
-              <Button variant="ghost" size="sm" className="min-h-[44px]">
-                {t('viewAll')}
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            {stockLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
-              </div>
-            ) : lowStockProducts.length > 0 ? (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {lowStockProducts.slice(0, 5).map((product) => (
-                  <Link key={product.id} href={`/inventory/${product.id}/edit`}>
-                    <div className="group relative flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 min-h-[72px]">
-                      {/* Product Icon */}
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center ring-2 ring-slate-100 dark:ring-slate-800">
-                        <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate mb-1">
-                          {product.name}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                          <span className="font-mono">{product.sku}</span>
-                          <span className="text-slate-300 dark:text-slate-600">•</span>
-                          <span className="text-orange-600 dark:text-orange-400 font-medium">
-                            {t('alertAt')} {product.lowStockAlert}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Stock Badge & Arrow */}
-                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <Badge variant="destructive" className="text-xs px-3 py-1 font-bold whitespace-nowrap">
-                          {product.quantity} {t('left')}
-                        </Badge>
-                        <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 sm:py-12">
-                <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-500 mx-auto mb-3" />
-                <p className="text-xs sm:text-sm text-muted-foreground">{t('allProductsWellStocked')}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Orders */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
-              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 shrink-0" />
-              <span className="truncate">{t('recentOrders')}</span>
-            </CardTitle>
-            <Link href="/orders" className="shrink-0">
-              <Button variant="ghost" size="sm" className="min-h-[44px]">
-                {t('viewAll')}
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            {ordersLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
-              </div>
-            ) : recentOrders.length > 0 ? (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {recentOrders.slice(0, 5).map((order) => (
-                  <Link key={order.id} href={`/orders/${order.id}`}>
-                    <div className="group relative flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 min-h-[72px]">
-                      {/* Customer Avatar */}
-                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 ring-2 ring-slate-100 dark:ring-slate-800">
-                        <AvatarImage src={order.customer?.imageUrl} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold text-sm">
-                          {(order.customer?.name || 'W').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      {/* Order Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 font-mono">
-                            {order.orderId}
-                          </p>
-                          <Badge className={`${getStatusColor(order.status)} text-xs px-2 py-0.5`}>
-                            {(order.status || 'pending').replace(/_/g, ' ')}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                          <span className="truncate">{order.customer?.name || t('walkInCustomer')}</span>
-                          <span className="text-slate-300 dark:text-slate-600">•</span>
-                          <span className="whitespace-nowrap">{formatDate(order.createdAt)}</span>
-                        </div>
-                      </div>
-
-                      {/* Amount & Arrow */}
-                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <div className="text-right">
-                          <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                            {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 sm:py-12">
-                <XCircle className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-xs sm:text-sm text-muted-foreground">{t('noRecentOrders')}</p>
-                <Link href="/orders/add">
-                  <Button variant="outline" size="sm" className="mt-3 min-h-[44px]">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('createOrder')}
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Month Performance */}
-      {metrics && (
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 shrink-0" />
-              <span className="truncate">{t('thisMonthPerformance')}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">{t('revenue')}</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 break-all">
-                  {formatCurrency(metrics.thisMonthRevenue || 0, 'EUR')}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">{t('profit')}</p>
-                <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 break-all">
-                  {formatCurrency(metrics.thisMonthProfit || 0, 'EUR')}
-                </p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Executive Summary - Key Metrics Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Today's Revenue */}
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            {metricsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:todayRevenue')}</p>
+                  <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
+                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-500" />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')} {t('dashboard:profit')}
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Orders to Fulfill */}
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            {metricsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:toFulfill')}</p>
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                    <PackageCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {metrics?.fulfillOrdersToday || 0}
+                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  <ShoppingCart className="h-3 w-3 text-blue-500" />
+                  <span className="text-xs text-muted-foreground">
+                    {t('dashboard:ofTotal', { count: metrics?.totalOrdersToday || 0 })}
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fulfillment Rate */}
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:fulfillmentRate')}</p>
+              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {fulfillmentRate.toFixed(0)}%
+            </p>
+            <Progress value={fulfillmentRate} className="h-1.5 mt-2" />
+          </CardContent>
+        </Card>
+
+        {/* Profit Margin */}
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            {metricsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:profitMargin')}</p>
+                  <div className="p-1.5 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg">
+                    <BarChart3 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {profitMargin}%
+                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {t('dashboard:thisMonth')}
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        
+        {/* Left Column - Orders & Operations */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          
+          {/* Order Pipeline */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-blue-600" />
+                    {t('dashboard:orderPipeline')}
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm mt-1">
+                    {t('dashboard:orderPipelineDesc')}
+                  </CardDescription>
+                </div>
+                <Link href="/orders">
+                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-all-orders">
+                    {t('viewAll')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                <Link href="/orders?status=pending" className="block">
+                  <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="pipeline-pending">
+                    <p className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400">{orderStatusCounts.pending}</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">{t('dashboard:pending')}</p>
+                  </div>
+                </Link>
+                <Link href="/orders?status=to_fulfill" className="block">
+                  <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="pipeline-to-fulfill">
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{orderStatusCounts.to_fulfill}</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{t('dashboard:toFulfillStatus')}</p>
+                  </div>
+                </Link>
+                <Link href="/orders?status=picking" className="block">
+                  <div className="text-center p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer" data-testid="pipeline-picking">
+                    <p className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400">{orderStatusCounts.picking}</p>
+                    <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-1">{t('dashboard:picking')}</p>
+                  </div>
+                </Link>
+                <Link href="/orders?status=packed" className="block">
+                  <div className="text-center p-3 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors cursor-pointer" data-testid="pipeline-packed">
+                    <p className="text-2xl sm:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{orderStatusCounts.packed}</p>
+                    <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">{t('dashboard:packed')}</p>
+                  </div>
+                </Link>
+                <Link href="/orders?status=shipped" className="block">
+                  <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="pipeline-shipped">
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{orderStatusCounts.shipped}</p>
+                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">{t('dashboard:shipped')}</p>
+                  </div>
+                </Link>
+                <Link href="/orders?status=delivered" className="block">
+                  <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" data-testid="pipeline-delivered">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{orderStatusCounts.delivered}</p>
+                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">{t('dashboard:delivered')}</p>
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payments & Financial Health */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-green-600" />
+                    {t('dashboard:paymentsFinancial')}
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm mt-1">
+                    {t('dashboard:paymentsFinancialDesc')}
+                  </CardDescription>
+                </div>
+                <Link href="/orders/pay-later">
+                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-unpaid">
+                    {t('dashboard:viewUnpaid')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {/* Payment Rate */}
+                <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BadgeCheck className="h-4 w-4 text-green-600" />
+                    <span className="text-xs font-medium text-green-700 dark:text-green-300">{t('dashboard:paymentRate')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{paymentRate.toFixed(0)}%</p>
+                  <Progress value={paymentRate} className="h-1.5 mt-2" />
+                </div>
+
+                {/* Unpaid Orders */}
+                <div className="p-4 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-red-600" />
+                    <span className="text-xs font-medium text-red-700 dark:text-red-300">{t('dashboard:unpaidOrders')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {Array.isArray(unpaidOrders) ? unpaidOrders.length : 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard:ordersAwaiting')}</p>
+                </div>
+
+                {/* Outstanding Amount */}
+                <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CircleDollarSign className="h-4 w-4 text-amber-600" />
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('dashboard:outstanding')}</span>
+                  </div>
+                  <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                    {formatCurrency(totalUnpaidAmount, 'EUR')}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard:toCollect')}</p>
+                </div>
+
+                {/* Monthly Revenue */}
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('dashboard:monthRevenue')}</span>
+                  </div>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
+                  </p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                    {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')} {t('dashboard:profit')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Orders */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 pb-3">
+              <div>
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                  {t('recentOrders')}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">
+                  {t('dashboard:recentOrdersDesc')}
+                </CardDescription>
+              </div>
+              <Link href="/orders">
+                <Button variant="ghost" size="sm" className="min-h-[36px]">
+                  {t('viewAll')}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              {ordersLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+              ) : recentOrders.length > 0 ? (
+                <div className="space-y-2">
+                  {recentOrders.slice(0, 5).map((order) => (
+                    <Link key={order.id} href={`/orders/${order.id}`}>
+                      <div className="group flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" data-testid={`order-row-${order.id}`}>
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarImage src={order.customer?.imageUrl} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-xs font-semibold">
+                            {(order.customer?.name || 'W').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white font-mono">{order.orderId}</span>
+                            <Badge className={`${getStatusColor(order.status || 'pending')} text-[10px] px-1.5 py-0`}>
+                              {(order.status || 'pending').replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {order.customer?.name || t('walkInCustomer')} • {formatDate(order.createdAt)}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-sm text-gray-900 dark:text-white">
+                            {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <XCircle className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">{t('noRecentOrders')}</p>
+                  <Link href="/orders/add">
+                    <Button variant="outline" size="sm" className="mt-3">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('createOrder')}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Tasks & Insights */}
+        <div className="space-y-4 sm:space-y-6">
+          
+          {/* Warehouse Operations Tasks */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-orange-600" />
+                {t('dashboard:warehouseTasks')}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                {t('dashboard:warehouseTasksDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
+              {/* Pending Receiving */}
+              <Link href="/receiving">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="task-receiving">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:pendingReceiving')}</p>
+                      <p className="text-xs text-muted-foreground">{t('dashboard:shipmentsToReceive')}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                    {pendingReceivingCount}
+                  </Badge>
+                </div>
+              </Link>
+
+              {/* Stock Approvals */}
+              <Link href="/stock/approvals">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer" data-testid="task-approvals">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                      <ClipboardCheck className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:stockApprovals')}</p>
+                      <p className="text-xs text-muted-foreground">{t('dashboard:pendingApprovalDesc')}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className={pendingAdjustments.length > 0 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" : ""}>
+                    {pendingAdjustments.length}
+                  </Badge>
+                </div>
+              </Link>
+
+              {/* Low Stock */}
+              <Link href="/inventory?lowStock=true">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="task-low-stock">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:lowStockAlerts')}</p>
+                      <p className="text-xs text-muted-foreground">{t('dashboard:needsReorder')}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className={lowStockProducts.length > 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" : ""}>
+                    {lowStockProducts.length}
+                  </Badge>
+                </div>
+              </Link>
+
+              {/* Pick & Pack */}
+              <Link href="/orders/pick-pack">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="task-pick-pack">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                      <PackageCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:ordersToPack')}</p>
+                      <p className="text-xs text-muted-foreground">{t('dashboard:readyForFulfillment')}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                    {orderStatusCounts.to_fulfill + orderStatusCounts.picking}
+                  </Badge>
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Business Insights */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-cyan-600" />
+                {t('dashboard:businessInsights')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+              {/* Customer Stats */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm text-muted-foreground">{t('dashboard:totalCustomers')}</span>
+                </div>
+                <span className="font-bold text-gray-900 dark:text-white">{customers.length}</span>
+              </div>
+              
+              <Separator />
+              
+              {/* Product Stats */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm text-muted-foreground">{t('dashboard:totalProducts')}</span>
+                </div>
+                <span className="font-bold text-gray-900 dark:text-white">{products.length}</span>
+              </div>
+              
+              <Separator />
+              
+              {/* Total Orders */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm text-muted-foreground">{t('dashboard:ordersThisMonth')}</span>
+                </div>
+                <span className="font-bold text-gray-900 dark:text-white">{recentOrders.length}</span>
+              </div>
+              
+              <Separator />
+              
+              {/* Avg Order Value */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">{t('dashboard:avgOrderValue')}</span>
+                </div>
+                <span className="font-bold text-gray-900 dark:text-white">
+                  {recentOrders.length > 0 
+                    ? formatCurrency(
+                        recentOrders.reduce((sum, o) => sum + parseFloat(o.grandTotal || '0'), 0) / recentOrders.length,
+                        'EUR'
+                      )
+                    : formatCurrency(0, 'EUR')
+                  }
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5 text-yellow-600" />
+                {t('quickActions')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/orders/add">
+                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-new-order">
+                    <Plus className="h-5 w-5" />
+                    <span className="text-xs">{t('newOrder')}</span>
+                  </Button>
+                </Link>
+                <Link href="/inventory/add">
+                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-add-product">
+                    <Package className="h-5 w-5" />
+                    <span className="text-xs">{t('addProduct')}</span>
+                  </Button>
+                </Link>
+                <Link href="/customers/add">
+                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-add-customer">
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs">{t('addCustomer')}</span>
+                  </Button>
+                </Link>
+                <Link href="/receiving">
+                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-receiving">
+                    <Truck className="h-5 w-5" />
+                    <span className="text-xs">{t('receiveGoods')}</span>
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
