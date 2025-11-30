@@ -1632,6 +1632,9 @@ export default function PickPack() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showMobileProgress, setShowMobileProgress] = useState(false);
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+  const [routeSortOrder, setRouteSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [routeStartZone, setRouteStartZone] = useState('');
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [manualItemIndex, setManualItemIndex] = useState(0);
@@ -5276,9 +5279,20 @@ export default function PickPack() {
     setSelectedBatchItems(new Set());
   };
 
-  // Quick Action: Optimize Pick Route
+  // Quick Action: Optimize Pick Route - opens the route optimizer popup
   const optimizePickRoute = () => {
+    setShowRouteOptimizer(true);
+  };
+
+  // Apply route optimization with current settings
+  const applyRouteOptimization = () => {
     if (!activePickingOrder) {
+      toast({
+        title: t('noActiveOrder', 'No Active Order'),
+        description: t('startPickingFirst', 'Start picking an order first to optimize its route.'),
+        variant: 'destructive'
+      });
+      setShowRouteOptimizer(false);
       return;
     }
 
@@ -5286,7 +5300,18 @@ export default function PickPack() {
     const sortedItems = [...activePickingOrder.items].sort((a, b) => {
       const locA = a.warehouseLocation || '';
       const locB = b.warehouseLocation || '';
-      return locA.localeCompare(locB);
+      
+      // If a start zone is specified, prioritize items from that zone
+      if (routeStartZone) {
+        const aStartsWithZone = locA.toLowerCase().startsWith(routeStartZone.toLowerCase());
+        const bStartsWithZone = locB.toLowerCase().startsWith(routeStartZone.toLowerCase());
+        if (aStartsWithZone && !bStartsWithZone) return -1;
+        if (!aStartsWithZone && bStartsWithZone) return 1;
+      }
+      
+      // Sort by location, ascending or descending
+      const comparison = locA.localeCompare(locB);
+      return routeSortOrder === 'asc' ? comparison : -comparison;
     });
 
     const optimizedOrder = {
@@ -5295,6 +5320,12 @@ export default function PickPack() {
     };
 
     setActivePickingOrder(optimizedOrder);
+    setShowRouteOptimizer(false);
+    
+    toast({
+      title: t('routeOptimized', 'Route Optimized!'),
+      description: t('itemsSortedByLocation', 'Items have been sorted for the most efficient picking path.'),
+    });
   };
 
   // Quick Action: Toggle Performance Stats
@@ -13190,6 +13221,178 @@ export default function PickPack() {
               );
             })()}
 
+            {/* Route Optimizer Modal */}
+            {showRouteOptimizer && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 p-5 sm:p-6 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30">
+                          <Route className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl sm:text-2xl font-bold text-white">{t('routeOptimizer', 'Route Optimizer')}</h2>
+                          <p className="text-white/80 text-sm">{t('optimizePickPath', 'Optimize your picking path')}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="text-white hover:bg-white/20 h-10 w-10"
+                        onClick={() => setShowRouteOptimizer(false)}
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                    {/* Route Settings */}
+                    <div className="space-y-6">
+                      {/* Sort Direction */}
+                      <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <Navigation className="h-5 w-5 text-blue-500" />
+                          {t('sortDirection', 'Sort Direction')}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            className={`p-4 rounded-xl border-2 transition-all ${
+                              routeSortOrder === 'asc'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                            }`}
+                            onClick={() => setRouteSortOrder('asc')}
+                          >
+                            <div className="flex flex-col items-center gap-2">
+                              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                                routeSortOrder === 'asc' 
+                                  ? 'bg-blue-500 text-white' 
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                              }`}>
+                                <ChevronsUp className="h-5 w-5" />
+                              </div>
+                              <span className="font-medium text-sm text-gray-900 dark:text-white">A → Z</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{t('lowToHigh', 'Low to High')}</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            className={`p-4 rounded-xl border-2 transition-all ${
+                              routeSortOrder === 'desc'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                            }`}
+                            onClick={() => setRouteSortOrder('desc')}
+                          >
+                            <div className="flex flex-col items-center gap-2">
+                              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                                routeSortOrder === 'desc' 
+                                  ? 'bg-blue-500 text-white' 
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                              }`}>
+                                <ChevronsDown className="h-5 w-5" />
+                              </div>
+                              <span className="font-medium text-sm text-gray-900 dark:text-white">Z → A</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{t('highToLow', 'High to Low')}</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Start Zone */}
+                      <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-green-500" />
+                          {t('startZone', 'Start Zone')}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {t('startZoneDesc', 'Items from this zone will be picked first')}
+                        </p>
+                        <Input
+                          placeholder={t('enterZoneCode', 'Enter zone code (e.g., A, B1, COLD)')}
+                          value={routeStartZone}
+                          onChange={(e) => setRouteStartZone(e.target.value)}
+                          className="bg-white dark:bg-slate-700"
+                        />
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {['A', 'B', 'C', 'D', 'COLD', 'HEAVY'].map(zone => (
+                            <Button
+                              key={zone}
+                              size="sm"
+                              variant={routeStartZone === zone ? 'default' : 'outline'}
+                              className="text-xs"
+                              onClick={() => setRouteStartZone(routeStartZone === zone ? '' : zone)}
+                            >
+                              {zone}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Warehouse Map - Coming Soon */}
+                      <div className="bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 relative overflow-hidden">
+                        <div className="absolute top-3 right-3">
+                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs">
+                            {t('comingSoon', 'Coming Soon')}
+                          </Badge>
+                        </div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <LayoutGrid className="h-5 w-5 text-purple-500" />
+                          {t('warehouseMap', 'Warehouse Map')}
+                        </h3>
+                        <div className="aspect-video bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center p-6">
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center mb-4">
+                            <Building className="h-8 w-8 text-purple-500" />
+                          </div>
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{t('interactiveMap', 'Interactive Warehouse Map')}</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs">
+                            {t('mapDescription', 'Visualize optimal picking routes with our interactive 2D warehouse map. Draw zones, set paths, and optimize walking distance.')}
+                          </p>
+                          <div className="flex items-center gap-4 mt-4 text-xs text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Route className="h-3 w-3" />
+                              {t('pathOptimization', 'Path Optimization')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {t('zoneMapping', 'Zone Mapping')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Navigation className="h-3 w-3" />
+                              {t('liveTracking', 'Live Tracking')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 mt-6">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setShowRouteOptimizer(false)}
+                      >
+                        {t('cancel', 'Cancel')}
+                      </Button>
+                      <Button
+                        className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+                        onClick={applyRouteOptimization}
+                      >
+                        <Route className="h-4 w-4 mr-2" />
+                        {t('applyOptimization', 'Apply Optimization')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Quick Actions */}
               <Card>
@@ -13248,13 +13451,22 @@ export default function PickPack() {
                         )}
                       </Button>
                       <Button 
-                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                        variant="outline" 
+                        className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
+                          showRouteOptimizer 
+                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 border-0' 
+                            : 'hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 group'
+                        }`}
+                        variant={showRouteOptimizer ? "default" : "outline"} 
                         size="lg"
                         onClick={optimizePickRoute}
                       >
-                        <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        <Route className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showRouteOptimizer ? 'text-white' : 'text-cyan-600 dark:text-cyan-400 group-hover:text-cyan-700'}`} />
                         {t('optimizePickRoute')}
+                        {!showRouteOptimizer && (
+                          <span className="ml-auto text-xs text-cyan-600 dark:text-cyan-400 font-medium hidden sm:inline">
+                            {t('settings', 'Settings')}
+                          </span>
+                        )}
                       </Button>
                       <Button 
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
