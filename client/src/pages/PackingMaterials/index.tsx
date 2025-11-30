@@ -2,7 +2,32 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag, MoreVertical, Check, FileDown, FileText } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  Package2, 
+  Edit, 
+  Trash2, 
+  DollarSign, 
+  Layers, 
+  Archive, 
+  ExternalLink, 
+  Filter, 
+  ShoppingCart, 
+  Copy, 
+  Tag, 
+  MoreVertical, 
+  Check, 
+  FileDown, 
+  FileText,
+  Box,
+  Boxes,
+  Ruler,
+  Shield,
+  Wrench,
+  PackageOpen,
+  ChevronDown
+} from "lucide-react";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { format } from "date-fns";
 import { DataTable, DataTableColumn, BulkAction } from "@/components/ui/data-table";
@@ -35,6 +60,7 @@ import type { PackingMaterial } from "@shared/schema";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function getDisplayUrl(url: string | null): { display: string; href: string } | null {
   if (!url) return null;
@@ -53,11 +79,39 @@ function getDisplayUrl(url: string | null): { display: string; href: string } | 
   }
 }
 
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case 'cartons':
+      return Box;
+    case 'filling':
+      return PackageOpen;
+    case 'protective':
+      return Shield;
+    case 'supplies':
+      return Wrench;
+    case 'packaging':
+      return Boxes;
+    default:
+      return Package2;
+  }
+}
+
+function formatDimensionsCompact(dimensions: string | null | undefined): string {
+  if (!dimensions) return '-';
+  const match = dimensions.match(/(\d+)\s*[xX×]\s*(\d+)\s*[xX×]\s*(\d+)/);
+  if (match) {
+    return `${match[1]}×${match[2]}×${match[3]}`;
+  }
+  return dimensions;
+}
+
 export default function PackingMaterials() {
   const { t } = useTranslation('warehouse');
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -170,7 +224,7 @@ export default function PackingMaterials() {
       const ids = selectedMaterials.map(m => m.id);
       await apiRequest('POST', '/api/packing-materials/bulk-update-category', { ids, category });
 
-      const getCategoryLabel = (cat: string) => {
+      const getCategoryLabelLocal = (cat: string) => {
         const categoryKeys: Record<string, string> = {
           cartons: 'categoryCartons',
           filling: 'categoryFilling',
@@ -183,7 +237,7 @@ export default function PackingMaterials() {
 
       toast({
         title: t('categoryUpdated'),
-        description: t('updatedMaterialsCategory', { count: selectedMaterials.length, category: getCategoryLabel(category) }),
+        description: t('updatedMaterialsCategory', { count: selectedMaterials.length, category: getCategoryLabelLocal(category) }),
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/packing-materials'] });
@@ -276,8 +330,10 @@ export default function PackingMaterials() {
       sortable: true,
       className: "min-w-[140px]",
       cell: (material) => {
+        const Icon = getCategoryIcon(material.category);
         return material.category ? (
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 w-fit">
+            <Icon className="h-3 w-3" />
             {getCategoryLabel(material.category)}
           </Badge>
         ) : (
@@ -390,14 +446,18 @@ export default function PackingMaterials() {
     col.key === 'imageUrl' || col.key === 'actions' || visibleColumns[col.key] !== false
   );
 
-  const stats = {
-    total: materials.length,
-    lowStock: materials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
-    categories: Array.from(new Set(materials.map(m => m.category).filter(Boolean))).length,
-    totalValue: materials.reduce((sum, m) => sum + ((parseFloat(m.cost || '0')) * (m.stockQuantity || 0)), 0),
-  };
+  const stats = useMemo(() => {
+    const cartonMaterials = allMaterials.filter(m => m.category === 'cartons');
+    return {
+      total: materials.length,
+      lowStock: materials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
+      categories: Array.from(new Set(materials.map(m => m.category).filter(Boolean))).length,
+      totalValue: materials.reduce((sum, m) => sum + ((parseFloat(m.cost || '0')) * (m.stockQuantity || 0)), 0),
+      cartons: cartonMaterials.reduce((sum, m) => sum + (m.stockQuantity || 0), 0),
+      cartonsLow: cartonMaterials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
+    };
+  }, [allMaterials, materials]);
 
-  // Export handlers
   const handleExportXLSX = () => {
     try {
       const exportData = materials.map(material => ({
@@ -440,7 +500,7 @@ export default function PackingMaterials() {
         status: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? t('lowStock') : t('inStock'),
       }));
 
-      const columns: PDFColumn[] = [
+      const pdfColumns: PDFColumn[] = [
         { key: 'name', header: t('materialName') },
         { key: 'category', header: t('category') },
         { key: 'dimensions', header: t('dimensions') },
@@ -451,7 +511,7 @@ export default function PackingMaterials() {
         { key: 'status', header: t('status') },
       ];
 
-      exportToPDF(t('packingMaterials'), exportData, columns, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('packingMaterials'), exportData, pdfColumns, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
         title: t('exportSuccessful'),
@@ -466,6 +526,15 @@ export default function PackingMaterials() {
       });
     }
   };
+
+  const handlePurchaseFromSameSupplier = (supplier: string) => {
+    const urlInfo = getDisplayUrl(supplier);
+    if (urlInfo) {
+      window.open(urlInfo.href, '_blank');
+    }
+  };
+
+  const activeFiltersCount = (categoryFilter !== 'all' ? 1 : 0) + (supplierFilter !== 'all' ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -482,22 +551,34 @@ export default function PackingMaterials() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 max-w-full overflow-x-hidden">
+      {/* Header Section - Stacks vertically on mobile */}
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('packingMaterials')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('manageMaterialsInventory')}
           </p>
         </div>
-        <div className="flex gap-2">
+        
+        {/* Action Buttons - Full width on mobile, arranged horizontally */}
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+          {/* Mobile: Quick Add Carton Button */}
+          <Link href="/packing-materials/add?category=cartons" className="flex-1 sm:flex-none sm:hidden">
+            <Button variant="outline" className="w-full" data-testid="button-quick-add-carton">
+              <Box className="h-4 w-4 mr-2" />
+              {t('addCarton')}
+            </Button>
+          </Link>
+          
+          {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('export')}
+              <Button variant="outline" className="flex-1 sm:flex-none" data-testid="button-export">
+                <FileDown className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('export')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -513,8 +594,10 @@ export default function PackingMaterials() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/packing-materials/add">
-            <Button data-testid="button-add-material">
+          
+          {/* Add Material Button */}
+          <Link href="/packing-materials/add" className="flex-1 sm:flex-none">
+            <Button className="w-full sm:w-auto" data-testid="button-add-material">
               <Plus className="h-4 w-4 mr-2" />
               {t('addMaterial')}
             </Button>
@@ -522,18 +605,20 @@ export default function PackingMaterials() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+      {/* Stats Cards - 2 columns on mobile, up to 5 on large screens */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+        {/* Total Materials */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
           <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-[10px] sm:text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">
                   {t('totalMaterials')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         {formatCompactNumber(stats.total)}
                       </p>
                     </TooltipTrigger>
@@ -543,24 +628,56 @@ export default function PackingMaterials() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                <Package2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
+              <div className="flex-shrink-0 p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Package2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Cartons Stat - NEW */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
           <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-[10px] sm:text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">
+                  {t('cartons')}
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-blue-600 dark:text-blue-400 truncate cursor-help">
+                        {formatCompactNumber(stats.cartons)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{stats.cartons.toLocaleString()} {t('unit')}s</p>
+                      {stats.cartonsLow > 0 && (
+                        <p className="text-amber-500">{stats.cartonsLow} {t('lowStock')}</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                <Box className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Low Stock */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-3 sm:p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] sm:text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">
                   {t('lowStock')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
+                      <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
                         {formatCompactNumber(stats.lowStock)}
                       </p>
                     </TooltipTrigger>
@@ -570,24 +687,25 @@ export default function PackingMaterials() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
-                <Archive className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
+              <div className="flex-shrink-0 p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+                <Archive className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Categories */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
           <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-[10px] sm:text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">
                   {t('category')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         {formatCompactNumber(stats.categories)}
                       </p>
                     </TooltipTrigger>
@@ -597,24 +715,25 @@ export default function PackingMaterials() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                <Layers className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <Layers className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+        {/* Total Value */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow col-span-2 sm:col-span-1">
           <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-[10px] sm:text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">
                   {t('totalValue')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         {formatCompactNumber(stats.totalValue)}
                       </p>
                     </TooltipTrigger>
@@ -624,21 +743,31 @@ export default function PackingMaterials() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-shrink-0 p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filters Section */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader className="pb-4">
+        <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3 md:pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-              <CardTitle className="text-lg">{t('searchMaterials')}</CardTitle>
-            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 sm:pointer-events-none"
+            >
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400" />
+              <CardTitle className="text-base sm:text-lg">{t('searchMaterials')}</CardTitle>
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+              <ChevronDown className={`h-4 w-4 text-slate-400 sm:hidden transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="hidden sm:flex">
@@ -666,33 +795,69 @@ export default function PackingMaterials() {
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="relative md:col-span-1">
+        <CardContent className={`p-3 sm:p-4 md:p-6 pt-0 space-y-3 ${!showFilters && isMobile ? 'hidden' : ''} sm:block`}>
+          {/* Filters - Stack vertically on mobile */}
+          <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 sm:gap-3">
+            {/* Search Input */}
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder={t('searchMaterials')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 focus:border-cyan-500"
+                className="pl-10 h-11 sm:h-10 focus:border-cyan-500"
                 data-testid="input-search"
               />
             </div>
+            
+            {/* Category Filter with Icons */}
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-category">
+              <SelectTrigger className="h-11 sm:h-10 focus:border-cyan-500" data-testid="select-category">
                 <SelectValue placeholder={t('filterByCategory')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('allCategories')}</SelectItem>
-                <SelectItem value="cartons">{t('categoryCartons')}</SelectItem>
-                <SelectItem value="filling">{t('categoryFilling')}</SelectItem>
-                <SelectItem value="protective">{t('categoryProtective')}</SelectItem>
-                <SelectItem value="supplies">{t('categorySupplies')}</SelectItem>
-                <SelectItem value="packaging">{t('categoryPackaging')}</SelectItem>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Package2 className="h-4 w-4 text-slate-400" />
+                    {t('allCategories')}
+                  </div>
+                </SelectItem>
+                <SelectItem value="cartons">
+                  <div className="flex items-center gap-2">
+                    <Box className="h-4 w-4 text-blue-500" />
+                    {t('categoryCartons')}
+                  </div>
+                </SelectItem>
+                <SelectItem value="filling">
+                  <div className="flex items-center gap-2">
+                    <PackageOpen className="h-4 w-4 text-amber-500" />
+                    {t('categoryFilling')}
+                  </div>
+                </SelectItem>
+                <SelectItem value="protective">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-green-500" />
+                    {t('categoryProtective')}
+                  </div>
+                </SelectItem>
+                <SelectItem value="supplies">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-purple-500" />
+                    {t('categorySupplies')}
+                  </div>
+                </SelectItem>
+                <SelectItem value="packaging">
+                  <div className="flex items-center gap-2">
+                    <Boxes className="h-4 w-4 text-cyan-500" />
+                    {t('categoryPackaging')}
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Supplier Filter */}
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-              <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-supplier">
+              <SelectTrigger className="h-11 sm:h-10 focus:border-cyan-500" data-testid="select-supplier">
                 <SelectValue placeholder={t('filterBySupplier')} />
               </SelectTrigger>
               <SelectContent>
@@ -705,26 +870,80 @@ export default function PackingMaterials() {
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Active Filter Pills - Touch-friendly */}
+          {(categoryFilter !== 'all' || supplierFilter !== 'all') && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {categoryFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="h-8 px-3 text-sm flex items-center gap-1.5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                  onClick={() => setCategoryFilter('all')}
+                >
+                  {(() => {
+                    const Icon = getCategoryIcon(categoryFilter);
+                    return <Icon className="h-3.5 w-3.5" />;
+                  })()}
+                  {getCategoryLabel(categoryFilter)}
+                  <span className="text-slate-500 ml-1">×</span>
+                </Badge>
+              )}
+              {supplierFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="h-8 px-3 text-sm flex items-center gap-1.5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                  onClick={() => setSupplierFilter('all')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {supplierFilter}
+                  <span className="text-slate-500 ml-1">×</span>
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setSupplierFilter('all');
+                }}
+              >
+                {t('clearAll')}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Materials List */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0">
           {/* Mobile Card View */}
-          <div className="sm:hidden space-y-3 p-3">
-            {materials?.map((material) => {
-              const stockQty = material.stockQuantity || 0;
-              const minStock = material.minStockLevel || 10;
-              const isLowStock = stockQty <= minStock;
-              const urlInfo = getDisplayUrl(material.supplier);
+          <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {materials.length === 0 ? (
+              <div className="p-6 text-center">
+                <Package2 className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-slate-500 dark:text-slate-400">{t('noMaterialsFound')}</p>
+              </div>
+            ) : (
+              materials.map((material) => {
+                const stockQty = material.stockQuantity || 0;
+                const minStock = material.minStockLevel || 10;
+                const isLowStock = stockQty <= minStock;
+                const urlInfo = getDisplayUrl(material.supplier);
+                const isCarton = material.category === 'cartons';
+                const Icon = getCategoryIcon(material.category);
 
-              return (
-                <div key={material.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
-                  <div className="space-y-3">
-                    {/* Top Row - Material Image, Name, Status, Actions */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                return (
+                  <div 
+                    key={material.id} 
+                    className="p-3 sm:p-4 bg-white dark:bg-slate-900 active:bg-slate-50 dark:active:bg-slate-800 transition-colors"
+                    data-testid={`card-material-${material.id}`}
+                  >
+                    <div className="space-y-3">
+                      {/* Top Row - Image, Name, Stock Status */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                           {material.imageUrl ? (
                             <img 
                               src={material.imageUrl} 
@@ -732,110 +951,123 @@ export default function PackingMaterials() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <Package2 className="h-6 w-6 text-muted-foreground" />
+                            <Package2 className="h-7 w-7 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                            {material.name}
-                          </p>
-                          {material.code && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {t('materialCode')}: {material.code}
-                            </p>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">
+                                {material.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {material.code && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {material.code}
+                                  </span>
+                                )}
+                                <Badge variant="outline" className="h-5 text-[10px] flex items-center gap-1">
+                                  <Icon className="h-2.5 w-2.5" />
+                                  {getCategoryLabel(material.category)}
+                                </Badge>
+                              </div>
+                            </div>
+                            {isLowStock ? (
+                              <Badge className="bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800 flex-shrink-0 h-6 text-[10px]">
+                                {t('lowStock')}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 flex-shrink-0 h-6 text-[10px]">
+                                {t('inStock')}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {isLowStock ? (
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
-                            {t('lowStock')}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
-                            {t('inStock')}
-                          </Badge>
+                      
+                      {/* Info Grid - Compact layout */}
+                      <div className={`grid ${isCarton ? 'grid-cols-3' : 'grid-cols-2'} gap-3 text-sm`}>
+                        <div>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('quantity')}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {stockQty.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('unitCost')}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-'}
+                          </p>
+                        </div>
+                        {/* Show dimensions prominently for cartons */}
+                        {isCarton && (
+                          <div>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                              <Ruler className="h-2.5 w-2.5" />
+                              {t('dimensions')}
+                            </p>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 text-xs">
+                              {formatDimensionsCompact(material.dimensions)}
+                            </p>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    
-                    {/* Middle Row - Key Details (grid-cols-2) */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('category')}</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {material.category ? getCategoryLabel(material.category) : 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('quantity')}</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {stockQty.toLocaleString()} {t('unit')}s
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('unitCost')}</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('dimensions')}</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {material.dimensions || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Bottom Row - Supplier & Actions */}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('supplier')}</p>
-                        {urlInfo ? (
+
+                      {/* Supplier Row */}
+                      {urlInfo && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <ExternalLink className="h-3 w-3" />
                           <a 
                             href={urlInfo.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 truncate"
+                            className="text-blue-600 dark:text-blue-400 hover:underline truncate"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {urlInfo.display}
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
-                        ) : (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noSupplier')}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons - Full width, swipe-friendly */}
+                      <div className="flex gap-2 pt-1">
                         {urlInfo && (
                           <a 
                             href={urlInfo.href}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="flex-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-8">
-                              <ShoppingCart className="h-3 w-3 mr-1" />
+                            <Button 
+                              className="w-full h-10 bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+                              data-testid={`button-purchase-${material.id}`}
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-2" />
                               {t('purchase')}
                             </Button>
                           </a>
                         )}
-                        <Link href={`/packing-materials/edit/${material.id}`}>
-                          <Button size="sm" variant="outline" className="h-8">
-                            <Edit className="h-3 w-3 mr-1" />
+                        <Link href={`/packing-materials/edit/${material.id}`} className={urlInfo ? '' : 'flex-1'}>
+                          <Button 
+                            variant="outline" 
+                            className={`h-10 ${urlInfo ? '' : 'w-full'}`}
+                            data-testid={`button-edit-${material.id}`}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
                             {t('edit')}
                           </Button>
                         </Link>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
           
           {/* Desktop Table View */}
-          <div className="hidden sm:block">
+          <div className="hidden sm:block p-4 md:p-6">
             <DataTable
               columns={columns}
               data={materials}
@@ -845,6 +1077,23 @@ export default function PackingMaterials() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Purchase from Same Supplier FAB for Carton category */}
+      {categoryFilter === 'cartons' && supplierFilter !== 'all' && isMobile && (
+        <div className="fixed bottom-20 right-4 z-40">
+          <Button
+            className="h-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-5"
+            onClick={() => handlePurchaseFromSameSupplier(materials.find(m => {
+              const info = getDisplayUrl(m.supplier);
+              return info?.display === supplierFilter;
+            })?.supplier || '')}
+            data-testid="button-purchase-same-supplier"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            {t('purchaseFromSupplier')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

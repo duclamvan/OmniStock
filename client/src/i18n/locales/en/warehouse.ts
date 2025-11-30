@@ -504,6 +504,9 @@ const warehouse = {
   deleteMaterial: 'Delete Material',
   saveChanges: 'Save Changes',
   cancel: 'Cancel',
+  purchaseFromSupplier: 'Purchase from Supplier',
+  clearAll: 'Clear All',
+  noMaterialsFound: 'No materials found',
   
   // Form Sections
   materialInformation: 'Material Information',

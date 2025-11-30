@@ -495,6 +495,9 @@ const warehouse = {
   deleteMaterial: 'Xóa vật liệu',
   saveChanges: 'Lưu thay đổi',
   cancel: 'Hủy',
+  purchaseFromSupplier: 'Mua từ nhà cung cấp',
+  clearAll: 'Xóa tất cả',
+  noMaterialsFound: 'Không tìm thấy vật liệu',
   
   // Form Sections
   materialInformation: 'Thông tin vật liệu',
