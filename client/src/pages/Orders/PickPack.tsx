@@ -13086,13 +13086,22 @@ export default function PickPack() {
                         })()
                       }
                       <Button 
-                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                        className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
+                          batchPickingMode 
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25 border-0' 
+                            : 'hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                        }`}
                         variant={batchPickingMode ? "default" : "outline"} 
                         size="lg"
                         onClick={toggleBatchPickingMode}
                       >
-                        <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        <Users className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${batchPickingMode ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
                         {batchPickingMode ? t('disableBatchMode') : t('batchPickingMode')}
+                        {batchPickingMode && (
+                          <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                            Active
+                          </span>
+                        )}
                       </Button>
                       <Button 
                         className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
@@ -13152,39 +13161,61 @@ export default function PickPack() {
           <TabsContent value="pending" className="mt-4 sm:mt-6">
             {/* Batch Picking Controls */}
             {batchPickingMode && (
-              <Card className="mb-4 border-2 border-purple-500 dark:border-purple-600">
-                <CardHeader className="bg-gradient-to-r from-purple-50 dark:from-purple-900/300 to-indigo-50 dark:to-indigo-900/300 text-white pb-3">
-                  <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Batch Picking Mode Active
+              <Card className="mb-4 border-2 border-purple-500 dark:border-purple-600 overflow-hidden shadow-lg shadow-purple-500/10">
+                <CardHeader className="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white pb-4 pt-4">
+                  <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span className="flex items-center gap-3">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Users className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-bold">{t('batchPickingMode')}</span>
+                        <p className="text-xs text-purple-100 font-normal mt-0.5">{t('selectMultipleOrdersToPick', 'Select multiple orders to pick together')}</p>
+                      </div>
                     </span>
-                    <Badge className="bg-white text-purple-600 dark:text-purple-400">
-                      {selectedBatchItems.size} orders selected
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-white/90 text-purple-700 dark:text-purple-700 font-semibold px-3 py-1 text-sm">
+                        {selectedBatchItems.size} {t('selected', 'selected')}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-white hover:bg-white/20 h-8 w-8 p-0"
+                        onClick={toggleBatchPickingMode}
+                      >
+                        <XCircle className="h-5 w-5" />
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="flex gap-2 flex-wrap">
+                <CardContent className="pt-4 pb-4 bg-gradient-to-b from-purple-50/50 dark:from-purple-900/20 to-transparent">
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
                     <Button 
                       size="sm"
+                      variant="outline"
+                      className="border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-400"
                       onClick={() => {
                         const allIds = new Set(getOrdersByStatus('pending').map(o => o.id));
                         setSelectedBatchItems(allIds);
                       }}
                     >
-                      Select All
+                      <CheckCircle className="h-4 w-4 mr-1.5 text-purple-600 dark:text-purple-400" />
+                      {t('selectAll', 'Select All')} ({getOrdersByStatus('pending').length})
                     </Button>
                     <Button 
                       size="sm"
                       variant="outline"
+                      className="border-gray-300 dark:border-gray-600"
                       onClick={() => setSelectedBatchItems(new Set())}
+                      disabled={selectedBatchItems.size === 0}
                     >
-                      Clear Selection
+                      <XCircle className="h-4 w-4 mr-1.5" />
+                      {t('clearSelection', 'Clear')}
                     </Button>
+                    <div className="flex-1" />
                     <Button 
                       size="sm"
-                      className="bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white"
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md shadow-green-500/25 min-w-[140px]"
                       disabled={selectedBatchItems.size === 0}
                       onClick={() => {
                         const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
@@ -13193,8 +13224,8 @@ export default function PickPack() {
                         }
                       }}
                     >
-                      <PlayCircle className="h-4 w-4 mr-1" />
-                      Start Batch Pick ({selectedBatchItems.size})
+                      <PlayCircle className="h-4 w-4 mr-1.5" />
+                      {t('startBatchPick', 'Start Batch')} ({selectedBatchItems.size})
                     </Button>
                   </div>
                 </CardContent>
@@ -13225,10 +13256,14 @@ export default function PickPack() {
                   {getOrdersByStatus('pending').map(order => (
                     <Card 
                       key={order.id} 
-                      className={`fade-in ${
-                        batchPickingMode ? 'cursor-pointer hover:shadow-md' : ''
-                      } transition-all ${
-                        batchPickingMode && selectedBatchItems.has(order.id) ? 'border-2 border-purple-500 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30' : ''
+                      className={`fade-in transition-all duration-200 ${
+                        batchPickingMode 
+                          ? `cursor-pointer hover:shadow-md ${
+                              selectedBatchItems.has(order.id) 
+                                ? 'border-2 border-purple-500 dark:border-purple-400 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 shadow-md shadow-purple-500/10' 
+                                : 'border border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500'
+                            }`
+                          : ''
                       }`}
                       onClick={() => {
                         if (batchPickingMode) {
@@ -13247,13 +13282,18 @@ export default function PickPack() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
                               {batchPickingMode && (
-                                <input
-                                  type="checkbox"
-                                  checked={selectedBatchItems.has(order.id)}
-                                  className="h-4 w-4 text-purple-600 dark:text-purple-400 rounded"
+                                <div 
+                                  className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${
+                                    selectedBatchItems.has(order.id) 
+                                      ? 'bg-purple-600 border-purple-600 text-white' 
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-purple-400'
+                                  }`}
                                   onClick={(e) => e.stopPropagation()}
-                                  onChange={() => {}}
-                                />
+                                >
+                                  {selectedBatchItems.has(order.id) && (
+                                    <CheckCircle className="h-3.5 w-3.5" />
+                                  )}
+                                </div>
                               )}
                               <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                               <Badge variant={getPriorityColor(order.priority)} className="text-xs font-semibold py-0.5 px-2">
