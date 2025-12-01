@@ -327,6 +327,10 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                             <FormControl>
                               <Input
                                 placeholder={t('startTypingCustomerName')}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
                                 value={customerSearch}
                                 onChange={(e) => {
                                   setCustomerSearch(e.target.value);

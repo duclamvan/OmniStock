@@ -873,6 +873,10 @@ export default function AddService() {
                                 <Label className="text-xs font-medium mb-1.5 block">{t('financial:productName')}</Label>
                                 <Input
                                   placeholder={t('financial:clickToSelectOrType')}
+                                  autoComplete="off"
+                                  autoCorrect="off"
+                                  autoCapitalize="off"
+                                  spellCheck={false}
                                   value={searchTerm}
                                   onChange={(e) => handleProductNameChange(index, e.target.value)}
                                   onFocus={() => setOpenDropdownIndex(index)}
@@ -882,7 +886,6 @@ export default function AddService() {
                                   }}
                                   data-testid={`input-product-name-${index}`}
                                   className="w-full"
-                                  autoComplete="off"
                                 />
                                 {showSuggestions && (
                                   <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">

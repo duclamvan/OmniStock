@@ -2559,6 +2559,10 @@ export default function EditOrder() {
                 <Input
                   ref={customerSearchRef}
                   placeholder={t('searchCustomerPlaceholder')}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={customerSearch}
                   onChange={(e) => {
                     setCustomerSearch(e.target.value);
@@ -3403,6 +3407,10 @@ export default function EditOrder() {
                 <Input
                   ref={productSearchRef}
                   placeholder={t('clickToSeeAllProducts')}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-10"
