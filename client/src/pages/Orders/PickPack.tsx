@@ -15004,18 +15004,32 @@ export default function PickPack() {
               {t('close')}
             </Button>
             
-            {/* Go to Order Details Button */}
-            <Link href={`/orders/${previewOrder?.id}`}>
+            {/* Go to Order Details Button - Show lock for non-admin users */}
+            {user?.role === 'administrator' ? (
+              <Link href={`/orders/${previewOrder?.id}`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                >
+                  <FileText className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('viewFullDetails')}</span>
+                  <span className="sm:hidden">{t('details')}</span>
+                </Button>
+              </Link>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
-                className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9 opacity-60 cursor-not-allowed"
+                disabled
+                title={t('adminAccessRequired')}
               >
-                <FileText className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <Lock className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2 text-muted-foreground" />
                 <span className="hidden sm:inline">{t('viewFullDetails')}</span>
                 <span className="sm:hidden">{t('details')}</span>
               </Button>
-            </Link>
+            )}
             
             {/* Show Print Label button for ready orders */}
             {previewOrder?.packStatus === 'completed' && (
