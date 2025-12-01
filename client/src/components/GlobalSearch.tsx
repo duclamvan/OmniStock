@@ -155,6 +155,10 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
               onBlur?.();
             }, 200);
           }}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           className="pl-10 pr-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
           data-testid="input-global-search"
         />

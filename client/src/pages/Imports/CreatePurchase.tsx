@@ -1362,6 +1362,10 @@ export default function CreatePurchase() {
                         }}
                         onFocus={() => setSupplierDropdownOpen(true)}
                         placeholder={t('typeToSearchSuppliers')}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
                         className="pl-10"
                         data-testid="input-supplier"
                       />
@@ -1678,6 +1682,10 @@ export default function CreatePurchase() {
                         }}
                         onFocus={() => setProductDropdownOpen(true)}
                         placeholder={t('typeToSearchProducts')}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
                         className="h-9"
                         data-testid="input-item-name"
                       />
