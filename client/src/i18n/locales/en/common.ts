@@ -409,6 +409,7 @@ const common = {
   
   // Push Notifications
   newOrderNotifications: 'New Order Alerts',
+  orderAlerts: 'Order Alerts',
   notificationsEnabled: 'You will receive alerts for new orders',
   notificationsDisabled: 'Enable to receive order alerts',
   pushNotificationsEnabled: 'Push Notifications Enabled',
@@ -416,6 +417,19 @@ const common = {
   pushNotificationsDisabled: 'Push Notifications Disabled',
   pushNotificationsDisabledDesc: 'You will no longer receive order alerts',
   pushNotificationsFailed: 'Failed to update notification settings',
+  
+  // Dashboard Stats
+  toPick: 'to pick',
+  packed: 'packed',
+  shipments: 'shipments',
+  incoming: 'Incoming',
+  orderStatus: 'Order Status',
+  upcomingShipments: 'Upcoming Shipments',
+  tasks: 'Tasks',
+  noTracking: 'No tracking',
+  viewAll: 'View All',
+  allCaughtUp: "All caught up!",
+  noTasksToday: "No pending tasks for today",
   
   // Navigation Items & Descriptions
   pickAndPack: 'Pick & Pack',

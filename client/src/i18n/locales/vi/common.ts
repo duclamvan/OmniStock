@@ -385,6 +385,7 @@ const common = {
   
   // Push Notifications
   newOrderNotifications: 'Thông báo đơn mới',
+  orderAlerts: 'Thông báo đơn',
   notificationsEnabled: 'Bạn sẽ nhận thông báo khi có đơn hàng mới',
   notificationsDisabled: 'Bật để nhận thông báo đơn hàng',
   pushNotificationsEnabled: 'Đã bật thông báo',
@@ -392,6 +393,19 @@ const common = {
   pushNotificationsDisabled: 'Đã tắt thông báo',
   pushNotificationsDisabledDesc: 'Bạn sẽ không nhận thông báo đơn hàng nữa',
   pushNotificationsFailed: 'Không thể cập nhật cài đặt thông báo',
+  
+  // Dashboard Stats
+  toPick: 'cần lấy',
+  packed: 'đã đóng gói',
+  shipments: 'lô hàng',
+  incoming: 'Sắp đến',
+  orderStatus: 'Trạng thái đơn',
+  upcomingShipments: 'Lô hàng sắp đến',
+  tasks: 'Nhiệm vụ',
+  noTracking: 'Không có mã theo dõi',
+  viewAll: 'Xem tất cả',
+  allCaughtUp: 'Đã hoàn thành!',
+  noTasksToday: 'Không có nhiệm vụ cần làm hôm nay',
   
   // Navigation Items & Descriptions
   pickAndPack: 'Lấy hàng & Đóng gói',

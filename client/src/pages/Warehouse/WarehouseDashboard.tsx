@@ -1,5 +1,4 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,16 +6,17 @@ import { Switch } from "@/components/ui/switch";
 import { 
   Package, 
   Truck, 
-  ClipboardList,
-  Clock,
   CheckCircle2,
   ArrowRight,
-  AlertTriangle,
   Calendar,
-  User,
   Bell,
   BellOff,
-  Smartphone
+  ClipboardCheck,
+  BoxesIcon,
+  Clock,
+  PlayCircle,
+  Layers,
+  ShoppingBag
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatDate } from "@/lib/currencyUtils";
@@ -137,43 +137,11 @@ export default function WarehouseDashboard() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-    }
-  };
-
-  const getTaskTypeLabel = (type: string) => {
-    switch (type) {
-      case 'general': return t('generalTask');
-      case 'urgent': return t('urgentTask');
-      case 'inventory': return t('inventoryTask');
-      case 'maintenance': return t('maintenanceTask');
-      case 'other': return t('otherTask');
-      default: return type;
-    }
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return t('urgent');
-      case 'high': return t('high');
-      case 'medium': return t('medium');
-      case 'low': return t('low');
-      default: return priority;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
-      case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'confirmed': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      case 'urgent': return 'bg-red-500 text-white';
+      case 'high': return 'bg-orange-500 text-white';
+      case 'medium': return 'bg-amber-500 text-white';
+      case 'low': return 'bg-green-500 text-white';
+      default: return 'bg-gray-500 text-white';
     }
   };
 
@@ -189,310 +157,265 @@ export default function WarehouseDashboard() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-48 mt-2" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="space-y-6 p-2">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="h-80">
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-40 w-full" />
-              </CardContent>
-            </Card>
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
+        <Skeleton className="h-40 w-full rounded-xl" />
       </div>
     );
   }
 
   const ordersToPickPack = data?.ordersToPickPack || [];
   const pickPackStats = data?.pickPackStats || { pending: 0, picking: 0, packing: 0, ready: 0 };
-  const receivingTasks = data?.receivingTasks || [];
   const incomingShipments = data?.incomingShipments || [];
   const adminTasks = data?.adminTasks || [];
+  
+  const totalOrders = pickPackStats.pending + pickPackStats.picking + pickPackStats.packing + pickPackStats.ready;
+  const totalItems = ordersToPickPack.reduce((sum, order) => {
+    return sum + (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0);
+  }, 0);
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {t('warehouseDashboard')}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            {t('warehouseDashboardSubtitle')}
-          </p>
-        </div>
-        
-        {/* Push Notification Toggle */}
-        {pushSupported && (
-          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2.5">
-            <div className="flex items-center gap-2">
-              {isPushSubscribed ? (
-                <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              ) : (
-                <BellOff className="h-4 w-4 text-gray-400" />
-              )}
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {t('newOrderNotifications')}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {isPushSubscribed ? t('notificationsEnabled') : t('notificationsDisabled')}
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Today's Header - Big and Clear */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <Calendar className="h-6 w-6 opacity-80" />
+              <span className="text-lg font-medium opacity-90">{dayName}</span>
             </div>
-            <Switch
-              checked={isPushSubscribed}
-              onCheckedChange={handlePushToggle}
-              disabled={isSubscribing || pushPermission === 'denied'}
-              data-testid="switch-push-notifications"
-            />
+            <h1 className="text-2xl sm:text-3xl font-bold">{dateStr}</h1>
           </div>
-        )}
+          
+          {/* Push Notification Toggle */}
+          {pushSupported && (
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+              {isPushSubscribed ? (
+                <Bell className="h-5 w-5" />
+              ) : (
+                <BellOff className="h-5 w-5 opacity-60" />
+              )}
+              <span className="text-sm font-medium">
+                {t('orderAlerts')}
+              </span>
+              <Switch
+                checked={isPushSubscribed}
+                onCheckedChange={handlePushToggle}
+                disabled={isSubscribing || pushPermission === 'denied'}
+                className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
+                data-testid="switch-push-notifications"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="border-l-4 border-l-blue-500" data-testid="card-orders-to-pick">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Package className="h-5 w-5 text-blue-600" />
-              {t('ordersToPickPack')}
-              {ordersToPickPack.length > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {ordersToPickPack.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">{t('ordersToPickPackDesc')}</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Pick & Pack Stats Overview */}
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center" data-testid="stat-pending">
-                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{pickPackStats.pending}</div>
-                <div className="text-[10px] text-orange-700 dark:text-orange-200">{t('pending')}</div>
+      {/* Main Stats - Large Numbers */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Total Orders */}
+        <Link href="/orders/pick-pack">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer" data-testid="stat-total-orders">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center" data-testid="stat-picking">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{pickPackStats.picking}</div>
-                <div className="text-[10px] text-blue-700 dark:text-blue-200">{t('picking')}</div>
-              </div>
-              <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center" data-testid="stat-packing">
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{pickPackStats.packing}</div>
-                <div className="text-[10px] text-purple-700 dark:text-purple-200">{t('packing')}</div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center" data-testid="stat-ready">
-                <div className="text-lg font-bold text-green-600 dark:text-green-400">{pickPackStats.ready}</div>
-                <div className="text-[10px] text-green-700 dark:text-green-200">{t('ready')}</div>
-              </div>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('orders')}</span>
             </div>
-            
-            {/* Orders List */}
-            <div className="max-h-40 overflow-y-auto space-y-2">
-            {ordersToPickPack.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
-                <CheckCircle2 className="h-8 w-8 mb-2 text-green-500" />
-                <p className="text-sm">{t('noOrdersToPick')}</p>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalOrders}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('toPick')}</div>
+          </div>
+        </Link>
+        
+        {/* Total Items */}
+        <Link href="/orders/pick-pack">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-colors cursor-pointer" data-testid="stat-total-items">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                <BoxesIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
-            ) : (
-              ordersToPickPack.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg" data-testid={`row-order-${order.id}`}>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">#{order.orderId}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {order.customer?.name || 'Unknown'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(order.pickStatus || order.status)} variant="secondary">
-                      {order.pickStatus === 'in_progress' ? 'picking' : 
-                       order.packStatus === 'in_progress' ? 'packing' :
-                       order.packStatus === 'completed' ? 'ready' :
-                       order.pickStatus === 'completed' ? 'packing' : 'pending'}
-                    </Badge>
-                    <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="outline" className="min-h-[32px] h-8" data-testid={`button-pick-${order.id}`}>
-                        {t('view')}
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('items')}</span>
             </div>
-            {ordersToPickPack.length > 5 && (
-              <Link href="/pick-pack">
-                <Button variant="ghost" className="w-full text-sm" data-testid="button-view-all-orders">
-                  {t('view')} {ordersToPickPack.length - 5} {t('more')}...
-                </Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500" data-testid="card-receiving-tasks">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <ClipboardList className="h-5 w-5 text-green-600" />
-              {t('receivingTasks')}
-              {receivingTasks.length > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {receivingTasks.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">{t('receivingTasksDesc')}</p>
-          </CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {receivingTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                <CheckCircle2 className="h-10 w-10 mb-2 text-green-500" />
-                <p className="text-sm">{t('noReceivingTasks')}</p>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalItems}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('toPick')}</div>
+          </div>
+        </Link>
+        
+        {/* Ready to Ship */}
+        <Link href="/orders/pick-pack?tab=ready">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-green-100 dark:border-green-900 hover:border-green-300 dark:hover:border-green-700 transition-colors cursor-pointer" data-testid="stat-ready-to-ship">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                <Truck className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-            ) : (
-              receivingTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`row-receiving-${task.id}`}>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('readyToShip')}</span>
+            </div>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{pickPackStats.ready}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('packed')}</div>
+          </div>
+        </Link>
+        
+        {/* Incoming */}
+        <Link href="/imports/kanban">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-amber-100 dark:border-amber-900 hover:border-amber-300 dark:hover:border-amber-700 transition-colors cursor-pointer" data-testid="stat-incoming">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('incoming')}</span>
+            </div>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{incomingShipments.length}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('shipments')}</div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Quick Status Bar */}
+      {totalOrders > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('orderStatus')}</h2>
+            <Link href="/orders/pick-pack">
+              <Button variant="outline" size="sm" className="text-sm" data-testid="button-go-to-pickpack">
+                <PlayCircle className="h-4 w-4 mr-2" />
+                {t('startPicking')}
+              </Button>
+            </Link>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-pending">
+              <Clock className="h-5 w-5" />
+              <span className="text-xl font-bold">{pickPackStats.pending}</span>
+              <span>{t('pending')}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-picking">
+              <Layers className="h-5 w-5" />
+              <span className="text-xl font-bold">{pickPackStats.picking}</span>
+              <span>{t('picking')}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-packing">
+              <Package className="h-5 w-5" />
+              <span className="text-xl font-bold">{pickPackStats.packing}</span>
+              <span>{t('packing')}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-ready">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="text-xl font-bold">{pickPackStats.ready}</span>
+              <span>{t('ready')}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Two Column Layout for Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upcoming Shipments - Only show if there are any */}
+        {incomingShipments.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 bg-amber-50 dark:bg-amber-900/20">
+              <div className="flex items-center gap-3">
+                <Truck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('upcomingShipments')}</h2>
+              </div>
+              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-sm px-3">
+                {incomingShipments.length}
+              </Badge>
+            </div>
+            <div className="divide-y dark:divide-gray-700">
+              {incomingShipments.slice(0, 5).map((shipment) => (
+                <div key={shipment.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-testid={`row-shipment-${shipment.id}`}>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">{task.supplier}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {task.trackingNumber || 'No tracking'}
+                    <p className="font-medium text-base text-gray-900 dark:text-gray-100 truncate">{shipment.supplier}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {shipment.trackingNumber || t('noTracking')}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(task.receivingStatus)} variant="secondary">
-                      {task.receivingStatus}
-                    </Badge>
-                    <Link href={`/receiving/${task.id}`}>
-                      <Button size="sm" variant="outline" className="min-h-[36px]" data-testid={`button-receive-${task.id}`}>
-                        {t('continueReceiving')}
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
+                  <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-sm whitespace-nowrap ml-3">
+                    {getArrivingLabel(shipment.estimatedArrival)}
+                  </Badge>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500" data-testid="card-incoming-shipments">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Truck className="h-5 w-5 text-amber-600" />
-              {t('incomingShipments')}
-              {incomingShipments.length > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {incomingShipments.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">{t('incomingShipmentsDesc')}</p>
-          </CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {incomingShipments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                <CheckCircle2 className="h-10 w-10 mb-2 text-green-500" />
-                <p className="text-sm">{t('noIncomingShipments')}</p>
+              ))}
+            </div>
+            {incomingShipments.length > 5 && (
+              <div className="px-5 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <Link href="/imports/kanban">
+                  <Button variant="ghost" className="w-full" data-testid="button-view-all-shipments">
+                    {t('viewAll')} ({incomingShipments.length})
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </div>
-            ) : (
-              incomingShipments.slice(0, 5).map((shipment) => (
-                <div key={shipment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`row-shipment-${shipment.id}`}>
+            )}
+          </div>
+        )}
+
+        {/* Admin Tasks - Only show if there are any */}
+        {adminTasks.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
+              <div className="flex items-center gap-3">
+                <ClipboardCheck className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('tasks')}</h2>
+              </div>
+              <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-3">
+                {adminTasks.length}
+              </Badge>
+            </div>
+            <div className="divide-y dark:divide-gray-700">
+              {adminTasks.slice(0, 5).map((task) => (
+                <div key={task.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-testid={`row-task-${task.id}`}>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">{shipment.supplier}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {shipment.trackingNumber || 'No tracking'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" variant="secondary">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {t('arrivingIn')} {getArrivingLabel(shipment.estimatedArrival)}
-                    </Badge>
-                    <Link href={`/imports/kanban`}>
-                      <Button size="sm" variant="outline" className="min-h-[36px]" data-testid={`button-shipment-${shipment.id}`}>
-                        {t('viewShipment')}
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500" data-testid="card-admin-tasks">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <AlertTriangle className="h-5 w-5 text-purple-600" />
-              {t('adminTasks')}
-              {adminTasks.length > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {adminTasks.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">{t('adminTasksDesc')}</p>
-          </CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {adminTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                <CheckCircle2 className="h-10 w-10 mb-2 text-green-500" />
-                <p className="text-sm">{t('noAdminTasks')}</p>
-              </div>
-            ) : (
-              adminTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex flex-col p-3 bg-muted/50 rounded-lg" data-testid={`row-task-${task.id}`}>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm">{task.title}</p>
-                      {task.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                          {task.description}
-                        </p>
-                      )}
-                    </div>
-                    <Badge className={getPriorityColor(task.priority)} variant="secondary">
-                      {getPriorityLabel(task.priority)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="outline" className="text-xs">
-                        {getTaskTypeLabel(task.type)}
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={`${getPriorityColor(task.priority)} text-xs px-2 py-0.5`}>
+                        {task.priority.toUpperCase()}
                       </Badge>
                       {task.dueAt && (
-                        <span className="flex items-center gap-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatDate(task.dueAt)}
                         </span>
                       )}
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="min-h-[32px] text-xs"
-                      onClick={() => completeTaskMutation.mutate(task.id)}
-                      disabled={completeTaskMutation.isPending}
-                      data-testid={`button-complete-task-${task.id}`}
-                    >
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      {t('markComplete')}
-                    </Button>
+                    <p className="font-medium text-base text-gray-900 dark:text-gray-100">{task.title}</p>
+                    {task.description && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{task.description}</p>
+                    )}
                   </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="ml-3 shrink-0"
+                    onClick={() => completeTaskMutation.mutate(task.id)}
+                    disabled={completeTaskMutation.isPending}
+                    data-testid={`button-complete-task-${task.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Empty State - When everything is done */}
+      {totalOrders === 0 && incomingShipments.length === 0 && adminTasks.length === 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border dark:border-gray-700 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('allCaughtUp')}</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">{t('noTasksToday')}</p>
+        </div>
+      )}
     </div>
   );
 }
