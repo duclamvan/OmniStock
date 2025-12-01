@@ -270,6 +270,27 @@ const system = {
   selectFrequency: 'Select frequency',
   selectCurrency: 'Select currency',
   
+  // Employee form sections
+  personalInformation: 'Personal Information',
+  employmentDetails: 'Employment Details',
+  compensation: 'Compensation',
+  bankingAndTax: 'Banking & Tax Information',
+  emergencyContactSection: 'Emergency Contact',
+  emergencyContactName: 'Contact Name',
+  additionalNotes: 'Additional Notes',
+  salaryCurrency: 'Currency',
+  
+  // Employee form placeholders
+  addressPlaceholder: 'Street, City, Postal Code',
+  positionPlaceholder: 'e.g., Warehouse Manager',
+  departmentPlaceholder: 'e.g., Warehouse',
+  bankAccountPlaceholder: 'Account number',
+  bankNamePlaceholder: 'e.g., Česká spořitelna',
+  taxIdPlaceholder: 'Tax identification number',
+  insuranceIdPlaceholder: 'Insurance number',
+  emergencyContactPlaceholder: 'Contact person name',
+  notesPlaceholder: 'Any additional notes about this employee...',
+
   // Employee validation messages
   employeeIdRequired: 'Employee ID is required',
   firstNameRequired: 'First name is required',

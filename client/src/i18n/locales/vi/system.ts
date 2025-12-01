@@ -270,6 +270,27 @@ const system = {
   selectFrequency: 'Chọn tần suất',
   selectCurrency: 'Chọn tiền tệ',
   
+  // Employee form sections
+  personalInformation: 'Thông tin cá nhân',
+  employmentDetails: 'Chi tiết công việc',
+  compensation: 'Lương thưởng',
+  bankingAndTax: 'Thông tin ngân hàng & thuế',
+  emergencyContactSection: 'Liên hệ khẩn cấp',
+  emergencyContactName: 'Tên người liên hệ',
+  additionalNotes: 'Ghi chú bổ sung',
+  salaryCurrency: 'Tiền tệ',
+  
+  // Employee form placeholders
+  addressPlaceholder: 'Đường, Thành phố, Mã bưu điện',
+  positionPlaceholder: 'vd: Quản lý kho',
+  departmentPlaceholder: 'vd: Kho hàng',
+  bankAccountPlaceholder: 'Số tài khoản',
+  bankNamePlaceholder: 'vd: Vietcombank',
+  taxIdPlaceholder: 'Mã số thuế cá nhân',
+  insuranceIdPlaceholder: 'Số bảo hiểm',
+  emergencyContactPlaceholder: 'Tên người liên hệ',
+  notesPlaceholder: 'Ghi chú thêm về nhân viên này...',
+
   // Employee validation messages
   employeeIdRequired: 'Mã nhân viên là bắt buộc',
   firstNameRequired: 'Tên là bắt buộc',

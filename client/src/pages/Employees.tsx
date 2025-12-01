@@ -302,58 +302,65 @@ export default function Employees() {
   const totalAnnualPayroll = totalMonthlyPayroll * 12;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-4 md:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Users className="h-6 w-6 md:h-7 md:w-7 text-primary" />
             {t('system:employees')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t('system:manageYourTeamAndPayroll')}
           </p>
         </div>
-        <Button onClick={handleAddEmployee} data-testid="button-add-employee">
+        <Button onClick={handleAddEmployee} className="w-full sm:w-auto" data-testid="button-add-employee">
           <Plus className="h-4 w-4 mr-2" />
           {t('system:addEmployee')}
         </Button>
       </div>
 
       {/* Payroll Summary */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
             <CardTitle className="text-sm font-medium">{t('system:totalEmployees')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeEmployees.length}</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl md:text-3xl font-bold">{activeEmployees.length}</div>
             <p className="text-xs text-muted-foreground">
               {t('system:activeStaffMembers')}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
             <CardTitle className="text-sm font-medium">{t('system:monthlyPayroll')}</CardTitle>
-            <Coins className="h-4 w-4 text-muted-foreground" />
+            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <Coins className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMonthlyPayroll.toLocaleString()} CZK</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold truncate">{totalMonthlyPayroll.toLocaleString()} CZK</div>
             <p className="text-xs text-muted-foreground">
               {t('system:totalMonthlyCosts')}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
             <CardTitle className="text-sm font-medium">{t('system:annualPayroll')}</CardTitle>
-            <Coins className="h-4 w-4 text-muted-foreground" />
+            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Coins className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAnnualPayroll.toLocaleString()} CZK</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold truncate">{totalAnnualPayroll.toLocaleString()} CZK</div>
             <p className="text-xs text-muted-foreground">
               {t('system:estimatedYearlyCosts')}
             </p>
@@ -362,14 +369,17 @@ export default function Employees() {
       </div>
 
       {/* Employees Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            {t('system:allEmployees')} ({employees.length})
-          </CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 px-4 md:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              {t('system:allEmployees')}
+              <Badge variant="secondary" className="ml-1">{employees.length}</Badge>
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6 md:pt-0">
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-12 w-full" />
@@ -668,12 +678,13 @@ export default function Employees() {
 
       {/* Add/Edit Employee Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4 border-b bg-muted/30 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Users className="h-5 w-5 text-primary" />
               {selectedEmployee ? t('system:editEmployee') : t('system:addEmployee')}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               {selectedEmployee
                 ? t('common:updateInformation')
                 : t('common:addNewMember')}
@@ -681,327 +692,80 @@ export default function Employees() {
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="employeeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:employeeId')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('system:employeeIdPlaceholder')} {...field} data-testid="input-employee-id" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="userId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:userAccount')}</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          // Convert "none" to empty string for form
-                          field.onChange(value === "none" ? "" : value);
-                        }} 
-                        value={field.value || "none"}
-                      >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-6">
+              
+              {/* Section 1: Personal Information */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:personalInformation')}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:firstName')} *</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-user">
-                            <SelectValue placeholder={t('system:selectUser')} />
-                          </SelectTrigger>
+                          <Input {...field} data-testid="input-first-name" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">{t('system:noUserAssigned')}</SelectItem>
-                          {users.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.firstName} {user.lastName} ({user.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('common:status')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:lastName')} *</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-status">
-                            <SelectValue placeholder={t('common:selectStatus')} />
-                          </SelectTrigger>
+                          <Input {...field} data-testid="input-last-name" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">{t('system:active')}</SelectItem>
-                          <SelectItem value="on_leave">{t('system:onLeave')}</SelectItem>
-                          <SelectItem value="terminated">{t('system:terminated')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:firstName')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-first-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:lastName')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-last-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:email')}</FormLabel>
-                      <FormControl>
-                        <Input type="email" {...field} data-testid="input-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('common:phone')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="position"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:position')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('common:warehouseManagerPlaceholder')} {...field} data-testid="input-position" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:department')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('common:warehousePlaceholder')} {...field} data-testid="input-department" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="hireDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:hireDate')}</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} data-testid="input-hire-date" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="terminationDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:terminationDate')} ({t('common:optional')})</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} data-testid="input-termination-date" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="salary"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:salary')}</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" placeholder="30000" {...field} data-testid="input-salary" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="paymentFrequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:paymentFrequency')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:email')}</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-payment-frequency">
-                            <SelectValue placeholder={t('system:selectFrequency')} />
-                          </SelectTrigger>
+                          <Input type="email" placeholder="email@example.com" {...field} data-testid="input-email" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="monthly">{t('system:monthly')}</SelectItem>
-                          <SelectItem value="biweekly">{t('system:biweekly')}</SelectItem>
-                          <SelectItem value="weekly">{t('system:weekly')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('financial:currency')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('common:phone')}</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-currency">
-                            <SelectValue placeholder={t('system:selectCurrency')} />
-                          </SelectTrigger>
+                          <Input placeholder="+420 123 456 789" {...field} data-testid="input-phone" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="CZK">CZK</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
                 <FormField
                   control={form.control}
-                  name="bankAccount"
+                  name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('system:bankAccount')}</FormLabel>
+                      <FormLabel>{t('common:address')}</FormLabel>
                       <FormControl>
-                        <Input {...field} data-testid="input-bank-account" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bankName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:bankName')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-bank-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="taxId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:taxId')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-tax-id" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="insuranceId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:insuranceId')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-insurance-id" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="emergencyContact"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:emergencyContact')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-emergency-contact" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="emergencyPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('system:emergencyPhone')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-emergency-phone" />
+                        <Textarea placeholder={t('system:addressPlaceholder')} className="min-h-[60px]" {...field} data-testid="input-address" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1009,39 +773,350 @@ export default function Employees() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('common:address')}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} data-testid="input-address" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Section 2: Employment Details */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:employmentDetails')}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="employeeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:employeeId')} *</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:employeeIdPlaceholder')} {...field} data-testid="input-employee-id" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('common:notes')}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} data-testid="input-notes" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('common:status')} *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-status">
+                              <SelectValue placeholder={t('common:selectStatus')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">{t('system:active')}</SelectItem>
+                            <SelectItem value="on_leave">{t('system:onLeave')}</SelectItem>
+                            <SelectItem value="terminated">{t('system:terminated')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <DialogFooter>
+                  <FormField
+                    control={form.control}
+                    name="userId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:userAccount')}</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value === "none" ? "" : value);
+                          }} 
+                          value={field.value || "none"}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-user">
+                              <SelectValue placeholder={t('system:selectUser')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">{t('system:noUserAssigned')}</SelectItem>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.firstName} {user.lastName} ({user.email})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:position')} *</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:positionPlaceholder')} {...field} data-testid="input-position" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:department')} *</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:departmentPlaceholder')} {...field} data-testid="input-department" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hireDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:hireDate')} *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} data-testid="input-hire-date" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="terminationDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:terminationDate')}</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} data-testid="input-termination-date" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Section 3: Compensation */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Coins className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:compensation')}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="salary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:salary')} *</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" placeholder="30000" {...field} data-testid="input-salary" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:salaryCurrency')} *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-currency">
+                              <SelectValue placeholder={t('system:selectCurrency')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="CZK">
+                              <span className="flex items-center gap-2">
+                                <Coins className="h-3 w-3" /> CZK - Czech Koruna
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="EUR">
+                              <span className="flex items-center gap-2">
+                                <Euro className="h-3 w-3" /> EUR - Euro
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="USD">
+                              <span className="flex items-center gap-2">
+                                <DollarSign className="h-3 w-3" /> USD - US Dollar
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="paymentFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:paymentFrequency')} *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-payment-frequency">
+                              <SelectValue placeholder={t('system:selectFrequency')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="monthly">{t('system:monthly')}</SelectItem>
+                            <SelectItem value="biweekly">{t('system:biweekly')}</SelectItem>
+                            <SelectItem value="weekly">{t('system:weekly')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Section 4: Banking & Tax Information */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:bankingAndTax')}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="bankAccount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:bankAccount')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:bankAccountPlaceholder')} {...field} data-testid="input-bank-account" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="bankName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:bankName')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:bankNamePlaceholder')} {...field} data-testid="input-bank-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="taxId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:taxId')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:taxIdPlaceholder')} {...field} data-testid="input-tax-id" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="insuranceId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:insuranceId')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:insuranceIdPlaceholder')} {...field} data-testid="input-insurance-id" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Section 5: Emergency Contact */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:emergencyContactSection')}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="emergencyContact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:emergencyContactName')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('system:emergencyContactPlaceholder')} {...field} data-testid="input-emergency-contact" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emergencyPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('system:emergencyPhone')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+420 123 456 789" {...field} data-testid="input-emergency-phone" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Section 6: Additional Notes */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">{t('system:additionalNotes')}</h3>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('common:notes')}</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder={t('system:notesPlaceholder')} className="min-h-[80px]" {...field} data-testid="input-notes" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Footer */}
+              <DialogFooter className="pt-4 border-t flex flex-col-reverse sm:flex-row gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
+                  className="w-full sm:w-auto"
                   data-testid="button-cancel"
                 >
                   {t('common:cancel')}
@@ -1049,6 +1124,7 @@ export default function Employees() {
                 <Button
                   type="submit"
                   disabled={saveEmployeeMutation.isPending}
+                  className="w-full sm:w-auto"
                   data-testid="button-save-employee"
                 >
                   {saveEmployeeMutation.isPending
