@@ -457,19 +457,6 @@ const ItemCard = memo(({
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMoveToConsolidationItem({ id: item.id, name: item.name });
-                }}
-                className="h-8 px-2"
-                title={t('moveToConsolidation')}
-              >
-                <ArrowRightToLine className="h-4 w-4" />
-              </Button>
-              
               <Button 
                 size="sm"
                 variant="ghost"
@@ -2311,102 +2298,184 @@ export default function AtWarehouse() {
         </TabsContent>
 
         {/* All Items Tab with Drag & Drop */}
-        <TabsContent value="items" className="space-y-4">
-          {/* AI Classification Bar */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">{t('aiGoodsClassification')}</h3>
-                </div>
-                <p className="text-sm text-gray-600">
-                  {t('autoClassifyDescription')}
+        <TabsContent value="items" className="space-y-3">
+          {/* AI Classification - Compact bar only shown on desktop, collapsible */}
+          <Collapsible className="hidden sm:block">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between bg-muted/50 rounded-lg px-4 py-2.5 cursor-pointer hover:bg-muted/70 transition-colors border">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium">{t('aiGoodsClassification')}</span>
                   {selectedItemsForAI.size > 0 && (
-                    <span className="ml-2 font-medium text-purple-600">
+                    <Badge variant="secondary" className="text-xs">
                       {t('itemsSelected', { count: selectedItemsForAI.size })}
-                    </span>
+                    </Badge>
                   )}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedItemsForAI.size > 0 && (
+                </div>
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="outline"
                     size="sm"
-                    onClick={() => setSelectedItemsForAI(new Set())}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const itemsToClassify = selectedItemsForAI.size > 0 
+                        ? Array.from(selectedItemsForAI)
+                        : sortedAndFilteredItems.map(item => item.id);
+                      
+                      if (itemsToClassify.length === 0) {
+                        toast({
+                          title: t('noItemsToClassify'),
+                          description: t('allItemsAlreadyClassified'),
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      setIsAIProcessing(true);
+                      aiClassifyMutation.mutate(itemsToClassify);
+                    }}
+                    disabled={isAIProcessing || aiClassifyMutation.isPending}
+                    className="bg-purple-600 hover:bg-purple-700 text-white h-8"
                   >
-                    {t('clearSelection')}
+                    {aiClassifyMutation.isPending ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 mr-1.5 animate-spin" />
+                        {t('processing')}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3 mr-1.5" />
+                        {selectedItemsForAI.size > 0 ? t('classifySelected') : t('autoClassify')}
+                      </>
+                    )}
                   </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    const itemsToClassify = selectedItemsForAI.size > 0 
-                      ? Array.from(selectedItemsForAI)
-                      : sortedAndFilteredItems.map(item => item.id);
-                    
-                    if (itemsToClassify.length === 0) {
-                      toast({
-                        title: t('noItemsToClassify'),
-                        description: t('allItemsAlreadyClassified'),
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    
-                    setIsAIProcessing(true);
-                    aiClassifyMutation.mutate(itemsToClassify);
-                  }}
-                  disabled={isAIProcessing || aiClassifyMutation.isPending}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  {aiClassifyMutation.isPending ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      {t('processing')}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {selectedItemsForAI.size > 0 ? t('classifySelected') : t('autoClassifyAll')}
-                    </>
-                  )}
-                </Button>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
-            </div>
-          </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="text-sm text-muted-foreground mt-2 px-4">
+                {t('autoClassifyDescription')}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           <DragDropContext onDragEnd={handleDragEnd}>
+            {/* Mobile: Consolidations at top for easy access */}
+            <div className="lg:hidden mb-4">
+              <Collapsible defaultOpen={false}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-base">{t('consolidations')}</CardTitle>
+                          <Badge variant="secondary" className="text-sm">
+                            {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedItemsForAI.size > 0 && (
+                            <Badge variant="default" className="text-xs">
+                              {t('tapToAdd')}
+                            </Badge>
+                          )}
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {consolidations
+                          .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
+                          .map((consolidation) => (
+                            <div 
+                              key={consolidation.id}
+                              className={`border rounded-lg p-3 transition-all ${
+                                selectedItemsForAI.size > 0 
+                                  ? 'cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/30 active:scale-[0.98]' 
+                                  : 'bg-muted/20'
+                              }`}
+                              onClick={() => {
+                                if (selectedItemsForAI.size > 0) {
+                                  addItemsToConsolidationMutation.mutate({
+                                    consolidationId: consolidation.id,
+                                    itemIds: Array.from(selectedItemsForAI)
+                                  });
+                                  setSelectedItemsForAI(new Set());
+                                }
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {(() => {
+                                    const method = consolidation.shippingMethod;
+                                    if (method?.includes('air')) {
+                                      return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                    } else if (method?.includes('express')) {
+                                      return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                    } else if (method?.includes('railway')) {
+                                      return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                    } else if (method?.includes('sea')) {
+                                      return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                    } else {
+                                      return <Package className="h-4 w-4 text-muted-foreground" />;
+                                    }
+                                  })()}
+                                  <span className="font-medium text-sm truncate max-w-[150px]">{consolidation.name}</span>
+                                </div>
+                                <Badge variant="secondary" className="text-xs shrink-0">
+                                  {consolidation.itemCount || 0}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        <div 
+                          className="border-2 border-dashed rounded-lg p-3 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setIsCreateConsolidationOpen(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          <span className="text-sm">{t('newConsolidation')}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 order-2 lg:order-1">
                 <Card>
-                  <CardHeader>
-                    <div className="space-y-4">
+                  <CardHeader className="pb-3">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-lg">{t('availableItems')}</CardTitle>
-                          <CardDescription>{t('dragItemsToConsolidations')}</CardDescription>
+                          <CardDescription className="hidden sm:block">{t('selectItemsThenChooseConsolidation')}</CardDescription>
                         </div>
-                        <Badge variant="secondary" className="font-medium">
-                          {sortedAndFilteredItems.length} {t('items')}
+                        <Badge variant="secondary" className="font-medium text-base px-3 py-1">
+                          {sortedAndFilteredItems.length}
                         </Badge>
                       </div>
                       
-                      {/* Search and Sort Controls */}
+                      {/* Search and Sort Controls - Mobile optimized */}
                       <div className="flex gap-2 flex-wrap">
-                        <div className="relative flex-1 min-w-[200px]">
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <div className="relative flex-1 min-w-[150px]">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder={t('searchItemsByName')}
+                            placeholder={t('search')}
                             value={itemSearchTerm}
                             onChange={(e) => setItemSearchTerm(e.target.value)}
-                            className="pl-9"
+                            className="pl-10 h-11"
                           />
                         </div>
                         
                         <Select value={itemSortBy} onValueChange={setItemSortBy}>
-                          <SelectTrigger className="w-[200px]">
+                          <SelectTrigger className="w-[140px] sm:w-[180px] h-11">
                             <SortAsc className="h-4 w-4 mr-2" />
                             <SelectValue placeholder={t('sortBy')} />
                           </SelectTrigger>
@@ -2622,72 +2691,116 @@ export default function AtWarehouse() {
                             </>
                           )}
                           {selectedItemsForAI.size > 0 && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  {t('bulkActions', { count: selectedItemsForAI.size })}
-                                  <ChevronDown className="h-4 w-4 ml-1" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>{t('classification')}</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    selectedItemsForAI.forEach(id => {
-                                      updateItemClassificationMutation.mutate({ id, classification: 'general' });
+                            <>
+                              {/* Quick Add to Consolidation - Prominent Select */}
+                              <Select
+                                value=""
+                                onValueChange={(consolidationId) => {
+                                  if (consolidationId) {
+                                    addItemsToConsolidationMutation.mutate({
+                                      consolidationId: parseInt(consolidationId),
+                                      itemIds: Array.from(selectedItemsForAI)
                                     });
                                     setSelectedItemsForAI(new Set());
-                                  }}
-                                >
-                                  <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                                  {t('markAsGeneral')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    selectedItemsForAI.forEach(id => {
-                                      updateItemClassificationMutation.mutate({ id, classification: 'sensitive' });
-                                    });
-                                    setSelectedItemsForAI(new Set());
-                                  }}
-                                >
-                                  <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                                  {t('markAsSensitive')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    selectedItemsForAI.forEach(id => {
-                                      updateItemClassificationMutation.mutate({ id, classification: null });
-                                    });
-                                    setSelectedItemsForAI(new Set());
-                                  }}
-                                >
-                                  <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
-                                  {t('clearClassification')}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>{t('aiActions')}</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setIsAIProcessing(true);
-                                    aiClassifyMutation.mutate(Array.from(selectedItemsForAI));
-                                  }}
-                                >
-                                  <Sparkles className="h-4 w-4 mr-2" />
-                                  {t('aiClassifySelected')}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>{t('moveItems')}</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setBulkMoveItems(new Set(selectedItemsForAI));
-                                    setSelectedItemsForAI(new Set());
-                                  }}
-                                >
-                                  <ArrowRightToLine className="h-4 w-4 mr-2" />
-                                  {t('moveToConsolidation')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-[200px] bg-primary text-primary-foreground hover:bg-primary/90">
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  <SelectValue placeholder={t('addToConsolidation')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {consolidations
+                                    .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
+                                    .map((consolidation) => (
+                                      <SelectItem key={consolidation.id} value={consolidation.id.toString()}>
+                                        <div className="flex items-center gap-2">
+                                          {(() => {
+                                            const method = consolidation.shippingMethod;
+                                            if (method?.includes('air')) {
+                                              return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                                            } else if (method?.includes('express')) {
+                                              return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                                            } else if (method?.includes('railway')) {
+                                              return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                                            } else if (method?.includes('sea')) {
+                                              return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                                            } else {
+                                              return <Package className="h-4 w-4 text-muted-foreground" />;
+                                            }
+                                          })()}
+                                          <span>{consolidation.name}</span>
+                                          <Badge variant="secondary" className="text-xs ml-auto">
+                                            {consolidation.itemCount || 0}
+                                          </Badge>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 && (
+                                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                                      {t('noActiveConsolidations')}
+                                    </div>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              
+                              {/* Other Bulk Actions */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <MoreHorizontal className="h-4 w-4 mr-1" />
+                                    {t('more')}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>{t('classification')}</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      selectedItemsForAI.forEach(id => {
+                                        updateItemClassificationMutation.mutate({ id, classification: 'general' });
+                                      });
+                                      setSelectedItemsForAI(new Set());
+                                    }}
+                                  >
+                                    <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                    {t('markAsGeneral')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      selectedItemsForAI.forEach(id => {
+                                        updateItemClassificationMutation.mutate({ id, classification: 'sensitive' });
+                                      });
+                                      setSelectedItemsForAI(new Set());
+                                    }}
+                                  >
+                                    <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                    {t('markAsSensitive')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      selectedItemsForAI.forEach(id => {
+                                        updateItemClassificationMutation.mutate({ id, classification: null });
+                                      });
+                                      setSelectedItemsForAI(new Set());
+                                    }}
+                                  >
+                                    <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                                    {t('clearClassification')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuLabel>{t('aiActions')}</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setIsAIProcessing(true);
+                                      aiClassifyMutation.mutate(Array.from(selectedItemsForAI));
+                                    }}
+                                  >
+                                    <Sparkles className="h-4 w-4 mr-2" />
+                                    {t('aiClassifySelected')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
                           )}
                         </div>
                       </div>
@@ -2965,19 +3078,6 @@ export default function AtWarehouse() {
                                         </DropdownMenuContent>
                                       </DropdownMenu>
                                       
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setMoveToConsolidationItem({ id: item.id, name: item.name });
-                                        }}
-                                        className="h-8 px-2"
-                                        title={t('moveToConsolidation')}
-                                      >
-                                        <ArrowRightToLine className="h-4 w-4" />
-                                      </Button>
-                                      
                                       <Button 
                                         size="sm"
                                         variant="ghost"
@@ -3028,14 +3128,29 @@ export default function AtWarehouse() {
                 </Card>
               </div>
 
-              {/* Active Consolidations Column - Only show active */}
-              <div>
+              {/* Active Consolidations Column - Only show on desktop */}
+              <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{t('activeConsolidations')}</CardTitle>
-                    <CardDescription>
-                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} {t('readyForItems')}
-                    </CardDescription>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{t('activeConsolidations')}</CardTitle>
+                        <CardDescription>
+                          {selectedItemsForAI.size > 0 
+                            ? t('clickToAddSelectedItems', { count: selectedItemsForAI.size })
+                            : `${consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} ${t('readyForItems')}`
+                          }
+                        </CardDescription>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsCreateConsolidationOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        {t('new')}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[500px] pr-4">
@@ -3044,7 +3159,22 @@ export default function AtWarehouse() {
                           .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
                           .map((consolidation) => (
                             <div key={consolidation.id}>
-                              <div className="border rounded-lg p-2.5 bg-muted/20 hover:bg-muted/30 transition-colors">
+                              <div 
+                                className={`border rounded-lg p-2.5 transition-all ${
+                                  selectedItemsForAI.size > 0 
+                                    ? 'cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/30 hover:border-primary/50 hover:shadow-md' 
+                                    : 'bg-muted/20 hover:bg-muted/30'
+                                }`}
+                                onClick={() => {
+                                  if (selectedItemsForAI.size > 0) {
+                                    addItemsToConsolidationMutation.mutate({
+                                      consolidationId: consolidation.id,
+                                      itemIds: Array.from(selectedItemsForAI)
+                                    });
+                                    setSelectedItemsForAI(new Set());
+                                  }
+                                }}
+                              >
                                 <div className="flex justify-between items-start mb-1.5">
                                   <div className="flex-1">
                                     <div className="flex items-start gap-2">
@@ -3093,18 +3223,21 @@ export default function AtWarehouse() {
                                       })()} {t('kg')}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-6 w-6"
-                                      onClick={() => setEditingConsolidation(consolidation)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingConsolidation(consolidation);
+                                      }}
                                     >
                                       <Edit2 className="h-3 w-3" />
                                     </Button>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
                                           <MoreVertical className="h-3 w-3" />
                                         </Button>
                                       </DropdownMenuTrigger>

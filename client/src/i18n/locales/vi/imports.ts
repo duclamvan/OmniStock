@@ -1903,6 +1903,19 @@ const imports = {
   aiSuggest: 'AI Gợi ý',
   addVariants: 'Thêm biến thể',
   
+  // Consolidation Page Improvements
+  addToConsolidation: 'Thêm vào lô hàng',
+  noActiveConsolidations: 'Không có lô hàng nào',
+  more: 'Thêm',
+  clickToAddSelectedItems: 'Chạm để thêm {{count}} sản phẩm đã chọn',
+  tapToAdd: 'Chạm để thêm',
+  selectItemsThenChooseConsolidation: 'Chọn sản phẩm, sau đó chọn lô hàng',
+  search: 'Tìm kiếm...',
+  consolidations: 'Lô hàng',
+  newConsolidation: 'Lô mới',
+  new: 'Mới',
+  autoClassify: 'AI Phân loại',
+  
 } as const;
 
 export default imports;

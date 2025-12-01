@@ -1961,6 +1961,19 @@ const imports = {
   aiSuggest: 'AI Suggest',
   addVariants: 'Add Variants',
   
+  // Consolidation Page Improvements
+  addToConsolidation: 'Add to Consolidation',
+  noActiveConsolidations: 'No active consolidations',
+  more: 'More',
+  clickToAddSelectedItems: 'Tap consolidation to add {{count}} selected items',
+  tapToAdd: 'Tap to add',
+  selectItemsThenChooseConsolidation: 'Select items, then choose a consolidation',
+  search: 'Search...',
+  consolidations: 'Consolidations',
+  newConsolidation: 'New Consolidation',
+  new: 'New',
+  autoClassify: 'AI Classify',
+  
 } as const;
 
 export default imports;
