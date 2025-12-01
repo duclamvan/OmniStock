@@ -1838,7 +1838,7 @@ export default function PickPack() {
   const [showShipAllConfirm, setShowShipAllConfirm] = useState(false);
   const [recentlyShippedOrders, setRecentlyShippedOrders] = useState<PickPackOrder[]>([]);
   const [showUndoPopup, setShowUndoPopup] = useState(false);
-  const [undoTimeLeft, setUndoTimeLeft] = useState(15);
+  const [undoTimeLeft, setUndoTimeLeft] = useState(20);
   const [pendingShipments, setPendingShipments] = useState<{
     orderIds: string[];
     timestamp: number;
@@ -6014,14 +6014,14 @@ export default function PickPack() {
       );
     }
     
-    // Show undo bar immediately
+    // Show undo bar immediately with 20 second timer
     setPendingShipments({
       orderIds: [order.id],
       timestamp: Date.now(),
       description: `Shipped ${order.orderId}`
     });
     setShowUndoPopup(true);
-    setUndoTimeLeft(15);
+    setUndoTimeLeft(20);
     
     playSound('success');
     
@@ -6047,17 +6047,23 @@ export default function PickPack() {
     const readyOrders = getOrdersByStatus('ready');
     setRecentlyShippedOrders(readyOrders);
     
+    const orderIds = readyOrders.map(order => order.id);
+    
+    // Show undo bar immediately with 20 second timer
+    setShowShipAllConfirm(false);
+    setPendingShipments({
+      orderIds: orderIds,
+      timestamp: Date.now(),
+      description: t('shippedOrdersCount', { count: readyOrders.length }) || `Shipped ${readyOrders.length} orders`
+    });
+    setShowUndoPopup(true);
+    setUndoTimeLeft(20);
+    
+    playSound('success');
+    
     try {
-      // Use batch endpoint for all orders at once
-      const orderIds = readyOrders.map(order => order.id);
+      // Use batch endpoint for all orders at once (background processing)
       const result = await batchShipMutation.mutateAsync(orderIds);
-      
-      playSound('success');
-      
-      // Show undo popup
-      setShowShipAllConfirm(false);
-      setShowUndoPopup(true);
-      setUndoTimeLeft(5);
       
       toast({
         title: t('ordersShipped'),
@@ -6065,11 +6071,15 @@ export default function PickPack() {
       });
     } catch (error) {
       console.error('Error shipping orders:', error);
+      // Rollback on error
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       toast({
         title: t('error'),
         description: t('failedToShipOrders'),
         variant: "destructive"
       });
+      setPendingShipments(null);
+      setShowUndoPopup(false);
     }
   };
 
@@ -6085,7 +6095,7 @@ export default function PickPack() {
         // Time's up, clear pending shipments and hide bar
         setShowUndoPopup(false);
         setPendingShipments(null);
-        setUndoTimeLeft(15);
+        setUndoTimeLeft(20);
       }
     }
     return () => clearTimeout(timer);
@@ -6128,14 +6138,14 @@ export default function PickPack() {
       });
     } finally {
       setPendingShipments(null);
-      setUndoTimeLeft(15);
+      setUndoTimeLeft(20);
     }
     
     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     
     setShowUndoPopup(false);
     setRecentlyShippedOrders([]);
-    setUndoTimeLeft(5);
+    setUndoTimeLeft(20);
     
     toast({
       title: t('shipmentUndone'),
@@ -15363,7 +15373,7 @@ export default function PickPack() {
               <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-green-400 dark:from-green-500 to-blue-400 dark:to-blue-500 transition-all duration-1000 ease-linear"
-                  style={{ width: `${(undoTimeLeft / 15) * 100}%` }}
+                  style={{ width: `${(undoTimeLeft / 20) * 100}%` }}
                 />
               </div>
             </div>

@@ -1453,8 +1453,10 @@ const orders = {
   // PickPack.tsx - Details & Information
   details: 'Chi tiết',
   viewFullDetails: 'Xem chi tiết đầy đủ',
+  adminAccessRequired: 'Yêu cầu quyền quản trị viên',
   specialHandling: 'XỬ LÝ ĐẶC BIỆT',
   shippingDetails: 'Chi tiết vận chuyển',
+  shippedOrdersCount: 'Đã giao {{count}} đơn hàng',
   
   // PickPack.tsx - GLS/DHL Forms
   paket: 'Paket',

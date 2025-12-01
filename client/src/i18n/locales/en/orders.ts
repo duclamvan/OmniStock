@@ -1484,8 +1484,10 @@ const orders = {
   // PickPack.tsx - Details & Information
   details: 'Details',
   viewFullDetails: 'View Full Details',
+  adminAccessRequired: 'Admin access required',
   specialHandling: 'SPECIAL HANDLING',
   shippingDetails: 'Shipping Details',
+  shippedOrdersCount: 'Shipped {{count}} orders',
   
   // PickPack.tsx - GLS/DHL Forms
   paket: 'Paket',
