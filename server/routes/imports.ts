@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "../db";
 import crypto from "crypto";
 import { FINANCIAL_FIELDS } from "../routes";
+import OpenAI from "openai";
 import { 
   importPurchases, 
   purchaseItems, 
@@ -1304,6 +1305,154 @@ router.delete("/custom-items/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting custom item:", error);
     res.status(500).json({ message: "Failed to delete custom item" });
+  }
+});
+
+// AI Auto-Classification using DeepSeek AI
+// Classifies items as "general" or "sensitive" goods for China transport
+// Sensitive goods require special handling (UPS, railway restrictions)
+router.post("/items/auto-classify", async (req, res) => {
+  try {
+    const { itemIds } = req.body;
+    
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({ message: "Item IDs are required" });
+    }
+    
+    // Get all items to classify
+    const items = await db
+      .select()
+      .from(customItems)
+      .where(inArray(customItems.id, itemIds));
+    
+    if (items.length === 0) {
+      return res.status(404).json({ message: "No items found" });
+    }
+    
+    // Check for DeepSeek API key
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ message: "DeepSeek API key not configured" });
+    }
+    
+    // Initialize DeepSeek client (OpenAI-compatible API)
+    const deepseek = new OpenAI({
+      apiKey: apiKey,
+      baseURL: "https://api.deepseek.com"
+    });
+    
+    // Prepare items for classification
+    const itemsForClassification = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category || 'unknown',
+      notes: item.notes || ''
+    }));
+    
+    // Build the prompt for DeepSeek
+    const prompt = `You are an expert in international shipping and customs regulations from China to Europe.
+
+Classify each product as either "general" or "sensitive" goods for transport from China.
+
+**SENSITIVE GOODS** (require special handling, restrictions on UPS/air freight):
+- Liquids, gels, pastes, creams (nail polish, gel polish, adhesives, oils, lotions)
+- Flammable or combustible materials
+- Batteries and electronics with batteries
+- Magnetic items
+- Sharp objects (nail files, scissors, tools)
+- Pressurized containers (aerosols, sprays)
+- Chemicals, solvents, acetone-based products
+- Powders in large quantities
+- Items with strong odors
+- UV/LED equipment with specific voltage requirements
+- Any beauty products containing restricted chemicals
+
+**GENERAL GOODS** (can ship via standard methods - UPS, railway, sea, parcel):
+- Plastic/acrylic accessories and decorations
+- Dry nail art supplies (rhinestones, stickers, decals, tips)
+- Brushes and applicators without liquids
+- Display stands and organizers
+- Fabric and textile items
+- Paper products
+- Standard tools without sharp edges
+- Packaging materials
+
+For each item, analyze the name, category, and notes to determine classification.
+
+Items to classify:
+${JSON.stringify(itemsForClassification, null, 2)}
+
+Return ONLY a valid JSON array with classifications:
+[
+  {"id": <item_id>, "classification": "general" | "sensitive", "reason": "<brief reason>", "shippingRecommendation": "<UPS/Railway/Sea/Parcel or special handling needed>"}
+]`;
+
+    const completion = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert logistics consultant specializing in China-to-Europe shipping. You classify goods accurately based on shipping regulations and customs requirements. Always respond with valid JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 2000
+    });
+    
+    const responseText = completion.choices[0]?.message?.content?.trim();
+    if (!responseText) {
+      throw new Error('No response from DeepSeek AI');
+    }
+    
+    // Extract JSON from response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('Invalid AI response format:', responseText);
+      throw new Error('Invalid classification format from AI');
+    }
+    
+    const classifications = JSON.parse(jsonMatch[0]);
+    
+    // Update items in database with classifications
+    let updatedCount = 0;
+    for (const classification of classifications) {
+      if (classification.id && classification.classification) {
+        await db
+          .update(customItems)
+          .set({ 
+            classification: classification.classification,
+            notes: items.find(i => i.id === classification.id)?.notes 
+              ? `${items.find(i => i.id === classification.id)?.notes}\n[AI: ${classification.reason}]`
+              : `[AI: ${classification.reason}]`,
+            updatedAt: new Date()
+          })
+          .where(eq(customItems.id, classification.id));
+        updatedCount++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Successfully classified ${updatedCount} items using AI`,
+      classifications: classifications,
+      summary: {
+        total: items.length,
+        classified: updatedCount,
+        general: classifications.filter((c: any) => c.classification === 'general').length,
+        sensitive: classifications.filter((c: any) => c.classification === 'sensitive').length
+      }
+    });
+    
+  } catch (error: any) {
+    console.error("Error in AI auto-classification:", error);
+    res.status(500).json({ 
+      message: error.message || "Failed to auto-classify items",
+      error: process.env.NODE_ENV !== 'production' ? error.toString() : undefined
+    });
   }
 });
 

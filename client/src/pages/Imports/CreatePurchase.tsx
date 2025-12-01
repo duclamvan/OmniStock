@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { formatCurrency } from "@/lib/currencyUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -3160,10 +3161,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇺🇸</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">USD</div>
                   <div className="text-sm font-bold text-foreground">
-                    ${(grandTotal / (exchangeRates['USD'] || 1) * (exchangeRates[purchaseCurrency] || 1)).toFixed(2)}
+                    {formatCurrency(grandTotal / (exchangeRates['USD'] || 1) * (exchangeRates[purchaseCurrency] || 1), 'USD')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: ${(shippingCost / (exchangeRates['USD'] || 1) * (exchangeRates[shippingCurrency] || 1)).toFixed(2)}
+                    Ship: {formatCurrency(shippingCost / (exchangeRates['USD'] || 1) * (exchangeRates[shippingCurrency] || 1), 'USD')}
                   </div>
                   {(purchaseCurrency === "USD" || paymentCurrency === "USD") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
@@ -3182,10 +3183,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇪🇺</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">EUR</div>
                   <div className="text-sm font-bold text-foreground">
-                    €{(grandTotal / (exchangeRates['EUR'] || 0.92) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(2)}
+                    {formatCurrency(grandTotal / (exchangeRates['EUR'] || 0.92) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1), 'EUR')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: €{(shippingCost / (exchangeRates['EUR'] || 0.92) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(2)}
+                    Ship: {formatCurrency(shippingCost / (exchangeRates['EUR'] || 0.92) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1), 'EUR')}
                   </div>
                   {(purchaseCurrency === "EUR" || paymentCurrency === "EUR") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
@@ -3204,10 +3205,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇨🇿</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">CZK</div>
                   <div className="text-sm font-bold text-foreground">
-                    Kč{(grandTotal / (exchangeRates['CZK'] || 23) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(0)}
+                    {formatCurrency(grandTotal / (exchangeRates['CZK'] || 23) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1), 'CZK')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: Kč{(shippingCost / (exchangeRates['CZK'] || 23) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1)).toFixed(0)}
+                    Ship: {formatCurrency(shippingCost / (exchangeRates['CZK'] || 23) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1), 'CZK')}
                   </div>
                   {(purchaseCurrency === "CZK" || paymentCurrency === "CZK") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
