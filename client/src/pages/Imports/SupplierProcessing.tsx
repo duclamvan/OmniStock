@@ -713,31 +713,11 @@ export default function SupplierProcessing() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('allStatus')}</SelectItem>
-                    <SelectItem value="pending">
-                      <span className="flex items-center gap-2">
-                        <Clock className="h-3 w-3" /> Pending
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="processing">
-                      <span className="flex items-center gap-2">
-                        <Package2 className="h-3 w-3" /> Supplier Processing
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="at_warehouse">
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> At Consolidation
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="shipped">
-                      <span className="flex items-center gap-2">
-                        <Truck className="h-3 w-3" /> In Transit
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="delivered">
-                      <span className="flex items-center gap-2">
-                        <CheckCircle2 className="h-3 w-3" /> Received
-                      </span>
-                    </SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Supplier Processing</SelectItem>
+                    <SelectItem value="at_warehouse">At Consolidation</SelectItem>
+                    <SelectItem value="shipped">In Transit</SelectItem>
+                    <SelectItem value="delivered">Received</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={locationFilter} onValueChange={setLocationFilter}>
@@ -837,7 +817,7 @@ export default function SupplierProcessing() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground text-xs">{t('expectedArrival')}</p>
+                            <p className="text-muted-foreground text-xs">{t('estimatedArrival')}</p>
                             <p className="font-medium flex items-center gap-1">
                               <Clock className="h-3.5 w-3.5" />
                               {purchase.estimatedArrival 
