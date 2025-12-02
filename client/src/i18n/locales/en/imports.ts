@@ -306,6 +306,7 @@ const imports = {
   dragAndDropManage: 'Drag and drop to manage import workflow',
   newPurchase: 'New Purchase',
   searchSupplierTracking: 'Search supplier, tracking, items, location... (Vietnamese supported)',
+  searchOrScan: 'Search or scan barcode...',
   china: 'China',
   vietnam: 'Vietnam',
   usa: 'USA',
@@ -1961,18 +1962,23 @@ const imports = {
   aiSuggest: 'AI Suggest',
   addVariants: 'Add Variants',
   
-  // Consolidation Page Improvements
-  addToConsolidation: 'Add to Consolidation',
-  noActiveConsolidations: 'No active consolidations',
-  more: 'More',
-  clickToAddSelectedItems: 'Tap consolidation to add {{count}} selected items',
-  tapToAdd: 'Tap to add',
-  selectItemsThenChooseConsolidation: 'Select items, then choose a consolidation',
-  search: 'Search...',
-  consolidations: 'Consolidations',
-  newConsolidation: 'New Consolidation',
-  new: 'New',
-  autoClassify: 'AI Classify',
+  // Mobile Consolidation Page Improvements
+  addToConsolidationMobile: 'Add to Consolidation',
+  mobileMore: 'More',
+  clickToAddSelectedItemsMobile: 'Tap to add {{count}} selected items',
+  tapToAddMobile: 'Tap to add',
+  selectItemsThenChooseConsolidationMobile: 'Select items, then choose a consolidation',
+  searchMobile: 'Search...',
+  consolidationsMobile: 'Consolidations',
+  newConsolidationMobile: 'New Consolidation',
+  newShort: 'New',
+  autoClassifyShort: 'AI Classify',
+  quickActionsMobile: 'Quick Actions',
+  bulkActionsMobile: 'Bulk Actions',
+  allClassificationsMobile: 'All',
+  filterSensitive: 'Sensitive',
+  filterGeneral: 'General',
+  filterUnclassified: 'Unclassified',
   
 } as const;
 

@@ -315,6 +315,7 @@ const imports = {
   dragAndDropManage: 'Kéo thả để quản lý quy trình nhập hàng',
   newPurchase: 'Đơn mới',
   searchSupplierTracking: 'Tìm nhà cung cấp, mã vận đơn, sản phẩm, địa điểm... (hỗ trợ tiếng Việt)',
+  searchOrScan: 'Tìm kiếm hoặc quét mã vạch...',
   refreshed: 'Đã làm mới',
   dataUpdated: 'Dữ liệu đã cập nhật',
   purchaseStatusUpdated: 'Đã cập nhật trạng thái đơn hàng',
@@ -1903,18 +1904,23 @@ const imports = {
   aiSuggest: 'AI Gợi ý',
   addVariants: 'Thêm biến thể',
   
-  // Consolidation Page Improvements
-  addToConsolidation: 'Thêm vào lô hàng',
-  noActiveConsolidations: 'Không có lô hàng nào',
-  more: 'Thêm',
-  clickToAddSelectedItems: 'Chạm để thêm {{count}} sản phẩm đã chọn',
-  tapToAdd: 'Chạm để thêm',
-  selectItemsThenChooseConsolidation: 'Chọn sản phẩm, sau đó chọn lô hàng',
-  search: 'Tìm kiếm...',
-  consolidations: 'Lô hàng',
-  newConsolidation: 'Lô mới',
-  new: 'Mới',
-  autoClassify: 'AI Phân loại',
+  // Mobile Consolidation Page Improvements
+  addToConsolidationMobile: 'Thêm vào lô hàng',
+  mobileMore: 'Thêm',
+  clickToAddSelectedItemsMobile: 'Chạm để thêm {{count}} sản phẩm đã chọn',
+  tapToAddMobile: 'Chạm để thêm',
+  selectItemsThenChooseConsolidationMobile: 'Chọn sản phẩm, sau đó chọn lô hàng',
+  searchMobile: 'Tìm kiếm...',
+  consolidationsMobile: 'Lô hàng',
+  newConsolidationMobile: 'Lô mới',
+  newShort: 'Mới',
+  autoClassifyShort: 'AI Phân loại',
+  quickActionsMobile: 'Thao tác nhanh',
+  bulkActionsMobile: 'Thao tác hàng loạt',
+  allClassificationsMobile: 'Tất cả',
+  filterSensitive: 'Nhạy cảm',
+  filterGeneral: 'Thông thường',
+  filterUnclassified: 'Chưa phân loại',
   
 } as const;
 

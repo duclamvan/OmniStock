@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FixedSizeList as List } from "react-window";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train, Check, ChevronsUpDown, Barcode } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -350,7 +351,75 @@ const ItemCard = memo(({
                 </div>
               </div>
             </div>
-            <div className="flex gap-1 items-start">
+            {/* Mobile: Single action button (56px touch target for older employees) */}
+            <div className="lg:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-14 w-14 p-0 rounded-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-6 w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>{t('setClassification')}</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({ id: item.id, classification: 'general' });
+                    }}
+                  >
+                    <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                    {t('generalGoods')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({ id: item.id, classification: 'sensitive' });
+                    }}
+                  >
+                    <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                    {t('sensitiveGoods')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({ id: item.id, classification: null });
+                    }}
+                  >
+                    <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                    {t('none')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    {t('edit')}
+                  </DropdownMenuItem>
+                  {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); unpackItemMutation.mutate(item.id); }}
+                      className="text-primary"
+                    >
+                      <Package2 className="h-4 w-4 mr-2" />
+                      {t('unpackAllItems')}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: 'item', id: item.id, name: item.name }); }}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('delete')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            {/* Desktop: Multiple action buttons */}
+            <div className="hidden lg:flex gap-1 items-start">
               {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -508,6 +577,7 @@ export default function AtWarehouse() {
   const [isEditCustomItemOpen, setIsEditCustomItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CustomItem | null>(null);
   const [isCreateConsolidationOpen, setIsCreateConsolidationOpen] = useState(false);
+  const [isConsolidationDrawerOpen, setIsConsolidationDrawerOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ImportPurchase | null>(null);
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
@@ -2360,91 +2430,102 @@ export default function AtWarehouse() {
           </Collapsible>
 
           <DragDropContext onDragEnd={handleDragEnd}>
-            {/* Mobile: Consolidations at top for easy access */}
-            <div className="lg:hidden mb-4">
-              <Collapsible defaultOpen={false}>
-                <Card>
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-5 w-5 text-primary" />
-                          <CardTitle className="text-base">{t('consolidations')}</CardTitle>
-                          <Badge variant="secondary" className="text-sm">
-                            {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {selectedItemsForAI.size > 0 && (
-                            <Badge variant="default" className="text-xs">
-                              {t('tapToAdd')}
-                            </Badge>
-                          )}
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="pt-0">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {consolidations
-                          .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
-                          .map((consolidation) => (
-                            <div 
-                              key={consolidation.id}
-                              className={`border rounded-lg p-3 transition-all ${
-                                selectedItemsForAI.size > 0 
-                                  ? 'cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/30 active:scale-[0.98]' 
-                                  : 'bg-muted/20'
-                              }`}
-                              onClick={() => {
-                                if (selectedItemsForAI.size > 0) {
-                                  addItemsToConsolidationMutation.mutate({
-                                    consolidationId: consolidation.id,
-                                    itemIds: Array.from(selectedItemsForAI)
-                                  });
-                                  setSelectedItemsForAI(new Set());
-                                }
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  {(() => {
-                                    const method = consolidation.shippingMethod;
-                                    if (method?.includes('air')) {
-                                      return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                                    } else if (method?.includes('express')) {
-                                      return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                                    } else if (method?.includes('railway')) {
-                                      return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                                    } else if (method?.includes('sea')) {
-                                      return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                                    } else {
-                                      return <Package className="h-4 w-4 text-muted-foreground" />;
-                                    }
-                                  })()}
-                                  <span className="font-medium text-sm truncate max-w-[150px]">{consolidation.name}</span>
+            {/* Mobile Consolidation Drawer */}
+            <Drawer open={isConsolidationDrawerOpen} onOpenChange={setIsConsolidationDrawerOpen}>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader className="pb-2">
+                  <DrawerTitle className="flex items-center justify-between text-lg">
+                    <span>{t('consolidations')}</span>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setIsConsolidationDrawerOpen(false);
+                        setIsCreateConsolidationOpen(true);
+                      }}
+                      className="h-10"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {t('new')}
+                    </Button>
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-6 overflow-y-auto">
+                  {selectedItemsForAI.size > 0 && (
+                    <div className="bg-primary/10 rounded-lg p-3 mb-4 text-center">
+                      <span className="text-sm font-medium text-primary">
+                        {t('clickToAddSelectedItems', { count: selectedItemsForAI.size })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-3">
+                    {consolidations
+                      .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
+                      .map((consolidation) => (
+                        <div 
+                          key={consolidation.id}
+                          className={`border-2 rounded-xl p-4 transition-all min-h-[72px] ${
+                            selectedItemsForAI.size > 0 
+                              ? 'cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/40 active:scale-[0.98] shadow-sm' 
+                              : 'bg-card border-border'
+                          }`}
+                          onClick={() => {
+                            if (selectedItemsForAI.size > 0) {
+                              addItemsToConsolidationMutation.mutate({
+                                consolidationId: consolidation.id,
+                                itemIds: Array.from(selectedItemsForAI)
+                              });
+                              setSelectedItemsForAI(new Set());
+                              setIsConsolidationDrawerOpen(false);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className={`p-2.5 rounded-lg ${
+                                consolidation.shippingMethod?.includes('sensitive') 
+                                  ? 'bg-orange-100 dark:bg-orange-900/30' 
+                                  : 'bg-primary/10'
+                              }`}>
+                                {(() => {
+                                  const method = consolidation.shippingMethod;
+                                  const iconClass = `h-5 w-5 ${method?.includes('sensitive') ? 'text-orange-600' : 'text-primary'}`;
+                                  if (method?.includes('air')) return <Plane className={iconClass} />;
+                                  if (method?.includes('express')) return <Zap className={iconClass} />;
+                                  if (method?.includes('railway')) return <Train className={iconClass} />;
+                                  if (method?.includes('sea')) return <Ship className={iconClass} />;
+                                  return <Package className="h-5 w-5 text-muted-foreground" />;
+                                })()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-semibold text-base block truncate">{consolidation.name}</span>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                                  <span>{consolidation.itemCount || 0} {t('items')}</span>
+                                  {consolidation.location && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="truncate">{consolidation.location}</span>
+                                    </>
+                                  )}
                                 </div>
-                                <Badge variant="secondary" className="text-xs shrink-0">
-                                  {consolidation.itemCount || 0}
-                                </Badge>
                               </div>
                             </div>
-                          ))}
-                        <div 
-                          className="border-2 border-dashed rounded-lg p-3 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => setIsCreateConsolidationOpen(true)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          <span className="text-sm">{t('newConsolidation')}</span>
+                            {selectedItemsForAI.size > 0 && (
+                              <div className="bg-primary text-primary-foreground rounded-full p-2">
+                                <Plus className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
                         </div>
+                      ))}
+                    {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {t('noActiveConsolidations')}
                       </div>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            </div>
+                    )}
+                  </div>
+                </div>
+              </DrawerContent>
+            </Drawer>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
@@ -2462,8 +2543,42 @@ export default function AtWarehouse() {
                         </Badge>
                       </div>
                       
-                      {/* Search and Sort Controls - Mobile optimized */}
-                      <div className="flex gap-2 flex-wrap">
+                      {/* Mobile Sticky Search/Scan Bar (56px height for older employees) */}
+                      <div className="lg:hidden sticky top-0 z-10 bg-background pb-3 -mx-4 px-4 pt-3 border-b border-border/50">
+                        <div className="flex gap-2 items-center">
+                          <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                              placeholder={t('searchOrScan')}
+                              value={itemSearchTerm}
+                              onChange={(e) => setItemSearchTerm(e.target.value)}
+                              className="pl-12 pr-4 h-14 text-base rounded-xl border-2"
+                              data-testid="mobile-search-input"
+                            />
+                            {itemSearchTerm && (
+                              <Button
+                                variant="ghost"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-12 w-12 p-0 rounded-lg active:scale-95"
+                                onClick={() => setItemSearchTerm('')}
+                                data-testid="clear-search-button"
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            )}
+                          </div>
+                          {/* Barcode scanner button - 56px touch target */}
+                          <Button
+                            variant="outline"
+                            className="h-14 w-14 p-0 rounded-xl border-2 shrink-0"
+                            data-testid="scan-barcode-button"
+                          >
+                            <Barcode className="h-6 w-6" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop Search and Sort Controls */}
+                      <div className="hidden lg:flex gap-2 flex-wrap">
                         <div className="relative flex-1 min-w-[150px]">
                           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
@@ -2559,8 +2674,61 @@ export default function AtWarehouse() {
                         </Select>
                       </div>
                       
-                      {/* Filter Controls */}
-                      <div className="flex gap-2 flex-wrap">
+                      {/* Quick Filter Chips - Mobile optimized horizontal scroll (56px touch targets for older employees) */}
+                      <div className="lg:hidden -mx-4 px-4 overflow-x-auto pb-2">
+                        <div className="flex gap-3 min-w-max">
+                          <Button
+                            variant={itemClassificationFilter === 'all' ? 'default' : 'outline'}
+                            className="h-14 px-5 text-base rounded-full whitespace-nowrap font-medium"
+                            onClick={() => setItemClassificationFilter('all')}
+                            data-testid="filter-chip-all"
+                          >
+                            {t('allClassificationsMobile')}
+                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                              {sortedAndFilteredItems.length}
+                            </Badge>
+                          </Button>
+                          <Button
+                            variant={itemClassificationFilter === 'sensitive' ? 'default' : 'outline'}
+                            className={`h-14 px-5 text-base rounded-full whitespace-nowrap font-medium ${itemClassificationFilter === 'sensitive' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                            onClick={() => setItemClassificationFilter('sensitive')}
+                            data-testid="filter-chip-sensitive"
+                          >
+                            <Flag className="h-4 w-4 mr-2 fill-current" />
+                            {t('filterSensitive')}
+                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                              {allItems.filter(i => i.classification === 'sensitive').length}
+                            </Badge>
+                          </Button>
+                          <Button
+                            variant={itemClassificationFilter === 'general' ? 'default' : 'outline'}
+                            className={`h-14 px-5 text-base rounded-full whitespace-nowrap font-medium ${itemClassificationFilter === 'general' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                            onClick={() => setItemClassificationFilter('general')}
+                            data-testid="filter-chip-general"
+                          >
+                            <Flag className="h-4 w-4 mr-2 fill-current" />
+                            {t('filterGeneral')}
+                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                              {allItems.filter(i => i.classification === 'general').length}
+                            </Badge>
+                          </Button>
+                          <Button
+                            variant={itemClassificationFilter === 'unclassified' ? 'default' : 'outline'}
+                            className="h-14 px-5 text-base rounded-full whitespace-nowrap font-medium"
+                            onClick={() => setItemClassificationFilter('unclassified')}
+                            data-testid="filter-chip-unclassified"
+                          >
+                            <div className="h-4 w-4 mr-2 border-2 border-dashed border-current rounded" />
+                            {t('filterUnclassified')}
+                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                              {allItems.filter(i => !i.classification).length}
+                            </Badge>
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop Filter Controls */}
+                      <div className="hidden lg:flex gap-2 flex-wrap">
                         <Select value={itemSourceFilter} onValueChange={setItemSourceFilter}>
                           <SelectTrigger className="w-[140px]">
                             <Filter className="h-3 w-3 mr-2" />
@@ -2864,10 +3032,10 @@ export default function AtWarehouse() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all ${
+                                  className={`border-2 rounded-xl p-4 lg:p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all min-h-[72px] ${
                                     selectedItemsForAI.has(item.id) 
-                                      ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-300' 
-                                      : 'hover:border-purple-200'
+                                      ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-400' 
+                                      : 'border-border hover:border-purple-200'
                                   }`}
                                   onClick={(e) => {
                                     // Only toggle selection if not clicking on buttons or drag handle
@@ -2884,12 +3052,27 @@ export default function AtWarehouse() {
                                       setSelectedItemsForAI(newSelected);
                                     }
                                   }}
+                                  data-testid={`item-card-${item.id}`}
                                 >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
                                       {/* Top row with drag handle and name */}
                                       <div className="flex items-start gap-3">
-                                        <div className="flex items-center mt-0.5">
+                                        {/* Selection indicator on mobile (56px touch target for older employees) */}
+                                        <div 
+                                          className="lg:hidden flex items-center justify-center w-14 h-14 rounded-xl border-2 shrink-0 transition-colors active:scale-95"
+                                          style={{
+                                            backgroundColor: selectedItemsForAI.has(item.id) ? 'rgb(147 51 234)' : 'transparent',
+                                            borderColor: selectedItemsForAI.has(item.id) ? 'rgb(147 51 234)' : 'rgb(203 213 225)'
+                                          }}
+                                          data-testid={`item-select-${item.id}`}
+                                        >
+                                          {selectedItemsForAI.has(item.id) && (
+                                            <Check className="h-6 w-6 text-white" />
+                                          )}
+                                        </div>
+                                        {/* Drag handle - hidden on mobile */}
+                                        <div className="hidden lg:flex items-center mt-0.5">
                                           <div 
                                             data-drag-handle
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
@@ -2902,20 +3085,22 @@ export default function AtWarehouse() {
                                           <img 
                                             src={item.imageUrl} 
                                             alt={item.name}
-                                            className="w-12 h-12 object-cover rounded-md border"
+                                            className="w-14 h-14 lg:w-12 lg:h-12 object-cover rounded-lg border-2 shrink-0"
                                           />
                                         ) : (
-                                          <Package className="w-12 h-12 text-muted-foreground p-2" />
+                                          <div className="w-14 h-14 lg:w-12 lg:h-12 bg-muted/30 rounded-lg flex items-center justify-center shrink-0">
+                                            <Package className="w-7 h-7 lg:w-6 lg:h-6 text-muted-foreground" />
+                                          </div>
                                         )}
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-semibold text-base">{item.name}</span>
+                                            <span className="font-semibold text-base lg:text-base truncate">{item.name}</span>
                                             {getClassificationIcon(item.classification)}
                                           </div>
                                           
                                           {/* Compact metadata row */}
-                                          <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
-                                            <span>{t('qty')}: {item.quantity}</span>
+                                          <div className="flex items-center gap-2 mt-1.5 text-sm lg:text-sm text-muted-foreground flex-wrap">
+                                            <span className="font-medium">{t('qty')}: {item.quantity}</span>
                                             {item.weight && <span>• {item.weight} kg</span>}
                                             {item.source && (
                                               <>
@@ -2924,10 +3109,10 @@ export default function AtWarehouse() {
                                               </>
                                             )}
                                             {item.orderNumber && (
-                                              <span>• {item.orderNumber}</span>
+                                              <span className="hidden lg:inline">• {item.orderNumber}</span>
                                             )}
                                             {item.customerName && (
-                                              <span>• {item.customerName}</span>
+                                              <span className="hidden lg:inline">• {item.customerName}</span>
                                             )}
                                             {/* Inline items toggle for purchase orders */}
                                             {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
@@ -2936,14 +3121,14 @@ export default function AtWarehouse() {
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  className="h-5 px-1.5 -ml-1 text-xs hover:bg-muted"
+                                                  className="h-6 px-2 text-xs hover:bg-muted"
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     toggleItemExpanded(item.id);
                                                   }}
                                                   title={expandedItems.has(item.id) ? t('hideItems') : t('showItems')}
                                                 >
-                                                  <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                                                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
                                                   <span className="ml-1">{item.orderItems.length} {t('items')}</span>
                                                 </Button>
                                               </>
@@ -2969,7 +3154,76 @@ export default function AtWarehouse() {
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="flex gap-1 items-start">
+                                    {/* Mobile: Single action button (56px touch target for older employees) */}
+                                    <div className="lg:hidden">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            className="h-14 w-14 p-0 rounded-xl"
+                                            onClick={(e) => e.stopPropagation()}
+                                            data-testid={`item-action-menu-${item.id}`}
+                                          >
+                                            <MoreVertical className="h-6 w-6" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48">
+                                          <DropdownMenuLabel>{t('setClassification')}</DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: 'general' });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                            {t('generalGoods')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: 'sensitive' });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                            {t('sensitiveGoods')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: null });
+                                            }}
+                                          >
+                                            <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                                            {t('none')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            {t('edit')}
+                                          </DropdownMenuItem>
+                                          {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                            <DropdownMenuItem
+                                              onClick={(e) => { e.stopPropagation(); unpackItemMutation.mutate(item.id); }}
+                                              className="text-primary"
+                                            >
+                                              <Package2 className="h-4 w-4 mr-2" />
+                                              {t('unpackAllItems')}
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: 'item', id: item.id, name: item.name }); }}
+                                            className="text-red-600"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            {t('delete')}
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                    
+                                    {/* Desktop: Multiple action buttons */}
+                                    <div className="hidden lg:flex gap-1 items-start">
                                       {/* Three dots menu for purchase orders */}
                                       {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
                                         <DropdownMenu>
@@ -3223,22 +3477,27 @@ export default function AtWarehouse() {
                                       })()} {t('kg')}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-2 lg:gap-1" onClick={(e) => e.stopPropagation()}>
+                                    {/* Responsive edit button: 56px on mobile, compact on desktop */}
                                     <Button
                                       variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
+                                      className="h-12 w-12 lg:h-6 lg:w-6 p-0 rounded-lg"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setEditingConsolidation(consolidation);
                                       }}
                                     >
-                                      <Edit2 className="h-3 w-3" />
+                                      <Edit2 className="h-5 w-5 lg:h-3 lg:w-3" />
                                     </Button>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
-                                          <MoreVertical className="h-3 w-3" />
+                                        {/* Responsive button: 56px on mobile, compact on desktop */}
+                                        <Button 
+                                          variant="ghost" 
+                                          className="h-12 w-12 lg:h-6 lg:w-6 p-0 rounded-lg" 
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <MoreVertical className="h-5 w-5 lg:h-3 lg:w-3" />
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
@@ -3426,6 +3685,127 @@ export default function AtWarehouse() {
               </div>
             </div>
           </DragDropContext>
+          
+          {/* Mobile Bottom Action Bar - Fixed at bottom */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg safe-area-bottom">
+            <div className="flex items-center justify-around p-3 gap-2">
+              {/* Consolidations Button */}
+              <Button
+                variant={selectedItemsForAI.size > 0 ? "default" : "outline"}
+                size="lg"
+                className="flex-1 h-14 text-base font-medium relative"
+                onClick={() => setIsConsolidationDrawerOpen(true)}
+                data-testid="button-mobile-consolidations"
+              >
+                <Package className="h-5 w-5 mr-2" />
+                {selectedItemsForAI.size > 0 ? (
+                  <>
+                    {t('addToConsolidationMobile')}
+                    <Badge variant="secondary" className="ml-2 bg-primary-foreground text-primary">
+                      {selectedItemsForAI.size}
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    {t('consolidationsMobile')}
+                    <Badge variant="secondary" className="ml-2">
+                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length}
+                    </Badge>
+                  </>
+                )}
+              </Button>
+              
+              {/* AI Classify Button */}
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-14 px-4"
+                onClick={() => {
+                  const itemsToClassify = selectedItemsForAI.size > 0 
+                    ? Array.from(selectedItemsForAI)
+                    : sortedAndFilteredItems.map(item => item.id);
+                  
+                  if (itemsToClassify.length === 0) {
+                    toast({
+                      title: t('noItemsToClassify'),
+                      description: t('allItemsAlreadyClassified'),
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  setIsAIProcessing(true);
+                  aiClassifyMutation.mutate(itemsToClassify);
+                }}
+                disabled={isAIProcessing || aiClassifyMutation.isPending}
+                data-testid="button-mobile-ai-classify"
+              >
+                {aiClassifyMutation.isPending ? (
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                )}
+              </Button>
+              
+              {/* More Actions */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="lg" className="h-14 px-4" data-testid="button-mobile-more-actions">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{t('quickActionsMobile')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsCreateConsolidationOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('newConsolidationMobile')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsAddCustomItemOpen(true)}>
+                    <Package className="h-4 w-4 mr-2" />
+                    {t('addCustomItem')}
+                  </DropdownMenuItem>
+                  {selectedItemsForAI.size > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>{t('bulkActionsMobile')}</DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          selectedItemsForAI.forEach(id => {
+                            updateItemClassificationMutation.mutate({ id, classification: 'general' });
+                          });
+                          setSelectedItemsForAI(new Set());
+                        }}
+                      >
+                        <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                        {t('markAsGeneral')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          selectedItemsForAI.forEach(id => {
+                            updateItemClassificationMutation.mutate({ id, classification: 'sensitive' });
+                          });
+                          setSelectedItemsForAI(new Set());
+                        }}
+                      >
+                        <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                        {t('markAsSensitive')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedItemsForAI(new Set())}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        {t('clearSelection')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          
+          {/* Spacer for mobile bottom bar */}
+          <div className="lg:hidden h-24" />
         </TabsContent>
       </Tabs>
 
