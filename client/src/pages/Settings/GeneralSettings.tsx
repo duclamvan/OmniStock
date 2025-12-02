@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,16 +52,9 @@ const formSchema = z.object({
   default_currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']).default('CZK'),
   currency_display: z.enum(['symbol', 'code', 'both']).default('symbol'),
   
-  // Operational Settings
+  // Operational Settings - Order Defaults
   default_priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  default_order_location: z.string().default(''),
-  working_days: z.array(z.string()).default(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']),
-  business_hours_start: z.string().default('09:00'),
-  business_hours_end: z.string().default('17:00'),
-  warehouse_emergency_contact: z.string().default(''),
-  warehouse_contact_email: z.string().default(''),
-  pickup_cutoff_time: z.string().default('14:00'),
-  max_order_processing_days: z.coerce.number().min(1).max(30).default(2),
+  default_order_warehouse_id: z.coerce.number().optional(),
 
   // Notification Preferences
   enable_email_notifications: z.boolean().default(true),
@@ -85,15 +78,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const getWeekdays = (t: any) => [
-  { id: 'monday', label: t('settings:monday') },
-  { id: 'tuesday', label: t('settings:tuesday') },
-  { id: 'wednesday', label: t('settings:wednesday') },
-  { id: 'thursday', label: t('settings:thursday') },
-  { id: 'friday', label: t('settings:friday') },
-  { id: 'saturday', label: t('settings:saturday') },
-  { id: 'sunday', label: t('settings:sunday') },
-];
 
 const TIMEZONES = [
   { value: 'Europe/Prague', label: 'Europe/Prague (CET)' },
@@ -123,7 +107,9 @@ export default function GeneralSettings() {
   const { generalSettings, isLoading } = useSettings();
   const { applySettings } = useLocalization();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
-  const WEEKDAYS = getWeekdays(t);
+  
+  // Fetch warehouses for the default order warehouse dropdown
+  const { data: warehouses = [] } = useQuery<any[]>({ queryKey: ['/api/warehouses'] });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -152,14 +138,7 @@ export default function GeneralSettings() {
       default_currency: generalSettings.defaultCurrency || 'CZK',
       currency_display: generalSettings.currencyDisplay || 'symbol',
       default_priority: generalSettings.defaultPriority || 'medium',
-      default_order_location: generalSettings.defaultOrderLocation || '',
-      working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-      business_hours_start: generalSettings.businessHoursStart || '09:00',
-      business_hours_end: generalSettings.businessHoursEnd || '17:00',
-      warehouse_emergency_contact: generalSettings.warehouseEmergencyContact || '',
-      warehouse_contact_email: generalSettings.warehouseContactEmail || '',
-      pickup_cutoff_time: generalSettings.pickupCutoffTime || '14:00',
-      max_order_processing_days: generalSettings.maxOrderProcessingDays || 2,
+      default_order_warehouse_id: generalSettings.defaultOrderWarehouseId || undefined,
       enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
       enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
       low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
@@ -908,22 +887,36 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  {t('settings:operations')}
+                  {t('settings:orderDefaults')}
                 </CardTitle>
-                <CardDescription>{t('settings:regionalSettingsDescription')}</CardDescription>
+                <CardDescription>{t('settings:orderDefaultsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="default_order_location"
+                    name="default_order_warehouse_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultOrderLocation')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder={t('settings:defaultOrderLocationPlaceholder')} data-testid="input-default_order_location" />
-                        </FormControl>
-                        <FormDescription>{t('settings:defaultOrderLocationDescription')}</FormDescription>
+                        <FormLabel>{t('settings:defaultWarehouse')}</FormLabel>
+                        <Select 
+                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                          value={field.value?.toString() || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-default_order_warehouse_id">
+                              <SelectValue placeholder={t('settings:selectWarehouse')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {warehouses.map((warehouse: any) => (
+                              <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                                {warehouse.name} {warehouse.code ? `(${warehouse.code})` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>{t('settings:defaultWarehouseDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -947,70 +940,7 @@ export default function GeneralSettings() {
                             <SelectItem value="high">{t('settings:priorityHigh')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="pickup_cutoff_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:pickupCutoffTime')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="time" data-testid="input-pickup_cutoff_time" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="max_order_processing_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:maxOrderProcessingDays')}</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            min="1"
-                            max="30"
-                            data-testid="input-max_order_processing_days" 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="warehouse_emergency_contact"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:warehouseEmergencyContact')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder={t('settings:warehouseEmergencyContactPlaceholder')} data-testid="input-warehouse_emergency_contact" />
-                        </FormControl>
-                        <FormDescription>{t('settings:warehouseEmergencyContactDescription')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="warehouse_contact_email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:warehouseContactEmail')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder={t('settings:warehouseContactEmailPlaceholder')} data-testid="input-warehouse_contact_email" />
-                        </FormControl>
-                        <FormDescription>{t('settings:warehouseContactEmailDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultPriorityDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

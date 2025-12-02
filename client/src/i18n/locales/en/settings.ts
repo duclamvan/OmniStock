@@ -102,16 +102,15 @@ const settings = {
   priorityMedium: 'Medium',
   priorityHigh: 'High',
   
-  // General Settings - Operations
+  // General Settings - Operations / Order Defaults
   regionalSettings: 'Regional Settings',
+  orderDefaults: 'Order Defaults',
+  orderDefaultsDescription: 'Default settings applied to new orders',
+  defaultWarehouse: 'Default Warehouse',
+  defaultWarehouseDescription: 'Warehouse automatically assigned to new orders',
+  selectWarehouse: 'Select a warehouse',
   defaultPriority: 'Default Priority',
-  workingDays: 'Working Days',
-  businessHoursStart: 'Business Hours Start',
-  businessHoursEnd: 'Business Hours End',
-  warehouseEmergencyContact: 'Warehouse Emergency Contact',
-  warehouseContactEmail: 'Warehouse Contact Email',
-  pickupCutoffTime: 'Pickup Cutoff Time',
-  maxOrderProcessingDays: 'Max Order Processing Days',
+  defaultPriorityDescription: 'Priority level for new orders',
   returnPolicyText: 'Return Policy Text',
   
   // General Settings - Notifications

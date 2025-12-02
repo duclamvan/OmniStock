@@ -102,16 +102,15 @@ const settings = {
   priorityMedium: 'Trung bình',
   priorityHigh: 'Cao',
   
-  // General Settings - Operations
+  // General Settings - Operations / Order Defaults
   regionalSettings: 'Cài đặt khu vực',
+  orderDefaults: 'Cài đặt đơn hàng mặc định',
+  orderDefaultsDescription: 'Cài đặt mặc định áp dụng cho đơn hàng mới',
+  defaultWarehouse: 'Kho mặc định',
+  defaultWarehouseDescription: 'Kho tự động được gán cho đơn hàng mới',
+  selectWarehouse: 'Chọn kho',
   defaultPriority: 'Độ ưu tiên mặc định',
-  workingDays: 'Ngày làm việc',
-  businessHoursStart: 'Giờ bắt đầu làm việc',
-  businessHoursEnd: 'Giờ kết thúc làm việc',
-  warehouseEmergencyContact: 'Liên hệ khẩn cấp kho',
-  warehouseContactEmail: 'Email liên hệ kho',
-  pickupCutoffTime: 'Giờ chốt lấy hàng',
-  maxOrderProcessingDays: 'Số ngày xử lý đơn tối đa',
+  defaultPriorityDescription: 'Mức độ ưu tiên cho đơn hàng mới',
   returnPolicyText: 'Chính sách đổi trả',
   
   // General Settings - Notifications
