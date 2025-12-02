@@ -339,6 +339,7 @@ export default function POS() {
   const [discount, setDiscount] = useState(0);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [discountInput, setDiscountInput] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage');
   const [cartIdCounter, setCartIdCounter] = useState(0);
   
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -758,7 +759,23 @@ export default function POS() {
   };
 
   const handleApplyDiscount = () => {
-    const discountAmount = parseFloat(discountInput) || 0;
+    const inputValue = parseFloat(discountInput) || 0;
+    let discountAmount: number;
+    
+    if (discountType === 'percentage') {
+      if (inputValue > 100) {
+        toast({
+          title: 'Invalid Discount',
+          description: 'Percentage cannot be greater than 100%',
+          variant: 'destructive'
+        });
+        return;
+      }
+      discountAmount = (subtotal * inputValue) / 100;
+    } else {
+      discountAmount = inputValue;
+    }
+    
     if (discountAmount > subtotal) {
       toast({
         title: 'Invalid Discount',
@@ -1496,45 +1513,124 @@ export default function POS() {
 
       {/* Discount Dialog */}
       <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Apply Discount</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Percent className="h-5 w-5" />
+              Apply Discount
+            </DialogTitle>
             <DialogDescription>
-              Subtotal: {currency} {subtotal.toFixed(2)}
+              Subtotal: <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <Input
-              type="number"
-              value={discountInput}
-              onChange={(e) => setDiscountInput(e.target.value)}
-              placeholder="Enter discount amount"
-              className="h-14 text-xl text-center"
-              autoFocus
-              data-testid="input-discount"
-            />
+            {/* Discount Type Toggle */}
+            <div className="flex rounded-lg border p-1 bg-muted/30">
+              <Button
+                variant={discountType === 'percentage' ? 'default' : 'ghost'}
+                className="flex-1 h-10"
+                onClick={() => { setDiscountType('percentage'); setDiscountInput(''); }}
+                data-testid="button-discount-type-percentage"
+              >
+                <Percent className="h-4 w-4 mr-2" />
+                Percentage
+              </Button>
+              <Button
+                variant={discountType === 'amount' ? 'default' : 'ghost'}
+                className="flex-1 h-10"
+                onClick={() => { setDiscountType('amount'); setDiscountInput(''); }}
+                data-testid="button-discount-type-amount"
+              >
+                {currency === 'EUR' ? <Euro className="h-4 w-4 mr-2" /> : <DollarSign className="h-4 w-4 mr-2" />}
+                Fixed Amount
+              </Button>
+            </div>
+            
+            {/* Input with dynamic placeholder */}
+            <div className="relative">
+              <Input
+                type="number"
+                value={discountInput}
+                onChange={(e) => setDiscountInput(e.target.value)}
+                placeholder={discountType === 'percentage' ? 'Enter percentage (e.g., 10)' : `Enter amount (e.g., 5.00)`}
+                className="h-14 text-xl text-center pr-12"
+                autoFocus
+                data-testid="input-discount"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
+                {discountType === 'percentage' ? '%' : currency}
+              </span>
+            </div>
             
             {/* Quick Discount Buttons */}
-            <div className="grid grid-cols-4 gap-2">
-              {[5, 10, 15, 20].map((percent) => (
-                <Button
-                  key={percent}
-                  variant="outline"
-                  onClick={() => setDiscountInput((subtotal * percent / 100).toFixed(2))}
-                  data-testid={`button-discount-${percent}`}
-                >
-                  {percent}%
-                </Button>
-              ))}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Quick Select:</p>
+              <div className="grid grid-cols-4 gap-2">
+                {discountType === 'percentage' ? (
+                  [5, 10, 15, 20].map((percent) => (
+                    <Button
+                      key={percent}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDiscountInput(percent.toString())}
+                      data-testid={`button-discount-${percent}`}
+                    >
+                      {percent}%
+                    </Button>
+                  ))
+                ) : (
+                  (currency === 'EUR' ? [5, 10, 20, 50] : [50, 100, 200, 500]).map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDiscountInput(amount.toString())}
+                      data-testid={`button-discount-amount-${amount}`}
+                    >
+                      {currency} {amount}
+                    </Button>
+                  ))
+                )}
+              </div>
             </div>
+            
+            {/* Discount Preview */}
+            {discountInput && parseFloat(discountInput) > 0 && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-green-700 dark:text-green-300">Discount:</span>
+                  <span className="font-bold text-green-700 dark:text-green-300">
+                    -{currency} {discountType === 'percentage' 
+                      ? ((subtotal * parseFloat(discountInput)) / 100).toFixed(2)
+                      : parseFloat(discountInput).toFixed(2)
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm mt-1">
+                  <span className="text-green-700 dark:text-green-300">New Total:</span>
+                  <span className="font-bold text-lg text-green-700 dark:text-green-300">
+                    {currency} {discountType === 'percentage'
+                      ? (subtotal - (subtotal * parseFloat(discountInput)) / 100).toFixed(2)
+                      : (subtotal - parseFloat(discountInput)).toFixed(2)
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setDiscount(0); setShowDiscountDialog(false); }}>
-              Remove Discount
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => { setDiscount(0); setDiscountInput(''); setShowDiscountDialog(false); }}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Remove
             </Button>
-            <Button onClick={handleApplyDiscount} data-testid="button-apply-discount">
+            <Button onClick={handleApplyDiscount} data-testid="button-apply-discount" disabled={!discountInput || parseFloat(discountInput) <= 0}>
+              <Check className="h-4 w-4 mr-1" />
               Apply Discount
             </Button>
           </DialogFooter>
