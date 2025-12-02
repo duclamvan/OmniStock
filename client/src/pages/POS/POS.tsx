@@ -345,6 +345,8 @@ export default function POS() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastBarcodeTime = useRef<number>(0);
   const barcodeBuffer = useRef<string>('');
+  const cartScrollRef = useRef<HTMLDivElement>(null);
+  const prevCartLengthRef = useRef<number>(0);
 
   useEffect(() => {
     localStorage.setItem('pos_currency', currency);
@@ -361,6 +363,18 @@ export default function POS() {
       barcodeInputRef.current.focus();
     }
   }, []);
+
+  // Auto-scroll cart to bottom when new items are added
+  useEffect(() => {
+    if (cart.length > prevCartLengthRef.current && cartScrollRef.current) {
+      // Scroll to bottom with smooth animation
+      cartScrollRef.current.scrollTo({
+        top: cartScrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+    prevCartLengthRef.current = cart.length;
+  }, [cart.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1144,7 +1158,7 @@ export default function POS() {
         </div>
 
         {/* Cart Items */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-auto" ref={cartScrollRef}>
           <div className="p-3 space-y-2">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -1228,7 +1242,7 @@ export default function POS() {
               ))
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Cart Footer */}
         {cart.length > 0 && (
