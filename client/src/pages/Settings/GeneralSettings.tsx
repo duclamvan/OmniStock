@@ -68,8 +68,13 @@ const formSchema = z.object({
   enable_ai_address_parsing: z.boolean().default(false),
   enable_ai_carton_packing: z.boolean().default(false),
   
-  // Compliance
+  // Compliance & Security
   audit_log_retention_days: z.coerce.number().min(7).max(365).default(90),
+  session_timeout_minutes: z.coerce.number().min(5).max(480).default(60),
+  require_2fa_for_admins: z.boolean().default(false),
+  max_login_attempts: z.coerce.number().min(3).max(10).default(5),
+  enable_data_export: z.boolean().default(true),
+  auto_logout_on_idle: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -144,6 +149,11 @@ export default function GeneralSettings() {
       enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
       enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
       audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
+      session_timeout_minutes: generalSettings.sessionTimeoutMinutes || 60,
+      require_2fa_for_admins: generalSettings.require2faForAdmins ?? false,
+      max_login_attempts: generalSettings.maxLoginAttempts || 5,
+      enable_data_export: generalSettings.enableDataExport ?? true,
+      auto_logout_on_idle: generalSettings.autoLogoutOnIdle ?? true,
     },
   });
 
@@ -185,6 +195,11 @@ export default function GeneralSettings() {
         enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
         enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
         audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
+        session_timeout_minutes: generalSettings.sessionTimeoutMinutes || 60,
+        require_2fa_for_admins: generalSettings.require2faForAdmins ?? false,
+        max_login_attempts: generalSettings.maxLoginAttempts || 5,
+        enable_data_export: generalSettings.enableDataExport ?? true,
+        auto_logout_on_idle: generalSettings.autoLogoutOnIdle ?? true,
       };
       setOriginalSettings(snapshot);
       form.reset(snapshot);
@@ -1072,29 +1087,155 @@ export default function GeneralSettings() {
                 </CardTitle>
                 <CardDescription>{t('settings:complianceSecurityDescription')}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="audit_log_retention_days"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('settings:auditLogRetentionLabel')}</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="7"
-                          max="365"
-                          data-testid="input-audit_log_retention_days" 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        {t('settings:auditLogRetentionDescription')}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <CardContent className="space-y-6">
+                {/* Session & Access Control */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:sessionAccessControl')}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="session_timeout_minutes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('settings:sessionTimeoutLabel')}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              min="5"
+                              max="480"
+                              data-testid="input-session_timeout_minutes" 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t('settings:sessionTimeoutDescription')}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="max_login_attempts"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('settings:maxLoginAttemptsLabel')}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              min="3"
+                              max="10"
+                              data-testid="input-max_login_attempts" 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t('settings:maxLoginAttemptsDescription')}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="auto_logout_on_idle"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-auto_logout_on_idle"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t('settings:autoLogoutOnIdleLabel')}</FormLabel>
+                            <FormDescription>
+                              {t('settings:autoLogoutOnIdleDescription')}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="require_2fa_for_admins"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-require_2fa_for_admins"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t('settings:require2faForAdminsLabel')}</FormLabel>
+                            <FormDescription>
+                              {t('settings:require2faForAdminsDescription')}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Data & Audit */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:dataAuditSection')}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="audit_log_retention_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('settings:auditLogRetentionLabel')}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              min="7"
+                              max="365"
+                              data-testid="input-audit_log_retention_days" 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t('settings:auditLogRetentionDescription')}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="enable_data_export"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-enable_data_export"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t('settings:enableDataExportLabel')}</FormLabel>
+                            <FormDescription>
+                              {t('settings:enableDataExportDescription')}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

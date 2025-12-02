@@ -137,6 +137,20 @@ const settings = {
   yearlyReportLabel: 'Báo cáo năm',
   yearlyReportDescription: 'Nhận báo cáo đánh giá hàng năm qua email',
   
+  // Compliance & Security
+  sessionAccessControl: 'Phiên & Kiểm soát truy cập',
+  sessionTimeoutLabel: 'Hết phiên (phút)',
+  sessionTimeoutDescription: 'Tự động đăng xuất sau khi không hoạt động (5-480 phút)',
+  maxLoginAttemptsLabel: 'Số lần đăng nhập tối đa',
+  maxLoginAttemptsDescription: 'Khóa tài khoản sau các lần đăng nhập thất bại (3-10)',
+  autoLogoutOnIdleLabel: 'Tự động đăng xuất khi không hoạt động',
+  autoLogoutOnIdleDescription: 'Tự động đăng xuất người dùng không hoạt động',
+  require2faForAdminsLabel: 'Yêu cầu 2FA cho quản trị viên',
+  require2faForAdminsDescription: 'Bắt buộc xác thực hai yếu tố cho quản trị viên',
+  dataAuditSection: 'Dữ liệu & Kiểm toán',
+  enableDataExportLabel: 'Cho phép xuất dữ liệu',
+  enableDataExportDescription: 'Cho phép xuất dữ liệu ra CSV/Excel',
+
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Tự động hóa',
   enableAiAddressParsing: 'Bật phân tích địa chỉ bằng AI',

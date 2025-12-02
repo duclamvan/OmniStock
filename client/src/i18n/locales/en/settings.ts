@@ -137,6 +137,20 @@ const settings = {
   yearlyReportLabel: 'Yearly Report',
   yearlyReportDescription: 'Receive annual review report via email',
   
+  // Compliance & Security
+  sessionAccessControl: 'Session & Access Control',
+  sessionTimeoutLabel: 'Session Timeout (minutes)',
+  sessionTimeoutDescription: 'Auto logout after inactivity (5-480 minutes)',
+  maxLoginAttemptsLabel: 'Max Login Attempts',
+  maxLoginAttemptsDescription: 'Lock account after failed attempts (3-10)',
+  autoLogoutOnIdleLabel: 'Auto Logout on Idle',
+  autoLogoutOnIdleDescription: 'Automatically log out inactive users',
+  require2faForAdminsLabel: 'Require 2FA for Admins',
+  require2faForAdminsDescription: 'Enforce two-factor authentication for administrators',
+  dataAuditSection: 'Data & Audit',
+  enableDataExportLabel: 'Enable Data Export',
+  enableDataExportDescription: 'Allow exporting data to CSV/Excel',
+
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Automation',
   enableAiAddressParsing: 'Enable AI Address Parsing',

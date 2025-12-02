@@ -58,6 +58,11 @@ export interface GeneralSettings {
   enableAiAddressParsing?: boolean;
   enableAiCartonPacking?: boolean;
   auditLogRetentionDays?: number;
+  sessionTimeoutMinutes?: number;
+  require2faForAdmins?: boolean;
+  maxLoginAttempts?: number;
+  enableDataExport?: boolean;
+  autoLogoutOnIdle?: boolean;
 }
 
 export interface InventorySettings {
