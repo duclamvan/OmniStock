@@ -48,14 +48,7 @@ export interface GeneralSettings {
   defaultCurrency?: 'CZK' | 'EUR' | 'USD' | 'VND' | 'CNY';
   currencyDisplay?: 'symbol' | 'code' | 'both';
   defaultPriority?: 'low' | 'medium' | 'high';
-  defaultOrderLocation?: string;
-  workingDays?: string[];
-  businessHoursStart?: string;
-  businessHoursEnd?: string;
-  warehouseEmergencyContact?: string;
-  warehouseContactEmail?: string;
-  pickupCutoffTime?: string;
-  maxOrderProcessingDays?: number;
+  defaultOrderWarehouseId?: number;
   returnPolicyText?: string;
   customerPortalEnabled?: boolean;
   enableEmailNotifications?: boolean;

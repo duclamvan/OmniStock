@@ -181,14 +181,7 @@ export default function GeneralSettings() {
         default_currency: generalSettings.defaultCurrency || 'CZK',
         currency_display: generalSettings.currencyDisplay || 'symbol',
         default_priority: generalSettings.defaultPriority || 'medium',
-        default_order_location: generalSettings.defaultOrderLocation || '',
-        working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        business_hours_start: generalSettings.businessHoursStart || '09:00',
-        business_hours_end: generalSettings.businessHoursEnd || '17:00',
-        warehouse_emergency_contact: generalSettings.warehouseEmergencyContact || '',
-        warehouse_contact_email: generalSettings.warehouseContactEmail || '',
-        pickup_cutoff_time: generalSettings.pickupCutoffTime || '14:00',
-        max_order_processing_days: generalSettings.maxOrderProcessingDays || 2,
+        default_order_warehouse_id: generalSettings.defaultOrderWarehouseId || undefined,
         enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
         enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
         low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
@@ -792,97 +785,6 @@ export default function GeneralSettings() {
 
           {/* Tab 3: Warehouses & Operations */}
           <TabsContent value="operations" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  {t('settings:regionalSettings')}
-                </CardTitle>
-                <CardDescription>{t('settings:regionalSettingsDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="business_hours_start"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:businessHoursStart')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="time" data-testid="input-business_hours_start" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="business_hours_end"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:businessHoursEnd')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="time" data-testid="input-business_hours_end" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="working_days"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base">{t('settings:workingDays')}</FormLabel>
-                        <FormDescription>{t('settings:workingDaysHelp')}</FormDescription>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                        {WEEKDAYS.map((day) => (
-                          <FormField
-                            key={day.id}
-                            control={form.control}
-                            name="working_days"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={day.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(day.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, day.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== day.id
-                                              )
-                                            )
-                                      }}
-                                      data-testid={`checkbox-working_day_${day.id}`}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal text-sm">
-                                    {day.label}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
