@@ -4396,9 +4396,31 @@ export default function ReceivingList() {
       sum + (s.items?.reduce((itemSum: number, item: any) => itemSum + (item.quantity || 0), 0) || 0), 0);
   }, [toReceiveShipments, receivingShipments]);
 
-  // Filter active receipts (receiving or pending_verification)
+  // Filter active receipts - only show truly in-progress receipts
+  // Exclude completed, archived, and receipts where all items are fully received
   const activeReceipts = useMemo(() => 
-    receipts.filter((r: any) => r.status === 'pending_verification' || r.status === 'receiving'),
+    receipts.filter((r: any) => {
+      // Only include receiving or pending_verification status
+      if (r.status !== 'pending_verification' && r.status !== 'receiving') {
+        return false;
+      }
+      
+      // Check if all items have been fully received (progress = 100%)
+      const items = r.items || [];
+      if (items.length === 0) return true; // Show if no items yet
+      
+      const totalQuantity = items.reduce((sum: number, item: any) => 
+        sum + (item.expectedQuantity || item.quantity || 0), 0);
+      const receivedQuantity = items.reduce((sum: number, item: any) => 
+        sum + (item.receivedQuantity || 0), 0);
+      
+      // Hide if 100% received - these should be in archived/completed
+      if (totalQuantity > 0 && receivedQuantity >= totalQuantity) {
+        return false;
+      }
+      
+      return true;
+    }),
     [receipts]
   );
 
