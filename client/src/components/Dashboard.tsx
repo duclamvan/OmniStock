@@ -173,10 +173,13 @@ export function Dashboard() {
   const { t } = useTranslation('common');
   
   // Query all dashboard endpoints
-  const { data: operationsPulse, isLoading: operationsLoading } = useQuery<OperationsPulseData>({
+  // Operations pulse - faster polling (15s) for critical fulfillment metrics
+  const { data: operationsPulse, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<OperationsPulseData>({
     queryKey: ['/api/dashboard/operations-pulse'],
-    staleTime: 60 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 10 * 1000, // Data stale after 10 seconds
+    refetchInterval: 15 * 1000, // Refetch every 15 seconds for near real-time order updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
   });
 
   const { data: financialControl, isLoading: financialLoading } = useQuery<FinancialControlData>({
@@ -191,10 +194,13 @@ export function Dashboard() {
     refetchInterval: 60 * 1000,
   });
 
+  // Fulfillment efficiency - faster polling (20s) for pick/pack metrics
   const { data: fulfillmentEfficiency, isLoading: fulfillmentLoading } = useQuery<FulfillmentEfficiencyData>({
     queryKey: ['/api/dashboard/fulfillment-efficiency'],
-    staleTime: 60 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 15 * 1000,
+    refetchInterval: 20 * 1000, // Faster refresh for fulfillment metrics
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
   });
 
   const { data: customerSupport, isLoading: customerLoading } = useQuery<CustomerSupportData>({
@@ -203,10 +209,13 @@ export function Dashboard() {
     refetchInterval: 60 * 1000,
   });
 
+  // System alerts - faster polling (15s) for real-time alert detection
   const { data: systemAlerts, isLoading: alertsLoading } = useQuery<SystemAlertsData>({
     queryKey: ['/api/dashboard/system-alerts'],
-    staleTime: 30 * 1000,
-    refetchInterval: 30 * 1000,
+    staleTime: 10 * 1000,
+    refetchInterval: 15 * 1000,
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
   });
 
   const { user } = useAuth();

@@ -28,6 +28,8 @@ const common = {
   processing: 'Processing...',
   uploading: 'Uploading...',
   updating: 'Updating...',
+  justNow: 'Just now',
+  ago: 'ago',
   search: 'Search',
   searchPlaceholder: 'Search {{item}}...',
   filter: 'Filter',

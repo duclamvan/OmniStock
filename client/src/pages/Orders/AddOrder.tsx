@@ -1212,6 +1212,9 @@ export default function AddOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      // Invalidate dashboards for real-time order count updates
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] }); // Warehouse dashboard
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/operations-pulse'] }); // Executive dashboard
       
       // Set the order ID so packing optimization can be run
       setOrderId(createdOrder.id);

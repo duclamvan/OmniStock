@@ -16,8 +16,10 @@ import {
   Clock,
   PlayCircle,
   Layers,
-  ShoppingBag
+  ShoppingBag,
+  RefreshCw
 } from "lucide-react";
+import { useState, useEffect } from 'react';
 import { Link } from "wouter";
 import { formatDate } from "@/lib/currencyUtils";
 import { useTranslation } from 'react-i18next';
@@ -74,6 +76,7 @@ interface WarehouseDashboardData {
 export default function WarehouseDashboard() {
   const { t } = useTranslation('common');
   const { toast } = useToast();
+  const [timeSinceUpdate, setTimeSinceUpdate] = useState('');
   
   const {
     isSupported: pushSupported,
@@ -84,11 +87,33 @@ export default function WarehouseDashboard() {
     unsubscribe: unsubscribePush
   } = usePushNotifications();
   
-  const { data, isLoading } = useQuery<WarehouseDashboardData>({
+  const { data, isLoading, dataUpdatedAt, isFetching } = useQuery<WarehouseDashboardData>({
     queryKey: ['/api/dashboard/warehouse'],
-    staleTime: 30000,
-    refetchInterval: 60000,
+    staleTime: 5000, // Consider data stale after 5 seconds for near real-time
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time order updates
+    refetchOnWindowFocus: true, // Immediately refresh when returning to the page
+    refetchIntervalInBackground: false, // Don't poll when tab is not active (saves resources)
   });
+  
+  // Update the "time since last update" display every second
+  useEffect(() => {
+    const updateTimeSince = () => {
+      if (!dataUpdatedAt) return;
+      const seconds = Math.floor((Date.now() - dataUpdatedAt) / 1000);
+      if (seconds < 5) {
+        setTimeSinceUpdate(t('justNow') || 'Just now');
+      } else if (seconds < 60) {
+        setTimeSinceUpdate(`${seconds}s ${t('ago') || 'ago'}`);
+      } else {
+        const minutes = Math.floor(seconds / 60);
+        setTimeSinceUpdate(`${minutes}m ${t('ago') || 'ago'}`);
+      }
+    };
+    
+    updateTimeSince();
+    const interval = setInterval(updateTimeSince, 1000);
+    return () => clearInterval(interval);
+  }, [dataUpdatedAt, t]);
   
   const handlePushToggle = async () => {
     try {
@@ -196,26 +221,37 @@ export default function WarehouseDashboard() {
             <h1 className="text-2xl sm:text-3xl font-bold">{dateStr}</h1>
           </div>
           
-          {/* Push Notification Toggle */}
-          {pushSupported && (
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
-              {isPushSubscribed ? (
-                <Bell className="h-5 w-5" />
-              ) : (
-                <BellOff className="h-5 w-5 opacity-60" />
-              )}
-              <span className="text-sm font-medium">
-                {t('orderAlerts')}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Real-time Update Indicator */}
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
+              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              <span className="text-xs font-medium opacity-90">
+                {isFetching ? (t('updating') || 'Updating...') : timeSinceUpdate}
               </span>
-              <Switch
-                checked={isPushSubscribed}
-                onCheckedChange={handlePushToggle}
-                disabled={isSubscribing || pushPermission === 'denied'}
-                className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
-                data-testid="switch-push-notifications"
-              />
+              <div className={`w-2 h-2 rounded-full ${isFetching ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
             </div>
-          )}
+            
+            {/* Push Notification Toggle */}
+            {pushSupported && (
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+                {isPushSubscribed ? (
+                  <Bell className="h-5 w-5" />
+                ) : (
+                  <BellOff className="h-5 w-5 opacity-60" />
+                )}
+                <span className="text-sm font-medium">
+                  {t('orderAlerts')}
+                </span>
+                <Switch
+                  checked={isPushSubscribed}
+                  onCheckedChange={handlePushToggle}
+                  disabled={isSubscribing || pushPermission === 'denied'}
+                  className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
+                  data-testid="switch-push-notifications"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
