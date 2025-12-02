@@ -107,5 +107,14 @@ app.use((req, res, next) => {
     } catch (error) {
       console.error('Failed to start backup scheduler:', error);
     }
+    
+    // Start report scheduler
+    try {
+      const { startReportScheduler } = await import('./services/reportService');
+      await startReportScheduler();
+      log('Report scheduler started');
+    } catch (error) {
+      console.error('Failed to start report scheduler:', error);
+    }
   });
 })();

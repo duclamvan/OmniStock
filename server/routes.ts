@@ -13655,6 +13655,91 @@ Important:
   });
 
   // ============================================================================
+  // REPORT ROUTES
+  // ============================================================================
+  
+  const { 
+    generateAndSaveReport, 
+    getReportSettings, 
+    listReports, 
+    getReportByFileName, 
+    getLowStockAlerts,
+    getReportSchedulerStatus 
+  } = await import('./services/reportService');
+
+  // Get report settings and scheduler status
+  app.get('/api/reports/status', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const settings = await getReportSettings();
+      const scheduler = getReportSchedulerStatus();
+      res.json({ settings, scheduler });
+    } catch (error) {
+      console.error('Error fetching report status:', error);
+      res.status(500).json({ message: 'Failed to fetch report status' });
+    }
+  });
+
+  // List all generated reports
+  app.get('/api/reports', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const reports = await listReports();
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      res.status(500).json({ message: 'Failed to fetch reports' });
+    }
+  });
+
+  // Generate a report manually
+  app.post('/api/reports/generate', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { period } = req.body;
+      
+      if (!['daily', 'weekly', 'monthly', 'yearly'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Use daily, weekly, monthly, or yearly.' });
+      }
+      
+      const result = await generateAndSaveReport(period);
+      res.status(201).json({
+        message: `${period.charAt(0).toUpperCase() + period.slice(1)} report generated successfully`,
+        report: result.report,
+        filePath: result.filePath,
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
+  // Get a specific report by filename
+  app.get('/api/reports/:fileName', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { fileName } = req.params;
+      const report = await getReportByFileName(fileName);
+      
+      if (!report) {
+        return res.status(404).json({ message: 'Report not found' });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      res.status(500).json({ message: 'Failed to fetch report' });
+    }
+  });
+
+  // Get low stock alerts
+  app.get('/api/reports/alerts/low-stock', isAuthenticated, async (req, res) => {
+    try {
+      const alerts = await getLowStockAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error('Error fetching low stock alerts:', error);
+      res.status(500).json({ message: 'Failed to fetch low stock alerts' });
+    }
+  });
+
+  // ============================================================================
   // INVOICE ROUTES
   // ============================================================================
 
