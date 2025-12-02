@@ -1011,23 +1011,23 @@ export default function POS() {
                             <img 
                               src={product.imageUrl} 
                               alt={product.name}
-                              className="w-full h-full object-contain p-2"
+                              className="w-full h-full object-contain p-1"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Package className="h-12 w-12 text-gray-300" />
+                              <Package className="h-10 w-10 text-gray-300" />
                             </div>
                           )}
                         </div>
                         
-                        <div className="p-3 space-y-1">
-                          <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+                        <div className="p-2 space-y-0.5">
+                          <h3 className="font-medium text-xs leading-snug break-words">
                             {product.name}
                           </h3>
                           {product.sku && (
-                            <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono truncate">{product.sku}</p>
                           )}
-                          <p className="text-lg font-bold text-primary">
+                          <p className="text-sm font-bold text-primary">
                             {currency} {price.toFixed(2)}
                           </p>
                         </div>
