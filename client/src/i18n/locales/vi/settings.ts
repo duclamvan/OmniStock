@@ -877,6 +877,7 @@ const settings = {
   // Select placeholders
   selectCountry: 'Chọn quốc gia',
   selectOption: 'Chọn tùy chọn',
+  notSet: 'Chưa đặt',
   
   // Roles & Permissions Page
   rolesAndPermissions: 'Vai trò & Quyền hạn',

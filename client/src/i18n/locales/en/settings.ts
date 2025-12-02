@@ -879,6 +879,7 @@ const settings = {
   // Select placeholders
   selectCountry: 'Select a country',
   selectOption: 'Select an option',
+  notSet: 'Not Set',
   
   // Roles & Permissions Page
   rolesAndPermissions: 'Roles & Permissions',

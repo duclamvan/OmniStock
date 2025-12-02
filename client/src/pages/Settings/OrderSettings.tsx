@@ -301,6 +301,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="Cash">{t('settings:paymentMethodCash')}</SelectItem>
                             <SelectItem value="Card">{t('settings:paymentMethodCard')}</SelectItem>
                             <SelectItem value="Transfer">{t('settings:paymentMethodTransfer')}</SelectItem>
@@ -328,6 +329,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
                             <SelectItem value="processing">{t('settings:statusProcessing')}</SelectItem>
                             <SelectItem value="shipped">{t('settings:statusShipped')}</SelectItem>
@@ -353,6 +355,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
                             <SelectItem value="paid">{t('settings:statusPaid')}</SelectItem>
                             <SelectItem value="pay_later">{t('settings:statusPayLater')}</SelectItem>
@@ -377,6 +380,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="GLS">GLS</SelectItem>
                             <SelectItem value="GLS DE">GLS DE</SelectItem>
                             <SelectItem value="PPL">PPL</SelectItem>
@@ -407,6 +411,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="Viber">Viber</SelectItem>
                             <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                             <SelectItem value="Zalo">Zalo</SelectItem>
@@ -432,6 +437,7 @@ export default function OrderSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
                             <SelectItem value="flat">{t('settings:discountTypeFlatAmount')}</SelectItem>
                             <SelectItem value="rate">{t('settings:discountTypePercentage')}</SelectItem>
                           </SelectContent>
