@@ -294,7 +294,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPaymentMethod')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_method">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -322,7 +322,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultOrderStatus')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_order_status">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -348,7 +348,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPaymentStatus')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_status">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -373,7 +373,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCarrier')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_carrier">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -404,7 +404,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCommunicationChannel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_communication_channel">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -430,7 +430,7 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultDiscountType')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_discount_type">
                               <SelectValue placeholder={t('settings:selectOption')} />
