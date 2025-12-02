@@ -130,6 +130,12 @@ const settings = {
   weeklyReportEmail: 'Weekly Report',
   weeklyReportLabel: 'Weekly Report',
   weeklyReportDescription: 'Receive weekly performance report via email',
+  monthlyReportEmail: 'Monthly Report',
+  monthlyReportLabel: 'Monthly Report',
+  monthlyReportDescription: 'Receive monthly business summary via email',
+  yearlyReportEmail: 'Yearly Report',
+  yearlyReportLabel: 'Yearly Report',
+  yearlyReportDescription: 'Receive annual review report via email',
   
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Automation',

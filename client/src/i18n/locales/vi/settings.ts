@@ -130,6 +130,12 @@ const settings = {
   weeklyReportEmail: 'Báo cáo tuần',
   weeklyReportLabel: 'Báo cáo tuần',
   weeklyReportDescription: 'Nhận báo cáo hiệu suất hàng tuần qua email',
+  monthlyReportEmail: 'Báo cáo tháng',
+  monthlyReportLabel: 'Báo cáo tháng',
+  monthlyReportDescription: 'Nhận báo cáo tổng kết kinh doanh hàng tháng qua email',
+  yearlyReportEmail: 'Báo cáo năm',
+  yearlyReportLabel: 'Báo cáo năm',
+  yearlyReportDescription: 'Nhận báo cáo đánh giá hàng năm qua email',
   
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Tự động hóa',

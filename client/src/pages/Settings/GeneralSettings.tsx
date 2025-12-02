@@ -61,6 +61,8 @@ const formSchema = z.object({
   order_status_change_notifications: z.boolean().default(true),
   daily_summary_report_email: z.boolean().default(false),
   weekly_report_email: z.boolean().default(true),
+  monthly_report_email: z.boolean().default(false),
+  yearly_report_email: z.boolean().default(false),
   
   // AI & Automation
   enable_ai_address_parsing: z.boolean().default(false),
@@ -137,6 +139,8 @@ export default function GeneralSettings() {
       order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
       daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
       weekly_report_email: generalSettings.weeklyReportEmail ?? true,
+      monthly_report_email: generalSettings.monthlyReportEmail ?? false,
+      yearly_report_email: generalSettings.yearlyReportEmail ?? false,
       enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
       enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
       audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
@@ -176,6 +180,8 @@ export default function GeneralSettings() {
         order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
         daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
         weekly_report_email: generalSettings.weeklyReportEmail ?? true,
+        monthly_report_email: generalSettings.monthlyReportEmail ?? false,
+        yearly_report_email: generalSettings.yearlyReportEmail ?? false,
         enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
         enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
         audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
@@ -945,6 +951,50 @@ export default function GeneralSettings() {
                           <FormLabel>{t('settings:weeklyReportLabel')}</FormLabel>
                           <FormDescription>
                             {t('settings:weeklyReportDescription')}
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="monthly_report_email"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-monthly_report_email"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>{t('settings:monthlyReportLabel')}</FormLabel>
+                          <FormDescription>
+                            {t('settings:monthlyReportDescription')}
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="yearly_report_email"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-yearly_report_email"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>{t('settings:yearlyReportLabel')}</FormLabel>
+                          <FormDescription>
+                            {t('settings:yearlyReportDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>

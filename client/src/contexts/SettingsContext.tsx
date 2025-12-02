@@ -53,6 +53,8 @@ export interface GeneralSettings {
   orderStatusChangeNotifications?: boolean;
   dailySummaryReportEmail?: boolean;
   weeklyReportEmail?: boolean;
+  monthlyReportEmail?: boolean;
+  yearlyReportEmail?: boolean;
   enableAiAddressParsing?: boolean;
   enableAiCartonPacking?: boolean;
   auditLogRetentionDays?: number;
