@@ -83,10 +83,15 @@ const formSchema = z.object({
   available_carriers: z.string().default('GLS DE,PPL CZ,DHL DE'),
   default_carrier: z.string().default('PPL CZ'),
   
-  // Shipping Costs
-  free_shipping_threshold: z.coerce.number().min(0).default(0),
-  default_shipping_cost: z.coerce.number().min(0).default(0),
-  shipping_cost_currency: z.enum(['CZK', 'EUR', 'USD']).default('CZK'),
+  // Shipping Costs - EUR
+  default_shipping_cost_eur: z.coerce.number().min(0).default(0),
+  free_shipping_threshold_eur: z.coerce.number().min(0).default(0),
+  
+  // Shipping Costs - CZK
+  default_shipping_cost_czk: z.coerce.number().min(0).default(0),
+  free_shipping_threshold_czk: z.coerce.number().min(0).default(0),
+  
+  // Volumetric
   volumetric_weight_divisor: z.coerce.number().min(1).default(5000),
   
   // Label Generation
@@ -156,9 +161,10 @@ export default function ShippingSettings() {
       default_shipping_method: 'PPL CZ',
       available_carriers: 'GLS DE,PPL CZ,DHL DE',
       default_carrier: 'PPL CZ',
-      free_shipping_threshold: 0,
-      default_shipping_cost: 0,
-      shipping_cost_currency: 'CZK',
+      default_shipping_cost_eur: 0,
+      free_shipping_threshold_eur: 0,
+      default_shipping_cost_czk: 0,
+      free_shipping_threshold_czk: 0,
       volumetric_weight_divisor: 5000,
       default_label_size: 'A4',
       label_format: 'PDF',
@@ -214,9 +220,10 @@ export default function ShippingSettings() {
         default_shipping_method: normalizeCarrier(shippingSettings.defaultShippingMethod || 'PPL CZ'),
         available_carriers: shippingSettings.availableCarriers,
         default_carrier: normalizeCarrier(shippingSettings.defaultCarrier || 'PPL CZ'),
-        free_shipping_threshold: shippingSettings.freeShippingThreshold,
-        default_shipping_cost: shippingSettings.defaultShippingCost,
-        shipping_cost_currency: shippingSettings.shippingCostCurrency,
+        default_shipping_cost_eur: shippingSettings.defaultShippingCostEur ?? 0,
+        free_shipping_threshold_eur: shippingSettings.freeShippingThresholdEur ?? 0,
+        default_shipping_cost_czk: shippingSettings.defaultShippingCostCzk ?? 0,
+        free_shipping_threshold_czk: shippingSettings.freeShippingThresholdCzk ?? 0,
         volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor,
         default_label_size: shippingSettings.defaultLabelSize,
         label_format: shippingSettings.labelFormat,
@@ -1318,73 +1325,108 @@ export default function ShippingSettings() {
                 <CardDescription className="text-sm">Configure default shipping costs and thresholds</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="default_shipping_cost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Shipping Cost</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="0"
-                            data-testid="input-default_shipping_cost"
-                          />
-                        </FormControl>
-                        <FormDescription>Default cost for shipping</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="free_shipping_threshold"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Free Shipping Threshold</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="0"
-                            data-testid="input-free_shipping_threshold"
-                          />
-                        </FormControl>
-                        <FormDescription>Order value for free shipping</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="shipping_cost_currency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Currency</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                {/* EUR Row */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">EUR</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="default_shipping_cost_eur"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Shipping Cost (EUR)</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-shipping_cost_currency">
-                              <SelectValue placeholder={t('common:selectCurrency')} />
-                            </SelectTrigger>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0"
+                              data-testid="input-default_shipping_cost_eur"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="CZK">CZK</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormDescription>Default cost for EUR orders</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="free_shipping_threshold_eur"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Free Shipping Threshold (EUR)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0"
+                              data-testid="input-free_shipping_threshold_eur"
+                            />
+                          </FormControl>
+                          <FormDescription>Order value for free shipping in EUR</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* CZK Row */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">CZK</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="default_shipping_cost_czk"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Shipping Cost (CZK)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0"
+                              data-testid="input-default_shipping_cost_czk"
+                            />
+                          </FormControl>
+                          <FormDescription>Default cost for CZK orders</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="free_shipping_threshold_czk"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Free Shipping Threshold (CZK)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0"
+                              data-testid="input-free_shipping_threshold_czk"
+                            />
+                          </FormControl>
+                          <FormDescription>Order value for free shipping in CZK</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
 
                 <FormField

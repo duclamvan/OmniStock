@@ -181,9 +181,10 @@ export interface ShippingSettings {
   trackingUpdateFrequencyHours?: number;
   sendTrackingEmailToCustomer?: boolean;
   includeEstimatedDelivery?: boolean;
-  freeShippingThreshold?: number;
-  defaultShippingCost?: number;
-  shippingCostCurrency?: 'CZK' | 'EUR' | 'USD';
+  defaultShippingCostEur?: number;
+  freeShippingThresholdEur?: number;
+  defaultShippingCostCzk?: number;
+  freeShippingThresholdCzk?: number;
   volumetricWeightDivisor?: number;
   autoGenerateLabels?: boolean;
   defaultLabelFormat?: 'A4' | 'thermal';
