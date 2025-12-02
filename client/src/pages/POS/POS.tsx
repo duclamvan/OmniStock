@@ -89,7 +89,7 @@ interface ReceiptData {
   change?: number;
 }
 
-type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'pay_later' | 'qr_czk';
+type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'bank_transfer_private' | 'bank_transfer_invoice' | 'pay_later' | 'qr_czk';
 type ViewMode = 'grid' | 'list';
 
 function generateQRCodeSVG(data: string, size: number = 200): string {
@@ -812,9 +812,24 @@ export default function POS() {
       case 'cash': return <Banknote className={iconClass} />;
       case 'card': return <CreditCard className={iconClass} />;
       case 'bank_transfer': return <Building2 className={iconClass} />;
+      case 'bank_transfer_private': return <Building2 className={iconClass} />;
+      case 'bank_transfer_invoice': return <FileText className={iconClass} />;
       case 'pay_later': return <Clock className={iconClass} />;
       case 'qr_czk': return <QrCode className={iconClass} />;
       default: return null;
+    }
+  };
+  
+  const getPaymentMethodLabel = (method: PaymentMethod) => {
+    switch (method) {
+      case 'cash': return 'Cash';
+      case 'card': return 'Card';
+      case 'bank_transfer': return 'Bank Transfer';
+      case 'bank_transfer_private': return 'Privat Konto';
+      case 'bank_transfer_invoice': return 'Invoice Transfer';
+      case 'pay_later': return 'Pay Later';
+      case 'qr_czk': return 'QR Code CZK';
+      default: return method;
     }
   };
 
@@ -1337,28 +1352,94 @@ export default function POS() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid grid-cols-2 gap-4 py-4">
-            {[
-              { method: 'cash' as PaymentMethod, label: 'Cash', icon: Banknote, color: 'bg-green-500' },
-              { method: 'card' as PaymentMethod, label: 'Card', icon: CreditCard, color: 'bg-blue-500' },
-              { method: 'bank_transfer' as PaymentMethod, label: 'Bank Transfer', icon: Building2, color: 'bg-purple-500' },
-              { method: 'pay_later' as PaymentMethod, label: 'Pay Later', icon: Clock, color: 'bg-amber-500' },
-              { method: 'qr_czk' as PaymentMethod, label: 'QR Code CZK', icon: QrCode, color: 'bg-cyan-500' },
-            ].map(({ method, label, icon: Icon, color }) => (
-              <Button
-                key={method}
-                variant="outline"
-                className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
-                onClick={() => handlePaymentSelect(method)}
-                disabled={createOrderMutation.isPending}
-                data-testid={`button-payment-${method}`}
-              >
-                <div className={cn("p-3 rounded-full text-white", color)}>
-                  <Icon className="h-6 w-6" />
-                </div>
-                {label}
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 gap-3 py-4">
+            {/* Cash - Enabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              onClick={() => handlePaymentSelect('cash')}
+              disabled={createOrderMutation.isPending}
+              data-testid="button-payment-cash"
+            >
+              <div className="p-3 rounded-full text-white bg-green-500">
+                <Banknote className="h-6 w-6" />
+              </div>
+              Cash
+            </Button>
+            
+            {/* Card - Disabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed"
+              disabled={true}
+              data-testid="button-payment-card"
+            >
+              <div className="p-3 rounded-full text-white bg-blue-500">
+                <CreditCard className="h-6 w-6" />
+              </div>
+              <span className="flex items-center gap-1">
+                Card
+                <span className="text-[10px] text-muted-foreground">(Soon)</span>
+              </span>
+            </Button>
+            
+            {/* Bank Transfer - Privat Konto - Enabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              onClick={() => handlePaymentSelect('bank_transfer_private')}
+              disabled={createOrderMutation.isPending}
+              data-testid="button-payment-bank-private"
+            >
+              <div className="p-3 rounded-full text-white bg-purple-500">
+                <Building2 className="h-6 w-6" />
+              </div>
+              Privat Konto
+            </Button>
+            
+            {/* Bank Transfer - Invoice - Disabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed"
+              disabled={true}
+              data-testid="button-payment-bank-invoice"
+            >
+              <div className="p-3 rounded-full text-white bg-indigo-500">
+                <FileText className="h-6 w-6" />
+              </div>
+              <span className="flex flex-col items-center">
+                <span>Invoice Transfer</span>
+                <span className="text-[10px] text-muted-foreground">(Soon)</span>
+              </span>
+            </Button>
+            
+            {/* Pay Later - Enabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              onClick={() => handlePaymentSelect('pay_later')}
+              disabled={createOrderMutation.isPending}
+              data-testid="button-payment-pay_later"
+            >
+              <div className="p-3 rounded-full text-white bg-amber-500">
+                <Clock className="h-6 w-6" />
+              </div>
+              Pay Later
+            </Button>
+            
+            {/* QR Code CZK - Enabled */}
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              onClick={() => handlePaymentSelect('qr_czk')}
+              disabled={createOrderMutation.isPending}
+              data-testid="button-payment-qr_czk"
+            >
+              <div className="p-3 rounded-full text-white bg-cyan-500">
+                <QrCode className="h-6 w-6" />
+              </div>
+              QR Code CZK
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
