@@ -113,14 +113,23 @@ const settings = {
   defaultPriorityDescription: 'Priority level for new orders',
   returnPolicyText: 'Return Policy Text',
   
-  // General Settings - Notifications
-  notificationPreferences: 'Notification Preferences',
-  enableEmailNotifications: 'Enable Email Notifications',
-  enableSmsNotifications: 'Enable SMS Notifications',
-  lowStockAlertEmail: 'Low Stock Alert Email',
-  orderStatusChangeNotifications: 'Order Status Change Notifications',
-  dailySummaryReportEmail: 'Daily Summary Report Email',
-  weeklyReportEmail: 'Weekly Report Email',
+  // Admin Notifications
+  adminNotifications: 'Admin Notifications',
+  adminNotificationsDescription: 'Configure alerts for warehouse operations',
+  reportsTitle: 'Reports',
+  reportsDescription: 'Automated report delivery settings',
+  lowStockAlertEmail: 'Low Stock Alert',
+  lowStockAlertsLabel: 'Low Stock Alerts',
+  lowStockAlertsDescription: 'Receive alerts when products fall below minimum stock levels',
+  orderStatusChangeNotifications: 'Order Status Changes',
+  orderStatusChangesLabel: 'Order Status Changes',
+  orderStatusChangesDescription: 'Get notified when orders change status',
+  dailySummaryReportEmail: 'Daily Summary',
+  dailySummaryLabel: 'Daily Summary Report',
+  dailySummaryDescription: 'Receive daily operational summary via email',
+  weeklyReportEmail: 'Weekly Report',
+  weeklyReportLabel: 'Weekly Report',
+  weeklyReportDescription: 'Receive weekly performance report via email',
   
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Automation',

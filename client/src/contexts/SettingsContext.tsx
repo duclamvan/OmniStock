@@ -49,10 +49,6 @@ export interface GeneralSettings {
   currencyDisplay?: 'symbol' | 'code' | 'both';
   defaultPriority?: 'low' | 'medium' | 'high';
   defaultOrderWarehouseId?: number;
-  returnPolicyText?: string;
-  customerPortalEnabled?: boolean;
-  enableEmailNotifications?: boolean;
-  enableSmsNotifications?: boolean;
   lowStockAlertEmail?: boolean;
   orderStatusChangeNotifications?: boolean;
   dailySummaryReportEmail?: boolean;

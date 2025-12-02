@@ -113,14 +113,23 @@ const settings = {
   defaultPriorityDescription: 'Mức độ ưu tiên cho đơn hàng mới',
   returnPolicyText: 'Chính sách đổi trả',
   
-  // General Settings - Notifications
-  notificationPreferences: 'Tùy chọn thông báo',
-  enableEmailNotifications: 'Bật thông báo email',
-  enableSmsNotifications: 'Bật thông báo SMS',
-  lowStockAlertEmail: 'Email cảnh báo sắp hết hàng',
-  orderStatusChangeNotifications: 'Thông báo thay đổi trạng thái đơn',
-  dailySummaryReportEmail: 'Email báo cáo tổng kết hàng ngày',
-  weeklyReportEmail: 'Email báo cáo tuần',
+  // Admin Notifications
+  adminNotifications: 'Thông báo quản trị',
+  adminNotificationsDescription: 'Cấu hình cảnh báo cho hoạt động kho',
+  reportsTitle: 'Báo cáo',
+  reportsDescription: 'Cài đặt gửi báo cáo tự động',
+  lowStockAlertEmail: 'Cảnh báo hết hàng',
+  lowStockAlertsLabel: 'Cảnh báo sắp hết hàng',
+  lowStockAlertsDescription: 'Nhận cảnh báo khi sản phẩm dưới mức tồn kho tối thiểu',
+  orderStatusChangeNotifications: 'Thay đổi trạng thái đơn hàng',
+  orderStatusChangesLabel: 'Thay đổi trạng thái đơn hàng',
+  orderStatusChangesDescription: 'Nhận thông báo khi đơn hàng thay đổi trạng thái',
+  dailySummaryReportEmail: 'Tổng kết hàng ngày',
+  dailySummaryLabel: 'Báo cáo tổng kết hàng ngày',
+  dailySummaryDescription: 'Nhận báo cáo tổng kết hoạt động hàng ngày qua email',
+  weeklyReportEmail: 'Báo cáo tuần',
+  weeklyReportLabel: 'Báo cáo tuần',
+  weeklyReportDescription: 'Nhận báo cáo hiệu suất hàng tuần qua email',
   
   // General Settings - AI & Automation
   aiAndAutomation: 'AI & Tự động hóa',

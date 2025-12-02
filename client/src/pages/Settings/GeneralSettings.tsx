@@ -56,17 +56,11 @@ const formSchema = z.object({
   default_priority: z.enum(['low', 'medium', 'high']).default('medium'),
   default_order_warehouse_id: z.coerce.number().optional(),
 
-  // Notification Preferences
-  enable_email_notifications: z.boolean().default(true),
-  enable_sms_notifications: z.boolean().default(false),
+  // Admin Notifications
   low_stock_alert_email: z.boolean().default(true),
   order_status_change_notifications: z.boolean().default(true),
   daily_summary_report_email: z.boolean().default(false),
   weekly_report_email: z.boolean().default(true),
-  
-  // Customer Experience
-  customer_portal_enabled: z.boolean().default(false),
-  return_policy_text: z.string().default(''),
   
   // AI & Automation
   enable_ai_address_parsing: z.boolean().default(false),
@@ -139,14 +133,10 @@ export default function GeneralSettings() {
       currency_display: generalSettings.currencyDisplay || 'symbol',
       default_priority: generalSettings.defaultPriority || 'medium',
       default_order_warehouse_id: generalSettings.defaultOrderWarehouseId || undefined,
-      enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
-      enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
       low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
       order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
       daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
       weekly_report_email: generalSettings.weeklyReportEmail ?? true,
-      customer_portal_enabled: generalSettings.customerPortalEnabled ?? false,
-      return_policy_text: generalSettings.returnPolicyText || '',
       enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
       enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
       audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
@@ -182,14 +172,10 @@ export default function GeneralSettings() {
         currency_display: generalSettings.currencyDisplay || 'symbol',
         default_priority: generalSettings.defaultPriority || 'medium',
         default_order_warehouse_id: generalSettings.defaultOrderWarehouseId || undefined,
-        enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
-        enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
         low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
         order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
         daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
         weekly_report_email: generalSettings.weeklyReportEmail ?? true,
-        customer_portal_enabled: generalSettings.customerPortalEnabled ?? false,
-        return_policy_text: generalSettings.returnPolicyText || '',
         enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
         enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
         audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
@@ -852,62 +838,18 @@ export default function GeneralSettings() {
             </Card>
           </TabsContent>
 
-          {/* Tab 4: Customer Experience */}
+          {/* Tab 4: Notifications */}
           <TabsContent value="customer" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {t('settings:notificationPreferences')}
+                  {t('settings:adminNotifications')}
                 </CardTitle>
-                <CardDescription>{t('settings:notificationPreferencesDescription')}</CardDescription>
+                <CardDescription>{t('settings:adminNotificationsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="enable_email_notifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="checkbox-enable_email_notifications"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:emailNotificationsLabel')}</FormLabel>
-                          <FormDescription>
-                            {t('settings:emailNotificationsDescription')}
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="enable_sms_notifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="checkbox-enable_sms_notifications"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:smsNotificationsLabel')}</FormLabel>
-                          <FormDescription>
-                            {t('settings:smsNotificationsDescription')}
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
                   <FormField
                     control={form.control}
                     name="low_stock_alert_email"
@@ -951,7 +893,20 @@ export default function GeneralSettings() {
                       </FormItem>
                     )}
                   />
+                </div>
+              </CardContent>
+            </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {t('settings:reportsTitle')}
+                </CardTitle>
+                <CardDescription>{t('settings:reportsDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="daily_summary_report_email"
@@ -996,61 +951,6 @@ export default function GeneralSettings() {
                     )}
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  {t('settings:customerPortalTitle')}
-                </CardTitle>
-                <CardDescription>{t('settings:customerPortalDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="customer_portal_enabled"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-customer_portal_enabled"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableCustomerPortalLabel')}</FormLabel>
-                        <FormDescription>
-                          {t('settings:enableCustomerPortalDescription')}
-                        </FormDescription>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="return_policy_text"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('settings:returnPolicyLabel')}</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder={t('settings:returnPolicyPlaceholder')}
-                          rows={6}
-                          data-testid="textarea-return_policy_text"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        {t('settings:returnPolicyDescription')}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </CardContent>
             </Card>
           </TabsContent>
