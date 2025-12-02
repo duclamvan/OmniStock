@@ -132,7 +132,7 @@ const settings = {
   weeklyReportDescription: 'Receive weekly performance report via email',
   monthlyReportEmail: 'Monthly Report',
   monthlyReportLabel: 'Monthly Report',
-  monthlyReportDescription: 'Receive monthly business summary via email',
+  monthlyReportDescription: 'Receive monthly business summary',
   yearlyReportEmail: 'Yearly Report',
   yearlyReportLabel: 'Yearly Report',
   yearlyReportDescription: 'Receive annual review report via email',

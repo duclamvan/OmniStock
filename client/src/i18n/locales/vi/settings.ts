@@ -132,7 +132,7 @@ const settings = {
   weeklyReportDescription: 'Nhận báo cáo hiệu suất hàng tuần qua email',
   monthlyReportEmail: 'Báo cáo tháng',
   monthlyReportLabel: 'Báo cáo tháng',
-  monthlyReportDescription: 'Nhận báo cáo tổng kết kinh doanh hàng tháng qua email',
+  monthlyReportDescription: 'Nhận báo cáo tổng kết kinh doanh hàng tháng',
   yearlyReportEmail: 'Báo cáo năm',
   yearlyReportLabel: 'Báo cáo năm',
   yearlyReportDescription: 'Nhận báo cáo đánh giá hàng năm qua email',
