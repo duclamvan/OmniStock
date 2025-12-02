@@ -1250,54 +1250,6 @@ export default function ShippingSettings() {
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="default_shipping_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Shipping Method</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-default_shipping_method">
-                              <SelectValue placeholder={t('common:selectShippingMethod')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="PPL CZ">PPL CZ</SelectItem>
-                            <SelectItem value="GLS DE">GLS DE</SelectItem>
-                            <SelectItem value="DHL DE">DHL DE</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="default_carrier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Carrier</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-default_carrier">
-                              <SelectValue placeholder={t('common:selectDefaultCarrier')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="PPL CZ">PPL CZ</SelectItem>
-                            <SelectItem value="GLS DE">GLS DE</SelectItem>
-                            <SelectItem value="DHL DE">DHL DE</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
                   name="available_carriers"
