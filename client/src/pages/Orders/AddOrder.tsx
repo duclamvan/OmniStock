@@ -299,7 +299,7 @@ export default function AddOrder() {
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { user, canAccessFinancialData } = useAuth();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers, shippingSettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
@@ -1196,10 +1196,11 @@ export default function AddOrder() {
         taxRate: data.taxRate ? parseFloat(data.taxRate) / 100 : undefined,
       };
 
-      // Include selected document IDs with the order
+      // Include selected document IDs and biller info with the order
       const orderData = {
         ...convertedData,
-        selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
+        selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
+        billerId: user?.id, // Automatically add the current user as the biller
       };
 
       const response = await apiRequest('POST', '/api/orders', orderData);

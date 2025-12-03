@@ -39,6 +39,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuCheckboxItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -1324,21 +1325,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       <DropdownMenuLabel>{t('orders:showColumns')}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {columns.map((column) => (
-                        <DropdownMenuItem
+                        <DropdownMenuCheckboxItem
                           key={column.key}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toggleColumnVisibility(column.key);
-                          }}
+                          checked={visibleColumns[column.key] !== false}
+                          onCheckedChange={() => toggleColumnVisibility(column.key)}
+                          onSelect={(e) => e.preventDefault()}
                           className="cursor-pointer"
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <span>{column.header}</span>
-                            {visibleColumns[column.key] !== false && (
-                              <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
+                          {column.header}
+                        </DropdownMenuCheckboxItem>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
