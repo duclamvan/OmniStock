@@ -1191,6 +1191,7 @@ const inventory = {
   storeCreditType: 'Tín dụng cửa hàng',
   damagedGoods: 'Hàng hư hỏng',
   badQuality: 'Lô hàng chất lượng kém',
+  guaranteeType: 'Bảo hành',
   disposedNotReturnedToInventory: 'Đã thanh lý - Không trả về kho',
   statusLabel: 'Trạng thái',
   awaitingStatus: 'Chờ xử lý',

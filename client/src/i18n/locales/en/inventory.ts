@@ -1096,6 +1096,7 @@ const inventory = {
   storeCreditType: 'Store Credit',
   damagedGoods: 'Damaged Goods',
   badQuality: 'Bad Quality Batch Received',
+  guaranteeType: 'Guarantee',
   disposedNotReturnedToInventory: 'Disposed - Not returned to inventory',
   statusLabel: 'Status',
   awaitingStatus: 'Awaiting',
