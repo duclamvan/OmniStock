@@ -1107,7 +1107,7 @@ export default function CustomerDetails() {
                                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                         <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0"></div>
                                         <span className="text-slate-700 truncate text-xs">
-                                          {item.productName || item.name || 'Product'}
+                                          {item.productName || item.name || t('common:product')}
                                           {item.variantName && <span className="text-slate-500 font-normal"> - {item.variantName}</span>}
                                         </span>
                                       </div>
@@ -1178,7 +1178,10 @@ export default function CustomerDetails() {
                               ticket.status === 'in_progress' ? 'default' :
                               'outline'
                             }>
-                              {ticket.status.replace(/_/g, ' ')}
+                              {ticket.status === 'open' ? t('customers:ticketStatusOpen') :
+                               ticket.status === 'in_progress' ? t('customers:ticketStatusInProgress') :
+                               ticket.status === 'resolved' ? t('customers:ticketStatusResolved') :
+                               t('customers:ticketStatusClosed')}
                             </Badge>
                             {ticket.status !== 'resolved' && (
                               <Badge variant={
@@ -1186,7 +1189,10 @@ export default function CustomerDetails() {
                                 ticket.priority === 'high' ? 'default' :
                                 'outline'
                               }>
-                                {ticket.priority}
+                                {ticket.priority === 'low' ? t('customers:ticketPriorityLow') :
+                                 ticket.priority === 'normal' ? t('customers:ticketPriorityNormal') :
+                                 ticket.priority === 'high' ? t('customers:ticketPriorityHigh') :
+                                 t('customers:ticketPriorityUrgent')}
                               </Badge>
                             )}
                           </div>
@@ -1195,15 +1201,15 @@ export default function CustomerDetails() {
                             <p className="text-sm text-slate-500 line-clamp-2">{ticket.description}</p>
                           )}
                           <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
-                            <span>Category: {ticket.category?.replace(/_/g, ' ')}</span>
+                            <span>{t('common:category')}: {ticket.category?.replace(/_/g, ' ')}</span>
                             {ticket.createdAt && (
-                              <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                              <span>{t('common:created')}: {new Date(ticket.createdAt).toLocaleDateString()}</span>
                             )}
                           </div>
                         </div>
                         <Link href={`/tickets/${ticket.id}`}>
                           <Button variant="ghost" size="sm">
-                            View
+                            {t('common:view')}
                           </Button>
                         </Link>
                       </div>

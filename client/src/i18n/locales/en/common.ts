@@ -206,6 +206,9 @@ const common = {
   na: 'N/A',
   optional: 'Optional',
   required_field: 'Required',
+  product: 'Product',
+  created: 'Created',
+  orderItems: 'Order Items',
   
   // Sidebar
   sidebar: 'Sidebar',

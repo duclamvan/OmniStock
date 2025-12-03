@@ -308,6 +308,18 @@ const customers = {
   createTicket: 'Tạo phiếu hỗ trợ',
   viewAllTickets: 'Xem tất cả phiếu',
   
+  // Ticket Statuses
+  ticketStatusOpen: 'Đang mở',
+  ticketStatusInProgress: 'Đang xử lý',
+  ticketStatusResolved: 'Đã giải quyết',
+  ticketStatusClosed: 'Đã đóng',
+  
+  // Ticket Priorities
+  ticketPriorityLow: 'Thấp',
+  ticketPriorityNormal: 'Bình thường',
+  ticketPriorityHigh: 'Cao',
+  ticketPriorityUrgent: 'Khẩn cấp',
+  
   // AddCustomer Form - Validation
   nameRequired: 'Tên là bắt buộc',
   invalidEmail: 'Email không hợp lệ',

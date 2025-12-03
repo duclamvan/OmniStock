@@ -151,6 +151,18 @@ const customers = {
   createTicket: 'Create Ticket',
   viewAllTickets: 'View All Tickets',
   
+  // Ticket Statuses
+  ticketStatusOpen: 'Open',
+  ticketStatusInProgress: 'In Progress',
+  ticketStatusResolved: 'Resolved',
+  ticketStatusClosed: 'Closed',
+  
+  // Ticket Priorities
+  ticketPriorityLow: 'Low',
+  ticketPriorityNormal: 'Normal',
+  ticketPriorityHigh: 'High',
+  ticketPriorityUrgent: 'Urgent',
+  
   // AddCustomer Form - Validation
   nameRequired: 'Name is required',
   invalidEmail: 'Invalid email',
