@@ -371,7 +371,7 @@ export default function UserSettings() {
   };
 
   const formatRole = (role: string | undefined) => {
-    if (!role) return 'N/A';
+    if (!role) return t('settings:notAvailable');
     return role
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -392,7 +392,7 @@ export default function UserSettings() {
   };
 
   const formatAuthProvider = (provider: string | undefined) => {
-    if (!provider) return 'N/A';
+    if (!provider) return t('settings:notAvailable');
     return provider.charAt(0).toUpperCase() + provider.slice(1);
   };
 
@@ -450,20 +450,25 @@ export default function UserSettings() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-            {t('settings:userSettings')}
-          </h1>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
-            {t('settings:manageYourAccountPreferences')}
-          </p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-purple-500/5 to-blue-500/10 dark:from-primary/20 dark:via-purple-500/10 dark:to-blue-500/20 p-6 md:p-8">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />
+        <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/20 dark:bg-primary/30">
+                <SettingsIcon className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+              </div>
+              {t('settings:userSettings')}
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-2 md:mt-3 max-w-lg">
+              {t('settings:manageYourAccountPreferences')}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Profile Picture Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" />
@@ -516,7 +521,7 @@ export default function UserSettings() {
       </Card>
 
       {/* Personal Information Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserIcon className="h-5 w-5 text-primary" />
@@ -612,7 +617,7 @@ export default function UserSettings() {
       </Card>
 
       {/* Contact Information Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-primary" />
@@ -671,7 +676,7 @@ export default function UserSettings() {
       </Card>
 
       {/* Two-Factor Authentication Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-blue-950/30">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -878,7 +883,7 @@ export default function UserSettings() {
 
       {/* Password Change - Only for email/password auth */}
       {user.authProvider === 'email' && (
-        <Card>
+        <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5 text-primary" />
@@ -976,7 +981,7 @@ export default function UserSettings() {
       )}
 
       {/* Connected Accounts Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Link2 className="h-5 w-5 text-primary" />
@@ -1065,15 +1070,13 @@ export default function UserSettings() {
           </div>
 
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
-            {i18n.language === 'vi' 
-              ? 'Liên kết thêm tài khoản sẽ được hỗ trợ trong phiên bản tương lai' 
-              : 'Additional account linking will be available in a future update'}
+            {t('settings:additionalAccountLinkingComingSoon')}
           </p>
         </CardContent>
       </Card>
 
       {/* Language & Theme Preferences Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
@@ -1139,7 +1142,7 @@ export default function UserSettings() {
       </Card>
 
       {/* Account Details Section */}
-      <Card>
+      <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserIcon className="h-5 w-5 text-primary" />
@@ -1169,7 +1172,7 @@ export default function UserSettings() {
                 {t('common:emailAddress')}
               </div>
               <p className="text-gray-900 dark:text-white font-medium break-all" data-testid="text-account-email">
-                {user.email || 'N/A'}
+                {user.email || t('settings:notAvailable')}
               </p>
             </div>
 
@@ -1210,7 +1213,7 @@ export default function UserSettings() {
               <p className="text-gray-900 dark:text-white" data-testid="text-account-created">
                 {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) 
                   ? format(new Date(user.createdAt), 'PPP') 
-                  : 'N/A'}
+                  : t('settings:notAvailable')}
               </p>
               {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1228,7 +1231,7 @@ export default function UserSettings() {
               <p className="text-gray-900 dark:text-white" data-testid="text-account-updated">
                 {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime())
                   ? format(new Date(user.updatedAt), 'PPP') 
-                  : 'N/A'}
+                  : t('settings:notAvailable')}
               </p>
               {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime()) && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
