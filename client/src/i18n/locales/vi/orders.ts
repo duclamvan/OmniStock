@@ -1151,7 +1151,7 @@ const orders = {
   // Packing Completion Modal
   packingComplete: 'Hoàn thành đóng gói!',
   excellentWork: 'Tuyệt vời! Đơn hàng {{orderId}} đã sẵn sàng để giao',
-  pickNextOrder: 'LẤY ĐƠN TIẾP ({{count}})',
+  pickNextOrder: 'LẤY ĐƠN TIẾP',
   packNextOrder: 'ĐÓNG ĐƠN TIẾP ({{count}})',
   goToReadyToShip: 'ĐẾN SÀNSÀNG GIAO ({{count}})',
   proceedToPacking: 'TIẾP TỤC ĐÓNG GÓI',

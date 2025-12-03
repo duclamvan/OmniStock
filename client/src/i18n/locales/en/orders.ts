@@ -1180,7 +1180,7 @@ const orders = {
   // Packing Completion Modal
   packingComplete: 'Packing Complete!',
   excellentWork: 'Excellent work! Order {{orderId}} is ready to ship',
-  pickNextOrder: 'PICK NEXT ORDER ({{count}})',
+  pickNextOrder: 'PICK NEXT ORDER',
   packNextOrder: 'PACK NEXT ORDER ({{count}})',
   goToReadyToShip: 'GO TO READY TO SHIP ({{count}})',
   proceedToPacking: 'PROCEED TO PACKING',
