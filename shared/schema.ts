@@ -339,6 +339,10 @@ export const customers = pgTable('customers', {
   profilePictureUrl: varchar('profile_picture_url'), // Local path to downloaded Facebook profile picture
   // Store credit balance
   storeCredit: decimal('store_credit', { precision: 10, scale: 2 }).default('0'), // Available store credit balance
+  // Blacklist status
+  isBlacklisted: boolean('is_blacklisted').default(false), // Whether customer is blacklisted
+  blacklistedAt: timestamp('blacklisted_at'), // When customer was blacklisted
+  blacklistReason: text('blacklist_reason'), // Reason for blacklisting
 });
 
 // Customer shipping addresses (multiple per customer)

@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
   Edit, 
@@ -46,7 +48,9 @@ import {
   Truck,
   Receipt,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Ban,
+  ShieldCheck
 } from "lucide-react";
 import { Facebook } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
@@ -60,6 +64,7 @@ export default function CustomerDetails() {
   const { t } = useTranslation(['customers', 'common']);
   const { id } = useParams();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [expandAll, setExpandAll] = useState<boolean>(() => {
     const saved = localStorage.getItem(EXPAND_ALL_KEY);
@@ -95,6 +100,32 @@ export default function CustomerDetails() {
   const { data: billingAddresses = [], isLoading: billingAddressesLoading } = useQuery<any[]>({
     queryKey: [`/api/customers/${id}/billing-addresses`],
     enabled: !!id,
+  });
+
+  // Blacklist toggle mutation
+  const blacklistMutation = useMutation({
+    mutationFn: async (isBlacklisted: boolean) => {
+      return apiRequest('PATCH', `/api/customers/${id}`, {
+        isBlacklisted,
+        blacklistedAt: isBlacklisted ? new Date().toISOString() : null,
+      });
+    },
+    onSuccess: (_, isBlacklisted) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}`] });
+      toast({
+        title: isBlacklisted ? t('customers:addedToBlacklist') : t('customers:removedFromBlacklist'),
+        description: isBlacklisted 
+          ? t('customers:customerBlacklistAdded', { name: customer?.name })
+          : t('customers:customerBlacklistRemoved', { name: customer?.name }),
+      });
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: t('common:error'),
+        description: t('customers:blacklistError'),
+      });
+    },
   });
 
   const isLoading = customerLoading || ordersLoading || shippingAddressesLoading || billingAddressesLoading;
@@ -285,17 +316,46 @@ export default function CustomerDetails() {
                 </div>
               </div>
             </div>
-            <Link href={`/customers/${id}/edit`}>
-              <Button data-testid="button-editCustomer" className="shrink-0">
-                <Edit className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">{t('common:edit')}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={customer.isBlacklisted ? "default" : "outline"}
+                onClick={() => blacklistMutation.mutate(!customer.isBlacklisted)}
+                disabled={blacklistMutation.isPending}
+                className={`shrink-0 ${customer.isBlacklisted 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950'}`}
+                data-testid="button-toggleBlacklist"
+              >
+                {customer.isBlacklisted ? (
+                  <>
+                    <ShieldCheck className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">{t('customers:removeFromBlacklist')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Ban className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">{t('customers:addToBlacklist')}</span>
+                  </>
+                )}
               </Button>
-            </Link>
+              <Link href={`/customers/${id}/edit`}>
+                <Button data-testid="button-editCustomer" className="shrink-0">
+                  <Edit className="h-4 w-4 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('common:edit')}</span>
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Badges */}
-          {customerBadges.length > 0 && (
+          {(customerBadges.length > 0 || customer.hasPayLaterBadge || customer.isBlacklisted) && (
             <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+              {customer.isBlacklisted && (
+                <Badge variant="outline" className="bg-red-50 border-red-300 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400">
+                  <Ban className="mr-1 h-3 w-3" />
+                  {t('customers:blacklisted')}
+                </Badge>
+              )}
               {customerBadges.map((badge, index) => {
                 const Icon = badge.icon;
                 return (

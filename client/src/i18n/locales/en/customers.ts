@@ -120,6 +120,16 @@ const customers = {
   paid: 'Paid',
   payLater: 'Pay Later',
   
+  // Blacklist
+  addToBlacklist: 'Add to Blacklist',
+  removeFromBlacklist: 'Remove from Blacklist',
+  addedToBlacklist: 'Added to Blacklist',
+  removedFromBlacklist: 'Removed from Blacklist',
+  customerBlacklistAdded: '{{name}} has been added to the blacklist',
+  customerBlacklistRemoved: '{{name}} has been removed from the blacklist',
+  blacklistError: 'Failed to update blacklist status',
+  blacklisted: 'Blacklisted',
+  
   // Order Statuses
   toFulfill: 'To Fulfill',
   readyToShip: 'Ready to Ship',

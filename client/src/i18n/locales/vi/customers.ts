@@ -277,6 +277,16 @@ const customers = {
   paid: 'Đã thanh toán',
   payLater: 'Thanh toán sau',
   
+  // Blacklist
+  addToBlacklist: 'Thêm vào danh sách đen',
+  removeFromBlacklist: 'Xóa khỏi danh sách đen',
+  addedToBlacklist: 'Đã thêm vào danh sách đen',
+  removedFromBlacklist: 'Đã xóa khỏi danh sách đen',
+  customerBlacklistAdded: '{{name}} đã được thêm vào danh sách đen',
+  customerBlacklistRemoved: '{{name}} đã được xóa khỏi danh sách đen',
+  blacklistError: 'Không thể cập nhật trạng thái danh sách đen',
+  blacklisted: 'Danh sách đen',
+  
   // Order Statuses
   toFulfill: 'Cần xử lý',
   readyToShip: 'Sẵn sàng gửi',
