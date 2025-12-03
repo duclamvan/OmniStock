@@ -720,19 +720,80 @@ export default function SupplierProcessing() {
                     <SelectItem value="delivered">Received</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px]" data-testid="select-location-filter">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder={t('filterByLocation')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allLocations')}</SelectItem>
-                    <SelectItem value="Europe">🇪🇺 {t('europe')}</SelectItem>
-                    <SelectItem value="USA">🇺🇸 {t('usa')}</SelectItem>
-                    <SelectItem value="China">🇨🇳 {t('china')}</SelectItem>
-                    <SelectItem value="Vietnam">🇻🇳 {t('vietnam')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Location Toggle Buttons - prominent for frequent switching */}
+                <div className="flex items-center gap-1 p-1 bg-muted/50 dark:bg-muted/30 rounded-lg border" data-testid="location-filter-group">
+                  <Button
+                    variant={locationFilter === 'all' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationFilter('all')}
+                    className={cn(
+                      "h-9 px-3 text-xs font-medium transition-all",
+                      locationFilter === 'all' 
+                        ? "bg-primary text-primary-foreground shadow-sm" 
+                        : "hover:bg-background"
+                    )}
+                    data-testid="button-location-all"
+                  >
+                    <MapPin className="h-3.5 w-3.5 mr-1" />
+                    {t('all')}
+                  </Button>
+                  <Button
+                    variant={locationFilter === 'Europe' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationFilter('Europe')}
+                    className={cn(
+                      "h-9 px-3 text-sm transition-all",
+                      locationFilter === 'Europe' 
+                        ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700" 
+                        : "hover:bg-blue-50 dark:hover:bg-blue-950"
+                    )}
+                    data-testid="button-location-europe"
+                  >
+                    🇪🇺
+                  </Button>
+                  <Button
+                    variant={locationFilter === 'USA' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationFilter('USA')}
+                    className={cn(
+                      "h-9 px-3 text-sm transition-all",
+                      locationFilter === 'USA' 
+                        ? "bg-red-600 text-white shadow-sm hover:bg-red-700" 
+                        : "hover:bg-red-50 dark:hover:bg-red-950"
+                    )}
+                    data-testid="button-location-usa"
+                  >
+                    🇺🇸
+                  </Button>
+                  <Button
+                    variant={locationFilter === 'China' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationFilter('China')}
+                    className={cn(
+                      "h-9 px-3 text-sm transition-all",
+                      locationFilter === 'China' 
+                        ? "bg-amber-600 text-white shadow-sm hover:bg-amber-700" 
+                        : "hover:bg-amber-50 dark:hover:bg-amber-950"
+                    )}
+                    data-testid="button-location-china"
+                  >
+                    🇨🇳
+                  </Button>
+                  <Button
+                    variant={locationFilter === 'Vietnam' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationFilter('Vietnam')}
+                    className={cn(
+                      "h-9 px-3 text-sm transition-all",
+                      locationFilter === 'Vietnam' 
+                        ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" 
+                        : "hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                    )}
+                    data-testid="button-location-vietnam"
+                  >
+                    🇻🇳
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
