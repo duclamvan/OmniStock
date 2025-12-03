@@ -2125,3 +2125,42 @@ export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups, {
 
 export type DatabaseBackup = typeof databaseBackups.$inferSelect;
 export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
+
+// Employee Incidents - tracks mistakes, incidents, and performance issues
+export const employeeIncidents = pgTable('employee_incidents', {
+  id: serial('id').primaryKey(),
+  employeeId: integer('employee_id').notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: varchar('type', { length: 50 }).notNull().default('mistake'), // mistake, safety, quality, attendance, policy, other
+  severity: varchar('severity', { length: 20 }).notNull().default('minor'), // minor, moderate, major, critical
+  status: varchar('status', { length: 20 }).notNull().default('open'), // open, investigating, resolved, dismissed
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedBy: varchar('resolved_by').references(() => users.id),
+  resolution: text('resolution'),
+  reportedBy: varchar('reported_by').references(() => users.id),
+  relatedOrderId: varchar('related_order_id').references(() => orders.id),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const insertEmployeeIncidentSchema = createInsertSchema(employeeIncidents, {
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  type: z.enum(['mistake', 'safety', 'quality', 'attendance', 'policy', 'other']).default('mistake'),
+  severity: z.enum(['minor', 'moderate', 'major', 'critical']).default('minor'), // critical added for serious incidents
+  status: z.enum(['open', 'investigating', 'resolved', 'dismissed']).default('open'),
+  occurredAt: z.union([z.string(), z.date()]).optional(),
+  resolution: z.string().optional(),
+  notes: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+});
+
+export type EmployeeIncident = typeof employeeIncidents.$inferSelect;
+export type InsertEmployeeIncident = z.infer<typeof insertEmployeeIncidentSchema>;

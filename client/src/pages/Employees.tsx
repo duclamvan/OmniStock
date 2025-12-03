@@ -60,7 +60,8 @@ import {
   Building2,
   Phone,
   Mail,
-  ClipboardList
+  ClipboardList,
+  Eye
 } from "lucide-react";
 import {
   Tooltip,
@@ -429,6 +430,15 @@ export default function Employees() {
                             size="icon"
                             variant="ghost"
                             className="h-10 w-10"
+                            onClick={() => setLocation(`/employees/${employee.id}`)}
+                            data-testid={`button-view-${employee.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10"
                             onClick={() => handleEditEmployee(employee)}
                             data-testid={`button-edit-${employee.id}`}
                           >
@@ -609,6 +619,24 @@ export default function Employees() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setLocation(`/employees/${employee.id}`)}
+                                    data-testid={`button-view-${employee.id}`}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t('common:viewDetails')}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>

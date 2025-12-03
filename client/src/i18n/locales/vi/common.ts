@@ -63,6 +63,7 @@ const common = {
   upload: 'Tải lên',
   print: 'In',
   view: 'Xem',
+  viewDetails: 'Xem Chi tiết',
   details: 'Chi tiết',
   refresh: 'Làm mới',
   apply: 'Áp dụng',

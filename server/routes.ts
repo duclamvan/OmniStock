@@ -37,6 +37,7 @@ import {
   insertNotificationSchema,
   insertActivityLogSchema,
   insertPackingMaterialSchema,
+  insertEmployeeIncidentSchema,
   warehouseTasks,
   insertWarehouseTaskSchema,
   productCostHistory,
@@ -939,6 +940,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error assigning user to employee:', error);
       res.status(500).json({ message: 'Failed to assign user to employee' });
+    }
+  });
+
+  // GET /api/employees/:id/stats - Get employee performance stats (admin-only)
+  app.get('/api/employees/:id/stats', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const stats = await storage.getEmployeeStats(employeeId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting employee stats:', error);
+      res.status(500).json({ message: 'Failed to get employee stats' });
+    }
+  });
+
+  // GET /api/employees/:id/incidents - Get employee incidents (admin-only)
+  app.get('/api/employees/:id/incidents', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const incidents = await storage.getEmployeeIncidents(employeeId);
+      res.json(incidents);
+    } catch (error) {
+      console.error('Error getting employee incidents:', error);
+      res.status(500).json({ message: 'Failed to get employee incidents' });
+    }
+  });
+
+  // POST /api/employees/:id/incidents - Create new incident (admin-only)
+  app.post('/api/employees/:id/incidents', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const user = req.user;
+      
+      // Validate request body
+      const validated = insertEmployeeIncidentSchema.omit({ id: true, employeeId: true, reportedBy: true, createdAt: true, updatedAt: true }).safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: 'Invalid incident data', errors: validated.error.errors });
+      }
+      
+      const incidentData = {
+        ...validated.data,
+        employeeId,
+        reportedBy: user?.id || null,
+      };
+      
+      const incident = await storage.createEmployeeIncident(incidentData);
+      res.status(201).json(incident);
+    } catch (error) {
+      console.error('Error creating employee incident:', error);
+      res.status(500).json({ message: 'Failed to create incident' });
+    }
+  });
+
+  // PATCH /api/employees/:employeeId/incidents/:id - Update incident (admin-only)
+  app.patch('/api/employees/:employeeId/incidents/:id', requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const incidentId = parseInt(req.params.id);
+      const user = req.user;
+      
+      // Validate request body (partial update, all fields optional)
+      const updateSchema = insertEmployeeIncidentSchema.omit({ id: true, employeeId: true, reportedBy: true, createdAt: true, updatedAt: true }).partial();
+      const validated = updateSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: 'Invalid incident data', errors: validated.error.errors });
+      }
+      
+      const updateData: any = { ...validated.data };
+      
+      // If status is being set to resolved, set resolvedAt and resolvedBy
+      if (validated.data.status === 'resolved' || validated.data.status === 'dismissed') {
+        updateData.resolvedAt = new Date();
+        updateData.resolvedBy = user?.id || null;
+      }
+      
+      const incident = await storage.updateEmployeeIncident(incidentId, updateData);
+      
+      if (!incident) {
+        return res.status(404).json({ message: 'Incident not found' });
+      }
+      
+      res.json(incident);
+    } catch (error) {
+      console.error('Error updating employee incident:', error);
+      res.status(500).json({ message: 'Failed to update incident' });
+    }
+  });
+
+  // DELETE /api/employees/:employeeId/incidents/:id - Delete incident (admin-only)
+  app.delete('/api/employees/:employeeId/incidents/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const incidentId = parseInt(req.params.id);
+      await storage.deleteEmployeeIncident(incidentId);
+      res.json({ message: 'Incident deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting employee incident:', error);
+      res.status(500).json({ message: 'Failed to delete incident' });
+    }
+  });
+
+  // GET /api/employees/:id/tasks - Get employee assigned tasks (admin-only)
+  app.get('/api/employees/:id/tasks', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const employee = await storage.getEmployee(employeeId);
+      
+      if (!employee?.userId) {
+        return res.json([]);
+      }
+      
+      const tasks = await storage.getWarehouseTasks({ assignedToUserId: employee.userId });
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error getting employee tasks:', error);
+      res.status(500).json({ message: 'Failed to get employee tasks' });
+    }
+  });
+
+  // GET /api/employees/:id/activity - Get employee activity log (admin-only)
+  app.get('/api/employees/:id/activity', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const employee = await storage.getEmployee(employeeId);
+      
+      if (!employee?.userId) {
+        return res.json([]);
+      }
+      
+      const activity = await storage.getActivityLogs({ userId: employee.userId, limit });
+      res.json(activity);
+    } catch (error) {
+      console.error('Error getting employee activity:', error);
+      res.status(500).json({ message: 'Failed to get employee activity' });
     }
   });
 

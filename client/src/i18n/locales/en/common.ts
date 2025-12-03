@@ -58,6 +58,7 @@ const common = {
   upload: 'Upload',
   print: 'Print',
   view: 'View',
+  viewDetails: 'View Details',
   details: 'Details',
   refresh: 'Refresh',
   apply: 'Apply',

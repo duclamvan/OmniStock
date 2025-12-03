@@ -95,6 +95,7 @@ import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
 import Employees from "@/pages/Employees";
+import EmployeeDetail from "@/pages/Employees/EmployeeDetail";
 import ActivityLog from "@/pages/ActivityLog";
 import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
@@ -368,7 +369,10 @@ function Router() {
         <Route path="/receiving/receipt/:id" component={StartReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
-        {/* Employees Route */}
+        {/* Employees Routes */}
+        <Route path="/employees/:id">
+          {() => <ProtectedRoute requireAdmin><EmployeeDetail /></ProtectedRoute>}
+        </Route>
         <Route path="/employees">
           {() => <ProtectedRoute requireAdmin><Employees /></ProtectedRoute>}
         </Route>

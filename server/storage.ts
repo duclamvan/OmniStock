@@ -56,6 +56,7 @@ import {
   activityLog,
   invoices,
   warehouseTasks,
+  employeeIncidents,
   type User,
   type InsertUser,
   type Invoice,
@@ -64,6 +65,8 @@ import {
   type InsertActivityLog,
   type Employee,
   type InsertEmployee,
+  type EmployeeIncident,
+  type InsertEmployeeIncident,
   type Category,
   type InsertCategory,
   type ImportPurchase,
@@ -268,6 +271,21 @@ export interface IStorage {
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: number): Promise<void>;
   assignUserToEmployee(employeeId: number, userId: string | null): Promise<void>;
+  getEmployeeStats(employeeId: number): Promise<{
+    totalOrders: number;
+    totalTasks: number;
+    tasksCompleted: number;
+    openIncidents: number;
+    totalIncidents: number;
+    recentActivityCount: number;
+  }>;
+
+  // Employee Incidents
+  getEmployeeIncidents(employeeId: number): Promise<EmployeeIncident[]>;
+  getEmployeeIncident(id: number): Promise<EmployeeIncident | undefined>;
+  createEmployeeIncident(incident: InsertEmployeeIncident): Promise<EmployeeIncident>;
+  updateEmployeeIncident(id: number, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined>;
+  deleteEmployeeIncident(id: number): Promise<void>;
 
   // Activity Logs
   getActivityLogs(options?: { userId?: string; limit?: number; offset?: number }): Promise<ActivityLog[]>;
@@ -942,6 +960,120 @@ export class DatabaseStorage implements IStorage {
       .update(employees)
       .set({ userId, updatedAt: new Date() })
       .where(eq(employees.id, employeeId));
+  }
+
+  async getEmployeeStats(employeeId: number): Promise<{
+    totalOrders: number;
+    totalTasks: number;
+    tasksCompleted: number;
+    openIncidents: number;
+    totalIncidents: number;
+    recentActivityCount: number;
+  }> {
+    const employee = await this.getEmployee(employeeId);
+    if (!employee || !employee.userId) {
+      return {
+        totalOrders: 0,
+        totalTasks: 0,
+        tasksCompleted: 0,
+        openIncidents: 0,
+        totalIncidents: 0,
+        recentActivityCount: 0,
+      };
+    }
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [orderStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(activityLog)
+      .where(and(
+        eq(activityLog.userId, employee.userId),
+        eq(activityLog.entityType, 'order'),
+        sql`${activityLog.action} IN ('create', 'update', 'fulfill')`
+      ));
+
+    const [taskStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(warehouseTasks)
+      .where(eq(warehouseTasks.assignedToUserId, employee.userId));
+
+    const [completedTaskStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(warehouseTasks)
+      .where(and(
+        eq(warehouseTasks.assignedToUserId, employee.userId),
+        eq(warehouseTasks.status, 'completed')
+      ));
+
+    const [openIncidentStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeeIncidents)
+      .where(and(
+        eq(employeeIncidents.employeeId, employeeId),
+        sql`${employeeIncidents.status} IN ('open', 'investigating')`
+      ));
+
+    const [totalIncidentStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeeIncidents)
+      .where(eq(employeeIncidents.employeeId, employeeId));
+
+    const [recentActivityStats] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(activityLog)
+      .where(and(
+        eq(activityLog.userId, employee.userId),
+        sql`${activityLog.createdAt} >= ${thirtyDaysAgo}`
+      ));
+
+    return {
+      totalOrders: Number(orderStats?.count || 0),
+      totalTasks: Number(taskStats?.count || 0),
+      tasksCompleted: Number(completedTaskStats?.count || 0),
+      openIncidents: Number(openIncidentStats?.count || 0),
+      totalIncidents: Number(totalIncidentStats?.count || 0),
+      recentActivityCount: Number(recentActivityStats?.count || 0),
+    };
+  }
+
+  // Employee Incidents
+  async getEmployeeIncidents(employeeId: number): Promise<EmployeeIncident[]> {
+    return await db
+      .select()
+      .from(employeeIncidents)
+      .where(eq(employeeIncidents.employeeId, employeeId))
+      .orderBy(desc(employeeIncidents.createdAt));
+  }
+
+  async getEmployeeIncident(id: number): Promise<EmployeeIncident | undefined> {
+    const [incident] = await db
+      .select()
+      .from(employeeIncidents)
+      .where(eq(employeeIncidents.id, id));
+    return incident || undefined;
+  }
+
+  async createEmployeeIncident(incident: InsertEmployeeIncident): Promise<EmployeeIncident> {
+    const [newIncident] = await db
+      .insert(employeeIncidents)
+      .values(incident)
+      .returning();
+    return newIncident;
+  }
+
+  async updateEmployeeIncident(id: number, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined> {
+    const [updated] = await db
+      .update(employeeIncidents)
+      .set({ ...incident, updatedAt: new Date() })
+      .where(eq(employeeIncidents.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEmployeeIncident(id: number): Promise<void> {
+    await db.delete(employeeIncidents).where(eq(employeeIncidents.id, id));
   }
 
   // Activity Logs
