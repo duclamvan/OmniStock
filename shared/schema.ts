@@ -799,7 +799,11 @@ export const orderItems = pgTable('order_items', {
   packEndTime: timestamp('pack_end_time'),
   notes: text('notes'),
   landingCost: decimal('landing_cost', { precision: 10, scale: 4 }),
-  variantName: varchar('variant_name')
+  variantName: varchar('variant_name'),
+  appliedDiscountId: integer('applied_discount_id').references(() => discounts.id),
+  appliedDiscountLabel: varchar('applied_discount_label'), // Display text like "BUY 2 GET 1", "SALE 20%"
+  appliedDiscountType: varchar('applied_discount_type'), // percentage, fixed, buy_x_get_y
+  appliedDiscountScope: varchar('applied_discount_scope') // product, order, customer
 });
 
 // Product warehouse locations table
@@ -994,11 +998,23 @@ export const discounts = pgTable('discounts', {
   type: text('type').notNull(), // percentage, fixed, buy_x_get_y
   percentage: decimal('percentage', { precision: 5, scale: 2 }),
   value: decimal('value', { precision: 10, scale: 2 }),
+  buyQuantity: integer('buy_quantity'), // For buy_x_get_y: buy X
+  getQuantity: integer('get_quantity'), // For buy_x_get_y: get Y free
   minOrderAmount: decimal('min_order_amount', { precision: 10, scale: 2 }),
   status: text('status').default('active'), // active, inactive, expired
   startDate: date('start_date'),
   endDate: date('end_date'),
   applicationScope: text('application_scope').default('order'), // order, product, customer
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Product-Discount junction table for product-specific discounts
+export const productDiscounts = pgTable('product_discounts', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  discountId: integer('discount_id').notNull().references(() => discounts.id, { onDelete: 'cascade' }),
+  isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -1502,6 +1518,7 @@ export const insertPackingMaterialUsageSchema = createInsertSchema(packingMateri
 export const insertPmSupplierSchema = createInsertSchema(pmSuppliers).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductDiscountSchema = createInsertSchema(productDiscounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceItemSchema = createInsertSchema(serviceItems).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1689,6 +1706,8 @@ export type InsertPmSupplier = z.infer<typeof insertPmSupplierSchema>;
 
 export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
+export type ProductDiscount = typeof productDiscounts.$inferSelect;
+export type InsertProductDiscount = z.infer<typeof insertProductDiscountSchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Service = typeof services.$inferSelect;
