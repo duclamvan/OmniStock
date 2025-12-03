@@ -6561,7 +6561,22 @@ export default function PickPack() {
 
       return (
         <div className="max-w-3xl mx-auto px-3 lg:px-0 py-8">
-          <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30">
+          <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30 relative">
+            <Link href="/">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  setShowPackingCompletionModal(false);
+                  setActivePackingOrder(null);
+                  setPackingTimer(0);
+                }}
+                className="absolute top-3 right-3 h-10 w-10 rounded-full bg-white/80 hover:bg-white shadow-md z-10"
+                data-testid="button-home"
+              >
+                <Home className="h-5 w-5 text-gray-600" />
+              </Button>
+            </Link>
             <div className="bg-gradient-to-r from-purple-50 dark:from-purple-900/300 to-indigo-50 dark:to-indigo-900/300 p-1 lg:p-2"></div>
             <CardContent className="p-6 sm:p-10 lg:p-16 text-center">
               <div className="bg-gradient-to-br from-purple-400 dark:from-purple-500 to-indigo-400 dark:to-indigo-500 rounded-full w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mx-auto mb-4 lg:mb-8 flex items-center justify-center shadow-xl animate-bounce">
@@ -6685,22 +6700,6 @@ export default function PickPack() {
                   );
                 })()}
                 
-                {/* Close button - Stay in packing tab */}
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  onClick={() => {
-                    setShowPackingCompletionModal(false);
-                    setActivePackingOrder(null);
-                    setPackingTimer(0);
-                    setSelectedTab('packing');
-                  }}
-                  className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-gray-400 text-gray-600 hover:bg-gray-50 shadow-lg"
-                  data-testid="button-close-modal"
-                >
-                  <X className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                  CLOSE
-                </Button>
               </div>
             </CardContent>
           </Card>
