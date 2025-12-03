@@ -1654,7 +1654,7 @@ export default function PickPack() {
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
   const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
   const [routeSortOrder, setRouteSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [routeStartZone, setRouteStartZone] = useState('');
+  const [routeStartZones, setRouteStartZones] = useState<string[]>([]);
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [manualItemIndex, setManualItemIndex] = useState(0);
@@ -5321,12 +5321,25 @@ export default function PickPack() {
       const locA = a.warehouseLocation || '';
       const locB = b.warehouseLocation || '';
       
-      // If a start zone is specified, prioritize items from that zone
-      if (routeStartZone) {
-        const aStartsWithZone = locA.toLowerCase().startsWith(routeStartZone.toLowerCase());
-        const bStartsWithZone = locB.toLowerCase().startsWith(routeStartZone.toLowerCase());
-        if (aStartsWithZone && !bStartsWithZone) return -1;
-        if (!aStartsWithZone && bStartsWithZone) return 1;
+      // If start zones are specified, prioritize items from those zones (in order)
+      if (routeStartZones.length > 0) {
+        // Find which zone each item matches (if any) - lower index = higher priority
+        const getZonePriority = (loc: string) => {
+          const locLower = loc.toLowerCase();
+          for (let i = 0; i < routeStartZones.length; i++) {
+            if (locLower.startsWith(routeStartZones[i].toLowerCase())) {
+              return i; // Return zone index as priority (lower = first)
+            }
+          }
+          return routeStartZones.length; // Not in any zone = lowest priority
+        };
+        
+        const aPriority = getZonePriority(locA);
+        const bPriority = getZonePriority(locB);
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority; // Sort by zone priority
+        }
       }
       
       // Sort by location, ascending or descending
@@ -13442,33 +13455,152 @@ export default function PickPack() {
                         </div>
                       </div>
                       
-                      {/* Start Zone */}
+                      {/* Start Zones - Multiple Selection */}
                       <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                           <MapPin className="h-5 w-5 text-green-500" />
-                          {t('startZone', 'Start Zone')}
+                          {t('startZones', 'Start Zones')}
+                          {routeStartZones.length > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {routeStartZones.length} selected
+                            </Badge>
+                          )}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          {t('startZoneDesc', 'Items from this zone will be picked first')}
+                          {t('startZonesDesc', 'Items from these zones will be picked first (in order selected)')}
                         </p>
-                        <Input
-                          placeholder={t('enterZoneCode', 'Enter zone code (e.g., A, B1, COLD)')}
-                          value={routeStartZone}
-                          onChange={(e) => setRouteStartZone(e.target.value)}
-                          className="bg-white dark:bg-slate-700"
-                        />
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {['A', 'B', 'C', 'D', 'COLD', 'HEAVY'].map(zone => (
+                        
+                        {/* Selected zones display with order numbers */}
+                        {routeStartZones.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            {routeStartZones.map((zone, index) => (
+                              <Badge 
+                                key={zone} 
+                                variant="default" 
+                                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1.5 pr-1 cursor-pointer"
+                                onClick={() => setRouteStartZones(routeStartZones.filter(z => z !== zone))}
+                              >
+                                <span className="bg-green-800 text-xs px-1.5 py-0.5 rounded">{index + 1}</span>
+                                {zone}
+                                <X className="h-3 w-3 ml-0.5 hover:text-green-200" />
+                              </Badge>
+                            ))}
                             <Button
-                              key={zone}
                               size="sm"
-                              variant={routeStartZone === zone ? 'default' : 'outline'}
-                              className="text-xs"
-                              onClick={() => setRouteStartZone(routeStartZone === zone ? '' : zone)}
+                              variant="ghost"
+                              className="h-6 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-2"
+                              onClick={() => setRouteStartZones([])}
                             >
-                              {zone}
+                              Clear all
                             </Button>
-                          ))}
+                          </div>
+                        )}
+                        
+                        {/* Custom zone input */}
+                        <div className="flex gap-2 mb-3">
+                          <Input
+                            placeholder={t('enterZoneCode', 'Enter zone code (e.g., A3, B2, C0)')}
+                            className="bg-white dark:bg-slate-700 flex-1"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const value = (e.target as HTMLInputElement).value.trim().toUpperCase();
+                                if (value && !routeStartZones.includes(value)) {
+                                  setRouteStartZones([...routeStartZones, value]);
+                                  (e.target as HTMLInputElement).value = '';
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              const input = (e.target as HTMLElement).parentElement?.querySelector('input');
+                              if (input) {
+                                const value = input.value.trim().toUpperCase();
+                                if (value && !routeStartZones.includes(value)) {
+                                  setRouteStartZones([...routeStartZones, value]);
+                                  input.value = '';
+                                }
+                              }
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Main zone buttons */}
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('mainZones', 'Main Zones')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {['A', 'B', 'C', 'D', 'E', 'F'].map(zone => (
+                              <Button
+                                key={zone}
+                                size="sm"
+                                variant={routeStartZones.includes(zone) ? 'default' : 'outline'}
+                                className={`text-xs min-w-[40px] ${routeStartZones.includes(zone) ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                onClick={() => {
+                                  if (routeStartZones.includes(zone)) {
+                                    setRouteStartZones(routeStartZones.filter(z => z !== zone));
+                                  } else {
+                                    setRouteStartZones([...routeStartZones, zone]);
+                                  }
+                                }}
+                              >
+                                {zone}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Specific zone locations */}
+                        <div className="space-y-2 mt-3">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('specificLocations', 'Specific Locations')}</p>
+                          <div className="grid grid-cols-6 gap-1.5">
+                            {['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9',
+                              'B0', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9',
+                              'C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'].map(zone => (
+                              <Button
+                                key={zone}
+                                size="sm"
+                                variant={routeStartZones.includes(zone) ? 'default' : 'outline'}
+                                className={`text-xs h-7 px-2 ${routeStartZones.includes(zone) ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50 dark:hover:bg-green-900/20'}`}
+                                onClick={() => {
+                                  if (routeStartZones.includes(zone)) {
+                                    setRouteStartZones(routeStartZones.filter(z => z !== zone));
+                                  } else {
+                                    setRouteStartZones([...routeStartZones, zone]);
+                                  }
+                                }}
+                              >
+                                {zone}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Special zones */}
+                        <div className="space-y-2 mt-3">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('specialZones', 'Special Zones')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {['COLD', 'HEAVY', 'FRAGILE', 'BULK', 'HIGH'].map(zone => (
+                              <Button
+                                key={zone}
+                                size="sm"
+                                variant={routeStartZones.includes(zone) ? 'default' : 'outline'}
+                                className={`text-xs ${routeStartZones.includes(zone) ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}
+                                onClick={() => {
+                                  if (routeStartZones.includes(zone)) {
+                                    setRouteStartZones(routeStartZones.filter(z => z !== zone));
+                                  } else {
+                                    setRouteStartZones([...routeStartZones, zone]);
+                                  }
+                                }}
+                              >
+                                {zone}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       
