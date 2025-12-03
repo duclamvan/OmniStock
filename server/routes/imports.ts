@@ -105,14 +105,18 @@ interface LandedCostData {
 
 /**
  * Fetch the landed cost per unit for a receipt item.
- * Priority:
- * 1. Cost allocations table (for custom items with calculated allocations)
- * 2. purchaseItems.landingCostUnitBase (for purchase items)
- * 3. Fall back to unit price * 1.15 (15% markup estimate)
+ * 
+ * Priority order:
+ * 1. Exchange rates from shipment's stored exchangeRates (set at calculation time)
+ * 2. Cost allocations table (for custom items with calculated allocations)
+ * 3. purchaseItems.landingCostUnitBase (for purchase items)
+ * 4. Fall back to unit price * 1.15 (15% markup estimate)
  * 
  * Currency handling:
  * - landingCostUnitBase and costAllocations.amountAllocatedBase are stored in EUR (base currency)
  * - We convert from EUR to other currencies using actual exchange rates when available
+ * - Exchange rates are fetched from shipment's stored exchangeRates (Frankfurter API rates at calculation time)
+ * - Falls back to reasonable defaults if no stored rates available
  */
 async function getLandedCostForItem(
   tx: any,
@@ -126,46 +130,40 @@ async function getLandedCostForItem(
   let landingCostPerUnit = 0; // Always stored/returned in EUR (base currency)
   let source: 'cost_allocation' | 'purchase_item' | 'fallback' = 'fallback';
   
-  // Default exchange rates (will be overridden if actual rates available)
+  // Default exchange rates from EUR (base) to target currencies
+  // These are reasonable defaults used when actual rates are not available
   let eurToUsd = 1.08;
   let eurToCzk = 25.2;
   let eurToVnd = 27000;
   let eurToCny = 7.8;
   
-  // Try to fetch actual exchange rates from the purchase order
-  if (purchaseId) {
+  // Priority 1: Try to get exchange rates from the shipment's stored exchangeRates
+  // The LandingCostService stores exchange rates at calculation time in the shipment
+  if (shipmentId) {
     try {
-      const [purchase] = await tx
-        .select({
-          exchangeRate: importPurchases.exchangeRate,
-          purchaseCurrency: importPurchases.purchaseCurrency,
-          paymentCurrency: importPurchases.paymentCurrency
-        })
-        .from(importPurchases)
-        .where(eq(importPurchases.id, purchaseId));
+      const [shipment] = await tx
+        .select({ exchangeRates: shipments.exchangeRates })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
       
-      if (purchase?.exchangeRate) {
-        const rate = parseFloat(purchase.exchangeRate);
-        const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'EUR';
+      if (shipment?.exchangeRates) {
+        // exchangeRates is stored as JSON with format: { USD: 1.08, CZK: 25.2, ... }
+        // These are EUR→currency rates from Frankfurter API at time of calculation
+        const rates = typeof shipment.exchangeRates === 'string' 
+          ? JSON.parse(shipment.exchangeRates) 
+          : shipment.exchangeRates;
         
-        // exchangeRate in DB is typically foreign currency per base currency
-        // Use it to improve accuracy for the specific currency
-        if (currency === 'USD' && rate > 0) {
-          eurToUsd = rate;
-        } else if (currency === 'CZK' && rate > 0) {
-          eurToCzk = rate;
-        } else if (currency === 'VND' && rate > 0) {
-          eurToVnd = rate;
-        } else if (currency === 'CNY' && rate > 0) {
-          eurToCny = rate;
-        }
+        if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
+        if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
+        if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
+        if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
       }
     } catch (error) {
-      console.warn('Failed to fetch purchase exchange rate:', error);
+      console.warn('Failed to fetch shipment exchange rates:', error);
     }
   }
   
-  // Priority 1: Check cost allocations table for this item
+  // Priority 2: Check cost allocations table for this item
   // Note: costAllocations.amountAllocatedBase is stored in EUR (base currency)
   if (shipmentId) {
     try {
@@ -211,7 +209,7 @@ async function getLandedCostForItem(
     }
   }
   
-  // Priority 2: Check purchaseItems.landingCostUnitBase for purchase items
+  // Priority 3: Check purchaseItems.landingCostUnitBase for purchase items
   // Note: landingCostUnitBase is stored in EUR (base currency) by LandingCostService
   if (source === 'fallback' && itemType === 'purchase') {
     try {
@@ -224,50 +222,29 @@ async function getLandedCostForItem(
         .where(eq(purchaseItems.id, itemId));
       
       if (purchaseItem?.landingCostUnitBase) {
-        // landingCostUnitBase is already in EUR
+        // landingCostUnitBase is already in EUR (set by LandingCostService)
+        // Exchange rates are already obtained from shipment.exchangeRates in Priority 1
         landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
         source = 'purchase_item';
-        
-        // Try to get actual exchange rate from this purchase
-        if (purchaseItem.purchaseId && !purchaseId) {
-          try {
-            const [purchase] = await tx
-              .select({
-                exchangeRate: importPurchases.exchangeRate,
-                purchaseCurrency: importPurchases.purchaseCurrency,
-                paymentCurrency: importPurchases.paymentCurrency
-              })
-              .from(importPurchases)
-              .where(eq(importPurchases.id, purchaseItem.purchaseId));
-            
-            if (purchase?.exchangeRate) {
-              const rate = parseFloat(purchase.exchangeRate);
-              const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'EUR';
-              
-              if (currency === 'USD' && rate > 0) {
-                eurToUsd = rate;
-              } else if (currency === 'CZK' && rate > 0) {
-                eurToCzk = rate;
-              } else if (currency === 'VND' && rate > 0) {
-                eurToVnd = rate;
-              } else if (currency === 'CNY' && rate > 0) {
-                eurToCny = rate;
-              }
-            }
-          } catch (error) {
-            console.warn('Failed to fetch purchase exchange rate for item:', error);
-          }
-        }
       }
     } catch (error) {
       console.warn('Failed to fetch purchase item landing cost:', error);
     }
   }
   
-  // Priority 3: Fall back to unit price * 1.15 (15% markup estimate)
-  // Note: unitPrice is assumed to be in EUR for consistency
+  // Priority 4: Fall back to unit price * 1.15 (15% markup estimate)
+  // Note: This path is used when no cost allocations or landingCostUnitBase exist
+  // unitPrice comes from purchaseItems/customItems which should be in EUR (base currency)
+  // If unitPrice is stored in a different currency, this estimate may be inaccurate
+  // In production, most items should have proper landingCostUnitBase from LandingCostService
   if (source === 'fallback') {
     landingCostPerUnit = unitPrice * 1.15;
+    console.warn('Landed cost fallback used for item - unitPrice assumed to be EUR:', {
+      itemType,
+      itemId,
+      unitPrice,
+      estimatedLandedCost: landingCostPerUnit
+    });
   }
   
   // Calculate currency-specific landed costs from EUR base
