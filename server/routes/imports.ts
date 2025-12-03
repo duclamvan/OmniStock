@@ -85,6 +85,178 @@ function filterFinancialData(data: any, userRole: string): any {
   return data;
 }
 
+// ============================================================================
+// LANDED COST CALCULATION HELPER
+// ============================================================================
+// This helper function calculates the proper weighted average landed cost
+// when receiving inventory. It fetches actual cost allocations from the
+// costAllocations table (for custom items) or purchaseItems.landingCostUnitBase
+// (for purchase items) and calculates a proper weighted average.
+
+interface LandedCostData {
+  landingCostPerUnit: number;
+  landingCostEur: number;
+  landingCostUsd: number;
+  landingCostCzk: number;
+  source: 'cost_allocation' | 'purchase_item' | 'fallback';
+}
+
+/**
+ * Fetch the landed cost per unit for a receipt item.
+ * Priority:
+ * 1. Cost allocations table (for custom items with calculated allocations)
+ * 2. purchaseItems.landingCostUnitBase (for purchase items)
+ * 3. Fall back to unit price * 1.15 (15% markup estimate)
+ */
+async function getLandedCostForItem(
+  tx: any,
+  itemType: string,
+  itemId: number,
+  shipmentId: number | null,
+  quantity: number,
+  unitPrice: number
+): Promise<LandedCostData> {
+  let landingCostPerUnit = 0;
+  let source: 'cost_allocation' | 'purchase_item' | 'fallback' = 'fallback';
+  
+  // Priority 1: Check cost allocations table for this item
+  if (shipmentId) {
+    try {
+      // For custom items, get allocated costs from costAllocations table
+      if (itemType === 'custom') {
+        const allocations = await tx
+          .select({
+            amountAllocatedBase: costAllocations.amountAllocatedBase,
+            costType: costAllocations.costType
+          })
+          .from(costAllocations)
+          .where(
+            and(
+              eq(costAllocations.shipmentId, shipmentId),
+              eq(costAllocations.customItemId, itemId)
+            )
+          );
+        
+        if (allocations.length > 0) {
+          // Sum all allocated costs (FREIGHT, BROKERAGE, INSURANCE, etc.)
+          const totalAllocated = allocations.reduce((sum: number, alloc: any) => {
+            return sum + parseFloat(alloc.amountAllocatedBase || '0');
+          }, 0);
+          
+          // Get item unit price and add allocated costs
+          const [customItem] = await tx
+            .select({ unitPrice: customItems.unitPrice, quantity: customItems.quantity })
+            .from(customItems)
+            .where(eq(customItems.id, itemId));
+          
+          if (customItem) {
+            const itemUnitPrice = parseFloat(customItem.unitPrice || '0');
+            const itemQuantity = customItem.quantity || quantity;
+            // Landed cost = unit price + (total allocated costs / quantity)
+            landingCostPerUnit = itemUnitPrice + (totalAllocated / itemQuantity);
+            source = 'cost_allocation';
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch cost allocations:', error);
+    }
+  }
+  
+  // Priority 2: Check purchaseItems.landingCostUnitBase for purchase items
+  if (source === 'fallback' && itemType === 'purchase') {
+    try {
+      const [purchaseItem] = await tx
+        .select({ landingCostUnitBase: purchaseItems.landingCostUnitBase })
+        .from(purchaseItems)
+        .where(eq(purchaseItems.id, itemId));
+      
+      if (purchaseItem?.landingCostUnitBase) {
+        landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
+        source = 'purchase_item';
+      }
+    } catch (error) {
+      console.warn('Failed to fetch purchase item landing cost:', error);
+    }
+  }
+  
+  // Priority 3: Fall back to unit price * 1.15 (15% markup estimate)
+  if (source === 'fallback') {
+    landingCostPerUnit = unitPrice * 1.15;
+  }
+  
+  // Calculate currency-specific landed costs
+  // Base currency is EUR (from LandingCostService)
+  const landingCostEur = landingCostPerUnit;
+  const landingCostUsd = landingCostPerUnit * 1.08; // Approximate EUR to USD
+  const landingCostCzk = landingCostPerUnit * 25.2; // Approximate EUR to CZK
+  
+  return {
+    landingCostPerUnit,
+    landingCostEur,
+    landingCostUsd,
+    landingCostCzk,
+    source
+  };
+}
+
+/**
+ * Calculate weighted average landed cost when receiving inventory.
+ * Uses the formula: (oldQty * oldCost + newQty * newCost) / totalQty
+ */
+function calculateWeightedAverageLandedCost(
+  existingProduct: any,
+  newQuantity: number,
+  newLandedCost: LandedCostData
+): {
+  avgLandingCostEur: number;
+  avgLandingCostUsd: number;
+  avgLandingCostCzk: number;
+  avgLatestLandingCost: number;
+} {
+  const oldQuantity = existingProduct?.quantity || 0;
+  const totalQuantity = oldQuantity + newQuantity;
+  
+  if (totalQuantity <= 0) {
+    return {
+      avgLandingCostEur: newLandedCost.landingCostEur,
+      avgLandingCostUsd: newLandedCost.landingCostUsd,
+      avgLandingCostCzk: newLandedCost.landingCostCzk,
+      avgLatestLandingCost: newLandedCost.landingCostPerUnit
+    };
+  }
+  
+  // Get existing landed costs (default to 0 if null)
+  const oldLandingCostEur = parseFloat(existingProduct?.landingCostEur || existingProduct?.latestLandingCost || '0');
+  const oldLandingCostUsd = parseFloat(existingProduct?.landingCostUsd || '0');
+  const oldLandingCostCzk = parseFloat(existingProduct?.landingCostCzk || '0');
+  const oldLatestLandingCost = parseFloat(existingProduct?.latestLandingCost || '0');
+  
+  // Calculate weighted averages
+  const avgLandingCostEur = oldQuantity > 0 && oldLandingCostEur > 0
+    ? ((oldQuantity * oldLandingCostEur) + (newQuantity * newLandedCost.landingCostEur)) / totalQuantity
+    : newLandedCost.landingCostEur;
+    
+  const avgLandingCostUsd = oldQuantity > 0 && oldLandingCostUsd > 0
+    ? ((oldQuantity * oldLandingCostUsd) + (newQuantity * newLandedCost.landingCostUsd)) / totalQuantity
+    : newLandedCost.landingCostUsd;
+    
+  const avgLandingCostCzk = oldQuantity > 0 && oldLandingCostCzk > 0
+    ? ((oldQuantity * oldLandingCostCzk) + (newQuantity * newLandedCost.landingCostCzk)) / totalQuantity
+    : newLandedCost.landingCostCzk;
+    
+  const avgLatestLandingCost = oldQuantity > 0 && oldLatestLandingCost > 0
+    ? ((oldQuantity * oldLatestLandingCost) + (newQuantity * newLandedCost.landingCostPerUnit)) / totalQuantity
+    : newLandedCost.landingCostPerUnit;
+  
+  return {
+    avgLandingCostEur,
+    avgLandingCostUsd,
+    avgLandingCostCzk,
+    avgLatestLandingCost
+  };
+}
+
 // Get frequent suppliers
 router.get("/suppliers/frequent", async (req: any, res) => {
   try {
