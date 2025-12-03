@@ -240,6 +240,25 @@ const common = {
   criticalFulfillmentMetrics: 'Chỉ số xử lý đơn quan trọng',
   liveUpdates: 'Cập nhật trực tiếp',
   
+  // Dashboard Action Items
+  actionItems: 'Công việc cần xử lý',
+  actionItemsDescription: 'Các công việc đang chờ bạn giải quyết',
+  preordersAwaitingNotice: 'Đặt hàng trước chờ thông báo',
+  noPreordersWaiting: 'Không có đơn đặt trước đang chờ',
+  partiallyArrived: 'Đã về một phần',
+  openTickets: 'Phiếu hỗ trợ đang mở',
+  noOpenTickets: 'Không có phiếu hỗ trợ đang mở',
+  urgent: 'Khẩn cấp',
+  high: 'Cao',
+  medium: 'Trung bình',
+  low: 'Thấp',
+  activeDiscounts: 'Khuyến mãi đang áp dụng',
+  noActiveDiscounts: 'Không có khuyến mãi đang áp dụng',
+  incomingShipments: 'Hàng đang về',
+  noIncomingShipments: 'Không có hàng đang về',
+  inTransit: 'Đang vận chuyển',
+  more: 'thêm',
+  
   // Dashboard Metrics
   ordersToFulfill: 'Đơn cần xử lý',
   awaitingPickup: 'Chờ lấy hàng',

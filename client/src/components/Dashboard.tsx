@@ -24,7 +24,14 @@ import {
   Info,
   ArrowRight,
   Activity,
-  ShoppingCart
+  ShoppingCart,
+  ClipboardList,
+  Tag,
+  Ship,
+  Calendar,
+  Percent,
+  Phone,
+  Ticket
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -139,6 +146,67 @@ interface SystemAlertsData {
   timestamp: string;
 }
 
+interface ActionItemsData {
+  preordersAwaitingNotice: Array<{
+    id: string;
+    customerId: string;
+    customerName: string;
+    customerPhone: string | null;
+    status: string;
+    expectedDate: string | null;
+    reminderEnabled: boolean;
+    priority: string;
+    notes: string | null;
+    createdAt: string;
+  }>;
+  preordersCount: number;
+  openTickets: Array<{
+    id: number;
+    ticketId: string;
+    subject: string;
+    severity: string;
+    status: string;
+    customerId: string | null;
+    customerName: string | null;
+    orderId: string | null;
+    createdAt: string;
+  }>;
+  openTicketsCount: number;
+  ticketsBySeverity: {
+    urgent: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  activeDiscounts: Array<{
+    id: number;
+    discountId: string;
+    name: string;
+    type: string;
+    percentage: string | null;
+    value: string | null;
+    minOrderAmount: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    applicationScope: string;
+  }>;
+  activeDiscountsCount: number;
+  incomingShipments: Array<{
+    id: number;
+    shipmentName: string | null;
+    carrier: string;
+    trackingNumber: string;
+    status: string;
+    origin: string;
+    destination: string;
+    estimatedDelivery: string | null;
+    totalUnits: number | null;
+    createdAt: string;
+  }>;
+  incomingShipmentsCount: number;
+  timestamp: string;
+}
+
 // Skeleton components
 const MetricCardSkeleton = memo(() => (
   <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
@@ -218,6 +286,14 @@ export function Dashboard() {
     refetchIntervalInBackground: false,
   });
 
+  // Action items - preorders, tickets, discounts, incoming shipments
+  const { data: actionItems, isLoading: actionItemsLoading } = useQuery<ActionItemsData>({
+    queryKey: ['/api/dashboard/action-items'],
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000, // Refresh every minute
+    refetchOnWindowFocus: true,
+  });
+
   const { user } = useAuth();
   const isAdmin = user?.role === 'administrator';
   
@@ -245,6 +321,215 @@ export function Dashboard() {
           <span className="text-gray-900 dark:text-gray-100">{t('common:liveUpdates')}</span>
         </Badge>
       </div>
+
+      {/* Action Items Section - Quick access to pending work */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-action-items">
+            <ClipboardList className="h-5 w-5 text-orange-500" />
+            {t('common:actionItems')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common:actionItemsDescription')}</p>
+        </div>
+
+        {actionItemsLoading && !actionItems ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pre-orders Awaiting Notice */}
+            <Link href="/pre-orders">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow h-full ${(actionItems?.preordersCount || 0) > 0 ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-preorders-action">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {t('common:preordersAwaitingNotice')}
+                    </CardTitle>
+                    <Badge variant={actionItems?.preordersCount ? 'default' : 'outline'} className={actionItems?.preordersCount ? 'bg-purple-600' : ''}>
+                      {actionItems?.preordersCount || 0}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {actionItems?.preordersAwaitingNotice?.length ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {actionItems.preordersAwaitingNotice.slice(0, 3).map((po) => (
+                        <div key={po.id} className="text-sm border-l-2 border-purple-400 pl-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{po.customerName}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <Badge variant="outline" className="text-[10px] px-1 py-0">
+                              {po.status === 'pending' ? t('common:pending') : t('common:partiallyArrived')}
+                            </Badge>
+                            {po.expectedDate && (
+                              <span>{new Date(po.expectedDate).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {(actionItems?.preordersCount || 0) > 3 && (
+                        <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                          +{(actionItems?.preordersCount || 0) - 3} {t('common:more')} <ArrowRight className="h-3 w-3" />
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('common:noPreordersWaiting')}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Open Tickets */}
+            <Link href="/tickets">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow h-full ${(actionItems?.openTicketsCount || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-tickets-action">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Ticket className="h-4 w-4" />
+                      {t('common:openTickets')}
+                    </CardTitle>
+                    <Badge variant={actionItems?.openTicketsCount ? 'destructive' : 'outline'}>
+                      {actionItems?.openTicketsCount || 0}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {actionItems?.ticketsBySeverity && (actionItems.ticketsBySeverity.urgent > 0 || actionItems.ticketsBySeverity.high > 0) ? (
+                    <div className="space-y-1">
+                      {actionItems.ticketsBySeverity.urgent > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{t('common:urgent')}</Badge>
+                          <span className="font-bold text-red-600 dark:text-red-400">{actionItems.ticketsBySeverity.urgent}</span>
+                        </div>
+                      )}
+                      {actionItems.ticketsBySeverity.high > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-orange-500 text-orange-500">{t('common:high')}</Badge>
+                          <span className="font-medium text-orange-600 dark:text-orange-400">{actionItems.ticketsBySeverity.high}</span>
+                        </div>
+                      )}
+                      {actionItems?.openTickets?.slice(0, 2).map((ticket) => (
+                        <div key={ticket.id} className="text-xs text-gray-600 dark:text-gray-400 truncate border-l-2 border-red-400 pl-2">
+                          {ticket.subject}
+                        </div>
+                      ))}
+                    </div>
+                  ) : actionItems?.openTicketsCount ? (
+                    <div className="space-y-1">
+                      {actionItems?.openTickets?.slice(0, 3).map((ticket) => (
+                        <div key={ticket.id} className="text-xs text-gray-600 dark:text-gray-400 truncate border-l-2 border-gray-300 dark:border-gray-600 pl-2">
+                          {ticket.subject}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('common:noOpenTickets')}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Active Discounts */}
+            <Link href="/discounts">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow h-full ${(actionItems?.activeDiscountsCount || 0) > 0 ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-discounts-action">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      {t('common:activeDiscounts')}
+                    </CardTitle>
+                    <Badge variant={actionItems?.activeDiscountsCount ? 'default' : 'outline'} className={actionItems?.activeDiscountsCount ? 'bg-green-600' : ''}>
+                      {actionItems?.activeDiscountsCount || 0}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {actionItems?.activeDiscounts?.length ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {actionItems.activeDiscounts.slice(0, 3).map((discount) => (
+                        <div key={discount.id} className="text-sm border-l-2 border-green-400 pl-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{discount.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            {discount.percentage ? (
+                              <>
+                                <Percent className="h-3 w-3" />
+                                <span>{discount.percentage}%</span>
+                              </>
+                            ) : discount.value ? (
+                              <span>{formatCurrency(parseFloat(discount.value), 'EUR')}</span>
+                            ) : discount.type ? (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">{discount.type}</Badge>
+                            ) : null}
+                            {discount.endDate && (
+                              <span className="text-orange-500">→ {new Date(discount.endDate).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {(actionItems?.activeDiscountsCount || 0) > 3 && (
+                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                          +{(actionItems?.activeDiscountsCount || 0) - 3} {t('common:more')} <ArrowRight className="h-3 w-3" />
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('common:noActiveDiscounts')}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Incoming Shipments */}
+            <Link href="/receiving">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow h-full ${(actionItems?.incomingShipmentsCount || 0) > 0 ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-shipments-action">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Ship className="h-4 w-4" />
+                      {t('common:incomingShipments')}
+                    </CardTitle>
+                    <Badge variant={actionItems?.incomingShipmentsCount ? 'default' : 'outline'} className={actionItems?.incomingShipmentsCount ? 'bg-blue-600' : ''}>
+                      {actionItems?.incomingShipmentsCount || 0}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {actionItems?.incomingShipments?.length ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {actionItems.incomingShipments.slice(0, 3).map((shipment) => (
+                        <div key={shipment.id} className="text-sm border-l-2 border-blue-400 pl-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {shipment.shipmentName || shipment.trackingNumber}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <Badge variant="outline" className="text-[10px] px-1 py-0">
+                              {shipment.status === 'pending' ? t('common:pending') : t('common:inTransit')}
+                            </Badge>
+                            {shipment.estimatedDelivery && (
+                              <span>ETA: {new Date(shipment.estimatedDelivery).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {(actionItems?.incomingShipmentsCount || 0) > 3 && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          +{(actionItems?.incomingShipmentsCount || 0) - 3} {t('common:more')} <ArrowRight className="h-3 w-3" />
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('common:noIncomingShipments')}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
 
       {/* Section 1: Operations Pulse */}
       <section>

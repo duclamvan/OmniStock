@@ -69,6 +69,9 @@ import {
   computePlanChecksum,
   type UIPackingPlan,
   pushSubscriptions,
+  preOrders,
+  tickets,
+  discounts,
 } from "@shared/schema";
 import { sendPushToAllWarehouseOperators, getVapidPublicKey } from "./services/pushNotifications";
 import { createInsertSchema } from 'drizzle-zod';
@@ -2031,6 +2034,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching system alerts metrics:", error);
       res.status(500).json({ message: "Failed to fetch system alerts metrics" });
+    }
+  });
+
+  // Dashboard Action Items (preorders, tickets, discounts, incoming shipments)
+  app.get('/api/dashboard/action-items', requireRole(['administrator']), cacheMiddleware(30000), async (req, res) => {
+    try {
+      const now = new Date();
+
+      // 1. Pre-orders awaiting customer notice (pending or partially_arrived)
+      const allPreOrders = await db.select({
+        id: preOrders.id,
+        customerId: preOrders.customerId,
+        status: preOrders.status,
+        expectedDate: preOrders.expectedDate,
+        reminderEnabled: preOrders.reminderEnabled,
+        priority: preOrders.priority,
+        notes: preOrders.notes,
+        createdAt: preOrders.createdAt
+      }).from(preOrders).where(
+        or(
+          eq(preOrders.status, 'pending'),
+          eq(preOrders.status, 'partially_arrived')
+        )
+      );
+
+      // Get customer names for preorders
+      const preOrdersWithCustomers = await Promise.all(
+        allPreOrders.map(async (po) => {
+          const customer = await db.select({
+            name: customers.name,
+            phone: customers.phone
+          }).from(customers).where(eq(customers.id, po.customerId)).limit(1);
+          return {
+            ...po,
+            customerName: customer[0]?.name || 'Unknown',
+            customerPhone: customer[0]?.phone
+          };
+        })
+      );
+
+      // 2. Open tickets to solve
+      const openTickets = await db.select({
+        id: tickets.id,
+        ticketId: tickets.ticketId,
+        subject: tickets.subject,
+        severity: tickets.severity,
+        status: tickets.status,
+        customerId: tickets.customerId,
+        orderId: tickets.orderId,
+        createdAt: tickets.createdAt
+      }).from(tickets).where(
+        or(
+          eq(tickets.status, 'open'),
+          eq(tickets.status, 'in_progress')
+        )
+      ).orderBy(desc(tickets.createdAt)).limit(10);
+
+      // Get customer names for tickets
+      const ticketsWithCustomers = await Promise.all(
+        openTickets.map(async (ticket) => {
+          if (ticket.customerId) {
+            const customer = await db.select({
+              name: customers.name
+            }).from(customers).where(eq(customers.id, ticket.customerId)).limit(1);
+            return {
+              ...ticket,
+              customerName: customer[0]?.name || 'Unknown'
+            };
+          }
+          return { ...ticket, customerName: null };
+        })
+      );
+
+      // 3. Active discounts (currently running - started and not expired)
+      const todayStr = now.toISOString().split('T')[0];
+      const activeDiscounts = await db.select({
+        id: discounts.id,
+        discountId: discounts.discountId,
+        name: discounts.name,
+        type: discounts.type,
+        percentage: discounts.percentage,
+        value: discounts.value,
+        minOrderAmount: discounts.minOrderAmount,
+        startDate: discounts.startDate,
+        endDate: discounts.endDate,
+        applicationScope: discounts.applicationScope
+      }).from(discounts).where(
+        and(
+          eq(discounts.status, 'active'),
+          // Start date: must be null (immediate) or in the past/today
+          or(
+            isNull(discounts.startDate),
+            sql`${discounts.startDate} <= ${todayStr}`
+          ),
+          // End date: must be null (forever) or in the future/today
+          or(
+            isNull(discounts.endDate),
+            sql`${discounts.endDate} >= ${todayStr}`
+          )
+        )
+      );
+
+      // 4. Incoming PO shipments (pending or in transit)
+      const incomingShipments = await db.select({
+        id: shipments.id,
+        shipmentName: shipments.shipmentName,
+        carrier: shipments.carrier,
+        trackingNumber: shipments.trackingNumber,
+        status: shipments.status,
+        origin: shipments.origin,
+        destination: shipments.destination,
+        estimatedDelivery: shipments.estimatedDelivery,
+        totalUnits: shipments.totalUnits,
+        createdAt: shipments.createdAt
+      }).from(shipments).where(
+        or(
+          eq(shipments.status, 'pending'),
+          eq(shipments.status, 'in transit')
+        )
+      ).orderBy(shipments.estimatedDelivery).limit(10);
+
+      res.json({
+        preordersAwaitingNotice: preOrdersWithCustomers,
+        preordersCount: preOrdersWithCustomers.length,
+        openTickets: ticketsWithCustomers,
+        openTicketsCount: ticketsWithCustomers.length,
+        ticketsBySeverity: {
+          urgent: ticketsWithCustomers.filter(t => t.severity === 'urgent').length,
+          high: ticketsWithCustomers.filter(t => t.severity === 'high').length,
+          medium: ticketsWithCustomers.filter(t => t.severity === 'medium').length,
+          low: ticketsWithCustomers.filter(t => t.severity === 'low').length
+        },
+        activeDiscounts: activeDiscounts,
+        activeDiscountsCount: activeDiscounts.length,
+        incomingShipments: incomingShipments,
+        incomingShipmentsCount: incomingShipments.length,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard action items:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard action items" });
     }
   });
 

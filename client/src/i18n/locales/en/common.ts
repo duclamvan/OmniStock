@@ -263,6 +263,25 @@ const common = {
   criticalFulfillmentMetrics: 'Critical fulfillment metrics',
   liveUpdates: 'Live Updates',
   
+  // Dashboard Action Items
+  actionItems: 'Action Items',
+  actionItemsDescription: 'Pending work requiring your attention',
+  preordersAwaitingNotice: 'Pre-orders Awaiting Notice',
+  noPreordersWaiting: 'No pre-orders waiting',
+  partiallyArrived: 'Partially Arrived',
+  openTickets: 'Open Tickets',
+  noOpenTickets: 'No open tickets',
+  urgent: 'Urgent',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  activeDiscounts: 'Active Discounts',
+  noActiveDiscounts: 'No active discounts',
+  incomingShipments: 'Incoming Shipments',
+  noIncomingShipments: 'No incoming shipments',
+  inTransit: 'In Transit',
+  more: 'more',
+  
   // Dashboard Metrics
   ordersToFulfill: 'Orders to Fulfill',
   awaitingPickup: 'Awaiting pickup',
