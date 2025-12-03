@@ -20,6 +20,7 @@ import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Edit, Trash2, Chevron
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol, Currency } from "@/lib/currencyUtils";
 
 interface Purchase {
   id: number;
@@ -442,7 +443,8 @@ export default function SupplierProcessing() {
     return filtered;
   }, [purchases, searchTerm, statusFilter, locationFilter]);
 
-  const getItemColumns = (itemCount: number): DataTableColumn<PurchaseItem>[] => {
+  const getItemColumns = (itemCount: number, currency: string = 'USD'): DataTableColumn<PurchaseItem>[] => {
+    const currencySymbol = getCurrencySymbol(currency as Currency);
     const baseColumns: DataTableColumn<PurchaseItem>[] = [
       {
         key: "name",
@@ -470,7 +472,7 @@ export default function SupplierProcessing() {
         header: t('price'),
         sortable: true,
         cell: (item) => (
-          <span className="text-sm">${item.unitPrice}</span>
+          <span className="text-sm">{currencySymbol}{item.unitPrice}</span>
         ),
         className: "w-[80px] text-right"
       }
@@ -890,7 +892,7 @@ export default function SupplierProcessing() {
                           <div>
                             <p className="text-muted-foreground text-xs">{t('totalCost')}</p>
                             <p className="text-lg font-bold">
-                              {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
+                              {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.totalCost}
                             </p>
                           </div>
                         </div>
@@ -1006,7 +1008,7 @@ export default function SupplierProcessing() {
                                     {item.sku && <p className="text-muted-foreground">SKU: {item.sku}</p>}
                                     <div className="flex justify-between mt-1">
                                       <span className="text-muted-foreground">{t('qty')}: {item.quantity}</span>
-                                      <span className="font-medium">${item.unitPrice}</span>
+                                      <span className="font-medium">{getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{item.unitPrice}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1080,13 +1082,13 @@ export default function SupplierProcessing() {
                                 <div className="flex items-center gap-1.5">
                                   <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-muted-foreground">
-                                    Ship: {purchase.purchaseCurrency || 'USD'} {purchase.shippingCost}
+                                    Ship: {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.shippingCost}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
                                   <span className="font-semibold">
-                                    {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
+                                    {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.totalCost}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -1097,7 +1099,7 @@ export default function SupplierProcessing() {
                                 {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground">
-                                      Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
+                                      Paid: {getCurrencySymbol(purchase.paymentCurrency as Currency)}{purchase.totalPaid || '0'}
                                     </span>
                                   </div>
                                 )}
@@ -1208,7 +1210,7 @@ export default function SupplierProcessing() {
                                 )}>
                                   <DataTable
                                     data={purchase.items}
-                                    columns={getItemColumns(purchase.items.length)}
+                                    columns={getItemColumns(purchase.items.length, purchase.purchaseCurrency || 'USD')}
                                     getRowKey={(item) => item.id.toString()}
                                     showPagination={false}
                                     className="text-sm"
