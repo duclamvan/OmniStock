@@ -1559,31 +1559,6 @@ export default function OrderDetails() {
                     </div>
                   )}
                   
-                  {order.trackingNumber ? (
-                    <div data-testid="text-tracking-number">
-                      <span className="text-slate-500 dark:text-slate-400">{t('orders:trackingNumber')}</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <code className="text-sm bg-white dark:bg-slate-800 px-3 py-1.5 rounded font-mono border border-slate-200 dark:border-slate-700">
-                          {order.trackingNumber}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => copyToClipboard(order.trackingNumber, "Tracking number")}
-                          data-testid="button-copy-tracking"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div data-testid="text-no-tracking">
-                      <span className="text-slate-500 dark:text-slate-400">{t('orders:trackingNumber')}</span>
-                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">{t('orders:noTrackingNumber')}</p>
-                    </div>
-                  )}
-                  
                   {order.shippedAt && (
                     <div data-testid="text-shipped-at">
                       <span className="text-slate-500 dark:text-slate-400">{t('orders:shippedAt')}</span>
