@@ -25,25 +25,6 @@ export default function ReturnDetails() {
     enabled: !!id,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !returnData) {
-    return null;
-  }
-
-  const statusColors: Record<string, string> = {
-    'awaiting': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-    'processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  };
-
   const returnTypeDisplayMap = useMemo(() => {
     const types = inventorySettings.returnTypes || [];
     const map: Record<string, { label: string; color: string }> = {};
@@ -63,6 +44,25 @@ export default function ReturnDetails() {
     });
     return map;
   }, [inventorySettings.returnTypes, t]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !returnData) {
+    return null;
+  }
+
+  const statusColors: Record<string, string> = {
+    'awaiting': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    'processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  };
 
   const totalItems = returnData.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
   const totalValue = returnData.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
