@@ -401,6 +401,7 @@ const common = {
   // Dashboard Stats
   toPick: 'cần lấy',
   packed: 'đã đóng gói',
+  readyToShip: 'Sẵn sàng giao',
   shipments: 'lô hàng',
   incoming: 'Sắp đến',
   orderStatus: 'Trạng thái đơn',

@@ -426,6 +426,7 @@ const common = {
   // Dashboard Stats
   toPick: 'to pick',
   packed: 'packed',
+  readyToShip: 'Ready to Ship',
   shipments: 'shipments',
   incoming: 'Incoming',
   orderStatus: 'Order Status',
