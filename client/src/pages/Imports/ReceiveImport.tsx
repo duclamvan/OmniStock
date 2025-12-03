@@ -113,9 +113,15 @@ export default function ReceiveImport() {
       });
     },
     onSuccess: () => {
+      // Build notification with item names
+      const checkedItems = receivingItems.filter(item => item.checked);
+      const itemNames = checkedItems.slice(0, 3).map(item => `${item.receivedQuantity}x ${item.productName}`).join(', ');
+      const moreCount = checkedItems.length > 3 ? ` +${checkedItems.length - 3} more` : '';
+      
       toast({
-        title: t('addedToInventory'),
-        description: t('itemsAddedInventorySuccess')
+        title: t('addedToWarehouse') || 'Added to Warehouse Inventory',
+        description: `${itemNames}${moreCount}`,
+        duration: 5000
       });
       navigate(`/imports/orders/${id}`);
     }

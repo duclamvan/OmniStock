@@ -258,10 +258,18 @@ export default function StoreItems() {
       });
     },
     onSuccess: () => {
+      // Build notification with item names
+      const storedItems = items.filter(item => item.newLocations.some(loc => loc.quantity > 0));
+      const itemNames = storedItems.slice(0, 3).map(item => {
+        const qty = item.newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+        return `${qty}x ${item.productName}`;
+      }).join(', ');
+      const moreCount = storedItems.length > 3 ? ` +${storedItems.length - 3} more` : '';
+      
       toast({
-        title: t('warehouse:itemsStoredSuccessfully'),
-        description: `${completedItems} ${t('warehouse:items')} ${t('warehouse:haveBeenStored')}`,
-        duration: 3000
+        title: t('warehouse:addedToWarehouse') || 'Added to Warehouse Inventory',
+        description: `${itemNames}${moreCount}`,
+        duration: 5000
       });
       
       // Navigate back to receiving list or receipt details

@@ -283,11 +283,17 @@ export default function LandingCostDetails() {
       }
       return responses;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      
+      // Build detailed notification with item names
+      const itemNames = variables.slice(0, 3).map(item => `${item.quantity}x ${item.name}`).join(', ');
+      const moreCount = variables.length > 3 ? ` +${variables.length - 3} more` : '';
+      
       toast({
-        title: t('success') || 'Success',
-        description: `${data.length} ${t('itemsAddedToInventory') || 'items added/updated in inventory'}`,
+        title: t('addedToWarehouse') || 'Added to Warehouse Inventory',
+        description: `${itemNames}${moreCount}`,
+        duration: 5000
       });
       setSelectedItems(new Set());
     },

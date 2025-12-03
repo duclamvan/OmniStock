@@ -135,9 +135,15 @@ export default function ReceiveImportMobile() {
       });
     },
     onSuccess: () => {
+      // Build notification with item names
+      const itemsReceived = receivingItems.filter(item => item.receivedQuantity > 0);
+      const itemNames = itemsReceived.slice(0, 3).map(item => `${item.receivedQuantity}x ${item.productName}`).join(', ');
+      const moreCount = itemsReceived.length > 3 ? ` +${itemsReceived.length - 3} more` : '';
+      
       toast({
-        title: t('addedToInventorySuccess'),
-        description: t('itemsAddedWithCosts')
+        title: t('addedToWarehouse') || 'Added to Warehouse Inventory',
+        description: `${itemNames}${moreCount}`,
+        duration: 5000
       });
       navigate(`/imports/orders/${id}`);
     }
