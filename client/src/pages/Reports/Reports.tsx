@@ -61,6 +61,21 @@ export default function Reports() {
     },
   });
   const { data: expenses = [] } = useQuery({ queryKey: ['/api/expenses'] });
+  
+  // Fetch live exchange rates from Frankfurter API
+  const { data: exchangeRates } = useQuery({
+    queryKey: ['/api/exchange-rates'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
+        if (!response.ok) return { rates: { CZK: 25, USD: 1.1 } };
+        return response.json();
+      } catch {
+        return { rates: { CZK: 25, USD: 1.1 } };
+      }
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 
   // Calculate date range
   const getDateRange = () => {
@@ -83,8 +98,19 @@ export default function Reports() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
-  // Filter orders by date range
+  // Filter orders by date range AND shipped/paid status for accurate revenue
   const filteredOrders = useMemo(() => {
+    return (orders as any[]).filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      const inDateRange = orderDate >= startDate && orderDate <= endDate;
+      // Only include shipped and paid orders for revenue calculation (consistent with Dashboard)
+      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+      return inDateRange && isCompleted;
+    });
+  }, [orders, startDate, endDate]);
+  
+  // All orders in date range (for order count metrics)
+  const allOrdersInRange = useMemo(() => {
     return (orders as any[]).filter((order: any) => {
       const orderDate = new Date(order.createdAt);
       return orderDate >= startDate && orderDate <= endDate;
@@ -145,27 +171,45 @@ export default function Reports() {
       }
     });
 
-    // Simple conversion for profit calculation (approximate)
-    const usdToCzk = 23;
-    const eurToCzk = 25;
+    // Use live exchange rates from Frankfurter API (EUR-based)
+    // Frankfurter provides EUR -> other currency rates, so CZK rate is how many CZK per 1 EUR
+    const eurToCzk = exchangeRates?.rates?.CZK || 25;
+    const eurToUsd = exchangeRates?.rates?.USD || 1.1;
+    const usdToCzk = eurToCzk / eurToUsd; // Derived: 1 USD = X CZK
+    
     const totalRevenueCZKEquiv = totalRevenueCZK + (totalRevenueEUR * eurToCzk);
     const totalCostCZKEquiv = totalCostCZK + (totalCostEUR * eurToCzk) + (totalCostUSD * usdToCzk);
     const profitCZK = totalRevenueCZKEquiv - totalCostCZKEquiv;
     const profitMargin = totalRevenueCZKEquiv > 0 ? (profitCZK / totalRevenueCZKEquiv) * 100 : 0;
 
+    // Also calculate total in EUR for consistency with Dashboard
+    const czkToEur = 1 / eurToCzk;
+    const usdToEur = 1 / eurToUsd;
+    const totalRevenueEUREquiv = totalRevenueEUR + (totalRevenueCZK * czkToEur);
+    const totalCostEUREquiv = totalCostEUR + (totalCostCZK * czkToEur) + (totalCostUSD * usdToEur);
+    const profitEUR = totalRevenueEUREquiv - totalCostEUREquiv;
+
     return {
       totalRevenueCZK,
       totalRevenueEUR,
+      totalRevenueEUREquiv,
       totalCostCZK,
       totalCostEUR,
       totalCostUSD,
       profitCZK,
+      profitEUR,
       profitMargin,
       totalOrders: filteredOrders.length,
-      avgOrderValueCZK: filteredOrders.length > 0 ? totalRevenueCZK / filteredOrders.length : 0,
-      avgOrderValueEUR: filteredOrders.length > 0 ? totalRevenueEUR / filteredOrders.length : 0,
+      totalOrdersInRange: allOrdersInRange.length,
+      avgOrderValueCZK: filteredOrders.filter((o: any) => o.currency === 'CZK').length > 0 
+        ? totalRevenueCZK / filteredOrders.filter((o: any) => o.currency === 'CZK').length 
+        : 0,
+      avgOrderValueEUR: filteredOrders.filter((o: any) => o.currency === 'EUR').length > 0 
+        ? totalRevenueEUR / filteredOrders.filter((o: any) => o.currency === 'EUR').length 
+        : 0,
+      exchangeRates: { eurToCzk, eurToUsd },
     };
-  }, [filteredOrders, filteredOrderItems, filteredExpenses, products]);
+  }, [filteredOrders, filteredOrderItems, filteredExpenses, products, exchangeRates, allOrdersInRange]);
 
   // Calculate product performance
   const productPerformance = useMemo(() => {
