@@ -13892,7 +13892,7 @@ export default function PickPack() {
                   {getOrdersByStatus('pending').map(order => (
                     <Card 
                       key={order.id} 
-                      className={`fade-in transition-all duration-200 ${
+                      className={`transition-all duration-200 ${
                         batchPickingMode 
                           ? `cursor-pointer hover:shadow-md ${
                               selectedBatchItems.has(order.id) 
@@ -14102,9 +14102,9 @@ export default function PickPack() {
                     <p className="text-xs sm:text-sm text-gray-500">{t('noOrdersCurrentlyBeingPicked')}</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 stagger-animation">
+                  <div className="space-y-2">
                     {getOrdersByStatus('picking').map(order => (
-                      <Card key={order.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow rounded-lg fade-in">
+                      <Card key={order.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow rounded-lg">
                         <CardContent className="p-4">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -14285,11 +14285,11 @@ export default function PickPack() {
                     <p className="text-xs sm:text-sm text-gray-500">{t('noOrdersReadyForPacking')}</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 stagger-animation">
+                  <div className="space-y-2">
                     {getOrdersByStatus('packing')
                       .filter(order => !ordersSentBack.has(order.id)) // Filter out orders being sent back
                       .map(order => (
-                      <Card key={order.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow rounded-lg fade-in">
+                      <Card key={order.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow rounded-lg">
                         <CardContent className="p-4">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1 min-w-0">
