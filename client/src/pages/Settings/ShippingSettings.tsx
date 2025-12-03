@@ -344,9 +344,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  PPL CZ Carrier Configuration
+                  {t('settings:pplCzCarrierConfiguration')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure PPL Czech Republic carrier settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pplCzCarrierConfigurationDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -362,9 +362,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Auto Label Generation</FormLabel>
+                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically generate PPL labels when order is marked ready to ship
+                          {t('settings:enableAutoLabelGenerationDescriptionPpl')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -822,9 +822,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
-                  GLS DE Carrier Configuration
+                  {t('settings:glsDeCarrierConfiguration')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure GLS Germany carrier settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:glsDeCarrierConfigurationDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -840,9 +840,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Manual Label Entry</FormLabel>
+                        <FormLabel>{t('settings:enableManualLabelEntryLabel')}</FormLabel>
                         <FormDescription>
-                          Allow manual entry of GLS tracking numbers instead of API generation
+                          {t('settings:enableManualLabelEntryDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1011,9 +1011,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
-                  DHL DE Carrier Configuration
+                  {t('settings:dhlDeCarrierConfiguration')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure DHL Germany carrier settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dhlDeCarrierConfigurationDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -1029,9 +1029,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Auto Label Generation</FormLabel>
+                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically generate DHL labels when order is marked ready to ship
+                          {t('settings:enableAutoLabelGenerationDescriptionDhl')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1481,9 +1481,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-print Labels</FormLabel>
+                        <FormLabel>{t('settings:autoPrintLabelsLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically print labels after generation
+                          {t('settings:autoPrintLabelsDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1559,9 +1559,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Tracking</FormLabel>
+                        <FormLabel>{t('settings:enableTrackingLabel')}</FormLabel>
                         <FormDescription>
-                          Enable shipment tracking functionality
+                          {t('settings:enableTrackingDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1581,9 +1581,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-update Tracking Status</FormLabel>
+                        <FormLabel>{t('settings:autoUpdateTrackingStatusLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically update tracking status from carriers
+                          {t('settings:autoUpdateTrackingStatusDescriptionAlt')}
                         </FormDescription>
                       </div>
                     </FormItem>

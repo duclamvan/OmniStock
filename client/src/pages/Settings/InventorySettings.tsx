@@ -414,9 +414,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Barcode Scanning</FormLabel>
+                          <FormLabel>{t('settings:enableBarcodeScanningLabel')}</FormLabel>
                           <FormDescription>
-                            Enable barcode scanning features throughout the system
+                            {t('settings:enableBarcodeScanningDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -436,9 +436,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-generate SKU</FormLabel>
+                          <FormLabel>{t('settings:autoGenerateSkuLabel')}</FormLabel>
                           <FormDescription>
-                            Automatically generate SKU codes for new products
+                            {t('settings:autoGenerateSkuDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -458,9 +458,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Track Serial Numbers</FormLabel>
+                          <FormLabel>{t('settings:trackSerialNumbersLabel')}</FormLabel>
                           <FormDescription>
-                            Enable serial number tracking for products
+                            {t('settings:trackSerialNumbersDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -564,9 +564,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Stock Adjustment Approval Required</FormLabel>
+                          <FormLabel>{t('settings:stockAdjustmentApprovalRequiredLabel')}</FormLabel>
                           <FormDescription>
-                            Require manager approval for stock adjustments
+                            {t('settings:stockAdjustmentApprovalRequiredDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -586,9 +586,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Allow Negative Stock</FormLabel>
+                          <FormLabel>{t('settings:allowNegativeStockLabel')}</FormLabel>
                           <FormDescription>
-                            Allow stock to go below zero (backorders)
+                            {t('settings:allowNegativeStockDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -608,9 +608,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Batch/Lot Tracking</FormLabel>
+                          <FormLabel>{t('settings:enableBatchLotTrackingLabel')}</FormLabel>
                           <FormDescription>
-                            Track inventory by batch or lot numbers
+                            {t('settings:enableBatchLotTrackingDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -630,9 +630,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Expiration Date Tracking</FormLabel>
+                          <FormLabel>{t('settings:enableExpirationDateTrackingLabel')}</FormLabel>
                           <FormDescription>
-                            Track product expiration dates
+                            {t('settings:enableExpirationDateTrackingDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -649,9 +649,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Warehouse className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Warehouse Operations
+                  {t('settings:warehouseOperationsCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Warehouse and location management settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:warehouseOperationsCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -660,7 +660,7 @@ export default function InventorySettings() {
                     name="default_warehouse"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Warehouse</FormLabel>
+                        <FormLabel>{t('settings:defaultWarehouseLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_warehouse">
@@ -676,7 +676,7 @@ export default function InventorySettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default warehouse for new products</FormDescription>
+                        <FormDescription>{t('settings:defaultWarehouseDescriptionAlt')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -687,7 +687,7 @@ export default function InventorySettings() {
                     name="location_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location Format</FormLabel>
+                        <FormLabel>{t('settings:locationFormatLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-location_format">
@@ -701,7 +701,7 @@ export default function InventorySettings() {
                             <SelectItem value="Custom">Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Format for warehouse location codes</FormDescription>
+                        <FormDescription>{t('settings:locationFormatDescriptionAlt')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -722,9 +722,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Multi-warehouse</FormLabel>
+                          <FormLabel>{t('settings:enableMultiWarehouseLabel')}</FormLabel>
                           <FormDescription>
-                            Allow managing inventory across multiple warehouses
+                            {t('settings:enableMultiWarehouseDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -744,9 +744,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-assign Warehouse Location</FormLabel>
+                          <FormLabel>{t('settings:autoAssignWarehouseLocationLabel')}</FormLabel>
                           <FormDescription>
-                            Automatically assign locations to new products
+                            {t('settings:autoAssignWarehouseLocationDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -766,9 +766,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Bin Management</FormLabel>
+                          <FormLabel>{t('settings:enableBinManagementLabel')}</FormLabel>
                           <FormDescription>
-                            Track inventory at bin level
+                            {t('settings:enableBinManagementDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -788,9 +788,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Zone Management</FormLabel>
+                          <FormLabel>{t('settings:enableZoneManagementLabel')}</FormLabel>
                           <FormDescription>
-                            Organize warehouse into zones
+                            {t('settings:enableZoneManagementDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -810,9 +810,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Temperature Control Zones</FormLabel>
+                          <FormLabel>{t('settings:temperatureControlZonesLabel')}</FormLabel>
                           <FormDescription>
-                            Enable temperature-controlled storage zones
+                            {t('settings:temperatureControlZonesDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -829,9 +829,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Product Quality
+                  {t('settings:productQualityCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Quality control and inspection settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:productQualityCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -840,7 +840,7 @@ export default function InventorySettings() {
                     name="qc_sampling_rate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>QC Sampling Rate (%)</FormLabel>
+                        <FormLabel>{t('settings:qcSamplingRateLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -852,7 +852,7 @@ export default function InventorySettings() {
                             data-testid="input-qc_sampling_rate" 
                           />
                         </FormControl>
-                        <FormDescription>Percentage of items to quality check</FormDescription>
+                        <FormDescription>{t('settings:qcSamplingRateDescriptionAlt')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -863,7 +863,7 @@ export default function InventorySettings() {
                     name="condition_tracking"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Condition Tracking</FormLabel>
+                        <FormLabel>{t('settings:defaultConditionTrackingLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-condition_tracking">
@@ -877,7 +877,7 @@ export default function InventorySettings() {
                             <SelectItem value="returned">Returned</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default condition for products</FormDescription>
+                        <FormDescription>{t('settings:defaultConditionTrackingDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -898,9 +898,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Quality Control</FormLabel>
+                          <FormLabel>{t('settings:enableQualityControlLabel')}</FormLabel>
                           <FormDescription>
-                            Enable QC processes for incoming inventory
+                            {t('settings:enableQualityControlDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -920,9 +920,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Damage Report Required</FormLabel>
+                          <FormLabel>{t('settings:damageReportRequiredLabel')}</FormLabel>
                           <FormDescription>
-                            Require damage reports for damaged items
+                            {t('settings:damageReportRequiredDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -942,9 +942,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Photo Evidence Required</FormLabel>
+                          <FormLabel>{t('settings:photoEvidenceRequiredLabel')}</FormLabel>
                           <FormDescription>
-                            Require photo evidence for damage reports
+                            {t('settings:photoEvidenceRequiredDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -961,9 +961,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Ruler className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Measurement Units
+                  {t('settings:measurementUnitsCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Default measurement units and precision</CardDescription>
+                <CardDescription className="text-sm">{t('settings:measurementUnitsCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -972,7 +972,7 @@ export default function InventorySettings() {
                     name="default_length_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Length Unit</FormLabel>
+                        <FormLabel>{t('settings:defaultLengthUnitLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_length_unit">
@@ -986,7 +986,7 @@ export default function InventorySettings() {
                             <SelectItem value="in">Inches (in)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Unit for measuring length</FormDescription>
+                        <FormDescription>{t('settings:defaultLengthUnitDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -997,7 +997,7 @@ export default function InventorySettings() {
                     name="default_weight_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Weight Unit</FormLabel>
+                        <FormLabel>{t('settings:defaultWeightUnitLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_weight_unit">
@@ -1011,7 +1011,7 @@ export default function InventorySettings() {
                             <SelectItem value="oz">Ounces (oz)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Unit for measuring weight</FormDescription>
+                        <FormDescription>{t('settings:defaultWeightUnitDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1022,7 +1022,7 @@ export default function InventorySettings() {
                     name="default_volume_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Volume Unit</FormLabel>
+                        <FormLabel>{t('settings:defaultVolumeUnitLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_volume_unit">
@@ -1036,7 +1036,7 @@ export default function InventorySettings() {
                             <SelectItem value="oz">Fluid Ounces (oz)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Unit for measuring volume</FormDescription>
+                        <FormDescription>{t('settings:defaultVolumeUnitDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1047,7 +1047,7 @@ export default function InventorySettings() {
                     name="decimal_places_weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Decimal Places for Weight</FormLabel>
+                        <FormLabel>{t('settings:decimalPlacesWeightLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1059,7 +1059,7 @@ export default function InventorySettings() {
                             data-testid="input-decimal_places_weight" 
                           />
                         </FormControl>
-                        <FormDescription>Precision for weight (1-4 decimals)</FormDescription>
+                        <FormDescription>{t('settings:decimalPlacesWeightDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1070,7 +1070,7 @@ export default function InventorySettings() {
                     name="decimal_places_dimensions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Decimal Places for Dimensions</FormLabel>
+                        <FormLabel>{t('settings:decimalPlacesDimensionsLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1082,7 +1082,7 @@ export default function InventorySettings() {
                             data-testid="input-decimal_places_dimensions" 
                           />
                         </FormControl>
-                        <FormDescription>Precision for dimensions (1-4 decimals)</FormDescription>
+                        <FormDescription>{t('settings:decimalPlacesDimensionsDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1098,9 +1098,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Image className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Catalog Settings
+                  {t('settings:catalogSettingsCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Product catalog and image management settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:catalogSettingsCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1109,7 +1109,7 @@ export default function InventorySettings() {
                     name="max_images_per_product"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Max Images per Product</FormLabel>
+                        <FormLabel>{t('settings:maxImagesPerProductLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1121,7 +1121,7 @@ export default function InventorySettings() {
                             data-testid="input-max_images_per_product" 
                           />
                         </FormControl>
-                        <FormDescription>Maximum number of images allowed</FormDescription>
+                        <FormDescription>{t('settings:maxImagesPerProductDescriptionAlt')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1132,7 +1132,7 @@ export default function InventorySettings() {
                     name="image_quality"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Image Quality (%) - {field.value ?? 0}%</FormLabel>
+                        <FormLabel>{t('settings:imageQualityLabel')} - {field.value ?? 0}%</FormLabel>
                         <FormControl>
                           <Slider
                             min={0}
@@ -1144,7 +1144,7 @@ export default function InventorySettings() {
                             data-testid="slider-image_quality"
                           />
                         </FormControl>
-                        <FormDescription>Compression quality for images (higher = better quality)</FormDescription>
+                        <FormDescription>{t('settings:imageQualityDescriptionAlt')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1165,9 +1165,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Product Variants</FormLabel>
+                          <FormLabel>{t('settings:enableProductVariantsLabel')}</FormLabel>
                           <FormDescription>
-                            Allow products with multiple variants (size, color, etc.)
+                            {t('settings:enableProductVariantsDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1187,9 +1187,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Bundles</FormLabel>
+                          <FormLabel>{t('settings:enableBundlesLabel')}</FormLabel>
                           <FormDescription>
-                            Allow creation of product bundles and kits
+                            {t('settings:enableBundlesDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1209,9 +1209,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Services</FormLabel>
+                          <FormLabel>{t('settings:enableServicesLabel')}</FormLabel>
                           <FormDescription>
-                            Allow service products (non-physical items)
+                            {t('settings:enableServicesDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1231,9 +1231,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-compress Images</FormLabel>
+                          <FormLabel>{t('settings:autoCompressImagesLabel')}</FormLabel>
                           <FormDescription>
-                            Automatically compress uploaded images to save space
+                            {t('settings:autoCompressImagesDescriptionAlt')}
                           </FormDescription>
                         </div>
                       </FormItem>

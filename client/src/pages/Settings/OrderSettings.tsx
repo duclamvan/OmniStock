@@ -496,9 +496,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-assign Warehouse by Region</FormLabel>
+                          <FormLabel>{t('settings:autoAssignWarehouseByRegion')}</FormLabel>
                           <FormDescription>
-                            Automatically assign warehouse based on shipping region
+                            {t('settings:autoAssignWarehouseByRegionDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -518,9 +518,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Prefer Nearest Warehouse</FormLabel>
+                          <FormLabel>{t('settings:preferNearestWarehouse')}</FormLabel>
                           <FormDescription>
-                            Prefer nearest warehouse for order fulfillment
+                            {t('settings:preferNearestWarehouseDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -540,9 +540,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable Location-based Routing</FormLabel>
+                          <FormLabel>{t('settings:enableLocationBasedRouting')}</FormLabel>
                           <FormDescription>
-                            Route orders based on customer location
+                            {t('settings:enableLocationBasedRoutingDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -728,9 +728,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-assign Orders to Warehouse</FormLabel>
+                          <FormLabel>{t('settings:autoAssignOrdersToWarehouse')}</FormLabel>
                           <FormDescription>
-                            Automatically assign new orders to the nearest warehouse
+                            {t('settings:autoAssignOrdersToWarehouseDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -750,9 +750,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-create Packing Lists</FormLabel>
+                          <FormLabel>{t('settings:autoCreatePackingLists')}</FormLabel>
                           <FormDescription>
-                            Generate packing lists automatically when order is confirmed
+                            {t('settings:autoCreatePackingListsDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -772,9 +772,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-calculate Shipping Cost</FormLabel>
+                          <FormLabel>{t('settings:autoCalculateShippingCost')}</FormLabel>
                           <FormDescription>
-                            Calculate shipping costs based on weight and destination
+                            {t('settings:autoCalculateShippingDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -794,9 +794,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Require Barcode Scan for Picking</FormLabel>
+                          <FormLabel>{t('settings:requireBarcodeScanForPicking')}</FormLabel>
                           <FormDescription>
-                            Enforce barcode scanning during order picking
+                            {t('settings:requireBarcodeScanForPickingDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -816,9 +816,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Enable AI Carton Packing</FormLabel>
+                          <FormLabel>{t('settings:enableAiCartonPackingLabel')}</FormLabel>
                           <FormDescription>
-                            Use AI to suggest optimal carton sizes
+                            {t('settings:enableAiCartonPackingLabelDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -900,9 +900,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Require Customer Email</FormLabel>
+                          <FormLabel>{t('settings:requireCustomerEmail')}</FormLabel>
                           <FormDescription>
-                            Make email address mandatory for orders
+                            {t('settings:requireCustomerEmailDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -922,9 +922,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Require Shipping Address</FormLabel>
+                          <FormLabel>{t('settings:requireShippingAddress')}</FormLabel>
                           <FormDescription>
-                            Make shipping address mandatory for orders
+                            {t('settings:requireShippingAddressDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -944,9 +944,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Require Phone Number</FormLabel>
+                          <FormLabel>{t('settings:requirePhoneNumber')}</FormLabel>
                           <FormDescription>
-                            Make phone number mandatory for orders
+                            {t('settings:requirePhoneNumberDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -966,9 +966,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Allow Negative Stock</FormLabel>
+                          <FormLabel>{t('settings:allowNegativeStock')}</FormLabel>
                           <FormDescription>
-                            Allow orders when stock is unavailable
+                            {t('settings:allowNegativeStockDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1004,9 +1004,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-send Order Confirmation</FormLabel>
+                          <FormLabel>{t('settings:autoSendOrderConfirmation')}</FormLabel>
                           <FormDescription>
-                            Send confirmation email when order is created
+                            {t('settings:autoSendOrderConfirmationDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1026,9 +1026,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-send Shipping Notification</FormLabel>
+                          <FormLabel>{t('settings:autoSendShippingNotification')}</FormLabel>
                           <FormDescription>
-                            Send notification when order is shipped
+                            {t('settings:autoSendShippingNotificationDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1048,9 +1048,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-send Delivery Notification</FormLabel>
+                          <FormLabel>{t('settings:autoSendDeliveryNotification')}</FormLabel>
                           <FormDescription>
-                            Send notification when order is delivered
+                            {t('settings:autoSendDeliveryNotificationDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1070,9 +1070,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-update Stock on Order</FormLabel>
+                          <FormLabel>{t('settings:autoUpdateStockOnOrder')}</FormLabel>
                           <FormDescription>
-                            Automatically reduce stock when order is created
+                            {t('settings:autoUpdateStockOnOrderDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1092,9 +1092,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-create Return Request</FormLabel>
+                          <FormLabel>{t('settings:autoCreateReturnRequest')}</FormLabel>
                           <FormDescription>
-                            Automatically create return requests for eligible orders
+                            {t('settings:autoCreateReturnRequestDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1129,9 +1129,9 @@ export default function OrderSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Cash on Delivery</FormLabel>
+                        <FormLabel>{t('settings:enableCashOnDelivery')}</FormLabel>
                         <FormDescription>
-                          Allow customers to pay on delivery
+                          {t('settings:enableCashOnDeliveryDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1221,9 +1221,9 @@ export default function OrderSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Require Signature for COD</FormLabel>
+                        <FormLabel>{t('settings:requireSignatureForCod')}</FormLabel>
                         <FormDescription>
-                          Require customer signature when collecting COD payment
+                          {t('settings:requireSignatureForCodDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>

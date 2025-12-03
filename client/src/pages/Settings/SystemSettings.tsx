@@ -461,9 +461,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable Dark Mode</FormLabel>
+                        <FormLabel>{t('settings:enableDarkModeLabel')}</FormLabel>
                         <FormDescription>
-                          Enable dark mode as the default theme
+                          {t('settings:enableDarkModeDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -483,9 +483,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Compact View</FormLabel>
+                        <FormLabel>{t('settings:compactViewLabel')}</FormLabel>
                         <FormDescription>
-                          Use compact layout for tables and lists
+                          {t('settings:compactViewDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -519,9 +519,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-backup Enabled</FormLabel>
+                        <FormLabel>{t('settings:autoBackupEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically backup data on schedule
+                          {t('settings:autoBackupEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -534,7 +534,7 @@ export default function SystemSettings() {
                     name="backup_frequency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Backup Frequency</FormLabel>
+                        <FormLabel>{t('settings:backupFrequencyLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-backup_frequency">
@@ -547,7 +547,7 @@ export default function SystemSettings() {
                             <SelectItem value="monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>How often to create backups</FormDescription>
+                        <FormDescription>{t('settings:backupFrequencyDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -558,7 +558,7 @@ export default function SystemSettings() {
                     name="data_retention_period_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Data Retention Period (days)</FormLabel>
+                        <FormLabel>{t('settings:dataRetentionPeriodLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -569,7 +569,7 @@ export default function SystemSettings() {
                             data-testid="input-data_retention_period_days"
                           />
                         </FormControl>
-                        <FormDescription>How long to keep data</FormDescription>
+                        <FormDescription>{t('settings:dataRetentionPeriodDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -589,9 +589,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Archive Old Orders</FormLabel>
+                        <FormLabel>{t('settings:archiveOldOrdersLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically archive completed orders
+                          {t('settings:archiveOldOrdersDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -603,7 +603,7 @@ export default function SystemSettings() {
                   name="archive_after_days"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Archive After (days)</FormLabel>
+                      <FormLabel>{t('settings:archiveAfterDaysLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -614,7 +614,7 @@ export default function SystemSettings() {
                           data-testid="input-archive_after_days"
                         />
                       </FormControl>
-                      <FormDescription>Archive orders after this many days</FormDescription>
+                      <FormDescription>{t('settings:archiveAfterDaysDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -669,9 +669,9 @@ export default function SystemSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Security
+                  {t('settings:securityCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Security and authentication settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:securityCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -687,9 +687,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Require Strong Passwords</FormLabel>
+                        <FormLabel>{t('settings:requireStrongPasswordsLabel')}</FormLabel>
                         <FormDescription>
-                          Enforce strong password requirements
+                          {t('settings:requireStrongPasswordsDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -701,7 +701,7 @@ export default function SystemSettings() {
                   name="password_expiry_days"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password Expiry (days)</FormLabel>
+                      <FormLabel>{t('settings:passwordExpiryDaysLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -712,7 +712,7 @@ export default function SystemSettings() {
                           data-testid="input-password_expiry_days"
                         />
                       </FormControl>
-                      <FormDescription>Password expires after this many days (0 = never)</FormDescription>
+                      <FormDescription>{t('settings:passwordExpiryDaysDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -731,9 +731,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Two-Factor Authentication</FormLabel>
+                        <FormLabel>{t('settings:twoFactorAuthenticationLabel')}</FormLabel>
                         <FormDescription>
-                          Enable two-factor authentication for all users
+                          {t('settings:twoFactorAuthenticationDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -753,9 +753,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Session Logging</FormLabel>
+                        <FormLabel>{t('settings:sessionLoggingLabel')}</FormLabel>
                         <FormDescription>
-                          Log all user sessions for audit trail
+                          {t('settings:sessionLoggingDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -775,9 +775,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>IP Whitelist Enabled</FormLabel>
+                        <FormLabel>{t('settings:ipWhitelistEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Restrict access to whitelisted IP addresses
+                          {t('settings:ipWhitelistEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -793,9 +793,9 @@ export default function SystemSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Plug className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Integrations
+                  {t('settings:integrationsCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Third-party service integrations</CardDescription>
+                <CardDescription className="text-sm">{t('settings:integrationsCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -811,9 +811,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Facebook Integration Enabled</FormLabel>
+                        <FormLabel>{t('settings:facebookIntegrationEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable Facebook Marketplace integration
+                          {t('settings:facebookIntegrationEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -833,9 +833,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>OpenAI Integration Enabled</FormLabel>
+                        <FormLabel>{t('settings:openaiIntegrationEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable OpenAI API integration for AI features
+                          {t('settings:openaiIntegrationEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -855,9 +855,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>DeepSeek AI Enabled</FormLabel>
+                        <FormLabel>{t('settings:deepseekAiEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable DeepSeek AI integration
+                          {t('settings:deepseekAiEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -877,9 +877,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Nominatim Geocoding Enabled</FormLabel>
+                        <FormLabel>{t('settings:nominatimGeocodingEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable Nominatim for address geocoding
+                          {t('settings:nominatimGeocodingEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -899,9 +899,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Frankfurter Exchange Rates Enabled</FormLabel>
+                        <FormLabel>{t('settings:frankfurterExchangeRatesEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable Frankfurter API for exchange rates
+                          {t('settings:frankfurterExchangeRatesEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -917,9 +917,9 @@ export default function SystemSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
-                  AI & Automation
+                  {t('settings:aiAutomationCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">AI-powered automation features</CardDescription>
+                <CardDescription className="text-sm">{t('settings:aiAutomationCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -935,9 +935,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable AI Address Parsing</FormLabel>
+                        <FormLabel>{t('settings:enableAiAddressParsingLabel')}</FormLabel>
                         <FormDescription>
-                          Use AI to parse and validate addresses
+                          {t('settings:enableAiAddressParsingDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -957,9 +957,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable AI Carton Packing</FormLabel>
+                        <FormLabel>{t('settings:enableAiCartonPackingLabel')}</FormLabel>
                         <FormDescription>
-                          Use AI to optimize carton packing
+                          {t('settings:enableAiCartonPackingDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -979,9 +979,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable AI Weight Estimation</FormLabel>
+                        <FormLabel>{t('settings:enableAiWeightEstimationLabel')}</FormLabel>
                         <FormDescription>
-                          Use AI to estimate package weights
+                          {t('settings:enableAiWeightEstimationDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1001,9 +1001,9 @@ export default function SystemSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-optimize Warehouse Locations</FormLabel>
+                        <FormLabel>{t('settings:autoOptimizeWarehouseLocationsLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically optimize inventory locations
+                          {t('settings:autoOptimizeWarehouseLocationsDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>

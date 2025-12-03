@@ -491,9 +491,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Show Prices With VAT</FormLabel>
+                        <FormLabel>{t('settings:showPricesWithVatLabel')}</FormLabel>
                         <FormDescription>
-                          Display prices including VAT by default
+                          {t('settings:showPricesWithVatDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -509,9 +509,9 @@ export default function FinancialSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Tax & VAT Configuration
+                  {t('settings:taxVatConfigurationCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">VAT and tax settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:taxVatConfigurationCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -527,9 +527,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Enable VAT</FormLabel>
+                        <FormLabel>{t('settings:enableVatLabel')}</FormLabel>
                         <FormDescription>
-                          Enable VAT calculation and reporting
+                          {t('settings:enableVatDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -541,7 +541,7 @@ export default function FinancialSettings() {
                   name="vat_registration_number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>VAT Registration Number</FormLabel>
+                      <FormLabel>{t('settings:vatRegistrationNumberLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -550,7 +550,7 @@ export default function FinancialSettings() {
                           data-testid="input-vat_registration_number"
                         />
                       </FormControl>
-                      <FormDescription>Your VAT registration number</FormDescription>
+                      <FormDescription>{t('settings:vatRegistrationNumberDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -562,7 +562,7 @@ export default function FinancialSettings() {
                     name="default_tax_rate_czk"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Tax Rate for CZK (%)</FormLabel>
+                        <FormLabel>{t('settings:defaultTaxRateCzkLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -575,7 +575,7 @@ export default function FinancialSettings() {
                             data-testid="input-default_tax_rate_czk" 
                           />
                         </FormControl>
-                        <FormDescription>Tax rate in percentage</FormDescription>
+                        <FormDescription>{t('settings:taxRatePercentageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -586,7 +586,7 @@ export default function FinancialSettings() {
                     name="default_tax_rate_eur"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Tax Rate for EUR (%)</FormLabel>
+                        <FormLabel>{t('settings:defaultTaxRateEurLabel')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -599,7 +599,7 @@ export default function FinancialSettings() {
                             data-testid="input-default_tax_rate_eur" 
                           />
                         </FormControl>
-                        <FormDescription>Tax rate in percentage</FormDescription>
+                        <FormDescription>{t('settings:taxRatePercentageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -619,9 +619,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Reverse Charge Mechanism</FormLabel>
+                        <FormLabel>{t('settings:reverseChargeMechanismLabel')}</FormLabel>
                         <FormDescription>
-                          Enable reverse charge for B2B transactions
+                          {t('settings:reverseChargeMechanismDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -641,9 +641,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>OSS Scheme Enabled</FormLabel>
+                        <FormLabel>{t('settings:ossSchemeEnabledLabel')}</FormLabel>
                         <FormDescription>
-                          Enable One-Stop-Shop VAT scheme for EU
+                          {t('settings:ossSchemeEnabledDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -663,9 +663,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-apply Tax</FormLabel>
+                        <FormLabel>{t('settings:autoApplyTaxLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically apply tax rates to new orders based on currency
+                          {t('settings:autoApplyTaxDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -681,9 +681,9 @@ export default function FinancialSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Currency & Exchange
+                  {t('settings:currencyExchangeCard')}
                 </CardTitle>
-                <CardDescription className="text-sm">Currency and exchange rate settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:currencyExchangeCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -692,7 +692,7 @@ export default function FinancialSettings() {
                     name="base_currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Base Currency</FormLabel>
+                        <FormLabel>{t('settings:baseCurrencyLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-base_currency">
@@ -705,7 +705,7 @@ export default function FinancialSettings() {
                             <SelectItem value="USD">USD</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Default currency for the system</FormDescription>
+                        <FormDescription>{t('settings:baseCurrencyDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -716,7 +716,7 @@ export default function FinancialSettings() {
                     name="exchange_rate_api_source"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Exchange Rate Source</FormLabel>
+                        <FormLabel>{t('settings:exchangeRateSourceLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-exchange_rate_api_source">
@@ -729,7 +729,7 @@ export default function FinancialSettings() {
                             <SelectItem value="Manual">Manual Entry</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Source for exchange rates</FormDescription>
+                        <FormDescription>{t('settings:exchangeRateSourceDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -741,7 +741,7 @@ export default function FinancialSettings() {
                   name="exchange_rate_update_frequency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Exchange Rate Update Frequency</FormLabel>
+                      <FormLabel>{t('settings:exchangeRateUpdateFrequencyLabel')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger data-testid="select-exchange_rate_update_frequency">
@@ -754,7 +754,7 @@ export default function FinancialSettings() {
                           <SelectItem value="weekly">Weekly</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormDescription>How often to update exchange rates</FormDescription>
+                      <FormDescription>{t('settings:exchangeRateUpdateFrequencyDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -773,9 +773,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Auto-update Exchange Rates</FormLabel>
+                        <FormLabel>{t('settings:autoUpdateExchangeRatesLabel')}</FormLabel>
                         <FormDescription>
-                          Automatically fetch and update exchange rates
+                          {t('settings:autoUpdateExchangeRatesDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -787,7 +787,7 @@ export default function FinancialSettings() {
                   name="exchange_rate_source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Legacy Exchange Rate API Source</FormLabel>
+                      <FormLabel>{t('settings:legacyExchangeRateApiSourceLabel')}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
@@ -798,7 +798,7 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Legacy field - Using Fawaz Ahmed's free currency exchange rate API
+                        {t('settings:legacyExchangeRateApiSourceDescription')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -814,9 +814,9 @@ export default function FinancialSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Invoicing & Billing
+                  {t('settings:invoicingBilling')}
                 </CardTitle>
-                <CardDescription className="text-sm">Invoice numbering and payment settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:invoicingBillingDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -825,7 +825,7 @@ export default function FinancialSettings() {
                     name="invoice_number_prefix"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Invoice Number Prefix</FormLabel>
+                        <FormLabel>{t('settings:invoiceNumberPrefixLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -834,7 +834,7 @@ export default function FinancialSettings() {
                             data-testid="input-invoice_number_prefix"
                           />
                         </FormControl>
-                        <FormDescription>Prefix for invoice numbers</FormDescription>
+                        <FormDescription>{t('settings:invoiceNumberPrefixDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -845,7 +845,7 @@ export default function FinancialSettings() {
                     name="invoice_number_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Invoice Number Format</FormLabel>
+                        <FormLabel>{t('settings:invoiceNumberFormatLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -854,7 +854,7 @@ export default function FinancialSettings() {
                             data-testid="input-invoice_number_format"
                           />
                         </FormControl>
-                        <FormDescription>Format example for invoices</FormDescription>
+                        <FormDescription>{t('settings:invoiceNumberFormatDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -867,7 +867,7 @@ export default function FinancialSettings() {
                     name="next_invoice_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Next Invoice Number</FormLabel>
+                        <FormLabel>{t('settings:nextInvoiceNumberLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -878,7 +878,7 @@ export default function FinancialSettings() {
                             data-testid="input-next_invoice_number"
                           />
                         </FormControl>
-                        <FormDescription>Next sequential number</FormDescription>
+                        <FormDescription>{t('settings:nextInvoiceNumberDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -889,7 +889,7 @@ export default function FinancialSettings() {
                     name="payment_terms_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Payment Terms (days)</FormLabel>
+                        <FormLabel>{t('settings:paymentTermsDaysLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -900,7 +900,7 @@ export default function FinancialSettings() {
                             data-testid="input-payment_terms_days"
                           />
                         </FormControl>
-                        <FormDescription>Default payment terms</FormDescription>
+                        <FormDescription>{t('settings:paymentTermsDaysDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -911,7 +911,7 @@ export default function FinancialSettings() {
                     name="late_payment_fee_percentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Late Payment Fee (%)</FormLabel>
+                        <FormLabel>{t('settings:latePaymentFeePercentageLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -923,7 +923,7 @@ export default function FinancialSettings() {
                             data-testid="input-late_payment_fee_percentage"
                           />
                         </FormControl>
-                        <FormDescription>Fee for late payments</FormDescription>
+                        <FormDescription>{t('settings:latePaymentFeePercentageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -939,9 +939,9 @@ export default function FinancialSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Accounting
+                  {t('settings:accountingTitle')}
                 </CardTitle>
-                <CardDescription className="text-sm">Accounting methods and fiscal year settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:accountingDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -950,7 +950,7 @@ export default function FinancialSettings() {
                     name="fiscal_year_start"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Fiscal Year Start</FormLabel>
+                        <FormLabel>{t('settings:fiscalYearStartLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-fiscal_year_start">
@@ -963,7 +963,7 @@ export default function FinancialSettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>Month when fiscal year begins</FormDescription>
+                        <FormDescription>{t('settings:fiscalYearStartDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -974,7 +974,7 @@ export default function FinancialSettings() {
                     name="cost_calculation_method"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cost Calculation Method</FormLabel>
+                        <FormLabel>{t('settings:costCalculationMethodLabel')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-cost_calculation_method">
@@ -987,7 +987,7 @@ export default function FinancialSettings() {
                             <SelectItem value="Average">Average Cost</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Inventory cost calculation method</FormDescription>
+                        <FormDescription>{t('settings:costCalculationMethodDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1007,9 +1007,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Include Shipping in COGS</FormLabel>
+                        <FormLabel>{t('settings:includeShippingInCogsLabel')}</FormLabel>
                         <FormDescription>
-                          Include shipping costs in Cost of Goods Sold
+                          {t('settings:includeShippingInCogsDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1029,9 +1029,9 @@ export default function FinancialSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Track Expenses by Category</FormLabel>
+                        <FormLabel>{t('settings:trackExpensesByCategoryLabel')}</FormLabel>
                         <FormDescription>
-                          Enable categorization of expenses for reporting
+                          {t('settings:trackExpensesByCategoryDescription')}
                         </FormDescription>
                       </div>
                     </FormItem>
