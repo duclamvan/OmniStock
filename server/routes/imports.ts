@@ -4988,7 +4988,6 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
         try {
           let originalItem: any = null;
           let unitCost = 0;
-          let landingCostPerUnit = 0;
           
           // Get the original item details based on itemType
           if (item.itemType === 'purchase') {
@@ -4999,7 +4998,6 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             
             if (originalItem) {
               unitCost = parseFloat(originalItem.unitPrice || '0');
-              landingCostPerUnit = parseFloat(originalItem.landingCostUnitBase || '0');
             }
           } else if (item.itemType === 'custom') {
             [originalItem] = await tx
@@ -5009,7 +5007,6 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             
             if (originalItem) {
               unitCost = parseFloat(originalItem.unitPrice || '0');
-              landingCostPerUnit = unitCost * 1.15; // Default 15% markup for customs/shipping
             }
           }
           
@@ -5018,6 +5015,18 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             inventoryResults.failed++;
             continue;
           }
+          
+          // ================================================================
+          // LANDED COST INTEGRATION: Fetch actual cost allocations
+          // ================================================================
+          const landedCostData = await getLandedCostForItem(
+            tx,
+            item.itemType,
+            item.itemId,
+            receipt.shipmentId,
+            item.receivedQuantity || 0,
+            unitCost
+          );
           
           // Check if product exists by SKU
           const sku = item.sku || originalItem.sku || `SKU-${item.itemId}`;
@@ -5037,7 +5046,7 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             const newQuantity = item.receivedQuantity;
             const totalQuantity = oldQuantity + newQuantity;
             
-            // Calculate weighted average for costs
+            // Calculate weighted average for import costs
             const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
             const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
             const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
@@ -5069,7 +5078,7 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               }
             }
             
-            // Calculate weighted averages
+            // Calculate weighted averages for import costs
             const avgCostUsd = totalQuantity > 0 
               ? ((oldQuantity * oldCostUsd) + (newQuantity * newCostUsd)) / totalQuantity 
               : newCostUsd;
@@ -5082,13 +5091,26 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               ? ((oldQuantity * oldCostEur) + (newQuantity * newCostEur)) / totalQuantity
               : newCostEur || oldCostEur;
             
+            // ================================================================
+            // LANDED COST INTEGRATION: Calculate weighted average landed costs
+            // ================================================================
+            const avgLandedCosts = calculateWeightedAverageLandedCost(
+              existingProduct,
+              newQuantity,
+              landedCostData
+            );
+            
             // Update product with new quantities, costs, and prices
             const updateData: any = {
               quantity: totalQuantity,
               importCostUsd: avgCostUsd.toFixed(2),
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
               importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
-              latestLandingCost: landingCostPerUnit > 0 ? landingCostPerUnit.toFixed(4) : null,
+              // Weighted average landed costs in all currencies
+              latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
+              landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
+              landingCostUsd: avgLandedCosts.avgLandingCostUsd > 0 ? avgLandedCosts.avgLandingCostUsd.toFixed(4) : null,
+              landingCostCzk: avgLandedCosts.avgLandingCostCzk > 0 ? avgLandedCosts.avgLandingCostCzk.toFixed(4) : null,
               warehouseLocation: item.warehouseLocation || existingProduct.warehouseLocation,
               updatedAt: new Date()
             };
@@ -5111,16 +5133,19 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               product: updatedProduct,
               oldQuantity,
               addedQuantity: newQuantity,
-              newQuantity: totalQuantity
+              newQuantity: totalQuantity,
+              landedCostSource: landedCostData.source,
+              landedCostPerUnit: landedCostData.landingCostPerUnit,
+              avgLandedCost: avgLandedCosts.avgLatestLandingCost
             });
             
             inventoryResults.updated++;
             
-            // Record cost history
+            // Record cost history with weighted average landed cost
             await tx.insert(productCostHistory).values({
               productId: updatedProduct.id,
               customItemId: item.itemType === 'custom' ? item.itemId : null,
-              landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : avgCostUsd).toFixed(4),
+              landingCostUnitBase: avgLandedCosts.avgLatestLandingCost.toFixed(4),
               method: 'weighted_average',
               computedAt: new Date()
             });
@@ -5139,7 +5164,11 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               importCostUsd: unitCost.toFixed(2),
               importCostCzk: null,
               importCostEur: null,
-              latestLandingCost: landingCostPerUnit > 0 ? landingCostPerUnit.toFixed(4) : null,
+              // Set all landed cost fields for new products
+              latestLandingCost: landedCostData.landingCostPerUnit > 0 ? landedCostData.landingCostPerUnit.toFixed(4) : null,
+              landingCostEur: landedCostData.landingCostEur > 0 ? landedCostData.landingCostEur.toFixed(4) : null,
+              landingCostUsd: landedCostData.landingCostUsd > 0 ? landedCostData.landingCostUsd.toFixed(4) : null,
+              landingCostCzk: landedCostData.landingCostCzk > 0 ? landedCostData.landingCostCzk.toFixed(4) : null,
               isActive: true,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -5209,16 +5238,18 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               product: createdProduct,
               oldQuantity: 0,
               addedQuantity: item.receivedQuantity,
-              newQuantity: item.receivedQuantity
+              newQuantity: item.receivedQuantity,
+              landedCostSource: landedCostData.source,
+              landedCostPerUnit: landedCostData.landingCostPerUnit
             });
             
             inventoryResults.created++;
             
-            // Record initial cost history
+            // Record initial cost history with landed cost
             await tx.insert(productCostHistory).values({
               productId: createdProduct.id,
               customItemId: item.itemType === 'custom' ? item.itemId : null,
-              landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : parseFloat(newProduct.importCostUsd)).toFixed(4),
+              landingCostUnitBase: landedCostData.landingCostPerUnit.toFixed(4),
               method: 'initial_import',
               computedAt: new Date()
             });
@@ -5229,72 +5260,7 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
         }
       }
 
-      // Step 5: Apply landing cost allocations using the existing costAllocations table
-      // For custom items, look up allocations directly; for purchase items, use their stored landingCostUnitBase
-      if (receipt.shipmentId) {
-        try {
-          // Get existing cost allocations from the costAllocations table (populated by landing cost page)
-          const existingAllocations = await tx
-            .select()
-            .from(costAllocations)
-            .where(eq(costAllocations.shipmentId, receipt.shipmentId));
-          
-          if (existingAllocations.length > 0) {
-            // Group allocations by customItemId and sum up all cost types
-            const allocationsByCustomItemId = new Map<number, number>();
-            for (const alloc of existingAllocations) {
-              const current = allocationsByCustomItemId.get(alloc.customItemId) || 0;
-              allocationsByCustomItemId.set(alloc.customItemId, current + parseFloat(alloc.amountAllocatedBase || '0'));
-            }
-            
-            // Update product landing costs for items that have allocations
-            // Track which SKUs have been updated to avoid double-counting
-            const updatedSkus = new Set<string>();
-            
-            for (const item of items) {
-              const sku = item.sku || `SKU-${item.itemId}`;
-              
-              // Skip if already updated this SKU
-              if (updatedSkus.has(sku)) continue;
-              
-              let landingCostPerUnit = 0;
-              
-              if (item.itemType === 'custom' && item.itemId) {
-                // For custom items, look up from costAllocations
-                const totalAllocated = allocationsByCustomItemId.get(item.itemId) || 0;
-                landingCostPerUnit = item.receivedQuantity > 0 ? totalAllocated / item.receivedQuantity : 0;
-              } else if (item.itemType === 'purchase' && item.itemId) {
-                // For purchase items, use the landingCostUnitBase from the purchaseItems table
-                const [purchaseItem] = await tx
-                  .select()
-                  .from(purchaseItems)
-                  .where(eq(purchaseItems.id, item.itemId));
-                
-                if (purchaseItem?.landingCostUnitBase) {
-                  landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
-                }
-              }
-              
-              if (landingCostPerUnit > 0) {
-                await tx
-                  .update(products)
-                  .set({
-                    latestLandingCost: landingCostPerUnit.toFixed(4),
-                    updatedAt: new Date()
-                  })
-                  .where(eq(products.sku, sku));
-                
-                updatedSkus.add(sku);
-              }
-            }
-          }
-        } catch (allocationError) {
-          console.error('Error applying landing cost allocations:', allocationError);
-          // Continue with approval even if landing cost allocation fails
-        }
-      }
-
-      // Step 6: Mark purchase items as delivered and update purchase order status
+      // Step 5: Mark purchase items as delivered and update purchase order status
       const purchaseItemIds = items
         .filter(item => item.itemType === 'purchase' && item.itemId)
         .map(item => item.itemId);
