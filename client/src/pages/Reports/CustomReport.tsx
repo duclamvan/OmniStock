@@ -265,7 +265,7 @@ export default function CustomReport() {
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Test Notification System - Remove in production */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -273,7 +273,7 @@ export default function CustomReport() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">{t('clickButtonsToTest')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('clickButtonsToTest')}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={triggerSuccessToast}
@@ -322,11 +322,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">{t('ordersToFulfill')}</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-slate-400">{t('ordersToFulfill')}</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
                   {metrics?.fulfillOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">{t('ordersToFulfill')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('ordersToFulfill')}</p>
               </div>
               <div className="p-2 sm:p-3 bg-emerald-100 rounded-lg ml-4">
                 <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
@@ -340,11 +340,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">{t('totalOrders')}</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-slate-400">{t('totalOrders')}</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
                   {metrics?.totalOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">{t('shippedToday')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('shippedToday')}</p>
               </div>
               <div className="p-2 sm:p-3 bg-blue-100 rounded-lg ml-4">
                 <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
@@ -358,11 +358,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">{t('totalRevenue')}</p>
-                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-slate-400">{t('totalRevenue')}</p>
+                <p className="text-mobile-xl font-bold text-slate-900 dark:text-slate-100 mt-1 break-all">
                   {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">{t('todayIncrease', { percent: '10' })}</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{t('todayIncrease', { percent: '10' })}</p>
               </div>
               <div className="p-2 sm:p-3 bg-green-100 rounded-lg ml-4">
                 <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
@@ -376,11 +376,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">{t('totalProfit')}</p>
-                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-slate-400">{t('totalProfit')}</p>
+                <p className="text-mobile-xl font-bold text-slate-900 dark:text-slate-100 mt-1 break-all">
                   {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">{t('todayIncrease', { percent: '15' })} 🏆</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{t('todayIncrease', { percent: '15' })} 🏆</p>
               </div>
               <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg ml-4">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
@@ -393,38 +393,38 @@ export default function CustomReport() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-4 sm:p-6">
-            <p className="text-mobile-sm font-medium text-slate-600">{t('thisMonthTotalRevenue')}</p>
-            <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+            <p className="text-mobile-sm font-medium text-slate-600 dark:text-slate-400">{t('thisMonthTotalRevenue')}</p>
+            <p className="text-mobile-xl font-bold text-slate-900 dark:text-slate-100 mt-1 break-all">
               {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">{t('allCurrenciesConverted')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">{t('thisMonthTotalProfit')}</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('thisMonthTotalProfit')}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">{t('allCurrenciesConverted')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">{t('lastMonthTotalRevenue')}</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('lastMonthTotalRevenue')}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">{t('allCurrenciesConverted')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">{t('lastMonthTotalProfit')}</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('lastMonthTotalProfit')}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">{t('allCurrenciesConverted')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
       </div>
@@ -433,7 +433,7 @@ export default function CustomReport() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('revenueAndProfit')}</CardTitle>
-            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+            <select className="text-sm border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded px-3 py-1">
               <option>{tCommon('year')}</option>
               <option>{tCommon('month')}</option>
               <option>{tCommon('week')}</option>
@@ -449,7 +449,7 @@ export default function CustomReport() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{tFinancial('totalExpenses')}</CardTitle>
-            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+            <select className="text-sm border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded px-3 py-1">
               <option>{t('thisYear')}</option>
               <option>{t('lastYear')}</option>
             </select>
@@ -468,11 +468,11 @@ export default function CustomReport() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-800 rounded"></div>
-              <span className="text-sm text-slate-600">{t('purchased')}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t('purchased')}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-400 rounded"></div>
-              <span className="text-sm text-slate-600">{t('soldAmount')}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t('soldAmount')}</span>
             </div>
           </div>
         </CardHeader>
@@ -547,16 +547,16 @@ export default function CustomReport() {
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-mobile-sm">
                         <div>
-                          <span className="text-gray-500">Order ID:</span>
+                          <span className="text-gray-500 dark:text-gray-400">Order ID:</span>
                           <p className="font-medium">{order.orderId}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Date:</span>
+                          <span className="text-gray-500 dark:text-gray-400">Date:</span>
                           <p className="font-medium">{formatDate(order.createdAt)}</p>
                         </div>
                       </div>
-                      <div className="pt-2 border-t">
-                        <span className="text-gray-500 text-mobile-sm">Order Value:</span>
+                      <div className="pt-2 border-t dark:border-slate-700">
+                        <span className="text-gray-500 dark:text-gray-400 text-mobile-sm">Order Value:</span>
                         <p className="font-semibold text-mobile-lg">{formatCurrency(parseFloat(order.grandTotal), order.currency)}</p>
                       </div>
                     </div>
@@ -629,12 +629,12 @@ export default function CustomReport() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {activity.user?.firstName} {activity.user?.lastName}
                       </p>
-                      <p className="text-xs text-slate-500">{activity.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{activity.description}</p>
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-400 dark:text-slate-500">
                       {new Date(activity.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
@@ -649,7 +649,7 @@ export default function CustomReport() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('lowInStock')}</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">{tCommon('viewAllProducts')}</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">{tCommon('viewAllProducts')}</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
               {tCommon('filter')}
@@ -733,7 +733,7 @@ export default function CustomReport() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('monthlyFinancialSummary')}</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">{t('allAmountsInEUR')}</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">{t('allAmountsInEUR')}</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
               {tCommon('filter')}

@@ -53,7 +53,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {customer.type === 'vip' && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs cursor-pointer" data-testid="badge-vip">
+            <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer" data-testid="badge-vip">
               <Star className="h-3 w-3 mr-1" />
               VIP
             </Badge>
@@ -82,7 +82,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {totalSpent >= 50000 && totalSpent < 100000 && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300 text-xs cursor-pointer" data-testid="badge-platinum">
+            <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600 text-xs cursor-pointer" data-testid="badge-platinum">
               <Award className="h-3 w-3 mr-1" />
               Platinum
             </Badge>
@@ -111,7 +111,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {customer.customerRank === 'TOP10' && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs cursor-pointer" data-testid="badge-top10">
+            <Badge className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer" data-testid="badge-top10">
               <Trophy className="h-3 w-3 mr-1" />
               TOP 10{customer.country ? ` in ${customer.country}` : ''}
             </Badge>
@@ -125,7 +125,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {customer.customerRank === 'TOP50' && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-pointer" data-testid="badge-top50">
+            <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 text-xs cursor-pointer" data-testid="badge-top50">
               <Award className="h-3 w-3 mr-1" />
               TOP 50{customer.country ? ` in ${customer.country}` : ''}
             </Badge>
@@ -139,7 +139,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {customer.customerRank === 'TOP100' && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-pointer" data-testid="badge-top100">
+            <Badge className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs cursor-pointer" data-testid="badge-top100">
               <Star className="h-3 w-3 mr-1" />
               TOP 100{customer.country ? ` in ${customer.country}` : ''}
             </Badge>
@@ -154,7 +154,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {order?.paymentStatus === 'pay_later' && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-pointer" data-testid="badge-pay-later">
+            <Badge className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700 text-xs cursor-pointer" data-testid="badge-pay-later">
               <Clock className="h-3 w-3 mr-1" />
               Pay Later
             </Badge>
@@ -169,7 +169,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
       {daysSinceFirstOrder !== null && daysSinceFirstOrder <= 30 && (
         <Popover>
           <PopoverTrigger asChild>
-            <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-pointer" data-testid="badge-new-customer">
+            <Badge className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700 text-xs cursor-pointer" data-testid="badge-new-customer">
               <Sparkles className="h-3 w-3 mr-1" />
               New Customer
             </Badge>
@@ -270,85 +270,85 @@ function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: Cust
     'VIP': {
       icon: Star,
       label: 'VIP',
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
       getTooltip: () => t('common:vipCustomerManual'),
     },
     'Diamond': {
       icon: Gem,
       label: 'Diamond',
-      className: 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 border-purple-300',
+      className: 'bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-900 dark:text-purple-400 border-purple-300 dark:border-purple-700',
       getTooltip: (metadata) => `Lifetime spending ≥ ${formatCurrency(metadata?.threshold || 100000, currency)}`,
     },
     'Platinum': {
       icon: Award,
       label: 'Platinum',
-      className: 'bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300',
+      className: 'bg-gradient-to-r from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600',
       getTooltip: (metadata) => `Lifetime spending ≥ ${formatCurrency(metadata?.threshold || 50000, currency)}`,
     },
     'Gold': {
       icon: Medal,
       label: 'Gold',
-      className: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300',
+      className: 'bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-700',
       getTooltip: (metadata) => `Lifetime spending ≥ ${formatCurrency(metadata?.threshold || 25000, currency)}`,
     },
     'TOP10': {
       icon: Trophy,
       label: 'TOP 10',
-      className: 'bg-yellow-50 text-yellow-700 border-yellow-300',
+      className: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
       getTooltip: (metadata) => `Top 10 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
     },
     'TOP50': {
       icon: Award,
       label: 'TOP 50',
-      className: 'bg-blue-50 text-blue-700 border-blue-300',
+      className: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700',
       getTooltip: (metadata) => `Top 50 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
     },
     'TOP100': {
       icon: Star,
       label: 'TOP 100',
-      className: 'bg-slate-50 text-slate-700 border-slate-300',
+      className: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600',
       getTooltip: (metadata) => `Top 100 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
     },
     'PayLater': {
       icon: Clock,
       label: 'Pay Later',
-      className: 'bg-purple-50 text-purple-700 border-purple-300',
+      className: 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700',
       getTooltip: () => t('common:paymentScheduledLater'),
     },
     'NewCustomer': {
       icon: Sparkles,
       label: 'New Customer',
-      className: 'bg-green-50 text-green-700 border-green-300',
+      className: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700',
       getTooltip: () => 'First order placed within the last 30 days',
     },
     'FirstTimer': {
       icon: Sparkles,
       label: 'First Timer',
-      className: 'bg-cyan-50 text-cyan-700 border-cyan-300',
+      className: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-300 dark:border-cyan-700',
       getTooltip: () => 'Has placed only 1 order so far',
     },
     'SuperLoyal': {
       icon: Heart,
       label: 'Super Loyal',
-      className: 'bg-rose-50 text-rose-700 border-rose-300',
+      className: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700',
       getTooltip: (metadata) => `Has placed 10+ orders${metadata?.totalOrders ? ` (${metadata.totalOrders} orders total)` : ''}`,
     },
     'LoyalCustomer': {
       icon: RefreshCw,
       label: 'Loyal Customer',
-      className: 'bg-indigo-50 text-indigo-700 border-indigo-300',
+      className: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700',
       getTooltip: (metadata) => `Has placed ${metadata?.totalOrders || 'multiple'} orders - coming back for more!`,
     },
     'AtRisk': {
       icon: AlertTriangle,
       label: 'At Risk',
-      className: 'bg-orange-50 text-orange-700 border-orange-300',
+      className: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700',
       getTooltip: (metadata) => `No orders in ${metadata?.daysSinceLastOrder || '90+'} days - may need re-engagement`,
     },
     'HighValue': {
       icon: TrendingUp,
       label: 'High Value',
-      className: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+      className: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700',
       getTooltip: (metadata) => `Average order value: ${formatCurrency(metadata?.averageOrderValue || 500, currency)}`,
     },
   };

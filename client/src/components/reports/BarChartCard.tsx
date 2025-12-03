@@ -37,7 +37,7 @@ export function BarChartCard({
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
             <XAxis 
               dataKey={xAxisKey}
               className="text-xs"
@@ -51,9 +51,10 @@ export function BarChartCard({
             <Tooltip 
               formatter={formatValue}
               contentStyle={{ 
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
+                backgroundColor: 'var(--background)',
+                border: '1px solid var(--border)',
                 borderRadius: '6px',
+                color: 'var(--foreground)',
               }}
             />
             <Legend />

@@ -1055,7 +1055,7 @@ export default function OrderDetails() {
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex items-center gap-3 text-xs text-slate-500">
+                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
                     <span>{formatDate(order.createdAt)}</span>
@@ -1066,7 +1066,7 @@ export default function OrderDetails() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Banknote className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-slate-900">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
                   </div>
                 </div>
               </div>
@@ -1230,8 +1230,8 @@ export default function OrderDetails() {
                               </Link>
                             ) : (
                               <p className={cn(
-                                "font-semibold text-slate-900 text-sm mb-0.5",
-                                pickedItems.has(item.id) && "line-through text-slate-400"
+                                "font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5",
+                                pickedItems.has(item.id) && "line-through text-slate-400 dark:text-slate-500"
                               )}>
                                 {item.productName}
                               </p>
@@ -1557,13 +1557,13 @@ export default function OrderDetails() {
                       <div className="pt-2 space-y-1 border-t border-slate-200 dark:border-slate-700 mt-2">
                         {order.shippingAddress.tel && (
                           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400" data-testid="text-shipping-phone">
-                            <Phone className="h-3.5 w-3.5 text-slate-400" />
+                            <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                             <span className="text-xs">{order.shippingAddress.tel}</span>
                           </div>
                         )}
                         {order.shippingAddress.email && (
                           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400" data-testid="text-shipping-email">
-                            <Mail className="h-3.5 w-3.5 text-slate-400" />
+                            <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                             <span className="text-xs">{order.shippingAddress.email}</span>
                           </div>
                         )}
@@ -1574,7 +1574,7 @@ export default function OrderDetails() {
               ) : (
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-900/20" data-testid="section-no-shipping-address">
                   <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-slate-400" />
+                    <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('orders:shippingAddress')}</h3>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-500">{t('orders:noShippingAddress')}</p>
@@ -1628,7 +1628,7 @@ export default function OrderDetails() {
                   {orderCartons && orderCartons.length > 0 && (
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-700" data-testid="section-cartons">
                       <div className="flex items-center gap-2 mb-3">
-                        <Package className="h-4 w-4 text-slate-500" />
+                        <Package className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                         <span className="text-slate-500 dark:text-slate-400 font-medium">
                           {t('orders:cartons')}: {orderCartons.length} {orderCartons.length === 1 ? t('orders:box') : t('orders:boxes')}
                         </span>
@@ -1978,14 +1978,14 @@ export default function OrderDetails() {
                           {log.activityType === 'item_packed' && t('orders:packedItem', { product: log.productName || 'Item' })}
                           {log.activityType === 'pack_complete' && t('orders:packingCompleted')}
                         </p>
-                        <div className="text-xs text-slate-500 mt-0.5">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           {new Date(log.timestamp).toLocaleString()}
                           {log.userName && ` • ${log.userName}`}
                           {log.quantity && ` • ${t('orders:qtyColon')} ${log.quantity}`}
                           {log.location && ` • ${t('orders:loc')} ${log.location}`}
                         </div>
                         {log.notes && (
-                          <p className="text-xs text-slate-600 mt-1">{log.notes}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{log.notes}</p>
                         )}
                       </div>
                     </div>
@@ -2022,7 +2022,7 @@ export default function OrderDetails() {
                         e.stopPropagation();
                         toggleBadges();
                       }}
-                      className="h-6 w-6 p-0 text-slate-300 hover:text-slate-700 transition-all opacity-50 hover:opacity-100"
+                      className="h-6 w-6 p-0 text-slate-300 dark:text-slate-600 hover:text-slate-700 dark:hover:text-slate-300 transition-all opacity-50 hover:opacity-100"
                       data-testid="button-toggle-badges"
                     >
                       <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
@@ -2040,7 +2040,7 @@ export default function OrderDetails() {
                 <div className="space-y-2 text-sm">
                   {order.customer.email && (
                     <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
+                      <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <a href={`mailto:${order.customer.email}`} className="text-blue-600 hover:underline">
                         {order.customer.email}
                       </a>
@@ -2048,7 +2048,7 @@ export default function OrderDetails() {
                   )}
                   {order.customer.phone && (
                     <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                      <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
                         {order.customer.phone}
                       </a>
@@ -2056,7 +2056,7 @@ export default function OrderDetails() {
                   )}
                   {order.customer.facebookId && (
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-slate-400" />
+                      <MessageCircle className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <a 
                         href={`https://messenger.com/t/${order.customer.facebookId}`} 
                         target="_blank" 
@@ -2069,8 +2069,8 @@ export default function OrderDetails() {
                   )}
                   {(order.customer.address || order.customer.city) && (
                     <div className="flex items-start gap-2 mt-3">
-                      <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-                      <div className="text-slate-600">
+                      <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 mt-0.5" />
+                      <div className="text-slate-600 dark:text-slate-400">
                         {order.customer.address && <p>{order.customer.address}</p>}
                         {(order.customer.city || order.customer.state || order.customer.zipCode) && (
                           <p>
@@ -2106,7 +2106,7 @@ export default function OrderDetails() {
             </CardHeader>
             <CardContent>
               {tickets.length === 0 ? (
-                <div className="text-center py-6 text-sm text-slate-500">
+                <div className="text-center py-6 text-sm text-slate-500 dark:text-slate-400">
                   <p>{t('orders:noTicketsForThisOrder')}</p>
                   <Link href={`/tickets/add?orderId=${id}`}>
                     <Button variant="link" size="sm" className="mt-2">
@@ -2125,7 +2125,7 @@ export default function OrderDetails() {
                               {ticket.ticketId}
                             </p>
                           </Link>
-                          <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">{ticket.title}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1">{ticket.title}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant={
                               ticket.status === 'open' ? 'secondary' :
@@ -2190,9 +2190,9 @@ export default function OrderDetails() {
                       </div>
                       
                       {isTrackingLoading ? (
-                        <p className="text-sm text-slate-500">{t('orders:loadingTrackingInfo')}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{t('orders:loadingTrackingInfo')}</p>
                       ) : !trackingData || trackingData.length === 0 ? (
-                        <p className="text-sm text-slate-500">{t('orders:noTrackingInfo')}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{t('orders:noTrackingInfo')}</p>
                       ) : (
                         <div className="space-y-2">
                           {trackingData.map((shipment: any) => {
@@ -2408,23 +2408,23 @@ export default function OrderDetails() {
           
           <div className="space-y-4 py-4">
             {/* Order Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <div>
-                <Label className="text-sm text-slate-600">{t('orders:orderIdLabel')}</Label>
+                <Label className="text-sm text-slate-600 dark:text-slate-400">{t('orders:orderIdLabel')}</Label>
                 <p className="font-medium">{order?.orderId}</p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">{t('orders:customerLabel')}</Label>
+                <Label className="text-sm text-slate-600 dark:text-slate-400">{t('orders:customerLabel')}</Label>
                 <p className="font-medium">{order?.customer?.name}</p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">{t('orders:orderDateLabel')}</Label>
+                <Label className="text-sm text-slate-600 dark:text-slate-400">{t('orders:orderDateLabel')}</Label>
                 <p className="font-medium">
                   {order?.createdAt && formatDate(order.createdAt)}
                 </p>
               </div>
               <div>
-                <Label className="text-sm text-slate-600">{t('orders:totalAmountLabel')}</Label>
+                <Label className="text-sm text-slate-600 dark:text-slate-400">{t('orders:totalAmountLabel')}</Label>
                 <p className="font-medium">
                   {formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}
                 </p>
@@ -2482,8 +2482,8 @@ export default function OrderDetails() {
                       <div className="flex justify-between">
                         <div>
                           <p className="font-medium">{item.productName}</p>
-                          <p className="text-sm text-slate-500">{t('orders:skuColon')} {item.sku}</p>
-                          <p className="text-sm text-slate-500">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{t('orders:skuColon')} {item.sku}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
                             {t('orders:priceColon')} {formatCurrency(item.price || 0, order?.currency || 'EUR')} × {item.quantity}
                           </p>
                         </div>
@@ -2624,10 +2624,10 @@ export default function OrderDetails() {
           
           <div className="space-y-4 py-4">
             {/* Product Info */}
-            <div className="p-4 bg-slate-50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <p className="font-medium">{selectedPriceItem?.productName}</p>
-              <p className="text-sm text-slate-600">{t('orders:skuColon')} {selectedPriceItem?.sku}</p>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t('orders:skuColon')} {selectedPriceItem?.sku}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 {t('orders:currentPrice')} {formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}
               </p>
             </div>
@@ -2672,8 +2672,8 @@ export default function OrderDetails() {
 
             {/* Price Comparison */}
             {customPrice && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">{t('orders:priceComparison')}</p>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-300">{t('orders:priceComparison')}</p>
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between text-sm">
                     <span>{t('orders:originalPrice')}</span>

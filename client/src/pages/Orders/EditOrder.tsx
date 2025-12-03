@@ -2481,7 +2481,7 @@ export default function EditOrder() {
                       placeholder={t('phonePlaceholder')}
                       data-testid="input-quick-customer-phone"
                     />
-                    <p className="text-xs text-slate-500 mt-1">{t('formatWithoutSpaces')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('formatWithoutSpaces')}</p>
                   </div>
                 )}
 
@@ -2555,7 +2555,7 @@ export default function EditOrder() {
             <div className="relative customer-search-container">
               <Label htmlFor="customer">{t('searchCustomer')}</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <Input
                   ref={customerSearchRef}
                   placeholder={t('searchCustomerPlaceholder')}

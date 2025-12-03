@@ -256,11 +256,11 @@ export default function CustomerDetails() {
     
     // Ranking badges
     if (customer.customerRank === 'TOP10') {
-      badges.push({ label: 'TOP 10', icon: Trophy, color: 'bg-yellow-50 border-yellow-300 text-yellow-700' });
+      badges.push({ label: 'TOP 10', icon: Trophy, color: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400' });
     } else if (customer.customerRank === 'TOP50') {
-      badges.push({ label: 'TOP 50', icon: Award, color: 'bg-blue-50 border-blue-300 text-blue-700' });
+      badges.push({ label: 'TOP 50', icon: Award, color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' });
     } else if (customer.customerRank === 'TOP100') {
-      badges.push({ label: 'TOP 100', icon: Star, color: 'bg-gray-50 border-gray-300 text-gray-700' });
+      badges.push({ label: 'TOP 100', icon: Star, color: 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' });
     }
     
     // Activity badges
@@ -268,17 +268,17 @@ export default function CustomerDetails() {
       const daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysSinceLastOrder < 30) {
-        badges.push({ label: t('customers:active'), icon: Activity, color: 'bg-green-50 border-green-300 text-green-700' });
+        badges.push({ label: t('customers:active'), icon: Activity, color: 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' });
       } else if (daysSinceLastOrder > 180) {
-        badges.push({ label: t('customers:inactive'), icon: AlertCircle, color: 'bg-red-50 border-red-300 text-red-700' });
+        badges.push({ label: t('customers:inactive'), icon: AlertCircle, color: 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400' });
       }
     }
     
     // Type badges
     if (customer.type === 'wholesale') {
-      badges.push({ label: t('customers:wholesale'), icon: Building, color: 'bg-slate-50 border-slate-300 text-slate-700' });
+      badges.push({ label: t('customers:wholesale'), icon: Building, color: 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300' });
     } else if (customer.type === 'vip') {
-      badges.push({ label: t('customers:vip'), icon: Star, color: 'bg-purple-50 border-purple-300 text-purple-700' });
+      badges.push({ label: t('customers:vip'), icon: Star, color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-400' });
     }
     
     return badges;
@@ -304,8 +304,8 @@ export default function CustomerDetails() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg lg:text-2xl font-bold text-slate-900 truncate">{customer.name}</h1>
-                <div className="flex items-center gap-2 lg:gap-3 mt-1 text-xs lg:text-sm text-slate-500 flex-wrap">
+                <h1 className="text-lg lg:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">{customer.name}</h1>
+                <div className="flex items-center gap-2 lg:gap-3 mt-1 text-xs lg:text-sm text-slate-500 dark:text-slate-400 flex-wrap">
                   <span className="shrink-0">ID: {customer.id?.slice(0, 8)}...</span>
                   {customerDuration && (
                     <>
@@ -514,13 +514,13 @@ export default function CustomerDetails() {
                       )}
                       {customer.facebookId && (
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-600 ml-6">{t('customers:facebookId')}:</span>
+                          <span className="text-slate-600 dark:text-slate-400 ml-6">{t('customers:facebookId')}:</span>
                           <span className="font-medium" data-testid="text-facebookId">{customer.facebookId}</span>
                         </div>
                       )}
                       {customer.facebookName && customer.facebookName !== customer.name && (
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-600 ml-6">{t('customers:facebookName')}:</span>
+                          <span className="text-slate-600 dark:text-slate-400 ml-6">{t('customers:facebookName')}:</span>
                           <span className="font-medium" data-testid="text-facebookName">{customer.facebookName}</span>
                         </div>
                       )}
@@ -594,14 +594,14 @@ export default function CustomerDetails() {
                       {/* EU VAT Information */}
                       {customer.vatNumber && (
                         <div className="space-y-2">
-                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('customers:euVatInformation')}</h4>
+                          <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{t('customers:euVatInformation')}</h4>
                           <div className="flex items-center gap-2 text-sm">
                             <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="text-slate-600">{t('customers:vatNumber')}:</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('customers:vatNumber')}:</span>
                             <span className="font-medium font-mono" data-testid="text-vatNumber">{customer.vatNumber}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-slate-600 ml-6">{t('customers:vatStatus')}:</span>
+                            <span className="text-slate-600 dark:text-slate-400 ml-6">{t('customers:vatStatus')}:</span>
                             {customer.vatValid ? (
                               <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700" data-testid="badge-vatValid">
                                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -643,9 +643,9 @@ export default function CustomerDetails() {
                       )}
                     </>
                   ) : (
-                    <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                      <Receipt className="mx-auto h-10 w-10 mb-2 text-slate-300" />
-                      <p className="text-sm text-slate-500">{t('customers:noTaxInfo')}</p>
+                    <div className="text-center py-6 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                      <Receipt className="mx-auto h-10 w-10 mb-2 text-slate-300 dark:text-slate-600" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{t('customers:noTaxInfo')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -728,8 +728,8 @@ export default function CustomerDetails() {
                         <div className="flex items-start gap-2 text-sm pt-3 border-t">
                           <MessageCircle className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <span className="text-slate-600 block mb-1">{t('customers:notes')}:</span>
-                            <p className="text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg" data-testid="text-notes">
+                            <span className="text-slate-600 dark:text-slate-400 block mb-1">{t('customers:notes')}:</span>
+                            <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800 p-3 rounded-lg" data-testid="text-notes">
                               {customer.notes}
                             </p>
                           </div>
@@ -737,7 +737,7 @@ export default function CustomerDetails() {
                       )}
                     </>
                   ) : (
-                    <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                    <div className="text-center py-6 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                       <User className="mx-auto h-10 w-10 mb-2 text-slate-300" />
                       <p className="text-sm text-slate-500">{t('customers:noContactInformation')}</p>
                     </div>
@@ -893,14 +893,14 @@ export default function CustomerDetails() {
                               {address.ico && (
                                 <div className="flex items-center gap-1.5">
                                   <Building className="h-3.5 w-3.5 text-slate-400" />
-                                  <span className="text-slate-500 text-xs">IČO: </span>
+                                  <span className="text-slate-500 dark:text-slate-400 text-xs">IČO: </span>
                                   <span className="font-mono text-xs">{address.ico}</span>
                                 </div>
                               )}
                               {address.vatId && (
                                 <div className="flex items-center gap-1.5">
                                   <FileText className="h-3.5 w-3.5 text-slate-400" />
-                                  <span className="text-slate-500 text-xs">VAT: </span>
+                                  <span className="text-slate-500 dark:text-slate-400 text-xs">VAT: </span>
                                   <span className="font-mono text-xs">{address.vatId}</span>
                                 </div>
                               )}
@@ -986,16 +986,16 @@ export default function CustomerDetails() {
               </CardHeader>
               <CardContent>
                 {orders.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <Package className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">{t('customers:noOrders')}</p>
-                    <p className="text-xs text-slate-500 mt-1">{t('customers:ordersWillAppear')}</p>
+                  <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <Package className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('customers:noOrders')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:ordersWillAppear')}</p>
                   </div>
                 ) : filteredOrders.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <Search className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">{t('customers:noOrdersMatch')}</p>
-                    <p className="text-xs text-slate-500 mt-1">{t('customers:tryDifferentSearch')}</p>
+                  <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <Search className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('customers:noOrdersMatch')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:tryDifferentSearch')}</p>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -1008,7 +1008,7 @@ export default function CustomerDetails() {
                 ) : (
                   <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
                     {filteredOrders.map((order: any) => (
-                      <div key={order.id} className="bg-white border border-slate-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all overflow-hidden">
+                      <div key={order.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all overflow-hidden">
                         {/* Header Section - Clickable */}
                         <Link href={`/orders/${order.id}`}>
                           <div className="p-3 cursor-pointer group">
@@ -1079,7 +1079,7 @@ export default function CustomerDetails() {
                         {order.items && order.items.length > 0 && (
                           <>
                             <div 
-                              className="px-3 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border-t border-slate-100 dark:border-slate-600 flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -1100,10 +1100,10 @@ export default function CustomerDetails() {
                             </div>
                             
                             {expandedOrders[order.id] && (
-                              <div className="px-3 py-2 bg-slate-50/50 border-t border-slate-100">
+                              <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-600">
                                 <div className="space-y-1.5">
                                   {order.items.map((item: any, idx: number) => (
-                                    <div key={idx} className="flex items-center justify-between gap-2 text-sm p-1.5 bg-white rounded border border-slate-100">
+                                    <div key={idx} className="flex items-center justify-between gap-2 text-sm p-1.5 bg-white dark:bg-slate-700 rounded border border-slate-100 dark:border-slate-600">
                                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                         <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0"></div>
                                         <span className="text-slate-700 truncate text-xs">

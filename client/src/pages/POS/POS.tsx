@@ -102,15 +102,15 @@ function QRCodeCZK({ amount, orderId, scanLabel }: { amount: number; orderId: st
   const qrUrl = generateQRCodeSVG(spdString, 200);
   
   return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl">
+    <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-slate-800 rounded-xl">
       <img 
         src={qrUrl} 
         alt="Czech Payment QR Code" 
-        className="w-56 h-56 border-2 border-gray-200 rounded-lg"
+        className="w-56 h-56 border-2 border-gray-200 dark:border-slate-600 rounded-lg"
         data-testid="img-qr-code-czk"
       />
       <div className="text-center space-y-2">
-        <p className="text-base font-medium text-gray-700">{scanLabel || 'Scan to pay with Czech bank transfer'}</p>
+        <p className="text-base font-medium text-gray-700 dark:text-gray-300">{scanLabel || 'Scan to pay with Czech bank transfer'}</p>
         <p className="text-3xl font-bold text-primary">CZK {amount.toFixed(2)}</p>
       </div>
     </div>
@@ -154,32 +154,32 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
         }
       `}</style>
       
-      <div className="thermal-receipt bg-white p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 rounded-lg">
-        <div className="text-center border-b-2 border-dashed border-gray-300 pb-4 mb-4">
+      <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
+        <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <h2 className="text-xl font-bold">DAVIE SUPPLY</h2>
-          <p className="text-xs text-gray-600 mt-1">Point of Sale Receipt</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Point of Sale Receipt</p>
         </div>
         
-        <div className="space-y-1.5 text-sm border-b border-dashed border-gray-300 pb-4 mb-4">
+        <div className="space-y-1.5 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">Date:</span>
+            <span className="text-gray-600 dark:text-gray-400">Date:</span>
             <span className="font-medium">{data.date.toLocaleDateString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Time:</span>
+            <span className="text-gray-600 dark:text-gray-400">Time:</span>
             <span className="font-medium">{data.date.toLocaleTimeString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Order #:</span>
+            <span className="text-gray-600 dark:text-gray-400">Order #:</span>
             <span className="font-medium">{data.orderId}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Customer:</span>
+            <span className="text-gray-600 dark:text-gray-400">Customer:</span>
             <span className="font-medium">{data.customerName}</span>
           </div>
         </div>
         
-        <div className="border-b border-dashed border-gray-300 pb-4 mb-4">
+        <div className="border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="font-bold mb-3 text-base">Items:</div>
           {data.items.map((item, idx) => (
             <div key={idx} className="flex justify-between text-sm mb-2">
@@ -193,18 +193,18 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
           ))}
         </div>
         
-        <div className="space-y-2 text-sm border-b border-dashed border-gray-300 pb-4 mb-4">
+        <div className="space-y-2 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="flex justify-between">
             <span>{t('financial:subtotal')}:</span>
             <span>{data.currency} {data.subtotal.toFixed(2)}</span>
           </div>
           {data.discount > 0 && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex justify-between text-green-600 dark:text-green-400">
               <span>Discount:</span>
               <span>-{data.currency} {data.discount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-lg pt-2 border-t">
+          <div className="flex justify-between font-bold text-lg pt-2 border-t dark:border-slate-600">
             <span>{t('financial:total')}:</span>
             <span>{data.currency} {data.total.toFixed(2)}</span>
           </div>
@@ -212,32 +212,32 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
         
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">{t('financial:paymentMethod')}:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('financial:paymentMethod')}:</span>
             <span className="font-medium">{paymentMethodLabels[data.paymentMethod as PaymentMethod] || data.paymentMethod}</span>
           </div>
           {data.cashReceived && (
             <>
               <div className="flex justify-between">
-                <span className="text-gray-600">Cash Received:</span>
+                <span className="text-gray-600 dark:text-gray-400">Cash Received:</span>
                 <span className="font-medium">{data.currency} {data.cashReceived.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-green-600 font-bold">
+              <div className="flex justify-between text-green-600 dark:text-green-400 font-bold">
                 <span>Change:</span>
                 <span>{data.currency} {(data.change || 0).toFixed(2)}</span>
               </div>
             </>
           )}
           {data.notes && (
-            <div className="mt-3 pt-3 border-t">
+            <div className="mt-3 pt-3 border-t dark:border-slate-600">
               <span className="font-medium">Notes:</span>
-              <p className="text-gray-600 mt-1">{data.notes}</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">{data.notes}</p>
             </div>
           )}
         </div>
         
-        <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300">
-          <p className="text-sm text-gray-600">Thank you for your purchase!</p>
-          <p className="text-xs text-gray-400 mt-2">Powered by Davie Supply POS</p>
+        <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Thank you for your purchase!</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Powered by Davie Supply POS</p>
         </div>
       </div>
       

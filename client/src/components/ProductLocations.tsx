@@ -679,8 +679,8 @@ export default function ProductLocations({
             </Table>
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-500">
-            <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+            <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
             <p>{t('common:noLocationsAssigned')}</p>
             {!readOnly && (
               <p className="text-sm mt-1">{t('common:addLocationDescription')}</p>
@@ -788,9 +788,9 @@ export default function ProductLocations({
           <div className="space-y-4 py-4">
             <div>
               <Label>{t('common:fromLocation')}</Label>
-              <div className="mt-1 p-3 bg-slate-50 rounded-md">
+              <div className="mt-1 p-3 bg-slate-50 dark:bg-slate-800 rounded-md">
                 <p className="font-mono font-medium">{moveFromLocation?.locationCode}</p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Available: {moveFromLocation?.quantity} {t('common:units')}
                 </p>
               </div>
@@ -891,7 +891,7 @@ export default function ProductLocations({
   if (embedded) {
     return (
       <div className="pt-6">
-        <div className="border border-slate-200 rounded-lg bg-slate-50 p-6 space-y-4">
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 p-6 space-y-4">
           {headerSection}
           {contentSection}
         </div>

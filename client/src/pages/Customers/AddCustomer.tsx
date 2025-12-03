@@ -1773,13 +1773,13 @@ export default function AddCustomer() {
         <Card>
           <Collapsible open={customerDetailsOpen} onOpenChange={setCustomerDetailsOpen}>
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-500" />
                     {t('customers.locationBusinessInfo')}
                   </CardTitle>
-                  <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", customerDetailsOpen ? "rotate-0" : "-rotate-90")} />
+                  <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", customerDetailsOpen ? "rotate-0" : "-rotate-90")} />
                 </div>
               </CardHeader>
             </CollapsibleTrigger>
@@ -1802,7 +1802,7 @@ export default function AddCustomer() {
                     }}
                   />
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-slate-500">{t('customers.pasteFacebookUrlHint')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('customers.pasteFacebookUrlHint')}</p>
                     {extractedFacebookId && (
                       <>
                         <span className="text-xs text-slate-400">•</span>
@@ -1852,19 +1852,19 @@ export default function AddCustomer() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                               {duplicateCustomer.billingEmail && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">{t('customers.emailLabel')}</span>
-                                  <span className="font-medium text-slate-900">{duplicateCustomer.billingEmail}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.emailLabel')}</span>
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">{duplicateCustomer.billingEmail}</span>
                                 </div>
                               )}
                               {duplicateCustomer.billingTel && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">{t('customers.phoneLabel')}</span>
-                                  <span className="font-medium text-slate-900">{duplicateCustomer.billingTel}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.phoneLabel')}</span>
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">{duplicateCustomer.billingTel}</span>
                                 </div>
                               )}
                               {duplicateCustomer.country && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">{t('customers.countryLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.countryLabel')}</span>
                                   <span className="font-medium text-slate-900">
                                     {getCountryFlag(duplicateCustomer.country)} {europeanCountries.find(c => c.code === duplicateCustomer.country)?.name || duplicateCustomer.country}
                                   </span>
@@ -1872,7 +1872,7 @@ export default function AddCustomer() {
                               )}
                               {duplicateCustomer.preferredCurrency && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">{t('customers.currencyLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.currencyLabel')}</span>
                                   <Badge variant="outline" className="font-medium">
                                     {duplicateCustomer.preferredCurrency}
                                   </Badge>
@@ -1905,7 +1905,7 @@ export default function AddCustomer() {
                     className="text-base"
                     data-testid="input-facebookName"
                   />
-                  <p className="text-xs text-slate-500 mt-1">{t('customers.facebookNameOptionalHint')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.facebookNameOptionalHint')}</p>
                 </div>
 
                 <div>
@@ -1922,12 +1922,12 @@ export default function AddCustomer() {
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                   )}
-                  <p className="text-xs text-slate-500 mt-1">{t('customers.autoSyncsFacebookName')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.autoSyncsFacebookName')}</p>
                 </div>
 
                 <div>
                   <Label htmlFor="country" className="text-base font-semibold">{t('customers.countryLocation')}</Label>
-                  <p className="text-sm text-slate-500 mb-2">{t('customers.selectPrimaryCountryHint')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers.selectPrimaryCountryHint')}</p>
                   <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
                     <PopoverTrigger asChild>
                       <Button
@@ -2065,7 +2065,7 @@ export default function AddCustomer() {
 
                 <div>
                   <Label htmlFor="preferredCurrency" className="text-base font-semibold">{t('customers.preferredCurrency')}</Label>
-                  <p className="text-sm text-slate-500 mb-2">{t('customers.defaultCurrencyForOrders')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers.defaultCurrencyForOrders')}</p>
                   <Select
                     value={form.watch('preferredCurrency')}
                     onValueChange={(value: 'CZK' | 'EUR') => form.setValue('preferredCurrency', value)}
@@ -2091,7 +2091,7 @@ export default function AddCustomer() {
         <Card>
           <Collapsible open={shippingAddressesOpen} onOpenChange={setShippingAddressesOpen}>
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-orange-500" />
@@ -2113,7 +2113,7 @@ export default function AddCustomer() {
                         {t('customers.addShippingAddress')}
                       </Button>
                     )}
-                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", shippingAddressesOpen ? "rotate-0" : "-rotate-90")} />
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", shippingAddressesOpen ? "rotate-0" : "-rotate-90")} />
                   </div>
                 </div>
               </CardHeader>
@@ -2121,7 +2121,7 @@ export default function AddCustomer() {
             <CollapsibleContent>
               <CardContent className="space-y-4">
             {shippingAddresses.map((addr, index) => (
-              <div key={index} className="p-4 border rounded-lg bg-slate-50">
+              <div key={index} className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
@@ -2161,7 +2161,7 @@ export default function AddCustomer() {
                     </Button>
                   </div>
                 </div>
-                <div className="text-sm text-slate-600" data-testid={`text-shippingAddress-${index}`}>
+                <div className="text-sm text-slate-600 dark:text-slate-400" data-testid={`text-shippingAddress-${index}`}>
                   {addr.company && <p className="font-medium">{addr.company}</p>}
                   <p>{addr.firstName} {addr.lastName}</p>
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
@@ -2174,7 +2174,7 @@ export default function AddCustomer() {
             ))}
 
             {isAddingShipping && (
-              <div className="p-4 border rounded-lg bg-slate-50">
+              <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <h4 className="font-semibold mb-4">
                   {editingShippingIndex !== null ? t('customers.editShippingAddress') : t('customers.addShippingAddressForm')}
                 </h4>
@@ -2229,10 +2229,10 @@ export default function AddCustomer() {
 
                   <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t-2 border-slate-300" />
+                      <span className="w-full border-t-2 border-slate-300 dark:border-slate-600" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers.addressDetails')}</span>
                     </div>
                   </div>
 
@@ -2411,7 +2411,7 @@ export default function AddCustomer() {
                           </Button>
                         )}
                         {showShippingCountryDropdown && (
-                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-64 overflow-y-auto z-50">
                             {europeanCountries
                               .filter(country => 
                                 country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
@@ -2419,7 +2419,7 @@ export default function AddCustomer() {
                               .map((country) => (
                                 <div
                                   key={country.code}
-                                  className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
+                                  className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
                                   onClick={() => {
                                     shippingForm.setValue('country', country.name);
                                     setShippingCountryQuery('');
@@ -2434,7 +2434,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500">{t('customers.noCountriesFound')}</div>
+                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers.noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2484,7 +2484,7 @@ export default function AddCustomer() {
             )}
 
             {shippingAddresses.length === 0 && !isAddingShipping && (
-              <p className="text-center text-slate-500 py-8">{t('customers.noShippingAddresses')}</p>
+              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers.noShippingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2494,7 +2494,7 @@ export default function AddCustomer() {
         <Card>
           <Collapsible open={billingAddressesOpen} onOpenChange={setBillingAddressesOpen}>
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-blue-500" />
@@ -2516,7 +2516,7 @@ export default function AddCustomer() {
                         {t('customers.addBillingAddress')}
                       </Button>
                     )}
-                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", billingAddressesOpen ? "rotate-0" : "-rotate-90")} />
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", billingAddressesOpen ? "rotate-0" : "-rotate-90")} />
                   </div>
                 </div>
               </CardHeader>
@@ -2524,7 +2524,7 @@ export default function AddCustomer() {
             <CollapsibleContent>
               <CardContent className="space-y-4">
             {billingAddresses.map((addr, index) => (
-              <div key={index} className="p-4 border rounded-lg bg-slate-50">
+              <div key={index} className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
@@ -2564,7 +2564,7 @@ export default function AddCustomer() {
                     </Button>
                   </div>
                 </div>
-                <div className="text-sm text-slate-600" data-testid={`text-billingAddress-${index}`}>
+                <div className="text-sm text-slate-600 dark:text-slate-400" data-testid={`text-billingAddress-${index}`}>
                   {addr.company && <p className="font-medium">{addr.company}</p>}
                   <p>{addr.firstName} {addr.lastName}</p>
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
@@ -2579,7 +2579,7 @@ export default function AddCustomer() {
             ))}
 
             {isAddingBilling && (
-              <div className="p-4 border rounded-lg bg-slate-50">
+              <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold">
                     {editingBillingIndex !== null ? t('customers.editBillingAddress') : t('customers.addBillingAddressTitle')}
@@ -2666,10 +2666,10 @@ export default function AddCustomer() {
 
                   <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t-2 border-slate-300" />
+                      <span className="w-full border-t-2 border-slate-300 dark:border-slate-600" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers.addressDetails')}</span>
                     </div>
                   </div>
 
@@ -2836,7 +2836,7 @@ export default function AddCustomer() {
                           </Button>
                         )}
                         {showBillingCountryDropdown && (
-                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-64 overflow-y-auto z-50">
                             {europeanCountries
                               .filter(country => 
                                 country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
@@ -2844,7 +2844,7 @@ export default function AddCustomer() {
                               .map((country) => (
                                 <div
                                   key={country.code}
-                                  className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
+                                  className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
                                   onClick={() => {
                                     billingAddressForm.setValue('country', country.name);
                                     setBillingCountryQuery('');
@@ -2859,7 +2859,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500">{t('customers.noCountriesFound')}</div>
+                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers.noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2879,7 +2879,7 @@ export default function AddCustomer() {
                           placeholder={t('customers.icoPlaceholder')}
                           data-testid="input-billingIco"
                         />
-                        <p className="text-xs text-slate-500 mt-1">{t('customers.czechCompanyRegistrationHint')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.czechCompanyRegistrationHint')}</p>
                       </div>
                     )}
                     <div className={billingAddressForm.watch('country') === 'Czech Republic' ? '' : 'md:col-span-2'}>
@@ -2890,7 +2890,7 @@ export default function AddCustomer() {
                         placeholder={t('customers.vatNumberExamplePlaceholder')}
                         data-testid="input-billingVatId"
                       />
-                      <p className="text-xs text-slate-500 mt-1">{t('customers.companyVatIdHint')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.companyVatIdHint')}</p>
                     </div>
                   </div>
 
@@ -2936,7 +2936,7 @@ export default function AddCustomer() {
             )}
 
             {billingAddresses.length === 0 && !isAddingBilling && (
-              <p className="text-center text-slate-500 py-8">{t('customers.noBillingAddresses')}</p>
+              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers.noBillingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2947,13 +2947,13 @@ export default function AddCustomer() {
           <Card>
             <Collapsible open={taxInfoOpen} onOpenChange={setTaxInfoOpen}>
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <div className="flex items-center justify-between w-full">
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-purple-500" />
                       {t('customers.taxBusinessInformation')}
                     </CardTitle>
-                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", taxInfoOpen ? "rotate-0" : "-rotate-90")} />
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", taxInfoOpen ? "rotate-0" : "-rotate-90")} />
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
@@ -2978,7 +2978,7 @@ export default function AddCustomer() {
                         />
                         {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">{t('customers.enterIcoToAutofill')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.enterIcoToAutofill')}</p>
                     </div>
                     <div>
                       <Label htmlFor="dic">{t('customers.dic')}</Label>
@@ -2987,10 +2987,10 @@ export default function AddCustomer() {
                         {...form.register('dic')}
                         placeholder={t('customers.vatNumberCzPlaceholder')}
                         readOnly
-                        className="bg-slate-50"
+                        className="bg-slate-50 dark:bg-slate-800"
                         data-testid="input-dic"
                       />
-                      <p className="text-xs text-slate-500 mt-1">{t('customers.autoFilledFromAres')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.autoFilledFromAres')}</p>
                     </div>
                   </div>
                 </div>
@@ -3019,7 +3019,7 @@ export default function AddCustomer() {
                           }}
                           data-testid="input-vatNumber"
                         />
-                        <p className="text-xs text-slate-500 mt-1">{t('customers.willBeValidatedVies')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.willBeValidatedVies')}</p>
                       </div>
                       {isValidatingVat && (
                         <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
@@ -3041,7 +3041,7 @@ export default function AddCustomer() {
                       )}
                     </div>
                     {vatValidationResult?.companyName && (
-                      <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2" data-testid="text-vatCompanyName">
                         {t('customers.companyLabel')} {vatValidationResult.companyName}
                       </p>
                     )}

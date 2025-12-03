@@ -298,7 +298,7 @@ export default function PackingMaterials() {
       header: t('image'),
       className: "w-24",
       cell: (material) => (
-        <div className="w-16 h-16 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden">
+        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden">
           {material.imageUrl ? (
             <img 
               src={material.imageUrl} 

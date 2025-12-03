@@ -365,7 +365,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <LocationTypeIcon className="h-3.5 w-3.5 text-slate-600" />
+              <LocationTypeIcon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
               <Label className="text-sm font-medium">{t('warehouse:locationCode')}</Label>
             </div>
             <Button
@@ -733,7 +733,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                   </Badge>
                 </div>
               </div>
-              <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0" />
+              <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
             </div>
           </div>
         </div>

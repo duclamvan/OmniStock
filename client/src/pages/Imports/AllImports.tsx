@@ -151,7 +151,7 @@ export default function AllImports() {
       header: t('region'),
       cell: (order) => (
         <div className="flex items-center gap-1">
-          <Globe className="h-3 w-3 text-gray-400" />
+          <Globe className="h-3 w-3 text-gray-400 dark:text-gray-500" />
           {order.region || '-'}
         </div>
       ),
@@ -189,7 +189,7 @@ export default function AllImports() {
             )}
           </div>
           {order.calculationType && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               {order.calculationType.replace('_', ' ')}
             </div>
           )}
@@ -276,10 +276,10 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('totalOrders')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalOrders')}</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <Package className="h-8 w-8 text-gray-400" />
+              <Package className="h-8 w-8 text-gray-400 dark:text-gray-500" />
             </div>
           </CardContent>
         </Card>
@@ -288,7 +288,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('pending')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('pending')}</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-500" />
@@ -300,7 +300,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('inTransit')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('inTransit')}</p>
                 <p className="text-2xl font-bold">{stats.inTransit}</p>
               </div>
               <Ship className="h-8 w-8 text-purple-500" />
@@ -312,7 +312,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('delivered')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('delivered')}</p>
                 <p className="text-2xl font-bold">{stats.delivered}</p>
               </div>
               <Truck className="h-8 w-8 text-green-500" />
@@ -324,7 +324,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('received')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('received')}</p>
                 <p className="text-2xl font-bold">{stats.received}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-teal-500" />
@@ -336,7 +336,7 @@ export default function AllImports() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{t('totalValue')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalValue')}</p>
                 <p className="text-xl font-bold">
                   ${stats.totalValue.toLocaleString()}
                 </p>
@@ -356,7 +356,7 @@ export default function AllImports() {
           <div className="flex gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                 <Input
                   placeholder={t('searchPlaceholder')}
                   value={searchQuery}

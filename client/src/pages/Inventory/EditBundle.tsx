@@ -811,15 +811,15 @@ export default function EditBundle() {
       {/* Form Sections */}
       <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
         {/* Basic Information Section */}
-        <AccordionItem value="details" className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+        <AccordionItem value="details" className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700">
             <div className="flex items-center gap-3 text-left">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Package className="h-4 w-4 text-emerald-600" />
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">{t('inventory:bundleDetails')}</h3>
-                <p className="text-xs text-slate-500">{t('inventory:nameDescriptionSkuAndImage')}</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('inventory:bundleDetails')}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:nameDescriptionSkuAndImage')}</p>
               </div>
               {errors.name && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -831,7 +831,7 @@ export default function EditBundle() {
                 <Label>{t('inventory:bundleImageOptional')}</Label>
                 <div className="mt-2">
                   {(imagePreview || existingImageUrl) ? (
-                    <div className="relative w-48 h-48 rounded-lg border bg-slate-50 overflow-hidden group flex items-center justify-center">
+                    <div className="relative w-48 h-48 rounded-lg border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden group flex items-center justify-center">
                       <img
                         src={imagePreview || existingImageUrl || ''}
                         alt={t('inventory:bundlePreview')}
@@ -872,7 +872,7 @@ export default function EditBundle() {
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors">
+                    <label className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                       <input
                         type="file"
                         accept="image/*"
@@ -886,9 +886,9 @@ export default function EditBundle() {
                         }}
                       />
                       <div className="text-center">
-                        <ImageIcon className="h-12 w-12 mx-auto text-slate-400 mb-2" />
-                        <p className="text-sm text-slate-600 font-medium">{t('inventory:uploadImage')}</p>
-                        <p className="text-xs text-slate-500 mt-1">{t('inventory:clickToBrowse')}</p>
+                        <ImageIcon className="h-12 w-12 mx-auto text-slate-400 dark:text-slate-500 mb-2" />
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('inventory:uploadImage')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('inventory:clickToBrowse')}</p>
                       </div>
                     </label>
                   )}
@@ -952,17 +952,17 @@ export default function EditBundle() {
         </AccordionItem>
 
         {/* Products Section */}
-        <AccordionItem value="items" className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+        <AccordionItem value="items" className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700">
             <div className="flex items-center gap-3 text-left">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Plus className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                   {t('inventory:bundleProducts')} ({formData.items.length})
                 </h3>
-                <p className="text-xs text-slate-500">{t('inventory:selectProductsAndQuantities')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:selectProductsAndQuantities')}</p>
               </div>
               {errors.items && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
@@ -1153,15 +1153,15 @@ export default function EditBundle() {
         </AccordionItem>
 
         {/* Pricing Section */}
-        <AccordionItem value="pricing" className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+        <AccordionItem value="pricing" className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700">
             <div className="flex items-center gap-3 text-left">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <DollarSign className="h-4 w-4 text-amber-600" />
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">{t('inventory:bundlePricing')}</h3>
-                <p className="text-xs text-slate-500">{t('inventory:configureHowBundlePriced')}</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('inventory:bundlePricing')}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:configureHowBundlePriced')}</p>
               </div>
               {(errors.priceCzk || errors.priceEur) && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>

@@ -501,8 +501,8 @@ export default function ReceiptDetails() {
     return (
       <div className="container mx-auto p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-64 bg-gray-100 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
+          <div className="h-64 bg-gray-100 dark:bg-slate-800 rounded"></div>
         </div>
       </div>
     );
@@ -526,13 +526,13 @@ export default function ReceiptDetails() {
   const getConditionColor = (condition: string) => {
     switch (condition) {
       case 'good':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-green-400';
       case 'damaged':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-red-400';
       case 'partial':
-        return 'text-orange-600';
+        return 'text-orange-600 dark:text-orange-400';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-gray-400';
     }
   };
 

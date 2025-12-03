@@ -33,21 +33,21 @@ export function MetricCard({
       <CardContent className="p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</p>
             <p 
-              className="text-xl md:text-2xl font-bold text-slate-900 mt-1 break-words leading-tight" 
+              className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1 break-words leading-tight" 
               data-testid={`${testId}-value`}
               title={valueString}
             >
               {value}
             </p>
             {subtitle && (
-              <p className="text-xs text-slate-500 mt-1 truncate" title={subtitle}>{subtitle}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate" title={subtitle}>{subtitle}</p>
             )}
             {trend && (
               <p className={cn(
                 "text-xs mt-1 font-medium",
-                trend.value >= 0 ? "text-green-600" : "text-red-600"
+                trend.value >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
               )} data-testid={`${testId}-trend`}>
                 {trend.value >= 0 ? "+" : ""}{trend.value.toFixed(1)}% {trend.label}
               </p>

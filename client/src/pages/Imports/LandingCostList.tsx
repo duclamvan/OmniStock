@@ -152,14 +152,14 @@ export default function LandingCostList() {
     return (
       <div className="container mx-auto p-3 md:p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div className="h-20 bg-gray-100 rounded"></div>
-            <div className="h-20 bg-gray-100 rounded"></div>
-            <div className="h-20 bg-gray-100 rounded"></div>
-            <div className="h-20 bg-gray-100 rounded"></div>
+            <div className="h-20 bg-gray-100 dark:bg-slate-800 rounded"></div>
+            <div className="h-20 bg-gray-100 dark:bg-slate-800 rounded"></div>
+            <div className="h-20 bg-gray-100 dark:bg-slate-800 rounded"></div>
+            <div className="h-20 bg-gray-100 dark:bg-slate-800 rounded"></div>
           </div>
-          <div className="h-64 bg-gray-100 rounded"></div>
+          <div className="h-64 bg-gray-100 dark:bg-slate-800 rounded"></div>
         </div>
       </div>
     );
@@ -220,10 +220,10 @@ export default function LandingCostList() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
-                <AlertCircle className="h-4 w-4 text-gray-600" />
+                <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                 <p className="text-xs text-muted-foreground">{t('noCosts')}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-600">
+              <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">
                 {shipmentsWithCosts.filter(s => !s.landingCost).length}
               </p>
             </CardContent>

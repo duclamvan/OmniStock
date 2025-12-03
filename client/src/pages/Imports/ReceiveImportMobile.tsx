@@ -244,9 +244,9 @@ export default function ReceiveImportMobile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-white border-b">
+      <div className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b dark:border-slate-700">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Link href={`/imports/orders/${id}`}>
@@ -266,7 +266,7 @@ export default function ReceiveImportMobile() {
       </div>
 
       {/* Progress Overview */}
-      <div className="bg-white p-4 border-b">
+      <div className="bg-white dark:bg-slate-800 p-4 border-b dark:border-slate-700">
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t('receivingProgress')}</span>
@@ -274,16 +274,16 @@ export default function ReceiveImportMobile() {
           </div>
           <Progress value={progressPercentage} className="h-2" />
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-2 bg-orange-50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">{pendingItems.length}</p>
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{pendingItems.length}</p>
               <p className="text-xs text-muted-foreground">{t('pending')}</p>
             </div>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{receivedItems.length}</p>
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{receivedItems.length}</p>
               <p className="text-xs text-muted-foreground">{t('partial')}</p>
             </div>
-            <div className="p-2 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{completedItems.length}</p>
+            <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{completedItems.length}</p>
               <p className="text-xs text-muted-foreground">{t('complete')}</p>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function ReceiveImportMobile() {
       </div>
 
       {/* Order Info */}
-      <div className="bg-white p-4 mb-2">
+      <div className="bg-white dark:bg-slate-800 p-4 mb-2">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -331,7 +331,7 @@ export default function ReceiveImportMobile() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white p-4 border-y mb-2">
+      <div className="bg-white dark:bg-slate-800 p-4 border-y dark:border-slate-700 mb-2">
         <div className="flex gap-2">
           <Button
             onClick={() => setScanMode(!scanMode)}
@@ -356,7 +356,7 @@ export default function ReceiveImportMobile() {
 
       {/* Scan Mode */}
       {scanMode && (
-        <div className="bg-yellow-50 p-4 mb-2">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 mb-2">
           <div className="space-y-3">
             <Label className="text-sm">{t('scanOrEnterSku')}</Label>
             <div className="flex gap-2">
@@ -377,7 +377,7 @@ export default function ReceiveImportMobile() {
 
       {/* Items Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-        <TabsList className="w-full grid grid-cols-4 h-12 bg-white rounded-none border-b">
+        <TabsList className="w-full grid grid-cols-4 h-12 bg-white dark:bg-slate-800 rounded-none border-b dark:border-slate-700">
           <TabsTrigger value="all" className="data-[state=active]:border-b-2">
             {t('all')} ({receivingItems.length})
           </TabsTrigger>

@@ -29,33 +29,33 @@ const iconSizeMap = {
 
 const variantMap = {
   default: {
-    bg: "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100",
-    border: "border-2 border-slate-200",
-    icon: "text-slate-400",
+    bg: "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800",
+    border: "border-2 border-slate-200 dark:border-slate-700",
+    icon: "text-slate-400 dark:text-slate-500",
     defaultIcon: Package,
   },
   product: {
-    bg: "bg-gradient-to-br from-blue-50 via-white to-blue-50",
-    border: "border-2 border-blue-200",
-    icon: "text-blue-400",
+    bg: "bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-blue-950 dark:via-slate-900 dark:to-blue-950",
+    border: "border-2 border-blue-200 dark:border-blue-800",
+    icon: "text-blue-400 dark:text-blue-500",
     defaultIcon: Package,
   },
   user: {
-    bg: "bg-gradient-to-br from-purple-50 via-white to-purple-50",
-    border: "border-2 border-purple-200",
-    icon: "text-purple-400",
+    bg: "bg-gradient-to-br from-purple-50 via-white to-purple-50 dark:from-purple-950 dark:via-slate-900 dark:to-purple-950",
+    border: "border-2 border-purple-200 dark:border-purple-800",
+    icon: "text-purple-400 dark:text-purple-500",
     defaultIcon: User,
   },
   building: {
-    bg: "bg-gradient-to-br from-orange-50 via-white to-orange-50",
-    border: "border-2 border-orange-200",
-    icon: "text-orange-400",
+    bg: "bg-gradient-to-br from-orange-50 via-white to-orange-50 dark:from-orange-950 dark:via-slate-900 dark:to-orange-950",
+    border: "border-2 border-orange-200 dark:border-orange-800",
+    icon: "text-orange-400 dark:text-orange-500",
     defaultIcon: Building,
   },
   subtle: {
-    bg: "bg-gradient-to-br from-slate-50 via-white to-slate-50",
-    border: "border border-slate-200",
-    icon: "text-slate-300",
+    bg: "bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
+    border: "border border-slate-200 dark:border-slate-700",
+    icon: "text-slate-300 dark:text-slate-600",
     defaultIcon: ImageIcon,
   },
 };

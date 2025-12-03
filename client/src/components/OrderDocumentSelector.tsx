@@ -258,7 +258,7 @@ export default function OrderDocumentSelector({
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {t(selectedCount === 1 ? 'orders:documentSelected' : 'orders:documentsSelected', { count: selectedCount })}/{files.length}
                     </span>
                     <Checkbox
@@ -308,7 +308,7 @@ export default function OrderDocumentSelector({
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
                               {file.language && `${flag} ${file.language.toUpperCase()}`}
                             </span>
                           </div>

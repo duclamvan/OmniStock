@@ -25,9 +25,9 @@ export function MonthlyComparisonTable({
   };
 
   const renderChangeIcon = (change: number) => {
-    if (change > 0) return <ArrowUp className="h-4 w-4 text-green-600" />;
-    if (change < 0) return <ArrowDown className="h-4 w-4 text-red-600" />;
-    return <Minus className="h-4 w-4 text-slate-400" />;
+    if (change > 0) return <ArrowUp className="h-4 w-4 text-green-600 dark:text-green-400" />;
+    if (change < 0) return <ArrowDown className="h-4 w-4 text-red-600 dark:text-red-400" />;
+    return <Minus className="h-4 w-4 text-slate-400 dark:text-slate-500" />;
   };
 
   return (
@@ -83,7 +83,7 @@ export function MonthlyComparisonTable({
                         {index > 0 && renderChangeIcon(profitChange)}
                         <span className={cn(
                           "text-sm",
-                          profitChange > 0 ? "text-green-600" : profitChange < 0 ? "text-red-600" : "text-slate-400"
+                          profitChange > 0 ? "text-green-600 dark:text-green-400" : profitChange < 0 ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
                         )}>
                           {index > 0 ? `${profitChange >= 0 ? '+' : ''}${profitChange.toFixed(1)}%` : '-'}
                         </span>

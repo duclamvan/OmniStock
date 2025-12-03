@@ -374,10 +374,10 @@ export function ShippingAddressModal({
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t-2 border-slate-300" />
+              <span className="w-full border-t-2 border-slate-300 dark:border-slate-600" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-500 font-semibold">{t('common:addressDetails')}</span>
+              <span className="bg-white dark:bg-slate-950 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('common:addressDetails')}</span>
             </div>
           </div>
 
@@ -534,7 +534,7 @@ export function ShippingAddressModal({
                   </Button>
                 )}
                 {showCountryDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                  <div className="absolute top-full left-0 right-0 mt-1 border dark:border-slate-700 rounded-md shadow-lg bg-white dark:bg-slate-900 max-h-64 overflow-y-auto z-50">
                     {europeanCountries
                       .filter(country => 
                         country.name.toLowerCase().includes((countryQuery || '').toLowerCase())
@@ -542,7 +542,7 @@ export function ShippingAddressModal({
                       .map((country) => (
                         <div
                           key={country.code}
-                          className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
+                          className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-b dark:border-slate-700 last:border-b-0 transition-colors flex items-center gap-2"
                           onClick={() => {
                             form.setValue('country', country.name);
                             setCountryQuery('');
@@ -557,7 +557,7 @@ export function ShippingAddressModal({
                     {europeanCountries.filter(country => 
                       country.name.toLowerCase().includes((countryQuery || '').toLowerCase())
                     ).length === 0 && (
-                      <div className="p-4 text-center text-slate-500">{t('common:noCountriesFound')}</div>
+                      <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('common:noCountriesFound')}</div>
                     )}
                   </div>
                 )}
