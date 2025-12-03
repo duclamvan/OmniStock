@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from "react-hook-form";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useSettings } from "@/contexts/SettingsContext";
 import { ArrowLeft, Save, Plus, X, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -46,12 +47,17 @@ export default function EditReturn() {
   const { id } = useParams();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
+  const { inventorySettings } = useSettings();
+  
+  const enabledReturnTypes = useMemo(() => {
+    return (inventorySettings.returnTypes || []).filter(rt => rt.enabled);
+  }, [inventorySettings.returnTypes]);
   
   const returnSchema = z.object({
     customerId: z.string().min(1, t('common:required')),
     orderId: z.string().optional(),
     returnDate: z.string().min(1, t('common:required')),
-    returnType: z.enum(['exchange', 'refund', 'store_credit', 'damaged_goods', 'bad_quality']),
+    returnType: z.string().min(1, t('common:required')),
     status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
     shippingCarrier: z.string().optional(),
     notes: z.string().optional(),
@@ -378,14 +384,14 @@ export default function EditReturn() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
-                    <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
-                    <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
-                    <SelectItem value="damaged_goods">{t('inventory:damagedGoods')}</SelectItem>
-                    <SelectItem value="bad_quality">{t('inventory:badQuality')}</SelectItem>
+                    {enabledReturnTypes.map((rt) => (
+                      <SelectItem key={rt.value} value={rt.value}>
+                        {t(`inventory:${rt.labelKey}`)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                {(form.watch("returnType") === 'damaged_goods' || form.watch("returnType") === 'bad_quality') && (
+                {enabledReturnTypes.find(rt => rt.value === form.watch("returnType"))?.disposesInventory && (
                   <Badge variant="destructive" className="mt-2">
                     {t('inventory:disposedNotReturnedToInventory')}
                   </Badge>

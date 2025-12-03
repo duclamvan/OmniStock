@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
+import { useSettings } from "@/contexts/SettingsContext";
 import { Plus, Package, PackageX, RefreshCw, Search, Eye, Filter, Clock, CheckCircle, MoreVertical, FileDown } from "lucide-react";
 import { format } from "date-fns";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
@@ -43,9 +44,30 @@ export default function AllReturns() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
+  const { inventorySettings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedReturns, setSelectedReturns] = useState<any[]>([]);
+  
+  const returnTypeDisplayMap = useMemo(() => {
+    const types = inventorySettings.returnTypes || [];
+    const map: Record<string, { label: string; color: string }> = {};
+    const colors = [
+      'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+      'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+      'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+      'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+      'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+      'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+    ];
+    types.forEach((rt, index) => {
+      map[rt.value] = {
+        label: t(`inventory:${rt.labelKey}`),
+        color: colors[index % colors.length]
+      };
+    });
+    return map;
+  }, [inventorySettings.returnTypes, t]);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -286,12 +308,6 @@ export default function AllReturns() {
           'cancelled': t('inventory:cancelled'),
         };
 
-        const returnTypeMap: Record<string, string> = {
-          'exchange': t('inventory:exchange'),
-          'refund': t('inventory:refund'),
-          'store_credit': t('inventory:storeCredit'),
-        };
-
         return {
           [t('inventory:returnId')]: returnItem.returnId || returnItem.id,
           [t('inventory:customer')]: returnItem.customer?.name || '-',
@@ -299,7 +315,7 @@ export default function AllReturns() {
           [t('inventory:itemsCount')]: returnItem.items?.length || 0,
           [t('inventory:totalRefund')]: returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
           [t('inventory:status')]: statusMap[returnItem.status] || returnItem.status,
-          [t('inventory:returnType')]: returnTypeMap[returnItem.returnType] || returnItem.returnType,
+          [t('inventory:returnType')]: returnTypeDisplayMap[returnItem.returnType]?.label || returnItem.returnType,
           [t('inventory:date')]: format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
           [t('inventory:reason')]: returnItem.notes || '-',
         };
@@ -330,12 +346,6 @@ export default function AllReturns() {
         'cancelled': t('inventory:cancelled'),
       };
 
-      const returnTypeMap: Record<string, string> = {
-        'exchange': t('inventory:exchange'),
-        'refund': t('inventory:refund'),
-        'store_credit': t('inventory:storeCredit'),
-      };
-
       const exportData = filteredReturns.map((returnItem: any) => ({
         returnId: returnItem.returnId || returnItem.id,
         customer: returnItem.customer?.name || '-',
@@ -343,7 +353,7 @@ export default function AllReturns() {
         itemsCount: returnItem.items?.length || 0,
         total: returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
         status: statusMap[returnItem.status] || returnItem.status,
-        returnType: returnTypeMap[returnItem.returnType] || returnItem.returnType,
+        returnType: returnTypeDisplayMap[returnItem.returnType]?.label || returnItem.returnType,
         date: format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
         reason: returnItem.notes || '-',
       }));
@@ -615,12 +625,7 @@ export default function AllReturns() {
               };
               const status = statusMap[returnItem.status] || { label: returnItem.status, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
 
-              const returnTypeMap: Record<string, { label: string; color: string }> = {
-                'exchange': { label: t('inventory:exchange'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
-                'refund': { label: t('inventory:refund'), color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
-                'store_credit': { label: t('inventory:storeCredit'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
-              };
-              const returnType = returnTypeMap[returnItem.returnType] || { label: returnItem.returnType, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
+              const returnType = returnTypeDisplayMap[returnItem.returnType] || { label: returnItem.returnType, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
 
               return (
                 <div key={returnItem.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-4">

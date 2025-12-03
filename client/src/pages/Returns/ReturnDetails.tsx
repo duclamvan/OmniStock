@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useSettings } from "@/contexts/SettingsContext";
 import { 
   ArrowLeft, Package, Calendar, User, ShoppingCart, 
   RefreshCw, MessageSquare, Truck, Hash, Edit, Printer, Share2, Check 
@@ -16,6 +18,7 @@ export default function ReturnDetails() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { t } = useTranslation(['inventory', 'common']);
+  const { inventorySettings } = useSettings();
 
   const { data: returnData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/returns/${id}`],
@@ -41,11 +44,25 @@ export default function ReturnDetails() {
     'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   };
 
-  const typeColors: Record<string, string> = {
-    'exchange': 'bg-blue-100 text-blue-800',
-    'refund': 'bg-green-100 text-green-800',
-    'store_credit': 'bg-purple-100 text-purple-800',
-  };
+  const returnTypeDisplayMap = useMemo(() => {
+    const types = inventorySettings.returnTypes || [];
+    const map: Record<string, { label: string; color: string }> = {};
+    const colors = [
+      'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+      'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+      'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+      'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+      'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+      'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+    ];
+    types.forEach((rt, index) => {
+      map[rt.value] = {
+        label: t(`inventory:${rt.labelKey}`),
+        color: colors[index % colors.length]
+      };
+    });
+    return map;
+  }, [inventorySettings.returnTypes, t]);
 
   const totalItems = returnData.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
   const totalValue = returnData.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
@@ -106,10 +123,8 @@ export default function ReturnDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{t('inventory:returnType')}</p>
-                <Badge className={`mt-2 ${typeColors[returnData.returnType] || 'bg-gray-100 text-gray-800'}`}>
-                  {returnData.returnType?.replace('_', ' ').split(' ').map((word: string) => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')}
+                <Badge className={`mt-2 ${returnTypeDisplayMap[returnData.returnType]?.color || 'bg-gray-100 text-gray-800'}`}>
+                  {returnTypeDisplayMap[returnData.returnType]?.label || returnData.returnType}
                 </Badge>
               </div>
               <Package className="h-8 w-8 text-gray-400" />

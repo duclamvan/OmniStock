@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from "react-hook-form";
@@ -55,12 +55,17 @@ export default function AddReturn() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
+  const { inventorySettings } = useSettings();
+  
+  const enabledReturnTypes = useMemo(() => {
+    return (inventorySettings.returnTypes || []).filter(rt => rt.enabled);
+  }, [inventorySettings.returnTypes]);
   
   const returnSchema = z.object({
     customerId: z.string().min(1, t('common:required')),
     orderId: z.string().optional(),
     returnDate: z.string().min(1, t('common:required')),
-    returnType: z.enum(['exchange', 'refund', 'store_credit', 'damaged_goods', 'bad_quality']),
+    returnType: z.string().min(1, t('common:required')),
     status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
     trackingNumber: z.string().optional(),
     shippingCarrier: z.string().optional(),
@@ -75,7 +80,6 @@ export default function AddReturn() {
   });
 
   type ReturnFormData = z.infer<typeof returnSchema>;
-  const { inventorySettings } = useSettings();
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [returnId, setReturnId] = useState("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
@@ -620,14 +624,14 @@ export default function AddReturn() {
                         <SelectValue placeholder={t('inventory:returnType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="exchange">{t('inventory:exchangeType')}</SelectItem>
-                        <SelectItem value="refund">{t('inventory:refundType')}</SelectItem>
-                        <SelectItem value="store_credit">{t('inventory:storeCreditType')}</SelectItem>
-                        <SelectItem value="damaged_goods">{t('inventory:damagedGoods')}</SelectItem>
-                        <SelectItem value="bad_quality">{t('inventory:badQuality')}</SelectItem>
+                        {enabledReturnTypes.map((rt) => (
+                          <SelectItem key={rt.value} value={rt.value}>
+                            {t(`inventory:${rt.labelKey}`)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {(form.watch("returnType") === 'damaged_goods' || form.watch("returnType") === 'bad_quality') && (
+                    {enabledReturnTypes.find(rt => rt.value === form.watch("returnType"))?.disposesInventory && (
                       <Badge variant="destructive" className="mt-2">
                         {t('inventory:disposedNotReturnedToInventory')}
                       </Badge>
