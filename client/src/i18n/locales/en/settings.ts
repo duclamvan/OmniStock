@@ -442,6 +442,28 @@ const settings = {
   catalogSettings: 'Catalog Settings',
   catalogSettingsDescription: 'Product catalog and media settings',
   
+  // Inventory Settings Tabs
+  products: 'Products',
+  stock: 'Stock',
+  warehouse: 'Warehouse',
+  quality: 'Quality',
+  units: 'Units',
+  catalog: 'Catalog',
+  returns: 'Returns',
+  
+  // Return Types Settings
+  returnTypesTitle: 'Return Types',
+  returnTypesDescription: 'Configure available return types for your returns management',
+  newReturnTypePlaceholder: 'Enter new return type name',
+  returnTypeValueRequired: 'Return type name is required',
+  returnTypeAlreadyExists: 'This return type already exists',
+  disposesInventory: 'Disposes Inventory',
+  markAsDisposed: 'Mark as disposed',
+  resetToDefaults: 'Reset to Defaults',
+  saveReturnTypes: 'Save Return Types',
+  returnTypesSaved: 'Return types saved successfully',
+  returnTypesSaveError: 'Failed to save return types',
+  
   // Shipping Settings - Carriers
   carrierSettings: 'Carrier Settings',
   enabledCarriers: 'Enabled Carriers',

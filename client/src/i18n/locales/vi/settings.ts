@@ -440,6 +440,28 @@ const settings = {
   catalogSettings: 'Cài đặt danh mục',
   catalogSettingsDescription: 'Cài đặt danh mục sản phẩm và phương tiện',
   
+  // Inventory Settings Tabs
+  products: 'Sản phẩm',
+  stock: 'Kho',
+  warehouse: 'Kho hàng',
+  quality: 'Chất lượng',
+  units: 'Đơn vị',
+  catalog: 'Danh mục',
+  returns: 'Trả hàng',
+  
+  // Return Types Settings
+  returnTypesTitle: 'Loại trả hàng',
+  returnTypesDescription: 'Cấu hình các loại trả hàng có sẵn cho quản lý trả hàng',
+  newReturnTypePlaceholder: 'Nhập tên loại trả hàng mới',
+  returnTypeValueRequired: 'Tên loại trả hàng là bắt buộc',
+  returnTypeAlreadyExists: 'Loại trả hàng này đã tồn tại',
+  disposesInventory: 'Thanh lý hàng',
+  markAsDisposed: 'Đánh dấu thanh lý',
+  resetToDefaults: 'Đặt lại mặc định',
+  saveReturnTypes: 'Lưu loại trả hàng',
+  returnTypesSaved: 'Đã lưu loại trả hàng thành công',
+  returnTypesSaveError: 'Không thể lưu loại trả hàng',
+  
   // Shipping Settings - Carriers
   carrierSettings: 'Cài đặt đơn vị vận chuyển',
   enabledCarriers: 'Đơn vị vận chuyển được bật',

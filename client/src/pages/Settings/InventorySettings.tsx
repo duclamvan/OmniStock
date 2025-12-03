@@ -13,10 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Package, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image, Check } from "lucide-react";
-import { useSettings } from "@/contexts/SettingsContext";
+import { Package, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image, Check, RotateCcw, Plus, Trash2, Edit2, Save, X, AlertTriangle } from "lucide-react";
+import { useSettings, DEFAULT_RETURN_TYPES, ReturnTypeConfig } from "@/contexts/SettingsContext";
 import { useQuery } from "@tanstack/react-query";
 import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
+import { apiRequest } from "@/lib/queryClient";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
   // Product Defaults
@@ -167,6 +170,116 @@ export default function InventorySettings() {
     getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
   });
 
+  // Return types management state
+  const [returnTypes, setReturnTypes] = useState<ReturnTypeConfig[]>(
+    inventorySettings.returnTypes || DEFAULT_RETURN_TYPES
+  );
+  const [newReturnType, setNewReturnType] = useState('');
+  const [newReturnTypeLabelKey, setNewReturnTypeLabelKey] = useState('');
+  const [editingReturnType, setEditingReturnType] = useState<string | null>(null);
+  const [editReturnTypeValue, setEditReturnTypeValue] = useState('');
+  const [editReturnTypeLabelKey, setEditReturnTypeLabelKey] = useState('');
+  const [returnTypesSaving, setReturnTypesSaving] = useState(false);
+
+  // Sync local returnTypes with context when inventorySettings changes
+  useEffect(() => {
+    if (inventorySettings.returnTypes) {
+      setReturnTypes(inventorySettings.returnTypes);
+    }
+  }, [inventorySettings.returnTypes]);
+
+  // Return type handlers
+  const handleToggleReturnType = (value: string, enabled: boolean) => {
+    setReturnTypes(
+      returnTypes.map(rt => rt.value === value ? { ...rt, enabled } : rt)
+    );
+  };
+
+  const handleToggleDisposesInventory = (value: string, disposesInventory: boolean) => {
+    setReturnTypes(
+      returnTypes.map(rt => rt.value === value ? { ...rt, disposesInventory } : rt)
+    );
+  };
+
+  const handleAddReturnType = () => {
+    if (!newReturnType.trim()) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:returnTypeValueRequired'),
+      });
+      return;
+    }
+    
+    const valueSnakeCase = newReturnType.trim().toLowerCase().replace(/\s+/g, '_');
+    
+    if (returnTypes.find(rt => rt.value === valueSnakeCase)) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:returnTypeAlreadyExists'),
+      });
+      return;
+    }
+    
+    const labelKey = newReturnTypeLabelKey.trim() || newReturnType.trim().replace(/\s+/g, '') + 'Type';
+    
+    setReturnTypes([...returnTypes, { 
+      value: valueSnakeCase, 
+      labelKey,
+      enabled: true 
+    }]);
+    setNewReturnType('');
+    setNewReturnTypeLabelKey('');
+  };
+
+  const handleDeleteReturnType = (value: string) => {
+    setReturnTypes(returnTypes.filter(rt => rt.value !== value));
+  };
+
+  const handleSaveReturnTypes = async () => {
+    setReturnTypesSaving(true);
+    try {
+      try {
+        await apiRequest('PATCH', '/api/settings/return_types', {
+          value: returnTypes,
+          category: 'inventory'
+        });
+      } catch (patchError: any) {
+        if (patchError.status === 404 || patchError.message?.includes('not found')) {
+          await apiRequest('POST', '/api/settings', {
+            key: 'return_types',
+            value: returnTypes,
+            category: 'inventory',
+            description: 'Return types configuration for returns management'
+          });
+        } else {
+          throw patchError;
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
+      toast({
+        title: t('common:success'),
+        description: t('settings:returnTypesSaved'),
+      });
+    } catch (error) {
+      console.error('Error saving return types:', error);
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:returnTypesSaveError'),
+      });
+    } finally {
+      setReturnTypesSaving(false);
+    }
+  };
+
+  const handleResetReturnTypes = () => {
+    setReturnTypes(DEFAULT_RETURN_TYPES);
+  };
+
   // Capture snapshot when settings load
   useEffect(() => {
     if (!isLoading) {
@@ -228,7 +341,7 @@ export default function InventorySettings() {
     <Form {...form}>
       <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
             <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{t('settings:products')}</span>
@@ -252,6 +365,10 @@ export default function InventorySettings() {
             <TabsTrigger value="catalog" className="flex items-center gap-1 sm:gap-2">
               <Image className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{t('settings:catalog')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="returns" className="flex items-center gap-1 sm:gap-2">
+              <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t('settings:returns')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1350,6 +1467,135 @@ export default function InventorySettings() {
                       </FormItem>
                     )}
                   />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab 7: Returns */}
+          <TabsContent value="returns" className="space-y-4">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:returnTypesTitle')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('settings:returnTypesDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* Add new return type */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    placeholder={t('settings:newReturnTypePlaceholder')}
+                    value={newReturnType}
+                    onChange={(e) => setNewReturnType(e.target.value)}
+                    className="flex-1"
+                    data-testid="input-new-return-type"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddReturnType();
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button"
+                    onClick={handleAddReturnType}
+                    variant="secondary"
+                    className="min-h-[56px] sm:min-h-0"
+                    data-testid="button-add-return-type"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('common:add')}
+                  </Button>
+                </div>
+
+                {/* List of return types */}
+                <div className="space-y-2">
+                  {returnTypes.map((returnType) => (
+                    <div 
+                      key={returnType.value}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 gap-3"
+                      data-testid={`return-type-item-${returnType.value}`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <Switch
+                          checked={returnType.enabled}
+                          onCheckedChange={(checked) => handleToggleReturnType(returnType.value, checked)}
+                          data-testid={`switch-return-type-${returnType.value}`}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {t(`inventory:${returnType.labelKey}`, returnType.value.replace(/_/g, ' '))}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {returnType.value}
+                          </div>
+                        </div>
+                        {returnType.disposesInventory && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {t('settings:disposesInventory')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={returnType.disposesInventory || false}
+                            onCheckedChange={(checked) => handleToggleDisposesInventory(returnType.value, checked as boolean)}
+                            data-testid={`checkbox-disposes-${returnType.value}`}
+                          />
+                          <span className="text-muted-foreground">{t('settings:markAsDisposed')}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteReturnType(returnType.value)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
+                          data-testid={`button-delete-return-type-${returnType.value}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResetReturnTypes}
+                    className="flex-1 min-h-[56px] sm:min-h-0"
+                    data-testid="button-reset-return-types"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {t('settings:resetToDefaults')}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveReturnTypes}
+                    disabled={returnTypesSaving}
+                    className="flex-1 min-h-[56px] sm:min-h-0"
+                    data-testid="button-save-return-types"
+                  >
+                    {returnTypesSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t('settings:savingSettings')}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        {t('settings:saveReturnTypes')}
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
