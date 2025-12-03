@@ -1543,6 +1543,45 @@ const orders = {
   taxWithRate: 'Thuế ({{rate}}%):',
   creatingOrder: 'Đang tạo...',
   
+  // PickPack.tsx - Packing Mode Card Headers
+  noPackingMaterialsSpecified: 'Không có vật liệu đóng gói cho đơn hàng này',
+  recalculating: 'Đang tính lại...',
+  recalculateAI: 'Tính lại AI',
+  addAnotherCarton: 'Thêm thùng carton',
+  documentsWithCount: 'Tài liệu ({{count}})',
+  printAll: 'In tất cả',
+  printingDots: 'Đang in...',
+  allDocumentsMergedAndPrinted: 'Tất cả {{count}} tài liệu đã được gộp và đánh dấu đã in',
+  glsMaxWeightInfo: 'Tối đa 40 kg • Chu vi + cạnh dài nhất tối đa 300 cm',
+  
+  // PickPack.tsx - DHL Shipping
+  dhlShipping: 'Vận chuyển DHL',
+  createLabelOnDhlWebsite: 'Tạo nhãn trên trang DHL',
+  packageAndPaymentDetails: 'Thông tin kiện hàng & Thanh toán',
+  packageSize: 'Kích thước gói',
+  totalWeightRecommended: 'Tổng trọng lượng: {{weight}} kg → Đề xuất: Gói {{size}}',
+  nachnahmeWithFee: 'Thu tiền khi giao (+8,99€)',
+  nachnahmeDescription: 'Thanh toán có nên được thu khi giao hàng không?',
+  bankDetailsNotConfigured: 'Thông tin ngân hàng chưa được cấu hình trong cài đặt',
+  recipientAddress: 'Người nhận',
+  frequentBuyerInAddressbook: 'Khách quen - Đã có trong sổ địa chỉ DHL',
+  importantBicIbanNote: 'Quan trọng: Vui lòng nhập BIC và IBAN bằng chữ hoa (A-Z) và số (0-9).',
+  
+  // PickPack.tsx - GLS Shipping
+  glsShippingWithCartons: 'Vận chuyển GLS ({{count}} {{cartonText}})',
+  cartonSingular: 'thùng',
+  additionalCartonsViaGls: 'Các thùng bổ sung gửi qua GLS để tiết kiệm chi phí',
+  totalWeightKg: 'Tổng trọng lượng: {{weight}} kg',
+  cartonNumberGls: 'Thùng #{{number}} (GLS)',
+  duplicate: 'Trùng lặp',
+  
+  // PickPack.tsx - PPL Shipping
+  creatingLabels: 'Đang tạo nhãn...',
+  generatePplLabels: 'Tạo nhãn PPL',
+  retrieving: 'Đang lấy...',
+  retryLabelDownload: 'Thử lại tải nhãn',
+  shippingLabelsWithCount: 'Nhãn vận chuyển ({{count}})',
+  
 } as const;
 
 export default orders;

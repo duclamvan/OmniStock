@@ -7561,7 +7561,7 @@ export default function PickPack() {
             <CardHeader className="bg-gradient-to-r from-slate-700 dark:from-slate-800 to-slate-800 dark:to-slate-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Packing Materials
+                {t('packingMaterials')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -7594,7 +7594,7 @@ export default function PickPack() {
                           {material.instruction && (
                             <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
                           )}
-                          <p className="text-xs text-gray-500">For: {material.productName}</p>
+                          <p className="text-xs text-gray-500">{t('forMaterial', { name: material.productName })}</p>
                         </div>
                         
                         {/* Checkbox - Right Side, Bigger */}
@@ -7613,7 +7613,7 @@ export default function PickPack() {
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
-                    No packing materials specified for this order
+                    {t('noPackingMaterialsSpecified')}
                   </div>
                 )}
             </CardContent>
@@ -7626,7 +7626,7 @@ export default function PickPack() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Box className="h-5 w-5" />
-                    <span>Cartons ({cartons.length + cartonsDraft.length})</span>
+                    <span>{t('cartonWithCount', { count: cartons.length + cartonsDraft.length })}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {/* Recalculate Button */}
@@ -7651,12 +7651,12 @@ export default function PickPack() {
                       {isRecalculating ? (
                         <>
                           <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                          Recalculating...
+                          {t('recalculating')}
                         </>
                       ) : (
                         <>
                           <RefreshCw className="h-3 w-3 mr-1" />
-                          Recalculate AI
+                          {t('recalculateAI')}
                         </>
                       )}
                     </Button>
@@ -7775,7 +7775,7 @@ export default function PickPack() {
                 data-testid="add-carton-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Another Carton
+                {t('addAnotherCarton')}
               </Button>
 
               {/* Total Summary */}
@@ -7785,11 +7785,11 @@ export default function PickPack() {
               })() && (
                 <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg border-2 border-purple-200 dark:border-purple-700">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">Total Cartons:</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">{t('totalCartons')}</span>
                     <span className="font-bold text-purple-900">{cartons.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">Total Weight:</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">{t('totalWeight')}</span>
                     <span className="font-bold text-purple-900">
                       {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
                     </span>
@@ -7806,7 +7806,7 @@ export default function PickPack() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Documents ({documentsCount})
+                  {t('documentsWithCount', { count: documentsCount })}
                 </CardTitle>
                 <Button
                   variant="secondary"
@@ -7844,7 +7844,7 @@ export default function PickPack() {
                       playSound('success');
                       toast({
                         title: t('documentsSentToPrinter'),
-                        description: `All ${documentsCount} document(s) merged and marked as printed`,
+                        description: t('allDocumentsMergedAndPrinted', { count: documentsCount }),
                       });
                     } catch (error: any) {
                       console.error('Error printing merged documents:', error);
@@ -7866,7 +7866,7 @@ export default function PickPack() {
                   ) : (
                     <Printer className="h-3.5 w-3.5 mr-1.5" />
                   )}
-                  {isPrintingAllDocuments ? 'Printing...' : 'Print All'}
+                  {isPrintingAllDocuments ? t('printingDots') : t('printAll')}
                 </Button>
               </div>
             </CardHeader>
@@ -7904,7 +7904,7 @@ export default function PickPack() {
             <CardHeader className="bg-gradient-to-r from-indigo-700 dark:from-indigo-800 to-indigo-800 dark:to-indigo-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Shipping Information
+                {t('shippingInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 md:p-4">
@@ -8057,7 +8057,7 @@ export default function PickPack() {
                     <div>
                       <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
                       <div className="text-sm text-black mt-0.5">
-                        Max. 40 kg • Circumference + longest side max. 300 cm
+                        {t('glsMaxWeightInfo')}
                       </div>
                     </div>
 
@@ -8854,12 +8854,12 @@ export default function PickPack() {
                                       <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
                                         <span className="text-white font-bold text-sm">{index + 1}</span>
                                       </div>
-                                      <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                                      <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
                                       {isValid && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300 ml-auto" />}
                                       {isDuplicate && (
                                         <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 ml-auto">
                                           <AlertCircle className="h-3.5 w-3.5" />
-                                          <span>Duplicate</span>
+                                          <span>{t('duplicate')}</span>
                                         </div>
                                       )}
                                     </div>
@@ -9109,7 +9109,7 @@ export default function PickPack() {
                 <CardHeader className="bg-gradient-to-r from-yellow-50 dark:from-yellow-900/300 to-yellow-600 text-black px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
-                    DHL Shipping
+                    {t('dhlShipping')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
@@ -9123,7 +9123,7 @@ export default function PickPack() {
                     data-testid="button-dhl-website"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Create Label on DHL Website
+                    {t('createLabelOnDhlWebsite')}
                   </Button>
 
                   {/* Shipping Details - Collapsible */}
@@ -9146,7 +9146,7 @@ export default function PickPack() {
                   <div className="space-y-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Package className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
-                      <span className="text-base font-bold text-black">Paket & Zahlungsdetails</span>
+                      <span className="text-base font-bold text-black">{t('packageAndPaymentDetails')}</span>
                     </div>
 
                     {/* Country */}
@@ -9173,7 +9173,7 @@ export default function PickPack() {
                       </div>
                       {totalWeight > 0 && (
                         <p className="text-xs text-gray-600 mt-1">
-                          Total weight: {totalWeight.toFixed(2)} kg → Recommended: {highlightedSize} Paket
+                          {t('totalWeightRecommended', { weight: totalWeight.toFixed(2), size: highlightedSize })}
                         </p>
                       )}
                     </div>
@@ -9187,11 +9187,11 @@ export default function PickPack() {
                           className="border-2 border-yellow-600 dark:border-yellow-500"
                         />
                         <label className="text-sm font-semibold text-black">
-                          Nachnahme (+8,99€)
+                          {t('nachnahmeWithFee')}
                         </label>
                       </div>
                       <p className="text-xs text-gray-600 pl-6">
-                        Soll die Zahlung der Ware beim Empfang erfolgen?
+                        {t('nachnahmeDescription')}
                       </p>
 
                       {/* COD Bank Details - Only show if COD is enabled */}
@@ -9216,7 +9216,7 @@ export default function PickPack() {
                                 <Alert className="bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700">
                                   <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                   <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
-                                    Wichtig: Bitte BIC und IBAN in Großbuchstaben (A-Z) und Ziffern (0-9) angeben.
+                                    {t('importantBicIbanNote')}
                                   </AlertDescription>
                                 </Alert>
                               </div>
@@ -9224,7 +9224,7 @@ export default function PickPack() {
                           ) : (
                             <div className="px-2 py-1">
                               <p className="text-sm text-gray-600 italic">
-                                Bank details not configured in settings
+                                {t('bankDetailsNotConfigured')}
                               </p>
                             </div>
                           )}
@@ -9240,7 +9240,7 @@ export default function PickPack() {
                   <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
-                      <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
+                      <span className="text-base font-bold text-black">{t('recipientAddress')}</span>
                     </div>
 
                     {/* Frequent Buyer Badge - Only show for returning customers */}
@@ -9248,7 +9248,7 @@ export default function PickPack() {
                       <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded">
                         <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400 fill-yellow-600" />
                         <span className="text-xs text-black font-medium">
-                          Frequent buyer - Already in DHL addressbook
+                          {t('frequentBuyerInAddressbook')}
                         </span>
                       </div>
                     )}
@@ -9559,7 +9559,7 @@ export default function PickPack() {
                 <CardHeader className="bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
-                    GLS Shipping ({glsCartons.length} {glsCartons.length === 1 ? 'carton' : 'cartons'})
+                    {t('glsShippingWithCartons', { count: glsCartons.length, cartonText: glsCartons.length === 1 ? t('cartonSingular') : t('cartonsPlural') })}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
@@ -9567,13 +9567,13 @@ export default function PickPack() {
                   <div className="flex items-center gap-2 px-2 py-1 bg-sky-50 border-l-4 border-sky-500 rounded">
                     <Info className="h-4 w-4 text-sky-700" />
                     <span className="text-sm text-sky-900">
-                      Additional cartons shipped via GLS for cost savings
+                      {t('additionalCartonsViaGls')}
                     </span>
                   </div>
 
                   {totalGLSWeight > 0 && (
                     <div className="text-sm text-sky-700 font-medium">
-                      Total weight: {totalGLSWeight.toFixed(2)} kg
+                      {t('totalWeightKg', { weight: totalGLSWeight.toFixed(2) })}
                     </div>
                   )}
 
@@ -9622,7 +9622,7 @@ export default function PickPack() {
                     <Separator className="bg-sky-300 h-0.5" />
                     <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
                       <Truck className="h-4 w-4 text-sky-700" />
-                      <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                      <span className="text-sm font-bold text-sky-900">{t('glsShippingLabelsCount', { count: glsCartons.length })}</span>
                     </div>
                     {glsCartons.map((carton) => {
                       const index = cartons.findIndex(c => c.id === carton.id);
@@ -9648,12 +9648,12 @@ export default function PickPack() {
                             <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
-                            <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                            <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
                             {isValid && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300 ml-auto" />}
                             {isDuplicate && (
                               <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 ml-auto">
                                 <AlertCircle className="h-3.5 w-3.5" />
-                                <span>Duplicate</span>
+                                <span>{t('duplicate')}</span>
                               </div>
                             )}
                           </div>
@@ -9849,7 +9849,7 @@ export default function PickPack() {
             }`}>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Shipping Labels ({(() => {
+                {t('shippingLabelsWithCount', { count: (() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
@@ -9865,7 +9865,7 @@ export default function PickPack() {
                     // For other methods: count labels from DB or cartons
                     return shipmentLabelsFromDB.length > 0 ? shipmentLabelsFromDB.length : cartons.length;
                   }
-                })()})
+                })() })}
                 {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
@@ -9924,7 +9924,7 @@ export default function PickPack() {
                         ) : (
                           <Plus className="h-4 w-4 mr-2" />
                         )}
-                        {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
+                        {createPPLLabelsMutation.isPending ? t('creatingLabels') : t('generatePplLabels')}
                       </Button>
                       
                       {/* Retry button if batchId exists but label failed */}
@@ -9941,7 +9941,7 @@ export default function PickPack() {
                           ) : (
                             <Download className="h-4 w-4 mr-2" />
                           )}
-                          {retryPPLLabelMutation.isPending ? 'Retrieving...' : 'Retry Label Download'}
+                          {retryPPLLabelMutation.isPending ? t('retrieving') : t('retryLabelDownload')}
                         </Button>
                       )}
                     </>
@@ -11320,7 +11320,7 @@ export default function PickPack() {
                                       <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
                                         <span className="text-white font-bold text-sm">{index + 1}</span>
                                       </div>
-                                      <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                                      <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
                                       {isValid && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 dark:text-green-300 ml-auto" />}
                                     </div>
                                     

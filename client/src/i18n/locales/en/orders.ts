@@ -1572,6 +1572,45 @@ const orders = {
   taxWithRate: 'Tax ({{rate}}%):',
   creatingOrder: 'Creating...',
   
+  // PickPack.tsx - Packing Mode Card Headers
+  noPackingMaterialsSpecified: 'No packing materials specified for this order',
+  recalculating: 'Recalculating...',
+  recalculateAI: 'Recalculate AI',
+  addAnotherCarton: 'Add Another Carton',
+  documentsWithCount: 'Documents ({{count}})',
+  printAll: 'Print All',
+  printingDots: 'Printing...',
+  allDocumentsMergedAndPrinted: 'All {{count}} document(s) merged and marked as printed',
+  glsMaxWeightInfo: 'Max. 40 kg • Circumference + longest side max. 300 cm',
+  
+  // PickPack.tsx - DHL Shipping
+  dhlShipping: 'DHL Shipping',
+  createLabelOnDhlWebsite: 'Create Label on DHL Website',
+  packageAndPaymentDetails: 'Package & Payment Details',
+  packageSize: 'Package Size',
+  totalWeightRecommended: 'Total weight: {{weight}} kg → Recommended: {{size}} Package',
+  nachnahmeWithFee: 'Cash on Delivery (+8.99€)',
+  nachnahmeDescription: 'Should payment be collected upon delivery?',
+  bankDetailsNotConfigured: 'Bank details not configured in settings',
+  recipientAddress: 'Recipient',
+  frequentBuyerInAddressbook: 'Frequent buyer - Already in DHL addressbook',
+  importantBicIbanNote: 'Important: Please enter BIC and IBAN in uppercase letters (A-Z) and digits (0-9).',
+  
+  // PickPack.tsx - GLS Shipping
+  glsShippingWithCartons: 'GLS Shipping ({{count}} {{cartonText}})',
+  cartonSingular: 'carton',
+  additionalCartonsViaGls: 'Additional cartons shipped via GLS for cost savings',
+  totalWeightKg: 'Total weight: {{weight}} kg',
+  cartonNumberGls: 'Carton #{{number}} (GLS)',
+  duplicate: 'Duplicate',
+  
+  // PickPack.tsx - PPL Shipping
+  creatingLabels: 'Creating Labels...',
+  generatePplLabels: 'Generate PPL Labels',
+  retrieving: 'Retrieving...',
+  retryLabelDownload: 'Retry Label Download',
+  shippingLabelsWithCount: 'Shipping Labels ({{count}})',
+  
 } as const;
 
 export default orders;
