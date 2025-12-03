@@ -18,6 +18,10 @@ const orders = {
   createCustomPrice: 'Create Custom Price',
   startPickingMode: 'Start Picking Mode',
   exitPickingMode: 'Exit Picking Mode',
+  cardView: 'Card View',
+  listView: 'List View',
+  switchToCardView: 'Switch to Card View',
+  switchToListView: 'Switch to List View',
   
   // Order Fields
   orderNumber: 'Order Number',

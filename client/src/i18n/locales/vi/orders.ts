@@ -18,6 +18,10 @@ const orders = {
   createCustomPrice: 'Tạo giá tùy chỉnh',
   startPickingMode: 'Bắt đầu lấy hàng',
   exitPickingMode: 'Thoát chế độ lấy hàng',
+  cardView: 'Dạng thẻ',
+  listView: 'Dạng danh sách',
+  switchToCardView: 'Chuyển sang dạng thẻ',
+  switchToListView: 'Chuyển sang dạng danh sách',
   
   // Order Fields
   orderNumber: 'Mã đơn hàng',
