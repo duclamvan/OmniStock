@@ -11947,32 +11947,6 @@ export default function PickPack() {
           </div>
         </div>
 
-        {/* Keyboard Shortcuts Indicator - Desktop only */}
-        <div className="hidden lg:block bg-gradient-to-r from-blue-50 dark:from-blue-900/300/10 to-indigo-50 dark:to-indigo-900/300/10 border-b border-blue-200 dark:border-blue-700/30">
-          <div className="px-4 py-2">
-            <div className="flex items-center justify-center gap-6 text-xs text-gray-600">
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">
-                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+K
-                </kbd>
-                <span>{t('focusBarcode')}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+N</kbd>
-                <span>{t('nextItem')}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+P</kbd>
-                <span>{t('previous')}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Esc</kbd>
-                <span>{t('exit')}/{t('closeModal')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Item Overview Modal */}
         {showItemOverviewModal && activePickingOrder && (
           <div 
