@@ -174,7 +174,6 @@ const settings = {
   defaultDiscountType: 'Loại giảm giá mặc định',
   
   // Order Defaults descriptions
-  orderDefaultsDescription: 'Giá trị mặc định cho đơn hàng mới',
   selectPaymentMethod: 'Chọn phương thức thanh toán',
   selectOrderStatus: 'Chọn trạng thái đơn hàng',
   selectPaymentStatus: 'Chọn trạng thái thanh toán',
@@ -368,7 +367,6 @@ const settings = {
   
   // Inventory Settings - Warehouse Operations
   enableMultiWarehouse: 'Bật đa kho',
-  defaultWarehouse: 'Kho mặc định',
   enableBinLocations: 'Bật vị trí ngăn',
   enableZoneManagement: 'Bật quản lý khu vực',
   requirePutAwayConfirmation: 'Yêu cầu xác nhận lưu kho',
