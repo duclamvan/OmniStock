@@ -62,6 +62,7 @@ const CARTON_PRESETS = [
 
 const createFormSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t("nameIsRequired")),
+  nameVi: z.string().optional(),
   code: z.string().min(1, t("codeIsRequired")),
   category: z.string().min(1, t("categoryIsRequired")),
   size: z.string().optional(),
@@ -124,6 +125,7 @@ export default function EditPackingMaterial() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      nameVi: "",
       code: "",
       category: "",
       size: "",
@@ -215,6 +217,7 @@ export default function EditPackingMaterial() {
 
       form.reset({
         name: material.name || "",
+        nameVi: (material as any).nameVi || "",
         code: material.code || "",
         category: material.category || "",
         size: material.size || "",
@@ -487,6 +490,26 @@ export default function EditPackingMaterial() {
                               data-testid="input-name" 
                             />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="nameVi"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">{t('materialNameViLabel')}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              className="h-11" 
+                              placeholder={t('materialNameViPlaceholder')} 
+                              {...field} 
+                              data-testid="input-name-vi" 
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs">{t('materialNameViDescription')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

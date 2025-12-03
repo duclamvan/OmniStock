@@ -526,6 +526,9 @@ const warehouse = {
   
   // Form Fields
   materialNameLabel: 'Material Name',
+  materialNameViLabel: 'Vietnamese Name',
+  materialNameViPlaceholder: 'e.g., Thùng carton lớn',
+  materialNameViDescription: 'Vietnamese translation for bilingual display',
   materialCodeLabel: 'Material Code',
   materialNamePlaceholder: 'e.g., Large Shipping Carton',
   materialCodePlaceholder: 'e.g., CART-L-001',

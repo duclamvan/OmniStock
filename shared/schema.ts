@@ -942,6 +942,7 @@ export const shipmentLabels = pgTable('shipment_labels', {
 export const packingMaterials = pgTable('packing_materials', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
+  nameVi: text('name_vi'),
   code: varchar('code').notNull().unique(),
   category: varchar('category').notNull(), // cartons, filling, pallets, protective, tools, supplies
   type: varchar('type').notNull(),

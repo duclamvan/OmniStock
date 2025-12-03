@@ -509,6 +509,9 @@ const warehouse = {
   
   // Form Fields
   materialNameLabel: 'Tên vật liệu',
+  materialNameViLabel: 'Tên tiếng Việt',
+  materialNameViPlaceholder: 'VD: Thùng carton lớn',
+  materialNameViDescription: 'Bản dịch tiếng Việt cho hiển thị song ngữ',
   materialCodeLabel: 'Mã vật liệu',
   materialNamePlaceholder: 'VD: Thùng carton vận chuyển lớn',
   materialCodePlaceholder: 'VD: CART-L-001',
