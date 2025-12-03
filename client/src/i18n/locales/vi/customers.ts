@@ -588,6 +588,17 @@ const customers = {
   eurCurrency: 'EUR (Euro)',
   czkCurrency: 'CZK (Koruna Czech)',
   
+  // AddCustomer Form - Additional Billing Address Labels
+  icoLabel: 'IČO:',
+  vatIdLabel: 'Mã VAT:',
+  editBillingAddress: 'Sửa địa chỉ thanh toán',
+  addBillingAddressTitle: 'Thêm địa chỉ thanh toán',
+  copyFromShipping: 'Sao chép từ địa chỉ giao hàng',
+  
+  // AddCustomer Form - Duplicate Customer Messages
+  customerWithFacebookIdExistsInDatabase: 'Đã tồn tại khách hàng với Facebook ID "{{facebookId}}" trong cơ sở dữ liệu',
+  goToCustomerProfile: 'Đi đến hồ sơ của {{name}} →',
+  
 } as const;
 
 export default customers;

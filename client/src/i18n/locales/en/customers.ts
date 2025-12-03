@@ -434,6 +434,17 @@ const customers = {
   eurCurrency: 'EUR (Euro)',
   czkCurrency: 'CZK (Czech Koruna)',
   
+  // AddCustomer Form - Additional Billing Address Labels
+  icoLabel: 'IČO:',
+  vatIdLabel: 'VAT ID:',
+  editBillingAddress: 'Edit Billing Address',
+  addBillingAddressTitle: 'Add Billing Address',
+  copyFromShipping: 'Copy from Shipping',
+  
+  // AddCustomer Form - Duplicate Customer Messages
+  customerWithFacebookIdExistsInDatabase: 'A customer with Facebook ID "{{facebookId}}" already exists in the database',
+  goToCustomerProfile: "Go to {{name}}'s Profile →",
+  
 } as const;
 
 export default customers;
