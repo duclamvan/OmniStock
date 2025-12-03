@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -8,7 +8,23 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatCurrency } from "@/lib/currencyUtils";
-import type { Employee, EmployeeIncident, WarehouseTask, ActivityLog } from "@shared/schema";
+import type { Employee, EmployeeIncident, WarehouseTask, ActivityLog, OrderFulfillmentLog } from "@shared/schema";
+
+type ActivitySource = 'activity' | 'fulfillment';
+
+type UnifiedActivityItem = 
+  | (ActivityLog & { source: 'activity'; timestamp: number })
+  | (OrderFulfillmentLog & { source: 'fulfillment'; timestamp: number });
+
+interface GroupedFulfillment {
+  orderId: string;
+  hasPick: boolean;
+  hasPack: boolean;
+  pickLog?: OrderFulfillmentLog;
+  packLog?: OrderFulfillmentLog;
+  earliestTime: Date;
+  totalItems: number;
+}
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +107,8 @@ import {
   Briefcase,
   CreditCard,
   Heart,
+  Package,
+  PackageCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -146,10 +164,66 @@ export default function EmployeeDetail() {
     enabled: !!employeeId,
   });
 
-  const { data: activityLog = [], isLoading: activityLoading } = useQuery<ActivityLog[]>({
+  const { data: rawActivityData = [], isLoading: activityLoading } = useQuery<UnifiedActivityItem[]>({
     queryKey: ["/api/employees", employeeId, "activity"],
     enabled: !!employeeId,
   });
+
+  const processedActivityData = useMemo(() => {
+    const activityItems: UnifiedActivityItem[] = [];
+    const fulfillmentByOrder = new Map<string, GroupedFulfillment>();
+
+    rawActivityData.forEach((item) => {
+      if (item.source === 'activity') {
+        activityItems.push(item);
+      } else if (item.source === 'fulfillment') {
+        const fulfillment = item as OrderFulfillmentLog & { source: 'fulfillment'; timestamp: number };
+        const orderId = fulfillment.orderId;
+        
+        if (!fulfillmentByOrder.has(orderId)) {
+          fulfillmentByOrder.set(orderId, {
+            orderId,
+            hasPick: false,
+            hasPack: false,
+            earliestTime: new Date(fulfillment.startedAt),
+            totalItems: 0,
+          });
+        }
+        
+        const group = fulfillmentByOrder.get(orderId)!;
+        const startTime = new Date(fulfillment.startedAt);
+        if (startTime < group.earliestTime) {
+          group.earliestTime = startTime;
+        }
+        
+        if (fulfillment.activityType === 'pick') {
+          group.hasPick = true;
+          group.pickLog = fulfillment;
+          group.totalItems += fulfillment.itemCount || 0;
+        } else if (fulfillment.activityType === 'pack') {
+          group.hasPack = true;
+          group.packLog = fulfillment;
+          if (!group.hasPick) {
+            group.totalItems += fulfillment.itemCount || 0;
+          }
+        }
+      }
+    });
+
+    const groupedFulfillments: { type: 'grouped'; group: GroupedFulfillment; timestamp: number }[] = 
+      Array.from(fulfillmentByOrder.values()).map(group => ({
+        type: 'grouped' as const,
+        group,
+        timestamp: group.earliestTime.getTime(),
+      }));
+
+    const combined = [
+      ...activityItems.map(item => ({ type: 'activity' as const, item, timestamp: item.timestamp })),
+      ...groupedFulfillments,
+    ].sort((a, b) => b.timestamp - a.timestamp);
+
+    return combined;
+  }, [rawActivityData]);
 
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentFormSchema),
@@ -959,7 +1033,7 @@ export default function EmployeeDetail() {
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
-              ) : activityLog.length === 0 ? (
+              ) : processedActivityData.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>{t("system:noActivityRecorded")}</p>
@@ -968,30 +1042,95 @@ export default function EmployeeDetail() {
                 <div className="relative">
                   <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-slate-700" />
                   <div className="space-y-6">
-                    {activityLog.map((activity, index) => (
-                      <div
-                        key={activity.id}
-                        className="relative pl-10"
-                        data-testid={`activity-${activity.id}`}
-                      >
-                        <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-white dark:ring-slate-900" />
-                        <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                            <p className="font-medium text-gray-900 dark:text-gray-100">{activity.description}</p>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(activity.createdAt)}
-                            </span>
+                    {processedActivityData.map((entry, index) => {
+                      if (entry.type === 'activity') {
+                        const activity = entry.item;
+                        if (activity.source !== 'activity') return null;
+                        return (
+                          <div
+                            key={`activity-${activity.id}`}
+                            className="relative pl-10 min-h-[56px]"
+                            data-testid={`activity-log-${activity.id}`}
+                          >
+                            <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-white dark:ring-slate-900" />
+                            <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg min-h-[56px]">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                <p className="font-medium text-gray-900 dark:text-gray-100">{activity.description}</p>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatDate(activity.createdAt)}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-xs">
+                                <Badge variant="outline">{activity.action}</Badge>
+                                {activity.entityType && (
+                                  <Badge variant="secondary">{activity.entityType}</Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <Badge variant="outline">{activity.action}</Badge>
-                            {activity.entityType && (
-                              <Badge variant="secondary">{activity.entityType}</Badge>
-                            )}
+                        );
+                      } else if (entry.type === 'grouped') {
+                        const group = entry.group;
+                        const activityLabel = group.hasPick && group.hasPack 
+                          ? t("system:pickedAndPacked")
+                          : group.hasPick 
+                            ? t("system:picked")
+                            : t("system:packed");
+                        
+                        const IconComponent = group.hasPick && group.hasPack 
+                          ? PackageCheck 
+                          : group.hasPick 
+                            ? ClipboardList 
+                            : Package;
+                        
+                        const iconBgColor = group.hasPick && group.hasPack
+                          ? "bg-green-500"
+                          : group.hasPick
+                            ? "bg-blue-500"
+                            : "bg-purple-500";
+
+                        return (
+                          <div
+                            key={`fulfillment-${group.orderId}-${entry.timestamp}`}
+                            className="relative pl-10 min-h-[56px]"
+                            data-testid={`fulfillment-${group.orderId}`}
+                          >
+                            <div className={`absolute left-2.5 top-1 w-3 h-3 rounded-full ${iconBgColor} ring-4 ring-white dark:ring-slate-900`} />
+                            <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg min-h-[56px]">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <IconComponent className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                                    {activityLabel} {t("system:orderLabel")} #{group.orderId} ({group.totalItems} {t("system:items")})
+                                  </p>
+                                </div>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatDate(group.earliestTime)}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-xs">
+                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30">
+                                  {t("system:fulfillmentActivity")}
+                                </Badge>
+                                {group.hasPick && (
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    {t("system:picked")}
+                                  </Badge>
+                                )}
+                                {group.hasPack && (
+                                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                    {t("system:packed")}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      }
+                      return null;
+                    })}
                   </div>
                 </div>
               )}

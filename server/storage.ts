@@ -292,6 +292,9 @@ export interface IStorage {
   getActivityLogsByUserId(userId: string): Promise<ActivityLog[]>;
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
 
+  // Order Fulfillment Logs
+  getOrderFulfillmentLogsByUserId(userId: string, limit?: number): Promise<OrderFulfillmentLog[]>;
+
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
   getImportPurchase(id: number): Promise<ImportPurchase | undefined>;
@@ -1113,6 +1116,21 @@ export class DatabaseStorage implements IStorage {
       .values(log)
       .returning();
     return newLog;
+  }
+
+  // Order Fulfillment Logs
+  async getOrderFulfillmentLogsByUserId(userId: string, limit?: number): Promise<OrderFulfillmentLog[]> {
+    let query = db
+      .select()
+      .from(orderFulfillmentLogs)
+      .where(eq(orderFulfillmentLogs.userId, userId))
+      .orderBy(desc(orderFulfillmentLogs.startedAt));
+
+    if (limit) {
+      query = query.limit(limit) as any;
+    }
+
+    return await query;
   }
 
   // Import Purchases

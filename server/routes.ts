@@ -1057,19 +1057,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/employees/:id/activity - Get employee activity log (admin-only)
+  // GET /api/employees/:id/activity - Get employee activity log with fulfillment logs (admin-only)
   app.get('/api/employees/:id/activity', requireRole(['administrator']), async (req, res) => {
     try {
       const employeeId = parseInt(req.params.id);
-      const limit = parseInt(req.query.limit as string) || 50;
       const employee = await storage.getEmployee(employeeId);
       
       if (!employee?.userId) {
         return res.json([]);
       }
       
-      const activity = await storage.getActivityLogs({ userId: employee.userId, limit });
-      res.json(activity);
+      const [activityLogs, fulfillmentLogs] = await Promise.all([
+        storage.getActivityLogs({ userId: employee.userId, limit: 100 }),
+        storage.getOrderFulfillmentLogsByUserId(employee.userId, 100)
+      ]);
+
+      const activityItems = activityLogs.map(log => ({
+        ...log,
+        source: 'activity' as const,
+        timestamp: new Date(log.createdAt).getTime()
+      }));
+
+      const fulfillmentItems = fulfillmentLogs.map(log => ({
+        ...log,
+        source: 'fulfillment' as const,
+        timestamp: new Date(log.startedAt).getTime()
+      }));
+
+      const combined = [...activityItems, ...fulfillmentItems]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 100);
+      
+      res.json(combined);
     } catch (error) {
       console.error('Error getting employee activity:', error);
       res.status(500).json({ message: 'Failed to get employee activity' });

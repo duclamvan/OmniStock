@@ -584,6 +584,14 @@ const system = {
   in_progress: 'Đang xử lý',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
+  
+  // Fulfillment Activity
+  picked: 'Đã lấy hàng',
+  packed: 'Đã đóng gói',
+  pickedAndPacked: 'Đã lấy & đóng gói',
+  orderLabel: 'đơn hàng',
+  items: 'sản phẩm',
+  fulfillmentActivity: 'Hoạt động giao hàng',
 } as const;
 
 export default system;

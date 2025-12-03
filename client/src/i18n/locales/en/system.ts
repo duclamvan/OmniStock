@@ -584,6 +584,14 @@ const system = {
   in_progress: 'In Progress',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  
+  // Fulfillment Activity
+  picked: 'Picked',
+  packed: 'Packed',
+  pickedAndPacked: 'Picked & Packed',
+  orderLabel: 'order',
+  items: 'items',
+  fulfillmentActivity: 'Fulfillment Activity',
 } as const;
 
 export default system;
