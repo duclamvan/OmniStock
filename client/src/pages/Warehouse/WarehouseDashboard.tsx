@@ -3,6 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Package, 
   Truck, 
@@ -17,7 +22,9 @@ import {
   PlayCircle,
   Layers,
   ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Loader2
 } from "lucide-react";
 import { useState, useEffect } from 'react';
 import { Link } from "wouter";
@@ -26,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
 
 interface WarehouseDashboardData {
   ordersToPickPack: Array<{
@@ -76,7 +84,16 @@ interface WarehouseDashboardData {
 export default function WarehouseDashboard() {
   const { t } = useTranslation('common');
   const { toast } = useToast();
+  const { isAdministrator } = useAuth();
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('');
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    type: 'general',
+    dueAt: ''
+  });
   
   const {
     isSupported: pushSupported,
@@ -155,6 +172,33 @@ export default function WarehouseDashboard() {
       toast({
         title: t('error'),
         description: t('updateFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: typeof newTask) => {
+      return apiRequest('POST', '/api/warehouse-tasks', {
+        ...taskData,
+        status: 'pending',
+        dueAt: taskData.dueAt || null
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouse-tasks'] });
+      toast({
+        title: t('success'),
+        description: t('taskCreated') || 'Task created successfully',
+      });
+      setIsAddTaskOpen(false);
+      setNewTask({ title: '', description: '', priority: 'medium', type: 'general', dueAt: '' });
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('taskCreationFailed') || 'Failed to create task',
         variant: 'destructive',
       });
     },
@@ -393,57 +437,186 @@ export default function WarehouseDashboard() {
           </div>
         )}
 
-        {/* Admin Tasks - Only show if there are any */}
-        {adminTasks.length > 0 && (
+        {/* Admin Tasks - Show for admins always, or if there are tasks */}
+        {(adminTasks.length > 0 || isAdministrator) && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
               <div className="flex items-center gap-3">
                 <ClipboardCheck className="h-5 w-5 text-red-600 dark:text-red-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('tasks')}</h2>
+                {adminTasks.length > 0 && (
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-3">
+                    {adminTasks.length}
+                  </Badge>
+                )}
               </div>
-              <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-3">
-                {adminTasks.length}
-              </Badge>
+              {/* Add Task Button - Admin Only */}
+              {isAdministrator && (
+                <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="h-9 px-4" data-testid="button-add-task">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('addTask') || 'Add Task'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                      <DialogTitle>{t('createTask') || 'Create Task'}</DialogTitle>
+                      <DialogDescription>
+                        {t('createTaskDescription') || 'Create a task for warehouse employees'}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="task-title">{t('taskTitle') || 'Task Title'} *</Label>
+                        <Input
+                          id="task-title"
+                          value={newTask.title}
+                          onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder={t('enterTaskTitle') || 'Enter task title'}
+                          data-testid="input-task-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="task-description">{t('description') || 'Description'}</Label>
+                        <Textarea
+                          id="task-description"
+                          value={newTask.description}
+                          onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder={t('enterTaskDescription') || 'Enter task description (optional)'}
+                          rows={3}
+                          data-testid="input-task-description"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t('priority') || 'Priority'}</Label>
+                          <Select
+                            value={newTask.priority}
+                            onValueChange={(value) => setNewTask(prev => ({ ...prev, priority: value }))}
+                          >
+                            <SelectTrigger data-testid="select-task-priority">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">{t('low') || 'Low'}</SelectItem>
+                              <SelectItem value="medium">{t('medium') || 'Medium'}</SelectItem>
+                              <SelectItem value="high">{t('high') || 'High'}</SelectItem>
+                              <SelectItem value="urgent">{t('urgent') || 'Urgent'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t('taskType') || 'Type'}</Label>
+                          <Select
+                            value={newTask.type}
+                            onValueChange={(value) => setNewTask(prev => ({ ...prev, type: value }))}
+                          >
+                            <SelectTrigger data-testid="select-task-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="general">{t('general') || 'General'}</SelectItem>
+                              <SelectItem value="inventory">{t('inventory') || 'Inventory'}</SelectItem>
+                              <SelectItem value="receiving">{t('receiving') || 'Receiving'}</SelectItem>
+                              <SelectItem value="shipping">{t('shipping') || 'Shipping'}</SelectItem>
+                              <SelectItem value="cleaning">{t('cleaning') || 'Cleaning'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="task-due-date">{t('dueDate') || 'Due Date'}</Label>
+                        <Input
+                          id="task-due-date"
+                          type="date"
+                          value={newTask.dueAt}
+                          onChange={(e) => setNewTask(prev => ({ ...prev, dueAt: e.target.value }))}
+                          data-testid="input-task-due-date"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddTaskOpen(false)}
+                        data-testid="button-cancel-task"
+                      >
+                        {t('cancel') || 'Cancel'}
+                      </Button>
+                      <Button
+                        onClick={() => createTaskMutation.mutate(newTask)}
+                        disabled={!newTask.title.trim() || createTaskMutation.isPending}
+                        data-testid="button-create-task"
+                      >
+                        {createTaskMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {t('creating') || 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {t('createTask') || 'Create Task'}
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
-            <div className="divide-y dark:divide-gray-700">
-              {adminTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-testid={`row-task-${task.id}`}>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className={`${getPriorityColor(task.priority)} text-xs px-2 py-0.5`}>
-                        {task.priority.toUpperCase()}
-                      </Badge>
-                      {task.dueAt && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(task.dueAt)}
-                        </span>
+            {adminTasks.length > 0 ? (
+              <div className="divide-y dark:divide-gray-700">
+                {adminTasks.slice(0, 5).map((task) => (
+                  <div key={task.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-testid={`row-task-${task.id}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className={`${getPriorityColor(task.priority)} text-xs px-2 py-0.5`}>
+                          {task.priority.toUpperCase()}
+                        </Badge>
+                        {task.dueAt && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(task.dueAt)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-medium text-base text-gray-900 dark:text-gray-100">{task.title}</p>
+                      {task.description && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{task.description}</p>
                       )}
                     </div>
-                    <p className="font-medium text-base text-gray-900 dark:text-gray-100">{task.title}</p>
-                    {task.description && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{task.description}</p>
-                    )}
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="ml-3 shrink-0"
+                      onClick={() => completeTaskMutation.mutate(task.id)}
+                      disabled={completeTaskMutation.isPending}
+                      data-testid={`button-complete-task-${task.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="ml-3 shrink-0"
-                    onClick={() => completeTaskMutation.mutate(task.id)}
-                    disabled={completeTaskMutation.isPending}
-                    data-testid={`button-complete-task-${task.id}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5 py-8 text-center">
+                <ClipboardCheck className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTasksYet') || 'No tasks yet'}</p>
+                {isAdministrator && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {t('clickAddTaskToCreate') || 'Click "Add Task" to create one'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Empty State - When everything is done */}
-      {totalOrders === 0 && incomingShipments.length === 0 && adminTasks.length === 0 && (
+      {/* Empty State - When everything is done (don't show if admin can see task panel) */}
+      {totalOrders === 0 && incomingShipments.length === 0 && adminTasks.length === 0 && !isAdministrator && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border dark:border-gray-700 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
             <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
