@@ -343,6 +343,7 @@ export default function POS() {
   const [cartIdCounter, setCartIdCounter] = useState(0);
   const [showPayLaterCustomerSearch, setShowPayLaterCustomerSearch] = useState(false);
   const [payLaterCustomerSearchQuery, setPayLaterCustomerSearchQuery] = useState('');
+  const [showQRCodePreview, setShowQRCodePreview] = useState(false);
   
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1447,7 +1448,10 @@ export default function POS() {
             <Button
               variant="outline"
               className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
-              onClick={() => handlePaymentSelect('qr_czk')}
+              onClick={() => {
+                setShowPaymentDialog(false);
+                setShowQRCodePreview(true);
+              }}
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-qr_czk"
             >
@@ -1670,6 +1674,101 @@ export default function POS() {
               </Button>
             </DialogFooter>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code CZK Preview Dialog */}
+      <Dialog open={showQRCodePreview} onOpenChange={setShowQRCodePreview}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-6 w-6 text-cyan-500" />
+              {t('financial:qrCodeCzk')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('financial:qrCodeCzkDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Payment Summary Card */}
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('common:items')}</span>
+                <span className="font-medium">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
+              </div>
+              {discount > 0 && (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('common:subtotal')}</span>
+                    <span className="font-medium">{currency} {subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                    <span className="text-sm">{t('common:discount')}</span>
+                    <span className="font-medium">-{currency} {discount.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+              <div className="border-t border-cyan-200 dark:border-cyan-700 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">{t('common:total')}</span>
+                  <span className="text-2xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
+                </div>
+              </div>
+              {currency === 'EUR' && (
+                <div className="flex justify-between items-center bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Amount in CZK</span>
+                  <span className="text-xl font-bold text-cyan-600 dark:text-cyan-400">
+                    CZK {(total * 25).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {/* QR Code */}
+            <div className="flex justify-center">
+              <QRCodeCZK 
+                amount={currency === 'CZK' ? total : total * 25} 
+                orderId={`POS-${Date.now()}`}
+                scanLabel={t('financial:scanQrToPay')}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button 
+              variant="outline" 
+              onClick={() => { 
+                setShowQRCodePreview(false); 
+                setShowPaymentDialog(true); 
+              }}
+              className="w-full sm:w-auto"
+            >
+              Back
+            </Button>
+            <Button
+              size="lg"
+              className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+              onClick={() => {
+                setShowQRCodePreview(false);
+                handlePaymentSelect('qr_czk');
+              }}
+              disabled={createOrderMutation.isPending}
+              data-testid="button-confirm-qr-payment"
+            >
+              {createOrderMutation.isPending ? (
+                <>
+                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Check className="h-5 w-5 mr-2" />
+                  Complete Sale
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
