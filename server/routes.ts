@@ -9795,6 +9795,16 @@ Important:
     }
   });
 
+  app.get('/api/customers/:id/pending-services', isAuthenticated, async (req, res) => {
+    try {
+      const pendingServices = await storage.getCustomerPendingServices(req.params.id);
+      res.json(pendingServices);
+    } catch (error) {
+      console.error("Error fetching customer pending services:", error);
+      res.status(500).json({ message: "Failed to fetch pending services" });
+    }
+  });
+
   // Pre-Orders endpoints
   app.get('/api/pre-orders', isAuthenticated, async (req, res) => {
     try {

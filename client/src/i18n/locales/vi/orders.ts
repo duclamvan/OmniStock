@@ -1036,6 +1036,20 @@ const orders = {
   serviceItemNoLocation: 'Lấy cuối cùng - Không có vị trí vật lý',
   note: 'Ghi chú',
   
+  // Pending Services
+  pendingServices: 'Dịch vụ chờ xử lý',
+  pendingServicesDescription: 'Khách hàng này có các bản ghi dịch vụ chờ xử lý có thể thêm vào đơn hàng.',
+  laborFee: 'Phí nhân công',
+  partsCost: 'Phí linh kiện',
+  serviceFee: 'Phí dịch vụ',
+  servicePart: 'Linh kiện dịch vụ',
+  applyToOrder: 'Thêm vào đơn',
+  applied: 'Đã thêm',
+  serviceApplied: 'Đã thêm dịch vụ',
+  serviceAppliedDesc: '{{name}} đã được thêm vào đơn hàng',
+  serviceAlreadyApplied: 'Đã được thêm',
+  serviceAlreadyAppliedDesc: 'Dịch vụ này đã được thêm vào đơn hàng',
+  
   // Packing Checklist
   itemsVerified: 'Đã xác minh sản phẩm',
   packingSlipIncluded: 'Đã bao gồm phiếu đóng gói',

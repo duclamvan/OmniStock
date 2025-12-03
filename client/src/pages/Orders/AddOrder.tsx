@@ -726,6 +726,19 @@ export default function AddOrder() {
     enabled: !!selectedCustomer?.id,
   });
 
+  // Fetch pending services for selected customer
+  const { data: pendingServices, isLoading: isLoadingPendingServices } = useQuery<any[]>({
+    queryKey: ['/api/customers', selectedCustomer?.id, 'pending-services'],
+    enabled: !!selectedCustomer?.id,
+  });
+
+  // Track which pending services have been applied to the order
+  const [appliedServiceIds, setAppliedServiceIds] = useState<Set<string>>(new Set());
+
+  // Reset applied services when customer changes
+  useEffect(() => {
+    setAppliedServiceIds(new Set());
+  }, [selectedCustomer?.id]);
 
   // Mutation to create new shipping address
   const createShippingAddressMutation = useMutation({
@@ -1207,7 +1220,7 @@ export default function AddOrder() {
       const createdOrder = await response.json();
       return createdOrder;
     },
-    onSuccess: (createdOrder) => {
+    onSuccess: async (createdOrder) => {
       // Invalidate all order-related caches for real-time updates across the app
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
@@ -1216,6 +1229,25 @@ export default function AddOrder() {
       // Invalidate dashboards for real-time order count updates
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] }); // Warehouse dashboard
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/operations-pulse'] }); // Executive dashboard
+      
+      // Link applied services to this order
+      if (appliedServiceIds.size > 0) {
+        for (const serviceId of appliedServiceIds) {
+          try {
+            await apiRequest('PATCH', `/api/services/${serviceId}`, { 
+              orderId: createdOrder.id,
+              status: 'completed'
+            });
+          } catch (error) {
+            console.error('Failed to link service to order:', error);
+          }
+        }
+        // Invalidate services cache
+        queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+        if (selectedCustomer?.id) {
+          queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer.id, 'pending-services'] });
+        }
+      }
       
       // Set the order ID so packing optimization can be run
       setOrderId(createdOrder.id);
@@ -1673,6 +1705,75 @@ export default function AddOrder() {
 
   const removeOrderItem = (id: string) => {
     setOrderItems(items => items.filter(item => item.id !== id));
+  };
+
+  // Apply pending service to order (adds service fee and parts costs as order items)
+  const applyPendingService = async (service: any) => {
+    // Prevent duplicate application
+    if (appliedServiceIds.has(service.id)) {
+      toast({
+        title: t('orders:serviceAlreadyApplied'),
+        description: t('orders:serviceAlreadyAppliedDesc'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedCurrency = form.watch('currency') || 'EUR';
+    const newItems: OrderItem[] = [];
+
+    // Add service fee (labor cost) as an order item
+    const serviceFee = parseFloat(service.serviceCost || '0');
+    if (serviceFee > 0) {
+      newItems.push({
+        id: Math.random().toString(36).substr(2, 9),
+        serviceId: service.id,
+        productName: `${t('orders:serviceFee')}: ${service.name}`,
+        sku: 'SERVICE-FEE',
+        quantity: 1,
+        price: serviceFee,
+        discount: 0,
+        tax: 0,
+        total: serviceFee,
+      });
+    }
+
+    // Fetch service items (parts) and add them to order
+    try {
+      const response = await apiRequest('GET', `/api/services/${service.id}/items`);
+      if (response.ok) {
+        const serviceItems = await response.json();
+        for (const item of serviceItems) {
+          const itemQuantity = parseInt(item.quantity) || 1;
+          const unitPrice = parseFloat(item.unitPrice || '0');
+          const lineTotal = unitPrice * itemQuantity;
+          newItems.push({
+            id: Math.random().toString(36).substr(2, 9),
+            productId: item.productId || undefined,
+            serviceId: service.id,
+            productName: item.productName || t('orders:servicePart'),
+            sku: item.sku || 'PART',
+            quantity: itemQuantity,
+            price: unitPrice,
+            discount: 0,
+            tax: 0,
+            total: lineTotal,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching service items:', error);
+    }
+
+    // Add all items to order
+    if (newItems.length > 0) {
+      setOrderItems(items => [...items, ...newItems]);
+      setAppliedServiceIds(prev => new Set([...prev, service.id]));
+      toast({
+        title: t('orders:serviceApplied'),
+        description: t('orders:serviceAppliedDesc', { name: service.name }),
+      });
+    }
   };
 
   // Recalculate all item prices when switching between retail and wholesale
@@ -2975,6 +3076,95 @@ export default function AddOrder() {
                     <Plus className="h-4 w-4 mr-2" />
                     {t('orders:addNewAddress')}
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Pending Services Section */}
+            {selectedCustomer && pendingServices && pendingServices.length > 0 && (
+              <Card className="mt-4 border-2 border-amber-400 dark:border-amber-500 bg-amber-50/50 dark:bg-amber-900/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                      {t('orders:pendingServices')}
+                    </h4>
+                    <Badge variant="secondary" className="bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                      {pendingServices.filter(s => !appliedServiceIds.has(s.id)).length} {t('orders:pending')}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                    {t('orders:pendingServicesDescription')}
+                  </p>
+                  <div className="space-y-2">
+                    {pendingServices.map((service) => {
+                      const isApplied = appliedServiceIds.has(service.id);
+                      return (
+                        <div 
+                          key={service.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border ${
+                            isApplied 
+                              ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                          }`}
+                          data-testid={`pending-service-${service.id}`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                                {service.name}
+                              </span>
+                              {isApplied && (
+                                <Badge variant="default" className="bg-green-600 dark:bg-green-700 text-white">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  {t('orders:applied')}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 mt-1">
+                              <span>{t('orders:laborFee')}: {formatCurrency(parseFloat(service.serviceCost || '0'), service.currency || 'EUR')}</span>
+                              <span>•</span>
+                              <span>{t('orders:partsCost')}: {formatCurrency(parseFloat(service.partsCost || '0'), service.currency || 'EUR')}</span>
+                              <span>•</span>
+                              <span className="font-medium text-amber-600 dark:text-amber-400">
+                                {t('common:total')}: {formatCurrency(parseFloat(service.totalCost || '0'), service.currency || 'EUR')}
+                              </span>
+                            </div>
+                            {service.description && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                {service.description}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant={isApplied ? "outline" : "default"}
+                            size="sm"
+                            className={`ml-3 min-h-[44px] min-w-[100px] ${
+                              isApplied 
+                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 cursor-default' 
+                                : 'bg-amber-600 hover:bg-amber-700 text-white'
+                            }`}
+                            onClick={() => !isApplied && applyPendingService(service)}
+                            disabled={isApplied}
+                            data-testid={`button-apply-service-${service.id}`}
+                          >
+                            {isApplied ? (
+                              <>
+                                <Check className="h-4 w-4 mr-1" />
+                                {t('orders:applied')}
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4 mr-1" />
+                                {t('orders:applyToOrder')}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             )}

@@ -1042,6 +1042,20 @@ const orders = {
   serviceItemNoLocation: 'Pick last - No physical location',
   note: 'Note',
   
+  // Pending Services
+  pendingServices: 'Pending Services',
+  pendingServicesDescription: 'This customer has pending service records that can be added to the order.',
+  laborFee: 'Labor Fee',
+  partsCost: 'Parts Cost',
+  serviceFee: 'Service Fee',
+  servicePart: 'Service Part',
+  applyToOrder: 'Add to Order',
+  applied: 'Applied',
+  serviceApplied: 'Service Applied',
+  serviceAppliedDesc: '{{name}} has been added to the order',
+  serviceAlreadyApplied: 'Already Applied',
+  serviceAlreadyAppliedDesc: 'This service has already been added to the order',
+  
   // Packing Checklist
   itemsVerified: 'Items Verified',
   packingSlipIncluded: 'Packing Slip Included',

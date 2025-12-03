@@ -4854,6 +4854,42 @@ export class DatabaseStorage implements IStorage {
     await db.delete(serviceItems).where(eq(serviceItems.id, id));
   }
 
+  async getCustomerPendingServices(customerId: string): Promise<Service[]> {
+    const result = await db
+      .select({
+        id: services.id,
+        customerId: services.customerId,
+        orderId: services.orderId,
+        name: services.name,
+        description: services.description,
+        serviceDate: services.serviceDate,
+        serviceCost: services.serviceCost,
+        partsCost: services.partsCost,
+        totalCost: services.totalCost,
+        currency: services.currency,
+        status: services.status,
+        notes: services.notes,
+        createdAt: services.createdAt,
+        updatedAt: services.updatedAt,
+        customer: customers
+      })
+      .from(services)
+      .leftJoin(customers, eq(services.customerId, customers.id))
+      .where(
+        and(
+          eq(services.customerId, customerId),
+          eq(services.status, 'pending'),
+          isNull(services.orderId)
+        )
+      )
+      .orderBy(desc(services.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      customer: row.customer || undefined
+    }));
+  }
+
   async getPreOrders(): Promise<PreOrder[]> {
     const itemsCount = db
       .select({ 
