@@ -6601,7 +6601,11 @@ export default function PickPack() {
                   </div>
                   <div>
                     <p className="text-xs lg:text-sm text-gray-500">{t('weight')}</p>
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{packageWeight}kg</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {cartons.length > 0 
+                        ? `${cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(2)} kg`
+                        : '— kg'}
+                    </p>
                   </div>
                 </div>
               </div>

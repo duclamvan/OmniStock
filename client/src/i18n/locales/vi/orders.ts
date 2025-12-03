@@ -1072,6 +1072,12 @@ const orders = {
   muteSounds: 'Tắt tiếng',
   unmuteSounds: 'Bật tiếng',
   
+  // Progress Pills - Scroll Navigation
+  scrollToItems: 'Cuộn đến Sản phẩm',
+  scrollToDocuments: 'Cuộn đến Tài liệu',
+  scrollToCartons: 'Cuộn đến Thùng hàng',
+  scrollToShippingLabels: 'Cuộn đến Nhãn vận chuyển',
+  
   // Bundle Items
   
   // Packing Instructions

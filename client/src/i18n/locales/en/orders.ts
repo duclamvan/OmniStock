@@ -1078,6 +1078,12 @@ const orders = {
   muteSounds: 'Mute sounds',
   unmuteSounds: 'Unmute sounds',
   
+  // Progress Pills - Scroll Navigation
+  scrollToItems: 'Scroll to Items',
+  scrollToDocuments: 'Scroll to Documents',
+  scrollToCartons: 'Scroll to Cartons',
+  scrollToShippingLabels: 'Scroll to Shipping Labels',
+  
   // Bundle Items
   
   // Packing Instructions
