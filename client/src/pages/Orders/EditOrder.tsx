@@ -1208,6 +1208,7 @@ export default function EditOrder() {
   // BUT ONLY for NEW orders - don't overwrite saved shipping costs
   const watchedShippingMethod = form.watch('shippingMethod');
   const watchedCurrency = form.watch('currency');
+  const watchedPaymentMethod = form.watch('paymentMethod');
 
   // Calculate total weight of order items for weight-based shipping rates
   const calculateOrderWeight = () => {
@@ -1230,13 +1231,12 @@ export default function EditOrder() {
 
     const orderWeight = calculateOrderWeight();
     const pplRates = shippingSettings?.pplShippingRates;
-    const paymentMethod = form.getValues('paymentMethod');
 
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
       selectedCustomer.country,
       watchedCurrency,
-      { weight: orderWeight, pplRates, paymentMethod }
+      { weight: orderWeight, pplRates, paymentMethod: watchedPaymentMethod }
     );
 
     console.log('✅ Auto-calculating shipping cost for new order:', calculatedCost);
@@ -1246,7 +1246,6 @@ export default function EditOrder() {
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
-  const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedDiscountValue = form.watch('discountValue');
   const watchedShippingCost = form.watch('shippingCost');
   const watchedTaxRate = form.watch('taxRate');

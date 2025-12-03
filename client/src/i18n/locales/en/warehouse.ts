@@ -970,6 +970,33 @@ const warehouse = {
   stockQty: 'Stock Qty',
   presetSizes: 'Preset Sizes',
   addPresetCarton: 'Add Preset Carton',
+  
+  // Warehouse Dashboard Tasks
+  tasks: 'Tasks',
+  addTask: 'Add Task',
+  createTask: 'Create Task',
+  createTaskDescription: 'Create a task for warehouse employees',
+  taskTitle: 'Task Title',
+  enterTaskTitle: 'Enter task title',
+  enterTaskDescription: 'Enter task description (optional)',
+  taskType: 'Type',
+  dueDate: 'Due Date',
+  noTasksYet: 'No tasks yet',
+  clickAddTaskToCreate: 'Click "Add Task" to create one',
+  allCaughtUp: 'All Caught Up!',
+  noTasksToday: 'No pending tasks for today',
+  cleaning: 'Cleaning',
+  general: 'General',
+  inventory: 'Inventory',
+  receiving: 'Receiving',
+  shipping: 'Shipping',
+  priority: 'Priority',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  urgent: 'Urgent',
+  cancel: 'Cancel',
+  description: 'Description',
 } as const;
 
 export default warehouse;
