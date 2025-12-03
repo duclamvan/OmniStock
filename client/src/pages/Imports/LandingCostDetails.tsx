@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,6 +110,7 @@ interface PriceUpdate {
   priceEUR: number;
   priceCZK: number;
   hasChanged: boolean;
+  version: number;
 }
 
 export default function LandingCostDetails() {
@@ -119,6 +120,16 @@ export default function LandingCostDetails() {
   const [priceUpdates, setPriceUpdates] = useState<Record<string, PriceUpdate>>({});
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
+  const [savingItems, setSavingItems] = useState<Set<string>>(new Set());
+  
+  // Debounce timers for auto-save
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const priceUpdatesRef = useRef(priceUpdates);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    priceUpdatesRef.current = priceUpdates;
+  }, [priceUpdates]);
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery<Shipment>({
@@ -161,7 +172,8 @@ export default function LandingCostDetails() {
             sku: item.sku,
             priceEUR,
             priceCZK,
-            hasChanged: false
+            hasChanged: false,
+            version: 0
           };
         }
       });
@@ -170,30 +182,71 @@ export default function LandingCostDetails() {
       }
     }
   }, [landingCostPreview, products, productsBySKU]);
+  
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all pending debounce timers
+      Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer));
+      
+      // Save any remaining unsaved changes
+      const unsavedUpdates = Object.values(priceUpdatesRef.current).filter(u => u.hasChanged && u.productId);
+      if (unsavedUpdates.length > 0) {
+        // Trigger save for remaining items (fire and forget on unmount)
+        unsavedUpdates.forEach(update => {
+          apiRequest('PATCH', `/api/products/${update.productId}`, {
+            priceEur: update.priceEUR.toString(),
+            priceCzk: update.priceCZK.toString(),
+            price: update.priceEUR.toString()
+          }).catch(console.error);
+        });
+      }
+    };
+  }, []);
 
   // Save single product price mutation
   const savePriceMutation = useMutation({
-    mutationFn: async (update: PriceUpdate) => {
+    mutationFn: async (update: PriceUpdate & { isAutoSave?: boolean }) => {
       return await apiRequest('PATCH', `/api/products/${update.productId}`, {
         priceEur: update.priceEUR.toString(),
         priceCzk: update.priceCZK.toString(),
         price: update.priceEUR.toString()
       });
     },
-    onSuccess: (_, update) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      setSavedItems(prev => new Set([...prev, update.sku]));
-      setPriceUpdates(prev => ({
-        ...prev,
-        [update.sku]: { ...prev[update.sku], hasChanged: false }
-      }));
-      toast({
-        title: t('priceUpdated') || 'Price Updated',
-        description: `${update.sku}: €${update.priceEUR.toFixed(2)} / ${update.priceCZK.toFixed(0)} CZK`,
-      });
+    onMutate: (update) => {
+      setSavingItems(prev => new Set([...prev, update.sku]));
     },
-    onError: (error: any) => {
+    onSuccess: (_, update) => {
+      // Only mark as saved if the version matches (no newer edits)
+      const currentUpdate = priceUpdatesRef.current[update.sku];
+      if (currentUpdate && currentUpdate.version === update.version) {
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+        setSavedItems(prev => new Set([...prev, update.sku]));
+        setPriceUpdates(prev => ({
+          ...prev,
+          [update.sku]: { ...prev[update.sku], hasChanged: false }
+        }));
+      }
+      setSavingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(update.sku);
+        return newSet;
+      });
+      // Only show toast for manual saves, not auto-saves
+      if (!update.isAutoSave) {
+        toast({
+          title: t('priceUpdated') || 'Price Updated',
+          description: `${update.sku}: €${update.priceEUR.toFixed(2)} / ${update.priceCZK.toFixed(0)} CZK`,
+        });
+      }
+    },
+    onError: (error: any, update) => {
       console.error('Error saving price:', error);
+      setSavingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(update.sku);
+        return newSet;
+      });
       toast({
         title: t('error') || 'Error',
         description: error.message || t('failedToSavePrice') || 'Failed to save price',
@@ -306,10 +359,20 @@ export default function LandingCostDetails() {
     }
   });
 
-  // Handle price change
+  // Auto-save a single SKU
+  const autoSaveSku = useCallback((sku: string) => {
+    const update = priceUpdatesRef.current[sku];
+    if (update && update.hasChanged && update.productId) {
+      savePriceMutation.mutate({ ...update, isAutoSave: true });
+    }
+  }, []);
+
+  // Handle price change with debounced auto-save
   const handlePriceChange = (sku: string, productId: number, currency: 'EUR' | 'CZK', value: number) => {
+    const newVersion = Date.now();
+    
     setPriceUpdates(prev => {
-      const existing = prev[sku] || { productId, sku, priceEUR: 0, priceCZK: 0, hasChanged: false };
+      const existing = prev[sku] || { productId, sku, priceEUR: 0, priceCZK: 0, hasChanged: false, version: 0 };
       
       if (currency === 'EUR') {
         return {
@@ -318,7 +381,8 @@ export default function LandingCostDetails() {
             ...existing,
             priceEUR: value,
             priceCZK: convertCurrency(value, 'EUR', 'CZK'),
-            hasChanged: true
+            hasChanged: true,
+            version: newVersion
           }
         };
       } else {
@@ -328,7 +392,8 @@ export default function LandingCostDetails() {
             ...existing,
             priceCZK: value,
             priceEUR: convertCurrency(value, 'CZK', 'EUR'),
-            hasChanged: true
+            hasChanged: true,
+            version: newVersion
           }
         };
       }
@@ -340,7 +405,33 @@ export default function LandingCostDetails() {
       newSet.delete(sku);
       return newSet;
     });
+    
+    // Clear existing debounce timer for this SKU
+    if (debounceTimers.current[sku]) {
+      clearTimeout(debounceTimers.current[sku]);
+    }
+    
+    // Set new debounce timer (600ms delay)
+    debounceTimers.current[sku] = setTimeout(() => {
+      autoSaveSku(sku);
+      delete debounceTimers.current[sku];
+    }, 600);
   };
+  
+  // Handle immediate save on blur
+  const handlePriceBlur = useCallback((sku: string) => {
+    // Clear any pending debounce timer
+    if (debounceTimers.current[sku]) {
+      clearTimeout(debounceTimers.current[sku]);
+      delete debounceTimers.current[sku];
+    }
+    
+    // Immediately save if there are unsaved changes
+    const update = priceUpdatesRef.current[sku];
+    if (update && update.hasChanged && update.productId) {
+      savePriceMutation.mutate({ ...update, isAutoSave: true });
+    }
+  }, []);
 
   // Handle save all prices
   const handleSaveAllPrices = () => {
@@ -767,9 +858,15 @@ export default function LandingCostDetails() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           {/* EUR Price Input */}
-                          <div>
-                            <Label htmlFor={`price-eur-${item.sku}`} className="text-xs text-muted-foreground">
+                          <div className="relative">
+                            <Label htmlFor={`price-eur-${item.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
                               {t('priceEUR') || 'Price EUR'}
+                              {savingItems.has(item.sku) && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                              )}
+                              {savedItems.has(item.sku) && !hasChanges && (
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              )}
                             </Label>
                             <MathInput
                               id={`price-eur-${item.sku}`}
@@ -777,15 +874,22 @@ export default function LandingCostDetails() {
                               step={0.01}
                               value={displayPriceEUR}
                               onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'EUR', val)}
+                              onBlur={() => handlePriceBlur(item.sku)}
                               className="mt-1"
                               data-testid={`input-price-eur-${item.sku}`}
                             />
                           </div>
 
                           {/* CZK Price Input */}
-                          <div>
-                            <Label htmlFor={`price-czk-${item.sku}`} className="text-xs text-muted-foreground">
+                          <div className="relative">
+                            <Label htmlFor={`price-czk-${item.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
                               {t('priceCZK') || 'Price CZK'}
+                              {savingItems.has(item.sku) && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                              )}
+                              {savedItems.has(item.sku) && !hasChanges && (
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              )}
                             </Label>
                             <MathInput
                               id={`price-czk-${item.sku}`}
@@ -794,6 +898,7 @@ export default function LandingCostDetails() {
                               isInteger={true}
                               value={Math.round(displayPriceCZK)}
                               onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'CZK', val)}
+                              onBlur={() => handlePriceBlur(item.sku)}
                               className="mt-1"
                               data-testid={`input-price-czk-${item.sku}`}
                             />
