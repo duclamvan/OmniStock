@@ -353,58 +353,6 @@ export default function SystemSettings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="timezone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:timezone')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-timezone">
-                              <SelectValue placeholder={t('settings:selectTimezone')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {timezones.map((tz) => (
-                              <SelectItem key={tz.value} value={tz.value}>
-                                {tz.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>{t('settings:timezoneDescription')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="date_format"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:dateFormat')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-date_format">
-                              <SelectValue placeholder={t('settings:selectDateFormat')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>{t('settings:dateFormatDescription')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
                     name="session_timeout_minutes"
                     render={({ field }) => (
                       <FormItem>
