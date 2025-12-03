@@ -187,6 +187,10 @@ interface OrderItem {
   landingCost?: number | null;
   image?: string | null;
   notes?: string | null;
+  appliedDiscountId?: number | null;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  appliedDiscountScope?: string | null;
 }
 
 // Helper function to get country flag emoji
@@ -3899,6 +3903,11 @@ export default function AddOrder() {
                                       {t('orders:service')}
                                     </Badge>
                                   )}
+                                  {item.appliedDiscountLabel && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
+                                      {t('orders:offer')}: {item.appliedDiscountLabel}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
@@ -4127,17 +4136,22 @@ export default function AddOrder() {
                             )}
                             {item.bundleId && (
                               <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                Bundle
+                                {t('orders:bundle')}
                               </Badge>
                             )}
                             {item.serviceId && (
                               <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                Service
+                                {t('orders:service')}
+                              </Badge>
+                            )}
+                            {item.appliedDiscountLabel && (
+                              <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
+                                {t('orders:offer')}: {item.appliedDiscountLabel}
                               </Badge>
                             )}
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
+                            {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
                           </p>
                         </div>
                         

@@ -88,6 +88,7 @@ const orders = {
   variant: 'Biến thể',
   variantName: 'Tên biến thể',
   bundle: 'Combo',
+  offer: 'KHUYẾN MÃI',
   scanBarcodeOrSku: 'Quét mã vạch hoặc SKU...',
   readyToScan: 'Sẵn sàng quét...',
   

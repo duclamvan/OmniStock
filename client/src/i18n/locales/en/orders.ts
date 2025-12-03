@@ -88,6 +88,7 @@ const orders = {
   variant: 'Variant',
   variantName: 'Variant Name',
   bundle: 'Bundle',
+  offer: 'OFFER',
   scanBarcodeOrSku: 'Scan barcode or SKU...',
   readyToScan: 'Ready to scan...',
   

@@ -1237,6 +1237,12 @@ export default function OrderDetails() {
                               </p>
                             )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
+                            {item.appliedDiscountLabel && (
+                              <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
+                                <span className="font-medium">{t('orders:offer')}:</span>
+                                <span>{item.appliedDiscountLabel}</span>
+                              </div>
+                            )}
                             {item.serviceId && item.notes && (
                               <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1 mb-1.5">
                                 <p className="text-xs text-purple-900 dark:text-purple-300 font-medium">{t('orders:noteColon')} {item.notes}</p>
