@@ -110,7 +110,7 @@ export function useOrderDefaults() {
   
   return {
     defaultCurrency: orderSettings.defaultPaymentMethod ? generalSettings.defaultCurrency : (generalSettings.defaultCurrency ?? 'CZK'),
-    defaultPaymentMethod: orderSettings.defaultPaymentMethod ?? 'Transfer',
+    defaultPaymentMethod: orderSettings.defaultPaymentMethod ?? 'Bank Transfer',
     defaultOrderStatus: orderSettings.defaultOrderStatus ?? 'pending',
     defaultPaymentStatus: orderSettings.defaultPaymentStatus ?? 'pending',
     defaultCarrier: orderSettings.defaultCarrier ?? 'GLS',

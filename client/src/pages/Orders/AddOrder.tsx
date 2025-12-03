@@ -145,7 +145,9 @@ const addOrderSchema = z.object({
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
   shippingMethod: z.enum(['PPL', 'PPL CZ', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD']).transform(normalizeCarrier).optional(),
-  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
+  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer'], {
+    errorMap: () => ({ message: 'Please select a valid payment method: Bank Transfer, PayPal, COD, or Cash' })
+  }).transform(val => val === 'Transfer' ? 'Bank Transfer' : val).optional(),
   discountType: z.enum(['flat', 'rate']).default('flat'),
   discountValue: z.coerce.number().min(0).default(0),
   // Tax Invoice fields
