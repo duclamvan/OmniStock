@@ -1,4 +1,3 @@
-import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen, Plus, X, Edit2, Tag, Wallet, Check, Trash2 } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
-import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 
 const formSchema = z.object({
   // Pricing
@@ -81,19 +80,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const valuesAreEqual = (a: any, b: any): boolean => {
-  // Only null, undefined, and empty string are considered "unset"
-  // false and 0 are valid, intentional values
-  const isUnsetA = a === null || a === undefined || a === '';
-  const isUnsetB = b === null || b === undefined || b === '';
-  
-  if (isUnsetA && isUnsetB) return true; // Both unset = equal
-  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
-  
-  // Both are set values, compare normally
-  return a === b;
-};
-
 export default function FinancialSettings() {
   const { t } = useTranslation(['settings', 'common', 'financial']);
   const { toast } = useToast();
@@ -142,6 +128,21 @@ export default function FinancialSettings() {
       include_shipping_in_cogs: financialSettings.includeShippingInCogs,
       track_expenses_by_category: financialSettings.trackExpensesByCategory,
     },
+  });
+
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'financial',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
   });
 
   // Sync local expenseCategories with context when financialSettings changes
@@ -282,50 +283,6 @@ export default function FinancialSettings() {
     }
   }, [isLoading, form, financialSettings]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      // Compare current values against original snapshot
-      const changedEntries = Object.entries(values).filter(([key, value]) => {
-        const originalValue = originalSettings[key as keyof FormValues];
-        // Only save if value actually changed from original
-        return !valuesAreEqual(value, originalValue);
-      });
-      
-      // Convert empty strings and undefined to null for explicit clearing
-      const savePromises = changedEntries.map(([key, value]) => {
-        const cleanValue = (value === '' || value === undefined) ? null : value;
-        return apiRequest('POST', `/api/settings`, { 
-          key: camelToSnake(key), 
-          value: deepCamelToSnake(cleanValue), 
-          category: 'financial' 
-        });
-      });
-      
-      await Promise.all(savePromises);
-    },
-    onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'financial'] });
-      
-      // The useEffect will automatically update originalSettings when new data loads
-      toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:financialSettingsSavedSuccess'),
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
-      });
-    },
-  });
-
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -338,7 +295,7 @@ export default function FinancialSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="pricing" className="w-full">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="pricing" className="flex items-center gap-1 sm:gap-2">
@@ -394,6 +351,11 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="30"
                             data-testid="input-default_markup_percentage"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_markup_percentage');
+                            }}
+                            onBlur={handleTextBlur('default_markup_percentage')}
                           />
                         </FormControl>
                         <FormDescription>Default markup for new products</FormDescription>
@@ -417,6 +379,11 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="10"
                             data-testid="input-minimum_margin_percentage"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('minimum_margin_percentage');
+                            }}
+                            onBlur={handleTextBlur('minimum_margin_percentage')}
                           />
                         </FormControl>
                         <FormDescription>Minimum acceptable margin</FormDescription>
@@ -433,7 +400,13 @@ export default function FinancialSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Price Rounding</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('price_rounding')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-price_rounding">
                               <SelectValue placeholder={t('common:selectRounding')} />
@@ -469,6 +442,11 @@ export default function FinancialSettings() {
                             step="0.01"
                             placeholder="21"
                             data-testid="input-default_vat_rate"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_vat_rate');
+                            }}
+                            onBlur={handleTextBlur('default_vat_rate')}
                           />
                         </FormControl>
                         <FormDescription>Default VAT rate for pricing</FormDescription>
@@ -486,7 +464,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('show_prices_with_vat')(checked as boolean);
+                          }}
                           data-testid="checkbox-show_prices_with_vat"
                         />
                       </FormControl>
@@ -522,7 +503,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_vat')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_vat"
                         />
                       </FormControl>
@@ -548,6 +532,11 @@ export default function FinancialSettings() {
                           value={field.value ?? ''}
                           placeholder={t('settings:vatRegistrationNumberPlaceholder')}
                           data-testid="input-vat_registration_number"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('vat_registration_number');
+                          }}
+                          onBlur={handleTextBlur('vat_registration_number')}
                         />
                       </FormControl>
                       <FormDescription>{t('settings:vatRegistrationNumberDescription')}</FormDescription>
@@ -572,7 +561,12 @@ export default function FinancialSettings() {
                             max="100" 
                             step="0.01"
                             placeholder="21" 
-                            data-testid="input-default_tax_rate_czk" 
+                            data-testid="input-default_tax_rate_czk"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_tax_rate_czk');
+                            }}
+                            onBlur={handleTextBlur('default_tax_rate_czk')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:taxRatePercentageDescription')}</FormDescription>
@@ -596,7 +590,12 @@ export default function FinancialSettings() {
                             max="100" 
                             step="0.01"
                             placeholder="19" 
-                            data-testid="input-default_tax_rate_eur" 
+                            data-testid="input-default_tax_rate_eur"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_tax_rate_eur');
+                            }}
+                            onBlur={handleTextBlur('default_tax_rate_eur')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:taxRatePercentageDescription')}</FormDescription>
@@ -614,7 +613,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('reverse_charge_mechanism')(checked as boolean);
+                          }}
                           data-testid="checkbox-reverse_charge_mechanism"
                         />
                       </FormControl>
@@ -636,7 +638,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('oss_scheme_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-oss_scheme_enabled"
                         />
                       </FormControl>
@@ -658,7 +663,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_apply_tax')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_apply_tax"
                         />
                       </FormControl>
@@ -693,7 +701,13 @@ export default function FinancialSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:baseCurrencyLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('base_currency')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-base_currency">
                               <SelectValue placeholder={t('common:selectBaseCurrency')} />
@@ -717,7 +731,13 @@ export default function FinancialSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:exchangeRateSourceLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('exchange_rate_api_source')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-exchange_rate_api_source">
                               <SelectValue placeholder={t('common:selectSource')} />
@@ -742,7 +762,13 @@ export default function FinancialSettings() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('settings:exchangeRateUpdateFrequencyLabel')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleSelectChange('exchange_rate_update_frequency')(value);
+                        }} 
+                        value={field.value || ''}
+                      >
                         <FormControl>
                           <SelectTrigger data-testid="select-exchange_rate_update_frequency">
                             <SelectValue placeholder={t('common:selectFrequency')} />
@@ -768,7 +794,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_update_exchange_rates')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_update_exchange_rates"
                         />
                       </FormControl>
@@ -832,6 +861,11 @@ export default function FinancialSettings() {
                             value={field.value ?? ''}
                             placeholder={t('settings:invoiceNumberPrefixPlaceholder')}
                             data-testid="input-invoice_number_prefix"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('invoice_number_prefix');
+                            }}
+                            onBlur={handleTextBlur('invoice_number_prefix')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:invoiceNumberPrefixDescription')}</FormDescription>
@@ -852,6 +886,11 @@ export default function FinancialSettings() {
                             value={field.value ?? ''}
                             placeholder={t('settings:invoiceNumberFormatPlaceholder')}
                             data-testid="input-invoice_number_format"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('invoice_number_format');
+                            }}
+                            onBlur={handleTextBlur('invoice_number_format')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:invoiceNumberFormatDescription')}</FormDescription>
@@ -876,6 +915,11 @@ export default function FinancialSettings() {
                             min="1"
                             placeholder="1"
                             data-testid="input-next_invoice_number"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('next_invoice_number');
+                            }}
+                            onBlur={handleTextBlur('next_invoice_number')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:nextInvoiceNumberDescription')}</FormDescription>
@@ -898,6 +942,11 @@ export default function FinancialSettings() {
                             min="0"
                             placeholder="14"
                             data-testid="input-payment_terms_days"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('payment_terms_days');
+                            }}
+                            onBlur={handleTextBlur('payment_terms_days')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:paymentTermsDaysDescription')}</FormDescription>
@@ -921,6 +970,11 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="0"
                             data-testid="input-late_payment_fee_percentage"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('late_payment_fee_percentage');
+                            }}
+                            onBlur={handleTextBlur('late_payment_fee_percentage')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:latePaymentFeePercentageDescription')}</FormDescription>
@@ -951,7 +1005,13 @@ export default function FinancialSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:fiscalYearStartLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('fiscal_year_start')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-fiscal_year_start">
                               <SelectValue placeholder={t('common:selectMonth')} />
@@ -975,7 +1035,13 @@ export default function FinancialSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:costCalculationMethodLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('cost_calculation_method')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-cost_calculation_method">
                               <SelectValue placeholder={t('common:selectMethod')} />
@@ -1002,7 +1068,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('include_shipping_in_cogs')(checked as boolean);
+                          }}
                           data-testid="checkbox-include_shipping_in_cogs"
                         />
                       </FormControl>
@@ -1024,7 +1093,10 @@ export default function FinancialSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('track_expenses_by_category')(checked as boolean);
+                          }}
                           data-testid="checkbox-track_expenses_by_category"
                         />
                       </FormControl>
@@ -1159,20 +1231,58 @@ export default function FinancialSettings() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('settings:savingSettings')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('common:save')} {t('settings:settings')}
-              </>
-            )}
-          </Button>
+        {/* Sticky Action Bar with Save Status */}
+        <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t pt-4 pb-2 -mx-1 px-1 sm:px-0 sm:mx-0">
+          <div className="flex items-center justify-between gap-4">
+            {/* Save Status Indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600">{t('settings:saved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-destructive">{t('settings:saveFailed')}</span>
+              )}
+              {saveStatus === 'idle' && lastSavedAt && (
+                <span className="text-muted-foreground text-xs">
+                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                </span>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+              )}
+            </div>
+            
+            {/* Manual Save All Button (for text inputs) */}
+            <Button 
+              type="button"
+              variant={hasPendingChanges ? "default" : "outline"}
+              onClick={() => saveAllPending()}
+              disabled={!hasPendingChanges}
+              className="min-h-[44px]" 
+              data-testid="button-save"
+            >
+              {hasPendingChanges ? (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {t('settings:saveChanges')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('settings:allSaved')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

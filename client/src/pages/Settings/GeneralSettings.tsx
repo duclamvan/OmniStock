@@ -13,12 +13,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle } from "lucide-react";
+import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import i18n from "@/i18n/i18n";
 import { useTranslation } from 'react-i18next';
+import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 
 const formSchema = z.object({
   // Company Information
@@ -157,6 +158,21 @@ export default function GeneralSettings() {
     },
   });
 
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'general',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
+  });
+
   // Reset form when settings load (with proper fallbacks matching defaultValues)
   useEffect(() => {
     if (!isLoading) {
@@ -277,10 +293,6 @@ export default function GeneralSettings() {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -293,7 +305,7 @@ export default function GeneralSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form className="space-y-6">
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto gap-2">
             <TabsTrigger value="profile" className="flex items-center gap-2 px-3 py-2" data-testid="tab-profile">
@@ -342,7 +354,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyName')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyNamePlaceholder')} data-testid="input-company_name" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyNamePlaceholder')} 
+                            data-testid="input-company_name"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_name');
+                            }}
+                            onBlur={handleTextBlur('company_name')}
+                          />
                         </FormControl>
                         <FormDescription>{t('common:yourBusinessLegalName')}</FormDescription>
                         <FormMessage />
@@ -357,7 +378,17 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyEmail')}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder={t('settings:companyEmailPlaceholder')} data-testid="input-company_email" />
+                          <Input 
+                            {...field} 
+                            type="email" 
+                            placeholder={t('settings:companyEmailPlaceholder')} 
+                            data-testid="input-company_email"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_email');
+                            }}
+                            onBlur={handleTextBlur('company_email')}
+                          />
                         </FormControl>
                         <FormDescription>{t('common:primaryBusinessEmail')}</FormDescription>
                         <FormMessage />
@@ -372,7 +403,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyPhone')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyPhonePlaceholder')} data-testid="input-company_phone" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyPhonePlaceholder')} 
+                            data-testid="input-company_phone"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_phone');
+                            }}
+                            onBlur={handleTextBlur('company_phone')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -386,7 +426,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyWebsite')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_website" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            data-testid="input-company_website"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_website');
+                            }}
+                            onBlur={handleTextBlur('company_website')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -400,7 +449,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyAddress')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyAddressPlaceholder')} data-testid="input-company_address" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyAddressPlaceholder')} 
+                            data-testid="input-company_address"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_address');
+                            }}
+                            onBlur={handleTextBlur('company_address')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -414,7 +472,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyCity')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyCityPlaceholder')} data-testid="input-company_city" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyCityPlaceholder')} 
+                            data-testid="input-company_city"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_city');
+                            }}
+                            onBlur={handleTextBlur('company_city')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -428,7 +495,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyZip')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyZipPlaceholder')} data-testid="input-company_zip" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyZipPlaceholder')} 
+                            data-testid="input-company_zip"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_zip');
+                            }}
+                            onBlur={handleTextBlur('company_zip')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -442,7 +518,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyCountry')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:selectCountry')} data-testid="input-company_country" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:selectCountry')} 
+                            data-testid="input-company_country"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_country');
+                            }}
+                            onBlur={handleTextBlur('company_country')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -456,7 +541,16 @@ export default function GeneralSettings() {
                       <FormItem className="md:col-span-2">
                         <FormLabel>{t('settings:companyVatId')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyVatIdPlaceholder')} data-testid="input-company_vat_id" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyVatIdPlaceholder')} 
+                            data-testid="input-company_vat_id"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_vat_id');
+                            }}
+                            onBlur={handleTextBlur('company_vat_id')}
+                          />
                         </FormControl>
                         <FormDescription>{t('common:yourCompanyTaxId')}</FormDescription>
                         <FormMessage />
@@ -484,7 +578,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:companyLogoUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_logo_url" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            data-testid="input-company_logo_url"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_logo_url');
+                            }}
+                            onBlur={handleTextBlur('company_logo_url')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:companyLogoUrlDescription')}</FormDescription>
                         <FormMessage />
@@ -499,7 +602,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:invoiceStamp')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:companyWebsitePlaceholder')} data-testid="input-company_invoice_stamp" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            data-testid="input-company_invoice_stamp"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_invoice_stamp');
+                            }}
+                            onBlur={handleTextBlur('company_invoice_stamp')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:invoiceStampDescription')}</FormDescription>
                         <FormMessage />
@@ -517,7 +629,16 @@ export default function GeneralSettings() {
                           {t('settings:facebookUrl')}
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:facebookUrlPlaceholder')} data-testid="input-company_facebook_url" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:facebookUrlPlaceholder')} 
+                            data-testid="input-company_facebook_url"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_facebook_url');
+                            }}
+                            onBlur={handleTextBlur('company_facebook_url')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:facebookUrlDescription')}</FormDescription>
                         <FormMessage />
@@ -535,7 +656,16 @@ export default function GeneralSettings() {
                           {t('settings:whatsappNumber')}
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:whatsappNumberPlaceholder')} data-testid="input-company_whatsapp_number" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:whatsappNumberPlaceholder')} 
+                            data-testid="input-company_whatsapp_number"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_whatsapp_number');
+                            }}
+                            onBlur={handleTextBlur('company_whatsapp_number')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:whatsappNumberDescription')}</FormDescription>
                         <FormMessage />
@@ -550,7 +680,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:zaloNumber')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:zaloNumberPlaceholder')} data-testid="input-company_zalo_number" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:zaloNumberPlaceholder')} 
+                            data-testid="input-company_zalo_number"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_zalo_number');
+                            }}
+                            onBlur={handleTextBlur('company_zalo_number')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:zaloNumberDescription')}</FormDescription>
                         <FormMessage />
@@ -565,7 +704,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:linkedinUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:linkedinUrlPlaceholder')} data-testid="input-company_linkedin_url" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:linkedinUrlPlaceholder')} 
+                            data-testid="input-company_linkedin_url"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_linkedin_url');
+                            }}
+                            onBlur={handleTextBlur('company_linkedin_url')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:linkedinUrlDescription')}</FormDescription>
                         <FormMessage />
@@ -580,7 +728,16 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:instagramUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t('settings:instagramUrlPlaceholder')} data-testid="input-company_instagram_url" />
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:instagramUrlPlaceholder')} 
+                            data-testid="input-company_instagram_url"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_instagram_url');
+                            }}
+                            onBlur={handleTextBlur('company_instagram_url')}
+                          />
                         </FormControl>
                         <FormDescription>{t('settings:instagramUrlDescription')}</FormDescription>
                         <FormMessage />
@@ -610,7 +767,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultLanguage')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_language')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_language">
                               <SelectValue placeholder={t('settings:selectLanguage')} />
@@ -633,7 +796,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultDateFormat')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_date_format')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_date_format">
                               <SelectValue placeholder={t('settings:selectDateFormat')} />
@@ -660,7 +829,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultTimeFormat')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_time_format')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_time_format">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -683,7 +858,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultTimezone')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_timezone')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_timezone">
                               <SelectValue placeholder={t('settings:selectTimezone')} />
@@ -709,7 +890,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:numberFormat')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('number_format')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-number_format">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -744,7 +931,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCurrency')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_currency')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_currency">
                               <SelectValue placeholder={t('settings:selectCurrency')} />
@@ -769,7 +962,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:currencyDisplay')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('currency_display')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-currency_display">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -809,7 +1008,11 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel>{t('settings:defaultWarehouse')}</FormLabel>
                         <Select 
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                          onValueChange={(value) => {
+                            const parsedValue = value ? parseInt(value) : undefined;
+                            field.onChange(parsedValue);
+                            handleSelectChange('default_order_warehouse_id')(value);
+                          }} 
                           value={field.value?.toString() || ""}
                         >
                           <FormControl>
@@ -837,7 +1040,13 @@ export default function GeneralSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPriority')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_priority')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_priority">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -879,7 +1088,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('low_stock_alert_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-low_stock_alert_email"
                           />
                         </FormControl>
@@ -901,7 +1113,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('order_status_change_notifications')(checked as boolean);
+                            }}
                             data-testid="checkbox-order_status_change_notifications"
                           />
                         </FormControl>
@@ -936,14 +1151,17 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('daily_summary_report_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-daily_summary_report_email"
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:dailySummaryLabel')}</FormLabel>
+                          <FormLabel>{t('settings:dailyReportLabel')}</FormLabel>
                           <FormDescription>
-                            {t('settings:dailySummaryDescription')}
+                            {t('settings:dailyReportDescription')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -958,7 +1176,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('weekly_report_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-weekly_report_email"
                           />
                         </FormControl>
@@ -980,7 +1201,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('monthly_report_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-monthly_report_email"
                           />
                         </FormControl>
@@ -1002,7 +1226,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('yearly_report_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-yearly_report_email"
                           />
                         </FormControl>
@@ -1040,7 +1267,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_ai_address_parsing')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_ai_address_parsing"
                           />
                         </FormControl>
@@ -1062,7 +1292,10 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_ai_carton_packing')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_ai_carton_packing"
                           />
                         </FormControl>
@@ -1104,7 +1337,12 @@ export default function GeneralSettings() {
                               type="number" 
                               min="5"
                               max="480"
-                              data-testid="input-session_timeout_minutes" 
+                              data-testid="input-session_timeout_minutes"
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('session_timeout_minutes');
+                              }}
+                              onBlur={handleTextBlur('session_timeout_minutes')}
                             />
                           </FormControl>
                           <FormDescription>
@@ -1127,7 +1365,12 @@ export default function GeneralSettings() {
                               type="number" 
                               min="3"
                               max="10"
-                              data-testid="input-max_login_attempts" 
+                              data-testid="input-max_login_attempts"
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('max_login_attempts');
+                              }}
+                              onBlur={handleTextBlur('max_login_attempts')}
                             />
                           </FormControl>
                           <FormDescription>
@@ -1148,7 +1391,10 @@ export default function GeneralSettings() {
                           <FormControl>
                             <Checkbox
                               checked={field.value}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                handleCheckboxChange('auto_logout_on_idle')(checked as boolean);
+                              }}
                               data-testid="checkbox-auto_logout_on_idle"
                             />
                           </FormControl>
@@ -1170,7 +1416,10 @@ export default function GeneralSettings() {
                           <FormControl>
                             <Checkbox
                               checked={field.value}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                handleCheckboxChange('require_2fa_for_admins')(checked as boolean);
+                              }}
                               data-testid="checkbox-require_2fa_for_admins"
                             />
                           </FormControl>
@@ -1202,7 +1451,12 @@ export default function GeneralSettings() {
                               type="number" 
                               min="7"
                               max="365"
-                              data-testid="input-audit_log_retention_days" 
+                              data-testid="input-audit_log_retention_days"
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('audit_log_retention_days');
+                              }}
+                              onBlur={handleTextBlur('audit_log_retention_days')}
                             />
                           </FormControl>
                           <FormDescription>
@@ -1221,7 +1475,10 @@ export default function GeneralSettings() {
                           <FormControl>
                             <Checkbox
                               checked={field.value}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                handleCheckboxChange('enable_data_export')(checked as boolean);
+                              }}
                               data-testid="checkbox-enable_data_export"
                             />
                           </FormControl>
@@ -1257,13 +1514,43 @@ export default function GeneralSettings() {
           </Card>
         )}
 
-        {/* Sticky Action Bar */}
+        {/* Sticky Action Bar with Save Status */}
         <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t pt-4 pb-2 -mx-1 px-1 sm:px-0 sm:mx-0">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-4">
+            {/* Save Status Indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600">{t('settings:saved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-destructive">{t('settings:saveFailed')}</span>
+              )}
+              {saveStatus === 'idle' && lastSavedAt && (
+                <span className="text-muted-foreground text-xs">
+                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                </span>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+              )}
+            </div>
+            
+            {/* Manual Save All Button (for text inputs) */}
             <Button 
-              type="submit" 
-              disabled={saveMutation.isPending} 
-              className="w-full sm:w-auto min-h-[44px]" 
+              type="button"
+              variant={hasPendingChanges ? "default" : "outline"}
+              onClick={() => saveAllPending()}
+              disabled={saveMutation.isPending || !hasPendingChanges}
+              className="min-h-[44px]" 
               data-testid="button-save"
             >
               {saveMutation.isPending ? (
@@ -1271,10 +1558,15 @@ export default function GeneralSettings() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t('settings:savingSettings')}
                 </>
-              ) : (
+              ) : hasPendingChanges ? (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  {t('settings:saveAllSettings')}
+                  {t('settings:saveChanges')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('settings:allSaved')}
                 </>
               )}
             </Button>

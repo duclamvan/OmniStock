@@ -26,27 +26,23 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
   const autoUpdateTrackingStatus = shippingSettings?.autoUpdateTrackingStatus ?? true;
   const trackingUpdateFrequencyHours = shippingSettings?.trackingUpdateFrequencyHours ?? 1;
   
-  const { data: tracking, isLoading } = useQuery({
-    queryKey: ['/api/orders', orderId, 'tracking'],
-    queryFn: async () => {
-      const res = await fetch(`/api/orders/${orderId}/tracking`);
-      if (!res.ok) throw new Error('Failed to fetch tracking');
-      return res.json();
-    },
+  // Use standard query pattern with default fetcher for consistency
+  const { data: tracking = [], isLoading } = useQuery<any[]>({
+    queryKey: [`/api/orders/${orderId}/tracking`],
     // Disable query if tracking is disabled
     enabled: enableTracking,
     // Use configured frequency for auto-updates, or disable if autoUpdate is off
     refetchInterval: autoUpdateTrackingStatus ? trackingUpdateFrequencyHours * 60 * 60 * 1000 : false,
   });
   
+  // Use apiRequest for consistency with global error handling
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/orders/${orderId}/tracking?force=true`);
-      if (!res.ok) throw new Error('Failed to refresh tracking');
-      return res.json();
+      const response = await apiRequest('GET', `/api/orders/${orderId}/tracking?force=true`);
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'tracking'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/tracking`] });
       toast({
         title: t('orders:trackingRefreshed'),
         description: t('orders:trackingInfoUpdated'),

@@ -15,11 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Truck, Save, Loader2, Package, Tag, Bell, DollarSign, Globe } from "lucide-react";
+import { Truck, Save, Loader2, Package, Tag, Bell, DollarSign, Globe, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import { useSettingsAutosave } from "@/hooks/useSettingsAutosave";
 
-// Helper function to normalize carrier names for backward compatibility
 const normalizeCarrier = (value: string): string => {
   const map: Record<string, string> = {
     'PPL': 'PPL CZ',
@@ -32,7 +32,6 @@ const normalizeCarrier = (value: string): string => {
   return map[value] || value;
 };
 
-// Default PPL shipping rates structure - flat rate per kg + COD fees
 const DEFAULT_PPL_RATES = {
   countries: {
     CZ: { ratePerKg: 25, baseFee: 50, currency: 'CZK' },
@@ -45,24 +44,17 @@ const DEFAULT_PPL_RATES = {
 };
 
 const formSchema = z.object({
-  // PPL CZ Settings
   ppl_default_sender_address: z.string().default(''),
   ppl_enable_auto_label: z.boolean().default(false),
   ppl_max_package_weight_kg: z.coerce.number().min(0).default(50),
   ppl_max_package_dimensions_cm: z.string().default('200x80x60'),
   ppl_shipping_rates: z.string().default(JSON.stringify(DEFAULT_PPL_RATES)),
-  
-  // Country Carrier Mapping (JSON string for country code -> carrier)
   country_carrier_mapping: z.string().default('{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}'),
-  
-  // GLS DE Settings
   gls_default_sender_address: z.string().default(''),
   gls_enable_manual_labels: z.boolean().default(false),
   gls_max_package_weight_kg: z.coerce.number().min(0).default(40),
   gls_max_girth_cm: z.coerce.number().min(0).default(300),
   gls_shipping_rates: z.string().default(JSON.stringify({ paketXS: 4.59, paketS: 5.19 })),
-  
-  // DHL DE Settings
   dhl_default_sender_address: z.string().default(''),
   dhl_enable_auto_label: z.boolean().default(false),
   dhl_max_package_weight_kg: z.coerce.number().min(0).default(31.5),
@@ -75,33 +67,21 @@ const formSchema = z.object({
     paket31kg: { price: 23.99, maxWeight: 31.5, dimensions: '120x60x60' },
     nachnahme: { fee: 8.99 }
   })),
-  
-  // General Settings
   quick_select_czk: z.string().default('0,100,150,250'),
   quick_select_eur: z.string().default('0,5,10,13,15,20'),
   default_shipping_method: z.enum(['PPL', 'PPL CZ', 'GLS', 'GLS DE', 'DHL', 'DHL DE']).transform(normalizeCarrier).default('PPL CZ'),
   available_carriers: z.string().default('GLS DE,PPL CZ,DHL DE'),
   default_carrier: z.string().default('PPL CZ'),
-  
-  // Shipping Costs - EUR
   default_shipping_cost_eur: z.coerce.number().min(0).default(0),
   free_shipping_threshold_eur: z.coerce.number().min(0).default(0),
-  
-  // Shipping Costs - CZK
   default_shipping_cost_czk: z.coerce.number().min(0).default(0),
   free_shipping_threshold_czk: z.coerce.number().min(0).default(0),
-  
-  // Volumetric
   volumetric_weight_divisor: z.coerce.number().min(1).default(5000),
-  
-  // Label Generation
   default_label_size: z.enum(['A4', 'A5', '4x6', '10x15cm']).default('A4'),
   label_format: z.enum(['PDF', 'PNG', 'ZPL']).default('PDF'),
   auto_print_labels: z.boolean().default(false),
   include_packing_slip: z.boolean().default(true),
   include_invoice: z.boolean().default(false),
-  
-  // Tracking & Notifications
   enable_tracking: z.boolean().default(true),
   auto_update_tracking_status: z.boolean().default(true),
   tracking_update_frequency_hours: z.coerce.number().min(1).max(24).default(6),
@@ -110,19 +90,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-const valuesAreEqual = (a: any, b: any): boolean => {
-  // Only null, undefined, and empty string are considered "unset"
-  // false and 0 are valid, intentional values
-  const isUnsetA = a === null || a === undefined || a === '';
-  const isUnsetB = b === null || b === undefined || b === '';
-  
-  if (isUnsetA && isUnsetB) return true; // Both unset = equal
-  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
-  
-  // Both are set values, compare normally
-  return a === b;
-};
 
 export default function ShippingSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -179,7 +146,21 @@ export default function ShippingSettings() {
     },
   });
 
-  // Helper function to convert object/string to JSON string for textarea
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'shipping',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
+  });
+
   const toJsonString = (value: any): string => {
     if (!value) return '';
     if (typeof value === 'object') {
@@ -188,7 +169,6 @@ export default function ShippingSettings() {
     return value;
   };
 
-  // Reset form when settings load
   useEffect(() => {
     if (!isLoading) {
       const snapshot = {
@@ -242,45 +222,8 @@ export default function ShippingSettings() {
   }, [isLoading, shippingSettings, form]);
 
   const saveMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      // Compare current values against original snapshot
-      const changedEntries = Object.entries(values).filter(([key, value]) => {
-        const originalValue = originalSettings[key as keyof FormValues];
-        // Only save if value actually changed from original
-        return !valuesAreEqual(value, originalValue);
-      });
-      
-      // Convert empty strings and undefined to null for explicit clearing
-      const savePromises = changedEntries.map(([key, value]) => {
-        let processedValue = (value === '' || value === undefined) ? null : value;
-        
-        // Parse JSON for address fields, country_carrier_mapping, and shipping_rates
-        if ((key.includes('address') || key === 'country_carrier_mapping' || key.includes('shipping_rates')) && typeof processedValue === 'string' && processedValue.trim()) {
-          try {
-            processedValue = JSON.parse(processedValue);
-          } catch (e) {
-            throw new Error(`Invalid JSON format for ${key}`);
-          }
-        }
-        
-        return apiRequest('POST', `/api/settings`, { 
-          key: camelToSnake(key), 
-          value: deepCamelToSnake(processedValue), 
-          category: 'shipping' 
-        });
-      });
-      
-      await Promise.all(savePromises);
-    },
-    onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'shipping'] });
-      
-      // The useEffect will automatically update originalSettings when new data loads
-      toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:shippingSettingsSavedSuccess'),
-      });
+    mutationFn: async () => {
+      await saveAllPending();
     },
     onError: (error: any) => {
       toast({
@@ -290,10 +233,6 @@ export default function ShippingSettings() {
       });
     },
   });
-
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
 
   if (isLoading) {
     return (
@@ -307,7 +246,7 @@ export default function ShippingSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="ppl-cz" className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="ppl-cz" className="flex items-center gap-2">
@@ -357,7 +296,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('ppl_enable_auto_label')(checked as boolean);
+                          }}
                           data-testid="checkbox-ppl_enable_auto_label"
                         />
                       </FormControl>
@@ -391,6 +333,11 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Textarea
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('ppl_default_sender_address');
+                          }}
+                          onBlur={handleTextBlur('ppl_default_sender_address')}
                           placeholder={`{
   "name": "Company Name",
   "street": "Street Address",
@@ -434,6 +381,11 @@ export default function ShippingSettings() {
                         <FormControl>
                           <Input
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('ppl_max_package_weight_kg');
+                            }}
+                            onBlur={handleTextBlur('ppl_max_package_weight_kg')}
                             type="number"
                             min="0"
                             max="50"
@@ -455,7 +407,16 @@ export default function ShippingSettings() {
                       <FormItem>
                         <FormLabel>Maximum Dimensions (cm)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="200x80x60" data-testid="input-ppl_max_package_dimensions_cm" />
+                          <Input
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('ppl_max_package_dimensions_cm');
+                            }}
+                            onBlur={handleTextBlur('ppl_max_package_dimensions_cm')}
+                            placeholder="200x80x60"
+                            data-testid="input-ppl_max_package_dimensions_cm"
+                          />
                         </FormControl>
                         <FormDescription>L×W×H (PPL max: 200×80×60)</FormDescription>
                         <FormMessage />
@@ -500,12 +461,14 @@ export default function ShippingSettings() {
                       }
                       newRates.countries[countryCode] = { ...newRates.countries[countryCode], [key]: value };
                       field.onChange(JSON.stringify(newRates, null, 2));
+                      markPendingChange('ppl_shipping_rates');
                     };
                     
                     const updateCodFee = (type: 'cash' | 'card', value: number) => {
                       const newRates = { ...parsedRates };
                       newRates.codFees[type] = { fee: value, currency: 'CZK' };
                       field.onChange(JSON.stringify(newRates, null, 2));
+                      markPendingChange('ppl_shipping_rates');
                     };
                     
                     const addCountry = (countryCode: string) => {
@@ -513,6 +476,7 @@ export default function ShippingSettings() {
                       if (!newRates.countries[countryCode]) {
                         newRates.countries[countryCode] = { ratePerKg: 0, baseFee: 0, currency: 'CZK' };
                         field.onChange(JSON.stringify(newRates, null, 2));
+                        markPendingChange('ppl_shipping_rates');
                       }
                     };
                     
@@ -520,6 +484,7 @@ export default function ShippingSettings() {
                       const newRates = { ...parsedRates };
                       delete newRates.countries[countryCode];
                       field.onChange(JSON.stringify(newRates, null, 2));
+                      markPendingChange('ppl_shipping_rates');
                     };
                     
                     const countryFlags: Record<string, string> = {
@@ -567,6 +532,7 @@ export default function ShippingSettings() {
                                         type="number"
                                         value={rate?.baseFee || 0}
                                         onChange={(e) => updateCountryRate(code, 'baseFee', parseFloat(e.target.value) || 0)}
+                                        onBlur={handleTextBlur('ppl_shipping_rates')}
                                         className="w-20"
                                         min="0"
                                         step="1"
@@ -580,6 +546,7 @@ export default function ShippingSettings() {
                                         type="number"
                                         value={rate?.ratePerKg || 0}
                                         onChange={(e) => updateCountryRate(code, 'ratePerKg', parseFloat(e.target.value) || 0)}
+                                        onBlur={handleTextBlur('ppl_shipping_rates')}
                                         className="w-20"
                                         min="0"
                                         step="1"
@@ -618,6 +585,7 @@ export default function ShippingSettings() {
                                     type="number"
                                     value={parsedRates.codFees?.cash?.fee || 0}
                                     onChange={(e) => updateCodFee('cash', parseFloat(e.target.value) || 0)}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
                                     step="1"
@@ -634,6 +602,7 @@ export default function ShippingSettings() {
                                     type="number"
                                     value={parsedRates.codFees?.card?.fee || 0}
                                     onChange={(e) => updateCodFee('card', parseFloat(e.target.value) || 0)}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
                                     step="1"
@@ -682,6 +651,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('gls_max_package_weight_kg');
+                              }}
+                              onBlur={handleTextBlur('gls_max_package_weight_kg')}
                               type="number"
                               min="0"
                               max="40"
@@ -705,6 +679,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('gls_max_girth_cm');
+                              }}
+                              onBlur={handleTextBlur('gls_max_girth_cm')}
                               type="number"
                               min="0"
                               max="300"
@@ -739,6 +718,7 @@ export default function ShippingSettings() {
                       const updateRate = (size: string, value: number) => {
                         const newRates = { ...parsedRates, [size]: value };
                         field.onChange(JSON.stringify(newRates));
+                        markPendingChange('gls_shipping_rates');
                       };
 
                       return (
@@ -751,6 +731,7 @@ export default function ShippingSettings() {
                                   type="number"
                                   value={parsedRates.paketXS || 4.59}
                                   onChange={(e) => updateRate('paketXS', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
                                   step="0.01"
@@ -766,6 +747,7 @@ export default function ShippingSettings() {
                                   type="number"
                                   value={parsedRates.paketS || 5.19}
                                   onChange={(e) => updateRate('paketS', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
                                   step="0.01"
@@ -781,6 +763,7 @@ export default function ShippingSettings() {
                                   type="number"
                                   value={parsedRates.paketM || 0}
                                   onChange={(e) => updateRate('paketM', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
                                   step="0.01"
@@ -796,6 +779,7 @@ export default function ShippingSettings() {
                                   type="number"
                                   value={parsedRates.paketL || 0}
                                   onChange={(e) => updateRate('paketL', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
                                   step="0.01"
@@ -835,7 +819,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('gls_enable_manual_labels')(checked as boolean);
+                          }}
                           data-testid="checkbox-gls_enable_manual_labels"
                         />
                       </FormControl>
@@ -869,6 +856,11 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Textarea
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('gls_default_sender_address');
+                          }}
+                          onBlur={handleTextBlur('gls_default_sender_address')}
                           placeholder={`{
   "name": "Company Name",
   "street": "Straße",
@@ -930,51 +922,69 @@ export default function ShippingSettings() {
                         ...parsedRates, 
                         [size]: { ...parsedRates[size], [key]: value } 
                       };
-                      field.onChange(JSON.stringify(newRates));
+                      field.onChange(JSON.stringify(newRates, null, 2));
+                      markPendingChange('dhl_shipping_rates');
                     };
 
                     const packageSizes = [
-                      { key: 'paket2kg', label: '2 kg - Paket', defaultPrice: 6.19, defaultWeight: 2, defaultDim: '60x30x15' },
-                      { key: 'paket5kg', label: '5 kg - Paket', defaultPrice: 7.69, defaultWeight: 5, defaultDim: '120x60x60', topseller: true },
-                      { key: 'paket10kg', label: '10 kg - Paket', defaultPrice: 10.49, defaultWeight: 10, defaultDim: '120x60x60' },
-                      { key: 'paket20kg', label: '20 kg - Paket', defaultPrice: 18.99, defaultWeight: 20, defaultDim: '120x60x60' },
-                      { key: 'paket31kg', label: '31.5 kg - Paket', defaultPrice: 23.99, defaultWeight: 31.5, defaultDim: '120x60x60' },
+                      { key: 'paket2kg', label: 'Paket 2kg', defaultWeight: 2, defaultDim: '60x30x15', defaultPrice: 6.19 },
+                      { key: 'paket5kg', label: 'Paket 5kg', defaultWeight: 5, defaultDim: '120x60x60', defaultPrice: 7.69 },
+                      { key: 'paket10kg', label: 'Paket 10kg', defaultWeight: 10, defaultDim: '120x60x60', defaultPrice: 10.49 },
+                      { key: 'paket20kg', label: 'Paket 20kg', defaultWeight: 20, defaultDim: '120x60x60', defaultPrice: 18.99 },
+                      { key: 'paket31kg', label: 'Paket 31.5kg', defaultWeight: 31.5, defaultDim: '120x60x60', defaultPrice: 23.99 },
                     ];
 
                     return (
                       <FormItem>
                         <div className="space-y-4">
-                          {/* Package Size Cards */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                            {packageSizes.map((pkg) => (
-                              <div 
-                                key={pkg.key} 
-                                className={`p-3 rounded-lg border ${pkg.topseller ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : 'bg-muted/30'}`}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-medium">{pkg.label}</span>
-                                  {pkg.topseller && <span className="text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded">TOP</span>}
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={parsedRates[pkg.key]?.price ?? pkg.defaultPrice}
-                                      onChange={(e) => updateRate(pkg.key, 'price', parseFloat(e.target.value) || 0)}
-                                      className="w-20 h-8 text-sm"
-                                      min="0"
-                                      step="0.01"
-                                      data-testid={`input-dhl-rate-${pkg.key}`}
-                                    />
-                                    <span className="text-xs text-muted-foreground">EUR</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    max. {parsedRates[pkg.key]?.dimensions || pkg.defaultDim} cm
-                                  </div>
-                                </div>
+                          {packageSizes.map((pkg) => (
+                            <div 
+                              key={pkg.key} 
+                              className="flex flex-wrap items-center gap-3 p-3 rounded-lg border bg-muted/30"
+                            >
+                              <span className="font-medium min-w-[100px]">{pkg.label}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Price:</span>
+                                <Input
+                                  type="number"
+                                  value={parsedRates[pkg.key]?.price ?? pkg.defaultPrice}
+                                  onChange={(e) => updateRate(pkg.key, 'price', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('dhl_shipping_rates')}
+                                  className="w-20 h-8 text-sm"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid={`input-dhl-${pkg.key}-price`}
+                                />
+                                <span className="text-xs text-muted-foreground">EUR</span>
                               </div>
-                            ))}
-                          </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Max:</span>
+                                <Input
+                                  type="number"
+                                  value={parsedRates[pkg.key]?.maxWeight ?? pkg.defaultWeight}
+                                  onChange={(e) => updateRate(pkg.key, 'maxWeight', parseFloat(e.target.value) || 0)}
+                                  onBlur={handleTextBlur('dhl_shipping_rates')}
+                                  className="w-16 h-8 text-sm"
+                                  min="0"
+                                  step="0.1"
+                                  data-testid={`input-dhl-${pkg.key}-weight`}
+                                />
+                                <span className="text-xs text-muted-foreground">kg</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Dim:</span>
+                                <Input
+                                  type="text"
+                                  value={parsedRates[pkg.key]?.dimensions ?? pkg.defaultDim}
+                                  onChange={(e) => updateRate(pkg.key, 'dimensions', e.target.value)}
+                                  onBlur={handleTextBlur('dhl_shipping_rates')}
+                                  className="w-28 h-8 text-sm"
+                                  placeholder="L×W×H"
+                                  data-testid={`input-dhl-${pkg.key}-dim`}
+                                />
+                              </div>
+                            </div>
+                          ))}
 
                           {/* Nachnahme (COD) Fee */}
                           <div className="pt-4 border-t">
@@ -986,6 +996,7 @@ export default function ShippingSettings() {
                                 type="number"
                                 value={parsedRates.nachnahme?.fee ?? 8.99}
                                 onChange={(e) => updateRate('nachnahme', 'fee', parseFloat(e.target.value) || 0)}
+                                onBlur={handleTextBlur('dhl_shipping_rates')}
                                 className="w-20 h-8 text-sm"
                                 min="0"
                                 step="0.01"
@@ -1024,7 +1035,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('dhl_enable_auto_label')(checked as boolean);
+                          }}
                           data-testid="checkbox-dhl_enable_auto_label"
                         />
                       </FormControl>
@@ -1058,6 +1072,11 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Textarea
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('dhl_default_sender_address');
+                          }}
+                          onBlur={handleTextBlur('dhl_default_sender_address')}
                           placeholder={`{
   "name": "Company Name",
   "street": "Straße",
@@ -1111,12 +1130,14 @@ export default function ShippingSettings() {
                     const updateMapping = (country: string, carrier: string) => {
                       const newMapping = { ...parsedMapping, [country]: carrier };
                       field.onChange(JSON.stringify(newMapping, null, 2));
+                      markPendingChange('country_carrier_mapping');
                     };
                     
                     const removeMapping = (country: string) => {
                       const newMapping = { ...parsedMapping };
                       delete newMapping[country];
                       field.onChange(JSON.stringify(newMapping, null, 2));
+                      markPendingChange('country_carrier_mapping');
                     };
                     
                     const countries = [
@@ -1156,7 +1177,10 @@ export default function ShippingSettings() {
                                 <span className="text-muted-foreground">→</span>
                                 <Select 
                                   value={carrier as string} 
-                                  onValueChange={(value) => updateMapping(countryCode, value)}
+                                  onValueChange={(value) => {
+                                    updateMapping(countryCode, value);
+                                    handleSelectChange('country_carrier_mapping')(form.getValues('country_carrier_mapping'));
+                                  }}
                                 >
                                   <SelectTrigger className="w-[140px]" data-testid={`select-country-carrier-${countryCode}`}>
                                     <SelectValue />
@@ -1184,7 +1208,10 @@ export default function ShippingSettings() {
                           {availableCountries.length > 0 && (
                             <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed">
                               <Select
-                                onValueChange={(countryCode) => updateMapping(countryCode, 'PPL CZ')}
+                                onValueChange={(countryCode) => {
+                                  updateMapping(countryCode, 'PPL CZ');
+                                  handleSelectChange('country_carrier_mapping')(form.getValues('country_carrier_mapping'));
+                                }}
                               >
                                 <SelectTrigger className="w-full" data-testid="select-add-country">
                                   <SelectValue placeholder="+ Add country..." />
@@ -1227,7 +1254,16 @@ export default function ShippingSettings() {
                     <FormItem>
                       <FormLabel>Quick Select CZK</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="0,100,150,250" data-testid="input-quick_select_czk" />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('quick_select_czk');
+                          }}
+                          onBlur={handleTextBlur('quick_select_czk')}
+                          placeholder="0,100,150,250"
+                          data-testid="input-quick_select_czk"
+                        />
                       </FormControl>
                       <FormDescription>Comma-separated shipping costs in CZK for quick selection</FormDescription>
                       <FormMessage />
@@ -1242,7 +1278,16 @@ export default function ShippingSettings() {
                     <FormItem>
                       <FormLabel>Quick Select EUR</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="0,5,10,13,15,20" data-testid="input-quick_select_eur" />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('quick_select_eur');
+                          }}
+                          onBlur={handleTextBlur('quick_select_eur')}
+                          placeholder="0,5,10,13,15,20"
+                          data-testid="input-quick_select_eur"
+                        />
                       </FormControl>
                       <FormDescription>Comma-separated shipping costs in EUR for quick selection</FormDescription>
                       <FormMessage />
@@ -1257,7 +1302,16 @@ export default function ShippingSettings() {
                     <FormItem>
                       <FormLabel>Available Carriers</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={t('settings:availableCarriersPlaceholder')} data-testid="input-available_carriers" />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('available_carriers');
+                          }}
+                          onBlur={handleTextBlur('available_carriers')}
+                          placeholder={t('settings:availableCarriersPlaceholder')}
+                          data-testid="input-available_carriers"
+                        />
                       </FormControl>
                       <FormDescription>Comma-separated list of available carriers</FormDescription>
                       <FormMessage />
@@ -1292,6 +1346,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('default_shipping_cost_eur');
+                              }}
+                              onBlur={handleTextBlur('default_shipping_cost_eur')}
                               type="number"
                               min="0"
                               step="0.01"
@@ -1314,6 +1373,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('free_shipping_threshold_eur');
+                              }}
+                              onBlur={handleTextBlur('free_shipping_threshold_eur')}
                               type="number"
                               min="0"
                               step="0.01"
@@ -1344,6 +1408,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('default_shipping_cost_czk');
+                              }}
+                              onBlur={handleTextBlur('default_shipping_cost_czk')}
                               type="number"
                               min="0"
                               step="0.01"
@@ -1366,6 +1435,11 @@ export default function ShippingSettings() {
                           <FormControl>
                             <Input
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                markPendingChange('free_shipping_threshold_czk');
+                              }}
+                              onBlur={handleTextBlur('free_shipping_threshold_czk')}
                               type="number"
                               min="0"
                               step="0.01"
@@ -1390,6 +1464,11 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Input
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('volumetric_weight_divisor');
+                          }}
+                          onBlur={handleTextBlur('volumetric_weight_divisor')}
                           type="number"
                           min="1"
                           placeholder="5000"
@@ -1426,7 +1505,13 @@ export default function ShippingSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Default Label Size</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_label_size')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_label_size">
                               <SelectValue placeholder={t('common:selectLabelSize')} />
@@ -1450,7 +1535,13 @@ export default function ShippingSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Label Format</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('label_format')(value);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-label_format">
                               <SelectValue placeholder={t('common:selectLabelFormat')} />
@@ -1476,7 +1567,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_print_labels')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_print_labels"
                         />
                       </FormControl>
@@ -1498,7 +1592,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('include_packing_slip')(checked as boolean);
+                          }}
                           data-testid="checkbox-include_packing_slip"
                         />
                       </FormControl>
@@ -1520,7 +1617,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('include_invoice')(checked as boolean);
+                          }}
                           data-testid="checkbox-include_invoice"
                         />
                       </FormControl>
@@ -1554,7 +1654,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_tracking')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_tracking"
                         />
                       </FormControl>
@@ -1576,7 +1679,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_update_tracking_status')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_update_tracking_status"
                         />
                       </FormControl>
@@ -1599,6 +1705,11 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Input
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('tracking_update_frequency_hours');
+                          }}
+                          onBlur={handleTextBlur('tracking_update_frequency_hours')}
                           type="number"
                           min="1"
                           max="24"
@@ -1620,7 +1731,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('send_tracking_email_to_customer')(checked as boolean);
+                          }}
                           data-testid="checkbox-send_tracking_email_to_customer"
                         />
                       </FormControl>
@@ -1642,7 +1756,10 @@ export default function ShippingSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('include_estimated_delivery')(checked as boolean);
+                          }}
                           data-testid="checkbox-include_estimated_delivery"
                         />
                       </FormControl>
@@ -1660,26 +1777,61 @@ export default function ShippingSettings() {
           </TabsContent>
         </Tabs>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={saveMutation.isPending}
-            className="w-full sm:w-auto"
-            data-testid="button-save-shipping-settings"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('settings:savingSettings')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('common:save')} {t('settings:settings')}
-              </>
-            )}
-          </Button>
+        {/* Sticky Action Bar */}
+        <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t pt-4 pb-2 -mx-1 px-1 sm:px-0 sm:mx-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600">{t('settings:saved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-destructive">{t('settings:saveFailed')}</span>
+              )}
+              {saveStatus === 'idle' && lastSavedAt && (
+                <span className="text-muted-foreground text-xs">
+                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                </span>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+              )}
+            </div>
+            
+            <Button 
+              type="button"
+              variant={hasPendingChanges ? "default" : "outline"}
+              onClick={() => saveAllPending()}
+              disabled={saveMutation.isPending || !hasPendingChanges}
+              className="min-h-[44px]" 
+              data-testid="button-save"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('settings:savingSettings')}
+                </>
+              ) : hasPendingChanges ? (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {t('settings:saveChanges')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('settings:allSaved')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

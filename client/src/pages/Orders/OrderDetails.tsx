@@ -95,9 +95,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle } from "lucide-react";
+import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink } from "lucide-react";
 import html2canvas from "html2canvas";
 import logoPath from '@assets/logo_1754349267160.png';
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -126,6 +127,10 @@ export default function OrderDetails() {
   const [isProductDocsOpen, setIsProductDocsOpen] = useState(true);
   const [isUploadedFilesOpen, setIsUploadedFilesOpen] = useState(true);
   const [isShippingLabelsOpen, setIsShippingLabelsOpen] = useState(true);
+
+  // Get shipping settings for tracking
+  const { shippingSettings } = useSettings();
+  const enableTracking = shippingSettings?.enableTracking ?? true;
 
   // Toggle badges visibility
   const toggleBadges = () => {
@@ -258,6 +263,57 @@ export default function OrderDetails() {
     queryKey: [`/api/orders/${id}/cartons`],
     enabled: !!id && !!order,
   });
+
+  // Fetch tracking data for Order Progress section - use standard query pattern with default fetcher
+  const { data: trackingData = [], isLoading: isTrackingLoading } = useQuery<any[]>({
+    queryKey: [`/api/orders/${id}/tracking`],
+    enabled: !!id && !!order && enableTracking && !!order.shippedAt,
+    refetchInterval: shippingSettings?.autoUpdateTrackingStatus 
+      ? (shippingSettings?.trackingUpdateFrequencyHours ?? 1) * 60 * 60 * 1000 
+      : false,
+  });
+
+  // Refresh tracking mutation - uses apiRequest for consistency
+  const refreshTrackingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('GET', `/api/orders/${id}/tracking?force=true`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}/tracking`] });
+      toast({
+        title: t('orders:trackingRefreshed'),
+        description: t('orders:trackingInfoUpdated'),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: t('orders:refreshFailed'),
+        description: error.message || t('orders:failedToRefreshTracking'),
+      });
+    },
+  });
+
+  // Status config for tracking - same as OrderTrackingPanel
+  const trackingStatusConfig = {
+    delivered: { variant: 'default' as const, icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-500' },
+    out_for_delivery: { variant: 'secondary' as const, icon: Truck, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500' },
+    in_transit: { variant: 'outline' as const, icon: Package, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-500' },
+    exception: { variant: 'destructive' as const, icon: AlertCircle, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-500' },
+    created: { variant: 'outline' as const, icon: Clock, color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-500' },
+    unknown: { variant: 'outline' as const, icon: Package, color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-500' },
+  };
+
+  // Generate external tracking URL based on carrier
+  const getTrackingUrl = (carrier: string, trackingNumber: string) => {
+    const carrierUrls: Record<string, string> = {
+      ppl: `https://www.ppl.cz/vyhledat-zasilku?shipmentId=${trackingNumber}`,
+      gls: `https://gls-group.com/EU/en/parcel-tracking?match=${trackingNumber}`,
+      dhl: `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`,
+    };
+    return carrierUrls[carrier?.toLowerCase()] || null;
+  };
 
   // Prevent OrderDetails from rendering on pick-pack page
   if (location === '/orders/pick-pack') {
@@ -2114,18 +2170,79 @@ export default function OrderDetails() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Order Tracking via API - shown only when shipped */}
-                {order.shippedAt && order.trackingNumber && (
+                {/* Compact Order Tracking - shown only when shipped and tracking enabled */}
+                {order.shippedAt && enableTracking && (
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-sky-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{t('orders:trackingInformation')}</p>
-                      <p className="text-sm text-slate-500 italic">
-                        {t('orders:trackingUpdatesNotImplemented')}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {t('orders:trackingHash', { number: order.trackingNumber })}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-sm">{t('orders:trackingInformation')}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2"
+                          onClick={() => refreshTrackingMutation.mutate()}
+                          disabled={refreshTrackingMutation.isPending}
+                          data-testid="button-refresh-tracking-compact"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${refreshTrackingMutation.isPending ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </div>
+                      
+                      {isTrackingLoading ? (
+                        <p className="text-sm text-slate-500">{t('orders:loadingTrackingInfo')}</p>
+                      ) : !trackingData || trackingData.length === 0 ? (
+                        <p className="text-sm text-slate-500">{t('orders:noTrackingInfo')}</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {trackingData.map((shipment: any) => {
+                            const config = trackingStatusConfig[shipment.statusCode as keyof typeof trackingStatusConfig] || trackingStatusConfig.unknown;
+                            const StatusIcon = config.icon;
+                            const trackingUrl = getTrackingUrl(shipment.carrier, shipment.trackingNumber);
+                            
+                            return (
+                              <div key={shipment.id} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-md space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs font-mono">
+                                    {shipment.carrier?.toUpperCase()}
+                                  </Badge>
+                                  <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
+                                    {shipment.trackingNumber}
+                                  </span>
+                                  {trackingUrl && (
+                                    <a
+                                      href={trackingUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                      data-testid={`link-tracking-${shipment.id}`}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <StatusIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                                  <span className={`font-medium ${config.color}`}>
+                                    {shipment.statusLabel}
+                                  </span>
+                                </div>
+                                {shipment.lastEventAt && (
+                                  <p className="text-xs text-slate-400">
+                                    {new Date(shipment.lastEventAt).toLocaleString()}
+                                  </p>
+                                )}
+                                {shipment.errorState && (
+                                  <p className="text-xs text-red-500 flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    {shipment.errorState}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

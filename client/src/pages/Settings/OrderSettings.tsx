@@ -13,9 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign, MapPin } from "lucide-react";
+import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign, MapPin, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 
 const formSchema = z.object({
   // Order Defaults
@@ -84,19 +85,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const valuesAreEqual = (a: any, b: any): boolean => {
-  // Only null, undefined, and empty string are considered "unset"
-  // false and 0 are valid, intentional values
-  const isUnsetA = a === null || a === undefined || a === '';
-  const isUnsetB = b === null || b === undefined || b === '';
-  
-  if (isUnsetA && isUnsetB) return true; // Both unset = equal
-  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
-  
-  // Both are set values, compare normally
-  return a === b;
-};
-
 export default function OrderSettings() {
   const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
@@ -143,6 +131,21 @@ export default function OrderSettings() {
       cod_fee_fixed_amount: orderSettings.codFeeFixedAmount,
       require_cod_signature: orderSettings.requireCodSignature,
     },
+  });
+
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'order',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
   });
 
   // Capture snapshot when settings load
@@ -192,31 +195,11 @@ export default function OrderSettings() {
   }, [isLoading, form, orderSettings]);
 
   const saveMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      // Compare current values against original snapshot
-      const changedEntries = Object.entries(values).filter(([key, value]) => {
-        const originalValue = originalSettings[key as keyof FormValues];
-        // Only save if value actually changed from original
-        return !valuesAreEqual(value, originalValue);
-      });
-      
-      // Convert empty strings and undefined to null for explicit clearing
-      const savePromises = changedEntries.map(([key, value]) => {
-        const cleanValue = (value === '' || value === undefined) ? null : value;
-        return apiRequest('POST', `/api/settings`, { 
-          key: camelToSnake(key), 
-          value: deepCamelToSnake(cleanValue), 
-          category: 'orders' 
-        });
-      });
-      
-      await Promise.all(savePromises);
+    mutationFn: async () => {
+      await saveAllPending();
     },
     onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'orders'] });
-      
-      // The useEffect will automatically update originalSettings when new data loads
+      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'order'] });
       toast({
         title: t('settings:settingsSaved'),
         description: t('settings:orderSettingsSavedSuccess'),
@@ -231,10 +214,6 @@ export default function OrderSettings() {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -247,7 +226,7 @@ export default function OrderSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="defaults" className="w-full">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="defaults" className="flex items-center gap-1 sm:gap-2">
@@ -294,7 +273,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPaymentMethod')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_payment_method')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_method">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -322,7 +308,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultOrderStatus')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_order_status')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_order_status">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -348,7 +341,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPaymentStatus')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_payment_status')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_status">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -373,7 +373,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCarrier')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_carrier')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_carrier">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -404,7 +411,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCommunicationChannel')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_communication_channel')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_communication_channel">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -430,7 +444,14 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultDiscountType')}</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === '__not_set__' ? '' : val)} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(val) => {
+                            const newValue = val === '__not_set__' ? '' : val;
+                            field.onChange(newValue);
+                            handleSelectChange('default_discount_type')(newValue);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_discount_type">
                               <SelectValue placeholder={t('settings:selectOption')} />
@@ -474,6 +495,11 @@ export default function OrderSettings() {
                           {...field}
                           value={field.value ?? ''}
                           data-testid="input-default_order_location"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('default_order_location');
+                          }}
+                          onBlur={handleTextBlur('default_order_location')}
                         />
                       </FormControl>
                       <FormDescription>{t('settings:defaultOrderLocationDescription')}</FormDescription>
@@ -491,7 +517,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_assign_warehouse_by_region')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_assign_warehouse_by_region"
                           />
                         </FormControl>
@@ -513,7 +542,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('prefer_nearest_warehouse')(checked as boolean);
+                            }}
                             data-testid="checkbox-prefer_nearest_warehouse"
                           />
                         </FormControl>
@@ -535,7 +567,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_location_based_routing')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_location_based_routing"
                           />
                         </FormControl>
@@ -568,7 +603,13 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:czechRepublicCarrier')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('czech_republic_carrier')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-czech_republic_carrier">
                               <SelectValue placeholder={t('settings:selectCarrier')} />
@@ -596,7 +637,13 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:europeanUnionCarrier')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('european_union_carrier')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-european_union_carrier">
                               <SelectValue placeholder={t('settings:selectCarrier')} />
@@ -624,7 +671,13 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:restOfWorldCarrier')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('rest_of_world_carrier')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-rest_of_world_carrier">
                               <SelectValue placeholder={t('settings:selectCarrier')} />
@@ -671,7 +724,13 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:initialFulfillmentStage')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_fulfillment_stage')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_fulfillment_stage">
                               <SelectValue placeholder={t('settings:selectFulfillmentStage')} />
@@ -705,6 +764,11 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-pick_pack_time_sla_hours"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('pick_pack_time_sla_hours');
+                            }}
+                            onBlur={handleTextBlur('pick_pack_time_sla_hours')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:pickAndPackSlaDescription')}</FormDescription>
@@ -723,7 +787,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_assign_orders_to_warehouse')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_assign_orders_to_warehouse"
                           />
                         </FormControl>
@@ -745,7 +812,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_create_packing_lists')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_create_packing_lists"
                           />
                         </FormControl>
@@ -767,7 +837,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_calculate_shipping')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_calculate_shipping"
                           />
                         </FormControl>
@@ -789,7 +862,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('require_barcode_scan_for_picking')(checked as boolean);
+                            }}
                             data-testid="checkbox-require_barcode_scan_for_picking"
                           />
                         </FormControl>
@@ -811,7 +887,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_ai_carton_packing')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_ai_carton_packing"
                           />
                         </FormControl>
@@ -855,6 +934,11 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-minimum_order_value"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('minimum_order_value');
+                            }}
+                            onBlur={handleTextBlur('minimum_order_value')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:minimumOrderValueDescription')}</FormDescription>
@@ -877,6 +961,11 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-block_duplicate_orders_hours"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('block_duplicate_orders_hours');
+                            }}
+                            onBlur={handleTextBlur('block_duplicate_orders_hours')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:duplicateOrderPreventionHoursDescription')}</FormDescription>
@@ -895,7 +984,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('require_customer_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-require_customer_email"
                           />
                         </FormControl>
@@ -917,7 +1009,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('require_shipping_address')(checked as boolean);
+                            }}
                             data-testid="checkbox-require_shipping_address"
                           />
                         </FormControl>
@@ -939,7 +1034,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('require_phone_number')(checked as boolean);
+                            }}
                             data-testid="checkbox-require_phone_number"
                           />
                         </FormControl>
@@ -961,7 +1059,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('allow_negative_stock')(checked as boolean);
+                            }}
                             data-testid="checkbox-allow_negative_stock"
                           />
                         </FormControl>
@@ -999,7 +1100,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_send_order_confirmation_email')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_send_order_confirmation_email"
                           />
                         </FormControl>
@@ -1021,7 +1125,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_send_shipping_notification')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_send_shipping_notification"
                           />
                         </FormControl>
@@ -1043,7 +1150,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_send_delivery_notification')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_send_delivery_notification"
                           />
                         </FormControl>
@@ -1065,7 +1175,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_update_stock_on_order')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_update_stock_on_order"
                           />
                         </FormControl>
@@ -1087,7 +1200,10 @@ export default function OrderSettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_create_return_request')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_create_return_request"
                           />
                         </FormControl>
@@ -1124,7 +1240,10 @@ export default function OrderSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_cod')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_cod"
                         />
                       </FormControl>
@@ -1145,7 +1264,13 @@ export default function OrderSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultCodCurrency')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_cod_currency')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_cod_currency">
                               <SelectValue placeholder={t('settings:selectCurrency')} />
@@ -1177,6 +1302,11 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-cod_fee_percentage"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('cod_fee_percentage');
+                            }}
+                            onBlur={handleTextBlur('cod_fee_percentage')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:codPercentageFeeDescription')}</FormDescription>
@@ -1199,6 +1329,11 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-cod_fee_fixed_amount"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('cod_fee_fixed_amount');
+                            }}
+                            onBlur={handleTextBlur('cod_fee_fixed_amount')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:codFixedFeeDescription')}</FormDescription>
@@ -1216,7 +1351,10 @@ export default function OrderSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('require_cod_signature')(checked as boolean);
+                          }}
                           data-testid="checkbox-require_cod_signature"
                         />
                       </FormControl>
@@ -1234,26 +1372,63 @@ export default function OrderSettings() {
           </TabsContent>
         </Tabs>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button 
-            type="submit" 
-            disabled={saveMutation.isPending}
-            data-testid="button-save-settings"
-            className="w-full sm:w-auto"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('settings:savingSettings')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('common:save')} {t('settings:settings')}
-              </>
-            )}
-          </Button>
+        {/* Sticky Action Bar with Save Status */}
+        <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t pt-4 pb-2 -mx-1 px-1 sm:px-0 sm:mx-0">
+          <div className="flex items-center justify-between gap-4">
+            {/* Save Status Indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600">{t('settings:saved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-destructive">{t('settings:saveFailed')}</span>
+              )}
+              {saveStatus === 'idle' && lastSavedAt && (
+                <span className="text-muted-foreground text-xs">
+                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                </span>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+              )}
+            </div>
+            
+            {/* Manual Save All Button (for text inputs) */}
+            <Button 
+              type="button"
+              variant={hasPendingChanges ? "default" : "outline"}
+              onClick={() => saveAllPending()}
+              disabled={saveMutation.isPending || !hasPendingChanges}
+              className="min-h-[44px]" 
+              data-testid="button-save-settings"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('settings:savingSettings')}
+                </>
+              ) : hasPendingChanges ? (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {t('settings:saveChanges')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('settings:allSaved')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

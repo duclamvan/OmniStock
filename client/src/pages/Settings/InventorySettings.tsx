@@ -1,4 +1,3 @@
-import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,12 +11,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Package, Save, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image } from "lucide-react";
+import { Package, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useQuery } from "@tanstack/react-query";
-import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 
 const formSchema = z.object({
   // Product Defaults
@@ -99,19 +98,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const valuesAreEqual = (a: any, b: any): boolean => {
-  // Only null, undefined, and empty string are considered "unset"
-  // false and 0 are valid, intentional values
-  const isUnsetA = a === null || a === undefined || a === '';
-  const isUnsetB = b === null || b === undefined || b === '';
-  
-  if (isUnsetA && isUnsetB) return true; // Both unset = equal
-  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
-  
-  // Both are set values, compare normally
-  return a === b;
-};
-
 export default function InventorySettings() {
   const { t } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
@@ -165,6 +151,22 @@ export default function InventorySettings() {
     },
   });
 
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveField,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'inventory',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
+  });
+
   // Capture snapshot when settings load
   useEffect(() => {
     if (!isLoading) {
@@ -212,50 +214,6 @@ export default function InventorySettings() {
     }
   }, [isLoading, form, inventorySettings]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      // Compare current values against original snapshot
-      const changedEntries = Object.entries(values).filter(([key, value]) => {
-        const originalValue = originalSettings[key as keyof FormValues];
-        // Only save if value actually changed from original
-        return !valuesAreEqual(value, originalValue);
-      });
-      
-      // Convert empty strings and undefined to null for explicit clearing
-      const savePromises = changedEntries.map(([key, value]) => {
-        const cleanValue = (value === '' || value === undefined) ? null : value;
-        return apiRequest('POST', `/api/settings`, { 
-          key: camelToSnake(key), 
-          value: deepCamelToSnake(cleanValue), 
-          category: 'inventory' 
-        });
-      });
-      
-      await Promise.all(savePromises);
-    },
-    onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'inventory'] });
-      
-      // The useEffect will automatically update originalSettings when new data loads
-      toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:inventorySettingsSavedSuccess'),
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
-      });
-    },
-  });
-
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -268,7 +226,7 @@ export default function InventorySettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2">
@@ -322,7 +280,12 @@ export default function InventorySettings() {
                             type="number" 
                             min="0"
                             placeholder={t('settings:lowStockThresholdPlaceholder')} 
-                            data-testid="input-low_stock_threshold" 
+                            data-testid="input-low_stock_threshold"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('low_stock_threshold');
+                            }}
+                            onBlur={handleTextBlur('low_stock_threshold')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:lowStockThresholdDescription')}</FormDescription>
@@ -337,7 +300,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultProductType')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_product_type')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_product_type">
                               <SelectValue placeholder={t('settings:selectProductType')} />
@@ -361,7 +330,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultPackagingType')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_packaging_requirement')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_packaging_requirement">
                               <SelectValue placeholder={t('settings:selectPackagingType')} />
@@ -390,7 +365,12 @@ export default function InventorySettings() {
                             {...field} 
                             value={field.value ?? ''}
                             placeholder={t('settings:skuPrefixPlaceholder')} 
-                            data-testid="input-sku_prefix" 
+                            data-testid="input-sku_prefix"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('sku_prefix');
+                            }}
+                            onBlur={handleTextBlur('sku_prefix')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:skuPrefixDescription')}</FormDescription>
@@ -409,7 +389,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_barcode_scanning')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_barcode_scanning"
                           />
                         </FormControl>
@@ -431,7 +414,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_generate_sku')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_generate_sku"
                           />
                         </FormControl>
@@ -453,7 +439,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('track_serial_numbers')(checked as boolean);
+                            }}
                             data-testid="checkbox-track_serial_numbers"
                           />
                         </FormControl>
@@ -496,7 +485,12 @@ export default function InventorySettings() {
                             type="number" 
                             min="0"
                             placeholder={t('settings:autoReorderPointPlaceholder')} 
-                            data-testid="input-auto_reorder_point" 
+                            data-testid="input-auto_reorder_point"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('auto_reorder_point');
+                            }}
+                            onBlur={handleTextBlur('auto_reorder_point')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:autoReorderPointDescription')}</FormDescription>
@@ -518,7 +512,12 @@ export default function InventorySettings() {
                             type="number" 
                             min="0"
                             placeholder={t('settings:safetyStockLevelPlaceholder')} 
-                            data-testid="input-safety_stock_level" 
+                            data-testid="input-safety_stock_level"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('safety_stock_level');
+                            }}
+                            onBlur={handleTextBlur('safety_stock_level')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:safetyStockLevelDescription')}</FormDescription>
@@ -540,7 +539,12 @@ export default function InventorySettings() {
                             type="number" 
                             min="1"
                             placeholder={t('settings:stockCountFrequencyPlaceholder')} 
-                            data-testid="input-stock_count_frequency_days" 
+                            data-testid="input-stock_count_frequency_days"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('stock_count_frequency_days');
+                            }}
+                            onBlur={handleTextBlur('stock_count_frequency_days')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:stockCountFrequencyDescription')}</FormDescription>
@@ -559,7 +563,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('stock_adjustment_approval_required')(checked as boolean);
+                            }}
                             data-testid="checkbox-stock_adjustment_approval_required"
                           />
                         </FormControl>
@@ -581,7 +588,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('allow_negative_stock')(checked as boolean);
+                            }}
                             data-testid="checkbox-allow_negative_stock"
                           />
                         </FormControl>
@@ -603,7 +613,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_batch_lot_tracking')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_batch_lot_tracking"
                           />
                         </FormControl>
@@ -625,7 +638,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_expiration_date_tracking')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_expiration_date_tracking"
                           />
                         </FormControl>
@@ -661,7 +677,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultWarehouseLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_warehouse')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_warehouse">
                               <SelectValue placeholder={t('common:selectDefaultWarehouse')} />
@@ -688,7 +710,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:locationFormatLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('location_format')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-location_format">
                               <SelectValue placeholder={t('common:selectLocationFormat')} />
@@ -717,7 +745,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_multi_warehouse')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_multi_warehouse"
                           />
                         </FormControl>
@@ -739,7 +770,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_assign_warehouse_location')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_assign_warehouse_location"
                           />
                         </FormControl>
@@ -761,7 +795,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_bin_management')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_bin_management"
                           />
                         </FormControl>
@@ -783,7 +820,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_zone_management')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_zone_management"
                           />
                         </FormControl>
@@ -805,7 +845,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('temperature_control_zones')(checked as boolean);
+                            }}
                             data-testid="checkbox-temperature_control_zones"
                           />
                         </FormControl>
@@ -849,7 +892,12 @@ export default function InventorySettings() {
                             min="0"
                             max="100"
                             placeholder="10" 
-                            data-testid="input-qc_sampling_rate" 
+                            data-testid="input-qc_sampling_rate"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('qc_sampling_rate');
+                            }}
+                            onBlur={handleTextBlur('qc_sampling_rate')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:qcSamplingRateDescriptionAlt')}</FormDescription>
@@ -864,7 +912,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultConditionTrackingLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('condition_tracking')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-condition_tracking">
                               <SelectValue placeholder={t('common:selectCondition')} />
@@ -893,7 +947,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_quality_control')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_quality_control"
                           />
                         </FormControl>
@@ -915,7 +972,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('damage_report_required')(checked as boolean);
+                            }}
                             data-testid="checkbox-damage_report_required"
                           />
                         </FormControl>
@@ -937,7 +997,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('photo_evidence_required')(checked as boolean);
+                            }}
                             data-testid="checkbox-photo_evidence_required"
                           />
                         </FormControl>
@@ -973,7 +1036,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultLengthUnitLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_length_unit')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_length_unit">
                               <SelectValue placeholder={t('common:selectLengthUnit')} />
@@ -998,7 +1067,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultWeightUnitLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_weight_unit')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_weight_unit">
                               <SelectValue placeholder={t('common:selectWeightUnit')} />
@@ -1023,7 +1098,13 @@ export default function InventorySettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:defaultVolumeUnitLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('default_volume_unit')(value);
+                          }} 
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_volume_unit">
                               <SelectValue placeholder={t('common:selectVolumeUnit')} />
@@ -1056,7 +1137,12 @@ export default function InventorySettings() {
                             min="1"
                             max="4"
                             placeholder="2" 
-                            data-testid="input-decimal_places_weight" 
+                            data-testid="input-decimal_places_weight"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('decimal_places_weight');
+                            }}
+                            onBlur={handleTextBlur('decimal_places_weight')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:decimalPlacesWeightDescription')}</FormDescription>
@@ -1079,7 +1165,12 @@ export default function InventorySettings() {
                             min="1"
                             max="4"
                             placeholder="2" 
-                            data-testid="input-decimal_places_dimensions" 
+                            data-testid="input-decimal_places_dimensions"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('decimal_places_dimensions');
+                            }}
+                            onBlur={handleTextBlur('decimal_places_dimensions')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:decimalPlacesDimensionsDescription')}</FormDescription>
@@ -1118,7 +1209,12 @@ export default function InventorySettings() {
                             min="1"
                             max="20"
                             placeholder="10" 
-                            data-testid="input-max_images_per_product" 
+                            data-testid="input-max_images_per_product"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('max_images_per_product');
+                            }}
+                            onBlur={handleTextBlur('max_images_per_product')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:maxImagesPerProductDescriptionAlt')}</FormDescription>
@@ -1139,7 +1235,10 @@ export default function InventorySettings() {
                             max={100}
                             step={5}
                             value={[field.value ?? 80]}
-                            onValueChange={(vals) => field.onChange(vals[0])}
+                            onValueChange={(vals) => {
+                              field.onChange(vals[0]);
+                              saveField('image_quality', vals[0]);
+                            }}
                             className="w-full"
                             data-testid="slider-image_quality"
                           />
@@ -1160,7 +1259,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_product_variants')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_product_variants"
                           />
                         </FormControl>
@@ -1182,7 +1284,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_bundles')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_bundles"
                           />
                         </FormControl>
@@ -1204,7 +1309,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('enable_services')(checked as boolean);
+                            }}
                             data-testid="checkbox-enable_services"
                           />
                         </FormControl>
@@ -1226,7 +1334,10 @@ export default function InventorySettings() {
                         <FormControl>
                           <Checkbox
                             checked={field.value === true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('auto_compress_images')(checked as boolean);
+                            }}
                             data-testid="checkbox-auto_compress_images"
                           />
                         </FormControl>
@@ -1245,22 +1356,53 @@ export default function InventorySettings() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('settings:savingSettings')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('common:save')} {t('settings:settings')}
-              </>
+        {/* Sticky action bar with save status */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t py-3 -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{t('settings:savingSettings')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span className="text-green-500">{t('settings:settingsSaved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-destructive">{t('settings:settingsSaveError')}</span>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span>{t('common:unsavedChanges')}</span>
+              )}
+            </div>
+            {hasPendingChanges && (
+              <Button 
+                type="button" 
+                onClick={() => saveAllPending()}
+                disabled={saveStatus === 'saving'}
+                className="w-auto"
+                data-testid="button-save-pending"
+              >
+                {saveStatus === 'saving' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('settings:savingSettings')}
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {t('common:saveChanges')}
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
-      </form>
+      </div>
     </Form>
   );
 }

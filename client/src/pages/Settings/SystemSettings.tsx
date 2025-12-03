@@ -28,10 +28,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { format } from "date-fns";
+import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 
 interface BackupRecord {
   id: number;
@@ -172,6 +173,21 @@ export default function SystemSettings() {
     },
   });
 
+  const {
+    handleSelectChange,
+    handleCheckboxChange,
+    handleTextBlur,
+    markPendingChange,
+    saveStatus,
+    lastSavedAt,
+    hasPendingChanges,
+    saveAllPending,
+  } = useSettingsAutosave({
+    category: 'system',
+    originalValues: originalSettings,
+    getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
+  });
+
   // Capture snapshot when settings load
   useEffect(() => {
     if (!isLoading) {
@@ -212,50 +228,6 @@ export default function SystemSettings() {
       form.reset(snapshot);
     }
   }, [isLoading, form, systemSettings]);
-
-  const saveMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      // Compare current values against original snapshot
-      const changedEntries = Object.entries(values).filter(([key, value]) => {
-        const originalValue = originalSettings[key as keyof FormValues];
-        // Only save if value actually changed from original
-        return !valuesAreEqual(value, originalValue);
-      });
-      
-      // Convert empty strings and undefined to null for explicit clearing
-      const savePromises = changedEntries.map(([key, value]) => {
-        const cleanValue = (value === '' || value === undefined) ? null : value;
-        return apiRequest('POST', `/api/settings`, { 
-          key: camelToSnake(key), 
-          value: deepCamelToSnake(cleanValue), 
-          category: 'system' 
-        });
-      });
-      
-      await Promise.all(savePromises);
-    },
-    onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'system'] });
-      
-      // The useEffect will automatically update originalSettings when new data loads
-      toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:systemSettingsSavedSuccess'),
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
-      });
-    },
-  });
-
-  const onSubmit = (values: FormValues) => {
-    saveMutation.mutate(values);
-  };
 
   const factoryResetMutation = useMutation({
     mutationFn: async (confirmationPhrase: string) => {
@@ -299,7 +271,7 @@ export default function SystemSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="system" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2">
@@ -342,7 +314,17 @@ export default function SystemSettings() {
                     <FormItem>
                       <FormLabel>{t('settings:applicationName')}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value ?? ''} placeholder={t('settings:applicationNamePlaceholder')} data-testid="input-app_name" />
+                        <Input
+                          {...field}
+                          value={field.value ?? ''}
+                          placeholder={t('settings:applicationNamePlaceholder')}
+                          data-testid="input-app_name"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('app_name');
+                          }}
+                          onBlur={handleTextBlur('app_name')}
+                        />
                       </FormControl>
                       <FormDescription>{t('settings:applicationNameDescription')}</FormDescription>
                       <FormMessage />
@@ -365,6 +347,11 @@ export default function SystemSettings() {
                             min="5"
                             placeholder={t('settings:sessionTimeoutMinutesPlaceholder')}
                             data-testid="input-session_timeout_minutes"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('session_timeout_minutes');
+                            }}
+                            onBlur={handleTextBlur('session_timeout_minutes')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:sessionTimeoutMinutesDescription')}</FormDescription>
@@ -387,6 +374,11 @@ export default function SystemSettings() {
                             min="10"
                             placeholder={t('settings:autoSaveIntervalSecondsPlaceholder')}
                             data-testid="input-auto_save_interval_seconds"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('auto_save_interval_seconds');
+                            }}
+                            onBlur={handleTextBlur('auto_save_interval_seconds')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:autoSaveIntervalSecondsDescription')}</FormDescription>
@@ -404,7 +396,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_dark_mode')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_dark_mode"
                         />
                       </FormControl>
@@ -426,7 +421,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('compact_view')(checked as boolean);
+                          }}
                           data-testid="checkbox-compact_view"
                         />
                       </FormControl>
@@ -462,7 +460,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_backup_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_backup_enabled"
                         />
                       </FormControl>
@@ -483,7 +484,13 @@ export default function SystemSettings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('settings:backupFrequencyLabel')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleSelectChange('backup_frequency')(value);
+                          }}
+                          value={field.value || ''}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-backup_frequency">
                               <SelectValue placeholder={t('common:selectFrequency')} />
@@ -515,6 +522,11 @@ export default function SystemSettings() {
                             min="1"
                             placeholder="365"
                             data-testid="input-data_retention_period_days"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('data_retention_period_days');
+                            }}
+                            onBlur={handleTextBlur('data_retention_period_days')}
                           />
                         </FormControl>
                         <FormDescription>{t('settings:dataRetentionPeriodDescription')}</FormDescription>
@@ -532,7 +544,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('archive_old_orders')(checked as boolean);
+                          }}
                           data-testid="checkbox-archive_old_orders"
                         />
                       </FormControl>
@@ -560,6 +575,11 @@ export default function SystemSettings() {
                           min="1"
                           placeholder="90"
                           data-testid="input-archive_after_days"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('archive_after_days');
+                          }}
+                          onBlur={handleTextBlur('archive_after_days')}
                         />
                       </FormControl>
                       <FormDescription>{t('settings:archiveAfterDaysDescription')}</FormDescription>
@@ -630,7 +650,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('require_strong_passwords')(checked as boolean);
+                          }}
                           data-testid="checkbox-require_strong_passwords"
                         />
                       </FormControl>
@@ -658,6 +681,11 @@ export default function SystemSettings() {
                           min="0"
                           placeholder="90"
                           data-testid="input-password_expiry_days"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('password_expiry_days');
+                          }}
+                          onBlur={handleTextBlur('password_expiry_days')}
                         />
                       </FormControl>
                       <FormDescription>{t('settings:passwordExpiryDaysDescription')}</FormDescription>
@@ -674,7 +702,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('two_factor_authentication')(checked as boolean);
+                          }}
                           data-testid="checkbox-two_factor_authentication"
                         />
                       </FormControl>
@@ -696,7 +727,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('session_logging')(checked as boolean);
+                          }}
                           data-testid="checkbox-session_logging"
                         />
                       </FormControl>
@@ -718,7 +752,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('ip_whitelist_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-ip_whitelist_enabled"
                         />
                       </FormControl>
@@ -754,7 +791,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('facebook_integration_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-facebook_integration_enabled"
                         />
                       </FormControl>
@@ -776,7 +816,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('openai_integration_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-openai_integration_enabled"
                         />
                       </FormControl>
@@ -798,7 +841,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('deepseek_ai_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-deepseek_ai_enabled"
                         />
                       </FormControl>
@@ -820,7 +866,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('nominatim_geocoding_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-nominatim_geocoding_enabled"
                         />
                       </FormControl>
@@ -842,7 +891,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('frankfurter_exchange_rates_enabled')(checked as boolean);
+                          }}
                           data-testid="checkbox-frankfurter_exchange_rates_enabled"
                         />
                       </FormControl>
@@ -878,7 +930,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_ai_address_parsing')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_ai_address_parsing"
                         />
                       </FormControl>
@@ -900,7 +955,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_ai_carton_packing')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_ai_carton_packing"
                         />
                       </FormControl>
@@ -922,7 +980,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('enable_ai_weight_estimation')(checked as boolean);
+                          }}
                           data-testid="checkbox-enable_ai_weight_estimation"
                         />
                       </FormControl>
@@ -944,7 +1005,10 @@ export default function SystemSettings() {
                       <FormControl>
                         <Checkbox
                           checked={field.value === true}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleCheckboxChange('auto_optimize_warehouse_locations')(checked as boolean);
+                          }}
                           data-testid="checkbox-auto_optimize_warehouse_locations"
                         />
                       </FormControl>
@@ -962,22 +1026,55 @@ export default function SystemSettings() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('settings:savingSettings')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('common:save')} {t('settings:settings')}
-              </>
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t py-3 -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{t('settings:savingSettings')}</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600 dark:text-green-400">{t('settings:settingsSaved')}</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <>
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-red-600 dark:text-red-400">{t('settings:settingsSaveError')}</span>
+                </>
+              )}
+              {saveStatus === 'idle' && hasPendingChanges && (
+                <span>{t('settings:unsavedChanges')}</span>
+              )}
+            </div>
+            {hasPendingChanges && (
+              <Button
+                type="button"
+                onClick={() => saveAllPending()}
+                disabled={saveStatus === 'saving'}
+                className="w-auto"
+                data-testid="button-save-pending"
+              >
+                {saveStatus === 'saving' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('settings:savingSettings')}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {t('common:save')}
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
-      </form>
+      </div>
 
       {/* Factory Reset Confirmation Dialog */}
       <Dialog open={showFactoryResetDialog} onOpenChange={setShowFactoryResetDialog}>
@@ -1251,12 +1348,18 @@ function BackupHistoryCard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {backups.map((backup) => (
+                  {backups.map((backup) => {
+                    const createdDate = backup.createdAt ? new Date(backup.createdAt) : null;
+                    const expiresDate = backup.expiresAt ? new Date(backup.expiresAt) : null;
+                    const isValidCreatedDate = createdDate && !isNaN(createdDate.getTime());
+                    const isValidExpiresDate = expiresDate && !isNaN(expiresDate.getTime());
+                    
+                    return (
                     <TableRow key={backup.id}>
                       <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          {format(new Date(backup.createdAt), 'dd/MM/yyyy HH:mm')}
+                          {isValidCreatedDate ? format(createdDate, 'dd/MM/yyyy HH:mm') : '-'}
                         </div>
                       </TableCell>
                       <TableCell>{getBackupTypeBadge(backup.backupType)}</TableCell>
@@ -1264,7 +1367,7 @@ function BackupHistoryCard() {
                       <TableCell>{formatFileSize(backup.fileSize)}</TableCell>
                       <TableCell>{backup.recordCount?.toLocaleString() || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {format(new Date(backup.expiresAt), 'dd/MM/yyyy')}
+                        {isValidExpiresDate ? format(expiresDate, 'dd/MM/yyyy') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -1292,7 +1395,7 @@ function BackupHistoryCard() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </div>
