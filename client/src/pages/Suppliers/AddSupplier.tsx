@@ -288,10 +288,10 @@ export default function AddSupplier() {
             </AccordionItem>
 
             {/* Contact Details */}
-            <AccordionItem value="contact-details" className="border-l-4 border-l-green-500 rounded-lg border bg-card">
+            <AccordionItem value="contact-details" className="border-l-4 border-l-green-500 dark:border-l-green-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <Mail className="h-5 w-5 text-green-600" />
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
                   {t('inventory:contactInfo')}
                 </div>
               </AccordionTrigger>
@@ -369,10 +369,10 @@ export default function AddSupplier() {
             </AccordionItem>
 
             {/* Address Information */}
-            <AccordionItem value="address-info" className="border-l-4 border-l-purple-500 rounded-lg border bg-card">
+            <AccordionItem value="address-info" className="border-l-4 border-l-purple-500 dark:border-l-purple-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <MapPin className="h-5 w-5 text-purple-600" />
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   {t('inventory:addressInfo')}
                 </div>
               </AccordionTrigger>
@@ -439,10 +439,10 @@ export default function AddSupplier() {
             </AccordionItem>
 
             {/* Additional Information */}
-            <AccordionItem value="additional-info" className="border-l-4 border-l-orange-500 rounded-lg border bg-card">
+            <AccordionItem value="additional-info" className="border-l-4 border-l-orange-500 dark:border-l-orange-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <FileText className="h-5 w-5 text-orange-600" />
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   {t('inventory:additionalInfo')}
                 </div>
               </AccordionTrigger>

@@ -345,11 +345,9 @@ export default function AllSuppliers() {
       header: t('inventory:supplier'),
       cell: (supplier) => (
         <div className="min-w-[180px]">
-          <Link href={`/suppliers/${supplier.id}`}>
-            <span className="font-semibold text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer block">
-              {supplier.name}
-            </span>
-          </Link>
+          <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+            {supplier.name}
+          </span>
           {supplier.contactPerson && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{supplier.contactPerson}</p>
           )}
@@ -360,14 +358,13 @@ export default function AllSuppliers() {
       key: "contact",
       header: t('inventory:contactInfo'),
       cell: (supplier) => (
-        <div className="space-y-1 min-w-[160px]">
+        <div className="space-y-1 min-w-[160px]" onClick={(e) => e.stopPropagation()}>
           {supplier.email && (
             <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
               <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               <a 
                 href={`mailto:${supplier.email}`} 
                 className="hover:text-cyan-600 dark:hover:text-cyan-400 truncate max-w-[200px]"
-                onClick={(e) => e.stopPropagation()}
               >
                 {supplier.email}
               </a>
@@ -379,14 +376,13 @@ export default function AllSuppliers() {
               <a 
                 href={`tel:${supplier.phone}`} 
                 className="hover:text-cyan-600 dark:hover:text-cyan-400"
-                onClick={(e) => e.stopPropagation()}
               >
                 {supplier.phone}
               </a>
             </div>
           )}
           {!supplier.email && !supplier.phone && (
-            <span className="text-sm text-slate-400">-</span>
+            <span className="text-sm text-slate-400 dark:text-slate-500">-</span>
           )}
         </div>
       ),
@@ -449,49 +445,51 @@ export default function AllSuppliers() {
       key: "actions",
       header: "",
       cell: (supplier) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{t('inventory:actions')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
-              <Eye className="h-4 w-4 mr-2" />
-              {t('inventory:viewSupplier')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              {t('inventory:editSupplier')}
-            </DropdownMenuItem>
-            {supplier.supplierLink && (
-              <DropdownMenuItem asChild>
-                <a
-                  href={supplier.supplierLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {t('inventory:visitWebsite')}
-                </a>
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>{t('inventory:actions')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
+                <Eye className="h-4 w-4 mr-2" />
+                {t('inventory:viewSupplier')}
               </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                setDeleteSupplier(supplier);
-                setShowDeleteDialog(true);
-              }}
-              className="text-red-600 focus:text-red-600"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t('common:delete')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                {t('inventory:editSupplier')}
+              </DropdownMenuItem>
+              {supplier.supplierLink && (
+                <DropdownMenuItem asChild>
+                  <a
+                    href={supplier.supplierLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    {t('inventory:visitWebsite')}
+                  </a>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setDeleteSupplier(supplier);
+                  setShowDeleteDialog(true);
+                }}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('common:delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
     },
   ];
@@ -715,7 +713,12 @@ export default function AllSuppliers() {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredSuppliers?.map((supplier: Supplier) => (
-              <div key={supplier.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+              <div 
+                key={supplier.id} 
+                className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-cyan-400 dark:hover:border-cyan-600 hover:shadow-md transition-all active:scale-[0.99]"
+                onClick={() => navigate(`/suppliers/${supplier.id}`)}
+                data-testid={`card-supplier-${supplier.id}`}
+              >
                 <div className="space-y-3">
                   {/* Top Row - Supplier Name, Status, Actions */}
                   <div className="flex items-start justify-between gap-2">
@@ -726,11 +729,9 @@ export default function AllSuppliers() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <Link href={`/suppliers/${supplier.id}`}>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer truncate">
-                            {supplier.name}
-                          </p>
-                        </Link>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {supplier.name}
+                        </p>
                         {supplier.contactPerson && (
                           <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                             {supplier.contactPerson}
@@ -742,31 +743,37 @@ export default function AllSuppliers() {
                       {getStatusBadge(supplier)}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('inventory:actions')}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/suppliers/${supplier.id}`); }}>
                             <Eye className="h-4 w-4 mr-2" />
-                            View Details
+                            {t('inventory:viewSupplier')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/suppliers/${supplier.id}/edit`); }}>
                             <Pencil className="h-4 w-4 mr-2" />
-                            Edit Supplier
+                            {t('inventory:editSupplier')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setDeleteSupplier(supplier);
                               setShowDeleteDialog(true);
                             }}
                             className="text-red-600 focus:text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('common:delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -908,6 +915,7 @@ export default function AllSuppliers() {
               getRowKey={(supplier) => supplier.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              onRowClick={(supplier) => navigate(`/suppliers/${supplier.id}`)}
             />
           </div>
         </CardContent>

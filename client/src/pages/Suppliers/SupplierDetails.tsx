@@ -182,16 +182,16 @@ export default function SupplierDetails() {
             <CardContent className="space-y-4">
               {supplier.contactPerson && (
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">{t('inventory:contactPerson')}</p>
-                  <p className="font-medium">{supplier.contactPerson}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('inventory:contactPerson')}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{supplier.contactPerson}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {supplier.email && (
                   <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <a href={`mailto:${supplier.email}`} className="text-blue-600 hover:underline">
+                    <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                    <a href={`mailto:${supplier.email}`} className="text-cyan-600 dark:text-cyan-400 hover:underline">
                       {supplier.email}
                     </a>
                   </div>
@@ -199,8 +199,8 @@ export default function SupplierDetails() {
 
                 {supplier.phone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    <a href={`tel:${supplier.phone}`} className="text-blue-600 hover:underline">
+                    <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                    <a href={`tel:${supplier.phone}`} className="text-cyan-600 dark:text-cyan-400 hover:underline">
                       {supplier.phone}
                     </a>
                   </div>
@@ -209,26 +209,26 @@ export default function SupplierDetails() {
 
               {(supplier.address || supplier.country) && (
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-                  <div className="text-slate-600">
+                  <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 mt-0.5" />
+                  <div className="text-slate-600 dark:text-slate-300">
                     {supplier.address && <p>{supplier.address}</p>}
-                    {supplier.country && <p className="font-medium">{supplier.country}</p>}
+                    {supplier.country && <p className="font-medium text-slate-900 dark:text-slate-100">{supplier.country}</p>}
                   </div>
                 </div>
               )}
 
-              <Separator />
+              <Separator className="dark:bg-slate-700" />
 
               {/* Links */}
               <div className="space-y-3">
                 {supplier.website && (
                   <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-slate-400" />
+                    <Globe className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <a
                       href={supplier.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-cyan-600 dark:text-cyan-400 hover:underline"
                     >
                       {supplier.website}
                     </a>
@@ -237,14 +237,14 @@ export default function SupplierDetails() {
 
                 {supplier.supplierLink && (
                   <div className="flex items-center gap-2">
-                    <LinkIcon className="h-4 w-4 text-slate-400" />
+                    <LinkIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <div className="flex-1">
-                      <p className="text-sm text-slate-600 mb-1">{t('inventory:supplierCatalog')}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('inventory:supplierCatalog')}</p>
                       <a
                         href={supplier.supplierLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline break-all"
+                        className="text-cyan-600 dark:text-cyan-400 hover:underline break-all"
                       >
                         {supplier.supplierLink}
                       </a>
@@ -256,16 +256,16 @@ export default function SupplierDetails() {
           </Card>
 
           {/* Products */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
               <div className="space-y-4">
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   {t('inventory:supplierProducts')} ({filteredProducts.length} of {supplierProducts.length})
                 </CardTitle>
                 {supplierProducts.length > 0 && (
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <Input
                       placeholder={t('inventory:searchProductsByNameSku')}
                       value={productSearch}
@@ -278,26 +278,27 @@ export default function SupplierDetails() {
             </CardHeader>
             <CardContent>
               {supplierProducts.length === 0 ? (
-                <p className="text-slate-500">{t('inventory:noProductsFromSupplier')}</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noProductsFromSupplier')}</p>
               ) : filteredProducts.length === 0 ? (
-                <p className="text-slate-500">{t('inventory:noProductsMatchSearch')}</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noProductsMatchSearch')}</p>
               ) : (
                 <div className="space-y-1">
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer text-sm"
+                      className="flex items-center justify-between p-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-600 cursor-pointer text-sm transition-all"
                       onClick={() => setLocation(`/products/${product.id}`)}
+                      data-testid={`product-row-${product.id}`}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{product.name}</p>
-                        <p className="text-xs text-slate-500">SKU: {product.sku}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{product.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">SKU: {product.sku}</p>
                       </div>
                       <div className="text-right ml-2">
-                        <p className="font-medium">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
                           {product.priceEur && formatCurrency(parseFloat(product.priceEur), 'EUR')}
                         </p>
-                        <p className="text-xs text-slate-500">Stock: {product.quantity}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Stock: {product.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -307,16 +308,16 @@ export default function SupplierDetails() {
           </Card>
           
           {/* Purchase History */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
               <div className="space-y-4">
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                  <ShoppingCart className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                   {t('inventory:supplierPurchases')} ({filteredPurchases.length} of {supplierPurchases.length})
                 </CardTitle>
                 {supplierPurchases.length > 0 && (
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <Input
                       placeholder={t('inventory:searchPurchasesByProductSku')}
                       value={purchaseSearch}
@@ -329,28 +330,28 @@ export default function SupplierDetails() {
             </CardHeader>
             <CardContent>
               {supplierPurchases.length === 0 ? (
-                <p className="text-slate-500">{t('inventory:noPurchaseHistory')}</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noPurchaseHistory')}</p>
               ) : filteredPurchases.length === 0 ? (
-                <p className="text-slate-500">{t('inventory:noPurchasesMatchSearch')}</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noPurchasesMatchSearch')}</p>
               ) : (
                 <div className="space-y-2">
                   {filteredPurchases.slice(0, 10).map((purchase) => (
                     <div
                       key={purchase.id}
-                      className="p-3 border rounded-lg"
+                      className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50/50 dark:bg-slate-700/30"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium">{purchase.productName}</p>
-                          <p className="text-sm text-slate-500">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">{purchase.productName}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
                             SKU: {purchase.sku || 'N/A'} • Qty: {purchase.quantity}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(parseFloat(purchase.importPrice), purchase.importCurrency)}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {purchase.createdAt ? formatDate(purchase.createdAt) : ''}
                           </p>
                         </div>
@@ -366,7 +367,7 @@ export default function SupplierDetails() {
                     </div>
                   ))}
                   {filteredPurchases.length > 10 && (
-                    <p className="text-sm text-slate-500 text-center pt-2">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center pt-2">
                       {t('inventory:showingLatestOf', { count: filteredPurchases.length })}
                     </p>
                   )}
@@ -376,11 +377,11 @@ export default function SupplierDetails() {
           </Card>
 
           {/* Files & Documents */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                  <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   {t('inventory:filesDocuments')} ({supplierFiles.length})
                 </CardTitle>
                 <ObjectUploader
@@ -397,19 +398,19 @@ export default function SupplierDetails() {
             </CardHeader>
             <CardContent>
               {supplierFiles.length === 0 ? (
-                <p className="text-slate-500">{t('inventory:noFilesUploaded')}</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noFilesUploaded')}</p>
               ) : (
                 <div className="space-y-2">
                   {supplierFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50"
+                      className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <File className="h-5 w-5 text-slate-400" />
+                        <File className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                         <div>
-                          <p className="font-medium">{file.fileName}</p>
-                          <p className="text-sm text-slate-500">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">{file.fileName}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
                             {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : t('inventory:unknownSize')} • 
                             {file.createdAt ? formatDate(file.createdAt) : ''}
                           </p>
@@ -443,30 +444,30 @@ export default function SupplierDetails() {
         {/* Right Column - Stats & Notes */}
         <div className="space-y-6">
           {/* Purchase Stats */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>{t('inventory:totalPurchases')}</CardTitle>
+              <CardTitle className="text-slate-900 dark:text-slate-100">{t('inventory:totalPurchases')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">{t('inventory:totalPurchased')}</p>
-                  <p className="text-xl font-bold">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('inventory:totalPurchased')}</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                     ${supplier.totalPurchased ? parseFloat(supplier.totalPurchased).toLocaleString() : "0"}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">{t('inventory:lastPurchase')}</p>
-                  <p className="font-medium">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('inventory:lastPurchase')}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">
                     {supplierPurchases.length > 0 && supplierPurchases[0].createdAt
                       ? formatDate(supplierPurchases[0].createdAt)
                       : supplier.lastPurchaseDate 
@@ -478,22 +479,22 @@ export default function SupplierDetails() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Package className="h-5 w-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">{t('inventory:activeProducts')}</p>
-                  <p className="text-xl font-bold">{supplierProducts.length}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('inventory:activeProducts')}</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{supplierProducts.length}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">{t('inventory:totalPurchases')}</p>
-                  <p className="text-xl font-bold">{supplierPurchases.length}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('inventory:totalPurchases')}</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{supplierPurchases.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -501,33 +502,33 @@ export default function SupplierDetails() {
 
           {/* Notes */}
           {supplier.notes && (
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                  <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                   {t('inventory:notes')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap">{supplier.notes}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{supplier.notes}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Metadata */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>{t('inventory:additionalInformation')}</CardTitle>
+              <CardTitle className="text-slate-900 dark:text-slate-100">{t('inventory:additionalInformation')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div>
-                  <p className="text-slate-600">{t('inventory:supplierId')}</p>
-                  <p className="font-mono text-xs">{supplier.id}</p>
+                  <p className="text-slate-600 dark:text-slate-400">{t('inventory:supplierId')}</p>
+                  <p className="font-mono text-xs text-slate-900 dark:text-slate-100">{supplier.id}</p>
                 </div>
                 <div>
-                  <p className="text-slate-600">{t('inventory:created')}</p>
-                  <p>{supplier.createdAt ? formatDate(supplier.createdAt) : ''}</p>
+                  <p className="text-slate-600 dark:text-slate-400">{t('inventory:created')}</p>
+                  <p className="text-slate-900 dark:text-slate-100">{supplier.createdAt ? formatDate(supplier.createdAt) : ''}</p>
                 </div>
               </div>
             </CardContent>
