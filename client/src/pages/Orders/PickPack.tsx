@@ -6805,36 +6805,66 @@ export default function PickPack() {
               </div>
             </div>
 
-            {/* Minimal Progress Bar */}
+            {/* Minimal Progress Bar - Clickable Pills */}
             <div className="flex gap-0.5 mt-3 mx-auto max-w-[200px]">
               {/* Step 1: Items */}
-              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('checklist-items-verified')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                title={t('scrollToItems')}
+                className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                 activePackingOrder.items.every(item => {
                   if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                     return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
                   }
                   return (verifiedItems[item.id] || 0) >= item.quantity;
                 })
-                  ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' 
+                  ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
-              }`} />
+              }`}
+                data-testid="progress-pill-items"
+              />
               
               {/* Step 2: Documents */}
-              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('section-documents')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                title={t('scrollToDocuments')}
+                className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                 printedDocuments.packingList
-                  ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' 
+                  ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
-              }`} />
+              }`}
+                data-testid="progress-pill-documents"
+              />
               
               {/* Step 3: Cartons */}
-              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('checklist-cartons')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                title={t('scrollToCartons')}
+                className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                 selectedCarton 
-                  ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' 
+                  ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
-              }`} />
+              }`}
+                data-testid="progress-pill-cartons"
+              />
               
               {/* Step 4: Shipping Labels */}
-              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('checklist-shipping-labels')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                title={t('scrollToShippingLabels')}
+                className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                 (() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
@@ -6846,7 +6876,7 @@ export default function PickPack() {
                   if (isPPL) {
                     // PPL: Check if shipment created and all cartons have labels
                     return activePackingOrder.pplStatus === 'created' && shipmentLabelsFromDB.length >= cartons.length
-                      ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' 
+                      ? 'bg-green-500 dark:bg-green-600' 
                       : 'bg-gray-400/50 dark:bg-gray-600/50';
                   } else if (isGLS) {
                     // GLS: Check if all tracking numbers are entered (from controlled state OR database) and no duplicates
@@ -6862,7 +6892,7 @@ export default function PickPack() {
                     const uniqueTracking = new Set(trackingNumbers);
                     const hasDuplicates = trackingNumbers.length !== uniqueTracking.size;
                     
-                    return allHaveTracking && !hasDuplicates ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
+                    return allHaveTracking && !hasDuplicates ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
                   } else if (isDHL) {
                     // DHL: Check if all cartons have tracking numbers (multi-carrier COD scenario included)
                     const codAmount = typeof activePackingOrder.codAmount === 'string'
@@ -6882,13 +6912,15 @@ export default function PickPack() {
                     const uniqueTracking = new Set(trackingNumbers);
                     const hasDuplicates = trackingNumbers.length !== uniqueTracking.size;
                     
-                    return allHaveTracking && !hasDuplicates ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
+                    return allHaveTracking && !hasDuplicates ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
                   } else {
                     // Other methods: Check if all cartons have labels printed
-                    return cartons.every(c => c.labelPrinted) ? 'bg-green-50 dark:bg-green-900/300 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
+                    return cartons.every(c => c.labelPrinted) ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-400/50 dark:bg-gray-600/50';
                   }
                 })()
-              }`} />
+              }`}
+                data-testid="progress-pill-shipping-labels"
+              />
             </div>
           </div>
         </div>
