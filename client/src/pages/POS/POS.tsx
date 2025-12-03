@@ -341,6 +341,8 @@ export default function POS() {
   const [discountInput, setDiscountInput] = useState('');
   const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage');
   const [cartIdCounter, setCartIdCounter] = useState(0);
+  const [showPayLaterCustomerSearch, setShowPayLaterCustomerSearch] = useState(false);
+  const [payLaterCustomerSearchQuery, setPayLaterCustomerSearchQuery] = useState('');
   
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -495,6 +497,16 @@ export default function POS() {
       fuzzy: true,
     }).map(r => r.item).slice(0, 10);
   }, [customers, customerSearchQuery]);
+
+  const filteredPayLaterCustomers = useMemo(() => {
+    if (!payLaterCustomerSearchQuery.trim()) return customers.slice(0, 15);
+    return fuzzySearch(customers, payLaterCustomerSearchQuery, {
+      fields: ['firstName', 'lastName', 'company', 'email', 'phone', 'facebookName'],
+      threshold: 0.3,
+      fuzzy: true,
+      vietnameseNormalization: true,
+    }).map(r => r.item).slice(0, 15);
+  }, [customers, payLaterCustomerSearchQuery]);
 
   const selectedCustomer = useMemo(() => {
     return customers.find(c => c.id === selectedCustomerId);
@@ -1417,7 +1429,11 @@ export default function POS() {
             <Button
               variant="outline"
               className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
-              onClick={() => handlePaymentSelect('pay_later')}
+              onClick={() => {
+                setShowPaymentDialog(false);
+                setPayLaterCustomerSearchQuery('');
+                setShowPayLaterCustomerSearch(true);
+              }}
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-pay_later"
             >
@@ -1569,6 +1585,90 @@ export default function POS() {
                 ))}
               </div>
             </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pay Later Customer Search Dialog */}
+      <Dialog open={showPayLaterCustomerSearch} onOpenChange={setShowPayLaterCustomerSearch}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-500" />
+              Select Customer for Pay Later
+            </DialogTitle>
+            <DialogDescription>
+              Search by name, Facebook name, email, phone, or company
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Input
+              placeholder="Search customers (including Facebook name)..."
+              value={payLaterCustomerSearchQuery}
+              onChange={(e) => setPayLaterCustomerSearchQuery(e.target.value)}
+              className="h-12"
+              autoFocus
+              data-testid="input-pay-later-customer-search"
+            />
+            
+            <ScrollArea className="h-[350px]">
+              <div className="space-y-2">
+                {filteredPayLaterCustomers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No customers found</p>
+                    <p className="text-sm">Try a different search term</p>
+                  </div>
+                ) : (
+                  filteredPayLaterCustomers.map((customer) => (
+                    <Button
+                      key={customer.id}
+                      variant="outline"
+                      className="w-full min-h-[60px] h-auto py-3 justify-start"
+                      onClick={() => { 
+                        setSelectedCustomerId(customer.id); 
+                        setShowPayLaterCustomerSearch(false);
+                        handlePaymentSelect('pay_later');
+                      }}
+                      data-testid={`button-pay-later-customer-${customer.id}`}
+                    >
+                      <User className="h-5 w-5 mr-3 flex-shrink-0" />
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email || 'Unknown'}
+                        </p>
+                        {customer.facebookName && (
+                          <p className="text-xs text-blue-500 dark:text-blue-400 truncate">
+                            FB: {customer.facebookName}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {customer.phone && (
+                            <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                          )}
+                          {customer.email && !customer.phone && (
+                            <span className="text-xs text-muted-foreground truncate">{customer.email}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+            
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button 
+                variant="outline" 
+                onClick={() => { 
+                  setShowPayLaterCustomerSearch(false); 
+                  setShowPaymentDialog(true); 
+                }}
+              >
+                Back to Payment Options
+              </Button>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>
