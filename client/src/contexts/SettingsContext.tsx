@@ -22,6 +22,23 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   'General',
 ];
 
+// Default return types (fallback if not set in app_settings)
+export const DEFAULT_RETURN_TYPES = [
+  { value: 'exchange', labelKey: 'exchangeType', enabled: true },
+  { value: 'refund', labelKey: 'refundType', enabled: true },
+  { value: 'store_credit', labelKey: 'storeCreditType', enabled: true },
+  { value: 'damaged_goods', labelKey: 'damagedGoods', enabled: true, disposesInventory: true },
+  { value: 'bad_quality', labelKey: 'badQuality', enabled: true, disposesInventory: true },
+  { value: 'guarantee', labelKey: 'guaranteeType', enabled: true },
+];
+
+export interface ReturnTypeConfig {
+  value: string;
+  labelKey: string;
+  enabled: boolean;
+  disposesInventory?: boolean;
+}
+
 // Types for settings by category
 export interface GeneralSettings {
   companyName?: string;
@@ -103,6 +120,7 @@ export interface InventorySettings {
   maxImagesPerProduct?: number;
   autoCompressImages?: boolean;
   imageQuality?: number;
+  returnTypes?: ReturnTypeConfig[];
 }
 
 export interface OrderSettings {
@@ -498,10 +516,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings]
   );
 
-  const inventorySettings = useMemo(
-    () => parseSettingsByCategory<InventorySettings>(settings, 'inventory'),
-    [settings]
-  );
+  const inventorySettings = useMemo(() => {
+    const parsed = parseSettingsByCategory<InventorySettings>(settings, 'inventory');
+    // Ensure returnTypes always has a value (fallback to defaults)
+    return {
+      ...parsed,
+      returnTypes: (parsed.returnTypes && parsed.returnTypes.length > 0) 
+        ? parsed.returnTypes 
+        : DEFAULT_RETURN_TYPES
+    };
+  }, [settings]);
 
   const orderSettings = useMemo(
     () => parseSettingsByCategory<OrderSettings>(settings, 'orders'),
