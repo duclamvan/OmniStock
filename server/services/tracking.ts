@@ -3,7 +3,6 @@ import { shipmentTracking, orderCartons, shipmentLabels } from '@shared/schema';
 import { eq, and, isNull, lt } from 'drizzle-orm';
 import { getPPLAccessToken } from './pplService';
 
-// Normalized status codes
 export type TrackingStatus = 'created' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'exception' | 'unknown';
 
 interface TrackingCheckpoint {
@@ -22,13 +21,11 @@ interface NormalizedTracking {
   lastEventAt?: Date;
 }
 
-// Base adapter interface
 interface TrackingAdapter {
   fetchTracking(trackingNumber: string): Promise<NormalizedTracking>;
   shouldRefresh(lastChecked?: Date): boolean;
 }
 
-// PPL Adapter - uses existing OAuth2 token
 class PPLTrackingAdapter implements TrackingAdapter {
   private trackingUpdateFrequencyHours: number;
   
@@ -37,73 +34,86 @@ class PPLTrackingAdapter implements TrackingAdapter {
   }
   
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
-    // Get PPL access token (reuse from existing PPL label service)
-    const token = await getPPLAccessToken();
-    
-    const response = await fetch(
-      `https://api.dhl.com/ecs/ppl/myapi2/consignment/${trackingNumber}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+    try {
+      const token = await getPPLAccessToken();
+      
+      const response = await fetch(
+        `https://api.dhl.com/ecs/ppl/myapi2/shipment/${trackingNumber}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept-Language': 'cs-CZ'
+          }
         }
+      );
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            statusCode: 'created',
+            statusLabel: 'Label created, awaiting pickup',
+            checkpoints: [],
+          };
+        }
+        const errorText = await response.text();
+        console.error(`PPL tracking API error: ${response.status} - ${errorText}`);
+        throw new Error(`PPL tracking failed: ${response.statusText}`);
       }
-    );
-    
-    if (!response.ok) {
-      if (response.status === 404) {
+      
+      const data = await response.json();
+      return this.normalizePPLResponse(data);
+    } catch (error: any) {
+      if (error.message.includes('PPL API credentials not configured')) {
         return {
-          statusCode: 'created',
-          statusLabel: 'Label created, awaiting pickup',
+          statusCode: 'unknown',
+          statusLabel: 'PPL credentials not configured',
           checkpoints: [],
         };
       }
-      throw new Error(`PPL tracking failed: ${response.statusText}`);
+      throw error;
     }
-    
-    const data = await response.json();
-    return this.normalizePPLResponse(data);
   }
   
   private normalizePPLResponse(data: any): NormalizedTracking {
-    // Normalize PPL response to common format
-    const statusCode = this.mapPPLStatus(data.status);
-    const checkpoints = (data.events || []).map((event: any) => ({
-      timestamp: `${event.date}T${event.time}`,
-      location: event.depot || 'Unknown',
-      status: event.status,
-      description: event.statusText || event.status
-    })).reverse(); // Reverse to get newest-first (PPL returns oldest-first)
+    const statusCode = this.mapPPLStatus(data.state || data.status);
+    
+    const events = data.trackAndTraceEvents || data.events || [];
+    const checkpoints = events.map((event: any) => ({
+      timestamp: event.eventDate || `${event.date}T${event.time || '00:00:00'}`,
+      location: event.depot?.name || event.depot || event.location || 'Unknown',
+      status: event.eventType || event.status || '',
+      description: event.eventDescription || event.statusText || event.description || event.status || ''
+    })).reverse();
     
     return {
       statusCode,
-      statusLabel: data.statusText || data.status,
+      statusLabel: data.stateText || data.statusText || data.state || 'Unknown',
       checkpoints,
       lastEventAt: checkpoints.length > 0 ? new Date(checkpoints[0].timestamp) : undefined,
       deliveredAt: statusCode === 'delivered' && checkpoints.length > 0 
-        ? new Date(checkpoints[0].timestamp) // Now correctly uses latest event
+        ? new Date(checkpoints[0].timestamp)
         : undefined,
     };
   }
   
   private mapPPLStatus(status: string): TrackingStatus {
-    const s = status?.toLowerCase() || '';
-    if (s.includes('deliver')) return 'delivered';
-    if (s.includes('transit') || s.includes('transport')) return 'in_transit';
-    if (s.includes('out for delivery')) return 'out_for_delivery';
-    if (s.includes('exception') || s.includes('problem')) return 'exception';
+    const s = (status || '').toLowerCase();
+    if (s.includes('deliver') || s.includes('doručen')) return 'delivered';
+    if (s.includes('transit') || s.includes('transport') || s.includes('přeprav')) return 'in_transit';
+    if (s.includes('out for delivery') || s.includes('na cestě')) return 'out_for_delivery';
+    if (s.includes('exception') || s.includes('problem') || s.includes('chyba')) return 'exception';
+    if (s.includes('picked') || s.includes('vyzvednut') || s.includes('přijat')) return 'in_transit';
     return 'unknown';
   }
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
     const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
-    const thresholdDate = new Date(Date.now() - frequencyMs);
-    return lastChecked < thresholdDate;
+    return lastChecked < new Date(Date.now() - frequencyMs);
   }
 }
 
-// GLS Adapter - public API
 class GLSTrackingAdapter implements TrackingAdapter {
   private trackingUpdateFrequencyHours: number;
   
@@ -112,68 +122,100 @@ class GLSTrackingAdapter implements TrackingAdapter {
   }
   
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
-    const response = await fetch(
-      `https://gls-group.com/app/service/open/rest/EU/en/rstt001`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          references: [trackingNumber]
-        })
+    try {
+      const response = await fetch(
+        `https://gls-group.com/app/service/open/rest/EU/en/rstt001?match=${encodeURIComponent(trackingNumber)}&type=P`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            statusCode: 'created',
+            statusLabel: 'Shipment not found in GLS system',
+            checkpoints: [],
+          };
+        }
+        throw new Error(`GLS tracking failed: ${response.statusText}`);
       }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`GLS tracking failed: ${response.statusText}`);
+      
+      const data = await response.json();
+      return this.normalizeGLSResponse(data, trackingNumber);
+    } catch (error: any) {
+      console.error('GLS tracking error:', error.message);
+      return {
+        statusCode: 'unknown',
+        statusLabel: 'Unable to fetch GLS tracking',
+        checkpoints: [],
+      };
     }
-    
-    const data = await response.json();
-    return this.normalizeGLSResponse(data);
   }
   
-  private normalizeGLSResponse(data: any): NormalizedTracking {
-    // GLS API returns nested structure: data.tuNo[0].history
-    const history = data.tuNo?.[0]?.history || [];
-    const checkpoints = history.map((event: any) => ({
-      timestamp: `${event.date}T${event.time || '00:00:00'}`,
-      location: event.location || 'Unknown',
-      status: event.status,
-      description: event.statusText || event.status
-    })).reverse(); // Reverse to get newest-first (GLS returns oldest-first)
+  private normalizeGLSResponse(data: any, trackingNumber: string): NormalizedTracking {
+    const parcels = data.tuStatus || [];
+    const parcel = parcels.find((p: any) => 
+      p.tuNo === trackingNumber || 
+      p.references?.some((r: any) => r.value === trackingNumber)
+    ) || parcels[0];
     
-    const statusCode = this.mapGLSStatus(checkpoints[0]?.status || '');
+    if (!parcel) {
+      return {
+        statusCode: 'unknown',
+        statusLabel: 'Parcel not found',
+        checkpoints: [],
+      };
+    }
+    
+    const history = parcel.history || [];
+    const checkpoints = history.map((event: any) => ({
+      timestamp: event.date && event.time 
+        ? `${event.date}T${event.time}` 
+        : event.timestamp || new Date().toISOString(),
+      location: [event.address?.city, event.address?.countryCode].filter(Boolean).join(', ') || 
+                event.location || 'Unknown',
+      status: event.evtDsc || event.status || '',
+      description: event.evtDsc || event.statusText || event.description || ''
+    })).reverse();
+    
+    const latestEvent = checkpoints[0];
+    const statusCode = this.mapGLSStatus(parcel.progressBar?.statusInfo || latestEvent?.status || '');
     
     return {
       statusCode,
-      statusLabel: checkpoints[0]?.statusText || 'In transit',
+      statusLabel: parcel.progressBar?.statusText || latestEvent?.description || 'In transit',
       checkpoints,
-      estimatedDelivery: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
+      estimatedDelivery: parcel.infos?.find((i: any) => i.type === 'DELIVERYDATE')?.value 
+        ? new Date(parcel.infos.find((i: any) => i.type === 'DELIVERYDATE').value) 
+        : undefined,
       lastEventAt: checkpoints.length > 0 ? new Date(checkpoints[0].timestamp) : undefined,
       deliveredAt: statusCode === 'delivered' && checkpoints.length > 0 
-        ? new Date(checkpoints[0].timestamp) // Now correctly uses latest event
+        ? new Date(checkpoints[0].timestamp)
         : undefined,
     };
   }
   
   private mapGLSStatus(status: string): TrackingStatus {
-    const s = status?.toLowerCase() || '';
-    if (s.includes('deliver')) return 'delivered';
-    if (s.includes('transit')) return 'in_transit';
-    if (s.includes('out for delivery')) return 'out_for_delivery';
+    const s = (status || '').toLowerCase();
+    if (s.includes('deliver') || s.includes('zugestellt') || s.includes('doručen')) return 'delivered';
+    if (s.includes('transit') || s.includes('unterwegs') || s.includes('přeprav')) return 'in_transit';
+    if (s.includes('out for delivery') || s.includes('zustellung') || s.includes('doručován')) return 'out_for_delivery';
+    if (s.includes('exception') || s.includes('problem') || s.includes('fehler')) return 'exception';
     return 'unknown';
   }
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
     const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
-    const thresholdDate = new Date(Date.now() - frequencyMs);
-    return lastChecked < thresholdDate;
+    return lastChecked < new Date(Date.now() - frequencyMs);
   }
 }
 
-// DHL Adapter - public API with API key
 class DHLTrackingAdapter implements TrackingAdapter {
   private trackingUpdateFrequencyHours: number;
   
@@ -182,94 +224,174 @@ class DHLTrackingAdapter implements TrackingAdapter {
   }
   
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
-    const apiKey = process.env.DHL_PUBLIC_API_KEY;
+    const apiKey = process.env.DHL_API_KEY;
+    
     if (!apiKey) {
-      throw new Error('DHL_PUBLIC_API_KEY not configured');
+      console.warn('DHL_API_KEY not configured - tracking unavailable');
+      return {
+        statusCode: 'unknown',
+        statusLabel: 'DHL API key not configured',
+        checkpoints: [],
+      };
     }
     
-    const response = await fetch(
-      `https://api-eu.dhl.com/track/shipments?trackingNumber=${trackingNumber}`,
-      {
-        headers: {
-          'DHL-API-Key': apiKey
+    try {
+      const response = await fetch(
+        `https://api-eu.dhl.com/track/shipments?trackingNumber=${encodeURIComponent(trackingNumber)}`,
+        {
+          headers: {
+            'DHL-API-Key': apiKey,
+            'Accept': 'application/json'
+          }
         }
+      );
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            statusCode: 'created',
+            statusLabel: 'Shipment not found in DHL system',
+            checkpoints: [],
+          };
+        }
+        if (response.status === 401 || response.status === 403) {
+          console.error('DHL API authentication failed - check DHL_API_KEY');
+          return {
+            statusCode: 'unknown',
+            statusLabel: 'DHL API authentication failed',
+            checkpoints: [],
+          };
+        }
+        if (response.status === 429) {
+          console.warn('DHL API rate limit reached');
+          return {
+            statusCode: 'unknown',
+            statusLabel: 'Rate limit exceeded, try again later',
+            checkpoints: [],
+          };
+        }
+        const errorText = await response.text();
+        console.error(`DHL tracking API error: ${response.status} - ${errorText}`);
+        throw new Error(`DHL tracking failed: ${response.statusText}`);
       }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`DHL tracking failed: ${response.statusText}`);
+      
+      const data = await response.json();
+      return this.normalizeDHLResponse(data);
+    } catch (error: any) {
+      console.error('DHL tracking error:', error.message);
+      return {
+        statusCode: 'unknown',
+        statusLabel: 'Unable to fetch DHL tracking',
+        checkpoints: [],
+      };
     }
-    
-    const data = await response.json();
-    return this.normalizeDHLResponse(data);
   }
   
   private normalizeDHLResponse(data: any): NormalizedTracking {
     const shipment = data.shipments?.[0];
     if (!shipment) {
-      throw new Error('No shipment data found');
+      return {
+        statusCode: 'unknown',
+        statusLabel: 'No shipment data found',
+        checkpoints: [],
+      };
     }
     
     const events = shipment.events || [];
-    const statusCode = this.mapDHLStatus(shipment.status?.statusCode || '');
+    const statusCode = this.mapDHLStatus(shipment.status?.statusCode || shipment.status?.status || '');
+    
     const checkpoints = events.map((event: any) => ({
-      timestamp: event.timestamp,
-      location: event.location?.address?.addressLocality || 'Unknown',
-      status: event.status,
-      description: event.statusText || event.status
+      timestamp: event.timestamp || new Date().toISOString(),
+      location: event.location?.address?.addressLocality || 
+                [event.location?.address?.city, event.location?.address?.countryCode].filter(Boolean).join(', ') ||
+                'Unknown',
+      status: event.statusCode || event.status || '',
+      description: event.description || event.status || ''
     }));
+    
+    const estimatedDelivery = shipment.estimatedTimeOfDelivery 
+      ? new Date(shipment.estimatedTimeOfDelivery)
+      : shipment.details?.expectedDeliveryTimeFrame?.from
+        ? new Date(shipment.details.expectedDeliveryTimeFrame.from)
+        : undefined;
     
     return {
       statusCode,
-      statusLabel: shipment.status?.status || 'In transit',
+      statusLabel: shipment.status?.description || shipment.status?.status || 'In transit',
       checkpoints,
+      estimatedDelivery,
       lastEventAt: events.length > 0 ? new Date(events[0].timestamp) : undefined,
-      deliveredAt: statusCode === 'delivered' ? new Date(events[0].timestamp) : undefined,
+      deliveredAt: statusCode === 'delivered' && events.length > 0 
+        ? new Date(events[0].timestamp) 
+        : undefined,
     };
   }
   
   private mapDHLStatus(status: string): TrackingStatus {
-    const s = status?.toLowerCase() || '';
-    if (s.includes('deliver')) return 'delivered';
-    if (s.includes('transit')) return 'in_transit';
-    if (s.includes('out for delivery')) return 'out_for_delivery';
-    if (s.includes('exception')) return 'exception';
+    const s = (status || '').toLowerCase();
+    if (s.includes('deliver') || s === 'ok') return 'delivered';
+    if (s.includes('transit') || s.includes('process')) return 'in_transit';
+    if (s.includes('out') || s.includes('with delivery courier')) return 'out_for_delivery';
+    if (s.includes('exception') || s.includes('failure') || s.includes('issue')) return 'exception';
+    if (s.includes('pre-transit') || s.includes('shipment information received')) return 'created';
     return 'unknown';
   }
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
     const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
-    const thresholdDate = new Date(Date.now() - frequencyMs);
-    return lastChecked < thresholdDate;
+    return lastChecked < new Date(Date.now() - frequencyMs);
   }
 }
 
-// Main Tracking Service
+class GenericTrackingAdapter implements TrackingAdapter {
+  private trackingUpdateFrequencyHours: number;
+  private carrierName: string;
+  
+  constructor(carrierName: string, trackingUpdateFrequencyHours: number = 1) {
+    this.carrierName = carrierName;
+    this.trackingUpdateFrequencyHours = trackingUpdateFrequencyHours;
+  }
+  
+  async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
+    return {
+      statusCode: 'unknown',
+      statusLabel: `Manual tracking required for ${this.carrierName}`,
+      checkpoints: [],
+    };
+  }
+  
+  shouldRefresh(lastChecked?: Date): boolean {
+    if (!lastChecked) return true;
+    const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
+    return lastChecked < new Date(Date.now() - frequencyMs);
+  }
+}
+
 export class TrackingService {
   private adapters: Map<string, TrackingAdapter>;
   private trackingUpdateFrequencyHours: number;
   
   constructor(trackingUpdateFrequencyHours?: number) {
-    // Centralized validation with sane min/max
-    let hours = 1; // Default
+    let hours = 1;
     
     if (typeof trackingUpdateFrequencyHours === 'number') {
-      // Enforce minimum 0.083 hours (5 minutes) and maximum 24 hours
       hours = Math.max(0.083, Math.min(24, trackingUpdateFrequencyHours));
     }
     
     if (isNaN(hours) || hours <= 0) {
-      hours = 1; // Fallback to 1 hour if invalid
+      hours = 1;
     }
     
     this.trackingUpdateFrequencyHours = hours;
     
-    this.adapters = new Map([
-      ['ppl', new PPLTrackingAdapter(hours)],
-      ['gls', new GLSTrackingAdapter(hours)],
-      ['dhl', new DHLTrackingAdapter(hours)],
-    ]);
+    this.adapters = new Map<string, TrackingAdapter>();
+    this.adapters.set('ppl', new PPLTrackingAdapter(hours));
+    this.adapters.set('gls', new GLSTrackingAdapter(hours));
+    this.adapters.set('dhl', new DHLTrackingAdapter(hours));
+    this.adapters.set('dhl express', new DHLTrackingAdapter(hours));
+    this.adapters.set('dhl parcel', new DHLTrackingAdapter(hours));
+    this.adapters.set('other', new GenericTrackingAdapter('Other', hours));
   }
   
   async refreshTracking(trackingId: string) {
@@ -279,20 +401,28 @@ export class TrackingService {
     
     if (!tracking) return null;
     
-    const adapter = this.adapters.get(tracking.carrier.toLowerCase());
+    const carrierKey = tracking.carrier.toLowerCase();
+    let adapter = this.adapters.get(carrierKey);
+    
     if (!adapter) {
-      throw new Error(`Unknown carrier: ${tracking.carrier}`);
+      if (carrierKey.includes('dhl')) {
+        adapter = this.adapters.get('dhl');
+      } else if (carrierKey.includes('gls')) {
+        adapter = this.adapters.get('gls');
+      } else if (carrierKey.includes('ppl')) {
+        adapter = this.adapters.get('ppl');
+      } else {
+        adapter = new GenericTrackingAdapter(tracking.carrier, this.trackingUpdateFrequencyHours);
+      }
     }
     
-    // Check if refresh is needed (5-minute cache)
-    if (!adapter.shouldRefresh(tracking.lastCheckedAt || undefined)) {
-      return tracking; // Return cached data
+    if (!adapter!.shouldRefresh(tracking.lastCheckedAt || undefined)) {
+      return tracking;
     }
     
     try {
-      const normalized = await adapter.fetchTracking(tracking.trackingNumber);
+      const normalized = await adapter!.fetchTracking(tracking.trackingNumber);
       
-      // Update database
       const [updated] = await db.update(shipmentTracking)
         .set({
           statusCode: normalized.statusCode,
@@ -310,7 +440,6 @@ export class TrackingService {
       
       return updated;
     } catch (error: any) {
-      // Store error state
       await db.update(shipmentTracking)
         .set({
           errorState: error.message,
@@ -331,28 +460,23 @@ export class TrackingService {
   }
   
   async createTrackingForOrder(orderId: string): Promise<void> {
-    // Get cartons with tracking numbers for this order
     const cartons = await db.query.orderCartons.findMany({
       where: eq(orderCartons.orderId, orderId)
     });
     
-    // Get carrier from shipmentLabels
     const labels = await db.query.shipmentLabels.findMany({
       where: eq(shipmentLabels.orderId, orderId)
     });
     
     const carrier = labels[0]?.carrier?.toLowerCase() || 'unknown';
     
-    // Skip tracking creation if carrier is unknown (no adapter available)
     if (!carrier || carrier === 'unknown') {
       console.log(`Skipping tracking creation for order ${orderId} - unknown carrier`);
       return;
     }
     
-    // Create tracking records for each carton with a tracking number
     for (const carton of cartons) {
       if (carton.trackingNumber) {
-        // Check if tracking already exists
         const existing = await db.query.shipmentTracking.findFirst({
           where: eq(shipmentTracking.trackingNumber, carton.trackingNumber)
         });

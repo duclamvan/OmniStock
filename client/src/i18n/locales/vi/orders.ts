@@ -1577,7 +1577,6 @@ const orders = {
   additionalCartonsViaGls: 'Các thùng bổ sung gửi qua GLS để tiết kiệm chi phí',
   totalWeightKg: 'Tổng trọng lượng: {{weight}} kg',
   cartonNumberGls: 'Thùng #{{number}} (GLS)',
-  duplicate: 'Trùng lặp',
   
   // PickPack.tsx - PPL Shipping
   creatingLabels: 'Đang tạo nhãn...',
@@ -1585,6 +1584,20 @@ const orders = {
   retrieving: 'Đang lấy...',
   retryLabelDownload: 'Thử lại tải nhãn',
   shippingLabelsWithCount: 'Nhãn vận chuyển ({{count}})',
+  
+  // OrderTrackingPanel.tsx - Shipment Tracking
+  shipmentTracking: 'Theo dõi Vận chuyển',
+  noTrackingInfo: 'Không có thông tin theo dõi cho đơn hàng này',
+  trackingDisabled: 'Theo dõi bị tắt. Bật trong Cài đặt để xem theo dõi vận chuyển.',
+  loadingTrackingInfo: 'Đang tải thông tin theo dõi...',
+  cartonTracked: '{{count}} thùng được theo dõi',
+  cartonsTracked: '{{count}} thùng được theo dõi',
+  trackingRefreshed: 'Đã Làm mới Theo dõi',
+  trackingInfoUpdated: 'Thông tin theo dõi đã được cập nhật',
+  refreshFailed: 'Làm mới Thất bại',
+  failedToRefreshTracking: 'Không thể làm mới thông tin theo dõi',
+  trackingHistory: 'Lịch sử Theo dõi',
+  estimatedDelivery: 'Dự kiến Giao hàng',
   
 } as const;
 

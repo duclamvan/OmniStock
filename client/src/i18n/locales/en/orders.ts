@@ -1606,7 +1606,6 @@ const orders = {
   additionalCartonsViaGls: 'Additional cartons shipped via GLS for cost savings',
   totalWeightKg: 'Total weight: {{weight}} kg',
   cartonNumberGls: 'Carton #{{number}} (GLS)',
-  duplicate: 'Duplicate',
   
   // PickPack.tsx - PPL Shipping
   creatingLabels: 'Creating Labels...',
@@ -1614,6 +1613,20 @@ const orders = {
   retrieving: 'Retrieving...',
   retryLabelDownload: 'Retry Label Download',
   shippingLabelsWithCount: 'Shipping Labels ({{count}})',
+  
+  // OrderTrackingPanel.tsx - Shipment Tracking
+  shipmentTracking: 'Shipment Tracking',
+  noTrackingInfo: 'No tracking information available for this order',
+  trackingDisabled: 'Tracking is disabled. Enable it in Settings to view shipment tracking.',
+  loadingTrackingInfo: 'Loading tracking information...',
+  cartonTracked: '{{count}} carton tracked',
+  cartonsTracked: '{{count}} cartons tracked',
+  trackingRefreshed: 'Tracking Refreshed',
+  trackingInfoUpdated: 'Tracking information has been updated',
+  refreshFailed: 'Refresh Failed',
+  failedToRefreshTracking: 'Failed to refresh tracking information',
+  trackingHistory: 'Tracking History',
+  estimatedDelivery: 'Estimated Delivery',
   
 } as const;
 
