@@ -1230,10 +1230,7 @@ export default function POS() {
                       )}
                       
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-xs leading-tight line-clamp-1">{item.name}</h4>
-                        {item.sku && (
-                          <p className="text-[10px] text-muted-foreground">{item.sku}</p>
-                        )}
+                        <h4 className="font-medium text-xs leading-tight line-clamp-2">{item.name}</h4>
                       </div>
 
                       <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded p-0.5 shrink-0">
