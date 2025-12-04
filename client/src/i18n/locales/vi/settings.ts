@@ -1,6 +1,7 @@
 const settings = {
   // Settings Pages
   settings: 'Cài đặt',
+  settingsDescription: 'Cấu hình tùy chọn hệ thống WMS của bạn',
   generalSettings: 'Cài đặt chung',
   orderSettings: 'Cài đặt đơn hàng',
   inventorySettings: 'Cài đặt tồn kho',
@@ -1003,6 +1004,19 @@ const settings = {
   selectLabelFormat: 'Chọn định dạng nhãn',
 
   // FinancialSettings specific
+  pricingMarginsTitle: 'Định giá & Lợi nhuận',
+  defaultMarkupPercentageLabel: 'Tỷ lệ đánh giá mặc định (%)',
+  minimumMarginPercentageLabel: 'Tỷ lệ lợi nhuận tối thiểu (%)',
+  priceRoundingLabel: 'Làm tròn giá',
+  selectNone: 'Không có',
+  roundTo050: 'Làm tròn đến 0.50',
+  roundTo100: 'Làm tròn đến 1.00',
+  roundTo500: 'Làm tròn đến 5.00',
+  roundTo1000: 'Làm tròn đến 10.00',
+  defaultVatRateLabel: 'Thuế VAT mặc định (%)',
+  costMethodFIFO: 'FIFO (Nhập trước, Xuất trước)',
+  costMethodLIFO: 'LIFO (Nhập sau, Xuất trước)',
+  costMethodAverage: 'Chi phí bình quân',
   defaultMarkupPercentagePlaceholder: '30',
   minimumMarginPercentagePlaceholder: '10',
   defaultVatRatePlaceholder: '21',
@@ -1022,6 +1036,25 @@ const settings = {
   autoSaveIntervalSecondsPlaceholder: '30',
   dataRetentionPeriodDaysPlaceholder: '365',
   archiveAfterDaysPlaceholder: '90',
+  passwordExpiryDaysPlaceholder: '90',
+
+  // Backup frequency options
+  frequencyDaily: 'Hàng ngày',
+  frequencyWeekly: 'Hàng tuần',
+  frequencyMonthly: 'Hàng tháng',
+
+  // Timezone labels
+  timezoneEuropePrague: 'Châu Âu/Praha (CET)',
+  timezoneEuropeBerlin: 'Châu Âu/Berlin (CET)',
+  timezoneEuropeLondon: 'Châu Âu/London (GMT)',
+  timezoneAmericaNewYork: 'Mỹ/New York (EST)',
+  timezoneAmericaLosAngeles: 'Mỹ/Los Angeles (PST)',
+  timezoneAmericaChicago: 'Mỹ/Chicago (CST)',
+  timezoneAsiaHoChiMinh: 'Châu Á/Hồ Chí Minh (ICT)',
+  timezoneAsiaShanghai: 'Châu Á/Thượng Hải (CST)',
+  timezoneAsiaTokyo: 'Châu Á/Tokyo (JST)',
+  timezoneAustraliaSydney: 'Úc/Sydney (AEDT)',
+  timezoneUTC: 'UTC',
 
   // Common placeholders
   selectMonth: 'Chọn tháng',

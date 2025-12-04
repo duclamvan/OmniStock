@@ -114,18 +114,18 @@ const valuesAreEqual = (a: any, b: any): boolean => {
   return a === b;
 };
 
-const timezones = [
-  { value: 'Europe/Prague', label: 'Europe/Prague (CET)' },
-  { value: 'Europe/Berlin', label: 'Europe/Berlin (CET)' },
-  { value: 'Europe/London', label: 'Europe/London (GMT)' },
-  { value: 'America/New_York', label: 'America/New York (EST)' },
-  { value: 'America/Los_Angeles', label: 'America/Los Angeles (PST)' },
-  { value: 'America/Chicago', label: 'America/Chicago (CST)' },
-  { value: 'Asia/Ho_Chi_Minh', label: 'Asia/Ho Chi Minh (ICT)' },
-  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
-  { value: 'Australia/Sydney', label: 'Australia/Sydney (AEDT)' },
-  { value: 'UTC', label: 'UTC' },
+const getTimezones = (t: (key: string) => string) => [
+  { value: 'Europe/Prague', label: t('settings:timezoneEuropePrague') },
+  { value: 'Europe/Berlin', label: t('settings:timezoneEuropeBerlin') },
+  { value: 'Europe/London', label: t('settings:timezoneEuropeLondon') },
+  { value: 'America/New_York', label: t('settings:timezoneAmericaNewYork') },
+  { value: 'America/Los_Angeles', label: t('settings:timezoneAmericaLosAngeles') },
+  { value: 'America/Chicago', label: t('settings:timezoneAmericaChicago') },
+  { value: 'Asia/Ho_Chi_Minh', label: t('settings:timezoneAsiaHoChiMinh') },
+  { value: 'Asia/Shanghai', label: t('settings:timezoneAsiaShanghai') },
+  { value: 'Asia/Tokyo', label: t('settings:timezoneAsiaTokyo') },
+  { value: 'Australia/Sydney', label: t('settings:timezoneAustraliaSydney') },
+  { value: 'UTC', label: t('settings:timezoneUTC') },
 ];
 
 export default function SystemSettings() {
@@ -497,9 +497,9 @@ export default function SystemSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="daily">{t('settings:frequencyDaily')}</SelectItem>
+                            <SelectItem value="weekly">{t('settings:frequencyWeekly')}</SelectItem>
+                            <SelectItem value="monthly">{t('settings:frequencyMonthly')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:backupFrequencyDescription')}</FormDescription>
@@ -520,7 +520,7 @@ export default function SystemSettings() {
                             value={field.value ?? ''}
                             type="number"
                             min="1"
-                            placeholder="365"
+                            placeholder={t('settings:dataRetentionPeriodDaysPlaceholder')}
                             data-testid="input-data_retention_period_days"
                             onChange={(e) => {
                               field.onChange(e);
@@ -573,7 +573,7 @@ export default function SystemSettings() {
                           value={field.value ?? ''}
                           type="number"
                           min="1"
-                          placeholder="90"
+                          placeholder={t('settings:archiveAfterDaysPlaceholder')}
                           data-testid="input-archive_after_days"
                           onChange={(e) => {
                             field.onChange(e);
@@ -679,7 +679,7 @@ export default function SystemSettings() {
                           value={field.value ?? ''}
                           type="number"
                           min="0"
-                          placeholder="90"
+                          placeholder={t('settings:passwordExpiryDaysPlaceholder')}
                           data-testid="input-password_expiry_days"
                           onChange={(e) => {
                             field.onChange(e);

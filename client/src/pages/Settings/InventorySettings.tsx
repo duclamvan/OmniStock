@@ -807,7 +807,7 @@ export default function InventorySettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="none">{t('common:none')}</SelectItem>
                             {warehouses.map((warehouse: any) => (
                               <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                                 {warehouse.name}
@@ -843,7 +843,7 @@ export default function InventorySettings() {
                             <SelectItem value="A-01-01">A-01-01</SelectItem>
                             <SelectItem value="A01-R01-S01">A01-R01-S01</SelectItem>
                             <SelectItem value="Zone-Rack-Bin">Zone-Rack-Bin</SelectItem>
-                            <SelectItem value="Custom">Custom</SelectItem>
+                            <SelectItem value="Custom">{t('settings:locationFormatCustom')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:locationFormatDescriptionAlt')}</FormDescription>
@@ -1042,10 +1042,10 @@ export default function InventorySettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="good">Good</SelectItem>
-                            <SelectItem value="damaged">Damaged</SelectItem>
-                            <SelectItem value="refurbished">Refurbished</SelectItem>
-                            <SelectItem value="returned">Returned</SelectItem>
+                            <SelectItem value="good">{t('settings:conditionGood')}</SelectItem>
+                            <SelectItem value="damaged">{t('settings:conditionDamaged')}</SelectItem>
+                            <SelectItem value="refurbished">{t('settings:conditionRefurbished')}</SelectItem>
+                            <SelectItem value="returned">{t('settings:conditionReturned')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:defaultConditionTrackingDescription')}</FormDescription>

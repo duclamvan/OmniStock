@@ -330,9 +330,9 @@ export default function FinancialSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Percent className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Pricing & Margins
+                  {t('settings:pricingMarginsTitle')}
                 </CardTitle>
-                <CardDescription className="text-sm">Configure pricing rules and margin settings</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pricingAndMarginsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -341,7 +341,7 @@ export default function FinancialSettings() {
                     name="default_markup_percentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Markup Percentage (%)</FormLabel>
+                        <FormLabel>{t('settings:defaultMarkupPercentageLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -358,7 +358,7 @@ export default function FinancialSettings() {
                             onBlur={handleTextBlur('default_markup_percentage')}
                           />
                         </FormControl>
-                        <FormDescription>Default markup for new products</FormDescription>
+                        <FormDescription>{t('settings:defaultMarkupPercentageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -369,7 +369,7 @@ export default function FinancialSettings() {
                     name="minimum_margin_percentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Minimum Margin Percentage (%)</FormLabel>
+                        <FormLabel>{t('settings:minimumMarginPercentageLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -386,7 +386,7 @@ export default function FinancialSettings() {
                             onBlur={handleTextBlur('minimum_margin_percentage')}
                           />
                         </FormControl>
-                        <FormDescription>Minimum acceptable margin</FormDescription>
+                        <FormDescription>{t('settings:minimumMarginPercentageDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -399,7 +399,7 @@ export default function FinancialSettings() {
                     name="price_rounding"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Price Rounding</FormLabel>
+                        <FormLabel>{t('settings:priceRoundingLabel')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -413,14 +413,14 @@ export default function FinancialSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="0.50">Round to 0.50</SelectItem>
-                            <SelectItem value="1.00">Round to 1.00</SelectItem>
-                            <SelectItem value="5.00">Round to 5.00</SelectItem>
-                            <SelectItem value="10.00">Round to 10.00</SelectItem>
+                            <SelectItem value="none">{t('settings:selectNone')}</SelectItem>
+                            <SelectItem value="0.50">{t('settings:roundTo050')}</SelectItem>
+                            <SelectItem value="1.00">{t('settings:roundTo100')}</SelectItem>
+                            <SelectItem value="5.00">{t('settings:roundTo500')}</SelectItem>
+                            <SelectItem value="10.00">{t('settings:roundTo1000')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>Automatic price rounding</FormDescription>
+                        <FormDescription>{t('settings:priceRoundingDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -431,7 +431,7 @@ export default function FinancialSettings() {
                     name="default_vat_rate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default VAT Rate (%)</FormLabel>
+                        <FormLabel>{t('settings:defaultVatRateLabel')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -449,7 +449,7 @@ export default function FinancialSettings() {
                             onBlur={handleTextBlur('default_vat_rate')}
                           />
                         </FormControl>
-                        <FormDescription>Default VAT rate for pricing</FormDescription>
+                        <FormDescription>{t('settings:defaultVatRateDescription')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -744,9 +744,9 @@ export default function FinancialSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="ECB">European Central Bank (ECB)</SelectItem>
-                            <SelectItem value="Frankfurter">Frankfurter API</SelectItem>
-                            <SelectItem value="Manual">Manual Entry</SelectItem>
+                            <SelectItem value="ECB">ECB</SelectItem>
+                            <SelectItem value="Frankfurter">Frankfurter</SelectItem>
+                            <SelectItem value="Manual">{t('settings:exchangeRateSourceManual')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:exchangeRateSourceDescription')}</FormDescription>
@@ -775,9 +775,9 @@ export default function FinancialSettings() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="hourly">Hourly</SelectItem>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="hourly">{t('settings:updateFrequencyHourly')}</SelectItem>
+                          <SelectItem value="daily">{t('settings:updateFrequencyDaily')}</SelectItem>
+                          <SelectItem value="weekly">{t('settings:updateFrequencyWeekly')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>{t('settings:exchangeRateUpdateFrequencyDescription')}</FormDescription>
@@ -1018,8 +1018,21 @@ export default function FinancialSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((month) => (
-                              <SelectItem key={month} value={month}>{month}</SelectItem>
+                            {[
+                              { value: 'January', key: 'monthJanuary' },
+                              { value: 'February', key: 'monthFebruary' },
+                              { value: 'March', key: 'monthMarch' },
+                              { value: 'April', key: 'monthApril' },
+                              { value: 'May', key: 'monthMay' },
+                              { value: 'June', key: 'monthJune' },
+                              { value: 'July', key: 'monthJuly' },
+                              { value: 'August', key: 'monthAugust' },
+                              { value: 'September', key: 'monthSeptember' },
+                              { value: 'October', key: 'monthOctober' },
+                              { value: 'November', key: 'monthNovember' },
+                              { value: 'December', key: 'monthDecember' },
+                            ].map((month) => (
+                              <SelectItem key={month.value} value={month.value}>{t(`settings:${month.key}`)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1048,9 +1061,9 @@ export default function FinancialSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="FIFO">FIFO (First In, First Out)</SelectItem>
-                            <SelectItem value="LIFO">LIFO (Last In, First Out)</SelectItem>
-                            <SelectItem value="Average">Average Cost</SelectItem>
+                            <SelectItem value="FIFO">{t('settings:costMethodFIFO')}</SelectItem>
+                            <SelectItem value="LIFO">{t('settings:costMethodLIFO')}</SelectItem>
+                            <SelectItem value="Average">{t('settings:costMethodAverage')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t('settings:costCalculationMethodDescription')}</FormDescription>

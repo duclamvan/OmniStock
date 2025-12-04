@@ -1,6 +1,7 @@
 const settings = {
   // Settings Pages
   settings: 'Settings',
+  settingsDescription: 'Configure your WMS system preferences',
   generalSettings: 'General Settings',
   orderSettings: 'Order Settings',
   inventorySettings: 'Inventory Settings',
@@ -1100,6 +1101,19 @@ const settings = {
   selectLabelFormat: 'Select label format',
 
   // FinancialSettings specific
+  pricingMarginsTitle: 'Pricing & Margins',
+  defaultMarkupPercentageLabel: 'Default Markup Percentage (%)',
+  minimumMarginPercentageLabel: 'Minimum Margin Percentage (%)',
+  priceRoundingLabel: 'Price Rounding',
+  selectNone: 'None',
+  roundTo050: 'Round to 0.50',
+  roundTo100: 'Round to 1.00',
+  roundTo500: 'Round to 5.00',
+  roundTo1000: 'Round to 10.00',
+  defaultVatRateLabel: 'Default VAT Rate (%)',
+  costMethodFIFO: 'FIFO (First In, First Out)',
+  costMethodLIFO: 'LIFO (Last In, First Out)',
+  costMethodAverage: 'Average Cost',
   defaultMarkupPercentagePlaceholder: '30',
   minimumMarginPercentagePlaceholder: '10',
   defaultVatRatePlaceholder: '21',
@@ -1119,6 +1133,25 @@ const settings = {
   autoSaveIntervalSecondsPlaceholder: '30',
   dataRetentionPeriodDaysPlaceholder: '365',
   archiveAfterDaysPlaceholder: '90',
+  passwordExpiryDaysPlaceholder: '90',
+
+  // Backup frequency options
+  frequencyDaily: 'Daily',
+  frequencyWeekly: 'Weekly',
+  frequencyMonthly: 'Monthly',
+
+  // Timezone labels
+  timezoneEuropePrague: 'Europe/Prague (CET)',
+  timezoneEuropeBerlin: 'Europe/Berlin (CET)',
+  timezoneEuropeLondon: 'Europe/London (GMT)',
+  timezoneAmericaNewYork: 'America/New York (EST)',
+  timezoneAmericaLosAngeles: 'America/Los Angeles (PST)',
+  timezoneAmericaChicago: 'America/Chicago (CST)',
+  timezoneAsiaHoChiMinh: 'Asia/Ho Chi Minh (ICT)',
+  timezoneAsiaShanghai: 'Asia/Shanghai (CST)',
+  timezoneAsiaTokyo: 'Asia/Tokyo (JST)',
+  timezoneAustraliaSydney: 'Australia/Sydney (AEDT)',
+  timezoneUTC: 'UTC',
 
   // Common placeholders
   selectMonth: 'Select month',
