@@ -17,7 +17,9 @@ export default {
   profitMargin: 'Profit Margin',
   thisMonth: 'This month',
   
-  // Order Pipeline
+  // Pick & Pack Flow
+  pickPackFlow: 'Pick & Pack Flow',
+  pickPackFlowDesc: 'Track orders through pick and pack stages',
   orderPipeline: 'Order Pipeline',
   orderPipelineDesc: 'Track orders through each fulfillment stage',
   pending: 'Pending',

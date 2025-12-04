@@ -343,20 +343,20 @@ export default function Home() {
         {/* Left Column - Orders & Operations */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           
-          {/* Order Pipeline */}
+          {/* Pick & Pack Flow */}
           <Card>
             <CardHeader className="p-4 sm:p-6 pb-3">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Layers className="h-5 w-5 text-blue-600" />
-                    {t('dashboard:orderPipeline')}
+                    <PackageCheck className="h-5 w-5 text-blue-600" />
+                    {t('dashboard:pickPackFlow')}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-1">
-                    {t('dashboard:orderPipelineDesc')}
+                    {t('dashboard:pickPackFlowDesc')}
                   </CardDescription>
                 </div>
-                <Link href="/orders">
+                <Link href="/orders/pick-pack">
                   <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-all-orders">
                     {t('viewAll')}
                     <ChevronRight className="h-4 w-4 ml-1" />

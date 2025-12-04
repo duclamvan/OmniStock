@@ -17,7 +17,9 @@ export default {
   profitMargin: 'Biên lợi nhuận',
   thisMonth: 'Tháng này',
   
-  // Order Pipeline
+  // Pick & Pack Flow
+  pickPackFlow: 'Quy trình Lấy & Đóng gói',
+  pickPackFlowDesc: 'Theo dõi đơn hàng qua các giai đoạn lấy và đóng gói',
   orderPipeline: 'Quy trình đơn hàng',
   orderPipelineDesc: 'Theo dõi đơn hàng qua từng giai đoạn xử lý',
   pending: 'Chờ xử lý',
