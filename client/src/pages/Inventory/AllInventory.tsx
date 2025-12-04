@@ -1411,10 +1411,10 @@ export default function AllInventory() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <Link href={`/inventory/products/${product.id}`}>
-                            <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                            <span className={`font-semibold truncate cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
                               {product.name}
                               {product.isActive && getProductStatusBadge(product)}
-                            </p>
+                            </span>
                           </Link>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {t('inventory:sku')}: {product.sku}
