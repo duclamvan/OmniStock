@@ -880,29 +880,6 @@ export default function POS() {
                 </SelectContent>
               </Select>
               
-              {/* Currency Toggle */}
-              <div className="flex bg-white/10 rounded-lg p-1">
-                <Button
-                  variant={currency === 'EUR' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={cn("h-8 px-3", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
-                  onClick={() => setCurrency('EUR')}
-                  data-testid="button-currency-eur"
-                >
-                  <Euro className="h-4 w-4 mr-1" />
-                  EUR
-                </Button>
-                <Button
-                  variant={currency === 'CZK' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={cn("h-8 px-3", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
-                  onClick={() => setCurrency('CZK')}
-                  data-testid="button-currency-czk"
-                >
-                  CZK
-                </Button>
-              </div>
-              
               {/* Sound Toggle */}
               <Button
                 variant="ghost"
@@ -1145,18 +1122,42 @@ export default function POS() {
                 <p className="text-sm text-gray-300">{totalItems} items</p>
               </div>
             </div>
-            {cart.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearCart}
-                className="text-red-300 hover:text-red-200 hover:bg-red-500/20"
-                data-testid="button-clear-cart"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Currency Toggle */}
+              <div className="flex bg-white/10 rounded-lg p-1">
+                <Button
+                  variant={currency === 'EUR' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className={cn("h-8 px-3", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
+                  onClick={() => setCurrency('EUR')}
+                  data-testid="button-currency-eur"
+                >
+                  <Euro className="h-4 w-4 mr-1" />
+                  EUR
+                </Button>
+                <Button
+                  variant={currency === 'CZK' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className={cn("h-8 px-3", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
+                  onClick={() => setCurrency('CZK')}
+                  data-testid="button-currency-czk"
+                >
+                  CZK
+                </Button>
+              </div>
+              {cart.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearCart}
+                  className="text-red-300 hover:text-red-200 hover:bg-red-500/20"
+                  data-testid="button-clear-cart"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
