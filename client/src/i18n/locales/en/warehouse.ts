@@ -93,7 +93,6 @@ const warehouse = {
   tip4: 'Set status to "Inactive" if not operational yet',
   
   // Edit Warehouse
-  editWarehouse: 'Edit Warehouse',
   editWarehouseDesc: 'Update warehouse details and manage attachments',
   warehouseNotFound: 'Warehouse not found',
   warehouseNotFoundDesc: "The warehouse you're looking for doesn't exist.",
@@ -229,12 +228,6 @@ const warehouse = {
   deleteFile: 'Delete File',
   deleteFileConfirm: 'Are you sure you want to delete',
   thisActionCannotBeUndone: 'This action cannot be undone.',
-  
-  type: {
-    fulfillment: 'Fulfillment',
-    storage: 'Storage',
-    transit: 'Transit',
-  },
   
   // Pick & Pack
   pickAndPack: 'Pick & Pack',
@@ -492,7 +485,6 @@ const warehouse = {
   noSupplier: 'No supplier',
   
   // Actions & Buttons
-  purchase: 'Purchase',
   copyNames: 'Copy Names',
   changeCategory: 'Change Category',
   export: 'Export',
@@ -502,15 +494,12 @@ const warehouse = {
   addMaterial: 'Add Material',
   updateMaterial: 'Update Material',
   deleteMaterial: 'Delete Material',
-  saveChanges: 'Save Changes',
-  cancel: 'Cancel',
   purchaseFromSupplier: 'Purchase from Supplier',
   clearAll: 'Clear All',
   noMaterialsFound: 'No materials found',
   
   // Form Sections
   materialInformation: 'Material Information',
-  basicInformation: 'Basic Information',
   materialIdentificationNaming: 'Material identification and naming',
   dimensionsSpecifications: 'Dimensions & Specifications',
   physicalMeasurementsWeight: 'Physical measurements and weight',
@@ -550,7 +539,6 @@ const warehouse = {
   purchaseLinkPlaceholder: 'https://top-obaly.cz',
   supplierName: 'Supplier Name',
   supplierNamePlaceholder: 'Auto-generated from link',
-  description: 'Description',
   descriptionPlaceholder: 'Add material notes or specifications...',
   fragile: 'Fragile',
   fragileDescription: 'Handle with care, requires special packaging',
@@ -635,7 +623,6 @@ const warehouse = {
   totalAislesDescription: 'How many aisles (A01, A02, ...) to create in this warehouse',
   failedToSaveWarehouseConfig: 'Failed to save warehouse configuration.',
   aisleLabel: 'Aisle {{aisleId}}',
-  saving: 'Saving...',
   racks: 'Racks',
   levels: 'Levels',
   bins: 'Bins',
@@ -672,15 +659,11 @@ const warehouse = {
   remaining: 'Remaining',
   sku: 'SKU',
   item: 'Item',
-  items: 'Items',
-  location: 'Location',
-  locations: 'Locations',
   
   // Move Inventory Dialog
   moveInventory: 'Move Inventory',
   transferInventoryBetweenLocations: 'Transfer inventory between warehouse locations',
   movingFrom: 'Moving From',
-  available: 'Available',
   moveToLocation: 'Move To Location',
   selectDestinationLocation: 'Select destination location',
   noOtherLocationsAvailable: 'No other locations available',
@@ -689,7 +672,6 @@ const warehouse = {
   product: 'Product',
   afterMove: 'After move',
   unitsRemaining: 'units remaining',
-  moving: 'Moving...',
   inventoryMovedSuccessfully: 'Inventory moved successfully',
   failedToMoveInventory: 'Failed to move inventory',
   pleaseFillRequiredFields: 'Please fill in all required fields',
@@ -703,7 +685,6 @@ const warehouse = {
   locationNotRecognized: 'Location code not recognized',
   
   // Location Selector
-  locationType: 'Location Type',
   selectLocationType: 'Select location type',
   displayArea: 'Display Area',
   palletStorage: 'Pallet Storage',
@@ -722,7 +703,6 @@ const warehouse = {
   coordinates: 'Coordinates',
   
   // Bin Details Panel
-  binDetails: 'Bin Details',
   binType: 'bin',
   occupancy: 'Occupancy',
   percentOccupied: '% occupied',
@@ -754,16 +734,13 @@ const warehouse = {
   widthCm: 'Width (cm)',
   depthCm: 'Depth (cm)',
   maxWeightKg: 'Max Weight (kg)',
-  editLocation: 'Edit Location',
   locationUpdated: 'Location updated',
   locationUpdatedSuccess: 'The location has been updated successfully.',
   failedToUpdateLocation: 'Failed to update location.',
   
   // Putaway Mini
-  scanProduct: 'Scan Product',
   productCodeBarcode: 'Product Code / Barcode',
   scanOrEnterCode: 'Scan or enter code',
-  currentStock: 'Current Stock',
   currentLocation: 'Current Location',
   suggestedLocations: 'Suggested Locations',
   aiSuggestion: 'AI Suggestion',
@@ -781,10 +758,6 @@ const warehouse = {
   failedToCompletePutaway: 'Failed to complete putaway.',
   
   // Layout Designer
-  layoutSavedSuccessfully: 'Layout saved successfully',
-  failedToSaveLayout: 'Failed to save layout',
-  layoutImportedSuccessfully: 'Layout imported successfully',
-  invalidLayoutFile: 'Invalid layout file',
   grid: 'Grid',
   snap: 'Snap',
   autoSave: 'Auto-save',
@@ -794,7 +767,6 @@ const warehouse = {
   // Stock Adjustment Dialog
   requestStockAdjustment: 'Request Stock Adjustment',
   requestStockAdjustmentDesc: 'Submit a request to adjust inventory quantity (requires admin approval)',
-  currentStock: 'Current Stock',
   currentStockUnits: 'Current Stock: {{quantity}} units',
   adjustmentType: 'Adjustment Type',
   adjustmentTypeRequired: 'Adjustment Type *',
@@ -833,7 +805,6 @@ const warehouse = {
   failedToCreateRequest: 'Failed to create adjustment request',
   failedToAdjustStock: 'Failed to adjust stock',
   itemScanned: 'Item Scanned',
-  totalItems: 'Total: {{count}} items',
   duplicateBarcodeDetected: 'Duplicate Barcode Detected',
   barcodeScannedTimes: 'Barcode "{{barcode}}" scanned {{count}} times',
   productLabel: 'Product: {{name}}',
@@ -841,7 +812,6 @@ const warehouse = {
   newLabel: 'New: {{quantity}} units',
   
   // Layout Generator Dialog
-  generateWarehouseLayout: 'Generate Warehouse Layout',
   layoutName: 'Layout Name',
   layoutNameRequired: 'Layout name is required',
   layoutNameDescription: 'A descriptive name for this warehouse layout',
@@ -867,11 +837,6 @@ const warehouse = {
   totalBinsLabel: 'Total bins: {{count}}',
   gridLabel: 'Grid: {{rows}} rows × {{columns}} columns',
   binCodesLabel: 'Bin codes: {{start}} to {{end}}',
-  generating: 'Generating...',
-  generateLayout: 'Generate Layout',
-  failedToGenerateLayout: 'Failed to generate layout',
-  editLocation: 'Edit Location',
-  
   // Print Labels
   noLocationsSelected: 'No locations selected',
   selectLocationsForLabels: 'Please select at least one location to print labels.',
@@ -879,16 +844,7 @@ const warehouse = {
   labelsSentToPrinter: 'Labels sent to printer',
   printingLocationLabels: 'Printing {{count}} location labels.',
   
-  // Layout Designer
-  layoutSavedSuccessfully: 'Layout saved successfully',
-  failedToSaveLayout: 'Failed to save layout',
-  layoutImportedSuccessfully: 'Layout imported successfully',
-  invalidLayoutFile: 'Invalid layout file',
-  layoutGeneratedSuccess: 'Warehouse layout has been generated successfully.',
-  failedToGenerateLayout: 'Failed to generate layout.',
-  
   // Additional StoreItems translations
-  qty: 'Qty',
   scanLocationBarcode: 'Scan Location Barcode',
   enterQuantity: 'Enter Quantity',
   scanLocationPlaceholder: 'Scan or enter location code (e.g., WH1-A01-R02-L03-B2)',
@@ -897,11 +853,6 @@ const warehouse = {
   
   // Additional WarehouseLocationSelector translations (new unique keys)
   warehouseNumber: 'Warehouse {{number}}',
-  warehouse: 'Warehouse',
-  shelves: 'Shelves',
-  pallets: 'Pallets',
-  locationCode: 'Location Code',
-  aisle: 'Aisle',
   pallet: 'Pallet',
   
   // Mockup Warehouse Layout
@@ -960,14 +911,11 @@ const warehouse = {
   createAllCartons: 'Create All Cartons',
   cartonsCreatedSuccess: '{{count}} cartons created successfully',
   someCartonsFailed: '{{failed}} cartons failed to create',
-  backToPackingMaterials: 'Back to Packing Materials',
   noCartonsToCreate: 'No cartons to create',
   addAtLeastOneCarton: 'Please add at least one carton entry',
   creatingCartons: 'Creating cartons...',
   supplierUrlPlaceholder: 'e.g., https://obalove-materialy.cz/product-page',
   cartonNamePlaceholder: 'e.g., Medium Shipping Carton',
-  unitCost: 'Unit Cost',
-  stockQty: 'Stock Qty',
   presetSizes: 'Preset Sizes',
   addPresetCarton: 'Add Preset Carton',
   
@@ -980,23 +928,12 @@ const warehouse = {
   enterTaskTitle: 'Enter task title',
   enterTaskDescription: 'Enter task description (optional)',
   taskType: 'Type',
-  dueDate: 'Due Date',
   noTasksYet: 'No tasks yet',
   clickAddTaskToCreate: 'Click "Add Task" to create one',
   allCaughtUp: 'All Caught Up!',
   noTasksToday: 'No pending tasks for today',
   cleaning: 'Cleaning',
-  general: 'General',
-  inventory: 'Inventory',
-  receiving: 'Receiving',
   shipping: 'Shipping',
-  priority: 'Priority',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
-  cancel: 'Cancel',
-  description: 'Description',
 } as const;
 
 export default warehouse;

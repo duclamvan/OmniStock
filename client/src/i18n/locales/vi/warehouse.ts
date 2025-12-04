@@ -865,23 +865,17 @@ const warehouse = {
   enterTaskTitle: 'Nhập tiêu đề công việc',
   enterTaskDescription: 'Nhập mô tả công việc (tùy chọn)',
   taskType: 'Loại',
-  dueDate: 'Ngày hết hạn',
   noTasksYet: 'Chưa có công việc nào',
   clickAddTaskToCreate: 'Nhấn "Thêm công việc" để tạo mới',
   allCaughtUp: 'Đã hoàn thành tất cả!',
   noTasksToday: 'Không có công việc chờ xử lý hôm nay',
   cleaning: 'Dọn dẹp',
   general: 'Chung',
-  inventory: 'Tồn kho',
-  receiving: 'Nhận hàng',
   shipping: 'Vận chuyển',
-  priority: 'Độ ưu tiên',
   low: 'Thấp',
   medium: 'Trung bình',
   high: 'Cao',
   urgent: 'Khẩn cấp',
-  cancel: 'Hủy',
-  description: 'Mô tả',
 } as const;
 
 export default warehouse;

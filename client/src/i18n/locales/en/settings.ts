@@ -106,7 +106,6 @@ const settings = {
   
   // General Settings - Operations / Order Defaults
   regionalSettings: 'Regional Settings',
-  orderDefaults: 'Order Defaults',
   orderDefaultsDescription: 'Default settings applied to new orders',
   defaultWarehouse: 'Default Warehouse',
   defaultWarehouseDescription: 'Warehouse automatically assigned to new orders',
@@ -174,7 +173,6 @@ const settings = {
   defaultDiscountType: 'Default Discount Type',
   
   // Order Defaults descriptions
-  orderDefaultsDescription: 'Default values for new orders',
   selectPaymentMethod: 'Select payment method',
   selectOrderStatus: 'Select order status',
   selectPaymentStatus: 'Select payment status',
@@ -368,7 +366,6 @@ const settings = {
   
   // Inventory Settings - Warehouse Operations
   enableMultiWarehouse: 'Enable Multi-warehouse',
-  defaultWarehouse: 'Default Warehouse',
   enableBinLocations: 'Enable Bin Locations',
   enableZoneManagement: 'Enable Zone Management',
   requirePutAwayConfirmation: 'Require Put-away Confirmation',
@@ -830,7 +827,6 @@ const settings = {
   
   // Common Actions
   saveSettings: 'Save Settings',
-  resetToDefaults: 'Reset to Defaults',
   cancelChanges: 'Cancel Changes',
   settingsSaved: 'Settings saved successfully',
   settingsSaveFailed: 'Failed to save settings',
@@ -883,8 +879,6 @@ const settings = {
   localizationHelp: 'All system dates and times will be displayed according to these settings',
   switchLanguage: 'Switch Language',
   languageDescription: 'Primary language for the system interface',
-  timezoneDescription: 'Your local timezone (affects all date/time displays)',
-  dateFormatDescription: 'How dates are displayed throughout the system',
   timeFormatDescription: 'How times are displayed throughout the system',
   
   // Regional Settings
@@ -904,14 +898,6 @@ const settings = {
   emailNotificationsDescription: 'Receive notifications via email',
   smsNotificationsLabel: 'SMS Notifications',
   smsNotificationsDescription: 'Receive notifications via SMS',
-  lowStockAlertsLabel: 'Low Stock Alerts',
-  lowStockAlertsDescription: 'Get notified when inventory is low',
-  orderStatusChangesLabel: 'Order Status Changes',
-  orderStatusChangesDescription: 'Get notified when order status changes',
-  dailySummaryLabel: 'Daily Summary Report',
-  dailySummaryDescription: 'Receive daily business summary',
-  weeklyReportLabel: 'Weekly Report',
-  weeklyReportDescription: 'Receive weekly business report',
   
   // Customer Portal
   customerPortalTitle: 'Customer Portal',
@@ -998,9 +984,6 @@ const settings = {
   carrierDHL: 'DHL',
 
   // OrderSettings specific
-  defaultOrderLocation: 'Default Order Location',
-  defaultOrderLocationDescription: 'Default warehouse location for new orders',
-  defaultOrderLocationPlaceholder: 'e.g., Main Warehouse',
   czechCarrierDescription: 'Default carrier for Czech orders',
   euCarrierDescription: 'Default carrier for EU orders',
   internationalCarrierDescription: 'Default carrier for international orders',
@@ -1014,8 +997,6 @@ const settings = {
   fulfillmentStageReadyToShip: 'Ready to Ship',
   fulfillmentStageShipped: 'Shipped',
   selectFulfillmentStage: 'Select fulfillment stage',
-  minimumOrderValue: 'Minimum Order Value',
-  minimumOrderValueDescription: 'Minimum value required for an order (0 = no minimum)',
   duplicateOrderPreventionHours: 'Duplicate Order Prevention (hours)',
   duplicateOrderPreventionHoursDescription: 'Prevent duplicate orders within specified hours (0 = disabled)',
   codPercentageFee: 'COD Percentage Fee (%)',
@@ -1024,33 +1005,18 @@ const settings = {
   codFixedFeeDescription: 'Fixed fee amount for COD orders',
 
   // InventorySettings specific
-  lowStockThreshold: 'Low Stock Threshold',
-  lowStockThresholdDescription: 'Alert when stock falls below this number',
   lowStockThresholdPlaceholder: '10',
-  defaultProductType: 'Default Product Type',
-  defaultProductTypeDescription: 'Default type for new products',
-  selectProductType: 'Select product type',
   defaultPackagingType: 'Default Packaging Type',
   defaultPackagingTypeDescription: 'Default packaging for products',
-  selectPackagingType: 'Select packaging type',
-  skuPrefix: 'SKU Prefix',
-  skuPrefixDescription: 'Prefix for auto-generated SKUs',
   skuPrefixPlaceholder: 'e.g., PRD-',
-  stockManagement: 'Stock Management',
   stockManagementDescription: 'Inventory thresholds and reorder settings',
-  autoReorderPoint: 'Auto-reorder Point',
-  autoReorderPointDescription: 'Trigger reorder when stock reaches this level',
   autoReorderPointPlaceholder: '5',
-  safetyStockLevel: 'Safety Stock Level',
-  safetyStockLevelDescription: 'Minimum buffer stock to maintain',
   safetyStockLevelPlaceholder: '10',
   stockCountFrequency: 'Stock Count Frequency (days)',
   stockCountFrequencyDescription: 'How often to conduct stock counts',
   stockCountFrequencyPlaceholder: '30',
   warehouseLocations: 'Warehouse Locations',
   warehouseLocationsDescription: 'Warehouse and location settings',
-  defaultWarehouse: 'Default Warehouse',
-  defaultWarehouseDescription: 'Default warehouse for new products',
   selectDefaultWarehouse: 'Select default warehouse',
   warehouseLocationFormat: 'Warehouse Location Format',
   warehouseLocationFormatDescription: 'Format for warehouse location codes',
@@ -1087,11 +1053,6 @@ const settings = {
   serialNumberTracking: 'Serial Number Tracking',
   serialNumberTrackingDescription: 'Track individual serial numbers',
 
-  // Product types
-  productTypeRegular: 'Regular',
-  productTypeBundle: 'Bundle',
-  productTypeService: 'Service',
-
   // Packaging types
   packagingTypeCarton: 'Carton',
   packagingTypeOuterCarton: 'Outer Carton',
@@ -1099,16 +1060,6 @@ const settings = {
 
   // Condition types
   conditionNone: 'None',
-  conditionGood: 'Good',
-  conditionDamaged: 'Damaged',
-  conditionRefurbished: 'Refurbished',
-  conditionReturned: 'Returned',
-
-  // Location formats
-  locationFormatA0101: 'A-01-01',
-  locationFormatA01R01S01: 'A01-R01-S01',
-  locationFormatZoneRackBin: 'Zone-Rack-Bin',
-  locationFormatCustom: 'Custom',
 
   // Units
   unitCentimeters: 'Centimeters (cm)',
@@ -1125,15 +1076,6 @@ const settings = {
   unitFluidOunces: 'Fluid Ounces (oz)',
 
   // ShippingSettings specific
-  pplCzCarrierConfiguration: 'PPL CZ Carrier Configuration',
-  pplCzCarrierConfigurationDescription: 'PPL CZ specific settings',
-  glsDeCarrierConfiguration: 'GLS DE Carrier Configuration',
-  glsDeCarrierConfigurationDescription: 'GLS DE specific settings',
-  dhlDeCarrierConfiguration: 'DHL DE Carrier Configuration',
-  dhlDeCarrierConfigurationDescription: 'DHL DE specific settings',
-  pplDefaultService: 'PPL Default Service',
-  pplDefaultServiceDescription: 'Default service type for PPL shipments',
-  pplDefaultServicePlaceholder: 'e.g., PPL Parcel CZ Private',
   glsDefaultService: 'GLS Default Service',
   glsDefaultServiceDescription: 'Default service type for GLS shipments',
   glsDefaultServicePlaceholder: 'e.g., GLS Parcel',
@@ -1163,7 +1105,6 @@ const settings = {
   defaultVatRatePlaceholder: '21',
   defaultTaxRateCzkPlaceholder: '21',
   defaultTaxRateEurPlaceholder: '19',
-  vatRegistrationNumberPlaceholder: 'CZ12345678',
   invoiceNumberPrefixPlaceholder: 'INV-',
   invoiceNumberFormatPlaceholder: 'INV-0001 or 2024-0001',
   nextInvoiceNumberPlaceholder: '1',
@@ -1267,55 +1208,31 @@ const settings = {
   enableManualLabelEntry: 'Enable Manual Label Entry',
   enableManualLabelEntryDescription: 'Allow manual entry of tracking numbers instead of API generation',
   autoPrintLabelsLabel: 'Auto-print Labels',
-  autoPrintLabelsDescription: 'Automatically print labels when generated',
   enableTrackingLabel: 'Enable Tracking',
-  enableTrackingDescription: 'Enable shipment tracking features',
   autoUpdateTrackingStatusLabel: 'Auto-update Tracking Status',
   autoUpdateTrackingStatusDescriptionAlt: 'Automatically fetch tracking updates',
   
   // System checkbox translations
   enableDarkModeLabel: 'Enable Dark Mode',
-  enableDarkModeDescription: 'Enable dark mode as the default theme',
   compactViewLabel: 'Compact View',
-  compactViewDescription: 'Use compact layout for tables and lists',
   autoBackupEnabledLabel: 'Auto-backup Enabled',
-  autoBackupEnabledDescription: 'Automatically backup data on schedule',
   backupFrequencyLabel: 'Backup Frequency',
-  backupFrequencyDescription: 'How often to create backups',
   dataRetentionPeriodDaysLabel: 'Data Retention Period (days)',
-  dataRetentionPeriodDaysDescription: 'How long to keep data',
   archiveOldOrdersLabel: 'Archive Old Orders',
-  archiveOldOrdersDescription: 'Automatically archive completed orders',
   archiveAfterDaysLabel: 'Archive After (days)',
-  archiveAfterDaysDescription: 'Archive orders after this many days',
   requireStrongPasswordsLabel: 'Require Strong Passwords',
-  requireStrongPasswordsDescription: 'Enforce strong password requirements',
   passwordExpiryDaysLabel: 'Password Expiry (days)',
-  passwordExpiryDaysDescription: 'Password expires after this many days (0 = never)',
   twoFactorAuthenticationLabel: 'Two-Factor Authentication',
-  twoFactorAuthenticationDescription: 'Enable two-factor authentication for all users',
   sessionLoggingLabel: 'Session Logging',
-  sessionLoggingDescription: 'Log all user sessions for audit trail',
   ipWhitelistEnabledLabel: 'IP Whitelist Enabled',
-  ipWhitelistEnabledDescription: 'Restrict access to whitelisted IP addresses',
   facebookIntegrationEnabledLabel: 'Facebook Integration Enabled',
-  facebookIntegrationEnabledDescription: 'Enable Facebook Marketplace integration',
   openaiIntegrationEnabledLabel: 'OpenAI Integration Enabled',
-  openaiIntegrationEnabledDescription: 'Enable OpenAI API integration for AI features',
   deepseekAiEnabledLabel: 'DeepSeek AI Enabled',
-  deepseekAiEnabledDescription: 'Enable DeepSeek AI integration',
   nominatimGeocodingEnabledLabel: 'Nominatim Geocoding Enabled',
-  nominatimGeocodingEnabledDescription: 'Enable Nominatim for address geocoding',
   frankfurterExchangeRatesEnabledLabel: 'Frankfurter Exchange Rates Enabled',
-  frankfurterExchangeRatesEnabledDescription: 'Enable Frankfurter API for exchange rates',
   enableAiAddressParsingLabel: 'Enable AI Address Parsing',
-  enableAiAddressParsingDescription: 'Use AI to parse and validate addresses',
-  enableAiCartonPackingLabel: 'Enable AI Carton Packing',
-  enableAiCartonPackingDescription: 'Use AI to optimize carton packing',
   enableAiWeightEstimationLabel: 'Enable AI Weight Estimation',
-  enableAiWeightEstimationDescription: 'Use AI to estimate package weights',
   autoOptimizeWarehouseLocationsLabel: 'Auto-optimize Warehouse Locations',
-  autoOptimizeWarehouseLocationsDescription: 'Automatically optimize warehouse storage locations',
   
   // Warehouse operations card
   warehouseOperationsCard: 'Warehouse Operations',
@@ -1400,7 +1317,6 @@ const settings = {
   failedToUpdateContactInformation: 'Failed to update contact information',
   profileImageUpdatedSuccessfully: 'Profile image updated successfully',
   failedToUpdateProfileImage: 'Failed to update profile image',
-  twoFactorAuthentication: 'Two-Factor Authentication',
   addExtraLayerOfSecurityWithSMS: 'Add an extra layer of security with SMS verification',
   status: 'Status',
   enabled: 'Enabled',

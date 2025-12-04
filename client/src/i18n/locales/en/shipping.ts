@@ -266,7 +266,6 @@ const shipping = {
   trackingInfoUpdated: 'Tracking information has been updated',
   refreshFailed: 'Refresh Failed',
   failedToRefreshTracking: 'Failed to refresh tracking',
-  estimatedDelivery: 'Estimated delivery',
   trackingHistory: 'Tracking History',
   
   // ShippingManagement placeholders
