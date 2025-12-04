@@ -52,7 +52,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
-import type { Product, Customer } from '@shared/schema';
+import type { Product, Customer, Category } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from 'react-i18next';
@@ -436,13 +436,14 @@ export default function POS() {
     queryKey: ['/api/settings/pos'],
   });
 
+  const { data: categoriesData = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
   const categories = useMemo(() => {
-    const cats = new Set<string>();
-    products.forEach((p: any) => {
-      if (p.category) cats.add(p.category);
-    });
-    return ['all', ...Array.from(cats)];
-  }, [products]);
+    const categoryNames = categoriesData.map((cat: Category) => cat.name);
+    return ['all', ...categoryNames];
+  }, [categoriesData]);
 
   const allItems = useMemo(() => [
     ...products.map((p: any) => ({ ...p, itemType: 'product' as const })),
@@ -985,7 +986,7 @@ export default function POS() {
             <SelectContent>
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
+                  {cat === 'all' ? t('inventory:allCategories') : cat}
                 </SelectItem>
               ))}
             </SelectContent>
