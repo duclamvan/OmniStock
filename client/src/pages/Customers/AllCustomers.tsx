@@ -117,6 +117,31 @@ export default function AllCustomers() {
     },
   });
 
+  const blacklistCustomerMutation = useMutation({
+    mutationFn: async ({ id, isBlacklisted }: { id: string; isBlacklisted: boolean }) => {
+      return apiRequest('PATCH', `/api/customers/${id}`, {
+        isBlacklisted,
+        blacklistedAt: isBlacklisted ? new Date().toISOString() : null,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      toast({
+        title: t('common:success'),
+        description: variables.isBlacklisted 
+          ? t('customers:customerBlacklisted')
+          : t('customers:customerUnblacklisted'),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('customers:failedToUpdateBlacklist'),
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate stats
   const totalRevenue = filteredCustomers?.reduce((sum: number, c: any) => 
     sum + parseFloat(c.totalSpent || '0'), 0) || 0;
@@ -315,11 +340,11 @@ export default function AllCustomers() {
   };
 
   const handleBlacklistCustomer = (customer: any) => {
-    toast({
-      title: t('customers:blacklistCustomer'),
-      description: t('customers:blacklistCustomerDescription', { name: customer.name }),
+    const isCurrentlyBlacklisted = customer.isBlacklisted;
+    blacklistCustomerMutation.mutate({
+      id: customer.id,
+      isBlacklisted: !isCurrentlyBlacklisted,
     });
-    // TODO: Implement blacklist functionality
   };
 
   const handleExportXLSX = () => {

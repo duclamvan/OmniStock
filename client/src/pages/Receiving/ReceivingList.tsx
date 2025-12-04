@@ -1246,16 +1246,41 @@ function ScannedItemList({ items, filter }: { items: ScannedItem[]; filter: stri
 
 function ActionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { t } = useTranslation(['imports']);
-  const { session, clearSession } = useReceivingSession();
+  const { session, updateItemStatus, clearSession } = useReceivingSession();
   const { toast } = useToast();
 
   const handleMarkAllComplete = () => {
     session.scannedItems.forEach(item => {
-      // Mark as complete via API
+      updateItemStatus(item.id, 'complete');
     });
     toast({
       title: t('batchUpdate'),
       description: t('allItemsMarkedAsComplete'),
+    });
+    onClose();
+  };
+
+  const handleFlagIssues = () => {
+    const incompleteItems = session.scannedItems.filter(
+      item => item.status !== 'complete' && item.status !== 'damaged'
+    );
+    incompleteItems.forEach(item => {
+      updateItemStatus(item.id, 'partial');
+    });
+    toast({
+      title: t('batchUpdate'),
+      description: t('itemsFlaggedForReview', { count: incompleteItems.length }),
+    });
+    onClose();
+  };
+
+  const handleSubmitDiscrepancies = () => {
+    const discrepancyItems = session.scannedItems.filter(
+      item => item.status === 'partial' || item.status === 'damaged' || item.status === 'missing'
+    );
+    toast({
+      title: t('discrepanciesSubmitted'),
+      description: t('discrepanciesSubmittedDescription', { count: discrepancyItems.length }),
     });
     onClose();
   };
@@ -1283,6 +1308,7 @@ function ActionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             size="lg" 
             variant="outline" 
             className="w-full h-14 text-base"
+            onClick={handleFlagIssues}
             data-testid="button-flag-issues"
           >
             <AlertTriangle className="h-5 w-5 mr-2" />
@@ -1292,6 +1318,7 @@ function ActionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             size="lg" 
             variant="outline" 
             className="w-full h-14 text-base"
+            onClick={handleSubmitDiscrepancies}
             data-testid="button-submit-discrepancies"
           >
             <AlertCircle className="h-5 w-5 mr-2" />

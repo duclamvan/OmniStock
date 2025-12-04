@@ -799,7 +799,7 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Low Stock Products */}
-            <Link href="/products?filter=low-stock">
+            <Link href="/inventory?lowStock=true">
               <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.lowStockCount || 0) > 0 ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-low-stock">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
