@@ -1897,11 +1897,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-      // Low stock count
+      // Low stock count - supports both percentage and amount types
       const allProducts = await storage.getProducts();
-      const lowStockProducts = allProducts.filter(p => 
-        p.quantity <= (p.lowStockAlert || 5) && p.isActive
-      );
+      const lowStockProducts = allProducts.filter(p => {
+        if (!p.isActive) return false;
+        const quantity = p.quantity || 0;
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        
+        if (alertType === 'percentage') {
+          const maxStock = p.maxStockLevel || 100;
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          return quantity <= threshold;
+        } else {
+          return quantity <= alertValue;
+        }
+      });
 
       // Over-allocated SKUs (products with allocated > quantity)
       const overAllocatedProducts = allProducts.filter(p => {

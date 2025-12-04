@@ -146,7 +146,21 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
     ));
   
   const allProducts = await db.select().from(products);
-  const lowStockProducts = allProducts.filter(p => (p.quantity || 0) <= (p.lowStockAlert || 5) && (p.quantity || 0) > 0);
+  // Support both percentage and amount-based low stock alerts
+  const lowStockProducts = allProducts.filter(p => {
+    const quantity = p.quantity || 0;
+    if (quantity === 0) return false; // Skip out of stock for this metric
+    const alertType = p.lowStockAlertType || 'percentage';
+    const alertValue = p.lowStockAlert || 45;
+    
+    if (alertType === 'percentage') {
+      const maxStock = p.maxStockLevel || 100;
+      const threshold = Math.ceil((maxStock * alertValue) / 100);
+      return quantity <= threshold;
+    } else {
+      return quantity <= alertValue;
+    }
+  });
   const outOfStockProducts = allProducts.filter(p => (p.quantity || 0) === 0);
   
   const stockAdjustments = await db.select({ count: sql<number>`count(*)` })
@@ -287,18 +301,44 @@ export async function generateAndSaveReport(period: 'daily' | 'weekly' | 'monthl
   return { report, filePath };
 }
 
-export async function getLowStockAlerts(): Promise<Array<{ id: string; name: string; sku: string; stock: number; threshold: number }>> {
+export async function getLowStockAlerts(): Promise<Array<{ id: string; name: string; sku: string; stock: number; threshold: number; alertType: string }>> {
   const allProducts = await db.select().from(products);
   
   return allProducts
-    .filter(p => (p.quantity || 0) <= (p.lowStockAlert || 5))
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku || '',
-      stock: p.quantity || 0,
-      threshold: p.lowStockAlert || 5,
-    }))
+    .filter(p => {
+      const quantity = p.quantity || 0;
+      const alertType = p.lowStockAlertType || 'percentage';
+      const alertValue = p.lowStockAlert || 45;
+      
+      if (alertType === 'percentage') {
+        const maxStock = p.maxStockLevel || 100;
+        const threshold = Math.ceil((maxStock * alertValue) / 100);
+        return quantity <= threshold;
+      } else {
+        return quantity <= alertValue;
+      }
+    })
+    .map(p => {
+      const alertType = p.lowStockAlertType || 'percentage';
+      const alertValue = p.lowStockAlert || 45;
+      let threshold: number;
+      
+      if (alertType === 'percentage') {
+        const maxStock = p.maxStockLevel || 100;
+        threshold = Math.ceil((maxStock * alertValue) / 100);
+      } else {
+        threshold = alertValue;
+      }
+      
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku || '',
+        stock: p.quantity || 0,
+        threshold,
+        alertType,
+      };
+    })
     .sort((a, b) => a.stock - b.stock);
 }
 

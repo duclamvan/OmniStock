@@ -2184,11 +2184,30 @@ export class DatabaseStorage implements IStorage {
 
   async getLowStockProducts(): Promise<Product[]> {
     try {
-      const lowStockProducts = await db
+      // Get all active products and filter based on alert type
+      const allProducts = await db
         .select()
         .from(products)
-        .where(sql`${products.quantity} <= ${products.lowStockAlert}`)
+        .where(eq(products.isActive, true))
         .orderBy(products.quantity);
+      
+      // Filter products based on their low stock alert type
+      const lowStockProducts = allProducts.filter(p => {
+        const quantity = p.quantity || 0;
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        
+        if (alertType === 'percentage') {
+          // Calculate threshold based on percentage of max stock level
+          const maxStock = p.maxStockLevel || 100; // Default to 100 if not set
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          return quantity <= threshold;
+        } else {
+          // Amount-based: use the alert value directly
+          return quantity <= alertValue;
+        }
+      });
+      
       return lowStockProducts;
     } catch (error) {
       console.error('Error fetching low stock products:', error);
