@@ -514,9 +514,9 @@ export default function EmployeeDetail() {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("system:totalOrders")}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.totalOrders || 0}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -530,13 +530,13 @@ export default function EmployeeDetail() {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("system:tasksCompleted")}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {statsLoading ? (
                     <Skeleton className="h-8 w-16" />
                   ) : (
                     `${stats?.tasksCompleted || 0}/${stats?.totalTasks || 0}`
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -550,9 +550,9 @@ export default function EmployeeDetail() {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("system:openIncidents")}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.openIncidents || 0}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -566,9 +566,9 @@ export default function EmployeeDetail() {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("system:recentActivity")}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.recentActivityCount || 0}
-                </p>
+                </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500">{t("system:last30Days")}</p>
               </div>
             </div>
