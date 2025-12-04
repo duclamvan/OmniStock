@@ -530,7 +530,8 @@ export const products = pgTable('products', {
   supplierId: varchar('supplier_id').references(() => suppliers.id),
   description: text('description'),
   quantity: integer('quantity').default(0),
-  lowStockAlert: integer('low_stock_alert').default(5),
+  lowStockAlertType: text('low_stock_alert_type').default('percentage'), // 'amount' or 'percentage'
+  lowStockAlert: integer('low_stock_alert').default(45), // Units if 'amount', percentage if 'percentage' (default 45%)
   priceCzk: decimal('price_czk'),
   priceEur: decimal('price_eur'),
   priceUsd: decimal('price_usd'),
