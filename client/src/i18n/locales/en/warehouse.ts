@@ -335,7 +335,6 @@ const warehouse = {
   // Warehouse Locations
   locations: 'Locations',
   location: 'Location',
-  locationCode: 'Location Code',
   locationType: 'Location Type',
   zone: 'Zone',
   aisle: 'Aisle',
@@ -397,7 +396,6 @@ const warehouse = {
   changeWarehouse: 'Change Warehouse',
   warehouseAssigned: 'Warehouse Assigned',
   noWarehouseSelected: 'No Warehouse Selected',
-  selectWarehouse: 'Select Warehouse',
   
   // Statuses
   available: 'Available',
@@ -706,7 +704,6 @@ const warehouse = {
   binType: 'bin',
   occupancy: 'Occupancy',
   percentOccupied: '% occupied',
-  capacity: 'Capacity',
   inventory: 'Inventory',
   productsInThisBin: 'Products in this bin',
   noProductsStoredInBin: 'No products stored in this bin',
@@ -719,7 +716,6 @@ const warehouse = {
   // Features: Bin Details
   currentInventory: 'Current Inventory',
   lot: 'Lot:',
-  pickable: 'Pickable',
   putawayAllowed: 'Putaway Allowed',
   sortKey: 'Sort Key',
   temperature: 'Temperature',
