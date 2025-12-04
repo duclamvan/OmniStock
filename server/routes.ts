@@ -94,7 +94,7 @@ import optimizeDb from './routes/optimize-db';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 import { optimizeCartonPacking } from "./services/cartonPackingService";
-import { TrackingService } from "./services/tracking";
+import { TrackingService, isWithinWorkingHours } from "./services/tracking";
 import OpenAI from "openai";
 import passport from "passport";
 import { localization } from "./localization";
@@ -7508,8 +7508,8 @@ Important:
 
       // Create service with configured frequency
       const trackingService = new TrackingService(trackingUpdateFrequencyHours);
-      const updated = await trackingService.refreshTracking(id);
-      res.json(updated);
+      const result = await trackingService.refreshTracking(id);
+      res.json(result.tracking);
     } catch (error: any) {
       console.error('Error refreshing tracking:', error);
       res.status(500).json({ error: error.message || 'Failed to refresh tracking' });
@@ -7517,6 +7517,7 @@ Important:
   });
 
   // Bulk refresh all active tracking
+  // Only refreshes during working hours (Mon-Fri 8am-6pm) and skips delivered orders
   app.post('/api/tracking/bulk-refresh', isAuthenticated, async (req, res) => {
     try {
       // Load shipping settings
@@ -7529,13 +7530,29 @@ Important:
         return res.json({ refreshed: 0, total: 0, message: 'Tracking is disabled' });
       }
 
+      // Guard: Skip refresh outside working hours (Mon-Fri 8am-6pm)
+      // Reduces unnecessary API calls on weekends and overnight
+      const force = req.body?.force === true;
+      if (!isWithinWorkingHours() && !force) {
+        return res.json({ 
+          refreshed: 0, 
+          total: 0, 
+          message: 'Skipped: Outside working hours (Mon-Fri 8am-6pm)',
+          outsideWorkingHours: true
+        });
+      }
+
       // Calculate frequency in milliseconds
       const frequencyMs = trackingUpdateFrequencyHours * 60 * 60 * 1000;
 
-      // Get all tracking that hasn't been delivered
+      // Get all tracking that:
+      // 1. Hasn't been delivered (deliveredAt is NULL)
+      // 2. statusCode is NOT 'delivered' (redundant safety check)
+      // 3. Due for refresh based on configured frequency
       const activeTracking = await db.query.shipmentTracking.findMany({
         where: and(
           isNull(shipmentTracking.deliveredAt),
+          sql`${shipmentTracking.statusCode} != 'delivered'`,
           // Only refresh if last check was > configured frequency OR never checked (NULL)
           or(
             isNull(shipmentTracking.lastCheckedAt),
@@ -7548,16 +7565,31 @@ Important:
       const trackingService = new TrackingService(trackingUpdateFrequencyHours);
 
       let refreshed = 0;
+      let ordersUpdatedCount = 0;
+      
       for (const tracking of activeTracking) {
         try {
-          await trackingService.refreshTracking(tracking.id);
+          const result = await trackingService.refreshTracking(tracking.id);
           refreshed++;
+          // Only count if the order was actually updated to delivered
+          if (result.orderUpdated) {
+            ordersUpdatedCount++;
+          }
         } catch (error) {
           console.error(`Failed to refresh tracking ${tracking.id}:`, error);
         }
       }
+      
+      // Also reconcile any shipped orders with already-delivered tracking
+      // This catches orders that had tracking marked delivered before this feature
+      const reconciledOrders = await trackingService.reconcileDeliveredOrders();
 
-      res.json({ refreshed, total: activeTracking.length });
+      res.json({ 
+        refreshed, 
+        total: activeTracking.length,
+        ordersUpdatedToDelivered: ordersUpdatedCount + reconciledOrders,
+        reconciledOrders
+      });
     } catch (error: any) {
       console.error('Error in bulk refresh:', error);
       res.status(500).json({ error: error.message || 'Bulk refresh failed' });

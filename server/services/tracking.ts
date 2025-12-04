@@ -1,9 +1,31 @@
 import { db } from '../db';
-import { shipmentTracking, orderCartons, shipmentLabels } from '@shared/schema';
-import { eq, and, isNull, lt } from 'drizzle-orm';
+import { shipmentTracking, orderCartons, shipmentLabels, orders } from '@shared/schema';
+import { eq, and, isNull, lt, ne } from 'drizzle-orm';
 import { getPPLAccessToken } from './pplService';
 
 export type TrackingStatus = 'created' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'exception' | 'unknown';
+
+/**
+ * Check if current time is within working hours (Monday-Friday, 8am-6pm)
+ * Skips weekends and outside business hours to reduce unnecessary API calls
+ */
+export function isWithinWorkingHours(): boolean {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+  const hour = now.getHours();
+  
+  // Skip weekends (Saturday = 6, Sunday = 0)
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return false;
+  }
+  
+  // Only refresh during working hours (8am - 6pm)
+  if (hour < 8 || hour >= 18) {
+    return false;
+  }
+  
+  return true;
+}
 
 interface TrackingCheckpoint {
   timestamp: string;
@@ -394,12 +416,19 @@ export class TrackingService {
     this.adapters.set('other', new GenericTrackingAdapter('Other', hours));
   }
   
-  async refreshTracking(trackingId: string) {
+  async refreshTracking(trackingId: string): Promise<{ tracking: typeof shipmentTracking.$inferSelect | null, orderUpdated: boolean }> {
     const tracking = await db.query.shipmentTracking.findFirst({
       where: eq(shipmentTracking.id, trackingId)
     });
     
-    if (!tracking) return null;
+    if (!tracking) return { tracking: null, orderUpdated: false };
+    
+    // For already delivered tracking, skip API call but still try to update order status
+    // This ensures orders get updated regardless of entry point (bulk refresh, single refresh, etc.)
+    if (tracking.statusCode === 'delivered' || tracking.deliveredAt) {
+      const orderUpdated = await this.updateOrderStatusToDelivered(tracking.orderId);
+      return { tracking, orderUpdated };
+    }
     
     const carrierKey = tracking.carrier.toLowerCase();
     let adapter = this.adapters.get(carrierKey);
@@ -417,7 +446,7 @@ export class TrackingService {
     }
     
     if (!adapter!.shouldRefresh(tracking.lastCheckedAt || undefined)) {
-      return tracking;
+      return { tracking, orderUpdated: false };
     }
     
     try {
@@ -438,7 +467,13 @@ export class TrackingService {
         .where(eq(shipmentTracking.id, trackingId))
         .returning();
       
-      return updated;
+      // Automatically update order status to 'delivered' when tracking shows delivered
+      let orderUpdated = false;
+      if (normalized.statusCode === 'delivered' && tracking.orderId) {
+        orderUpdated = await this.updateOrderStatusToDelivered(tracking.orderId);
+      }
+      
+      return { tracking: updated, orderUpdated };
     } catch (error: any) {
       await db.update(shipmentTracking)
         .set({
@@ -449,6 +484,80 @@ export class TrackingService {
         .where(eq(shipmentTracking.id, trackingId));
       
       throw error;
+    }
+  }
+  
+  /**
+   * Update order status to 'delivered' when all tracking for the order shows delivered
+   * Only updates if order is currently 'shipped' status
+   * Returns true if order was actually updated
+   */
+  private async updateOrderStatusToDelivered(orderId: string): Promise<boolean> {
+    try {
+      // Get all tracking records for this order
+      const orderTrackingRecords = await db.query.shipmentTracking.findMany({
+        where: eq(shipmentTracking.orderId, orderId)
+      });
+      
+      // Check if ALL tracking records show 'delivered'
+      const allDelivered = orderTrackingRecords.length > 0 && 
+        orderTrackingRecords.every(t => t.statusCode === 'delivered');
+      
+      if (!allDelivered) {
+        return false; // Some packages still in transit
+      }
+      
+      // Get the order to check current status
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId)
+      });
+      
+      // Only update if order is currently 'shipped' (not already delivered or other status)
+      if (order && order.orderStatus === 'shipped') {
+        await db.update(orders)
+          .set({
+            orderStatus: 'delivered',
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderId));
+        
+        console.log(`Order ${order.orderId} automatically marked as delivered (tracking confirmed delivery)`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Failed to auto-update order ${orderId} status to delivered:`, error);
+      return false;
+    }
+  }
+  
+  /**
+   * Reconcile all shipped orders with delivered tracking
+   * Useful for catch-up processing of orders that had tracking delivered before this feature
+   * Returns count of orders that were updated to delivered
+   */
+  async reconcileDeliveredOrders(): Promise<number> {
+    try {
+      // Get all tracking records that are delivered
+      const deliveredTracking = await db.query.shipmentTracking.findMany({
+        where: eq(shipmentTracking.statusCode, 'delivered')
+      });
+      
+      // Group by orderId
+      const orderIds = [...new Set(deliveredTracking.map(t => t.orderId))];
+      
+      let updatedCount = 0;
+      for (const orderId of orderIds) {
+        const wasUpdated = await this.updateOrderStatusToDelivered(orderId);
+        if (wasUpdated) {
+          updatedCount++;
+        }
+      }
+      
+      return updatedCount;
+    } catch (error) {
+      console.error('Failed to reconcile delivered orders:', error);
+      return 0;
     }
   }
   
