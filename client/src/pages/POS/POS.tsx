@@ -1215,72 +1215,68 @@ export default function POS() {
             ) : (
               cart.map((item) => (
                 <Card key={item.cartId} className="overflow-hidden" data-testid={`cart-item-${item.cartId}`}>
-                  <CardContent className="p-3">
-                    <div className="flex gap-3">
+                  <CardContent className="p-2">
+                    <div className="flex gap-2 items-center">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt={item.name}
-                          className="w-16 h-16 object-contain rounded-lg border bg-gray-50"
+                          className="w-10 h-10 object-contain rounded border bg-gray-50 shrink-0"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                          <Package className="h-8 w-8 text-gray-400" />
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center shrink-0">
+                          <Package className="h-5 w-5 text-gray-400" />
                         </div>
                       )}
                       
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div>
-                          <h4 className="font-semibold text-sm leading-tight line-clamp-1">{item.name}</h4>
-                          {item.sku && (
-                            <p className="text-xs text-muted-foreground">{item.sku}</p>
-                          )}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-xs leading-tight line-clamp-1">{item.name}</h4>
+                        {item.sku && (
+                          <p className="text-[10px] text-muted-foreground">{item.sku}</p>
+                        )}
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateQuantity(item.cartId, item.quantity - 1)}
-                              data-testid={`button-decrease-${item.cartId}`}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="font-bold min-w-[2.5rem] text-center text-lg">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateQuantity(item.cartId, item.quantity + 1)}
-                              data-testid={`button-increase-${item.cartId}`}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-primary">
-                              {currency} {(item.price * item.quantity).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {currency} {item.price.toFixed(2)} each
-                            </p>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded p-0.5 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => updateQuantity(item.cartId, item.quantity - 1)}
+                          data-testid={`button-decrease-${item.cartId}`}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="font-bold min-w-[1.5rem] text-center text-sm">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => updateQuantity(item.cartId, item.quantity + 1)}
+                          data-testid={`button-increase-${item.cartId}`}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <div className="text-right shrink-0 min-w-[70px]">
+                        <p className="text-sm font-bold text-primary">
+                          {currency} {(item.price * item.quantity).toFixed(2)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {currency} {item.price.toFixed(2)} each
+                        </p>
                       </div>
                       
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0 self-start"
+                        className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                         onClick={() => removeFromCart(item.cartId)}
                         data-testid={`button-remove-${item.cartId}`}
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
