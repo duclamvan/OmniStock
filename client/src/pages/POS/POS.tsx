@@ -917,70 +917,52 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Barcode Scanner Input */}
-        <div className="bg-white dark:bg-gray-800 p-4 border-b shadow-sm">
-          <form onSubmit={handleBarcodeSubmit} className="flex gap-3">
-            <div className="relative flex-1">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-muted-foreground">
-                <Scan className="h-5 w-5" />
-                <div className="h-4 w-px bg-gray-300" />
-                <Usb className="h-4 w-4" />
-                <Bluetooth className="h-4 w-4" />
-              </div>
-              <Input
-                ref={barcodeInputRef}
-                placeholder="Scan barcode or enter SKU... (USB & Bluetooth scanners supported)"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                className={cn(
-                  "pl-28 h-14 text-lg font-medium border-2 transition-all duration-200",
-                  scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
-                  scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
-                  !scanFeedback && "border-gray-200 dark:border-gray-700"
-                )}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                data-testid="input-barcode"
-              />
+        {/* Unified Search & Scan Bar */}
+        <div className="bg-white dark:bg-gray-800 px-4 py-3 border-b flex items-center gap-2">
+          <form onSubmit={handleBarcodeSubmit} className="relative flex-1">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
+              <Search className="h-5 w-5" />
+              <div className="h-4 w-px bg-gray-300 dark:bg-gray-600" />
+              <Scan className="h-4 w-4" />
             </div>
-            <Button type="submit" size="lg" className="h-14 px-6" data-testid="button-scan-submit">
-              <Keyboard className="h-5 w-5 mr-2" />
-              Enter
-            </Button>
-          </form>
-        </div>
-
-        {/* Search and Filter Bar */}
-        <div className="bg-white dark:bg-gray-800 px-4 py-3 border-b flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              ref={searchInputRef}
-              placeholder={t('products:searchItems')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-base"
+              ref={barcodeInputRef}
+              placeholder={t('pos:searchOrScan', 'Search or scan barcode...')}
+              value={barcodeInput || searchQuery}
+              onChange={(e) => {
+                const val = e.target.value;
+                setBarcodeInput(val);
+                setSearchQuery(val);
+              }}
+              className={cn(
+                "pl-20 pr-10 h-14 text-base font-medium border-2 transition-all duration-200",
+                scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
+                scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
+                !scanFeedback && "border-gray-200 dark:border-gray-700"
+              )}
               autoComplete="off"
-              data-testid="input-search"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-testid="input-search-scan"
             />
-            {searchQuery && (
+            {(barcodeInput || searchQuery) && (
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setSearchQuery('')}
+                onClick={() => { setBarcodeInput(''); setSearchQuery(''); }}
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
-          </div>
+          </form>
           
           {/* Category Filter */}
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-40 h-12" data-testid="select-category">
-              <Grid3X3 className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-36 h-14" data-testid="select-category">
+              <Grid3X3 className="h-4 w-4 mr-1.5" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -997,20 +979,20 @@ export default function POS() {
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-10 w-10"
+              className="h-12 w-12"
               onClick={() => setViewMode('grid')}
               data-testid="button-view-grid"
             >
-              <Grid3X3 className="h-4 w-4" />
+              <Grid3X3 className="h-5 w-5" />
             </Button>
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-10 w-10"
+              className="h-12 w-12"
               onClick={() => setViewMode('list')}
               data-testid="button-view-list"
             >
-              <List className="h-4 w-4" />
+              <List className="h-5 w-5" />
             </Button>
           </div>
         </div>
