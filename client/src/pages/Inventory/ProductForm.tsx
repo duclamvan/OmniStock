@@ -128,7 +128,9 @@ const productSchema = z.object({
   supplierId: z.string().optional(),
   description: z.string().optional(),
   quantity: z.coerce.number().min(0).default(0),
-  lowStockAlert: z.coerce.number().min(0).default(5),
+  lowStockAlert: z.coerce.number().min(0).default(45),
+  lowStockAlertType: z.enum(['percentage', 'amount']).default('percentage'),
+  maxStockLevel: z.coerce.number().min(0).optional(),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
   importCostUsd: z.coerce.number().min(0).optional(),
@@ -366,7 +368,9 @@ export default function ProductForm() {
   const buildDefaultValues = useCallback(() => {
     return {
       quantity: 0,
-      lowStockAlert: lowStockThreshold || 10,
+      lowStockAlert: lowStockThreshold || 45,
+      lowStockAlertType: 'percentage' as const,
+      maxStockLevel: 100,
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
       warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
       name: isEditMode ? undefined : (nameFromUrl || undefined),
@@ -759,7 +763,9 @@ export default function ProductForm() {
         supplierId: product.supplierId || '',
         description: product.description || '',
         quantity: product.quantity || 0,
-        lowStockAlert: product.lowStockAlert || 5,
+        lowStockAlert: product.lowStockAlert || 45,
+        lowStockAlertType: product.lowStockAlertType || 'percentage',
+        maxStockLevel: product.maxStockLevel || 100,
         priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
         priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
         importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
@@ -2097,15 +2103,64 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">{t('products:formLabels.lowStockAlert')}</Label>
+                      <Label htmlFor="maxStockLevel" className="text-sm font-medium">{t('products:formLabels.maxStockLevel')}</Label>
                       <Input
                         type="number"
                         min="0"
-                        {...form.register('lowStockAlert')}
-                        data-testid="input-low-stock"
+                        {...form.register('maxStockLevel')}
+                        data-testid="input-max-stock"
                         className="mt-1"
                       />
                     </div>
+                  </div>
+
+                  {/* Low Stock Alert Section */}
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">{t('products:formLabels.lowStockAlertSettings')}</Label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="lowStockAlertType" className="text-xs text-amber-700 dark:text-amber-300">{t('products:formLabels.alertType')}</Label>
+                        <Select
+                          value={form.watch('lowStockAlertType') || 'percentage'}
+                          onValueChange={(value: 'percentage' | 'amount') => form.setValue('lowStockAlertType', value)}
+                        >
+                          <SelectTrigger className="mt-1" data-testid="select-alert-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">{t('products:formLabels.alertTypePercentage')}</SelectItem>
+                            <SelectItem value="amount">{t('products:formLabels.alertTypeAmount')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="lowStockAlert" className="text-xs text-amber-700 dark:text-amber-300">
+                          {form.watch('lowStockAlertType') === 'percentage' 
+                            ? t('products:formLabels.alertThresholdPercent') 
+                            : t('products:formLabels.alertThresholdUnits')}
+                        </Label>
+                        <div className="relative mt-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={form.watch('lowStockAlertType') === 'percentage' ? 100 : undefined}
+                            {...form.register('lowStockAlert')}
+                            data-testid="input-low-stock"
+                          />
+                          {form.watch('lowStockAlertType') === 'percentage' && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      {form.watch('lowStockAlertType') === 'percentage' 
+                        ? t('products:formLabels.percentageAlertHint')
+                        : t('products:formLabels.amountAlertHint')}
+                    </p>
                   </div>
 
                   <div>
