@@ -2184,3 +2184,110 @@ export const insertEmployeeIncidentSchema = createInsertSchema(employeeIncidents
 
 export type EmployeeIncident = typeof employeeIncidents.$inferSelect;
 export type InsertEmployeeIncident = z.infer<typeof insertEmployeeIncidentSchema>;
+
+// Roles table - for dynamic role management
+export const roles = pgTable('roles', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  displayName: varchar('display_name', { length: 100 }).notNull(), // Human-readable name
+  displayNameVi: varchar('display_name_vi', { length: 100 }), // Vietnamese name
+  description: text('description'),
+  descriptionVi: text('description_vi'), // Vietnamese description
+  type: varchar('type', { length: 20 }).notNull().default('custom'), // 'system' or 'custom'
+  isSystem: boolean('is_system').notNull().default(false), // Protect built-in roles from deletion
+  color: varchar('color', { length: 50 }).default('blue'), // Badge color (blue, green, amber, red, etc.)
+  icon: varchar('icon', { length: 50 }).default('Users'), // Lucide icon name
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const insertRoleSchema = createInsertSchema(roles, {
+  name: z.string().min(1, 'Role name is required').max(100),
+  displayName: z.string().min(1, 'Display name is required').max(100),
+  displayNameVi: z.string().max(100).optional(),
+  description: z.string().optional(),
+  descriptionVi: z.string().optional(),
+  type: z.enum(['system', 'custom']).default('custom'),
+  isSystem: z.boolean().default(false),
+  color: z.string().max(50).optional(),
+  icon: z.string().max(50).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+// Permissions table - available permissions organized by section and page
+export const permissions = pgTable('permissions', {
+  id: serial('id').primaryKey(),
+  section: varchar('section', { length: 50 }).notNull(), // e.g., 'orders', 'inventory', 'customers'
+  page: varchar('page', { length: 50 }).notNull(), // e.g., 'list', 'add', 'edit', 'delete'
+  path: varchar('path', { length: 255 }).notNull(), // Route path e.g., '/orders', '/orders/add'
+  displayName: varchar('display_name', { length: 100 }).notNull(),
+  displayNameVi: varchar('display_name_vi', { length: 100 }), // Vietnamese name
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0), // For ordering in UI
+  createdAt: timestamp('created_at').notNull().defaultNow()
+}, (table) => ({
+  uniqueSectionPage: unique().on(table.section, table.page),
+}));
+
+export const insertPermissionSchema = createInsertSchema(permissions, {
+  section: z.string().min(1).max(50),
+  page: z.string().min(1).max(50),
+  path: z.string().min(1).max(255),
+  displayName: z.string().min(1).max(100),
+  displayNameVi: z.string().max(100).optional(),
+  description: z.string().optional(),
+  sortOrder: z.number().default(0),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+// Role Permissions - join table linking roles to permissions
+export const rolePermissions = pgTable('role_permissions', {
+  id: serial('id').primaryKey(),
+  roleId: integer('role_id').notNull().references(() => roles.id, { onDelete: 'cascade' }),
+  permissionId: integer('permission_id').notNull().references(() => permissions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+}, (table) => ({
+  uniqueRolePermission: unique().on(table.roleId, table.permissionId),
+}));
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions, {
+  roleId: z.number(),
+  permissionId: z.number(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+// Relations for roles
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));

@@ -13,7 +13,16 @@ The frontend is a React and TypeScript application built with Vite. It uses Shad
 The backend is an Express.js application written in TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-The system utilizes Replit Auth with optional Twilio SMS Two-Factor Authentication (2FA) and Enterprise-Grade Role-Based Access Control (RBAC). Primary authentication uses Replit's OpenID Connect, with session management via HTTP-only cookies and automatic token refresh. **New users have a NULL role by default, requiring administrator assignment. Both frontend and backend enforce access restrictions: frontend displays "Pending Approval" screen, backend returns 403 Forbidden from all business API endpoints.** Available roles include `administrator` and `warehouse_operator`.
+The system utilizes Replit Auth with optional Twilio SMS Two-Factor Authentication (2FA) and Enterprise-Grade Role-Based Access Control (RBAC). Primary authentication uses Replit's OpenID Connect, with session management via HTTP-only cookies and automatic token refresh. **New users have a NULL role by default, requiring administrator assignment. Both frontend and backend enforce access restrictions: frontend displays "Pending Approval" screen, backend returns 403 Forbidden from all business API endpoints.**
+
+### Dynamic Role Management System
+The system now supports **dynamic role creation and management** with granular section/page-based permissions:
+- **Database Tables**: `roles`, `permissions`, `role_permissions` (join table)
+- **System Roles**: `administrator` (full access - 61 permissions), `warehouse_operator` (operational access - 42 permissions)
+- **Custom Roles**: Administrators can create custom roles with specific permission sets
+- **Permission Sections**: dashboard, orders, inventory, packing, warehouse, customers, suppliers, returns, finances, services, tickets, stock, pos, shipping, imports, reports, employees, settings, users
+- **RolesSettings UI**: Tabbed interface with "Manage Roles" (CRUD for roles with section-based permission picker) and "Assign Users" (role assignment dropdown)
+- **APIs**: GET/POST/PATCH/DELETE /api/roles, GET /api/permissions, PATCH /api/users/:userId/assign-role
 
 ### Production Security Features
 **Comprehensive Route Protection (100% Coverage)**:

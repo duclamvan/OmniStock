@@ -73,6 +73,10 @@ import {
   preOrders,
   tickets,
   discounts,
+  roles,
+  permissions,
+  rolePermissions,
+  insertRoleSchema,
 } from "@shared/schema";
 import { sendPushToAllWarehouseOperators, getVapidPublicKey } from "./services/pushNotifications";
 import { createInsertSchema } from 'drizzle-zod';
@@ -808,6 +812,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting user:', error);
       res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+
+  // =====================================================
+  // ROLES & PERMISSIONS MANAGEMENT API ENDPOINTS
+  // =====================================================
+
+  // GET /api/roles - List all roles with their permissions (admin-only)
+  app.get('/api/roles', requireRole(['administrator']), async (req, res) => {
+    try {
+      const allRoles = await db.select().from(roles).orderBy(roles.isSystem, roles.name);
+      
+      // Get permissions for each role
+      const rolesWithPermissions = await Promise.all(
+        allRoles.map(async (role) => {
+          const rolePerms = await db.select({
+            permission: permissions
+          })
+            .from(rolePermissions)
+            .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+            .where(eq(rolePermissions.roleId, role.id));
+          
+          return {
+            ...role,
+            permissions: rolePerms.map(rp => rp.permission)
+          };
+        })
+      );
+      
+      res.json(rolesWithPermissions);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({ message: 'Failed to fetch roles' });
+    }
+  });
+
+  // GET /api/roles/:id - Get a specific role with permissions (admin-only)
+  app.get('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
+      
+      if (!role) {
+        return res.status(404).json({ message: 'Role not found' });
+      }
+      
+      const rolePerms = await db.select({
+        permission: permissions
+      })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, role.id));
+      
+      res.json({
+        ...role,
+        permissions: rolePerms.map(rp => rp.permission)
+      });
+    } catch (error) {
+      console.error('Error fetching role:', error);
+      res.status(500).json({ message: 'Failed to fetch role' });
+    }
+  });
+
+  // POST /api/roles - Create a new role (admin-only)
+  app.post('/api/roles', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { permissionIds, ...roleData } = req.body;
+      
+      // Validate role data
+      const validatedData = insertRoleSchema.parse(roleData);
+      
+      // Create the role
+      const [newRole] = await db.insert(roles).values({
+        ...validatedData,
+        type: 'custom',
+        isSystem: false
+      }).returning();
+      
+      // Add permissions if provided
+      if (permissionIds && Array.isArray(permissionIds) && permissionIds.length > 0) {
+        await db.insert(rolePermissions).values(
+          permissionIds.map((permId: number) => ({
+            roleId: newRole.id,
+            permissionId: permId
+          }))
+        );
+      }
+      
+      // Fetch the role with permissions
+      const rolePerms = await db.select({
+        permission: permissions
+      })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, newRole.id));
+      
+      res.json({
+        ...newRole,
+        permissions: rolePerms.map(rp => rp.permission)
+      });
+    } catch (error) {
+      console.error('Error creating role:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation failed', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create role' });
+    }
+  });
+
+  // PATCH /api/roles/:id - Update a role (admin-only)
+  app.patch('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      const { permissionIds, ...roleData } = req.body;
+      
+      // Check if role exists
+      const [existingRole] = await db.select().from(roles).where(eq(roles.id, roleId));
+      if (!existingRole) {
+        return res.status(404).json({ message: 'Role not found' });
+      }
+      
+      // System roles can only have permissions updated, not name/description
+      if (existingRole.isSystem && (roleData.name || roleData.displayName)) {
+        return res.status(403).json({ message: 'Cannot modify system role name' });
+      }
+      
+      // Update role data if provided
+      if (Object.keys(roleData).length > 0) {
+        await db.update(roles)
+          .set({ ...roleData, updatedAt: new Date() })
+          .where(eq(roles.id, roleId));
+      }
+      
+      // Update permissions if provided
+      if (permissionIds !== undefined && Array.isArray(permissionIds)) {
+        // Remove existing permissions
+        await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+        
+        // Add new permissions
+        if (permissionIds.length > 0) {
+          await db.insert(rolePermissions).values(
+            permissionIds.map((permId: number) => ({
+              roleId: roleId,
+              permissionId: permId
+            }))
+          );
+        }
+      }
+      
+      // Fetch updated role with permissions
+      const [updatedRole] = await db.select().from(roles).where(eq(roles.id, roleId));
+      const rolePerms = await db.select({
+        permission: permissions
+      })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, roleId));
+      
+      res.json({
+        ...updatedRole,
+        permissions: rolePerms.map(rp => rp.permission)
+      });
+    } catch (error) {
+      console.error('Error updating role:', error);
+      res.status(500).json({ message: 'Failed to update role' });
+    }
+  });
+
+  // DELETE /api/roles/:id - Delete a role (admin-only)
+  app.delete('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      
+      // Check if role exists
+      const [existingRole] = await db.select().from(roles).where(eq(roles.id, roleId));
+      if (!existingRole) {
+        return res.status(404).json({ message: 'Role not found' });
+      }
+      
+      // Prevent deletion of system roles
+      if (existingRole.isSystem) {
+        return res.status(403).json({ message: 'Cannot delete system roles' });
+      }
+      
+      // Check if any users are using this role
+      const usersWithRole = await db.select().from(users).where(eq(users.role, existingRole.name));
+      if (usersWithRole.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete role. ${usersWithRole.length} user(s) are assigned to this role.` 
+        });
+      }
+      
+      // Delete role (permissions will cascade)
+      await db.delete(roles).where(eq(roles.id, roleId));
+      
+      res.json({ message: 'Role deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      res.status(500).json({ message: 'Failed to delete role' });
+    }
+  });
+
+  // GET /api/permissions - List all permissions grouped by section (admin-only)
+  app.get('/api/permissions', requireRole(['administrator']), async (req, res) => {
+    try {
+      const allPermissions = await db.select().from(permissions).orderBy(permissions.sortOrder);
+      
+      // Group permissions by section
+      const grouped = allPermissions.reduce((acc, perm) => {
+        if (!acc[perm.section]) {
+          acc[perm.section] = [];
+        }
+        acc[perm.section].push(perm);
+        return acc;
+      }, {} as Record<string, typeof allPermissions>);
+      
+      res.json({
+        all: allPermissions,
+        grouped
+      });
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      res.status(500).json({ message: 'Failed to fetch permissions' });
+    }
+  });
+
+  // PATCH /api/users/:userId/assign-role - Assign a role to a user (admin-only)
+  // This endpoint updates the user's role to match a custom or system role name
+  app.patch('/api/users/:userId/assign-role', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { roleName } = req.body;
+      
+      if (!roleName) {
+        // Allow null to revoke access
+        await storage.updateUserRole(userId, null);
+        return res.json({ message: 'User role revoked' });
+      }
+      
+      // Verify the role exists
+      const [role] = await db.select().from(roles).where(eq(roles.name, roleName));
+      if (!role) {
+        return res.status(400).json({ message: 'Invalid role name' });
+      }
+      
+      await storage.updateUserRole(userId, roleName);
+      res.json({ message: 'User role updated successfully', role });
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      res.status(500).json({ message: 'Failed to assign role' });
     }
   });
 
