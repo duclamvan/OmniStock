@@ -2230,6 +2230,7 @@ export const permissions = pgTable('permissions', {
   displayName: varchar('display_name', { length: 100 }).notNull(),
   displayNameVi: varchar('display_name_vi', { length: 100 }), // Vietnamese name
   description: text('description'),
+  isSensitive: boolean('is_sensitive').notNull().default(false), // Sensitive permissions (import costs, profits, margins) - default unchecked for new roles
   sortOrder: integer('sort_order').notNull().default(0), // For ordering in UI
   createdAt: timestamp('created_at').notNull().defaultNow()
 }, (table) => ({
@@ -2244,6 +2245,7 @@ export const insertPermissionSchema = createInsertSchema(permissions, {
   displayName: z.string().min(1).max(100),
   displayNameVi: z.string().max(100).optional(),
   description: z.string().optional(),
+  isSensitive: z.boolean().default(false),
   sortOrder: z.number().default(0),
 }).omit({
   id: true,
