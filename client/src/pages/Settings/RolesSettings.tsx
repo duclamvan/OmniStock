@@ -70,6 +70,7 @@ import {
   LayoutDashboard,
   Check,
   Minus,
+  Crown,
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -699,37 +700,55 @@ export default function RolesSettings() {
 
                           <CollapsibleContent>
                             <div className="px-4 pb-4 pt-2 border-t">
-                              <p className="text-sm font-medium mb-3">{t('settings:permissionsSection')}:</p>
-                              {Object.entries(
-                                role.permissions.reduce((acc, perm) => {
-                                  if (!acc[perm.section]) acc[perm.section] = [];
-                                  acc[perm.section].push(perm);
-                                  return acc;
-                                }, {} as Record<string, Permission[]>)
-                              ).map(([section, perms]) => {
-                                const Icon = getSectionIcon(section);
-                                return (
-                                  <div key={section} className="mb-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Icon className="h-4 w-4 text-muted-foreground" />
-                                      <span className="font-medium text-sm capitalize">
-                                        {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
-                                      </span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1 ml-6">
-                                      {perms.map((perm) => (
-                                        <Badge key={perm.id} variant="secondary" className="text-xs">
-                                          {getPermissionDisplayName(perm)}
-                                        </Badge>
-                                      ))}
-                                    </div>
+                              {role.name === 'administrator' ? (
+                                <div className="flex items-center gap-4 py-6 px-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                                  <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full">
+                                    <Crown className="h-8 w-8 text-white" />
                                   </div>
-                                );
-                              })}
-                              {role.permissions.length === 0 && (
-                                <p className="text-sm text-muted-foreground italic">
-                                  {t('settings:noPermissionsSelected')}
-                                </p>
+                                  <div>
+                                    <h4 className="font-semibold text-lg text-amber-800 dark:text-amber-300">
+                                      {t('settings:fullAccessTitle')}
+                                    </h4>
+                                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                                      {t('settings:fullAccessDescription')}
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-medium mb-3">{t('settings:permissionsSection')}:</p>
+                                  {Object.entries(
+                                    role.permissions.reduce((acc, perm) => {
+                                      if (!acc[perm.section]) acc[perm.section] = [];
+                                      acc[perm.section].push(perm);
+                                      return acc;
+                                    }, {} as Record<string, Permission[]>)
+                                  ).map(([section, perms]) => {
+                                    const Icon = getSectionIcon(section);
+                                    return (
+                                      <div key={section} className="mb-3">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <Icon className="h-4 w-4 text-muted-foreground" />
+                                          <span className="font-medium text-sm capitalize">
+                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 ml-6">
+                                          {perms.map((perm) => (
+                                            <Badge key={perm.id} variant="secondary" className="text-xs">
+                                              {getPermissionDisplayName(perm)}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {role.permissions.length === 0 && (
+                                    <p className="text-sm text-muted-foreground italic">
+                                      {t('settings:noPermissionsSelected')}
+                                    </p>
+                                  )}
+                                </>
                               )}
                             </div>
                           </CollapsibleContent>

@@ -1005,6 +1005,8 @@ const settings = {
   customRole: 'Tùy chỉnh',
   fullAccess: 'Toàn quyền',
   allPermissions: 'Tất cả quyền hạn',
+  fullAccessTitle: 'Toàn quyền hệ thống',
+  fullAccessDescription: 'Quản trị viên có quyền truy cập không giới hạn vào tất cả tính năng, trang và dữ liệu nhạy cảm trong toàn bộ hệ thống.',
   permissionCount: 'Quyền hạn',
   userCount: 'Người dùng',
   noRolesFound: 'Không tìm thấy vai trò',
