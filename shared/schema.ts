@@ -2220,9 +2220,10 @@ export const insertRoleSchema = createInsertSchema(roles, {
 export type Role = typeof roles.$inferSelect;
 export type InsertRole = z.infer<typeof insertRoleSchema>;
 
-// Permissions table - available permissions organized by section and page
+// Permissions table - available permissions organized by parent section, section and page
 export const permissions = pgTable('permissions', {
   id: serial('id').primaryKey(),
+  parentSection: varchar('parent_section', { length: 50 }).notNull().default('warehouse_operations'), // 'warehouse_operations' or 'administration'
   section: varchar('section', { length: 50 }).notNull(), // e.g., 'orders', 'inventory', 'customers'
   page: varchar('page', { length: 50 }).notNull(), // e.g., 'list', 'add', 'edit', 'delete'
   path: varchar('path', { length: 255 }).notNull(), // Route path e.g., '/orders', '/orders/add'
@@ -2236,6 +2237,7 @@ export const permissions = pgTable('permissions', {
 }));
 
 export const insertPermissionSchema = createInsertSchema(permissions, {
+  parentSection: z.enum(['warehouse_operations', 'administration']).default('warehouse_operations'),
   section: z.string().min(1).max(50),
   page: z.string().min(1).max(50),
   path: z.string().min(1).max(255),

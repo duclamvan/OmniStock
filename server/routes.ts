@@ -1014,12 +1014,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/permissions - List all permissions grouped by section (admin-only)
+  // GET /api/permissions - List all permissions grouped by parent section and section (admin-only)
   app.get('/api/permissions', requireRole(['administrator']), async (req, res) => {
     try {
       const allPermissions = await db.select().from(permissions).orderBy(permissions.sortOrder);
       
-      // Group permissions by section
+      // Group permissions by section (flat)
       const grouped = allPermissions.reduce((acc, perm) => {
         if (!acc[perm.section]) {
           acc[perm.section] = [];
@@ -1028,9 +1028,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, {} as Record<string, typeof allPermissions>);
       
+      // Group permissions by parent section -> section (hierarchical)
+      const hierarchical = allPermissions.reduce((acc, perm) => {
+        const parentKey = perm.parentSection || 'warehouse_operations';
+        if (!acc[parentKey]) {
+          acc[parentKey] = {};
+        }
+        if (!acc[parentKey][perm.section]) {
+          acc[parentKey][perm.section] = [];
+        }
+        acc[parentKey][perm.section].push(perm);
+        return acc;
+      }, {} as Record<string, Record<string, typeof allPermissions>>);
+      
       res.json({
         all: allPermissions,
-        grouped
+        grouped,
+        hierarchical
       });
     } catch (error) {
       console.error('Error fetching permissions:', error);
