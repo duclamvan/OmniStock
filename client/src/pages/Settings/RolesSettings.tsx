@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -444,6 +445,28 @@ export default function RolesSettings() {
   const handleSectionClick = (parentSection: ParentSection, section: string) => {
     setActiveParent(parentSection);
     setSelectedSection(section);
+  };
+
+  const getSensitivePermissionIds = () => {
+    return permissionsData?.all.filter(p => p.isSensitive).map(p => p.id) || [];
+  };
+
+  const isSensitiveDataEnabled = () => {
+    const sensitiveIds = getSensitivePermissionIds();
+    return sensitiveIds.length > 0 && sensitiveIds.every(id => roleForm.permissionIds.includes(id));
+  };
+
+  const toggleSensitiveDataAccess = (enabled: boolean) => {
+    const sensitiveIds = getSensitivePermissionIds();
+    setRoleForm(prev => {
+      let newIds: number[];
+      if (enabled) {
+        newIds = Array.from(new Set([...prev.permissionIds, ...sensitiveIds]));
+      } else {
+        newIds = prev.permissionIds.filter(id => !sensitiveIds.includes(id));
+      }
+      return { ...prev, permissionIds: newIds };
+    });
   };
 
   const getRoleDisplayName = (role: Role) => {
@@ -903,6 +926,36 @@ export default function RolesSettings() {
                     data-testid="input-description-vi"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
+                    <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <Label htmlFor="sensitive-data-toggle" className="text-base font-semibold cursor-pointer">
+                      {t('settings:sensitiveDataAccess')}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('settings:sensitiveDataDescription')}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="sensitive-data-toggle"
+                  checked={isSensitiveDataEnabled()}
+                  onCheckedChange={toggleSensitiveDataAccess}
+                  className="scale-125"
+                  data-testid="switch-sensitive-data"
+                />
+              </div>
+              <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  {t('settings:sensitiveDataIncludes')}
+                </p>
               </div>
             </div>
 

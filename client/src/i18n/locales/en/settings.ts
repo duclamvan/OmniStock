@@ -1037,6 +1037,9 @@ const settings = {
   selectSectionToViewPermissions: 'Select a section to view permissions',
   clickOnSectionFromLeft: 'Click on any section from the left panel',
   sensitiveData: 'Sensitive',
+  sensitiveDataAccess: 'Sensitive Financial Data Access',
+  sensitiveDataDescription: 'Allow this role to view import costs, profit margins, and other sensitive financial information',
+  sensitiveDataIncludes: 'Includes: View Import Cost, View Profit, View Margin',
   
   // Permission Sections
   sectionDashboard: 'Dashboard',

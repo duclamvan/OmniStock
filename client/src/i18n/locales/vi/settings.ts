@@ -1038,6 +1038,9 @@ const settings = {
   selectSectionToViewPermissions: 'Chọn một phần để xem quyền hạn',
   clickOnSectionFromLeft: 'Nhấp vào bất kỳ phần nào từ bảng bên trái',
   sensitiveData: 'Nhạy cảm',
+  sensitiveDataAccess: 'Quyền truy cập dữ liệu tài chính nhạy cảm',
+  sensitiveDataDescription: 'Cho phép vai trò này xem giá nhập, biên lợi nhuận và thông tin tài chính nhạy cảm khác',
+  sensitiveDataIncludes: 'Bao gồm: Xem giá nhập, Xem lợi nhuận, Xem biên lợi nhuận',
   
   // Permission Sections
   sectionDashboard: 'Bảng điều khiển',
