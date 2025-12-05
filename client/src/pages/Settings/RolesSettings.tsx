@@ -1064,13 +1064,16 @@ export default function RolesSettings() {
                         permissionsData?.grouped[selectedSection]?.map((permission) => (
                           <div
                             key={permission.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px] ${
+                            onClick={() => togglePermission(permission.id)}
+                            className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px] cursor-pointer ${
                               permission.isSensitive ? 'border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : ''
                             }`}
+                            data-testid={`permission-row-${permission.id}`}
                           >
                             <Checkbox
                               checked={roleForm.permissionIds.includes(permission.id)}
                               onCheckedChange={() => togglePermission(permission.id)}
+                              onClick={(e) => e.stopPropagation()}
                               className="min-h-[20px] min-w-[20px]"
                               data-testid={`checkbox-permission-${permission.id}`}
                             />
