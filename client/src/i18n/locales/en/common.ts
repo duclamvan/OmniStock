@@ -498,6 +498,7 @@ const common = {
   general: 'General',
   financial: 'Financial',
   system: 'System',
+  roles: 'Roles',
   userManagement: 'User Management',
   manageUsersAndRoles: 'Manage Users & Roles',
   employeeManagement: 'Employee Management',

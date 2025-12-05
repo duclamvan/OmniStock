@@ -476,6 +476,7 @@ const common = {
   general: 'Chung',
   financial: 'Tài chính',
   system: 'Hệ thống',
+  roles: 'Vai trò',
   userManagement: 'Quản lý người dùng',
   manageUsersAndRoles: 'Quản lý người dùng & Quyền',
   employeeManagement: 'Quản lý nhân viên',

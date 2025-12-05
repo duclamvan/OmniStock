@@ -529,14 +529,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
             { name: t('common:financial'), href: "/settings/financial" },
             { name: t('common:inventory'), href: "/settings/inventory" },
             { name: t('common:system'), href: "/settings/system" },
+            { name: t('common:roles'), href: "/settings/roles" },
           ],
-        },
-        {
-          name: t('common:userManagement'),
-          href: "/user-management",
-          icon: Users,
-          color: "text-indigo-600 dark:text-indigo-400",
-          description: t('common:manageUsersAndRoles')
         },
       ]
     }

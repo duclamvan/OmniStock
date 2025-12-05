@@ -93,7 +93,6 @@ import Register from "@/pages/Auth/Register";
 import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
-import UserManagement from "@/pages/UserManagement";
 import Employees from "@/pages/Employees";
 import EmployeeDetail from "@/pages/Employees/EmployeeDetail";
 import ActivityLog from "@/pages/ActivityLog";
@@ -433,10 +432,6 @@ function Router() {
         </Route>
         <Route path="/settings/roles">
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
-        </Route>
-        {/* User Management Route */}
-        <Route path="/user-management">
-          {() => <ProtectedRoute requireAdmin><UserManagement /></ProtectedRoute>}
         </Route>
       </Layout>
       <Route component={NotFound} />
