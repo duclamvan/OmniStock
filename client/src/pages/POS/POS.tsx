@@ -1686,7 +1686,7 @@ export default function POS() {
                     <div className="text-left flex-1 min-w-0">
                       {/* Customer Name */}
                       <p className="font-medium truncate">
-                        {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email || 'Unknown'}
+                        {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.facebookName || t('pos:customer', 'Customer')}
                       </p>
                       
                       {/* Facebook Name */}
@@ -1763,7 +1763,7 @@ export default function POS() {
                       <User className="h-5 w-5 mr-3 flex-shrink-0" />
                       <div className="text-left flex-1 min-w-0">
                         <p className="font-medium truncate">
-                          {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email || 'Unknown'}
+                          {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.facebookName || t('pos:customer', 'Customer')}
                         </p>
                         {customer.facebookName && (
                           <p className="text-xs text-blue-500 dark:text-blue-400 truncate">
@@ -1774,8 +1774,10 @@ export default function POS() {
                           {customer.phone && (
                             <span className="text-xs text-muted-foreground">{customer.phone}</span>
                           )}
-                          {customer.email && !customer.phone && (
-                            <span className="text-xs text-muted-foreground truncate">{customer.email}</span>
+                          {(customer.city || customer.country) && (
+                            <span className="text-xs text-muted-foreground">
+                              {[customer.city, customer.country].filter(Boolean).join(', ')}
+                            </span>
                           )}
                         </div>
                       </div>
