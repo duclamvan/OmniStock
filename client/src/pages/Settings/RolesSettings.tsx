@@ -957,247 +957,274 @@ export default function RolesSettings() {
               </div>
             </div>
 
-            <div className="border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 rounded-lg p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
-                    <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            {selectedRole?.name === 'administrator' ? (
+              <div className="flex flex-col items-center justify-center py-12 px-8 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-yellow-950/30 rounded-xl border-2 border-amber-200 dark:border-amber-700">
+                <div className="p-6 bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 rounded-full mb-6 shadow-lg shadow-amber-500/30">
+                  <Crown className="h-16 w-16 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-amber-800 dark:text-amber-300 mb-2">
+                  {t('settings:fullAccessTitle')}
+                </h3>
+                <p className="text-center text-amber-700 dark:text-amber-400 max-w-md mb-6">
+                  {t('settings:fullAccessDescription')}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
+                    {t('settings:allPages')}
+                  </Badge>
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
+                    {t('settings:allFeatures')}
+                  </Badge>
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
+                    {t('settings:sensitiveDataAccess')}
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
+                        <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <Label htmlFor="sensitive-data-toggle" className="text-base font-semibold cursor-pointer">
+                          {t('settings:sensitiveDataAccess')}
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {t('settings:sensitiveDataDescription')}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="sensitive-data-toggle"
+                      checked={isSensitiveDataEnabled()}
+                      onCheckedChange={toggleSensitiveDataAccess}
+                      className="scale-125"
+                      data-testid="switch-sensitive-data"
+                    />
                   </div>
-                  <div>
-                    <Label htmlFor="sensitive-data-toggle" className="text-base font-semibold cursor-pointer">
-                      {t('settings:sensitiveDataAccess')}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('settings:sensitiveDataDescription')}
+                  <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      {t('settings:sensitiveDataIncludes')}
                     </p>
                   </div>
                 </div>
-                <Switch
-                  id="sensitive-data-toggle"
-                  checked={isSensitiveDataEnabled()}
-                  onCheckedChange={toggleSensitiveDataAccess}
-                  className="scale-125"
-                  data-testid="switch-sensitive-data"
-                />
-              </div>
-              <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {t('settings:sensitiveDataIncludes')}
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">{t('settings:selectPermissions')}</h3>
-                <div className="text-sm text-muted-foreground">
-                  {roleForm.permissionIds.length} {t('settings:permissionCount')}
-                </div>
-              </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">{t('settings:selectPermissions')}</h3>
+                    <div className="text-sm text-muted-foreground">
+                      {roleForm.permissionIds.length} {t('settings:permissionCount')}
+                    </div>
+                  </div>
 
-              {isLoadingPermissions ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4">
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {PARENT_SECTIONS.map(({ key: parentKey, icon: ParentIcon, color }) => {
-                      const isParentExpanded = expandedParents.has(parentKey);
-                      const parentFullySelected = isParentFullySelected(parentKey);
-                      const parentPartiallySelected = isParentPartiallySelected(parentKey);
-                      const parentSections = permissionsData?.hierarchical[parentKey] || {};
-                      const sectionKeys = Object.keys(parentSections);
+                  {isLoadingPermissions ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4">
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                        {PARENT_SECTIONS.map(({ key: parentKey, icon: ParentIcon, color }) => {
+                          const isParentExpanded = expandedParents.has(parentKey);
+                          const parentFullySelected = isParentFullySelected(parentKey);
+                          const parentPartiallySelected = isParentPartiallySelected(parentKey);
+                          const parentSections = permissionsData?.hierarchical[parentKey] || {};
+                          const sectionKeys = Object.keys(parentSections);
 
-                      return (
-                        <Collapsible
-                          key={parentKey}
-                          open={isParentExpanded}
-                          onOpenChange={() => toggleParentExpanded(parentKey)}
-                        >
-                          <div className="border rounded-lg overflow-hidden">
-                            <CollapsibleTrigger asChild>
-                              <div
-                                className={`flex items-center gap-3 p-4 cursor-pointer min-h-[64px] bg-muted/50 hover:bg-muted transition-colors`}
-                                data-testid={`parent-${parentKey}`}
-                              >
-                                <div
-                                  role="checkbox"
-                                  aria-checked={parentFullySelected ? "true" : parentPartiallySelected ? "mixed" : "false"}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleParentPermissions(parentKey, !parentFullySelected && !parentPartiallySelected);
-                                  }}
-                                  className={`flex items-center justify-center min-h-[24px] min-w-[24px] h-6 w-6 rounded border-2 cursor-pointer transition-colors ${
-                                    parentFullySelected || parentPartiallySelected
-                                      ? 'bg-primary border-primary'
-                                      : 'bg-background border-input hover:border-primary'
-                                  }`}
-                                  data-testid={`checkbox-parent-${parentKey}`}
-                                >
-                                  {parentFullySelected && (
-                                    <Check className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
-                                  )}
-                                  {parentPartiallySelected && !parentFullySelected && (
-                                    <Minus className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
-                                  )}
-                                </div>
-                                <ParentIcon className={`h-6 w-6 ${color}`} />
-                                <div className="flex-1">
-                                  <span className="font-semibold text-base">
-                                    {t(`settings:parent${parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}` as any)}
-                                  </span>
-                                  <p className="text-xs text-muted-foreground">
-                                    {sectionKeys.length} {t('settings:sections')}
-                                  </p>
-                                </div>
-                                <Badge variant="secondary" className="text-sm font-medium">
-                                  {getParentSelectedCount(parentKey)}/{getParentTotalCount(parentKey)}
-                                </Badge>
-                                {isParentExpanded ? (
-                                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                                ) : (
-                                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                )}
-                              </div>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="border-t bg-background">
-                                {sectionKeys.map((section) => {
-                                  const Icon = getSectionIcon(section);
-                                  const isFullySelected = isSectionFullySelected(section);
-                                  const isPartialSelected = isSectionPartiallySelected(section);
-                                  const isActive = selectedSection === section && activeParent === parentKey;
-
-                                  return (
+                          return (
+                            <Collapsible
+                              key={parentKey}
+                              open={isParentExpanded}
+                              onOpenChange={() => toggleParentExpanded(parentKey)}
+                            >
+                              <div className="border rounded-lg overflow-hidden">
+                                <CollapsibleTrigger asChild>
+                                  <div
+                                    className={`flex items-center gap-3 p-4 cursor-pointer min-h-[64px] bg-muted/50 hover:bg-muted transition-colors`}
+                                    data-testid={`parent-${parentKey}`}
+                                  >
                                     <div
-                                      key={section}
-                                      className={`flex items-center gap-3 p-3 pl-12 cursor-pointer min-h-[56px] border-b last:border-b-0 transition-colors ${
-                                        isActive
-                                          ? 'bg-primary/10 border-l-4 border-l-primary'
-                                          : 'hover:bg-muted/50'
+                                      role="checkbox"
+                                      aria-checked={parentFullySelected ? "true" : parentPartiallySelected ? "mixed" : "false"}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleParentPermissions(parentKey, !parentFullySelected && !parentPartiallySelected);
+                                      }}
+                                      className={`flex items-center justify-center min-h-[24px] min-w-[24px] h-6 w-6 rounded border-2 cursor-pointer transition-colors ${
+                                        parentFullySelected || parentPartiallySelected
+                                          ? 'bg-primary border-primary'
+                                          : 'bg-background border-input hover:border-primary'
                                       }`}
-                                      onClick={() => handleSectionClick(parentKey, section)}
-                                      data-testid={`section-${section}`}
+                                      data-testid={`checkbox-parent-${parentKey}`}
                                     >
-                                      <div
-                                        role="checkbox"
-                                        aria-checked={isFullySelected ? "true" : isPartialSelected ? "mixed" : "false"}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleSectionPermissions(section, !isFullySelected && !isPartialSelected);
-                                        }}
-                                        className={`flex items-center justify-center min-h-[20px] min-w-[20px] h-5 w-5 rounded border-2 cursor-pointer transition-colors ${
-                                          isFullySelected || isPartialSelected
-                                            ? 'bg-primary border-primary'
-                                            : 'bg-background border-input hover:border-primary'
-                                        }`}
-                                        data-testid={`checkbox-section-${section}`}
-                                      >
-                                        {isFullySelected && (
-                                          <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
-                                        )}
-                                        {isPartialSelected && !isFullySelected && (
-                                          <Minus className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
-                                        )}
-                                      </div>
-                                      <Icon className="h-5 w-5 text-muted-foreground" />
-                                      <span className="font-medium capitalize flex-1">
-                                        {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
-                                      </span>
-                                      <Badge variant="outline" className="text-xs">
-                                        {permissionsData?.grouped[section]?.filter(p => roleForm.permissionIds.includes(p.id)).length || 0}
-                                        /{permissionsData?.grouped[section]?.length || 0}
-                                      </Badge>
+                                      {parentFullySelected && (
+                                        <Check className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
+                                      )}
+                                      {parentPartiallySelected && !parentFullySelected && (
+                                        <Minus className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
+                                      )}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                      );
-                    })}
-                  </div>
+                                    <ParentIcon className={`h-6 w-6 ${color}`} />
+                                    <div className="flex-1">
+                                      <span className="font-semibold text-base">
+                                        {t(`settings:parent${parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}` as any)}
+                                      </span>
+                                      <p className="text-xs text-muted-foreground">
+                                        {sectionKeys.length} {t('settings:sections')}
+                                      </p>
+                                    </div>
+                                    <Badge variant="secondary" className="text-sm font-medium">
+                                      {getParentSelectedCount(parentKey)}/{getParentTotalCount(parentKey)}
+                                    </Badge>
+                                    {isParentExpanded ? (
+                                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <div className="border-t bg-background">
+                                    {sectionKeys.map((section) => {
+                                      const Icon = getSectionIcon(section);
+                                      const isFullySelected = isSectionFullySelected(section);
+                                      const isPartialSelected = isSectionPartiallySelected(section);
+                                      const isActive = selectedSection === section && activeParent === parentKey;
 
-                  <div className="space-y-2 border-l pl-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">{t('settings:permissionPages')}</p>
-                      {selectedSection && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleSectionPermissions(selectedSection, true)}
-                            className="min-h-[36px] text-xs"
-                            data-testid="button-select-all"
-                          >
-                            {t('settings:selectAllSection')}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleSectionPermissions(selectedSection, false)}
-                            className="min-h-[36px] text-xs"
-                            data-testid="button-deselect-all"
-                          >
-                            {t('settings:deselectAllSection')}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
-                      {selectedSection ? (
-                        permissionsData?.grouped[selectedSection]?.map((permission) => (
-                          <div
-                            key={permission.id}
-                            onClick={() => togglePermission(permission.id)}
-                            className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px] cursor-pointer ${
-                              permission.isSensitive ? 'border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : ''
-                            }`}
-                            data-testid={`permission-row-${permission.id}`}
-                          >
-                            <Checkbox
-                              checked={roleForm.permissionIds.includes(permission.id)}
-                              onCheckedChange={() => togglePermission(permission.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="min-h-[20px] min-w-[20px]"
-                              data-testid={`checkbox-permission-${permission.id}`}
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-sm">
-                                  {getPermissionDisplayName(permission)}
-                                </p>
-                                {permission.isSensitive && (
-                                  <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
-                                    <ShieldAlert className="h-3 w-3 mr-1" />
-                                    {t('settings:sensitiveData')}
-                                  </Badge>
-                                )}
+                                      return (
+                                        <div
+                                          key={section}
+                                          className={`flex items-center gap-3 p-3 pl-12 cursor-pointer min-h-[56px] border-b last:border-b-0 transition-colors ${
+                                            isActive
+                                              ? 'bg-primary/10 border-l-4 border-l-primary'
+                                              : 'hover:bg-muted/50'
+                                          }`}
+                                          onClick={() => handleSectionClick(parentKey, section)}
+                                          data-testid={`section-${section}`}
+                                        >
+                                          <div
+                                            role="checkbox"
+                                            aria-checked={isFullySelected ? "true" : isPartialSelected ? "mixed" : "false"}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleSectionPermissions(section, !isFullySelected && !isPartialSelected);
+                                            }}
+                                            className={`flex items-center justify-center min-h-[20px] min-w-[20px] h-5 w-5 rounded border-2 cursor-pointer transition-colors ${
+                                              isFullySelected || isPartialSelected
+                                                ? 'bg-primary border-primary'
+                                                : 'bg-background border-input hover:border-primary'
+                                            }`}
+                                            data-testid={`checkbox-section-${section}`}
+                                          >
+                                            {isFullySelected && (
+                                              <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                                            )}
+                                            {isPartialSelected && !isFullySelected && (
+                                              <Minus className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                                            )}
+                                          </div>
+                                          <Icon className="h-5 w-5 text-muted-foreground" />
+                                          <span className="font-medium capitalize flex-1">
+                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
+                                          </span>
+                                          <Badge variant="outline" className="text-xs">
+                                            {permissionsData?.grouped[section]?.filter(p => roleForm.permissionIds.includes(p.id)).length || 0}
+                                            /{permissionsData?.grouped[section]?.length || 0}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </CollapsibleContent>
                               </div>
-                              {permission.description && (
-                                <p className="text-xs text-muted-foreground">
-                                  {permission.description}
-                                </p>
-                              )}
+                            </Collapsible>
+                          );
+                        })}
+                      </div>
+
+                      <div className="space-y-2 border-l pl-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium">{t('settings:permissionPages')}</p>
+                          {selectedSection && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleSectionPermissions(selectedSection, true)}
+                                className="min-h-[36px] text-xs"
+                                data-testid="button-select-all"
+                              >
+                                {t('settings:selectAllSection')}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleSectionPermissions(selectedSection, false)}
+                                className="min-h-[36px] text-xs"
+                                data-testid="button-deselect-all"
+                              >
+                                {t('settings:deselectAllSection')}
+                              </Button>
                             </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <Settings className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm font-medium">{t('settings:selectSectionToViewPermissions')}</p>
-                          <p className="text-xs mt-1">{t('settings:clickOnSectionFromLeft')}</p>
+                          )}
                         </div>
-                      )}
+                        <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
+                          {selectedSection ? (
+                            permissionsData?.grouped[selectedSection]?.map((permission) => (
+                              <div
+                                key={permission.id}
+                                onClick={() => togglePermission(permission.id)}
+                                className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px] cursor-pointer ${
+                                  permission.isSensitive ? 'border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : ''
+                                }`}
+                                data-testid={`permission-row-${permission.id}`}
+                              >
+                                <Checkbox
+                                  checked={roleForm.permissionIds.includes(permission.id)}
+                                  onCheckedChange={() => togglePermission(permission.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="min-h-[20px] min-w-[20px]"
+                                  data-testid={`checkbox-permission-${permission.id}`}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium text-sm">
+                                      {getPermissionDisplayName(permission)}
+                                    </p>
+                                    {permission.isSensitive && (
+                                      <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                                        <ShieldAlert className="h-3 w-3 mr-1" />
+                                        {t('settings:sensitiveData')}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {permission.description && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {permission.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-12 text-muted-foreground">
+                              <Settings className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                              <p className="text-sm font-medium">{t('settings:selectSectionToViewPermissions')}</p>
+                              <p className="text-xs mt-1">{t('settings:clickOnSectionFromLeft')}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           <DialogFooter className="gap-2">

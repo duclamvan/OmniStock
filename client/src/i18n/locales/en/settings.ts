@@ -1006,6 +1006,8 @@ const settings = {
   allPermissions: 'All Permissions',
   fullAccessTitle: 'Full System Access',
   fullAccessDescription: 'Administrators have unrestricted access to all features, pages, and sensitive data across the entire system.',
+  allPages: 'All Pages',
+  allFeatures: 'All Features',
   permissionCount: 'Permissions',
   userCount: 'Users',
   noRolesFound: 'No roles found',

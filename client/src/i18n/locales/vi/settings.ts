@@ -1007,6 +1007,8 @@ const settings = {
   allPermissions: 'Tất cả quyền hạn',
   fullAccessTitle: 'Toàn quyền hệ thống',
   fullAccessDescription: 'Quản trị viên có quyền truy cập không giới hạn vào tất cả tính năng, trang và dữ liệu nhạy cảm trong toàn bộ hệ thống.',
+  allPages: 'Tất cả trang',
+  allFeatures: 'Tất cả tính năng',
   permissionCount: 'Quyền hạn',
   userCount: 'Người dùng',
   noRolesFound: 'Không tìm thấy vai trò',
