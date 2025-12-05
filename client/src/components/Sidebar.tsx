@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   ChartLine, 
@@ -25,6 +25,14 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
+
+// Helper to check if current path matches a nav item (prefix matching)
+function isPathActive(currentPath: string, itemPath: string): boolean {
+  if (itemPath === '/') {
+    return currentPath === '/';
+  }
+  return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+}
 
 interface NavItem {
   labelKey: string;
@@ -190,18 +198,20 @@ export function Sidebar() {
   }, [isAdministrator]);
   
   // Find parent menus that should be open based on current location
-  const getInitialOpenItems = () => {
+  const getInitialOpenItems = useCallback(() => {
     const openMenus: string[] = [];
     filteredNavigation.forEach(item => {
       if (item.children) {
-        const hasActiveChild = item.children.some(child => child.href === location);
+        const hasActiveChild = item.children.some(child => 
+          child.href ? isPathActive(location, child.href) : false
+        );
         if (hasActiveChild) {
           openMenus.push(item.labelKey);
         }
       }
     });
     return openMenus;
-  };
+  }, [filteredNavigation, location]);
 
   const [openItems, setOpenItems] = useState<string[]>(getInitialOpenItems());
 
@@ -223,11 +233,13 @@ export function Sidebar() {
       // Check if it's a child item
       filteredNavigation.forEach(item => {
         if (item.children) {
-          const activeChild = item.children.find(child => child.href === location);
+          const activeChild = item.children.find(child => 
+            child.href ? isPathActive(location, child.href) : false
+          );
           if (activeChild) {
             activeKey = `${item.labelKey}-${activeChild.href}`;
           }
-        } else if (item.href === location) {
+        } else if (item.href && isPathActive(location, item.href)) {
           activeKey = item.labelKey;
         }
       });
@@ -271,7 +283,9 @@ export function Sidebar() {
           {filteredNavigation.map((item) => {
             if (item.children) {
               const isOpen = openItems.includes(item.labelKey);
-              const isActive = item.children.some(child => location === child.href);
+              const isActive = item.children.some(child => 
+                child.href ? isPathActive(location, child.href) : false
+              );
               
               return (
                 <div
@@ -308,7 +322,7 @@ export function Sidebar() {
                   <CollapsibleContent className="space-y-1">
                     <div className="pl-8 space-y-1">
                       {item.children.map((child) => {
-                        const isChildActive = location === child.href;
+                        const isChildActive = child.href ? isPathActive(location, child.href) : false;
                         return (
                           <div
                             key={child.href}
@@ -341,7 +355,7 @@ export function Sidebar() {
               );
             }
 
-            const isActive = location === item.href;
+            const isActive = item.href ? isPathActive(location, item.href) : false;
             
             return (
               <div
