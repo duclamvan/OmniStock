@@ -150,8 +150,16 @@ const SECTION_ICONS: Record<string, typeof Shield> = {
   reports: BarChart3,
   settings: Settings,
   financial: DollarSign,
+  finances: DollarSign,
   employees: UserCog,
   imports: FolderDown,
+  packing: Package,
+  pos: ShoppingCart,
+  stock: Package,
+  returns: Package,
+  services: Settings,
+  tickets: Users,
+  users: Users,
 };
 
 function getSectionIcon(section: string) {
