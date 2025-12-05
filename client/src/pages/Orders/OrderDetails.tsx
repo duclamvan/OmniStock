@@ -1125,38 +1125,38 @@ export default function OrderDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Order Items and Pricing */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Action Buttons - Above Invoice */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadInvoice}
-              data-testid="button-capture-order"
-              className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {t('orders:captureOrder')}
-            </Button>
-            {order.orderStatus === 'to_fulfill' && (
-              <Button
-                variant={showPickingMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowPickingMode(!showPickingMode)}
-                className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                {showPickingMode ? t('orders:exitPickingMode') : t('orders:startPickingMode')}
-              </Button>
-            )}
-          </div>
-
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef} className="overflow-hidden">
             <CardHeader className="border-b border-slate-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                {t('orders:invoice')}
-              </CardTitle>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('orders:invoice')}
+                </CardTitle>
+                <div className="flex items-center gap-2" data-hide-in-screenshot>
+                  {order.orderStatus === 'to_fulfill' && (
+                    <Button
+                      variant={showPickingMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowPickingMode(!showPickingMode)}
+                      className="h-8 text-xs"
+                    >
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                      {showPickingMode ? t('orders:exitPickingMode') : t('orders:startPickingMode')}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadInvoice}
+                    data-testid="button-capture-order"
+                    className="h-8 text-xs"
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                    {t('orders:captureOrder')}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
