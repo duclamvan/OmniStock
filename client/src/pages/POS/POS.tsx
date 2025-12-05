@@ -496,12 +496,13 @@ export default function POS() {
   }, [allItems, searchQuery, selectedCategory]);
 
   const filteredCustomers = useMemo(() => {
-    if (!customerSearchQuery.trim()) return customers.slice(0, 10);
+    if (!customerSearchQuery.trim()) return customers.slice(0, 15);
     return fuzzySearch(customers, customerSearchQuery, {
-      fields: ['firstName', 'lastName', 'company', 'email', 'phone'],
+      fields: ['firstName', 'lastName', 'company', 'email', 'phone', 'facebookName', 'city', 'country'],
       threshold: 0.3,
       fuzzy: true,
-    }).map(r => r.item).slice(0, 10);
+      vietnameseNormalization: true,
+    }).map(r => r.item).slice(0, 15);
   }, [customers, customerSearchQuery]);
 
   const filteredPayLaterCustomers = useMemo(() => {
@@ -1612,47 +1613,100 @@ export default function POS() {
       <Dialog open={showCustomerSearch} onOpenChange={setShowCustomerSearch}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Select Customer</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {t('pos:selectCustomer', 'Select Customer')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('pos:searchCustomerHint', 'Search by name, Facebook, phone, email, city, or country')}
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={customerSearchQuery}
-              onChange={(e) => setCustomerSearchQuery(e.target.value)}
-              className="h-12"
-              autoFocus
-              data-testid="input-customer-search"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder={t('pos:searchCustomerPlaceholder', 'Search customers...')}
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                className="pl-10 h-12"
+                autoFocus
+                data-testid="input-customer-search"
+              />
+              {customerSearchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setCustomerSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[350px]">
               <div className="space-y-2">
+                {/* Walk-in Customer Option */}
                 <Button
                   variant="outline"
-                  className="w-full h-14 justify-start"
+                  className="w-full min-h-[56px] h-auto py-3 justify-start"
                   onClick={() => { setSelectedCustomerId(''); setShowCustomerSearch(false); }}
                   data-testid="button-walkin-customer"
                 >
-                  <User className="h-5 w-5 mr-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">Walk-in Customer</span>
+                  <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full mr-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-muted-foreground">{t('pos:walkInCustomer', 'Walk-in Customer')}</p>
+                    <p className="text-xs text-muted-foreground">{t('pos:noCustomerRecord', 'No customer record')}</p>
+                  </div>
                 </Button>
+                
+                {filteredCustomers.length === 0 && customerSearchQuery && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>{t('common:noResultsFound', 'No customers found')}</p>
+                    <p className="text-sm">{t('common:tryDifferentSearch', 'Try a different search term')}</p>
+                  </div>
+                )}
                 
                 {filteredCustomers.map((customer) => (
                   <Button
                     key={customer.id}
                     variant="outline"
-                    className="w-full h-14 justify-start"
+                    className="w-full min-h-[70px] h-auto py-3 justify-start"
                     onClick={() => { setSelectedCustomerId(customer.id); setShowCustomerSearch(false); }}
                     data-testid={`button-customer-${customer.id}`}
                   >
-                    <User className="h-5 w-5 mr-3" />
-                    <div className="text-left">
-                      <p className="font-medium">
-                        {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email}
+                    <div className="p-2 bg-primary/10 rounded-full mr-3 shrink-0">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-left flex-1 min-w-0">
+                      {/* Customer Name */}
+                      <p className="font-medium truncate">
+                        {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.email || 'Unknown'}
                       </p>
-                      {customer.phone && (
-                        <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                      
+                      {/* Facebook Name */}
+                      {customer.facebookName && (
+                        <p className="text-xs text-blue-500 dark:text-blue-400 truncate flex items-center gap-1">
+                          <span className="font-medium">FB:</span> {customer.facebookName}
+                        </p>
                       )}
+                      
+                      {/* Contact & Location Info */}
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                        {customer.phone && (
+                          <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                        )}
+                        {(customer.city || customer.country) && (
+                          <span className="text-xs text-muted-foreground">
+                            {[customer.city, customer.country].filter(Boolean).join(', ')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Button>
                 ))}
