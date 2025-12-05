@@ -67,6 +67,8 @@ import {
   FolderDown,
   Building2,
   LayoutDashboard,
+  Check,
+  Minus,
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -932,20 +934,27 @@ export default function RolesSettings() {
                                 className={`flex items-center gap-3 p-4 cursor-pointer min-h-[64px] bg-muted/50 hover:bg-muted transition-colors`}
                                 data-testid={`parent-${parentKey}`}
                               >
-                                <Checkbox
-                                  checked={parentFullySelected}
-                                  ref={(ref) => {
-                                    if (ref && parentPartiallySelected) {
-                                      (ref as any).indeterminate = true;
-                                    }
+                                <div
+                                  role="checkbox"
+                                  aria-checked={parentFullySelected ? "true" : parentPartiallySelected ? "mixed" : "false"}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleParentPermissions(parentKey, !parentFullySelected && !parentPartiallySelected);
                                   }}
-                                  onCheckedChange={(checked) => {
-                                    toggleParentPermissions(parentKey, !!checked);
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="min-h-[24px] min-w-[24px]"
+                                  className={`flex items-center justify-center min-h-[24px] min-w-[24px] h-6 w-6 rounded border-2 cursor-pointer transition-colors ${
+                                    parentFullySelected || parentPartiallySelected
+                                      ? 'bg-primary border-primary'
+                                      : 'bg-background border-input hover:border-primary'
+                                  }`}
                                   data-testid={`checkbox-parent-${parentKey}`}
-                                />
+                                >
+                                  {parentFullySelected && (
+                                    <Check className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
+                                  )}
+                                  {parentPartiallySelected && !parentFullySelected && (
+                                    <Minus className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
+                                  )}
+                                </div>
                                 <ParentIcon className={`h-6 w-6 ${color}`} />
                                 <div className="flex-1">
                                   <span className="font-semibold text-base">
@@ -984,20 +993,27 @@ export default function RolesSettings() {
                                       onClick={() => handleSectionClick(parentKey, section)}
                                       data-testid={`section-${section}`}
                                     >
-                                      <Checkbox
-                                        checked={isFullySelected}
-                                        ref={(ref) => {
-                                          if (ref && isPartialSelected) {
-                                            (ref as any).indeterminate = true;
-                                          }
+                                      <div
+                                        role="checkbox"
+                                        aria-checked={isFullySelected ? "true" : isPartialSelected ? "mixed" : "false"}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleSectionPermissions(section, !isFullySelected && !isPartialSelected);
                                         }}
-                                        onCheckedChange={(checked) => {
-                                          toggleSectionPermissions(section, !!checked);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="min-h-[20px] min-w-[20px]"
+                                        className={`flex items-center justify-center min-h-[20px] min-w-[20px] h-5 w-5 rounded border-2 cursor-pointer transition-colors ${
+                                          isFullySelected || isPartialSelected
+                                            ? 'bg-primary border-primary'
+                                            : 'bg-background border-input hover:border-primary'
+                                        }`}
                                         data-testid={`checkbox-section-${section}`}
-                                      />
+                                      >
+                                        {isFullySelected && (
+                                          <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                                        )}
+                                        {isPartialSelected && !isFullySelected && (
+                                          <Minus className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                                        )}
+                                      </div>
                                       <Icon className="h-5 w-5 text-muted-foreground" />
                                       <span className="font-medium capitalize flex-1">
                                         {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
