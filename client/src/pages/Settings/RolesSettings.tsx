@@ -71,6 +71,12 @@ import {
   Check,
   Minus,
   Crown,
+  Percent,
+  PackageCheck,
+  ReceiptText,
+  Wrench,
+  Ticket,
+  ClipboardList,
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -146,6 +152,8 @@ const SECTION_ICONS: Record<string, typeof Shield> = {
   orders: ShoppingCart,
   inventory: Package,
   warehouse: Warehouse,
+  warehouses: Warehouse,
+  warehousedashboard: ClipboardList,
   customers: Users,
   suppliers: Building2,
   shipping: Truck,
@@ -156,12 +164,16 @@ const SECTION_ICONS: Record<string, typeof Shield> = {
   employees: UserCog,
   imports: FolderDown,
   packing: Package,
+  pickpack: PackageCheck,
   pos: ShoppingCart,
-  stock: Package,
+  stock: ClipboardList,
   returns: Package,
-  services: Settings,
-  tickets: Users,
+  services: Wrench,
+  tickets: Ticket,
   users: Users,
+  discounts: Percent,
+  expenses: ReceiptText,
+  receiving: Package,
 };
 
 function getSectionIcon(section: string) {
