@@ -25,7 +25,9 @@ export function useAuth() {
   const isAdministrator = user?.role === 'administrator';
   const isWarehouseOperator = user?.role === 'warehouse_operator';
   
+  // Administrator has full access to everything
   const hasPermission = (permission: string): boolean => {
+    if (isAdministrator) return true; // Admin has all permissions
     return user?.permissions?.includes(permission) ?? false;
   };
 
@@ -33,11 +35,11 @@ export function useAuth() {
     return user?.role === role;
   };
 
-  // Sensitive financial data access checks
-  const canViewImportCost = hasPermission(SENSITIVE_PERMISSIONS.VIEW_IMPORT_COST);
-  const canViewProfit = hasPermission(SENSITIVE_PERMISSIONS.VIEW_PROFIT);
-  const canViewMargin = hasPermission(SENSITIVE_PERMISSIONS.VIEW_MARGIN);
-  const canAccessSensitiveData = canViewImportCost || canViewProfit || canViewMargin;
+  // Sensitive financial data access checks - Admin always has access
+  const canViewImportCost = isAdministrator || hasPermission(SENSITIVE_PERMISSIONS.VIEW_IMPORT_COST);
+  const canViewProfit = isAdministrator || hasPermission(SENSITIVE_PERMISSIONS.VIEW_PROFIT);
+  const canViewMargin = isAdministrator || hasPermission(SENSITIVE_PERMISSIONS.VIEW_MARGIN);
+  const canAccessSensitiveData = isAdministrator || canViewImportCost || canViewProfit || canViewMargin;
 
   return {
     user,

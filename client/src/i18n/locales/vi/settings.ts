@@ -1003,6 +1003,8 @@ const settings = {
   roleType: 'Loại',
   systemRole: 'Hệ thống',
   customRole: 'Tùy chỉnh',
+  fullAccess: 'Toàn quyền',
+  allPermissions: 'Tất cả quyền hạn',
   permissionCount: 'Quyền hạn',
   userCount: 'Người dùng',
   noRolesFound: 'Không tìm thấy vai trò',

@@ -654,9 +654,18 @@ export default function RolesSettings() {
                                   <Badge variant={role.isSystem ? "secondary" : "outline"}>
                                     {role.isSystem ? t('settings:systemRole') : t('settings:customRole')}
                                   </Badge>
+                                  {role.name === 'administrator' && (
+                                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                                      {t('settings:fullAccess')}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                  <span>{role.permissions.length} {t('settings:permissionCount')}</span>
+                                  {role.name === 'administrator' ? (
+                                    <span className="text-amber-600 dark:text-amber-400 font-medium">{t('settings:allPermissions')}</span>
+                                  ) : (
+                                    <span>{role.permissions.length} {t('settings:permissionCount')}</span>
+                                  )}
                                   <span>{userCount} {t('settings:userCount')}</span>
                                 </div>
                               </div>

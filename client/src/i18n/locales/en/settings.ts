@@ -1002,6 +1002,8 @@ const settings = {
   roleType: 'Type',
   systemRole: 'System',
   customRole: 'Custom',
+  fullAccess: 'Full Access',
+  allPermissions: 'All Permissions',
   permissionCount: 'Permissions',
   userCount: 'Users',
   noRolesFound: 'No roles found',
