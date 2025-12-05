@@ -63,6 +63,7 @@ interface RecentOrder {
   status: string;
   paymentStatus?: string;
   grandTotal: string;
+  totalCost?: string;
   currency: string;
   createdAt: string;
 }
@@ -587,6 +588,11 @@ export default function Home() {
                           <p className="font-bold text-sm text-gray-900 dark:text-white">
                             {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
                           </p>
+                          {order.totalCost && (
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                              +{formatCurrency(parseFloat(order.grandTotal) - parseFloat(order.totalCost), order.currency as any)}
+                            </p>
+                          )}
                         </div>
                         <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                       </div>
