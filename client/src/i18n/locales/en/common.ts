@@ -344,6 +344,7 @@ const common = {
   
   // Notification Messages
   newNotifications: '{{count}} new',
+  viewAll: 'View All',
   viewAllNotifications: 'View all notifications',
   markAsRead: 'Mark as read',
   noNotifications: 'No notifications',
