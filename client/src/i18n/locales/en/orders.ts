@@ -1505,6 +1505,8 @@ const orders = {
   packingTime: 'Packing Time',
   completePackingReadyForShipping: 'Complete Packing - Ready for Shipping',
   completeAllStepsToFinishPacking: 'Complete All Steps to Finish Packing',
+  forceFinishPacking: 'Force Finish Packing (Skip Checks)',
+  forceFinishWarning: 'This will complete packing without verifying all steps. Use only if you are certain everything is correct.',
   
   // PickPack.tsx - Details & Information
   details: 'Details',

@@ -1660,6 +1660,7 @@ export default function PickPack() {
   const [manualItemIndex, setManualItemIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const [showResetOrderDialog, setShowResetOrderDialog] = useState(false);
+  const [showForceFinishButton, setShowForceFinishButton] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const overviewBarcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -11515,6 +11516,8 @@ export default function PickPack() {
                         duration: 5000,
                       });
                       playSound('error');
+                      // Show force finish button after failed validation
+                      setShowForceFinishButton(true);
                       return true;
                     }
                     return false;
@@ -11679,6 +11682,7 @@ export default function PickPack() {
                     duration: 5000,
                   });
                   playSound('error');
+                  setShowForceFinishButton(true);
                 }
               }}
               className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
@@ -11700,6 +11704,28 @@ export default function PickPack() {
                 </>
               )}
             </Button>
+            
+            {/* Force Finish Button - Only shows after failed validation attempt */}
+            {showForceFinishButton && !canCompletePacking && (
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
+                  {t('forceFinishWarning')}
+                </p>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    completePacking();
+                    setShowForceFinishButton(false);
+                  }}
+                  className="w-full h-10 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                  data-testid="button-force-finish-packing"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                  {t('forceFinishPacking')}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

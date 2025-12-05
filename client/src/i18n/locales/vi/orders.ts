@@ -1527,6 +1527,8 @@ const orders = {
   clickToUnverifyAll: 'Nhấp để bỏ xác minh tất cả',
   completePackingReadyForShipping: 'Hoàn tất đóng gói - Sẵn sàng vận chuyển',
   completeAllStepsToFinishPacking: 'Hoàn thành tất cả các bước để kết thúc đóng gói',
+  forceFinishPacking: 'Hoàn tất bắt buộc (Bỏ qua kiểm tra)',
+  forceFinishWarning: 'Thao tác này sẽ hoàn tất đóng gói mà không xác minh tất cả các bước. Chỉ sử dụng khi bạn chắc chắn mọi thứ đều đúng.',
   
   // PickPack.tsx - Status & Totals
   date: 'Ngày:',
