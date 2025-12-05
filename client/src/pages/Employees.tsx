@@ -402,11 +402,11 @@ export default function Employees() {
           ) : (
             <>
               {/* Mobile Card View */}
-              <div className="sm:hidden space-y-3">
+              <div className="sm:hidden space-y-4 px-4 py-4">
                 {employees.map((employee) => (
                   <div 
                     key={employee.id} 
-                    className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4"
+                    className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4"
                     data-testid={`card-employee-${employee.id}`}
                   >
                     <div className="space-y-3">
