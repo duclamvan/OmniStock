@@ -173,7 +173,7 @@ export default function RolesSettings() {
   const [expandedRoles, setExpandedRoles] = useState<Set<number>>(new Set());
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [activeParent, setActiveParent] = useState<ParentSection>('warehouse_operations');
-  const [expandedParents, setExpandedParents] = useState<Set<ParentSection>>(new Set(['warehouse_operations', 'administration']));
+  const [expandedParents, setExpandedParents] = useState<Set<ParentSection>>(new Set<ParentSection>(['warehouse_operations', 'administration']));
 
   const [roleForm, setRoleForm] = useState({
     name: '',
@@ -364,7 +364,7 @@ export default function RolesSettings() {
     setRoleForm(prev => {
       let newIds: number[];
       if (select) {
-        newIds = [...new Set([...prev.permissionIds, ...sectionIds])];
+        newIds = Array.from(new Set([...prev.permissionIds, ...sectionIds]));
       } else {
         newIds = prev.permissionIds.filter(id => !sectionIds.includes(id));
       }
@@ -393,7 +393,7 @@ export default function RolesSettings() {
     setRoleForm(prev => {
       let newIds: number[];
       if (select) {
-        newIds = [...new Set([...prev.permissionIds, ...parentIds])];
+        newIds = Array.from(new Set([...prev.permissionIds, ...parentIds]));
       } else {
         newIds = prev.permissionIds.filter(id => !parentIds.includes(id));
       }

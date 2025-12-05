@@ -1037,6 +1037,7 @@ const settings = {
   sections: 'phần',
   selectSectionToViewPermissions: 'Chọn một phần để xem quyền hạn',
   clickOnSectionFromLeft: 'Nhấp vào bất kỳ phần nào từ bảng bên trái',
+  sensitiveData: 'Nhạy cảm',
   
   // Permission Sections
   sectionDashboard: 'Bảng điều khiển',

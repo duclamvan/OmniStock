@@ -1036,6 +1036,7 @@ const settings = {
   sections: 'sections',
   selectSectionToViewPermissions: 'Select a section to view permissions',
   clickOnSectionFromLeft: 'Click on any section from the left panel',
+  sensitiveData: 'Sensitive',
   
   // Permission Sections
   sectionDashboard: 'Dashboard',
