@@ -104,7 +104,8 @@ export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);

@@ -305,7 +305,8 @@ export default function AddOrder() {
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
-  const { user, canAccessFinancialData } = useAuth();
+  const { user, canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const canAccessFinancialData = canViewProfit || canViewMargin;
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers, shippingSettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;

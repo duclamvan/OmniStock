@@ -292,7 +292,8 @@ export default function EditOrder() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const canAccessFinancialData = canViewProfit || canViewMargin;
   const { generalSettings, financialHelpers, shippingSettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);

@@ -135,7 +135,8 @@ function useDailyHighScores(statistics: {
 
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation(['orders', 'common']);
   const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");

@@ -645,13 +645,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.user.role = dbUser.role;
       req.user.createdAt = dbUser.createdAt;
 
+      // Fetch user's permissions based on their role
+      let userPermissions: string[] = [];
+      if (dbUser.role) {
+        const [userRole] = await db.select().from(roles).where(eq(roles.name, dbUser.role));
+        if (userRole) {
+          const rolePerms = await db.select({
+            permission: permissions
+          })
+            .from(rolePermissions)
+            .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+            .where(eq(rolePermissions.roleId, userRole.id));
+          // Create permission names in format: section.page
+          userPermissions = rolePerms.map(rp => `${rp.permission.section}.${rp.permission.page}`);
+        }
+      }
+
       res.json({
         id: dbUser.id,
         email: dbUser.email,
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
         role: dbUser.role,
-        createdAt: dbUser.createdAt
+        createdAt: dbUser.createdAt,
+        permissions: userPermissions
       });
     } catch (error) {
       console.error('Error fetching current user:', error);
@@ -934,8 +951,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // System roles can only have permissions updated, not name/description
-      if (existingRole.isSystem && (roleData.name || roleData.displayName)) {
-        return res.status(403).json({ message: 'Cannot modify system role name' });
+      // Only reject if the name or displayName is actually being changed
+      if (existingRole.isSystem) {
+        if (roleData.name && roleData.name !== existingRole.name) {
+          return res.status(403).json({ message: 'Cannot modify system role name' });
+        }
+        if (roleData.displayName && roleData.displayName !== existingRole.displayName) {
+          return res.status(403).json({ message: 'Cannot modify system role display name' });
+        }
       }
       
       // Update role data if provided
