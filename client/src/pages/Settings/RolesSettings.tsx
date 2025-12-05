@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   Shield,
+  ShieldAlert,
   Users,
   Lock,
   Plus,
@@ -81,6 +82,7 @@ interface Permission {
   displayName: string;
   displayNameVi: string | null;
   description: string | null;
+  isSensitive: boolean;
   sortOrder: number;
 }
 
@@ -1046,7 +1048,9 @@ export default function RolesSettings() {
                         permissionsData?.grouped[selectedSection]?.map((permission) => (
                           <div
                             key={permission.id}
-                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px]"
+                            className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted min-h-[56px] ${
+                              permission.isSensitive ? 'border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : ''
+                            }`}
                           >
                             <Checkbox
                               checked={roleForm.permissionIds.includes(permission.id)}
@@ -1055,9 +1059,17 @@ export default function RolesSettings() {
                               data-testid={`checkbox-permission-${permission.id}`}
                             />
                             <div className="flex-1">
-                              <p className="font-medium text-sm">
-                                {getPermissionDisplayName(permission)}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm">
+                                  {getPermissionDisplayName(permission)}
+                                </p>
+                                {permission.isSensitive && (
+                                  <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                                    <ShieldAlert className="h-3 w-3 mr-1" />
+                                    {t('settings:sensitiveData')}
+                                  </Badge>
+                                )}
+                              </div>
                               {permission.description && (
                                 <p className="text-xs text-muted-foreground">
                                   {permission.description}
