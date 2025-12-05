@@ -14710,17 +14710,15 @@ export default function PickPack() {
                                   <div className="p-2.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                                     <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                                   </div>
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-wide uppercase">
-                                        {section.title}
-                                      </h3>
-                                      {'subtitle' in section && section.subtitle && (
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
-                                          ({section.subtitle})
-                                        </span>
-                                      )}
-                                    </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 tracking-wide uppercase truncate">
+                                      {section.title}
+                                    </h3>
+                                    {'subtitle' in section && section.subtitle && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">
+                                        {section.subtitle}
+                                      </p>
+                                    )}
                                     <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
                                       {section.orders.length} {section.orders.length === 1 ? t('orderReady') : t('ordersReady')}
                                     </p>
