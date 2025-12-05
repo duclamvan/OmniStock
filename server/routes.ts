@@ -1744,6 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const metrics = await storage.getDashboardMetrics();
       const allOrders = await storage.getOrders();
+      const allExpenses = await storage.getExpenses();
 
       // Convert amount to EUR
       const convertToEur = (amount: number, currency: string): number => {
@@ -1768,6 +1769,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+
+      // Filter expenses by date ranges (only 'paid' expenses count)
+      const todayExpenses = allExpenses.filter(expense => {
+        if (expense.status !== 'paid') return false;
+        const expenseDate = new Date(expense.date!);
+        expenseDate.setHours(0, 0, 0, 0);
+        return expenseDate.getTime() === today.getTime();
+      });
+
+      // End of today (to avoid counting future-dated expenses)
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const thisMonthExpenses = allExpenses.filter(expense => {
+        if (expense.status !== 'paid') return false;
+        const expenseDate = new Date(expense.date!);
+        return expenseDate >= thisMonthStart && expenseDate <= todayEnd;
+      });
+
+      const lastMonthExpenses = allExpenses.filter(expense => {
+        if (expense.status !== 'paid') return false;
+        const expenseDate = new Date(expense.date!);
+        return expenseDate >= lastMonthStart && expenseDate <= lastMonthEnd;
+      });
+
+      // Calculate total expenses in EUR
+      const calculateExpensesInEur = (expenses: Expense[]) => {
+        return expenses.reduce((sum, expense) => {
+          const amount = parseFloat(expense.amount || '0');
+          return sum + convertToEur(amount, expense.currency || 'CZK');
+        }, 0);
+      };
+
+      const todayExpensesEur = calculateExpensesInEur(todayExpenses);
+      const thisMonthExpensesEur = calculateExpensesInEur(thisMonthExpenses);
+      const lastMonthExpensesEur = calculateExpensesInEur(lastMonthExpenses);
 
       // Fulfill Orders Today: ALL orders with status "to_fulfill"
       const fulfillOrdersToday = allOrders.filter(order => order.orderStatus === 'to_fulfill').length;
@@ -1863,15 +1900,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return totalProfit;
       };
 
+      // Calculate base profits (from orders only)
+      const baseProfitToday = await calculateProfitInEur(todayShippedOrders);
+      const baseProfitThisMonth = await calculateProfitInEur(thisMonthOrders);
+      const baseProfitLastMonth = await calculateProfitInEur(lastMonthOrders);
+
+      // Net profit = order profit - expenses (expenses reduce profit)
       const metricsWithConversion = {
         fulfillOrdersToday,
         totalOrdersToday: todayShippedOrders.length,
         totalRevenueToday: calculateRevenueInEur(todayShippedOrders),
-        totalProfitToday: await calculateProfitInEur(todayShippedOrders),
+        totalProfitToday: baseProfitToday - todayExpensesEur,
         thisMonthRevenue: calculateRevenueInEur(thisMonthOrders),
-        thisMonthProfit: await calculateProfitInEur(thisMonthOrders),
+        thisMonthProfit: baseProfitThisMonth - thisMonthExpensesEur,
         lastMonthRevenue: calculateRevenueInEur(lastMonthOrders),
-        lastMonthProfit: await calculateProfitInEur(lastMonthOrders),
+        lastMonthProfit: baseProfitLastMonth - lastMonthExpensesEur,
+        // Include expense totals for transparency
+        todayExpenses: todayExpensesEur,
+        thisMonthExpenses: thisMonthExpensesEur,
+        lastMonthExpenses: lastMonthExpensesEur,
         exchangeRates: exchangeRates.eur
       };
 
@@ -1902,6 +1949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
       const allOrders = await storage.getOrders();
+      const allExpenses = await storage.getExpenses();
 
       // Generate monthly summary
       const monthlySummary = [];
@@ -1913,6 +1961,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const orderDate = new Date(order.createdAt);
           return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         });
+
+        // Filter expenses for this month (only paid expenses count)
+        const monthExpenses = allExpenses.filter(expense => {
+          if (expense.status !== 'paid') return false;
+          const expenseDate = new Date(expense.date!);
+          return expenseDate >= monthStart && expenseDate <= monthEnd;
+        });
+
+        // Calculate monthly expenses in EUR
+        const monthExpensesEur = monthExpenses.reduce((sum, expense) => {
+          const amount = parseFloat(expense.amount || '0');
+          return sum + convertToEur(amount, expense.currency || 'CZK');
+        }, 0);
 
         // Separate orders by currency
         const czkOrders = monthOrders.filter(order => order.currency === 'CZK');
@@ -1954,7 +2015,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + convertToEur(revenue, order.currency);
         }, 0);
 
-        const totalProfitEur = monthOrders.reduce((sum, order) => {
+        // Calculate base profit (from orders) in EUR
+        const baseProfitEur = monthOrders.reduce((sum, order) => {
           const grandTotal = parseFloat(order.grandTotal || '0');
           const totalCost = parseFloat(order.totalCost || '0');
           const tax = parseFloat(order.tax || '0');
@@ -1965,10 +2027,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + convertToEur(profit, order.currency);
         }, 0);
 
+        // Net profit = order profit - expenses
+        const totalProfitEur = baseProfitEur - monthExpensesEur;
+
         // Convert EUR totals to CZK
-        const eurToCzk = exchangeRates.eur?.czk || 25.0;
+        const eurToCzk = exchangeRates.rates?.CZK || 25.0;
         const totalProfitCzk = totalProfitEur * eurToCzk;
         const totalRevenueCzk = totalRevenueEur * eurToCzk;
+        const monthExpensesCzk = monthExpensesEur * eurToCzk;
 
         monthlySummary.push({
           month: `${String(month + 1).padStart(2, '0')}-${String(year).slice(-2)}`,
@@ -1980,7 +2046,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           revenueEurOrders,
           totalProfitCzk,
           totalRevenueCzk,
-          orderCount: monthOrders.length
+          orderCount: monthOrders.length,
+          // Include expense data for transparency
+          expensesEur: monthExpensesEur,
+          expensesCzk: monthExpensesCzk,
+          expenseCount: monthExpenses.length
         });
       }
 
@@ -10958,7 +11028,33 @@ Important:
 
   app.get('/api/reports/financial-summary', requireRole(['administrator']), async (req, res) => {
     try {
-      const { year, month } = req.query;
+      const { year, month, baseCurrency = 'CZK' } = req.query;
+
+      // Fetch exchange rates from Frankfurter API for currency conversion
+      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+      const exchangeRates = await exchangeRateResponse.json();
+
+      // Convert amount to base currency (default CZK)
+      const convertToBaseCurrency = (amount: number, fromCurrency: string): number => {
+        if (!amount || !fromCurrency) return 0;
+        const base = (baseCurrency as string).toUpperCase();
+        const from = fromCurrency.toUpperCase();
+        if (from === base) return amount;
+
+        // First convert to EUR, then to base currency
+        let amountInEur = amount;
+        if (from !== 'EUR' && exchangeRates.rates && exchangeRates.rates[from]) {
+          amountInEur = amount / exchangeRates.rates[from];
+        }
+
+        // Then convert from EUR to base currency
+        if (base === 'EUR') return amountInEur;
+        if (exchangeRates.rates && exchangeRates.rates[base]) {
+          return amountInEur * exchangeRates.rates[base];
+        }
+
+        return amount; // Fallback if rate not found
+      };
 
       // Get financial data
       const orders = await storage.getOrders();
@@ -10984,23 +11080,41 @@ Important:
         }
       }
 
-      // Calculate financial summary
+      // Calculate financial summary with currency conversion
       const revenue = filteredOrders
         .filter(o => o.status === 'shipped' || o.status === 'delivered')
-        .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+        .reduce((sum, order) => {
+          const amount = parseFloat(order.total || '0');
+          return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
+        }, 0);
 
+      // Calculate expenses with currency conversion (only paid expenses count)
       const totalExpenses = filteredExpenses
         .filter(e => e.status === 'paid')
-        .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
+        .reduce((sum, expense) => {
+          const amount = parseFloat(expense.amount || '0');
+          return sum + convertToBaseCurrency(amount, expense.currency || 'CZK');
+        }, 0);
 
       const totalPurchases = filteredPurchases
         .reduce((sum, purchase) => {
           const qty = purchase.quantity || 0;
           const price = parseFloat(purchase.importPrice || '0');
-          return sum + (qty * price);
+          return sum + (qty * price); // Purchases are typically in the same currency
         }, 0);
 
       const profit = revenue - totalExpenses - totalPurchases;
+
+      // Calculate expense breakdown with currency conversion
+      const expenseBreakdown = filteredExpenses
+        .filter(e => e.status === 'paid')
+        .reduce((acc, expense) => {
+          const category = expense.category || 'Other';
+          const amount = parseFloat(expense.amount || '0');
+          const convertedAmount = convertToBaseCurrency(amount, expense.currency || 'CZK');
+          acc[category] = (acc[category] || 0) + convertedAmount;
+          return acc;
+        }, {} as Record<string, number>);
 
       const summary = {
         revenue,
@@ -11008,12 +11122,9 @@ Important:
         purchases: totalPurchases,
         profit,
         profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
-        expenseBreakdown: filteredExpenses.reduce((acc, expense) => {
-          const category = expense.category || 'Other';
-          acc[category] = (acc[category] || 0) + parseFloat(expense.amount || '0');
-          return acc;
-        }, {} as Record<string, number>),
-        monthlyTrend: year ? getMonthlyTrend(orders, expenses, purchases, parseInt(year as string)) : []
+        expenseBreakdown,
+        baseCurrency,
+        monthlyTrend: year ? getMonthlyTrendWithCurrency(orders, expenses, purchases, parseInt(year as string), convertToBaseCurrency) : []
       };
 
       res.json(summary);
@@ -11023,8 +11134,14 @@ Important:
     }
   });
 
-  // Helper function for monthly trend
-  function getMonthlyTrend(orders: Order[], expenses: Expense[], purchases: Purchase[], year: number) {
+  // Helper function for monthly trend with currency conversion
+  function getMonthlyTrendWithCurrency(
+    orders: Order[], 
+    expenses: Expense[], 
+    purchases: Purchase[], 
+    year: number,
+    convertToBaseCurrency: (amount: number, currency: string) => number
+  ) {
     const months = Array.from({ length: 12 }, (_, i) => i);
 
     return months.map(month => {
@@ -11045,11 +11162,17 @@ Important:
 
       const revenue = monthOrders
         .filter(o => o.status === 'shipped' || o.status === 'delivered')
-        .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+        .reduce((sum, order) => {
+          const amount = parseFloat(order.total || '0');
+          return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
+        }, 0);
 
       const totalExpenses = monthExpenses
         .filter(e => e.status === 'paid')
-        .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
+        .reduce((sum, expense) => {
+          const amount = parseFloat(expense.amount || '0');
+          return sum + convertToBaseCurrency(amount, expense.currency || 'CZK');
+        }, 0);
 
       const totalPurchases = monthPurchases
         .reduce((sum, purchase) => {
