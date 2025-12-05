@@ -1711,6 +1711,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/dashboard/recently-received', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentReceiptItems = await db.select({
+        productName: products.name,
+        receivedAt: receipts.receivedAt,
+        sku: receiptItems.sku,
+      })
+        .from(receiptItems)
+        .innerJoin(receipts, eq(receiptItems.receiptId, receipts.id))
+        .leftJoin(products, eq(receiptItems.productId, products.id))
+        .where(
+          and(
+            sql`${receipts.receivedAt} >= ${sevenDaysAgo.toISOString()}`,
+            eq(receipts.status, 'approved')
+          )
+        )
+        .orderBy(desc(receipts.receivedAt))
+        .limit(20);
+
+      const uniqueProducts = [...new Set(recentReceiptItems.map(item => item.productName || item.sku || 'Unknown Item'))];
+      const latestReceivedAt = recentReceiptItems.length > 0 ? recentReceiptItems[0].receivedAt : null;
+
+      res.json({
+        products: uniqueProducts,
+        receivedAt: latestReceivedAt,
+        count: recentReceiptItems.length
+      });
+    } catch (error) {
+      console.error("Error fetching recently received items:", error);
+      res.status(500).json({ message: "Failed to fetch recently received items" });
+    }
+  });
+
   // New Admin Dashboard Endpoints
 
   // Operations Pulse Metrics

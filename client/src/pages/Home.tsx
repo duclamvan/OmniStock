@@ -28,7 +28,9 @@ import {
   Zap,
   CircleDollarSign,
   Wallet,
-  BadgeCheck
+  BadgeCheck,
+  PackageOpen,
+  UserCheck
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
@@ -73,6 +75,27 @@ interface OrderStatusCounts {
   shipped: number;
   delivered: number;
   cancelled: number;
+}
+
+interface RecentlyReceivedData {
+  products: string[];
+  receivedAt: string | null;
+  count: number;
+}
+
+interface ActivityLog {
+  id: number;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  description: string;
+  createdAt: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
+  };
 }
 
 export default function Home() {
@@ -125,6 +148,16 @@ export default function Home() {
     queryKey: ['/api/products'],
   });
 
+  // Fetch recently received items
+  const { data: recentlyReceived, isLoading: receivedLoading } = useQuery<RecentlyReceivedData>({
+    queryKey: ['/api/dashboard/recently-received'],
+  });
+
+  // Fetch employee activities
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
+    queryKey: ['/api/dashboard/activities', 5],
+  });
+
   const pendingAdjustments = stockAdjustmentRequests.filter(req => req.status === 'pending');
   const pendingReceivingCount = (shipmentsToReceive?.length || 0) + (shipmentsReceiving?.length || 0);
 
@@ -168,6 +201,30 @@ export default function Home() {
   const profitMargin = metrics && metrics.thisMonthRevenue > 0 
     ? ((metrics.thisMonthProfit / metrics.thisMonthRevenue) * 100).toFixed(1) 
     : '0';
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return t('dashboard:justNow');
+    if (diffMins < 60) return t('dashboard:minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('dashboard:hoursAgo', { count: diffHours });
+    return t('dashboard:daysAgo', { count: diffDays });
+  };
+
+  const getActionText = (action: string) => {
+    const actionKey = `dashboard:action_${action}`;
+    return t(actionKey, action);
+  };
+
+  const getEntityText = (entityType: string) => {
+    const entityKey = `dashboard:entity_${entityType}`;
+    return t(entityKey, entityType);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -638,6 +695,103 @@ export default function Home() {
                   </Badge>
                 </div>
               </Link>
+            </CardContent>
+          </Card>
+
+          {/* Recent Receiving */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <PackageOpen className="h-5 w-5 text-teal-600" />
+                    {t('dashboard:recentReceiving')}
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    {t('dashboard:recentReceivingDesc')}
+                  </CardDescription>
+                </div>
+                <Link href="/receiving">
+                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-receiving">
+                    {t('dashboard:viewReceiving')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              {receivedLoading ? (
+                <Skeleton className="h-12 w-full" />
+              ) : recentlyReceived && recentlyReceived.products.length > 0 ? (
+                <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium text-teal-700 dark:text-teal-400">
+                      {t('dashboard:recentlyReceived')}
+                    </span>{' '}
+                    {recentlyReceived.products.slice(0, 5).join(', ')}
+                    {recentlyReceived.products.length > 5 && ` ${t('dashboard:andMore', { count: recentlyReceived.products.length - 5 })}`}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <PackageOpen className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">{t('dashboard:noRecentReceiving')}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Employee Activity */}
+          <Card>
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-indigo-600" />
+                {t('dashboard:employeeActivity')}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                {t('dashboard:employeeActivityDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              {activitiesLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : activities.length > 0 ? (
+                <div className="space-y-2">
+                  {activities.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-testid={`activity-row-${activity.id}`}>
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarImage src={activity.user?.profileImageUrl} />
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-xs font-semibold">
+                          {(activity.user?.firstName || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 dark:text-white truncate">
+                          <span className="font-medium">
+                            {activity.user?.firstName || 'User'}
+                          </span>{' '}
+                          <span className="text-muted-foreground">
+                            {getActionText(activity.action)} {getEntityText(activity.entityType)}
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {activity.entityId}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {formatTimeAgo(activity.createdAt)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <UserCheck className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">{t('dashboard:noRecentActivity')}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

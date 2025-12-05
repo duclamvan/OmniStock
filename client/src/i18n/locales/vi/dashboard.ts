@@ -61,4 +61,34 @@ export default {
   totalProducts: 'Tổng sản phẩm',
   ordersThisMonth: 'Đơn hàng tháng này',
   avgOrderValue: 'Giá trị đơn TB',
+  
+  // Recent Receiving
+  recentReceiving: 'Nhận hàng gần đây',
+  recentReceivingDesc: 'Sản phẩm đã nhận trong 7 ngày qua',
+  recentlyReceived: 'Đã nhận gần đây:',
+  noRecentReceiving: 'Không có hàng nhận trong 7 ngày qua',
+  viewReceiving: 'Xem nhận hàng',
+  
+  // Employee Activity
+  employeeActivity: 'Hoạt động nhân viên',
+  employeeActivityDesc: 'Hành động gần đây của thành viên',
+  noRecentActivity: 'Không có hoạt động gần đây',
+  action_create: 'đã tạo',
+  action_update: 'đã cập nhật',
+  action_delete: 'đã xóa',
+  action_login: 'đã đăng nhập',
+  action_logout: 'đã đăng xuất',
+  entity_order: 'đơn hàng',
+  entity_product: 'sản phẩm',
+  entity_customer: 'khách hàng',
+  entity_employee: 'nhân viên',
+  entity_shipment: 'lô hàng',
+  entity_receipt: 'phiếu nhận',
+  
+  // Time ago
+  justNow: 'vừa xong',
+  minutesAgo: '{{count}} phút',
+  hoursAgo: '{{count}} giờ',
+  daysAgo: '{{count}} ngày',
+  andMore: '+{{count}} khác',
 };

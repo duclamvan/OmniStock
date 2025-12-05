@@ -61,4 +61,34 @@ export default {
   totalProducts: 'Total Products',
   ordersThisMonth: 'Orders This Month',
   avgOrderValue: 'Avg Order Value',
+  
+  // Recent Receiving
+  recentReceiving: 'Recent Receiving',
+  recentReceivingDesc: 'Products received in the last 7 days',
+  recentlyReceived: 'Recently received:',
+  noRecentReceiving: 'No items received in the last 7 days',
+  viewReceiving: 'View Receiving',
+  
+  // Employee Activity
+  employeeActivity: 'Employee Activity',
+  employeeActivityDesc: 'Recent actions by team members',
+  noRecentActivity: 'No recent activity',
+  action_create: 'created',
+  action_update: 'updated',
+  action_delete: 'deleted',
+  action_login: 'logged in',
+  action_logout: 'logged out',
+  entity_order: 'order',
+  entity_product: 'product',
+  entity_customer: 'customer',
+  entity_employee: 'employee',
+  entity_shipment: 'shipment',
+  entity_receipt: 'receipt',
+  
+  // Time ago
+  justNow: 'just now',
+  minutesAgo: '{{count}}m',
+  hoursAgo: '{{count}}h',
+  daysAgo: '{{count}}d',
+  andMore: '+{{count}} more',
 };
