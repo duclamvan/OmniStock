@@ -74,6 +74,7 @@ import { useTranslation } from "react-i18next";
 
 interface Permission {
   id: number;
+  parentSection: string;
   section: string;
   page: string;
   path: string;
@@ -111,7 +112,15 @@ interface User {
 interface PermissionsResponse {
   all: Permission[];
   grouped: Record<string, Permission[]>;
+  hierarchical: Record<string, Record<string, Permission[]>>;
 }
+
+type ParentSection = 'warehouse_operations' | 'administration';
+
+const PARENT_SECTIONS: { key: ParentSection; icon: typeof Warehouse; color: string }[] = [
+  { key: 'warehouse_operations', icon: Warehouse, color: 'text-blue-600' },
+  { key: 'administration', icon: Settings, color: 'text-purple-600' },
+];
 
 const ROLE_COLORS = [
   { value: 'blue', label: 'colorBlue', class: 'bg-blue-500' },
@@ -161,6 +170,8 @@ export default function RolesSettings() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [expandedRoles, setExpandedRoles] = useState<Set<number>>(new Set());
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [activeParent, setActiveParent] = useState<ParentSection>('warehouse_operations');
+  const [expandedParents, setExpandedParents] = useState<Set<ParentSection>>(new Set(['warehouse_operations', 'administration']));
 
   const [roleForm, setRoleForm] = useState({
     name: '',
@@ -368,6 +379,59 @@ export default function RolesSettings() {
     const sectionPermissions = permissionsData?.grouped[section] || [];
     const selectedCount = sectionPermissions.filter(p => roleForm.permissionIds.includes(p.id)).length;
     return selectedCount > 0 && selectedCount < sectionPermissions.length;
+  };
+
+  const getParentPermissionIds = (parentSection: ParentSection) => {
+    const parentData = permissionsData?.hierarchical[parentSection] || {};
+    return Object.values(parentData).flat().map(p => p.id);
+  };
+
+  const toggleParentPermissions = (parentSection: ParentSection, select: boolean) => {
+    const parentIds = getParentPermissionIds(parentSection);
+    setRoleForm(prev => {
+      let newIds: number[];
+      if (select) {
+        newIds = [...new Set([...prev.permissionIds, ...parentIds])];
+      } else {
+        newIds = prev.permissionIds.filter(id => !parentIds.includes(id));
+      }
+      return { ...prev, permissionIds: newIds };
+    });
+  };
+
+  const isParentFullySelected = (parentSection: ParentSection) => {
+    const parentIds = getParentPermissionIds(parentSection);
+    return parentIds.length > 0 && parentIds.every(id => roleForm.permissionIds.includes(id));
+  };
+
+  const isParentPartiallySelected = (parentSection: ParentSection) => {
+    const parentIds = getParentPermissionIds(parentSection);
+    const selectedCount = parentIds.filter(id => roleForm.permissionIds.includes(id)).length;
+    return selectedCount > 0 && selectedCount < parentIds.length;
+  };
+
+  const getParentSelectedCount = (parentSection: ParentSection) => {
+    const parentIds = getParentPermissionIds(parentSection);
+    return parentIds.filter(id => roleForm.permissionIds.includes(id)).length;
+  };
+
+  const getParentTotalCount = (parentSection: ParentSection) => {
+    return getParentPermissionIds(parentSection).length;
+  };
+
+  const toggleParentExpanded = (parentSection: ParentSection) => {
+    const newExpanded = new Set(expandedParents);
+    if (newExpanded.has(parentSection)) {
+      newExpanded.delete(parentSection);
+    } else {
+      newExpanded.add(parentSection);
+    }
+    setExpandedParents(newExpanded);
+  };
+
+  const handleSectionClick = (parentSection: ParentSection, section: string) => {
+    setActiveParent(parentSection);
+    setSelectedSection(section);
   };
 
   const getRoleDisplayName = (role: Role) => {
@@ -846,51 +910,109 @@ export default function RolesSettings() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium mb-2">{t('settings:permissionSection')}</p>
-                    <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2">
-                      {sections.map((section) => {
-                        const Icon = getSectionIcon(section);
-                        const isFullySelected = isSectionFullySelected(section);
-                        const isPartiallySelected = isSectionPartiallySelected(section);
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                    {PARENT_SECTIONS.map(({ key: parentKey, icon: ParentIcon, color }) => {
+                      const isParentExpanded = expandedParents.has(parentKey);
+                      const parentFullySelected = isParentFullySelected(parentKey);
+                      const parentPartiallySelected = isParentPartiallySelected(parentKey);
+                      const parentSections = permissionsData?.hierarchical[parentKey] || {};
+                      const sectionKeys = Object.keys(parentSections);
 
-                        return (
-                          <div
-                            key={section}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer min-h-[56px] border transition-colors ${
-                              selectedSection === section
-                                ? 'bg-primary/10 border-primary'
-                                : 'hover:bg-muted border-transparent'
-                            }`}
-                            onClick={() => setSelectedSection(section)}
-                            data-testid={`section-${section}`}
-                          >
-                            <Checkbox
-                              checked={isFullySelected}
-                              ref={(ref) => {
-                                if (ref && isPartiallySelected) {
-                                  (ref as any).indeterminate = true;
-                                }
-                              }}
-                              onCheckedChange={(checked) => {
-                                toggleSectionPermissions(section, !!checked);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="min-h-[20px] min-w-[20px]"
-                              data-testid={`checkbox-section-${section}`}
-                            />
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                            <span className="font-medium capitalize flex-1">
-                              {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
-                            </span>
-                            <Badge variant="secondary" className="text-xs">
-                              {permissionsData?.grouped[section]?.filter(p => roleForm.permissionIds.includes(p.id)).length || 0}
-                              /{permissionsData?.grouped[section]?.length || 0}
-                            </Badge>
+                      return (
+                        <Collapsible
+                          key={parentKey}
+                          open={isParentExpanded}
+                          onOpenChange={() => toggleParentExpanded(parentKey)}
+                        >
+                          <div className="border rounded-lg overflow-hidden">
+                            <CollapsibleTrigger asChild>
+                              <div
+                                className={`flex items-center gap-3 p-4 cursor-pointer min-h-[64px] bg-muted/50 hover:bg-muted transition-colors`}
+                                data-testid={`parent-${parentKey}`}
+                              >
+                                <Checkbox
+                                  checked={parentFullySelected}
+                                  ref={(ref) => {
+                                    if (ref && parentPartiallySelected) {
+                                      (ref as any).indeterminate = true;
+                                    }
+                                  }}
+                                  onCheckedChange={(checked) => {
+                                    toggleParentPermissions(parentKey, !!checked);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="min-h-[24px] min-w-[24px]"
+                                  data-testid={`checkbox-parent-${parentKey}`}
+                                />
+                                <ParentIcon className={`h-6 w-6 ${color}`} />
+                                <div className="flex-1">
+                                  <span className="font-semibold text-base">
+                                    {t(`settings:parent${parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}` as any)}
+                                  </span>
+                                  <p className="text-xs text-muted-foreground">
+                                    {sectionKeys.length} {t('settings:sections')}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="text-sm font-medium">
+                                  {getParentSelectedCount(parentKey)}/{getParentTotalCount(parentKey)}
+                                </Badge>
+                                {isParentExpanded ? (
+                                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </div>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="border-t bg-background">
+                                {sectionKeys.map((section) => {
+                                  const Icon = getSectionIcon(section);
+                                  const isFullySelected = isSectionFullySelected(section);
+                                  const isPartialSelected = isSectionPartiallySelected(section);
+                                  const isActive = selectedSection === section && activeParent === parentKey;
+
+                                  return (
+                                    <div
+                                      key={section}
+                                      className={`flex items-center gap-3 p-3 pl-12 cursor-pointer min-h-[56px] border-b last:border-b-0 transition-colors ${
+                                        isActive
+                                          ? 'bg-primary/10 border-l-4 border-l-primary'
+                                          : 'hover:bg-muted/50'
+                                      }`}
+                                      onClick={() => handleSectionClick(parentKey, section)}
+                                      data-testid={`section-${section}`}
+                                    >
+                                      <Checkbox
+                                        checked={isFullySelected}
+                                        ref={(ref) => {
+                                          if (ref && isPartialSelected) {
+                                            (ref as any).indeterminate = true;
+                                          }
+                                        }}
+                                        onCheckedChange={(checked) => {
+                                          toggleSectionPermissions(section, !!checked);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="min-h-[20px] min-w-[20px]"
+                                        data-testid={`checkbox-section-${section}`}
+                                      />
+                                      <Icon className="h-5 w-5 text-muted-foreground" />
+                                      <span className="font-medium capitalize flex-1">
+                                        {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
+                                      </span>
+                                      <Badge variant="outline" className="text-xs">
+                                        {permissionsData?.grouped[section]?.filter(p => roleForm.permissionIds.includes(p.id)).length || 0}
+                                        /{permissionsData?.grouped[section]?.length || 0}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </Collapsible>
+                      );
+                    })}
                   </div>
 
                   <div className="space-y-2 border-l pl-4">
@@ -919,7 +1041,7 @@ export default function RolesSettings() {
                         </div>
                       )}
                     </div>
-                    <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2">
+                    <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
                       {selectedSection ? (
                         permissionsData?.grouped[selectedSection]?.map((permission) => (
                           <div
@@ -945,9 +1067,10 @@ export default function RolesSettings() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">Select a section to view permissions</p>
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Settings className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm font-medium">{t('settings:selectSectionToViewPermissions')}</p>
+                          <p className="text-xs mt-1">{t('settings:clickOnSectionFromLeft')}</p>
                         </div>
                       )}
                     </div>

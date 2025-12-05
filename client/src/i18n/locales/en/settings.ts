@@ -1030,6 +1030,13 @@ const settings = {
   expandPermissions: 'Show permissions',
   collapsePermissions: 'Hide permissions',
   
+  // Parent Sections (Hierarchical)
+  parentWarehouseOperations: 'Warehouse Operations',
+  parentAdministration: 'Administration',
+  sections: 'sections',
+  selectSectionToViewPermissions: 'Select a section to view permissions',
+  clickOnSectionFromLeft: 'Click on any section from the left panel',
+  
   // Permission Sections
   sectionDashboard: 'Dashboard',
   sectionOrders: 'Orders',
@@ -1041,8 +1048,16 @@ const settings = {
   sectionReports: 'Reports',
   sectionSettings: 'Settings',
   sectionFinancial: 'Financial',
+  sectionFinances: 'Financial',
   sectionEmployees: 'Employees',
   sectionImports: 'Imports',
+  sectionPacking: 'Packing',
+  sectionPos: 'Point of Sale',
+  sectionStock: 'Stock',
+  sectionReturns: 'Returns',
+  sectionServices: 'Services',
+  sectionTickets: 'Tickets',
+  sectionUsers: 'Users',
   
   // Role Colors
   colorBlue: 'Blue',

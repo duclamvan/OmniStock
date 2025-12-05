@@ -1031,6 +1031,13 @@ const settings = {
   expandPermissions: 'Hiện quyền hạn',
   collapsePermissions: 'Ẩn quyền hạn',
   
+  // Parent Sections (Hierarchical)
+  parentWarehouseOperations: 'Hoạt động kho',
+  parentAdministration: 'Quản trị',
+  sections: 'phần',
+  selectSectionToViewPermissions: 'Chọn một phần để xem quyền hạn',
+  clickOnSectionFromLeft: 'Nhấp vào bất kỳ phần nào từ bảng bên trái',
+  
   // Permission Sections
   sectionDashboard: 'Bảng điều khiển',
   sectionOrders: 'Đơn hàng',
@@ -1042,8 +1049,16 @@ const settings = {
   sectionReports: 'Báo cáo',
   sectionSettings: 'Cài đặt',
   sectionFinancial: 'Tài chính',
+  sectionFinances: 'Tài chính',
   sectionEmployees: 'Nhân viên',
   sectionImports: 'Nhập khẩu',
+  sectionPacking: 'Đóng gói',
+  sectionPos: 'Điểm bán hàng',
+  sectionStock: 'Kho',
+  sectionReturns: 'Hoàn trả',
+  sectionServices: 'Dịch vụ',
+  sectionTickets: 'Vé hỗ trợ',
+  sectionUsers: 'Người dùng',
   
   // Role Colors
   colorBlue: 'Xanh dương',
