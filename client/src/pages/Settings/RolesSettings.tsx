@@ -149,6 +149,7 @@ const ROLE_COLORS = [
 
 const SECTION_ICONS: Record<string, typeof Shield> = {
   dashboard: LayoutDashboard,
+  admindashboard: LayoutDashboard,
   orders: ShoppingCart,
   inventory: Package,
   warehouse: Warehouse,

@@ -1050,6 +1050,7 @@ const settings = {
   
   // Permission Sections
   sectionDashboard: 'Bảng điều khiển',
+  sectionAdminDashboard: 'Bảng điều khiển quản trị',
   sectionOrders: 'Đơn hàng',
   sectionInventory: 'Tồn kho',
   sectionWarehouse: 'Kho hàng',

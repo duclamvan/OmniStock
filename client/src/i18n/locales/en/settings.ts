@@ -1049,6 +1049,7 @@ const settings = {
   
   // Permission Sections
   sectionDashboard: 'Dashboard',
+  sectionAdminDashboard: 'Admin Dashboard',
   sectionOrders: 'Orders',
   sectionInventory: 'Inventory',
   sectionWarehouse: 'Warehouse',
