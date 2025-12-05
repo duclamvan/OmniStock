@@ -319,6 +319,8 @@ export default function RolesSettings() {
   const openCreateDialog = () => {
     resetForm();
     setSelectedRole(null);
+    // Always expand both parent sections when opening dialog
+    setExpandedParents(new Set<ParentSection>(['warehouse_operations', 'administration']));
     setIsRoleDialogOpen(true);
   };
 
@@ -334,6 +336,8 @@ export default function RolesSettings() {
       icon: role.icon || 'shield',
       permissionIds: role.permissions.map(p => p.id),
     });
+    // Always expand both parent sections when opening dialog
+    setExpandedParents(new Set<ParentSection>(['warehouse_operations', 'administration']));
     setIsRoleDialogOpen(true);
   };
 
