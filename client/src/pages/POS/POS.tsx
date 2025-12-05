@@ -313,6 +313,10 @@ export default function POS() {
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>(() => {
     return (localStorage.getItem('pos_currency') as 'EUR' | 'CZK') || 'EUR';
   });
+  
+  // Currency symbol helper - € for EUR, Kč for CZK
+  const currencySymbol = currency === 'EUR' ? '€' : 'Kč';
+  
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
@@ -764,7 +768,7 @@ export default function POS() {
     if (cashAmount < total) {
       toast({
         title: 'Insufficient Amount',
-        description: `Cash received (${currency} ${cashAmount.toFixed(2)}) is less than total (${currency} ${total.toFixed(2)})`,
+        description: `Cash received (${cashAmount.toFixed(2)} ${currencySymbol}) is less than total (${total.toFixed(2)} ${currencySymbol})`,
         variant: 'destructive'
       });
       return;
@@ -1033,7 +1037,7 @@ export default function POS() {
                             <p className="text-[10px] text-muted-foreground font-mono truncate">{product.sku}</p>
                           )}
                           <p className="text-sm font-bold text-primary">
-                            {currency} {price.toFixed(2)}
+                            {price.toFixed(2)} {currencySymbol}
                           </p>
                         </div>
                       </CardContent>
@@ -1080,7 +1084,7 @@ export default function POS() {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-xl font-bold text-primary">
-                                {currency} {price.toFixed(2)}
+                                {price.toFixed(2)} {currencySymbol}
                               </p>
                               {isInCart && cartItem && (
                                 <Badge className="mt-1">{cartItem.quantity} in cart</Badge>
@@ -1240,12 +1244,12 @@ export default function POS() {
                         </Button>
                       </div>
                       
-                      <div className="text-right shrink-0 min-w-[70px]">
-                        <p className="text-sm font-bold text-primary">
-                          {currency} {(item.price * item.quantity).toFixed(2)}
+                      <div className="text-right shrink-0 w-[80px]">
+                        <p className="text-sm font-bold text-primary tabular-nums">
+                          {(item.price * item.quantity).toFixed(2)} {currencySymbol}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {currency} {item.price.toFixed(2)} each
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          {item.price.toFixed(2)} {currencySymbol}
                         </p>
                       </div>
                       
@@ -1279,7 +1283,7 @@ export default function POS() {
                 data-testid="button-add-discount"
               >
                 <Percent className="h-4 w-4 mr-1" />
-                {discount > 0 ? `${currency} ${discount.toFixed(2)}` : 'Discount'}
+                {discount > 0 ? `${discount.toFixed(2)} ${currencySymbol}` : 'Discount'}
               </Button>
               <Button
                 variant="outline"
@@ -1297,17 +1301,17 @@ export default function POS() {
             <div className="space-y-2 text-base">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">{currency} {subtotal.toFixed(2)}</span>
+                <span className="font-medium tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span className="font-medium">-{currency} {discount.toFixed(2)}</span>
+                  <span className="font-medium tabular-nums">-{discount.toFixed(2)} {currencySymbol}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold pt-2 border-t">
                 <span>Total</span>
-                <span className="text-primary">{currency} {total.toFixed(2)}</span>
+                <span className="text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
               </div>
             </div>
 
@@ -1324,7 +1328,7 @@ export default function POS() {
               ) : (
                 <>
                   <CreditCard className="h-6 w-6 mr-3" />
-                  Pay {currency} {total.toFixed(2)}
+                  Pay {total.toFixed(2)} {currencySymbol}
                 </>
               )}
             </Button>
@@ -1338,7 +1342,7 @@ export default function POS() {
           <DialogHeader>
             <DialogTitle className="text-2xl">Select Payment Method</DialogTitle>
             <DialogDescription>
-              Total: <span className="font-bold text-xl text-primary">{currency} {total.toFixed(2)}</span>
+              Total: <span className="font-bold text-xl text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -1463,8 +1467,8 @@ export default function POS() {
               <p className="text-sm font-medium text-muted-foreground mb-1">
                 {t('pos:totalDue', 'Total Due')} / Cần thu
               </p>
-              <p className="text-4xl font-bold text-primary">
-                {currency} {total.toFixed(2)}
+              <p className="text-4xl font-bold text-primary tabular-nums">
+                {total.toFixed(2)} {currencySymbol}
               </p>
             </div>
 
@@ -1484,7 +1488,7 @@ export default function POS() {
                   data-testid="button-exact-amount"
                 >
                   <span className="text-xs opacity-70">{t('pos:exact', 'Exact')}</span>
-                  <span>{currency} {total.toFixed(2)}</span>
+                  <span className="tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
                 </Button>
                 
                 {/* Quick Cash Amounts - Show 5 rounded options */}
@@ -1514,7 +1518,7 @@ export default function POS() {
                       onClick={() => setCashReceived(amount.toString())}
                       data-testid={`button-quick-cash-${amount}`}
                     >
-                      {currency} {amount}
+                      {amount} {currencySymbol}
                     </Button>
                   ));
                 })()}
@@ -1522,15 +1526,15 @@ export default function POS() {
               
               {/* Custom Amount Input */}
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
-                  {currency}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
+                  {currencySymbol}
                 </div>
                 <Input
                   type="number"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
                   placeholder="0.00"
-                  className="h-16 text-3xl font-bold text-center pl-16 pr-4"
+                  className="h-16 text-3xl font-bold text-center pl-4 pr-16 tabular-nums"
                   data-testid="input-cash-amount"
                 />
               </div>
@@ -1552,14 +1556,14 @@ export default function POS() {
                 }
               </p>
               <p className={cn(
-                "text-4xl font-bold",
+                "text-4xl font-bold tabular-nums",
                 parseFloat(cashReceived || '0') >= total 
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
               )}>
                 {parseFloat(cashReceived || '0') >= total 
-                  ? `${currency} ${(parseFloat(cashReceived || '0') - total).toFixed(2)}`
-                  : `${currency} ${(total - parseFloat(cashReceived || '0')).toFixed(2)}`
+                  ? `${(parseFloat(cashReceived || '0') - total).toFixed(2)} ${currencySymbol}`
+                  : `${(total - parseFloat(cashReceived || '0')).toFixed(2)} ${currencySymbol}`
                 }
               </p>
               {parseFloat(cashReceived || '0') > 0 && parseFloat(cashReceived || '0') < total && (
@@ -1766,25 +1770,25 @@ export default function POS() {
                 <>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common:subtotal')}</span>
-                    <span className="font-medium">{currency} {subtotal.toFixed(2)}</span>
+                    <span className="font-medium tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
                   </div>
                   <div className="flex justify-between items-center text-green-600 dark:text-green-400">
                     <span className="text-sm">{t('common:discount')}</span>
-                    <span className="font-medium">-{currency} {discount.toFixed(2)}</span>
+                    <span className="font-medium tabular-nums">-{discount.toFixed(2)} {currencySymbol}</span>
                   </div>
                 </>
               )}
               <div className="border-t border-cyan-200 dark:border-cyan-700 pt-2">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-700 dark:text-gray-300">{t('common:total')}</span>
-                  <span className="text-2xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
                 </div>
               </div>
               {currency === 'EUR' && (
                 <div className="flex justify-between items-center bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Amount in CZK</span>
-                  <span className="text-xl font-bold text-cyan-600 dark:text-cyan-400">
-                    CZK {(total * 25).toFixed(2)}
+                  <span className="text-xl font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">
+                    {(total * 25).toFixed(2)} Kč
                   </span>
                 </div>
               )}
@@ -1865,7 +1869,7 @@ export default function POS() {
               Apply Discount
             </DialogTitle>
             <DialogDescription>
-              Subtotal: <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
+              Subtotal: <span className="font-semibold tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -1904,7 +1908,7 @@ export default function POS() {
                 data-testid="input-discount"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
-                {discountType === 'percentage' ? '%' : currency}
+                {discountType === 'percentage' ? '%' : currencySymbol}
               </span>
             </div>
             
@@ -1933,7 +1937,7 @@ export default function POS() {
                       onClick={() => setDiscountInput(amount.toString())}
                       data-testid={`button-discount-amount-${amount}`}
                     >
-                      {currency} {amount}
+                      {amount} {currencySymbol}
                     </Button>
                   ))
                 )}
@@ -1945,20 +1949,20 @@ export default function POS() {
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-green-700 dark:text-green-300">Discount:</span>
-                  <span className="font-bold text-green-700 dark:text-green-300">
-                    -{currency} {discountType === 'percentage' 
+                  <span className="font-bold text-green-700 dark:text-green-300 tabular-nums">
+                    -{discountType === 'percentage' 
                       ? ((subtotal * parseFloat(discountInput)) / 100).toFixed(2)
                       : parseFloat(discountInput).toFixed(2)
-                    }
+                    } {currencySymbol}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm mt-1">
                   <span className="text-green-700 dark:text-green-300">New Total:</span>
-                  <span className="font-bold text-lg text-green-700 dark:text-green-300">
-                    {currency} {discountType === 'percentage'
+                  <span className="font-bold text-lg text-green-700 dark:text-green-300 tabular-nums">
+                    {discountType === 'percentage'
                       ? (subtotal - (subtotal * parseFloat(discountInput)) / 100).toFixed(2)
                       : (subtotal - parseFloat(discountInput)).toFixed(2)
-                    }
+                    } {currencySymbol}
                   </span>
                 </div>
               </div>
