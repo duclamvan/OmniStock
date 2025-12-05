@@ -1907,6 +1907,10 @@ const imports = {
   aiSuggest: 'AI Gợi ý',
   addVariants: 'Thêm biến thể',
   
+  // Consolidation Actions
+  addToConsolidation: 'Thêm vào lô hàng',
+  selectItemsThenChooseConsolidation: 'Chọn sản phẩm, sau đó chọn lô hàng để thêm vào',
+  
   // Mobile Consolidation Page Improvements
   addToConsolidationMobile: 'Thêm vào lô hàng',
   mobileMore: 'Thêm',

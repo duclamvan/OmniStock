@@ -1965,6 +1965,10 @@ const imports = {
   aiSuggest: 'AI Suggest',
   addVariants: 'Add Variants',
   
+  // Consolidation Actions
+  addToConsolidation: 'Add to Consolidation',
+  selectItemsThenChooseConsolidation: 'Select items, then choose a consolidation to add them',
+  
   // Mobile Consolidation Page Improvements
   addToConsolidationMobile: 'Add to Consolidation',
   mobileMore: 'More',

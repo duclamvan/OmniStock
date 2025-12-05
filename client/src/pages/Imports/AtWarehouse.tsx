@@ -2873,7 +2873,7 @@ export default function AtWarehouse() {
                                   }
                                 }}
                               >
-                                <SelectTrigger className="w-[200px] bg-primary text-primary-foreground hover:bg-primary/90">
+                                <SelectTrigger className="w-[200px] border-primary text-primary hover:bg-primary/10">
                                   <Plus className="h-4 w-4 mr-2" />
                                   <SelectValue placeholder={t('addToConsolidation')} />
                                 </SelectTrigger>
