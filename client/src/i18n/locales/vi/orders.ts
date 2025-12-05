@@ -1317,7 +1317,7 @@ const orders = {
   edit: 'Sửa',
   export: 'Xuất',
   returnThisItem: 'Trả lại sản phẩm này',
-  makeCustomPrice: 'Tạo giá tùy chỉnh',
+  setExclusivePrice: 'Đặt giá độc quyền',
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Tiến trình lấy hàng',

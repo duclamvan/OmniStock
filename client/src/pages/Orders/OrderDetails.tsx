@@ -1318,7 +1318,7 @@ export default function OrderDetails() {
                                     }}
                                   >
                                     <Banknote className="mr-2 h-4 w-4" />
-                                    {t('orders:makeCustomPrice')}
+                                    {t('orders:setExclusivePrice')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

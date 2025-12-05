@@ -1346,7 +1346,7 @@ const orders = {
   edit: 'Edit',
   export: 'Export',
   returnThisItem: 'Return this item',
-  makeCustomPrice: 'Make custom price',
+  setExclusivePrice: 'Set Exclusive Price',
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Picking Progress',
