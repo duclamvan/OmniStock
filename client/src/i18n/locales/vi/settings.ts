@@ -1089,6 +1089,25 @@ const settings = {
   colorOrange: 'Cam',
   colorGray: 'Xám',
   
+  // Role Icons
+  roleIcon: 'Biểu tượng',
+  iconShield: 'Khiên',
+  iconUsers: 'Người dùng',
+  iconUserCog: 'Cài đặt người dùng',
+  iconShoppingCart: 'Giỏ hàng',
+  iconPackage: 'Gói hàng',
+  iconWarehouse: 'Kho',
+  iconTruck: 'Xe tải',
+  iconDollar: 'Đô la',
+  iconChart: 'Biểu đồ',
+  iconSettings: 'Cài đặt',
+  iconBuilding: 'Tòa nhà',
+  iconClipboard: 'Bảng ghi',
+  iconWrench: 'Cờ lê',
+  iconTicket: 'Vé',
+  iconPercent: 'Phần trăm',
+  iconReceipt: 'Hóa đơn',
+  
   // Role Form
   createRole: 'Tạo vai trò',
   saveRole: 'Lưu vai trò',

@@ -147,6 +147,25 @@ const ROLE_COLORS = [
   { value: 'gray', label: 'colorGray', class: 'bg-gray-500' },
 ];
 
+const ROLE_ICONS: { value: string; label: string; icon: typeof Shield }[] = [
+  { value: 'shield', label: 'iconShield', icon: Shield },
+  { value: 'users', label: 'iconUsers', icon: Users },
+  { value: 'usercog', label: 'iconUserCog', icon: UserCog },
+  { value: 'shoppingcart', label: 'iconShoppingCart', icon: ShoppingCart },
+  { value: 'package', label: 'iconPackage', icon: Package },
+  { value: 'warehouse', label: 'iconWarehouse', icon: Warehouse },
+  { value: 'truck', label: 'iconTruck', icon: Truck },
+  { value: 'dollar', label: 'iconDollar', icon: DollarSign },
+  { value: 'chart', label: 'iconChart', icon: BarChart3 },
+  { value: 'settings', label: 'iconSettings', icon: Settings },
+  { value: 'building', label: 'iconBuilding', icon: Building2 },
+  { value: 'clipboard', label: 'iconClipboard', icon: ClipboardList },
+  { value: 'wrench', label: 'iconWrench', icon: Wrench },
+  { value: 'ticket', label: 'iconTicket', icon: Ticket },
+  { value: 'percent', label: 'iconPercent', icon: Percent },
+  { value: 'receipt', label: 'iconReceipt', icon: ReceiptText },
+];
+
 const SECTION_ICONS: Record<string, typeof Shield> = {
   dashboard: LayoutDashboard,
   admindashboard: LayoutDashboard,
@@ -178,7 +197,11 @@ const SECTION_ICONS: Record<string, typeof Shield> = {
 };
 
 function getSectionIcon(section: string) {
-  return SECTION_ICONS[section.toLowerCase()] || Settings;
+  // First check role icons
+  const roleIcon = ROLE_ICONS.find(i => i.value === section.toLowerCase());
+  if (roleIcon) return roleIcon.icon;
+  // Then check section icons
+  return SECTION_ICONS[section.toLowerCase()] || Shield;
 }
 
 function getRoleColorClass(color: string | null) {
@@ -961,6 +984,33 @@ export default function RolesSettings() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {!selectedRole?.isSystem && (
+                  <div className="space-y-2">
+                    <Label htmlFor="role-icon">{t('settings:roleIcon')}</Label>
+                    <Select
+                      value={roleForm.icon}
+                      onValueChange={(value) => setRoleForm(prev => ({ ...prev, icon: value }))}
+                    >
+                      <SelectTrigger className="min-h-[44px]" data-testid="select-role-icon">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_ICONS.map((iconOption) => {
+                          const IconComponent = iconOption.icon;
+                          return (
+                            <SelectItem key={iconOption.value} value={iconOption.value}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                {t(`settings:${iconOption.label}` as any)}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="description">{t('settings:roleDescription')}</Label>

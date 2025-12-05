@@ -1088,6 +1088,25 @@ const settings = {
   colorOrange: 'Orange',
   colorGray: 'Gray',
   
+  // Role Icons
+  roleIcon: 'Icon',
+  iconShield: 'Shield',
+  iconUsers: 'Users',
+  iconUserCog: 'User Settings',
+  iconShoppingCart: 'Shopping Cart',
+  iconPackage: 'Package',
+  iconWarehouse: 'Warehouse',
+  iconTruck: 'Truck',
+  iconDollar: 'Dollar',
+  iconChart: 'Chart',
+  iconSettings: 'Settings',
+  iconBuilding: 'Building',
+  iconClipboard: 'Clipboard',
+  iconWrench: 'Wrench',
+  iconTicket: 'Ticket',
+  iconPercent: 'Percent',
+  iconReceipt: 'Receipt',
+  
   // Role Form
   createRole: 'Create Role',
   saveRole: 'Save Role',
