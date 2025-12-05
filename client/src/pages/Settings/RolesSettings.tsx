@@ -230,6 +230,8 @@ export default function RolesSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsRoleDialogOpen(false);
       resetForm();
       toast({
@@ -253,6 +255,8 @@ export default function RolesSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsRoleDialogOpen(false);
       setSelectedRole(null);
       resetForm();
@@ -277,6 +281,8 @@ export default function RolesSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsDeleteDialogOpen(false);
       setSelectedRole(null);
       toast({

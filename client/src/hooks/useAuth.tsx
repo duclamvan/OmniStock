@@ -19,6 +19,9 @@ export function useAuth() {
     queryKey: ['/api/users/me'],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
+    staleTime: 10 * 1000, // 10 seconds - shorter for permission updates
+    refetchInterval: 30 * 1000, // Refetch every 30 seconds to pick up permission changes
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 
   const isAuthenticated = !!user;
