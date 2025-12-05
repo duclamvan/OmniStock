@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileDown, FileText, Calendar } from "lucide-react";
-import { useReports, DateRangeType, CurrencyFilter } from "@/contexts/ReportsContext";
+import { FileDown, FileText } from "lucide-react";
+import { useReports, CurrencyFilter } from "@/contexts/ReportsContext";
 import { useTranslation } from 'react-i18next';
 
 interface ReportHeaderProps {
@@ -20,7 +20,7 @@ export function ReportHeader({
   showCurrencyFilter = false,
 }: ReportHeaderProps) {
   const { t } = useTranslation();
-  const { dateRange, setDateRange, currencyFilter, setCurrencyFilter } = useReports();
+  const { currencyFilter, setCurrencyFilter } = useReports();
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -32,21 +32,6 @@ export function ReportHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeType)}>
-          <SelectTrigger className="w-[150px]" data-testid="select-date-range">
-            <Calendar className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">{t('reports:today')}</SelectItem>
-            <SelectItem value="week">{t('reports:last7Days')}</SelectItem>
-            <SelectItem value="month">{t('reports:last30Days')}</SelectItem>
-            <SelectItem value="thisMonth">{t('reports:thisMonth')}</SelectItem>
-            <SelectItem value="year">{t('reports:thisYear')}</SelectItem>
-            <SelectItem value="all">{t('reports:allTime')}</SelectItem>
-          </SelectContent>
-        </Select>
-
         {showCurrencyFilter && (
           <Select value={currencyFilter} onValueChange={(value) => setCurrencyFilter(value as CurrencyFilter)}>
             <SelectTrigger className="w-[120px]" data-testid="select-currency">
