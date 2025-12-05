@@ -543,8 +543,6 @@ export default function OrderDetails() {
               <div class="order-info">
                 <div class="order-id">${order.orderId || order.id}</div>
                 <div class="order-meta">
-                  <span>${customerName}</span>
-                  <span>•</span>
                   <span>${orderDate}</span>
                 </div>
               </div>
