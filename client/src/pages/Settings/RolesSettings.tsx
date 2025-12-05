@@ -635,7 +635,15 @@ export default function RolesSettings() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {roles.map((role) => {
+                  {[...roles]
+                    .sort((a, b) => {
+                      // System roles first, then custom roles
+                      if (a.isSystem && !b.isSystem) return -1;
+                      if (!a.isSystem && b.isSystem) return 1;
+                      // Within each group, sort by id (newer roles at bottom)
+                      return a.id - b.id;
+                    })
+                    .map((role) => {
                     const isExpanded = expandedRoles.has(role.id);
                     const userCount = getUserCountForRole(role.name);
                     const SectionIcon = getSectionIcon(role.icon || 'shield');
