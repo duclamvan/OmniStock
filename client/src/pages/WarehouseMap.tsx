@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Warehouse, Package, Layers, MapPin, Info, X } from "lucide-react";
+import { Warehouse, Package, Layers, MapPin, Info, X, Plus, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -66,8 +66,10 @@ export default function WarehouseMap() {
   const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("");
-  const [totalAisles, setTotalAisles] = useState(6);
-  const [totalBZoneAisles, setTotalBZoneAisles] = useState(0); // Zone B (pallet area)
+  // Dynamic zones state: { A: { aisleCount: 6, defaultStorageType: 'bin' }, B: { aisleCount: 3, defaultStorageType: 'pallet' } }
+  const [zones, setZones] = useState<Record<string, ZoneConfig>>({
+    A: { aisleCount: 6, defaultStorageType: 'bin' }
+  });
   const [maxRacks, setMaxRacks] = useState(10);
   const [maxLevels, setMaxLevels] = useState(5);
   const [maxBins, setMaxBins] = useState(5);
@@ -77,6 +79,9 @@ export default function WarehouseMap() {
   const [expandedRack, setExpandedRack] = useState<string | null>(null); // Track which rack is expanded
   const [savingAisles, setSavingAisles] = useState<Set<string>>(new Set());
   const [savingGlobalConfig, setSavingGlobalConfig] = useState(false);
+  
+  // Compute total aisles from Zone A (for backward compatibility with API)
+  const totalAisles = zones.A?.aisleCount || 0;
 
   // Fetch warehouses
   const { data: warehouses, isLoading: warehousesLoading } = useQuery<any[]>({
@@ -102,7 +107,7 @@ export default function WarehouseMap() {
 
   // Update warehouse-level configuration mutation
   const updateWarehouseConfigMutation = useMutation({
-    mutationFn: async (config: { totalAisles: number; maxRacks: number; maxLevels: number; maxBins: number }) => {
+    mutationFn: async (config: { totalAisles: number; maxRacks: number; maxLevels: number; maxBins: number; zones?: Record<string, ZoneConfig> }) => {
       const response = await fetch(`/api/warehouses/${selectedWarehouseId}/map-config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -175,8 +180,16 @@ export default function WarehouseMap() {
   // Update local state when config is fetched
   useEffect(() => {
     if (warehouseConfig) {
-      setTotalAisles(warehouseConfig.totalAisles);
-      setTotalBZoneAisles(warehouseConfig.zones?.B?.aisleCount || 0);
+      // Load zones from config, with fallback to legacy format
+      if (warehouseConfig.zones && Object.keys(warehouseConfig.zones).length > 0) {
+        setZones(warehouseConfig.zones);
+      } else {
+        // Legacy format: convert totalAisles to Zone A
+        const legacyZones: Record<string, ZoneConfig> = {
+          A: { aisleCount: warehouseConfig.totalAisles, defaultStorageType: 'bin' }
+        };
+        setZones(legacyZones);
+      }
       setMaxRacks(warehouseConfig.maxRacks);
       setMaxLevels(warehouseConfig.maxLevels);
       setMaxBins(warehouseConfig.maxBins);
@@ -204,36 +217,68 @@ export default function WarehouseMap() {
     updateAisleConfigMutation.mutate({ aisleId, config });
   }, [updateAisleConfigMutation]);
 
-  // Handle warehouse-level configuration changes
-  const handleTotalAislesChange = useCallback((value: number) => {
-    setTotalAisles(value);
-    const zones: Record<string, ZoneConfig> = {
-      A: { aisleCount: value, defaultStorageType: 'bin' },
-    };
-    if (totalBZoneAisles > 0) {
-      zones.B = { aisleCount: totalBZoneAisles, defaultStorageType: 'pallet' };
-    }
-    instantGlobalConfigSave({ totalAisles: value, maxRacks, maxLevels, maxBins, zones });
-  }, [maxRacks, maxLevels, maxBins, totalBZoneAisles, instantGlobalConfigSave]);
+  // Handle zone configuration changes (aisle count, storage type)
+  const handleZoneChange = useCallback((zoneId: string, field: 'aisleCount' | 'defaultStorageType', value: number | string) => {
+    setZones(prev => {
+      const updated = { 
+        ...prev, 
+        [zoneId]: { 
+          ...prev[zoneId], 
+          [field]: value 
+        } 
+      };
+      // Calculate total aisles for Zone A (backward compatibility)
+      const totalAislesCount = updated.A?.aisleCount || 0;
+      instantGlobalConfigSave({ totalAisles: totalAislesCount, maxRacks, maxLevels, maxBins, zones: updated });
+      return updated;
+    });
+  }, [maxRacks, maxLevels, maxBins, instantGlobalConfigSave]);
 
-  // Handle Zone B aisle count changes
-  const handleBZoneAislesChange = useCallback((value: number) => {
-    setTotalBZoneAisles(value);
-    const zones: Record<string, ZoneConfig> = {
-      A: { aisleCount: totalAisles, defaultStorageType: 'bin' },
-    };
-    if (value > 0) {
-      zones.B = { aisleCount: value, defaultStorageType: 'pallet' };
+  // Add a new zone
+  const handleAddZone = useCallback(() => {
+    setZones(prev => {
+      // Find next available zone letter
+      const usedLetters = Object.keys(prev);
+      const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const nextLetter = allLetters.find(l => !usedLetters.includes(l));
+      if (!nextLetter) {
+        toast({ title: t('common:error'), description: 'Maximum zones reached', variant: 'destructive' });
+        return prev;
+      }
+      const updated = { 
+        ...prev, 
+        [nextLetter]: { aisleCount: 1, defaultStorageType: 'bin' as const }
+      };
+      // Calculate total aisles for Zone A (backward compatibility)
+      const totalAislesCount = updated.A?.aisleCount || 0;
+      instantGlobalConfigSave({ totalAisles: totalAislesCount, maxRacks, maxLevels, maxBins, zones: updated });
+      return updated;
+    });
+  }, [maxRacks, maxLevels, maxBins, instantGlobalConfigSave, toast, t]);
+
+  // Delete a zone
+  const handleDeleteZone = useCallback((zoneId: string) => {
+    if (zoneId === 'A') {
+      toast({ title: t('common:error'), description: 'Cannot delete Zone A', variant: 'destructive' });
+      return;
     }
-    instantGlobalConfigSave({ totalAisles, maxRacks, maxLevels, maxBins, zones });
-  }, [totalAisles, maxRacks, maxLevels, maxBins, instantGlobalConfigSave]);
+    setZones(prev => {
+      const { [zoneId]: removed, ...remaining } = prev;
+      // Calculate total aisles for Zone A (backward compatibility)
+      const totalAislesCount = remaining.A?.aisleCount || 0;
+      instantGlobalConfigSave({ totalAisles: totalAislesCount, maxRacks, maxLevels, maxBins, zones: remaining });
+      return remaining;
+    });
+  }, [maxRacks, maxLevels, maxBins, instantGlobalConfigSave, toast, t]);
 
   // Handle aisle configuration changes
   const handleAisleConfigChange = useCallback((aisleId: string, field: keyof AisleConfig, value: number | string) => {
     setAisleConfigs(prev => {
-      const isZoneB = aisleId.startsWith('B');
-      const defaultStorageType = isZoneB ? 'pallet' : 'bin';
-      const current = prev[aisleId] || { maxRacks, maxLevels, maxBins, storageType: defaultStorageType };
+      // Get zone letter from aisle ID (e.g., "A01" -> "A", "B02" -> "B")
+      const zoneLetter = aisleId.charAt(0);
+      // Use zone's default storage type from zones state, fallback to 'bin'
+      const zoneDefaultStorageType = zones[zoneLetter]?.defaultStorageType || 'bin';
+      const current = prev[aisleId] || { maxRacks, maxLevels, maxBins, storageType: zoneDefaultStorageType };
       const updated = { ...current, [field]: value };
       
       // Save immediately
@@ -241,7 +286,7 @@ export default function WarehouseMap() {
       
       return { ...prev, [aisleId]: updated };
     });
-  }, [maxRacks, maxLevels, maxBins, instantAisleSave]);
+  }, [maxRacks, maxLevels, maxBins, zones, instantAisleSave]);
 
   // Parse location code to extract aisle, rack, level, and bin
   const parseLocationCode = (locationCode: string) => {
@@ -294,17 +339,20 @@ export default function WarehouseMap() {
     return null;
   };
 
-  // Helper function to get zone label
+  // Helper function to get zone label from dynamic zones
   const getZoneLabel = (aisleCode: string): string | null => {
-    const prefix = aisleCode.charAt(0);
-    const zoneLabels: Record<string, string> = {
-      'B': t('warehouse:zoneBPallets'),
-      'C': t('warehouse:zoneCOffice'),
-      'D': t('warehouse:zoneDReturns'),
-      'E': t('warehouse:zoneEStaging'),
-      'F': t('warehouse:zoneFSpecial'),
-    };
-    return zoneLabels[prefix] || null;
+    const zoneLetter = aisleCode.charAt(0);
+    if (zoneLetter === 'A') return null; // Zone A is the default, no special label
+    const zoneConfig = zones[zoneLetter];
+    if (!zoneConfig) return null;
+    const storageType = zoneConfig.defaultStorageType === 'pallet' ? 'Pallets' : 'Bins';
+    return `Zone ${zoneLetter} - ${storageType}`;
+  };
+  
+  // Helper function to check if a zone uses pallet storage
+  const isZonePalletStorage = (aisleCode: string): boolean => {
+    const zoneLetter = aisleCode.charAt(0);
+    return zones[zoneLetter]?.defaultStorageType === 'pallet';
   };
 
   // Generate grid data from product locations
@@ -362,25 +410,25 @@ export default function WarehouseMap() {
       discoveredAisles.add(aisle);
     });
 
-    // Build list of configured A-aisles
+    // Build list of aisles from all configured zones
     const configuredAisles: string[] = [];
-    for (let a = 1; a <= totalAisles; a++) {
-      configuredAisles.push(`A${String(a).padStart(2, '0')}`);
-    }
+    const sortedZoneLetters = Object.keys(zones).sort();
+    
+    sortedZoneLetters.forEach(zoneLetter => {
+      const zoneConfig = zones[zoneLetter];
+      for (let a = 1; a <= zoneConfig.aisleCount; a++) {
+        configuredAisles.push(`${zoneLetter}${String(a).padStart(2, '0')}`);
+      }
+    });
 
-    // Build list of configured B-aisles (Zone B - Pallets)
-    const configuredBZoneAisles: string[] = [];
-    for (let b = 1; b <= totalBZoneAisles; b++) {
-      configuredBZoneAisles.push(`B${String(b).padStart(2, '0')}`);
-    }
-
-    // Extract other zone aisles (non-A, non-B aisles) from discovered locations and sort alphabetically
+    // Extract other zone aisles (not in configured zones) from discovered locations and sort alphabetically
+    const configuredZoneLetters = new Set(sortedZoneLetters);
     const otherZoneAisles = Array.from(discoveredAisles)
-      .filter(aisle => !aisle.startsWith('A') && !aisle.startsWith('B'))
+      .filter(aisle => !configuredZoneLetters.has(aisle.charAt(0)))
       .sort();
 
-    // Combine: configured A-aisles first, then B-aisles, then other discovered zone aisles
-    const allAislesToDisplay = [...configuredAisles, ...configuredBZoneAisles, ...otherZoneAisles];
+    // Combine: configured zone aisles first, then other discovered zone aisles
+    const allAislesToDisplay = [...configuredAisles, ...otherZoneAisles];
 
     // Build grid for all aisles
     const grid: LocationStats[][] = [];
@@ -388,12 +436,14 @@ export default function WarehouseMap() {
     allAislesToDisplay.forEach(aisleCode => {
       const row: LocationStats[] = [];
       
-      // Use per-aisle config if available, otherwise use global config (with Zone B defaults)
-      const isZoneBCode = aisleCode.startsWith('B');
+      // Use per-aisle config if available, otherwise use zone defaults
+      const zoneLetter = aisleCode.charAt(0);
+      const zoneConfig = zones[zoneLetter];
+      const isZonePallet = zoneConfig?.defaultStorageType === 'pallet';
       const aisleConfig = aisleConfigs[aisleCode] || { 
         maxRacks, 
-        maxLevels: isZoneBCode ? 2 : maxLevels, 
-        maxBins: isZoneBCode ? 2 : maxBins 
+        maxLevels: isZonePallet ? 2 : maxLevels, 
+        maxBins: isZonePallet ? 2 : maxBins 
       };
       
       for (let r = 1; r <= aisleConfig.maxRacks; r++) {
@@ -437,7 +487,7 @@ export default function WarehouseMap() {
     });
 
     return grid;
-  }, [productLocations, totalAisles, totalBZoneAisles, maxRacks, maxLevels, maxBins, aisleConfigs]);
+  }, [productLocations, zones, maxRacks, maxLevels, maxBins, aisleConfigs]);
 
   // Get color based on occupancy
   const getOccupancyColor = (percent: number) => {
@@ -560,278 +610,231 @@ export default function WarehouseMap() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Zone Configuration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Zone A (Bins) */}
-                  <div className="border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 md:p-4 bg-amber-50 dark:bg-amber-950/30">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">📦</span>
-                          <Label htmlFor="total-aisles" className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                            Zone A (Bins)
-                          </Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          A01, A02... for bin storage
-                        </p>
-                      </div>
-                      <div className="w-20">
-                        <Select 
-                          value={totalAisles.toString()} 
-                          onValueChange={(v) => handleTotalAislesChange(parseInt(v))}
-                          data-testid="select-total-aisles"
-                        >
-                          <SelectTrigger id="total-aisles" className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30].map(n => (
-                              <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                {/* Dynamic Zone Configuration */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      {t('warehouse:zones')}
+                    </h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddZone}
+                      className="h-7 text-xs gap-1"
+                      data-testid="btn-add-zone"
+                    >
+                      <Plus className="h-3 w-3" />
+                      {t('warehouse:addZone')}
+                    </Button>
                   </div>
-
-                  {/* Zone B (Pallets) */}
-                  <div className="border-2 border-purple-300 dark:border-purple-700 rounded-lg p-3 md:p-4 bg-purple-50 dark:bg-purple-950/30">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🛒</span>
-                          <Label htmlFor="total-b-aisles" className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                            Zone B (Pallets)
-                          </Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          B01, B02... for pallet storage
-                        </p>
-                      </div>
-                      <div className="w-20">
-                        <Select 
-                          value={totalBZoneAisles.toString()} 
-                          onValueChange={(v) => handleBZoneAislesChange(parseInt(v))}
-                          data-testid="select-total-b-aisles"
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(zones).sort(([a], [b]) => a.localeCompare(b)).map(([zoneId, zoneConfig]) => {
+                      const isPallet = zoneConfig.defaultStorageType === 'pallet';
+                      const borderColor = isPallet 
+                        ? 'border-purple-300 dark:border-purple-700' 
+                        : 'border-amber-300 dark:border-amber-700';
+                      const bgColor = isPallet
+                        ? 'bg-purple-50 dark:bg-purple-950/30'
+                        : 'bg-amber-50 dark:bg-amber-950/30';
+                      const textColor = isPallet
+                        ? 'text-purple-900 dark:text-purple-100'
+                        : 'text-amber-900 dark:text-amber-100';
+                      
+                      return (
+                        <div 
+                          key={zoneId} 
+                          className={`border-2 ${borderColor} rounded-lg p-3 ${bgColor}`}
+                          data-testid={`zone-card-${zoneId}`}
                         >
-                          <SelectTrigger id="total-b-aisles" className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20].map(n => (
-                              <SelectItem key={n} value={n.toString()}>{n === 0 ? 'None' : n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{isPallet ? '🛒' : '📦'}</span>
+                              <span className={`text-sm font-semibold ${textColor}`}>
+                                Zone {zoneId}
+                              </span>
+                            </div>
+                            {zoneId !== 'A' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteZone(zoneId)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                data-testid={`btn-delete-zone-${zoneId}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {/* Storage Type Toggle */}
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground">Type:</Label>
+                              <button
+                                type="button"
+                                onClick={() => handleZoneChange(zoneId, 'defaultStorageType', isPallet ? 'bin' : 'pallet')}
+                                className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                                  isPallet 
+                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                                }`}
+                                data-testid={`toggle-zone-${zoneId}-type`}
+                              >
+                                {isPallet ? '🛒 Pallet' : '📦 Bin'}
+                              </button>
+                            </div>
+                            
+                            {/* Aisle Count */}
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground">{t('warehouse:aisles')}:</Label>
+                              <Select 
+                                value={zoneConfig.aisleCount.toString()} 
+                                onValueChange={(v) => handleZoneChange(zoneId, 'aisleCount', parseInt(v))}
+                                data-testid={`select-zone-${zoneId}-aisles`}
+                              >
+                                <SelectTrigger className="h-8 w-20">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30].map(n => (
+                                    <SelectItem key={n} value={n.toString()}>{n === 0 && zoneId !== 'A' ? 'None' : n}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <p className="text-[10px] text-muted-foreground">
+                              {zoneId}01, {zoneId}02... for {isPallet ? 'pallet' : 'bin'} storage
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Per-Aisle Configuration - Zone A */}
-                {totalAisles > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                      📦 Zone A Aisles
-                    </h4>
-                    {Array.from({ length: totalAisles }, (_, i) => {
-                      const aisleId = `A${String(i + 1).padStart(2, '0')}`;
-                      const config = aisleConfigs[aisleId] || { maxRacks, maxLevels, maxBins, storageType: 'bin' };
-                      const isSaving = savingAisles.has(aisleId);
-                      const isPallet = config.storageType === 'pallet';
+                {/* Per-Aisle Configuration - All Zones */}
+                {Object.entries(zones).sort(([a], [b]) => a.localeCompare(b)).map(([zoneId, zoneConfig]) => {
+                  if (zoneConfig.aisleCount === 0) return null;
+                  
+                  const isZonePallet = zoneConfig.defaultStorageType === 'pallet';
+                  const zoneHeaderColor = isZonePallet 
+                    ? 'text-purple-700 dark:text-purple-400' 
+                    : 'text-amber-700 dark:text-amber-400';
+                  const zoneBorderColor = isZonePallet
+                    ? 'border-purple-200 dark:border-purple-700'
+                    : 'border-slate-200 dark:border-slate-700';
+                  const zoneBgColor = isZonePallet
+                    ? 'bg-purple-50 dark:bg-purple-900/30'
+                    : 'bg-slate-50 dark:bg-slate-900/50';
+                  
+                  return (
+                    <div key={`zone-aisles-${zoneId}`} className="space-y-2">
+                      <h4 className={`text-xs font-semibold ${zoneHeaderColor} flex items-center gap-2`}>
+                        {isZonePallet ? '🛒' : '📦'} Zone {zoneId} {t('warehouse:aisles')} ({isZonePallet ? 'Pallets' : 'Bins'})
+                      </h4>
+                      {Array.from({ length: zoneConfig.aisleCount }, (_, i) => {
+                        const aisleId = `${zoneId}${String(i + 1).padStart(2, '0')}`;
+                        const config = aisleConfigs[aisleId] || { 
+                          maxRacks, 
+                          maxLevels: isZonePallet ? 2 : maxLevels, 
+                          maxBins: isZonePallet ? 2 : maxBins, 
+                          storageType: zoneConfig.defaultStorageType 
+                        };
+                        const isSaving = savingAisles.has(aisleId);
+                        const isPallet = config.storageType === 'pallet';
 
-                      return (
-                        <div key={aisleId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-2 md:p-3 bg-slate-50 dark:bg-slate-900/50">
-                          <div className="flex items-center justify-between mb-2 md:mb-3">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs md:text-sm font-semibold text-amber-700 dark:text-amber-400">
-                                {t('warehouse:aisleLabel', { aisleId })}
-                              </h4>
-                              {/* Storage Type Toggle */}
-                              <button
-                                type="button"
-                                onClick={() => handleAisleConfigChange(aisleId, 'storageType', isPallet ? 'bin' : 'pallet')}
-                                className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                                  isPallet 
-                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
-                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                                }`}
-                                data-testid={`toggle-${aisleId}-storage-type`}
-                              >
-                                {isPallet ? '🛒 Pallet' : '📦 Bin'}
-                              </button>
+                        return (
+                          <div key={aisleId} className={`border ${zoneBorderColor} rounded-lg p-2 md:p-3 ${zoneBgColor}`}>
+                            <div className="flex items-center justify-between mb-2 md:mb-3">
+                              <div className="flex items-center gap-2">
+                                <h4 className={`text-xs md:text-sm font-semibold ${zoneHeaderColor}`}>
+                                  {t('warehouse:aisleLabel', { aisleId })}
+                                </h4>
+                                {/* Storage Type Toggle */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleAisleConfigChange(aisleId, 'storageType', isPallet ? 'bin' : 'pallet')}
+                                  className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                                    isPallet 
+                                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                                  }`}
+                                  data-testid={`toggle-${aisleId}-storage-type`}
+                                >
+                                  {isPallet ? '🛒 Pallet' : '📦 Bin'}
+                                </button>
+                              </div>
+                              {isSaving && (
+                                <Badge variant="outline" className="text-xs">
+                                  {t('warehouse:saving')}
+                                </Badge>
+                              )}
                             </div>
-                            {isSaving && (
-                              <Badge variant="outline" className="text-xs">
-                                {t('warehouse:saving')}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 md:gap-3">
-                            <div>
-                              <Label htmlFor={`${aisleId}-racks`} className="text-xs">{t('warehouse:racks')}</Label>
-                              <Select 
-                                value={config.maxRacks.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxRacks', parseInt(v))}
-                                data-testid={`select-${aisleId}-racks`}
-                              >
-                                <SelectTrigger id={`${aisleId}-racks`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                            <div className="grid grid-cols-3 gap-2 md:gap-3">
+                              <div>
+                                <Label htmlFor={`${aisleId}-racks`} className="text-xs">{t('warehouse:racks')}</Label>
+                                <Select 
+                                  value={config.maxRacks.toString()} 
+                                  onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxRacks', parseInt(v))}
+                                  data-testid={`select-${aisleId}-racks`}
+                                >
+                                  <SelectTrigger id={`${aisleId}-racks`} className="h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                                      <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            <div>
-                              <Label htmlFor={`${aisleId}-levels`} className="text-xs">{t('warehouse:levels')}</Label>
-                              <Select 
-                                value={config.maxLevels.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxLevels', parseInt(v))}
-                                data-testid={`select-${aisleId}-levels`}
-                              >
-                                <SelectTrigger id={`${aisleId}-levels`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                              <div>
+                                <Label htmlFor={`${aisleId}-levels`} className="text-xs">{t('warehouse:levels')}</Label>
+                                <Select 
+                                  value={config.maxLevels.toString()} 
+                                  onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxLevels', parseInt(v))}
+                                  data-testid={`select-${aisleId}-levels`}
+                                >
+                                  <SelectTrigger id={`${aisleId}-levels`} className="h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                                      <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            <div>
-                              <Label htmlFor={`${aisleId}-bins`} className="text-xs">
-                                {isPallet ? 'Pallets' : t('warehouse:bins')}
-                              </Label>
-                              <Select 
-                                value={config.maxBins.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxBins', parseInt(v))}
-                                data-testid={`select-${aisleId}-bins`}
-                              >
-                                <SelectTrigger id={`${aisleId}-bins`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {(isPallet ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Per-Aisle Configuration - Zone B */}
-                {totalBZoneAisles > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2">
-                      🛒 Zone B Aisles (Pallets)
-                    </h4>
-                    {Array.from({ length: totalBZoneAisles }, (_, i) => {
-                      const aisleId = `B${String(i + 1).padStart(2, '0')}`;
-                      const config = aisleConfigs[aisleId] || { maxRacks, maxLevels: 2, maxBins: 2, storageType: 'pallet' };
-                      const isSaving = savingAisles.has(aisleId);
-                      const isPallet = config.storageType !== 'bin'; // Default to pallet for Zone B
-
-                      return (
-                        <div key={aisleId} className="border border-purple-200 dark:border-purple-700 rounded-lg p-2 md:p-3 bg-purple-50 dark:bg-purple-900/30">
-                          <div className="flex items-center justify-between mb-2 md:mb-3">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs md:text-sm font-semibold text-purple-700 dark:text-purple-400">
-                                {t('warehouse:aisleLabel', { aisleId })}
-                              </h4>
-                              {/* Storage Type Toggle */}
-                              <button
-                                type="button"
-                                onClick={() => handleAisleConfigChange(aisleId, 'storageType', isPallet ? 'bin' : 'pallet')}
-                                className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                                  isPallet 
-                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
-                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                                }`}
-                                data-testid={`toggle-${aisleId}-storage-type`}
-                              >
-                                {isPallet ? '🛒 Pallet' : '📦 Bin'}
-                              </button>
-                            </div>
-                            {isSaving && (
-                              <Badge variant="outline" className="text-xs">
-                                {t('warehouse:saving')}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 md:gap-3">
-                            <div>
-                              <Label htmlFor={`${aisleId}-racks`} className="text-xs">{t('warehouse:racks')}</Label>
-                              <Select 
-                                value={config.maxRacks.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxRacks', parseInt(v))}
-                                data-testid={`select-${aisleId}-racks`}
-                              >
-                                <SelectTrigger id={`${aisleId}-racks`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`${aisleId}-levels`} className="text-xs">{t('warehouse:levels')}</Label>
-                              <Select 
-                                value={config.maxLevels.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxLevels', parseInt(v))}
-                                data-testid={`select-${aisleId}-levels`}
-                              >
-                                <SelectTrigger id={`${aisleId}-levels`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`${aisleId}-bins`} className="text-xs">
-                                {isPallet ? 'Pallets' : t('warehouse:bins')}
-                              </Label>
-                              <Select 
-                                value={config.maxBins.toString()} 
-                                onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxBins', parseInt(v))}
-                                data-testid={`select-${aisleId}-bins`}
-                              >
-                                <SelectTrigger id={`${aisleId}-bins`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {(isPallet ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(n => (
-                                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div>
+                                <Label htmlFor={`${aisleId}-bins`} className="text-xs">
+                                  {isPallet ? 'Pallets' : t('warehouse:bins')}
+                                </Label>
+                                <Select 
+                                  value={config.maxBins.toString()} 
+                                  onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxBins', parseInt(v))}
+                                  data-testid={`select-${aisleId}-bins`}
+                                >
+                                  <SelectTrigger id={`${aisleId}-bins`} className="h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(isPallet ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(n => (
+                                      <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -979,21 +982,23 @@ export default function WarehouseMap() {
                   {/* Grid Rows (Aisles) */}
                   {gridData.map((row, aisleIndex) => {
                     const currentAisle = row[0]?.aisle || '';
-                    const isZoneAisle = !currentAisle.startsWith('A');
+                    const currentZoneLetter = currentAisle.charAt(0);
+                    const isPalletZone = isZonePalletStorage(currentAisle);
                     const previousAisle = aisleIndex > 0 ? gridData[aisleIndex - 1][0]?.aisle : '';
-                    const isFirstZoneAisle = isZoneAisle && previousAisle.startsWith('A');
+                    const previousZoneLetter = previousAisle.charAt(0);
+                    const isNewZone = currentZoneLetter !== previousZoneLetter && currentZoneLetter !== 'A';
                     const zoneLabel = getZoneLabel(currentAisle);
                     
                     return (
                       <div key={aisleIndex}>
                         {/* Zone Section Header */}
-                        {isFirstZoneAisle && (
+                        {isNewZone && zoneLabel && (
                           <div className="flex items-center gap-2 mt-4 mb-3">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 dark:via-amber-700 to-transparent" />
-                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 px-3 py-1 bg-amber-50 dark:bg-amber-950 rounded-full border border-amber-200 dark:border-amber-800">
-                              {zoneLabel || 'Zone Storage Areas'}
+                            <div className={`h-px flex-1 bg-gradient-to-r from-transparent ${isPalletZone ? 'via-purple-300 dark:via-purple-700' : 'via-amber-300 dark:via-amber-700'} to-transparent`} />
+                            <span className={`text-xs font-semibold ${isPalletZone ? 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800' : 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800'} px-3 py-1 rounded-full border`}>
+                              {zoneLabel}
                             </span>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 dark:via-amber-700 to-transparent" />
+                            <div className={`h-px flex-1 bg-gradient-to-r from-transparent ${isPalletZone ? 'via-purple-300 dark:via-purple-700' : 'via-amber-300 dark:via-amber-700'} to-transparent`} />
                           </div>
                         )}
                         
@@ -1002,7 +1007,7 @@ export default function WarehouseMap() {
                           {/* Aisle Label */}
                           <div className="w-16 flex-shrink-0 flex items-center justify-center">
                             <span className={`text-xs font-semibold ${
-                              isZoneAisle 
+                              isPalletZone 
                                 ? 'text-purple-700 dark:text-purple-400' 
                                 : 'text-amber-700 dark:text-amber-400'
                             }`}>
@@ -1064,11 +1069,13 @@ export default function WarehouseMap() {
                           const rackKey = `${location.aisle}-${location.rack}`;
                           if (expandedRack !== rackKey) return null;
 
-                          const isZoneB = location.aisle.startsWith('B');
+                          const aisleZoneLetter = location.aisle.charAt(0);
+                          const zoneDefaultType = zones[aisleZoneLetter]?.defaultStorageType || 'bin';
+                          const isZonePallet = zoneDefaultType === 'pallet';
                           const aisleConfig = aisleConfigs[location.aisle] || { 
                             maxRacks, 
-                            maxLevels: isZoneB ? 2 : maxLevels, 
-                            maxBins: isZoneB ? 2 : maxBins 
+                            maxLevels: isZonePallet ? 2 : maxLevels, 
+                            maxBins: isZonePallet ? 2 : maxBins 
                           };
                           const levels = Array.from({ length: aisleConfig.maxLevels }, (_, i) => `L${String(i + 1).padStart(2, '0')}`);
                           const bins = Array.from({ length: aisleConfig.maxBins }, (_, i) => `B${i + 1}`);
