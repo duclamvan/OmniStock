@@ -252,17 +252,18 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
-  getUserByReplitSub(replitSub: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createUserWithPhone(userData: { name: string; phone: string }): Promise<User>;
   createSmsUser(phoneNumber: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  getUserCount(): Promise<number>;
   updateUserRole(userId: string, role: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
   updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
   setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
-  upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null; role?: string | null }): Promise<User>;
+  upsertGoogleUser(userData: { googleId: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User>;
 
   // Employees
   getEmployees(): Promise<Employee[]>;
@@ -733,9 +734,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByReplitSub(replitSub: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.replitSub, replitSub)).limit(1);
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
     return user;
+  }
+
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` }).from(users);
+    return result[0]?.count || 0;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -866,12 +872,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null; role?: string | null }): Promise<User> {
-    // Check if user exists by ID or email
-    let existingUser = await this.getUser(userData.id);
+  async upsertGoogleUser(userData: { googleId: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User> {
+    const { nanoid } = await import('nanoid');
     
+    // Check if user exists by Google ID first
+    let existingUser = await this.getUserByGoogleId(userData.googleId);
+    
+    // Also check by email if not found by Google ID
     if (!existingUser && userData.email) {
-      // Also check by email to handle duplicate email scenarios
       const [userByEmail] = await db
         .select()
         .from(users)
@@ -880,21 +888,16 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (existingUser) {
-      // Update existing user - preserve existing role if no new role provided
+      // Update existing user - preserve existing role
       const updateData: any = {
+        googleId: userData.googleId,
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
         profileImageUrl: userData.profileImageUrl,
-        replitSub: userData.replitSub || userData.id,
-        authProvider: 'replit',
+        authProvider: 'google',
         updatedAt: new Date(),
       };
-      
-      // Only update role if provided AND not null (don't overwrite existing role with null)
-      if (userData.role !== undefined && userData.role !== null) {
-        updateData.role = userData.role;
-      }
       
       const [updatedUser] = await db
         .update(users)
@@ -903,20 +906,31 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updatedUser;
     } else {
-      // Create new user
+      // Create new user - check if this is the first user (auto-admin)
+      const userCount = await this.getUserCount();
+      const isFirstUser = userCount === 0;
+      
+      console.log(`Creating new user. User count: ${userCount}, isFirstUser: ${isFirstUser}`);
+      
       const [newUser] = await db
         .insert(users)
         .values({
-          id: userData.id,
+          id: nanoid(),
+          googleId: userData.googleId,
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
           profileImageUrl: userData.profileImageUrl,
-          replitSub: userData.replitSub || userData.id,
-          authProvider: 'replit',
-          role: userData.role || null,
+          authProvider: 'google',
+          // First user automatically gets administrator role
+          role: isFirstUser ? 'administrator' : null,
         })
         .returning();
+      
+      if (isFirstUser) {
+        console.log(`First user ${newUser.email} automatically granted administrator role`);
+      }
+      
       return newUser;
     }
   }
