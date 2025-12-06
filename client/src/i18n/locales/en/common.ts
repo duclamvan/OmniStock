@@ -693,7 +693,7 @@ const common = {
     // Auth Methods
     googleAuth: 'Google',
     smsLogin: 'SMS Login',
-    googleSignInNote: 'Sign in securely with your Google account. The first user will be granted administrator access.',
+    googleSignInNote: 'Sign in securely with your Google account.',
     authNotConfigured: 'Authentication Not Configured',
     contactAdminForAuth: 'Please contact the administrator to configure Google OAuth credentials.',
     orSignInWith: 'Or sign in with',
