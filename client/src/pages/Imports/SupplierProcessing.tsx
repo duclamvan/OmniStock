@@ -1065,7 +1065,7 @@ export default function SupplierProcessing() {
                               </div>
 
                               {/* Info Grid */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
+                              <div className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
                                 <div className="flex items-center gap-1.5">
                                   <Package2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-muted-foreground">{purchase.itemCount} items</span>
