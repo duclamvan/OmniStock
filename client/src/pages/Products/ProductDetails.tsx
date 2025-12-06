@@ -13,6 +13,7 @@ import {
   Package, 
   Edit, 
   TrendingUp, 
+  TrendingDown,
   Image as ImageIcon,
   Hand,
   PackageOpen,
@@ -41,8 +42,18 @@ import {
   Repeat,
   ChevronRight,
   Grid3X3,
-  Settings2
+  Settings2,
+  History,
+  Minus,
+  ExternalLink
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/currencyUtils";
 import CostHistoryChart from "@/components/products/CostHistoryChart";
 import ProductFiles from "@/components/ProductFiles";
@@ -106,6 +117,32 @@ export default function ProductDetails() {
     queryKey: ['/api/bundles'],
     staleTime: 5 * 60 * 1000,
   });
+
+  // Calculate cost trend from history
+  const costTrend = (() => {
+    if (!costHistory || costHistory.length < 2) return null;
+    
+    // Sort by date descending (most recent first)
+    const sorted = [...costHistory].sort((a, b) => 
+      new Date(b.computedAt || b.createdAt).getTime() - new Date(a.computedAt || a.createdAt).getTime()
+    );
+    
+    const latest = parseFloat(sorted[0]?.landingCostUnitBase || '0');
+    const previous = parseFloat(sorted[1]?.landingCostUnitBase || '0');
+    
+    if (previous === 0 || latest === 0) return null;
+    
+    const changePercent = ((latest - previous) / previous) * 100;
+    const direction = changePercent > 0 ? 'up' : changePercent < 0 ? 'down' : 'same';
+    
+    return {
+      latest,
+      previous,
+      changePercent: Math.abs(changePercent).toFixed(1),
+      direction,
+      historyCount: costHistory.length
+    };
+  })();
 
   const recalculateReorderRate = useMutation({
     mutationFn: async () => {
@@ -654,10 +691,112 @@ export default function ProductDetails() {
               {/* Import Costs */}
               {canAccessFinancialData && (landingCostEur > 0 || landingCostCzk > 0 || product.importCostUsd) && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    {t('products:importCost')}
-                  </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      {t('products:importCost')}
+                      {costTrend && (
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                          costTrend.direction === 'up' 
+                            ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' 
+                            : costTrend.direction === 'down'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {costTrend.direction === 'up' && <TrendingUp className="h-3 w-3" />}
+                          {costTrend.direction === 'down' && <TrendingDown className="h-3 w-3" />}
+                          {costTrend.direction === 'same' && <Minus className="h-3 w-3" />}
+                          {costTrend.direction === 'up' ? '+' : costTrend.direction === 'down' ? '-' : ''}{costTrend.changePercent}%
+                        </span>
+                      )}
+                    </h3>
+                    {costHistory.length > 0 && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground" data-testid="button-view-cost-history">
+                            <History className="h-3 w-3" />
+                            {t('products:viewHistory', 'View History')} ({costHistory.length})
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <History className="h-5 w-5" />
+                              {t('products:costHistory')} - {product.name}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 overflow-y-auto max-h-[60vh]">
+                            {/* Chart */}
+                            <div className="p-4 bg-muted/30 rounded-lg">
+                              <CostHistoryChart data={costHistory} />
+                            </div>
+                            
+                            {/* Summary Stats */}
+                            {costTrend && (
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="p-3 rounded-lg border bg-card">
+                                  <p className="text-xs text-muted-foreground">{t('products:latestCost', 'Latest Cost')}</p>
+                                  <p className="text-lg font-bold">{formatCurrency(costTrend.latest, 'CZK')}</p>
+                                </div>
+                                <div className="p-3 rounded-lg border bg-card">
+                                  <p className="text-xs text-muted-foreground">{t('products:previousCost', 'Previous Cost')}</p>
+                                  <p className="text-lg font-bold">{formatCurrency(costTrend.previous, 'CZK')}</p>
+                                </div>
+                                <div className={`p-3 rounded-lg border ${
+                                  costTrend.direction === 'up' 
+                                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' 
+                                    : costTrend.direction === 'down'
+                                      ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+                                      : 'bg-muted/50'
+                                }`}>
+                                  <p className="text-xs text-muted-foreground">{t('products:change', 'Change')}</p>
+                                  <p className={`text-lg font-bold flex items-center gap-1 ${
+                                    costTrend.direction === 'up' ? 'text-red-600' : costTrend.direction === 'down' ? 'text-green-600' : ''
+                                  }`}>
+                                    {costTrend.direction === 'up' && <TrendingUp className="h-4 w-4" />}
+                                    {costTrend.direction === 'down' && <TrendingDown className="h-4 w-4" />}
+                                    {costTrend.direction === 'up' ? '+' : costTrend.direction === 'down' ? '-' : ''}{costTrend.changePercent}%
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* History Table */}
+                            <div className="border rounded-lg overflow-hidden">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-muted/30">
+                                    <TableHead className="text-xs">{t('common:date', 'Date')}</TableHead>
+                                    <TableHead className="text-xs text-right">{t('products:landingCost', 'Landing Cost')}</TableHead>
+                                    <TableHead className="text-xs">{t('products:method', 'Method')}</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {[...costHistory]
+                                    .sort((a, b) => new Date(b.computedAt || b.createdAt).getTime() - new Date(a.computedAt || a.createdAt).getTime())
+                                    .map((entry: any, index: number) => (
+                                      <TableRow key={entry.id || index} className="text-sm">
+                                        <TableCell className="font-medium">
+                                          {new Date(entry.computedAt || entry.createdAt).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono">
+                                          {formatCurrency(parseFloat(entry.landingCostUnitBase || '0'), 'CZK')}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Badge variant="outline" className="text-xs capitalize">
+                                            {entry.method?.replace('_', ' ') || 'import'}
+                                          </Badge>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-3">
                     {product.importCostUsd && (
                       <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
