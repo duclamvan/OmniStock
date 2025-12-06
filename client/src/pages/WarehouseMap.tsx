@@ -716,7 +716,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[5, 8, 10, 12, 15, 20].map(n => (
+                                  {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
@@ -754,7 +754,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[2, 3, 4, 5, 6, 8].map(n => (
+                                  {(isPallet ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
@@ -818,7 +818,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[5, 8, 10, 12, 15, 20].map(n => (
+                                  {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
@@ -856,7 +856,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[2, 3, 4, 5, 6, 8].map(n => (
+                                  {(isPallet ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
