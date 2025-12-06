@@ -1052,7 +1052,7 @@ export default function SupplierProcessing() {
                             
                             <div className="flex-1 min-w-0">
                               {/* Title Row */}
-                              <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center gap-3">
                                 <h3 className="font-semibold text-base" data-testid={`text-supplier-${purchase.id}`}>
                                   {getLocationFlag(purchase.location || '')} {purchase.supplier}
                                 </h3>
@@ -1061,47 +1061,6 @@ export default function SupplierProcessing() {
                                   <span className="text-xs font-mono text-muted-foreground ml-auto hidden md:inline">
                                     {purchase.trackingNumber}
                                   </span>
-                                )}
-                              </div>
-
-                              {/* Info Grid */}
-                              <div className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                  <Package2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                  <span className="text-muted-foreground">{purchase.itemCount} items</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                  <span className="text-muted-foreground">
-                                    ETA: {purchase.estimatedArrival 
-                                      ? format(new Date(purchase.estimatedArrival), 'MMM dd')
-                                      : 'TBD'
-                                    }
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                  <span className="text-muted-foreground">
-                                    Ship: {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.shippingCost}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
-                                  <span className="font-semibold">
-                                    {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.totalCost}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-muted-foreground">
-                                    {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
-                                  </span>
-                                </div>
-                                {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground">
-                                      Paid: {getCurrencySymbol(purchase.paymentCurrency as Currency)}{purchase.totalPaid || '0'}
-                                    </span>
-                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1194,6 +1153,47 @@ export default function SupplierProcessing() {
                                 <TooltipContent>{t('deletePurchase')}</TooltipContent>
                               </Tooltip>
                             </div>
+                          </div>
+
+                          {/* Info Grid - Full Width */}
+                          <div className="pl-10 mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <Package2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground">{purchase.itemCount} items</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground">
+                                ETA: {purchase.estimatedArrival 
+                                  ? format(new Date(purchase.estimatedArrival), 'MMM dd')
+                                  : 'TBD'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground">
+                                Ship: {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.shippingCost}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="font-semibold">
+                                {getCurrencySymbol((purchase.purchaseCurrency || 'USD') as Currency)}{purchase.totalCost}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground">
+                                {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                            {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">
+                                  Paid: {getCurrencySymbol(purchase.paymentCurrency as Currency)}{purchase.totalPaid || '0'}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Items Table */}
