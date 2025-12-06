@@ -642,6 +642,11 @@ const warehouse = {
   productsStored: 'Products Stored',
   noProductsStored: 'No products stored in this location',
   more: 'more',
+  clickToExpand: 'Click to expand/collapse',
+  viewProducts: 'View Products',
+  productsSku: 'Products',
+  hasInventory: 'Has inventory',
+  emptyBin: 'Empty',
   
   // Storage & Location Management
   invalidLocationFormat: 'Invalid location format',

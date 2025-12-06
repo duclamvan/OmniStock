@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Warehouse, Package, Layers, MapPin, Info } from "lucide-react";
+import { Warehouse, Package, Layers, MapPin, Info, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -73,6 +73,7 @@ export default function WarehouseMap() {
   const [aisleConfigs, setAisleConfigs] = useState<Record<string, AisleConfig>>({});
   const [selectedLocation, setSelectedLocation] = useState<LocationStats | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [expandedRack, setExpandedRack] = useState<string | null>(null); // Track which rack is expanded
   const [savingAisles, setSavingAisles] = useState<Set<string>>(new Set());
   const [savingGlobalConfig, setSavingGlobalConfig] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -472,6 +473,17 @@ export default function WarehouseMap() {
   };
 
   const handleCellClick = (location: LocationStats) => {
+    const rackKey = `${location.aisle}-${location.rack}`;
+    // Toggle expansion - if already expanded, collapse; if different or collapsed, expand
+    if (expandedRack === rackKey) {
+      setExpandedRack(null);
+    } else {
+      setExpandedRack(rackKey);
+      setSelectedLocation(location);
+    }
+  };
+
+  const handleOpenDetails = (location: LocationStats) => {
     setSelectedLocation(location);
     setDetailsOpen(true);
   };
@@ -1023,41 +1035,178 @@ export default function WarehouseMap() {
                           </div>
 
                           {/* Rack Cells */}
-                          {row.map((location, rackIndex) => (
-                            <TooltipProvider key={rackIndex}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleCellClick(location)}
-                                    className={`flex-1 min-w-[60px] h-14 rounded border-2 transition-colors ${getOccupancyColor(location.occupancyPercent)}`}
-                                    data-testid={`cell-${location.aisle}-${location.rack}`}
-                                  >
-                                    <div className="flex flex-col items-center justify-center h-full">
-                                      {location.totalQuantity > 0 && (
-                                        <>
-                                          <span className="text-xs font-bold" data-testid={`quantity-${location.aisle}-${location.rack}`}>
-                                            {location.totalQuantity}
-                                          </span>
-                                          <span className="text-[10px] opacity-70" data-testid={`sku-count-${location.aisle}-${location.rack}`}>
-                                            {location.productCount} SKU
-                                          </span>
-                                        </>
-                                      )}
+                          {row.map((location, rackIndex) => {
+                            const rackKey = `${location.aisle}-${location.rack}`;
+                            const isExpanded = expandedRack === rackKey;
+                            
+                            return (
+                              <TooltipProvider key={rackIndex}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => handleCellClick(location)}
+                                      className={`flex-1 min-w-[60px] h-14 rounded border-2 transition-all ${getOccupancyColor(location.occupancyPercent)} ${
+                                        isExpanded 
+                                          ? 'ring-2 ring-amber-500 dark:ring-amber-400 ring-offset-2 dark:ring-offset-slate-900' 
+                                          : ''
+                                      }`}
+                                      data-testid={`cell-${location.aisle}-${location.rack}`}
+                                    >
+                                      <div className="flex flex-col items-center justify-center h-full">
+                                        {location.totalQuantity > 0 ? (
+                                          <>
+                                            <span className="text-xs font-bold" data-testid={`quantity-${location.aisle}-${location.rack}`}>
+                                              {location.totalQuantity}
+                                            </span>
+                                            <span className="text-[10px] opacity-70" data-testid={`sku-count-${location.aisle}-${location.rack}`}>
+                                              {location.productCount} SKU
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="text-[10px] text-muted-foreground">-</span>
+                                        )}
+                                      </div>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-xs">
+                                      <p className="font-semibold">{location.aisle}-{location.rack}</p>
+                                      <p>{t('warehouse:items')}: {location.totalQuantity}</p>
+                                      <p>{t('warehouse:productsSku')}: {location.productCount}</p>
+                                      <p>{t('warehouse:occupancy')}: {location.occupancyPercent.toFixed(1)}%</p>
+                                      <p className="text-muted-foreground mt-1">{t('warehouse:clickToExpand')}</p>
                                     </div>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <div className="text-xs">
-                                    <p className="font-semibold">{location.aisle}-{location.rack}</p>
-                                    <p>Items: {location.totalQuantity}</p>
-                                    <p>Products: {location.productCount}</p>
-                                    <p>Occupancy: {location.occupancyPercent.toFixed(1)}%</p>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ))}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })}
                         </div>
+
+                        {/* Expanded Level/Bin Grid (shown inline when a rack in this aisle is expanded) */}
+                        {row.map((location, rackIndex) => {
+                          const rackKey = `${location.aisle}-${location.rack}`;
+                          if (expandedRack !== rackKey) return null;
+
+                          const aisleConfig = aisleConfigs[location.aisle] || { maxRacks, maxLevels, maxBins };
+                          const levels = Array.from({ length: aisleConfig.maxLevels }, (_, i) => `L${String(i + 1).padStart(2, '0')}`);
+                          const bins = Array.from({ length: aisleConfig.maxBins }, (_, i) => `B${i + 1}`);
+                          const dataMap = new Map(location.levelBinBreakdown.map(lb => [`${lb.level}-${lb.bin}`, lb]));
+
+                          return (
+                            <div key={`expanded-${rackKey}`} className="ml-16 mb-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-amber-200 dark:border-amber-800 animate-in slide-in-from-top-2 duration-200">
+                              {/* Expanded Header */}
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Layers className="h-4 w-4 text-amber-600" />
+                                  <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                                    {location.aisle}-{location.rack} • {t('warehouse:levelBinBreakdown')}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {location.totalQuantity} {t('warehouse:items')} • {location.productCount} SKU
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    onClick={() => handleOpenDetails(location)}
+                                    data-testid={`btn-details-${rackKey}`}
+                                  >
+                                    <Info className="h-3 w-3 mr-1" />
+                                    {t('warehouse:viewProducts')}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => setExpandedRack(null)}
+                                    data-testid={`btn-close-${rackKey}`}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Level/Bin Grid */}
+                              <div className="space-y-1.5">
+                                {/* Bin Headers */}
+                                <div className="flex items-center gap-1">
+                                  <div className="w-10 text-[10px] text-muted-foreground font-medium text-right pr-1">
+                                    {t('warehouse:level')}
+                                  </div>
+                                  {bins.map(bin => (
+                                    <div key={bin} className="flex-1 min-w-[40px] text-center text-[10px] font-medium text-muted-foreground">
+                                      {bin}
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Level Rows (reversed so L01 is at bottom like real shelving) */}
+                                {[...levels].reverse().map(level => (
+                                  <div key={level} className="flex items-center gap-1">
+                                    <div className="w-10 text-[10px] font-semibold text-amber-700 dark:text-amber-400 text-right pr-1">
+                                      {level}
+                                    </div>
+                                    {bins.map(bin => {
+                                      const data = dataMap.get(`${level}-${bin}`);
+                                      const hasItems = data && data.quantity > 0;
+                                      return (
+                                        <TooltipProvider key={`${level}-${bin}`}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div 
+                                                className={`flex-1 min-w-[40px] h-8 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+                                                  hasItems 
+                                                    ? 'bg-amber-100 dark:bg-amber-950 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 hover:bg-amber-200 dark:hover:bg-amber-900' 
+                                                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                }`}
+                                                data-testid={`inline-bin-${location.aisle}-${location.rack}-${level}-${bin}`}
+                                              >
+                                                {hasItems ? (
+                                                  <span className="text-xs font-bold">{data.quantity}</span>
+                                                ) : (
+                                                  <span className="text-[9px]">-</span>
+                                                )}
+                                              </div>
+                                            </TooltipTrigger>
+                                            {hasItems && (
+                                              <TooltipContent side="top" className="max-w-xs">
+                                                <div className="text-xs space-y-1">
+                                                  <p className="font-semibold">{location.aisle}-{location.rack}-{level}-{bin}</p>
+                                                  <p>{t('warehouse:items')}: {data.quantity}</p>
+                                                  {data.products.slice(0, 3).map((p, i) => (
+                                                    <p key={i} className="text-muted-foreground truncate">{p.sku}: {p.quantity}</p>
+                                                  ))}
+                                                  {data.products.length > 3 && (
+                                                    <p className="text-muted-foreground">+{data.products.length - 3} {t('warehouse:more')}</p>
+                                                  )}
+                                                </div>
+                                              </TooltipContent>
+                                            )}
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Quick Legend */}
+                              <div className="mt-3 flex items-center gap-4 text-[10px] text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-3 h-3 rounded bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-700"></div>
+                                  <span>{t('warehouse:hasInventory')}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <div className="w-3 h-3 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></div>
+                                  <span>{t('warehouse:emptyBin')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })}

@@ -638,6 +638,11 @@ const warehouse = {
   productsStored: 'Sản phẩm lưu trữ',
   noProductsStored: 'Không có sản phẩm nào được lưu trữ tại vị trí này',
   more: 'thêm',
+  clickToExpand: 'Nhấn để mở rộng/thu gọn',
+  viewProducts: 'Xem sản phẩm',
+  productsSku: 'Sản phẩm',
+  hasInventory: 'Có hàng',
+  emptyBin: 'Trống',
   
   // Move Inventory Dialog
   moveInventory: 'Di chuyển hàng tồn kho',
