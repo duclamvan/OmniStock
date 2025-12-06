@@ -647,7 +647,7 @@ const common = {
     // Auth Methods
     googleAuth: 'Google',
     smsLogin: 'Đăng nhập SMS',
-    googleSignInNote: 'Tài khoản Google của bạn sẽ được sử dụng để xác thực an toàn. Người dùng đầu tiên đăng ký sẽ tự động trở thành quản trị viên.',
+    googleSignInNote: 'Đăng nhập an toàn bằng tài khoản Google. Người dùng đầu tiên sẽ được cấp quyền quản trị viên.',
     authNotConfigured: 'Xác thực chưa được cấu hình',
     contactAdminForAuth: 'Vui lòng liên hệ quản trị viên để cấu hình thông tin xác thực Google OAuth.',
     orSignInWith: 'Hoặc đăng nhập với',
