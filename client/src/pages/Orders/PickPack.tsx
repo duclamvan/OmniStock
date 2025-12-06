@@ -13096,7 +13096,7 @@ export default function PickPack() {
                   <span className="hidden sm:inline">{t('overview')}</span>
                 </span>
                 <span className="text-sm sm:text-base font-bold">
-                  {stats.pending + stats.picking + stats.packing + stats.ready}
+                  {stats.pending + stats.picking}
                 </span>
               </div>
             </TabsTrigger>
