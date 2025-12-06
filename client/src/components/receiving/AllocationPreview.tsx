@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation } from 'react-i18next';
 import { 
   Download,
@@ -28,7 +30,11 @@ import {
   Cpu,
   CheckCircle2,
   HelpCircle,
-  ChevronDown
+  ChevronDown,
+  Settings2,
+  Eye,
+  EyeOff,
+  RotateCcw
 } from "lucide-react";
 import {
   Tooltip,
@@ -169,6 +175,29 @@ const ALLOCATION_METHODS: AllocationMethod[] = [
   }
 ];
 
+// Column configuration for visibility controls
+interface ColumnConfig {
+  id: string;
+  label: string;
+  defaultVisible: boolean;
+  group?: 'core' | 'costs' | 'detailed';
+}
+
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { id: 'product', label: 'Product', defaultVisible: true, group: 'core' },
+  { id: 'units', label: 'Units', defaultVisible: true, group: 'core' },
+  { id: 'purchPrice', label: 'Purchase Price', defaultVisible: true, group: 'core' },
+  { id: 'chgKg', label: 'Chargeable Kg', defaultVisible: true, group: 'core' },
+  { id: 'freight', label: 'Freight', defaultVisible: true, group: 'costs' },
+  { id: 'duty', label: 'Duty', defaultVisible: true, group: 'costs' },
+  { id: 'brokerage', label: 'Customs/Brokerage', defaultVisible: false, group: 'detailed' },
+  { id: 'insurance', label: 'Insurance', defaultVisible: false, group: 'detailed' },
+  { id: 'packaging', label: 'Packaging', defaultVisible: false, group: 'detailed' },
+  { id: 'other', label: 'Other', defaultVisible: true, group: 'costs' },
+  { id: 'landingCost', label: 'Landing Cost/Unit', defaultVisible: false, group: 'detailed' },
+  { id: 'totalCost', label: 'Total Cost', defaultVisible: true, group: 'core' },
+];
+
 const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const { toast } = useToast();
   const { t } = useTranslation('imports');
@@ -176,6 +205,40 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [showMethodDetails, setShowMethodDetails] = useState(true);
+  
+  // Column visibility state
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    DEFAULT_COLUMNS.forEach(col => {
+      initial[col.id] = col.defaultVisible;
+    });
+    return initial;
+  });
+
+  const toggleColumn = (columnId: string) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [columnId]: !prev[columnId]
+    }));
+  };
+
+  const resetColumns = () => {
+    const initial: Record<string, boolean> = {};
+    DEFAULT_COLUMNS.forEach(col => {
+      initial[col.id] = col.defaultVisible;
+    });
+    setColumnVisibility(initial);
+  };
+
+  const showAllColumns = () => {
+    const all: Record<string, boolean> = {};
+    DEFAULT_COLUMNS.forEach(col => {
+      all[col.id] = true;
+    });
+    setColumnVisibility(all);
+  };
+
+  const visibleColumnCount = Object.values(columnVisibility).filter(Boolean).length;
 
   // Fetch allocation preview - use method-specific endpoint when manual override
   const { data: preview, isLoading, error, refetch } = useQuery<AllocationSummary>({
@@ -608,19 +671,118 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         </Card>
       </Collapsible>
 
-      {/* Compact Allocation Table */}
+      {/* Comprehensive Cost Allocation Table */}
       <Collapsible defaultOpen={true}>
         <Card>
           <CardHeader className="p-3 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">
-                {t('costAllocationDetails')} ({preview.totalItems} {t('items')})
-              </CardTitle>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </CollapsibleTrigger>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-cyan-600" />
+                <CardTitle className="text-sm font-semibold">
+                  {t('costAllocationDetails')} ({preview.totalItems} {preview.totalItems === 1 ? t('item') : t('items')})
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {preview.totalUnits} {t('units')}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1">
+                {/* Column Visibility Settings */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 text-xs gap-1 hidden md:flex"
+                      data-testid="button-column-settings"
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                      {t('columns')} ({visibleColumnCount}/{DEFAULT_COLUMNS.length})
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72" align="end">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">{t('columnVisibility') || 'Column Visibility'}</h4>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 text-xs px-2"
+                            onClick={showAllColumns}
+                            data-testid="button-show-all-columns"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            {t('showAll') || 'All'}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 text-xs px-2"
+                            onClick={resetColumns}
+                            data-testid="button-reset-columns"
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            {t('reset') || 'Reset'}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">{t('coreColumns') || 'Core'}</p>
+                        {DEFAULT_COLUMNS.filter(c => c.group === 'core').map(col => (
+                          <div key={col.id} className="flex items-center gap-2">
+                            <Checkbox 
+                              id={`col-${col.id}`}
+                              checked={columnVisibility[col.id]}
+                              onCheckedChange={() => toggleColumn(col.id)}
+                              data-testid={`checkbox-column-${col.id}`}
+                            />
+                            <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
+                              {t(col.id) || col.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">{t('costColumns') || 'Costs'}</p>
+                        {DEFAULT_COLUMNS.filter(c => c.group === 'costs').map(col => (
+                          <div key={col.id} className="flex items-center gap-2">
+                            <Checkbox 
+                              id={`col-${col.id}`}
+                              checked={columnVisibility[col.id]}
+                              onCheckedChange={() => toggleColumn(col.id)}
+                              data-testid={`checkbox-column-${col.id}`}
+                            />
+                            <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
+                              {t(col.id) || col.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">{t('detailedColumns') || 'Detailed'}</p>
+                        {DEFAULT_COLUMNS.filter(c => c.group === 'detailed').map(col => (
+                          <div key={col.id} className="flex items-center gap-2">
+                            <Checkbox 
+                              id={`col-${col.id}`}
+                              checked={columnVisibility[col.id]}
+                              onCheckedChange={() => toggleColumn(col.id)}
+                              data-testid={`checkbox-column-${col.id}`}
+                            />
+                            <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
+                              {t(col.id) || col.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
             </div>
           </CardHeader>
           <CollapsibleContent>
@@ -629,215 +791,306 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 <Table>
                   <TableHeader>
                     <TableRow className="text-xs bg-muted/30">
-                      <TableHead className="min-w-[180px] p-2">{t('product')}</TableHead>
-                      <TableHead className="text-right w-[60px] p-2">{t('units')}</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">{t('purchPrice')}</TableHead>
-                      <TableHead className="text-right w-[70px] p-2">{t('chgKg')}</TableHead>
-                      <TableHead className="text-right w-[90px] p-2">{t('freight')}</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">{t('duty')}</TableHead>
-                      <TableHead className="text-right w-[80px] p-2">{t('other')}</TableHead>
-                      <TableHead className="text-right w-[100px] p-2">{t('totalCost')}</TableHead>
+                      {columnVisibility.product && (
+                        <TableHead className="min-w-[180px] p-2">{t('product')}</TableHead>
+                      )}
+                      {columnVisibility.units && (
+                        <TableHead className="text-right w-[60px] p-2">{t('units')}</TableHead>
+                      )}
+                      {columnVisibility.purchPrice && (
+                        <TableHead className="text-right w-[90px] p-2">{t('purchPrice')}</TableHead>
+                      )}
+                      {columnVisibility.chgKg && (
+                        <TableHead className="text-right w-[70px] p-2">{t('chgKg')}</TableHead>
+                      )}
+                      {columnVisibility.freight && (
+                        <TableHead className="text-right w-[90px] p-2">{t('freight')}</TableHead>
+                      )}
+                      {columnVisibility.duty && (
+                        <TableHead className="text-right w-[80px] p-2">{t('duty')}</TableHead>
+                      )}
+                      {columnVisibility.brokerage && (
+                        <TableHead className="text-right w-[90px] p-2">{t('brokerage') || 'Customs'}</TableHead>
+                      )}
+                      {columnVisibility.insurance && (
+                        <TableHead className="text-right w-[80px] p-2">{t('insurance') || 'Insurance'}</TableHead>
+                      )}
+                      {columnVisibility.packaging && (
+                        <TableHead className="text-right w-[80px] p-2">{t('packaging') || 'Packaging'}</TableHead>
+                      )}
+                      {columnVisibility.other && (
+                        <TableHead className="text-right w-[80px] p-2">{t('other')}</TableHead>
+                      )}
+                      {columnVisibility.landingCost && (
+                        <TableHead className="text-right w-[100px] p-2">{t('landingCostUnit') || 'Landing/Unit'}</TableHead>
+                      )}
+                      {columnVisibility.totalCost && (
+                        <TableHead className="text-right w-[100px] p-2">{t('totalCost')}</TableHead>
+                      )}
                       <TableHead className="w-[40px] p-2"></TableHead>
                     </TableRow>
                   </TableHeader>
-              <TableBody>
-                {preview.items.map((item) => [
-                    <TableRow
-                      key={`row-${item.purchaseItemId}`}
-                      className={`text-xs hover:bg-muted/30 ${item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}`}
-                    >
-                      <TableCell className="p-2">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-xs">{item.name}</span>
-                            {item.warnings.length > 0 && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <AlertTriangle className="h-3 w-3 text-yellow-600 cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <div className="space-y-1">
-                                      {item.warnings.map((warning, idx) => (
-                                        <p key={idx}>{warning}</p>
-                                      ))}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">{item.sku}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right p-2">{item.quantity || 0}</TableCell>
-                      <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
-                        {formatCurrency(item.unitPrice, preview.baseCurrency)}
-                      </TableCell>
-                      <TableCell className="text-right p-2 text-muted-foreground">
-                        {(item.chargeableWeightKg || 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right p-2">
-                        {formatCurrency(item.freightAllocated, preview.baseCurrency)}
-                      </TableCell>
-                      <TableCell className="text-right p-2">
-                        {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
-                      </TableCell>
-                      <TableCell className="text-right p-2">
-                        {formatCurrency(
-                          (item.brokerageAllocated || 0) + 
-                          (item.insuranceAllocated || 0) + 
-                          (item.packagingAllocated || 0) + 
-                          (item.otherAllocated || 0),
-                          preview.baseCurrency
+                  <TableBody>
+                    {preview.items.map((item) => [
+                      <TableRow
+                        key={`row-${item.purchaseItemId}`}
+                        className={`text-xs hover:bg-muted/30 ${item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}`}
+                      >
+                        {columnVisibility.product && (
+                          <TableCell className="p-2">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-xs">{item.name}</span>
+                                {item.warnings.length > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <AlertTriangle className="h-3 w-3 text-yellow-600 cursor-help" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="space-y-1">
+                                          {item.warnings.map((warning, idx) => (
+                                            <p key={idx}>{warning}</p>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">{item.sku}</span>
+                            </div>
+                          </TableCell>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
-                        {formatCurrency((item.unitPrice || 0) + (item.landingCostPerUnit || 0), preview.baseCurrency)}
-                      </TableCell>
-                      <TableCell className="p-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleRow(item.purchaseItemId)}
-                          className="h-6 w-6 p-0"
-                          data-testid={`button-expand-${item.purchaseItemId}`}
-                        >
-                          <Info className="h-3 w-3" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>,
-                    expandedRows.has(item.purchaseItemId) && (
-                      <TableRow key={`expanded-${item.purchaseItemId}`}>
-                        <TableCell colSpan={9} className="bg-muted/30">
-                          <div className="p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium">{t('costBreakdown')}</h4>
-                              {currentMethod && (
-                                <Badge variant="outline" className="text-xs">
-                                  <currentMethod.icon className="h-3 w-3 mr-1" />
-                                  {currentMethod.name}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">{t('freightLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.freightAllocated, preview.baseCurrency)}
-                                </span>
+                        {columnVisibility.units && (
+                          <TableCell className="text-right p-2">{item.quantity || 0}</TableCell>
+                        )}
+                        {columnVisibility.purchPrice && (
+                          <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
+                            {formatCurrency(item.unitPrice, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.chgKg && (
+                          <TableCell className="text-right p-2 text-muted-foreground">
+                            {(item.chargeableWeightKg || 0).toFixed(2)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.freight && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.freightAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.duty && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.brokerage && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.brokerageAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.insurance && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.insuranceAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.packaging && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.packagingAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.other && (
+                          <TableCell className="text-right p-2">
+                            {formatCurrency(item.otherAllocated, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.landingCost && (
+                          <TableCell className="text-right p-2 text-orange-600 dark:text-orange-400">
+                            {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        {columnVisibility.totalCost && (
+                          <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
+                            {formatCurrency((item.unitPrice || 0) + (item.landingCostPerUnit || 0), preview.baseCurrency)}
+                          </TableCell>
+                        )}
+                        <TableCell className="p-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRow(item.purchaseItemId)}
+                            className="h-6 w-6 p-0"
+                            data-testid={`button-expand-${item.purchaseItemId}`}
+                          >
+                            <Info className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>,
+                      expandedRows.has(item.purchaseItemId) && (
+                        <TableRow key={`expanded-${item.purchaseItemId}`}>
+                          <TableCell colSpan={visibleColumnCount + 1} className="bg-muted/30">
+                            <div className="p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium">{t('costBreakdown')}</h4>
+                                {currentMethod && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <currentMethod.icon className="h-3 w-3 mr-1" />
+                                    {currentMethod.name}
+                                  </Badge>
+                                )}
                               </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('dutyLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('customsFeeLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.brokerageAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('insuranceLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.insuranceAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('packagingLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.packagingAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('otherLabel')}</span>
-                                <span className="ml-2 font-medium">
-                                  {formatCurrency(item.otherAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="mt-3 pt-3 border-t">
-                              <div className="flex justify-between">
-                                <span className="font-medium">{t('totalAllocated')}</span>
-                                <span className="font-bold">
-                                  {formatCurrency(item.totalAllocated, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm text-muted-foreground">
-                                <span>{t('perUnitCost')}</span>
-                                <span>
-                                  {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
-                                </span>
-                              </div>
-                              {currentMethod && (
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>{t('methodUsed')}</span>
-                                  <span className="flex items-center gap-1">
-                                    <currentMethod.icon className="h-3 w-3" />
-                                    {currentMethod.description}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('freightLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.freightAllocated, preview.baseCurrency)}
                                   </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('dutyLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('customsFeeLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.brokerageAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('insuranceLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.insuranceAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('packagingLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.packagingAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border">
+                                  <span className="text-muted-foreground text-xs block">{t('otherLabel')}</span>
+                                  <span className="font-medium">
+                                    {formatCurrency(item.otherAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-cyan-50 dark:bg-cyan-950/30 p-2 rounded border border-cyan-200 dark:border-cyan-800">
+                                  <span className="text-muted-foreground text-xs block">{t('totalAllocated')}</span>
+                                  <span className="font-bold text-cyan-700 dark:text-cyan-400">
+                                    {formatCurrency(item.totalAllocated, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                                <div className="bg-orange-50 dark:bg-orange-950/30 p-2 rounded border border-orange-200 dark:border-orange-800">
+                                  <span className="text-muted-foreground text-xs block">{t('perUnitCost')}</span>
+                                  <span className="font-bold text-orange-600 dark:text-orange-400">
+                                    {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
+                                  </span>
+                                </div>
+                              </div>
+                              {currentMethod && (
+                                <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{t('methodUsed')}:</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    <currentMethod.icon className="h-3 w-3 mr-1" />
+                                    {currentMethod.description}
+                                  </Badge>
+                                </div>
+                              )}
+                              {item.warnings.length > 0 && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <h5 className="text-sm font-medium text-yellow-600 mb-1">{t('warningsLabel')}</h5>
+                                  <ul className="list-disc list-inside text-sm text-yellow-600">
+                                    {item.warnings.map((warning, idx) => (
+                                      <li key={idx}>{warning}</li>
+                                    ))}
+                                  </ul>
                                 </div>
                               )}
                             </div>
-                            {item.warnings.length > 0 && (
-                              <div className="mt-3 pt-3 border-t">
-                                <h5 className="text-sm font-medium text-yellow-600 mb-1">{t('warningsLabel')}</h5>
-                                <ul className="list-disc list-inside text-sm text-yellow-600">
-                                  {item.warnings.map((warning, idx) => (
-                                    <li key={idx}>{warning}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    ])}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="font-bold text-xs bg-muted/50">
+                      {columnVisibility.product && (
+                        <TableCell className="p-2">{t('total')}</TableCell>
+                      )}
+                      {columnVisibility.units && (
+                        <TableCell className="text-right p-2">{preview.totalUnits || 0}</TableCell>
+                      )}
+                      {columnVisibility.purchPrice && (
+                        <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400">
+                          {formatCurrency(
+                            preview.totalUnits > 0 
+                              ? preview.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 0)), 0) / preview.totalUnits
+                              : 0,
+                            preview.baseCurrency
+                          )}
                         </TableCell>
-                      </TableRow>
-                    )
-                ])}
-              </TableBody>
-              <TableFooter>
-                <TableRow className="font-bold text-xs bg-muted/50">
-                  <TableCell className="p-2">{t('total')}</TableCell>
-                  <TableCell className="text-right p-2">{preview.totalUnits || 0}</TableCell>
-                  <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400">
-                    {formatCurrency(
-                      preview.totalUnits > 0 
-                        ? preview.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 0)), 0) / preview.totalUnits
-                        : 0,
-                      preview.baseCurrency
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right p-2">
-                    {(preview.totalChargeableWeight || 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right p-2">
-                    {formatCurrency(preview.totalCosts?.freight, preview.baseCurrency)}
-                  </TableCell>
-                  <TableCell className="text-right p-2">
-                    {formatCurrency(preview.totalCosts?.duty, preview.baseCurrency)}
-                  </TableCell>
-                  <TableCell className="text-right p-2">
-                    {formatCurrency(
-                      (preview.totalCosts?.brokerage || 0) +
-                      (preview.totalCosts?.insurance || 0) +
-                      (preview.totalCosts?.packaging || 0) +
-                      (preview.totalCosts?.other || 0),
-                      preview.baseCurrency
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right p-2 text-cyan-700 dark:text-cyan-400">
-                    {formatCurrency(
-                      preview.totalUnits > 0
-                        ? preview.items.reduce((sum, item) => sum + (((item.unitPrice || 0) + (item.landingCostPerUnit || 0)) * (item.quantity || 0)), 0) / preview.totalUnits
-                        : 0,
-                      preview.baseCurrency
-                    )}
-                  </TableCell>
-                  <TableCell className="p-2"></TableCell>
-                </TableRow>
-              </TableFooter>
+                      )}
+                      {columnVisibility.chgKg && (
+                        <TableCell className="text-right p-2">
+                          {(preview.totalChargeableWeight || 0).toFixed(2)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.freight && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.freight, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.duty && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.duty, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.brokerage && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.brokerage, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.insurance && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.insurance, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.packaging && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.packaging, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.other && (
+                        <TableCell className="text-right p-2">
+                          {formatCurrency(preview.totalCosts?.other, preview.baseCurrency)}
+                        </TableCell>
+                      )}
+                      {columnVisibility.landingCost && (
+                        <TableCell className="text-right p-2 text-orange-600 dark:text-orange-400">
+                          {formatCurrency(
+                            preview.totalUnits > 0
+                              ? preview.items.reduce((sum, item) => sum + ((item.landingCostPerUnit || 0) * (item.quantity || 0)), 0) / preview.totalUnits
+                              : 0,
+                            preview.baseCurrency
+                          )}
+                        </TableCell>
+                      )}
+                      {columnVisibility.totalCost && (
+                        <TableCell className="text-right p-2 text-cyan-700 dark:text-cyan-400">
+                          {formatCurrency(
+                            preview.totalUnits > 0
+                              ? preview.items.reduce((sum, item) => sum + (((item.unitPrice || 0) + (item.landingCostPerUnit || 0)) * (item.quantity || 0)), 0) / preview.totalUnits
+                              : 0,
+                            preview.baseCurrency
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="p-2"></TableCell>
+                    </TableRow>
+                  </TableFooter>
                 </Table>
               </div>
             </CardContent>
