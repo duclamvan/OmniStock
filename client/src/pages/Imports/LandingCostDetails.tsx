@@ -163,6 +163,7 @@ export default function LandingCostDetails() {
   const initDataRef = useRef<string>('');
   
   // Initialize price updates when products load - auto-fill from existing inventory prices
+  // or suggest prices based on landing cost for new products
   useEffect(() => {
     if (!landingCostPreview || !products) return;
     
@@ -180,10 +181,11 @@ export default function LandingCostDetails() {
       // Check if we already have a price update for this item (user-entered)
       const existingUpdate = priceUpdates[item.sku];
       
-      // Only initialize if:
-      // 1. Product exists in inventory AND
-      // 2. Either no existing update OR existing update has no user changes
-      if (product && (!existingUpdate || !existingUpdate.hasChanged)) {
+      // Skip if user has made changes
+      if (existingUpdate?.hasChanged) return;
+      
+      if (product) {
+        // Product exists in inventory - load saved prices
         const priceEUR = parseFloat(product.priceEur || product.price || '0');
         const priceCZK = parseFloat(product.priceCzk || '0') || (priceEUR > 0 ? convertCurrency(priceEUR, 'EUR', 'CZK') : 0);
         
@@ -201,6 +203,20 @@ export default function LandingCostDetails() {
           };
           hasUpdates = true;
         }
+      } else if (!existingUpdate) {
+        // Product NOT in inventory - suggest price based on landed cost with 50% markup
+        const suggestedPriceEUR = item.landingCostPerUnit * 1.5;
+        const suggestedPriceCZK = convertCurrency(suggestedPriceEUR, 'EUR', 'CZK');
+        
+        initialUpdates[item.sku] = {
+          productId: 0, // Will be set when product is created
+          sku: item.sku,
+          priceEUR: suggestedPriceEUR,
+          priceCZK: suggestedPriceCZK,
+          hasChanged: false, // Not marked as changed since it's a suggestion
+          version: 0
+        };
+        hasUpdates = true;
       }
     });
     
@@ -367,6 +383,21 @@ export default function LandingCostDetails() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      
+      // Mark prices as saved for received items (prices are saved with the product)
+      const receivedSkus = variables.map(item => item.sku);
+      setSavedItems(prev => new Set([...prev, ...receivedSkus]));
+      
+      // Clear hasChanged flag for received items since prices were saved with the product
+      setPriceUpdates(prev => {
+        const updated = { ...prev };
+        receivedSkus.forEach(sku => {
+          if (updated[sku]) {
+            updated[sku].hasChanged = false;
+          }
+        });
+        return updated;
+      });
       
       // Build detailed notification with item names
       const itemNames = variables.slice(0, 3).map(item => `${item.quantity}x ${item.name}`).join(', ');
