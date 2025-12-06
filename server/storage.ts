@@ -252,18 +252,13 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
-  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  createUserWithPhone(userData: { name: string; phone: string }): Promise<User>;
-  createSmsUser(phoneNumber: string): Promise<User>;
+  createUserWithPassword(userData: { username: string; passwordHash: string; firstName?: string; lastName?: string; email?: string; role?: string }): Promise<User>;
   getAllUsers(): Promise<User[]>;
   getUserCount(): Promise<number>;
   updateUserRole(userId: string, role: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
-  updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
-  setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
-  upsertGoogleUser(userData: { googleId: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User>;
 
   // Employees
   getEmployees(): Promise<Employee[]>;
@@ -734,10 +729,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
-    return user;
-  }
 
   async getUserCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)::int` }).from(users);
@@ -752,40 +743,22 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUserWithPhone(userData: { name: string; phone: string }): Promise<User> {
+  async createUserWithPassword(userData: { username: string; passwordHash: string; firstName?: string; lastName?: string; email?: string; role?: string }): Promise<User> {
     const { nanoid } = await import('nanoid');
     try {
       const [user] = await db.insert(users).values({
         id: nanoid(),
-        firstName: userData.name,
-        phoneNumber: userData.phone,
-        authProvider: 'sms',
-        phoneVerifiedAt: new Date(),
-        role: 'warehouse_operator',
+        username: userData.username,
+        passwordHash: userData.passwordHash,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        email: userData.email || null,
+        role: userData.role || null,
       }).returning();
       return user;
     } catch (error: any) {
       if (error.code === '23505') {
-        throw new Error('Phone number already registered');
-      }
-      throw error;
-    }
-  }
-
-  async createSmsUser(phoneNumber: string): Promise<User> {
-    const { nanoid } = await import('nanoid');
-    try {
-      const [user] = await db.insert(users).values({
-        id: nanoid(),
-        phoneNumber: phoneNumber,
-        authProvider: 'sms',
-        phoneVerifiedAt: new Date(),
-        role: 'warehouse_operator',
-      }).returning();
-      return user;
-    } catch (error: any) {
-      if (error.code === '23505') {
-        throw new Error('Phone number already registered');
+        throw new Error('Username already exists');
       }
       throw error;
     }
@@ -848,91 +821,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result[0];
-  }
-
-  async updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined> {
-    const result = await db
-      .update(users)
-      .set({ 
-        phoneNumber, 
-        twoFactorEnabled: enabled,
-        twoFactorVerified: false,
-        updatedAt: new Date() 
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    return result[0];
-  }
-
-  async setUser2FAVerified(userId: string, verified: boolean): Promise<void> {
-    await db
-      .update(users)
-      .set({ twoFactorVerified: verified, updatedAt: new Date() })
-      .where(eq(users.id, userId));
-  }
-
-  async upsertGoogleUser(userData: { googleId: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User> {
-    const { nanoid } = await import('nanoid');
-    
-    // Check if user exists by Google ID first
-    let existingUser = await this.getUserByGoogleId(userData.googleId);
-    
-    // Also check by email if not found by Google ID
-    if (!existingUser && userData.email) {
-      const [userByEmail] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, userData.email));
-      existingUser = userByEmail || null;
-    }
-    
-    if (existingUser) {
-      // Update existing user - preserve existing role
-      const updateData: any = {
-        googleId: userData.googleId,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        profileImageUrl: userData.profileImageUrl,
-        authProvider: 'google',
-        updatedAt: new Date(),
-      };
-      
-      const [updatedUser] = await db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, existingUser.id))
-        .returning();
-      return updatedUser;
-    } else {
-      // Create new user - check if this is the first user (auto-admin)
-      const userCount = await this.getUserCount();
-      const isFirstUser = userCount === 0;
-      
-      console.log(`Creating new user. User count: ${userCount}, isFirstUser: ${isFirstUser}`);
-      
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          id: nanoid(),
-          googleId: userData.googleId,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
-          authProvider: 'google',
-          // First user automatically gets administrator role
-          role: isFirstUser ? 'administrator' : null,
-        })
-        .returning();
-      
-      if (isFirstUser) {
-        console.log(`First user ${newUser.email} automatically granted administrator role`);
-      }
-      
-      return newUser;
-    }
   }
 
   // Employees

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./googleAuth";
+import { setupAuth, isAuthenticated, requireRole } from "./auth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
 import rateLimit from 'express-rate-limit';
@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Test-only endpoint for seeding user roles (RBAC testing)
-  // This endpoint bypasses OIDC limitations and allows direct role assignment for automated tests
+  // This endpoint allows direct user creation and role assignment for automated tests
   // SECURITY: Protected by shared secret to prevent unauthorized role escalation
   app.post('/api/test/seed-role', async (req, res) => {
     // Only available in non-production environments
@@ -341,10 +341,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { sub, role, email, firstName, lastName } = req.body;
+      const { username, role, email, firstName, lastName, password } = req.body;
 
-      if (!sub || !role) {
-        return res.status(400).json({ message: 'sub and role are required' });
+      if (!username || !role) {
+        return res.status(400).json({ message: 'username and role are required' });
       }
 
       // Validate role value
@@ -352,221 +352,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid role. Must be administrator or warehouse_operator' });
       }
 
-      // First, upsert the user to ensure they exist (with or without role)
-      // This creates the user record if it doesn't exist
-      await storage.upsertUser({
-        id: sub,
-        email: email || null,
-        firstName: firstName || null,
-        lastName: lastName || null,
-        profileImageUrl: null,
-        replitSub: sub,
-        role: null, // Don't set role here to avoid the update logic blocking it
-      });
+      // Check if user already exists
+      let user = await storage.getUserByUsername(username);
+      
+      if (user) {
+        // Update the existing user's role
+        await storage.updateUserRole(user.id, role);
+      } else {
+        // Create new user with password
+        const bcrypt = await import('bcryptjs');
+        const passwordHash = await bcrypt.hash(password || 'TestPassword123!', 12);
+        user = await storage.createUserWithPassword({
+          username,
+          passwordHash,
+          email: email || null,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          role,
+        });
+      }
 
-      // Now update the role (this will work because user exists)
-      await storage.updateUserRole(sub, role);
-
-      console.log(`[TEST] Seeded role ${role} for user ${sub}`);
-      return res.json({ success: true, sub, role });
+      console.log(`[TEST] Seeded role ${role} for user ${username}`);
+      return res.json({ success: true, username, role });
     } catch (error: any) {
       console.error('Error seeding role:', error);
       return res.status(500).json({ message: 'Failed to seed role', error: error.message });
     }
   });
 
-  // Phone verification storage (in production, use Redis or database)
-  const phoneVerificationCodes = new Map<string, { code: string; expires: number; attempts: number }>();
-
-  // Rate limiting for authentication endpoints
-  const authRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per windowMs
-    message: 'Too many authentication attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
+  // Rate limiting for SMS endpoints
   const smsRateLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3, // Limit each IP to 3 SMS sends per hour
     message: 'Too many SMS requests, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
   });
-
-  const twoFactorRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 2FA attempts per 15 minutes
-    message: 'Too many 2FA attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  // Send phone verification code
-  app.post('/api/auth/send-phone-code', smsRateLimiter, async (req, res) => {
-    try {
-      const { phone } = req.body;
-
-      if (!phone) {
-        return res.status(400).json({ message: 'Phone number is required' });
-      }
-
-      // Generate 6-digit code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-      // Store verification code
-      phoneVerificationCodes.set(phone, { code, expires, attempts: 0 });
-
-      // In production, integrate with SMS provider (Twilio, AWS SNS, etc.)
-      // For development, code is logged securely (not exposed in API response)
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV] Verification code for ${phone}: ${code}`);
-        return res.json({ message: 'Code sent', devCode: code });
-      }
-
-      // Production: code should be sent via SMS, not logged
-      res.json({ message: 'Verification code sent' });
-    } catch (error) {
-      console.error('Error sending verification code:', error);
-      res.status(500).json({ message: 'Failed to send verification code' });
-    }
-  });
-
-  // Verify phone code and login
-  app.post('/api/auth/verify-phone-code', authRateLimiter, async (req, res) => {
-    try {
-      const { phone, code } = req.body;
-
-      if (!phone || !code) {
-        return res.status(400).json({ message: 'Phone and code are required' });
-      }
-
-      const verification = phoneVerificationCodes.get(phone);
-
-      if (!verification) {
-        return res.status(400).json({ message: 'No verification code found' });
-      }
-
-      if (verification.attempts >= 3) {
-        phoneVerificationCodes.delete(phone);
-        return res.status(400).json({ message: 'Too many attempts. Please request a new code' });
-      }
-
-      if (Date.now() > verification.expires) {
-        phoneVerificationCodes.delete(phone);
-        return res.status(400).json({ message: 'Verification code expired' });
-      }
-
-      if (verification.code !== code) {
-        verification.attempts++;
-        return res.status(400).json({ message: 'Invalid verification code' });
-      }
-
-      // Code is valid, find or create user
-      let user = await storage.getUserByPhone(phone);
-
-      if (!user) {
-        return res.status(404).json({ message: 'No account found with this phone number' });
-      }
-
-      // Clean up verification code
-      phoneVerificationCodes.delete(phone);
-
-      // Create session
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Login failed' });
-        }
-        res.json({ message: 'Login successful', user });
-      });
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      res.status(500).json({ message: 'Verification failed' });
-    }
-  });
-
-  // Register with phone number
-  app.post('/api/auth/register-with-phone', authRateLimiter, async (req, res) => {
-    try {
-      const { name, phone, code } = req.body;
-
-      if (!name || !phone || !code) {
-        return res.status(400).json({ message: 'Name, phone, and code are required' });
-      }
-
-      const verification = phoneVerificationCodes.get(phone);
-
-      if (!verification) {
-        return res.status(400).json({ message: 'No verification code found' });
-      }
-
-      if (verification.attempts >= 3) {
-        phoneVerificationCodes.delete(phone);
-        return res.status(400).json({ message: 'Too many attempts. Please request a new code' });
-      }
-
-      if (Date.now() > verification.expires) {
-        phoneVerificationCodes.delete(phone);
-        return res.status(400).json({ message: 'Verification code expired' });
-      }
-
-      if (verification.code !== code) {
-        verification.attempts++;
-        return res.status(400).json({ message: 'Invalid verification code' });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByPhone(phone);
-      if (existingUser) {
-        return res.status(400).json({ message: 'User with this phone number already exists' });
-      }
-
-      // Create user
-      const user = await storage.createUserWithPhone({ name, phone });
-
-      // Clean up verification code
-      phoneVerificationCodes.delete(phone);
-
-      // Create session
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Registration successful but login failed' });
-        }
-        res.json({ message: 'Registration successful', user });
-      });
-    } catch (error) {
-      console.error('Error during phone registration:', error);
-      res.status(500).json({ message: 'Registration failed' });
-    }
-  });
-
-  // Facebook OAuth routes
-  app.get('/api/auth/facebook',
-    passport.authenticate('facebook', { scope: ['email'] })
-  );
 
   // Auth user endpoint - returns authenticated user data
   app.get('/api/auth/user', async (req: any, res) => {
     try {
       // Check if user is authenticated
-      if (!req.user) {
+      if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      let userId: string;
-      
-      // Handle different authentication methods
-      if (req.user.claims?.sub) {
-        // Replit Auth: user ID is in claims.sub
-        userId = String(req.user.claims.sub);
-      } else if (req.user.id) {
-        // SMS Auth: user object is stored directly in session
-        userId = req.user.id;
-      } else {
-        return res.status(401).json({ message: 'Invalid session data' });
-      }
+      const userId = req.user.id;
       
       // Fetch full user data from database
       const user = await storage.getUser(userId);
@@ -578,14 +410,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return user data without sensitive fields
       res.json({
         id: user.id,
+        username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
         profileImageUrl: user.profileImageUrl,
-        phoneNumber: user.phoneNumber,
-        authProvider: user.authProvider,
-        twoFactorEnabled: user.twoFactorEnabled
+        phoneNumber: user.phoneNumber
       });
     } catch (error) {
       console.error('Error fetching authenticated user:', error);
@@ -593,25 +424,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Role-checking middleware
-  function requireRole(allowedRoles: string[]) {
-    return (req: any, res: any, next: any) => {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized - Please log in' });
-      }
-
-      // Block users with no role assigned
-      if (!req.user.role) {
-        return res.status(403).json({ message: 'Account pending role assignment' });
-      }
-
-      if (!allowedRoles.includes(req.user.role)) {
-        return res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
-      }
-
-      next();
-    };
-  }
 
   // User Management API Endpoints
   
@@ -624,13 +436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Always fetch fresh data from database to ensure role is up-to-date
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user.id;
       let dbUser = await storage.getUser(userId);
-      
-      // Fallback: if not found by ID, try by replitSub (for backwards compatibility or test scenarios)
-      if (!dbUser && userId) {
-        dbUser = await storage.getUserByReplitSub(userId);
-      }
       
       if (!dbUser) {
         console.error('User not found:', userId, 'Session user:', req.user);
@@ -1453,207 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/2fa/setup - Enable/disable 2FA
-  app.post('/api/2fa/setup', twoFactorRateLimiter, async (req: any, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized - Please log in' });
-      }
 
-      const { phoneNumber, enabled } = req.body;
-
-      if (enabled && !phoneNumber) {
-        return res.status(400).json({ message: 'Phone number required to enable 2FA' });
-      }
-
-      const updatedUser = await storage.updateUser2FA(
-        req.user.id,
-        enabled ? phoneNumber : null,
-        enabled
-      );
-
-      if (!updatedUser) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json({
-        success: true,
-        twoFactorEnabled: updatedUser.twoFactorEnabled,
-        phoneNumber: updatedUser.phoneNumber
-      });
-    } catch (error) {
-      console.error('Error setting up 2FA:', error);
-      res.status(500).json({ message: 'Failed to setup 2FA' });
-    }
-  });
-
-  // POST /api/2fa/send-code - Send verification code
-  app.post('/api/2fa/send-code', smsRateLimiter, async (req: any, res) => {
-    try {
-      const { phoneNumber } = req.body;
-
-      if (!phoneNumber) {
-        return res.status(400).json({ message: 'Phone number is required' });
-      }
-
-      const { sendVerificationCode } = await import('./services/twilioService.js');
-      const result = await sendVerificationCode(phoneNumber);
-
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: result.error || 'Failed to send verification code' 
-        });
-      }
-
-      res.json({ success: true, status: result.status });
-    } catch (error) {
-      console.error('Error sending verification code:', error);
-      res.status(500).json({ message: 'Failed to send verification code' });
-    }
-  });
-
-  // POST /api/2fa/verify - Verify SMS code
-  app.post('/api/2fa/verify', twoFactorRateLimiter, async (req: any, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized - Please log in' });
-      }
-
-      const { code, phoneNumber } = req.body;
-
-      if (!code || !phoneNumber) {
-        return res.status(400).json({ message: 'Code and phone number are required' });
-      }
-
-      const { verifyCode } = await import('./services/twilioService.js');
-      const result = await verifyCode(phoneNumber, code);
-
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: result.error || 'Invalid verification code' 
-        });
-      }
-
-      // Get user ID from session claims
-      const userId = req.user.claims?.sub;
-      if (!userId) {
-        return res.status(500).json({ message: 'User ID not found in session' });
-      }
-
-      // Mark user as 2FA verified in database for this session
-      await storage.setUser2FAVerified(userId, true);
-      
-      console.log(`✅ User ${userId} successfully verified 2FA`);
-
-      res.json({ success: true, verified: true });
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      res.status(500).json({ message: 'Failed to verify code' });
-    }
-  });
-
-  // POST /api/auth/sms/start - Send SMS verification code for primary authentication
-  app.post('/api/auth/sms/start', smsRateLimiter, async (req: any, res) => {
-    try {
-      const { phoneNumber } = req.body;
-
-      if (!phoneNumber) {
-        return res.status(400).json({ message: 'Phone number is required' });
-      }
-
-      // Normalize phone number to E.164 format
-      const normalizedPhone = normalizePhone(phoneNumber);
-      if (!normalizedPhone) {
-        return res.status(400).json({ message: 'Invalid phone number format. Please use E.164 format (e.g., +420123456789)' });
-      }
-
-      // Send verification code
-      const { sendVerificationCode } = await import('./services/twilioService.js');
-      const result = await sendVerificationCode(normalizedPhone);
-
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: result.error || 'Failed to send verification code' 
-        });
-      }
-
-      console.log(`📱 SMS verification code sent to ${normalizedPhone}`);
-      res.json({ success: true, phoneNumber: normalizedPhone });
-    } catch (error) {
-      console.error('Error sending SMS verification code:', error);
-      res.status(500).json({ message: 'Failed to send verification code' });
-    }
-  });
-
-  // POST /api/auth/sms/verify - Verify SMS code and create session for primary authentication
-  app.post('/api/auth/sms/verify', authRateLimiter, async (req: any, res) => {
-    try {
-      const { phoneNumber, code } = req.body;
-
-      if (!phoneNumber || !code) {
-        return res.status(400).json({ message: 'Phone number and verification code are required' });
-      }
-
-      // Normalize phone number
-      const normalizedPhone = normalizePhone(phoneNumber);
-      if (!normalizedPhone) {
-        return res.status(400).json({ message: 'Invalid phone number format' });
-      }
-
-      // Verify the code with Twilio
-      const { verifyCode } = await import('./services/twilioService.js');
-      const verificationResult = await verifyCode(normalizedPhone, code);
-
-      if (!verificationResult.success) {
-        return res.status(400).json({ 
-          message: verificationResult.error || 'Invalid verification code' 
-        });
-      }
-
-      // Find or create user by phone number
-      let user = await storage.getUserByPhone(normalizedPhone);
-
-      if (!user) {
-        // Create new SMS user
-        console.log(`📱 Creating new SMS user for ${normalizedPhone}`);
-        user = await storage.createUserWithPhone({
-          name: 'User', // Default name, user can update later
-          phone: normalizedPhone
-        });
-      } else {
-        // Update phoneVerifiedAt timestamp for existing user
-        await db
-          .update(users)
-          .set({ phoneVerifiedAt: new Date() })
-          .where(eq(users.id, user.id));
-      }
-
-      // Create session using req.login()
-      req.login(user, (err: any) => {
-        if (err) {
-          console.error('Error creating session:', err);
-          return res.status(500).json({ message: 'Failed to create session' });
-        }
-
-        console.log(`✅ SMS login successful for user ${user.id}`);
-        
-        res.json({
-          success: true,
-          user: {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            role: user.role
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Error verifying SMS code:', error);
-      res.status(500).json({ message: 'Failed to verify code and create session' });
-    }
-  });
 
   // Serve GLS autofill userscript for Tampermonkey
   app.get('/api/download/gls-autofill-userscript', async (req, res) => {
@@ -14088,67 +13695,6 @@ Important:
   });
 
 
-  // Facebook OAuth endpoints
-  app.get('/api/auth/facebook',
-    passport.authenticate('facebook', { scope: ['email'] })
-  );
-
-  app.get('/api/auth/facebook/callback', async (req, res) => {
-    try {
-      const { code } = req.query;
-      const appId = process.env.FACEBOOK_APP_ID;
-      const appSecret = process.env.FACEBOOK_APP_SECRET;
-
-      if (!code || !appId || !appSecret) {
-        return res.redirect('/login?error=auth_failed');
-      }
-
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
-
-      // Exchange code for access token
-      const tokenResponse = await fetch(
-        `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
-      );
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        console.error('Facebook token error:', tokenData);
-        return res.redirect('/login?error=auth_failed');
-      }
-
-      // Get user info from Facebook
-      const userResponse = await fetch(
-        `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture.type(large)&access_token=${tokenData.access_token}`
-      );
-
-      const userData = await userResponse.json();
-
-      if (!userData.id) {
-        console.error('Facebook user data error:', userData);
-        return res.redirect('/login?error=auth_failed');
-      }
-
-      console.log('Facebook user data:', { id: userData.id, name: userData.name, email: userData.email });
-
-      // Here you would create/login the user in your database
-      // For now, we'll just create a session with the Facebook user data
-      if (req.session) {
-        req.session.user = {
-          id: userData.id,
-          email: userData.email || `${userData.id}@facebook.com`,
-          name: userData.name,
-          provider: 'facebook'
-        };
-      }
-
-      // Redirect to home page after successful login
-      res.redirect('/');
-    } catch (error) {
-      console.error('Facebook OAuth error:', error);
-      res.redirect('/login?error=auth_failed');
-    }
-  });
 
   // App Settings endpoints
   app.get('/api/settings', isAuthenticated, async (req, res) => {
