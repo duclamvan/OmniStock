@@ -79,6 +79,7 @@ export default function ProductDetails() {
   // Store observer reference
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isManualScrollingRef = useRef(false);
 
   const { data: product, isLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
@@ -149,6 +150,7 @@ export default function ProductDetails() {
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
+        if (isManualScrollingRef.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setActiveSection(entry.target.id);
@@ -191,11 +193,15 @@ export default function ProductDetails() {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
+    isManualScrollingRef.current = true;
     setActiveSection(sectionId);
     const element = sectionRefs.current[sectionId];
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    setTimeout(() => {
+      isManualScrollingRef.current = false;
+    }, 1000);
   };
 
   if (isLoading) {
