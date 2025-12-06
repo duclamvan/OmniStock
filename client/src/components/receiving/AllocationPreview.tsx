@@ -175,7 +175,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isManualOverride, setIsManualOverride] = useState(false);
-  const [showMethodDetails, setShowMethodDetails] = useState(false);
+  const [showMethodDetails, setShowMethodDetails] = useState(true);
 
   // Fetch allocation preview - use method-specific endpoint when manual override
   const { data: preview, isLoading, error, refetch } = useQuery<AllocationSummary>({
