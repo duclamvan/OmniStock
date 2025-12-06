@@ -78,15 +78,12 @@ export default function Login() {
       if (response.ok) {
         setIsRedirecting(true);
         setRedirectMessage(t('auth.loggingIn'));
-        setRedirectProgress(30);
+        setRedirectProgress(50);
         
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setRedirectProgress(70);
-        
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
         setRedirectProgress(100);
         
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise(resolve => setTimeout(resolve, 50));
         window.location.href = "/";
       } else if (response.status === 429) {
         toast({
@@ -133,20 +130,20 @@ export default function Login() {
       if (response.ok) {
         setIsRedirecting(true);
         setRedirectMessage(t('auth.creatingWorkspace'));
-        setRedirectProgress(20);
+        setRedirectProgress(30);
         
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 150));
         setRedirectMessage(t('auth.settingUpDashboard'));
-        setRedirectProgress(50);
+        setRedirectProgress(60);
         
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 150));
         setRedirectMessage(t('auth.almostReady'));
-        setRedirectProgress(80);
+        setRedirectProgress(90);
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 100));
         setRedirectProgress(100);
         
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50));
         window.location.href = "/";
       } else if (response.status === 403) {
         const errorData = await response.json();

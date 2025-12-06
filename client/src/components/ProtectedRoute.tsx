@@ -1,10 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth.tsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShieldX } from "lucide-react";
+import { ShieldX, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "react-i18next";
+import logoPath from "@assets/logo_1754349267160.png";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,6 +17,25 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const { isAuthenticated, isAdministrator, isLoading, user } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  // Animate progress bar while loading
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingProgress(0);
+      const timer1 = setTimeout(() => setLoadingProgress(30), 50);
+      const timer2 = setTimeout(() => setLoadingProgress(60), 150);
+      const timer3 = setTimeout(() => setLoadingProgress(80), 300);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    } else {
+      setLoadingProgress(100);
+    }
+  }, [isLoading]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -22,9 +44,32 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  // While checking authentication, render nothing or a loading state
+  // While checking authentication, show a professional loading screen
   if (isLoading) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-4">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="flex justify-center">
+            <img 
+              src={logoPath} 
+              alt="Logo" 
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="font-medium">{t('loading')}</span>
+            </div>
+            
+            <div className="px-8">
+              <Progress value={loadingProgress} className="h-1.5 bg-gray-200 dark:bg-gray-700" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If user is not authenticated, don't render anything (will redirect via useEffect)
