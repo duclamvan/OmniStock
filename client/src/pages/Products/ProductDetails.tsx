@@ -151,13 +151,27 @@ export default function ProductDetails() {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (isManualScrollingRef.current) return;
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
+        
+        const visibleSections = Object.entries(sectionRefs.current)
+          .filter(([_, el]) => el !== null)
+          .map(([id, el]) => ({
+            id,
+            top: el!.getBoundingClientRect().top
+          }))
+          .filter(({ top }) => top < window.innerHeight * 0.4 && top > -window.innerHeight * 0.5)
+          .sort((a, b) => Math.abs(a.top) - Math.abs(b.top));
+        
+        if (visibleSections.length > 0) {
+          const topSection = visibleSections.reduce((closest, section) => {
+            if (section.top >= 0 && section.top < closest.top) return section;
+            if (closest.top < 0 && section.top > closest.top) return section;
+            return closest;
+          }, visibleSections[0]);
+          
+          setActiveSection(topSection.id);
+        }
       },
-      { rootMargin: '-20% 0px -60% 0px' }
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
     );
 
     // Observe any sections that were already mounted before observer was created
