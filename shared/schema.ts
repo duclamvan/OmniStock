@@ -164,6 +164,7 @@ export const shipments = pgTable('shipments', {
   destination: text('destination').notNull(),
   status: text('status').notNull().default('pending'), // pending, in transit, delivered
   receivingStatus: text('receiving_status'), // null, receiving, pending_approval, completed, archived
+  allocationMethod: text('allocation_method'), // PER_UNIT, CHARGEABLE_WEIGHT, VALUE, QUANTITY, HYBRID - user-selected cost allocation method
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
   shippingCostCurrency: text('shipping_cost_currency').default('USD'),
   insuranceValue: decimal('insurance_value', { precision: 10, scale: 2 }).default('0'),
