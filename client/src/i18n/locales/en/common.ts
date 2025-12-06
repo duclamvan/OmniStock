@@ -663,6 +663,7 @@ const common = {
     codeSentTo: 'Code sent to {{phone}}',
     
     // Form Fields
+    username: 'Username',
     email: 'Email',
     password: 'Password',
     confirmPassword: 'Confirm Password',
@@ -671,6 +672,8 @@ const common = {
     verificationCode: 'Verification Code',
     
     // Placeholders
+    usernamePlaceholder: 'Enter your username',
+    passwordPlaceholder: 'Enter your password',
     emailPlaceholder: 'your@email.com',
     namePlaceholder: 'John Doe',
     phonePlaceholder: '+420 123 456 789',
@@ -716,6 +719,8 @@ const common = {
     // Error Messages
     authenticationFailed: 'Authentication Failed',
     unableToLogin: 'Unable to log in. Please try again.',
+    invalidCredentials: 'Invalid username or password',
+    tooManyLoginAttempts: 'Too many login attempts. Please try again later.',
     verificationFailed: 'Verification Failed',
     invalidCode: 'Invalid code. Please try again.',
     phoneNumberRequired: 'Phone number is required',

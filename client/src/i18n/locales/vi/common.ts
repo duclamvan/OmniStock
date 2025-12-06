@@ -617,6 +617,7 @@ const common = {
     codeSentTo: 'Mã đã gửi đến {{phone}}',
     
     // Form Fields
+    username: 'Tên đăng nhập',
     email: 'Email',
     password: 'Mật khẩu',
     confirmPassword: 'Xác nhận mật khẩu',
@@ -625,6 +626,8 @@ const common = {
     verificationCode: 'Mã xác minh',
     
     // Placeholders
+    usernamePlaceholder: 'Nhập tên đăng nhập',
+    passwordPlaceholder: 'Nhập mật khẩu',
     emailPlaceholder: 'your@email.com',
     namePlaceholder: 'Nguyễn Văn A',
     phonePlaceholder: '+420 123 456 789',
@@ -670,6 +673,8 @@ const common = {
     // Error Messages
     authenticationFailed: 'Xác thực thất bại',
     unableToLogin: 'Không thể đăng nhập. Vui lòng thử lại.',
+    invalidCredentials: 'Tên đăng nhập hoặc mật khẩu không đúng',
+    tooManyLoginAttempts: 'Quá nhiều lần đăng nhập. Vui lòng thử lại sau.',
     verificationFailed: 'Xác minh thất bại',
     invalidCode: 'Mã không hợp lệ. Vui lòng thử lại.',
     phoneNumberRequired: 'Cần nhập số điện thoại',
