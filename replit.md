@@ -38,9 +38,10 @@ The system now supports **dynamic role creation and management** with granular s
 - Prevents brute force attacks, credential stuffing, and API abuse
 
 **Security Headers (Helmet.js)**:
-- HTTP security headers for production deployment
-- CSP and COEP disabled for Vite dev server compatibility
-- XSS protection, clickjacking prevention, and HSTS enforcement
+- **Production CSP**: Strict Content Security Policy - scriptSrc allows only 'self' (no unsafe-inline/eval), styleSrc allows 'self' and 'unsafe-inline' for React compatibility
+- **HSTS**: Strict Transport Security enabled with 1-year max-age and includeSubDomains
+- **Additional directives**: baseUri, formAction, objectSrc restricted to prevent injection attacks
+- XSS protection, clickjacking prevention, and referrer policy enforcement
 
 **NULL Role Enforcement (Critical)**:
 - `isAuthenticated` middleware checks database user role on every request
@@ -52,8 +53,35 @@ The system now supports **dynamic role creation and management** with granular s
 - **Route**: `POST /api/auth/register-initial-admin`
 - **Purpose**: Create the first administrator user
 - **Availability**: Only works when no users exist in the database
-- **Request**: `{ username, password, firstName?, lastName?, email? }`
+- **Request**: `{ setupCode, username, password }` - setupCode must match INITIAL_ADMIN_SETUP_CODE env var
 - **Response**: `{ success: true, user: {...} }` or error
+
+# Production Deployment
+
+## Required Environment Variables
+The following environment variables **must** be set before the server will start in production:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SESSION_SECRET` | **Yes (always)** | Secret for session encryption. Use a strong random string (32+ chars). |
+| `INITIAL_ADMIN_SETUP_CODE` | **Yes (production)** | Unique setup code for initial admin registration. Required in production, defaults to "1707" in development only. |
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string |
+| `NODE_ENV` | **Yes** | Set to `production` for production deployment |
+
+## Optional Environment Variables
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CALLBACK_URL` | OAuth callback URL for Google authentication |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | For push notifications |
+| `DEEPSEEK_API_KEY` | For AI-powered features |
+| `TWILIO_*` | For SMS notifications |
+
+## Security Checklist
+- [ ] Set unique `SESSION_SECRET` (do not use default)
+- [ ] Set unique `INITIAL_ADMIN_SETUP_CODE` for production
+- [ ] All API secrets configured in Secrets panel
+- [ ] Database migrations applied (`npm run db:push`)
+- [ ] Test production build locally before deployment
 
 **Authentication Flow**:
 1. First user registers via `/api/auth/register-initial-admin` (gets admin role automatically)
