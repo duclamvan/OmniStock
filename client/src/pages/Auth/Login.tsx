@@ -385,7 +385,7 @@ export default function Login() {
               <div className="space-y-4">
                 <Button
                   type="button"
-                  className="w-full h-12 text-base bg-white hover:bg-gray-50 text-gray-800 font-medium shadow-md hover:shadow-lg transition-all border border-gray-200 rounded-xl dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white dark:border-slate-600"
+                  className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all rounded-xl"
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
                   data-testid="button-google-login"
