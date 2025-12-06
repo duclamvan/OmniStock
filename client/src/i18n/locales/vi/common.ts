@@ -709,6 +709,14 @@ const common = {
     passwordsDontMatch: 'Mật khẩu không khớp',
     firstTimeSetup: 'Thiết lập lần đầu',
     setupDescription: 'Tạo tài khoản quản trị viên để bắt đầu',
+    
+    // Transition Screen (after login/registration)
+    loggingIn: 'Đang đăng nhập...',
+    settingUpAccount: 'Đang thiết lập tài khoản',
+    welcomeAboard: 'Chào mừng bạn!',
+    creatingWorkspace: 'Đang tạo không gian làm việc...',
+    settingUpDashboard: 'Đang thiết lập bảng điều khiển...',
+    almostReady: 'Sắp hoàn tất...',
   },
   
   // Profile Page

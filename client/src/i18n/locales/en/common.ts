@@ -755,6 +755,14 @@ const common = {
     passwordsDontMatch: 'Passwords do not match',
     firstTimeSetup: 'First Time Setup',
     setupDescription: 'Create your administrator account to get started',
+    
+    // Transition Screen (after login/registration)
+    loggingIn: 'Signing you in...',
+    settingUpAccount: 'Setting Up Your Account',
+    welcomeAboard: 'Welcome Aboard!',
+    creatingWorkspace: 'Creating your workspace...',
+    settingUpDashboard: 'Setting up your dashboard...',
+    almostReady: 'Almost ready...',
   },
   
   // Profile Page

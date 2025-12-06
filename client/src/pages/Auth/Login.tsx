@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus, Loader2 } from "lucide-react";
+import { LogIn, UserPlus, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
+import { Progress } from "@/components/ui/progress";
 
 const loginSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters" }),
@@ -39,6 +40,9 @@ export default function Login() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectProgress, setRedirectProgress] = useState(0);
+  const [redirectMessage, setRedirectMessage] = useState("");
 
   const { data: hasUsersData, isLoading: isCheckingUsers } = useQuery<{ hasUsers: boolean }>({
     queryKey: ['/api/auth/has-users'],
@@ -72,10 +76,17 @@ export default function Login() {
       });
 
       if (response.ok) {
-        toast({
-          title: t('success'),
-          description: t('auth.loginSuccessful'),
-        });
+        setIsRedirecting(true);
+        setRedirectMessage(t('auth.loggingIn'));
+        setRedirectProgress(30);
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setRedirectProgress(70);
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setRedirectProgress(100);
+        
+        await new Promise(resolve => setTimeout(resolve, 150));
         window.location.href = "/";
       } else if (response.status === 429) {
         toast({
@@ -120,10 +131,22 @@ export default function Login() {
       });
 
       if (response.ok) {
-        toast({
-          title: t('success'),
-          description: t('auth.accountCreatedSuccessfully'),
-        });
+        setIsRedirecting(true);
+        setRedirectMessage(t('auth.creatingWorkspace'));
+        setRedirectProgress(20);
+        
+        await new Promise(resolve => setTimeout(resolve, 400));
+        setRedirectMessage(t('auth.settingUpDashboard'));
+        setRedirectProgress(50);
+        
+        await new Promise(resolve => setTimeout(resolve, 400));
+        setRedirectMessage(t('auth.almostReady'));
+        setRedirectProgress(80);
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setRedirectProgress(100);
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
         window.location.href = "/";
       } else if (response.status === 403) {
         const errorData = await response.json();
@@ -158,6 +181,41 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-4">
+        <div className="w-full max-w-md text-center space-y-8">
+          <div className="relative">
+            <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl animate-pulse">
+              {redirectProgress < 100 ? (
+                <Sparkles className="h-10 w-10 text-white" />
+              ) : (
+                <CheckCircle2 className="h-10 w-10 text-white" />
+              )}
+            </div>
+            <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-600/20 animate-ping" style={{ animationDuration: '2s' }} />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {redirectProgress < 100 ? t('auth.settingUpAccount') : t('auth.welcomeAboard')}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 h-6 transition-all duration-300">
+              {redirectMessage}
+            </p>
+          </div>
+          
+          <div className="space-y-3 px-8">
+            <Progress value={redirectProgress} className="h-2 bg-gray-200 dark:bg-gray-700" />
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              {redirectProgress}%
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isCheckingUsers) {
     return (
