@@ -150,6 +150,13 @@ export default function ProductDetails() {
     const handleScroll = () => {
       if (isManualScrollingRef.current) return;
       
+      const isAtBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 50);
+      
+      if (isAtBottom && navSections.length > 0) {
+        setActiveSection(navSections[navSections.length - 1].id);
+        return;
+      }
+      
       const triggerPoint = 120;
       
       const sectionsWithPositions = Object.entries(sectionRefs.current)
@@ -179,7 +186,7 @@ export default function ProductDetails() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [navSections]);
 
   // Ref callback to register sections
   const setSectionRef = useCallback((sectionId: string) => (el: HTMLElement | null) => {
