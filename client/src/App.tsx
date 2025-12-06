@@ -90,6 +90,8 @@ import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
+import TermsOfService from "@/pages/Legal/TermsOfService";
+import PrivacyPolicy from "@/pages/Legal/PrivacyPolicy";
 import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
@@ -119,6 +121,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Layout>
         <Route path="/">
           {() => <ProtectedRoute requireAdmin><Home /></ProtectedRoute>}

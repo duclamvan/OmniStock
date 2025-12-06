@@ -1168,6 +1168,112 @@ const common = {
   displaysMobileSidebar: 'Hiển thị thanh bên di động.',
   toggleSidebar: 'Bật/tắt thanh bên',
   
+  // Legal Pages
+  legal: {
+    termsOfService: 'Điều khoản Dịch vụ',
+    privacyPolicy: 'Chính sách Bảo mật',
+    backToLogin: 'Quay lại Đăng nhập',
+    lastUpdated: 'Cập nhật lần cuối',
+    
+    // Terms of Service
+    tosIntro: 'Chào mừng bạn đến với Davie Supply. Các Điều khoản Dịch vụ này quy định việc sử dụng hệ thống quản lý kho và dịch vụ của chúng tôi. Bằng cách truy cập hoặc sử dụng nền tảng của chúng tôi, bạn đồng ý tuân theo các điều khoản này.',
+    
+    acceptanceTitle: '1. Chấp nhận Điều khoản',
+    acceptanceContent: 'Bằng cách truy cập và sử dụng nền tảng Davie Supply, bạn xác nhận rằng bạn đã đọc, hiểu và đồng ý tuân theo các Điều khoản Dịch vụ này. Nếu bạn không đồng ý với các điều khoản này, vui lòng không sử dụng dịch vụ của chúng tôi.',
+    
+    serviceDescTitle: '2. Mô tả Dịch vụ',
+    serviceDescContent: 'Davie Supply cung cấp hệ thống quản lý kho B2B toàn diện được thiết kế cho doanh nghiệp. Nền tảng của chúng tôi cung cấp:',
+    serviceFeature1: 'Công cụ quản lý hàng tồn kho và kho hàng',
+    serviceFeature2: 'Xử lý đơn hàng và theo dõi giao hàng',
+    serviceFeature3: 'Quản lý quan hệ khách hàng (CRM)',
+    serviceFeature4: 'Theo dõi và báo cáo tài chính đa tiền tệ',
+    serviceFeature5: 'Tích hợp vận chuyển và tạo nhãn giao hàng',
+    serviceFeature6: 'Kiểm soát truy cập dựa trên vai trò để quản lý nhóm',
+    
+    userAccountsTitle: '3. Tài khoản & Trách nhiệm Người dùng',
+    userAccountsContent: 'Khi bạn tạo tài khoản với chúng tôi, bạn có trách nhiệm:',
+    userResponsibility1: 'Duy trì tính bảo mật của thông tin đăng nhập của bạn',
+    userResponsibility2: 'Tất cả các hoạt động xảy ra dưới tài khoản của bạn',
+    userResponsibility3: 'Cung cấp thông tin chính xác và đầy đủ',
+    userResponsibility4: 'Thông báo ngay cho chúng tôi về bất kỳ việc sử dụng trái phép nào',
+    
+    dataPrivacyTitle: '4. Bảo mật & An toàn Dữ liệu',
+    dataPrivacyContent: 'Chúng tôi cam kết bảo vệ dữ liệu và thông tin kinh doanh của bạn:',
+    dataPrivacy1: 'Tất cả dữ liệu được mã hóa khi truyền và lưu trữ',
+    dataPrivacy2: 'Chúng tôi không bán hoặc chia sẻ dữ liệu của bạn với bên thứ ba cho mục đích tiếp thị',
+    dataPrivacy3: 'Bạn giữ quyền sở hữu tất cả dữ liệu kinh doanh của mình',
+    dataPrivacy4: 'Kiểm tra bảo mật và tuân thủ định kỳ được thực hiện',
+    
+    prohibitedTitle: '5. Hoạt động Bị cấm',
+    prohibitedContent: 'Bạn đồng ý không tham gia vào bất kỳ hoạt động nào sau đây:',
+    prohibited1: 'Cố gắng truy cập trái phép vào hệ thống của chúng tôi',
+    prohibited2: 'Sử dụng dịch vụ cho bất kỳ mục đích bất hợp pháp hoặc gian lận nào',
+    prohibited3: 'Tải lên phần mềm độc hại hoặc nội dung có hại',
+    prohibited4: 'Can thiệp hoặc làm gián đoạn dịch vụ',
+    prohibited5: 'Vi phạm bất kỳ luật hoặc quy định hiện hành nào',
+    
+    limitationTitle: '6. Giới hạn Trách nhiệm',
+    limitationContent: 'Trong phạm vi tối đa được pháp luật cho phép, Davie Supply sẽ không chịu trách nhiệm về bất kỳ thiệt hại gián tiếp, ngẫu nhiên, đặc biệt, hậu quả hoặc trừng phạt nào, hoặc bất kỳ mất mát lợi nhuận hoặc doanh thu nào, dù phát sinh trực tiếp hoặc gián tiếp, hoặc bất kỳ mất mát dữ liệu, sử dụng, thiện chí hoặc các tổn thất vô hình khác do việc sử dụng dịch vụ của chúng tôi.',
+    
+    intellectualTitle: '7. Sở hữu Trí tuệ',
+    intellectualContent: 'Nền tảng Davie Supply, bao gồm thiết kế, tính năng và nội dung, được bảo vệ bởi luật sở hữu trí tuệ. Bạn không được sao chép, sửa đổi, phân phối hoặc tạo các tác phẩm phái sinh mà không có sự cho phép bằng văn bản của chúng tôi. Dữ liệu kinh doanh của bạn vẫn thuộc sở hữu của bạn.',
+    
+    governingTitle: '8. Luật Điều chỉnh',
+    governingContent: 'Các Điều khoản này sẽ được điều chỉnh và giải thích theo luật pháp của Cộng hòa Séc, không xét đến các quy định xung đột pháp luật. Bất kỳ tranh chấp nào phát sinh từ các điều khoản này sẽ được giải quyết tại tòa án Praha.',
+    
+    contactTitle: '9. Thông tin Liên hệ',
+    contactContent: 'Nếu bạn có bất kỳ câu hỏi nào về các Điều khoản Dịch vụ này, vui lòng liên hệ với chúng tôi:',
+    
+    agreementNote: 'Bằng cách sử dụng Davie Supply, bạn xác nhận rằng bạn đã đọc và hiểu các Điều khoản Dịch vụ này và đồng ý tuân theo chúng.',
+    
+    // Privacy Policy
+    privacyIntro: 'Tại Davie Supply, chúng tôi cam kết bảo vệ quyền riêng tư của bạn và đảm bảo an toàn cho thông tin cá nhân và kinh doanh của bạn. Chính sách Bảo mật này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ dữ liệu của bạn.',
+    
+    dataCollectionTitle: '1. Thông tin Chúng tôi Thu thập',
+    dataCollectionContent: 'Chúng tôi thu thập thông tin bạn cung cấp trực tiếp và thông tin được tạo ra thông qua việc sử dụng dịch vụ của chúng tôi:',
+    dataType1: 'Thông tin tài khoản: tên, email, số điện thoại, chi tiết công ty',
+    dataType2: 'Dữ liệu kinh doanh: hàng tồn kho, đơn hàng, thông tin khách hàng, hồ sơ tài chính',
+    dataType3: 'Dữ liệu sử dụng: cách bạn tương tác với nền tảng của chúng tôi',
+    dataType4: 'Thông tin thiết bị: loại trình duyệt, địa chỉ IP, hệ điều hành',
+    dataType5: 'Dữ liệu giao tiếp: yêu cầu hỗ trợ và phản hồi',
+    
+    dataUsageTitle: '2. Cách Chúng tôi Sử dụng Thông tin của Bạn',
+    dataUsageContent: 'Chúng tôi sử dụng thông tin thu thập được cho các mục đích sau:',
+    dataUsage1: 'Cung cấp và duy trì dịch vụ quản lý kho của chúng tôi',
+    dataUsage2: 'Xử lý giao dịch và quản lý tài khoản của bạn',
+    dataUsage3: 'Cải thiện và cá nhân hóa trải nghiệm của bạn',
+    dataUsage4: 'Liên lạc với bạn về cập nhật và hỗ trợ',
+    dataUsage5: 'Đảm bảo an ninh và ngăn chặn gian lận',
+    
+    dataSharingTitle: '3. Chia sẻ Thông tin',
+    dataSharingContent: 'Chúng tôi không bán thông tin cá nhân của bạn. Chúng tôi chỉ có thể chia sẻ dữ liệu trong các trường hợp sau:',
+    dataSharing1: 'Với sự đồng ý hoặc theo chỉ dẫn của bạn',
+    dataSharing2: 'Với các nhà cung cấp dịch vụ hỗ trợ vận hành nền tảng của chúng tôi',
+    dataSharing3: 'Khi được yêu cầu bởi pháp luật hoặc để bảo vệ quyền lợi hợp pháp của chúng tôi',
+    
+    dataSecurityTitle: '4. Bảo mật Dữ liệu',
+    dataSecurityContent: 'Chúng tôi thực hiện các biện pháp bảo mật tiêu chuẩn ngành để bảo vệ dữ liệu của bạn:',
+    security1: 'Mã hóa đầu cuối cho tất cả việc truyền dữ liệu',
+    security2: 'Trung tâm dữ liệu an toàn với giám sát 24/7',
+    security3: 'Kiểm tra bảo mật và đánh giá lỗ hổng định kỳ',
+    security4: 'Kiểm soát truy cập dựa trên vai trò và xác thực',
+    
+    yourRightsTitle: '5. Quyền của Bạn',
+    yourRightsContent: 'Bạn có các quyền sau đối với dữ liệu cá nhân của mình:',
+    right1: 'Truy cập: Yêu cầu bản sao dữ liệu cá nhân của bạn',
+    right2: 'Sửa chữa: Cập nhật hoặc sửa chữa thông tin không chính xác',
+    right3: 'Xóa: Yêu cầu xóa dữ liệu của bạn (tùy thuộc vào yêu cầu pháp lý)',
+    right4: 'Xuất: Tải xuống dữ liệu của bạn ở định dạng di động',
+    right5: 'Từ chối: Hủy đăng ký nhận thông tin tiếp thị',
+    
+    cookiesTitle: '6. Cookie & Theo dõi',
+    cookiesContent: 'Chúng tôi sử dụng cookie thiết yếu để cung cấp dịch vụ và duy trì phiên của bạn. Chúng tôi cũng có thể sử dụng cookie phân tích để hiểu cách nền tảng của chúng tôi được sử dụng và cải thiện dịch vụ. Bạn có thể quản lý tùy chọn cookie trong cài đặt trình duyệt của mình.',
+    
+    privacyContactContent: 'Đối với các câu hỏi liên quan đến quyền riêng tư hoặc để thực hiện quyền dữ liệu của bạn, vui lòng liên hệ đội ngũ bảo mật của chúng tôi:',
+    
+    privacyAgreementNote: 'Bằng cách sử dụng Davie Supply, bạn đồng ý với việc thu thập và sử dụng thông tin của bạn như được mô tả trong Chính sách Bảo mật này.',
+  },
+  
 } as const;
 
 export default common;

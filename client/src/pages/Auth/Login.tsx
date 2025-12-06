@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -503,13 +503,13 @@ export default function Login() {
           <div className="pt-5 text-center text-xs border-t border-gray-100 dark:border-gray-800">
             <p className="text-gray-500 dark:text-gray-500">
               {t('auth.byContinuingYouAgree')}{" "}
-              <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+              <Link href="/terms-of-service" className="text-blue-600 hover:text-blue-700 hover:underline">
                 {t('auth.termsOfService')}
-              </a>{" "}
+              </Link>{" "}
               {t('auth.and')}{" "}
-              <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+              <Link href="/privacy-policy" className="text-blue-600 hover:text-blue-700 hover:underline">
                 {t('auth.privacyPolicy')}
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>

@@ -1252,6 +1252,112 @@ const common = {
   streetPlaceholder: 'Street name',
   numberPlaceholder: '123',
   
+  // Legal Pages
+  legal: {
+    termsOfService: 'Terms of Service',
+    privacyPolicy: 'Privacy Policy',
+    backToLogin: 'Back to Login',
+    lastUpdated: 'Last Updated',
+    
+    // Terms of Service
+    tosIntro: 'Welcome to Davie Supply. These Terms of Service govern your use of our warehouse management system and services. By accessing or using our platform, you agree to be bound by these terms.',
+    
+    acceptanceTitle: '1. Acceptance of Terms',
+    acceptanceContent: 'By accessing and using the Davie Supply platform, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.',
+    
+    serviceDescTitle: '2. Service Description',
+    serviceDescContent: 'Davie Supply provides a comprehensive B2B warehouse management system designed for businesses. Our platform offers:',
+    serviceFeature1: 'Inventory and warehouse management tools',
+    serviceFeature2: 'Order processing and fulfillment tracking',
+    serviceFeature3: 'Customer relationship management (CRM)',
+    serviceFeature4: 'Multi-currency financial tracking and reporting',
+    serviceFeature5: 'Shipping integration and label generation',
+    serviceFeature6: 'Role-based access control for team management',
+    
+    userAccountsTitle: '3. User Accounts & Responsibilities',
+    userAccountsContent: 'When you create an account with us, you are responsible for:',
+    userResponsibility1: 'Maintaining the confidentiality of your login credentials',
+    userResponsibility2: 'All activities that occur under your account',
+    userResponsibility3: 'Providing accurate and complete information',
+    userResponsibility4: 'Notifying us immediately of any unauthorized use',
+    
+    dataPrivacyTitle: '4. Data Privacy & Security',
+    dataPrivacyContent: 'We are committed to protecting your data and business information:',
+    dataPrivacy1: 'All data is encrypted in transit and at rest',
+    dataPrivacy2: 'We do not sell or share your data with third parties for marketing',
+    dataPrivacy3: 'You retain ownership of all your business data',
+    dataPrivacy4: 'Regular security audits and compliance checks are performed',
+    
+    prohibitedTitle: '5. Prohibited Activities',
+    prohibitedContent: 'You agree not to engage in any of the following activities:',
+    prohibited1: 'Attempting to gain unauthorized access to our systems',
+    prohibited2: 'Using the service for any illegal or fraudulent purpose',
+    prohibited3: 'Uploading malicious software or harmful content',
+    prohibited4: 'Interfering with or disrupting the service',
+    prohibited5: 'Violating any applicable laws or regulations',
+    
+    limitationTitle: '6. Limitation of Liability',
+    limitationContent: 'To the maximum extent permitted by law, Davie Supply shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses resulting from your use of our services.',
+    
+    intellectualTitle: '7. Intellectual Property',
+    intellectualContent: 'The Davie Supply platform, including its design, features, and content, is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission. Your business data remains your property.',
+    
+    governingTitle: '8. Governing Law',
+    governingContent: 'These Terms shall be governed by and construed in accordance with the laws of the Czech Republic, without regard to its conflict of law provisions. Any disputes arising from these terms shall be resolved in the courts of Prague.',
+    
+    contactTitle: '9. Contact Information',
+    contactContent: 'If you have any questions about these Terms of Service, please contact us:',
+    
+    agreementNote: 'By using Davie Supply, you acknowledge that you have read and understood these Terms of Service and agree to be bound by them.',
+    
+    // Privacy Policy
+    privacyIntro: 'At Davie Supply, we are committed to protecting your privacy and ensuring the security of your personal and business information. This Privacy Policy explains how we collect, use, and safeguard your data.',
+    
+    dataCollectionTitle: '1. Information We Collect',
+    dataCollectionContent: 'We collect information that you provide directly to us and information generated through your use of our services:',
+    dataType1: 'Account information: name, email, phone number, company details',
+    dataType2: 'Business data: inventory, orders, customer information, financial records',
+    dataType3: 'Usage data: how you interact with our platform',
+    dataType4: 'Device information: browser type, IP address, operating system',
+    dataType5: 'Communication data: support inquiries and feedback',
+    
+    dataUsageTitle: '2. How We Use Your Information',
+    dataUsageContent: 'We use the collected information for the following purposes:',
+    dataUsage1: 'Providing and maintaining our warehouse management services',
+    dataUsage2: 'Processing transactions and managing your account',
+    dataUsage3: 'Improving and personalizing your experience',
+    dataUsage4: 'Communicating with you about updates and support',
+    dataUsage5: 'Ensuring security and preventing fraud',
+    
+    dataSharingTitle: '3. Information Sharing',
+    dataSharingContent: 'We do not sell your personal information. We may share data only in these circumstances:',
+    dataSharing1: 'With your consent or at your direction',
+    dataSharing2: 'With service providers who assist in operating our platform',
+    dataSharing3: 'When required by law or to protect our legal rights',
+    
+    dataSecurityTitle: '4. Data Security',
+    dataSecurityContent: 'We implement industry-standard security measures to protect your data:',
+    security1: 'End-to-end encryption for all data transmission',
+    security2: 'Secure data centers with 24/7 monitoring',
+    security3: 'Regular security audits and vulnerability assessments',
+    security4: 'Role-based access controls and authentication',
+    
+    yourRightsTitle: '5. Your Rights',
+    yourRightsContent: 'You have the following rights regarding your personal data:',
+    right1: 'Access: Request a copy of your personal data',
+    right2: 'Correction: Update or correct inaccurate information',
+    right3: 'Deletion: Request deletion of your data (subject to legal requirements)',
+    right4: 'Export: Download your data in a portable format',
+    right5: 'Opt-out: Unsubscribe from marketing communications',
+    
+    cookiesTitle: '6. Cookies & Tracking',
+    cookiesContent: 'We use essential cookies to provide our services and maintain your session. We may also use analytics cookies to understand how our platform is used and to improve our services. You can manage cookie preferences in your browser settings.',
+    
+    privacyContactContent: 'For privacy-related inquiries or to exercise your data rights, please contact our privacy team:',
+    
+    privacyAgreementNote: 'By using Davie Supply, you consent to the collection and use of your information as described in this Privacy Policy.',
+  },
+  
 } as const;
 
 export default common;
