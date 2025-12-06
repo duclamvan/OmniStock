@@ -8845,6 +8845,61 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
   }
 });
 
+// 9.5. PATCH /api/imports/shipments/:id/allocation-method - Save allocation method selection
+router.patch("/shipments/:id/allocation-method", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    const { allocationMethod } = req.body;
+    
+    if (isNaN(shipmentId)) {
+      return res.status(400).json({ message: "Invalid shipment ID" });
+    }
+    
+    // Validate allocation method
+    const validMethods = ['PER_UNIT', 'CHARGEABLE_WEIGHT', 'VALUE', 'QUANTITY', 'HYBRID'];
+    if (!allocationMethod || !validMethods.includes(allocationMethod)) {
+      return res.status(400).json({ 
+        message: `Invalid allocation method. Must be one of: ${validMethods.join(', ')}` 
+      });
+    }
+    
+    // Check if shipment exists
+    const [existingShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId))
+      .limit(1);
+    
+    if (!existingShipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Update the shipment with the selected allocation method
+    await db
+      .update(shipments)
+      .set({ 
+        allocationMethod,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId));
+    
+    console.log(`Saved allocation method ${allocationMethod} for shipment ${shipmentId}`);
+    
+    res.json({ 
+      success: true,
+      shipmentId,
+      allocationMethod,
+      message: `Allocation method set to ${allocationMethod}. This method will be used when calculating landing costs.`
+    });
+  } catch (error) {
+    console.error("Error saving allocation method:", error);
+    res.status(500).json({ 
+      message: "Failed to save allocation method",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 // Helper function to get detailed allocation breakdown per item
 async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
   try {
