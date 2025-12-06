@@ -72,6 +72,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrentTheme } from '@/lib/theme-utils';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -253,12 +254,36 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
     today.setHours(0, 0, 0, 0);
     return notifyDate <= today;
   }).length;
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return getCurrentTheme() === 'dark';
+    }
+    return false;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const previousLocation = useRef(location);
   const [isCollapsed, setIsCollapsed] = useState(() => 
     getLocalStorageBoolean('sidebarCollapsed', false)
   );
+  
+  // Sync isDarkMode with document.documentElement class changes (for when theme is changed elsewhere)
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark');
+          setIsDarkMode(isDark);
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch pre-orders to count fully arrived ones
   const { data: preOrders } = useQuery<any[]>({

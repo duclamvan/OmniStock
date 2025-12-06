@@ -440,7 +440,7 @@ export default function Reports() {
       {/* Financial Overview */}
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
           {t('financialOverview')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -540,7 +540,7 @@ export default function Reports() {
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     {t('profitMargin')}
                   </p>
-                  <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-margin">
+                  <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} data-testid="stat-margin">
                     {financialMetrics.profitMargin.toFixed(1)}%
                   </p>
                 </div>
@@ -556,7 +556,7 @@ export default function Reports() {
       {/* Sales & Orders Overview */}
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600" />
+          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 dark:text-cyan-400" />
           {t('salesAndOrders')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
