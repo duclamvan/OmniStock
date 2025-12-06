@@ -734,7 +734,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[3, 4, 5, 6, 8, 10].map(n => (
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
@@ -836,7 +836,7 @@ export default function WarehouseMap() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {[3, 4, 5, 6, 8, 10].map(n => (
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
                                     <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
                                   ))}
                                 </SelectContent>
