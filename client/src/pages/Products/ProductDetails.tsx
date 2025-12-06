@@ -70,7 +70,7 @@ interface NavSection {
 export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewImportCost: canAccessFinancialData } = useAuth();
   const { t } = useTranslation(['products', 'common']);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeSection, setActiveSection] = useState('overview');

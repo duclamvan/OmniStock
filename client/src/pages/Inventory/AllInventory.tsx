@@ -57,7 +57,7 @@ import {
 export default function AllInventory() {
   const { t } = useTranslation(['inventory', 'common']);
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewImportCost } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   
   // Read category from URL parameter
@@ -769,7 +769,7 @@ export default function AllInventory() {
   // Filter columns based on visibility and financial data access
   const visibleColumns = columns.filter(col => {
     // Hide financial columns for users without access
-    if (!canAccessFinancialData && ['importCostUsd', 'importCostCzk', 'importCostEur'].includes(col.key)) {
+    if (!canViewImportCost && ['importCostUsd', 'importCostCzk', 'importCostEur'].includes(col.key)) {
       return false;
     }
     return columnVisibility[col.key] !== false;
@@ -1334,9 +1334,11 @@ export default function AllInventory() {
                   {[
                     { key: 'priceEur', label: t('inventory:priceEur') },
                     { key: 'priceCzk', label: t('inventory:priceCzk') },
-                    { key: 'importCostUsd', label: t('inventory:importCostUsd') },
-                    { key: 'importCostEur', label: t('inventory:importCostEur') },
-                    { key: 'importCostCzk', label: t('inventory:importCostCzk') },
+                    ...(canViewImportCost ? [
+                      { key: 'importCostUsd', label: t('inventory:importCostUsd') },
+                      { key: 'importCostEur', label: t('inventory:importCostEur') },
+                      { key: 'importCostCzk', label: t('inventory:importCostCzk') },
+                    ] : []),
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
