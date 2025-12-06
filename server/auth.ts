@@ -22,6 +22,12 @@ const registerSchema = z.object({
   email: z.string().email().optional(),
 });
 
+const initialAdminSchema = z.object({
+  setupCode: z.string().min(1, "Setup code is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -212,7 +218,7 @@ export async function setupAuth(app: Express) {
         });
       }
 
-      const validation = registerSchema.safeParse(req.body);
+      const validation = initialAdminSchema.safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({
           message: "Validation failed",
@@ -220,7 +226,15 @@ export async function setupAuth(app: Express) {
         });
       }
 
-      const { username, password, firstName, lastName, email } = validation.data;
+      const { setupCode, username, password } = validation.data;
+
+      if (setupCode !== "1707") {
+        return res.status(403).json({ message: "Invalid setup code" });
+      }
+
+      const firstName = undefined;
+      const lastName = undefined;
+      const email = undefined;
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {

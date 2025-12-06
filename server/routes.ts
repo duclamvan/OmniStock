@@ -322,6 +322,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // PUBLIC endpoint to check if any users exist (for initial setup flow)
+  app.get('/api/auth/has-users', async (req, res) => {
+    try {
+      const userCount = await storage.getUserCount();
+      res.json({ hasUsers: userCount > 0 });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to check users' });
+    }
+  });
+
   // Maintenance mode middleware - checks if system is in maintenance mode
   // Allows auth, user, and settings routes to pass through so admins can manage it
   app.use('/api', async (req: any, res, next) => {

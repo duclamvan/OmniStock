@@ -698,6 +698,17 @@ const common = {
     termsOfService: 'Điều khoản dịch vụ',
     and: 'và',
     privacyPolicy: 'Chính sách bảo mật',
+    
+    // Initial Setup
+    createAdminAccount: 'Tạo tài khoản quản trị',
+    setupCode: 'Mã thiết lập',
+    setupCodePlaceholder: 'Nhập mã thiết lập',
+    setupCodeRequired: 'Mã thiết lập là bắt buộc',
+    invalidSetupCode: 'Mã thiết lập không hợp lệ',
+    confirmPasswordPlaceholder: 'Xác nhận mật khẩu của bạn',
+    passwordsDontMatch: 'Mật khẩu không khớp',
+    firstTimeSetup: 'Thiết lập lần đầu',
+    setupDescription: 'Tạo tài khoản quản trị viên để bắt đầu',
   },
   
   // Profile Page

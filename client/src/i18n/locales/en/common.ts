@@ -744,6 +744,17 @@ const common = {
     termsOfService: 'Terms of Service',
     and: 'and',
     privacyPolicy: 'Privacy Policy',
+    
+    // Initial Setup
+    createAdminAccount: 'Create Admin Account',
+    setupCode: 'Setup Code',
+    setupCodePlaceholder: 'Enter setup code',
+    setupCodeRequired: 'Setup code is required',
+    invalidSetupCode: 'Invalid setup code',
+    confirmPasswordPlaceholder: 'Confirm your password',
+    passwordsDontMatch: 'Passwords do not match',
+    firstTimeSetup: 'First Time Setup',
+    setupDescription: 'Create your administrator account to get started',
   },
   
   // Profile Page
