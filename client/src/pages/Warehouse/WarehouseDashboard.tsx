@@ -118,12 +118,12 @@ export default function WarehouseDashboard() {
       if (!dataUpdatedAt) return;
       const seconds = Math.floor((Date.now() - dataUpdatedAt) / 1000);
       if (seconds < 5) {
-        setTimeSinceUpdate(t('justNow') || 'Just now');
+        setTimeSinceUpdate(t('common:justNow'));
       } else if (seconds < 60) {
-        setTimeSinceUpdate(`${seconds}s ${t('ago') || 'ago'}`);
+        setTimeSinceUpdate(`${seconds}s ${t('common:ago')}`);
       } else {
         const minutes = Math.floor(seconds / 60);
-        setTimeSinceUpdate(`${minutes}m ${t('ago') || 'ago'}`);
+        setTimeSinceUpdate(`${minutes}m ${t('common:ago')}`);
       }
     };
     
@@ -137,20 +137,20 @@ export default function WarehouseDashboard() {
       if (isPushSubscribed) {
         await unsubscribePush();
         toast({
-          title: t('pushNotificationsDisabled'),
-          description: t('pushNotificationsDisabledDesc'),
+          title: t('common:pushNotificationsDisabled'),
+          description: t('common:pushNotificationsDisabledDesc'),
         });
       } else {
         await subscribePush(['new_order']);
         toast({
-          title: t('pushNotificationsEnabled'),
-          description: t('pushNotificationsEnabledDesc'),
+          title: t('common:pushNotificationsEnabled'),
+          description: t('common:pushNotificationsEnabledDesc'),
         });
       }
     } catch (error: any) {
       toast({
-        title: t('error'),
-        description: error.message || t('pushNotificationsFailed'),
+        title: t('common:error'),
+        description: error.message || t('common:pushNotificationsFailed'),
         variant: 'destructive',
       });
     }
@@ -164,14 +164,14 @@ export default function WarehouseDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] });
       queryClient.invalidateQueries({ queryKey: ['/api/warehouse-tasks'] });
       toast({
-        title: t('success'),
-        description: t('updateSuccess'),
+        title: t('common:success'),
+        description: t('warehouse:taskCompleted'),
       });
     },
     onError: () => {
       toast({
-        title: t('error'),
-        description: t('updateFailed'),
+        title: t('common:error'),
+        description: t('warehouse:taskCompletionFailed'),
         variant: 'destructive',
       });
     },
@@ -179,26 +179,32 @@ export default function WarehouseDashboard() {
   
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: typeof newTask) => {
-      return apiRequest('POST', '/api/warehouse-tasks', {
-        ...taskData,
+      const payload: Record<string, unknown> = {
+        title: taskData.title,
+        description: taskData.description || undefined,
+        priority: taskData.priority,
+        type: taskData.type,
         status: 'pending',
-        dueAt: taskData.dueAt || null
-      });
+      };
+      if (taskData.dueAt && taskData.dueAt.trim() !== '') {
+        payload.dueAt = taskData.dueAt;
+      }
+      return apiRequest('POST', '/api/warehouse-tasks', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] });
       queryClient.invalidateQueries({ queryKey: ['/api/warehouse-tasks'] });
       toast({
-        title: t('success'),
-        description: t('taskCreated') || 'Task created successfully',
+        title: t('common:success'),
+        description: t('warehouse:taskCreated'),
       });
       setIsAddTaskOpen(false);
       setNewTask({ title: '', description: '', priority: 'medium', type: 'general', dueAt: '' });
     },
     onError: () => {
       toast({
-        title: t('error'),
-        description: t('taskCreationFailed') || 'Failed to create task',
+        title: t('common:error'),
+        description: t('warehouse:taskCreationFailed'),
         variant: 'destructive',
       });
     },
@@ -219,9 +225,9 @@ export default function WarehouseDashboard() {
     const now = new Date();
     const diffDays = Math.ceil((arrivalDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays <= 0) return t('today');
-    if (diffDays === 1) return t('tomorrow');
-    return `${diffDays} ${t('days')}`;
+    if (diffDays <= 0) return t('common:today');
+    if (diffDays === 1) return t('common:tomorrow');
+    return `${diffDays} ${t('common:days')}`;
   };
 
   if (isLoading) {
@@ -270,7 +276,7 @@ export default function WarehouseDashboard() {
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
               <span className="text-xs font-medium opacity-90">
-                {isFetching ? (t('updating') || 'Updating...') : timeSinceUpdate}
+                {isFetching ? t('common:updating') : timeSinceUpdate}
               </span>
               <div className={`w-2 h-2 rounded-full ${isFetching ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
             </div>
@@ -284,7 +290,7 @@ export default function WarehouseDashboard() {
                   <BellOff className="h-5 w-5 opacity-60" />
                 )}
                 <span className="text-sm font-medium">
-                  {t('orderAlerts')}
+                  {t('common:orderAlerts')}
                 </span>
                 <Switch
                   checked={isPushSubscribed}
@@ -308,10 +314,10 @@ export default function WarehouseDashboard() {
               <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
                 <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('orders')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('common:orders')}</span>
             </div>
             <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalOrders}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('toPick')}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:toPick')}</div>
           </div>
         </Link>
         
@@ -322,10 +328,10 @@ export default function WarehouseDashboard() {
               <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
                 <BoxesIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('items')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('common:items')}</span>
             </div>
             <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalItems}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('toPick')}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:toPick')}</div>
           </div>
         </Link>
         
@@ -336,10 +342,10 @@ export default function WarehouseDashboard() {
               <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
                 <Truck className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('readyToShip')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('warehouse:readyToShip')}</span>
             </div>
             <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{pickPackStats.ready}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('packed')}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('warehouse:packed')}</div>
           </div>
         </Link>
         
@@ -350,10 +356,10 @@ export default function WarehouseDashboard() {
               <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
                 <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('incoming')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('common:incoming')}</span>
             </div>
             <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{incomingShipments.length}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('shipments')}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:shipments')}</div>
           </div>
         </Link>
       </div>
@@ -362,11 +368,11 @@ export default function WarehouseDashboard() {
       {totalOrders > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('orderStatus')}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('common:orderStatus')}</h2>
             <Link href="/orders/pick-pack">
               <Button variant="outline" size="sm" className="text-sm" data-testid="button-go-to-pickpack">
                 <PlayCircle className="h-4 w-4 mr-2" />
-                {t('startPicking')}
+                {t('warehouse:startPicking')}
               </Button>
             </Link>
           </div>
@@ -374,22 +380,22 @@ export default function WarehouseDashboard() {
             <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-pending">
               <Clock className="h-5 w-5" />
               <span className="text-xl font-bold">{pickPackStats.pending}</span>
-              <span>{t('pending')}</span>
+              <span>{t('common:pending')}</span>
             </div>
             <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-picking">
               <Layers className="h-5 w-5" />
               <span className="text-xl font-bold">{pickPackStats.picking}</span>
-              <span>{t('picking')}</span>
+              <span>{t('warehouse:picking')}</span>
             </div>
             <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-packing">
               <Package className="h-5 w-5" />
               <span className="text-xl font-bold">{pickPackStats.packing}</span>
-              <span>{t('packing')}</span>
+              <span>{t('warehouse:packing')}</span>
             </div>
             <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-4 py-2.5 rounded-lg text-base font-medium" data-testid="status-ready">
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-xl font-bold">{pickPackStats.ready}</span>
-              <span>{t('ready')}</span>
+              <span>{t('common:ready')}</span>
             </div>
           </div>
         </div>
@@ -403,7 +409,7 @@ export default function WarehouseDashboard() {
             <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 bg-amber-50 dark:bg-amber-900/20">
               <div className="flex items-center gap-3">
                 <Truck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('upcomingShipments')}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('common:upcomingShipments')}</h2>
               </div>
               <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-sm px-3">
                 {incomingShipments.length}
@@ -415,7 +421,7 @@ export default function WarehouseDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-base text-gray-900 dark:text-gray-100 truncate">{shipment.supplier}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {shipment.trackingNumber || t('noTracking')}
+                      {shipment.trackingNumber || t('common:noTracking')}
                     </p>
                   </div>
                   <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-sm whitespace-nowrap ml-3">
@@ -428,7 +434,7 @@ export default function WarehouseDashboard() {
               <div className="px-5 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                 <Link href="/imports/kanban">
                   <Button variant="ghost" className="w-full" data-testid="button-view-all-shipments">
-                    {t('viewAll')} ({incomingShipments.length})
+                    {t('common:viewAll')} ({incomingShipments.length})
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>

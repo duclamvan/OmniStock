@@ -946,6 +946,15 @@ const warehouse = {
   noTasksToday: 'No pending tasks for today',
   cleaning: 'Cleaning',
   shipping: 'Shipping',
+  general: 'General',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  urgent: 'Urgent',
+  taskCreated: 'Task created successfully',
+  taskCreationFailed: 'Failed to create task',
+  taskCompleted: 'Task completed successfully',
+  taskCompletionFailed: 'Failed to complete task',
 } as const;
 
 export default warehouse;

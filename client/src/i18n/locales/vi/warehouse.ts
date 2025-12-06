@@ -892,6 +892,10 @@ const warehouse = {
   medium: 'Trung bình',
   high: 'Cao',
   urgent: 'Khẩn cấp',
+  taskCreated: 'Tạo công việc thành công',
+  taskCreationFailed: 'Không thể tạo công việc',
+  taskCompleted: 'Hoàn thành công việc thành công',
+  taskCompletionFailed: 'Không thể hoàn thành công việc',
 } as const;
 
 export default warehouse;
