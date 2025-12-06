@@ -404,13 +404,19 @@ export default function WarehouseMap() {
       configuredAisles.push(`A${String(a).padStart(2, '0')}`);
     }
 
-    // Extract zone aisles (non-A aisles) and sort alphabetically
-    const zoneAisles = Array.from(discoveredAisles)
-      .filter(aisle => !aisle.startsWith('A'))
+    // Build list of configured B-aisles (Zone B - Pallets)
+    const configuredBZoneAisles: string[] = [];
+    for (let b = 1; b <= totalBZoneAisles; b++) {
+      configuredBZoneAisles.push(`B${String(b).padStart(2, '0')}`);
+    }
+
+    // Extract other zone aisles (non-A, non-B aisles) from discovered locations and sort alphabetically
+    const otherZoneAisles = Array.from(discoveredAisles)
+      .filter(aisle => !aisle.startsWith('A') && !aisle.startsWith('B'))
       .sort();
 
-    // Combine: configured A-aisles first, then zone aisles
-    const allAislesToDisplay = [...configuredAisles, ...zoneAisles];
+    // Combine: configured A-aisles first, then B-aisles, then other discovered zone aisles
+    const allAislesToDisplay = [...configuredAisles, ...configuredBZoneAisles, ...otherZoneAisles];
 
     // Build grid for all aisles
     const grid: LocationStats[][] = [];
@@ -418,8 +424,13 @@ export default function WarehouseMap() {
     allAislesToDisplay.forEach(aisleCode => {
       const row: LocationStats[] = [];
       
-      // Use per-aisle config if available, otherwise use global config
-      const aisleConfig = aisleConfigs[aisleCode] || { maxRacks, maxLevels, maxBins };
+      // Use per-aisle config if available, otherwise use global config (with Zone B defaults)
+      const isZoneBCode = aisleCode.startsWith('B');
+      const aisleConfig = aisleConfigs[aisleCode] || { 
+        maxRacks, 
+        maxLevels: isZoneBCode ? 2 : maxLevels, 
+        maxBins: isZoneBCode ? 2 : maxBins 
+      };
       
       for (let r = 1; r <= aisleConfig.maxRacks; r++) {
         const rackCode = `R${String(r).padStart(2, '0')}`;
@@ -462,7 +473,7 @@ export default function WarehouseMap() {
     });
 
     return grid;
-  }, [productLocations, totalAisles, maxRacks, maxLevels, maxBins, aisleConfigs]);
+  }, [productLocations, totalAisles, totalBZoneAisles, maxRacks, maxLevels, maxBins, aisleConfigs]);
 
   // Get color based on occupancy
   const getOccupancyColor = (percent: number) => {
