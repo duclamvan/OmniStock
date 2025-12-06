@@ -37,6 +37,22 @@ const loginRateLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 
+// Validate required environment variables at startup
+function validateEnvironment() {
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("FATAL: SESSION_SECRET environment variable is required. Please set it before starting the server.");
+  }
+  
+  if (isProduction && !process.env.INITIAL_ADMIN_SETUP_CODE) {
+    throw new Error("FATAL: INITIAL_ADMIN_SETUP_CODE environment variable is required in production. Please set a unique setup code.");
+  }
+}
+
+// Run validation immediately
+validateEnvironment();
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
@@ -47,7 +63,7 @@ export function getSession() {
     tableName: "sessions",
   });
   return session({
-    secret: process.env.SESSION_SECRET || "davie-supply-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -86,10 +102,10 @@ export async function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
 
-        console.log("User authenticated:", { id: user.id, username: user.username, role: user.role });
+        // Authentication successful - log only non-sensitive audit info
         return done(null, user);
       } catch (error) {
-        console.error("Error in LocalStrategy:", error);
+        console.error("Authentication error occurred");
         return done(error);
       }
     })
@@ -108,7 +124,7 @@ export async function setupAuth(app: Express) {
       }
       return cb(null, user);
     } catch (error) {
-      console.error("Error deserializing user:", error);
+      console.error("Session deserialization error");
       return cb(error);
     }
   });
@@ -137,8 +153,6 @@ export async function setupAuth(app: Express) {
           console.error("Login error:", loginErr);
           return res.status(500).json({ message: "Failed to create session" });
         }
-
-        console.log(`Login successful for user: ${user.username}`);
 
         return res.json({
           message: "Login successful",
@@ -203,7 +217,7 @@ export async function setupAuth(app: Express) {
         },
       });
     } catch (error) {
-      console.error("Error fetching user session:", error);
+      console.error("Session fetch error");
       return res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -228,7 +242,11 @@ export async function setupAuth(app: Express) {
 
       const { setupCode, username, password } = validation.data;
 
-      if (setupCode !== "1707") {
+      const isProduction = process.env.NODE_ENV === "production";
+      const expectedSetupCode = isProduction 
+        ? process.env.INITIAL_ADMIN_SETUP_CODE! 
+        : (process.env.INITIAL_ADMIN_SETUP_CODE || "1707");
+      if (setupCode !== expectedSetupCode) {
         return res.status(403).json({ message: "Invalid setup code" });
       }
 
@@ -258,8 +276,6 @@ export async function setupAuth(app: Express) {
         email,
         role: "administrator",
       });
-
-      console.log(`Initial admin created: ${user.username}`);
 
       req.login(user, (loginErr) => {
         if (loginErr) {

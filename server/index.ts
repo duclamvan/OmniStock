@@ -7,9 +7,26 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 
 // Security headers middleware (helmet)
+const isProduction = process.env.NODE_ENV === "production";
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for Vite dev server compatibility
-  crossOriginEmbedderPolicy: false, // Disabled for Vite dev server compatibility
+  contentSecurityPolicy: isProduction ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https:", "wss:"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  } : false, // Disabled for Vite dev server compatibility
+  crossOriginEmbedderPolicy: false, // Keep disabled for external resources
+  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
 
 // Add compression middleware for all responses
@@ -75,7 +92,8 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Log error instead of throwing to prevent process crash in production
+    console.error(`[Error] ${status}: ${message}`, err.stack || err);
   });
 
   // importantly only setup vite in development and after
