@@ -252,7 +252,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
   createUserWithPassword(userData: { username: string; passwordHash: string; firstName?: string; lastName?: string; email?: string; role?: string }): Promise<User>;
   getAllUsers(): Promise<User[]>;
   getUserCount(): Promise<number>;
@@ -715,7 +714,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, username));
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
@@ -733,14 +732,6 @@ export class DatabaseStorage implements IStorage {
   async getUserCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)::int` }).from(users);
     return result[0]?.count || 0;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
   }
 
   async createUserWithPassword(userData: { username: string; passwordHash: string; firstName?: string; lastName?: string; email?: string; role?: string }): Promise<User> {

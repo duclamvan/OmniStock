@@ -13,7 +13,7 @@ The frontend is a React and TypeScript application built with Vite. It uses Shad
 The backend is an Express.js application written in TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-The system utilizes Replit Auth with optional Twilio SMS Two-Factor Authentication (2FA) and Enterprise-Grade Role-Based Access Control (RBAC). Primary authentication uses Replit's OpenID Connect, with session management via HTTP-only cookies and automatic token refresh. **New users have a NULL role by default, requiring administrator assignment. Both frontend and backend enforce access restrictions: frontend displays "Pending Approval" screen, backend returns 403 Forbidden from all business API endpoints.**
+The system utilizes **username/password authentication with passport-local strategy** and Enterprise-Grade Role-Based Access Control (RBAC). Passwords are hashed using bcryptjs (12 rounds). Session management uses PostgreSQL-backed sessions with HTTP-only cookies. **New users have a NULL role by default, requiring administrator assignment. Both frontend and backend enforce access restrictions: frontend displays "Pending Approval" screen, backend returns 403 Forbidden from all business API endpoints.** The first registered user automatically receives administrator role via `/api/auth/register-initial-admin`.
 
 ### Dynamic Role Management System
 The system now supports **dynamic role creation and management** with granular section/page-based permissions:
@@ -48,22 +48,17 @@ The system now supports **dynamic role creation and management** with granular s
 - Enforced during both active sessions and token refresh
 - Prevents API bypass attempts by pending users
 
-### RBAC Testing Architecture
-**Important**: Replit's OIDC provider does NOT support arbitrary custom claims like `role`. Only standard OIDC claims (sub, email, first_name, last_name, profile_image_url) are supported.
+### Initial Admin Registration
+- **Route**: `POST /api/auth/register-initial-admin`
+- **Purpose**: Create the first administrator user
+- **Availability**: Only works when no users exist in the database
+- **Request**: `{ username, password, firstName?, lastName?, email? }`
+- **Response**: `{ success: true, user: {...} }` or error
 
-**Test-Only Role Seeding Endpoint**:
-- **Route**: `POST /api/test/seed-role`
-- **Purpose**: Bypass OIDC limitations for automated RBAC testing
-- **Security**: Shared secret authorization via `X-Test-Secret` header (matches `TEST_SECRET` env var, defaults to "replit-agent-test-secret-change-in-production")
-- **Availability**: Only when `NODE_ENV !== 'production'`
-- **Request**: Headers: `{"X-Test-Secret": "<secret>"}`, Body: `{sub, role, email?, firstName?, lastName?}`
-- **Response**: `{success: true, sub, role}` or error
-- **Implementation**: Creates user if needed, then sets role directly in database
-
-**Testing Flow**:
-1. Before login: Call `/api/test/seed-role` with shared secret to assign role
-2. During login: OIDC provides standard claims (no role)  
-3. After login: Role from database is loaded and enforced by middleware
+**Authentication Flow**:
+1. First user registers via `/api/auth/register-initial-admin` (gets admin role automatically)
+2. Subsequent users are created by admin via user management
+3. New users have NULL role until administrator assigns a role
 4. RBAC enforcement: 
    - `isAuthenticated` blocks NULL roles (pending approval)
    - `requireRole(['administrator'])` blocks non-admin users from admin routes
@@ -73,7 +68,7 @@ The system now supports **dynamic role creation and management** with granular s
 - ✅ NULL-role users see "Waiting for Admin Approval" frontend screen
 - ✅ Assigned role users (warehouse_operator, administrator) access business APIs - 200/304 success
 - ✅ Administrator-only routes (/settings, /user-management) blocked for warehouse_operator
-- ✅ Rate limiting prevents excessive authentication attempts
+- ✅ Rate limiting prevents excessive login attempts (5 per 15 minutes)
 
 ## Database Design
 The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow, including entities for users, products, orders, customers, warehouses, suppliers, returns, inventory tracking, multi-currency financial tracking, and an audit trail.
@@ -104,4 +99,4 @@ The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The sch
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 - **Frankfurter API**: For real-time and historical currency exchange rates.
-- **Twilio Verify API**: For SMS verification in two-factor authentication.
+- **Twilio Verify API**: For SMS notifications (pre-order reminders, etc.).
