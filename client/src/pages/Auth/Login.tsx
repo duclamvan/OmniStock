@@ -232,13 +232,15 @@ export default function Login() {
 
       if (response.ok) {
         // Invalidate auth queries to refetch user data
-        await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
         
         toast({
           title: t('success'),
           description: t('auth.loginSuccessful'),
         });
-        navigate("/");
+        
+        // Force reload to ensure all state is fresh
+        window.location.href = "/";
       } else {
         const data = await response.json();
         toast({
