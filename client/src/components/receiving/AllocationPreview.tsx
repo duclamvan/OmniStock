@@ -628,49 +628,6 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         </CardContent>
       </Card>
 
-      {/* Debug Info Section */}
-      <Collapsible>
-        <Card className="border-dashed">
-          <CardHeader className="p-3 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                <HelpCircle className="h-3 w-3" />
-                {t('debugInfo')}
-              </CardTitle>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="p-3 pt-0">
-              <div className="text-xs space-y-2 font-mono bg-muted p-2 rounded overflow-x-auto">
-                <div><strong>{t('baseCurrency')}</strong> {preview.baseCurrency}</div>
-                <div><strong>{t('totalItems')}</strong> {preview.totalItems}</div>
-                <div><strong>{t('sampleItemData')}</strong></div>
-                {preview.items[0] && (
-                  <pre className="text-[10px] overflow-x-auto bg-background p-2 rounded">
-                    {JSON.stringify({
-                      purchaseItemId: preview.items[0].purchaseItemId,
-                      sku: preview.items[0].sku,
-                      name: preview.items[0].name,
-                      quantity: preview.items[0].quantity,
-                      unitPrice: preview.items[0].unitPrice,
-                      chargeableWeightKg: preview.items[0].chargeableWeightKg,
-                      freightAllocated: preview.items[0].freightAllocated,
-                      landingCostPerUnit: preview.items[0].landingCostPerUnit,
-                      totalValue: preview.items[0].totalValue
-                    }, null, 2)}
-                  </pre>
-                )}
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
       {/* Comprehensive Cost Allocation Table */}
       <Collapsible defaultOpen={true}>
         <Card>
