@@ -77,9 +77,6 @@ export default function WarehouseMap() {
   const [expandedRack, setExpandedRack] = useState<string | null>(null); // Track which rack is expanded
   const [savingAisles, setSavingAisles] = useState<Set<string>>(new Set());
   const [savingGlobalConfig, setSavingGlobalConfig] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const aisleSaveTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
-  const globalConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch warehouses
   const { data: warehouses, isLoading: warehousesLoading } = useQuery<any[]>({
@@ -174,17 +171,6 @@ export default function WarehouseMap() {
     }
   }, [warehouses, selectedWarehouseId]);
 
-  // Cancel pending save when warehouse changes (Fix Issue 3)
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    if (globalConfigTimeoutRef.current) {
-      clearTimeout(globalConfigTimeoutRef.current);
-      globalConfigTimeoutRef.current = null;
-    }
-  }, [selectedWarehouseId]);
 
   // Update local state when config is fetched
   useEffect(() => {
@@ -198,46 +184,24 @@ export default function WarehouseMap() {
     }
   }, [warehouseConfig]);
 
-  // Debounced save function for warehouse-level configuration
-  const debouncedGlobalConfigSave = useCallback((config: { 
+  // Instant save function for warehouse-level configuration
+  const instantGlobalConfigSave = useCallback((config: { 
     totalAisles: number; 
     maxRacks: number; 
     maxLevels: number; 
     maxBins: number;
     zones?: Record<string, ZoneConfig>;
   }) => {
-    // Clear existing timeout
-    if (globalConfigTimeoutRef.current) {
-      clearTimeout(globalConfigTimeoutRef.current);
-    }
-
-    // Mark as saving
+    // Mark as saving and save immediately
     setSavingGlobalConfig(true);
-
-    // Set new timeout
-    globalConfigTimeoutRef.current = setTimeout(() => {
-      updateWarehouseConfigMutation.mutate(config);
-      globalConfigTimeoutRef.current = null;
-    }, 800);
+    updateWarehouseConfigMutation.mutate(config);
   }, [updateWarehouseConfigMutation]);
 
-  // Debounced save function for per-aisle configuration
-  const debouncedAisleSave = useCallback((aisleId: string, config: AisleConfig) => {
-    // Clear existing timeout for this aisle
-    if (aisleSaveTimeouts.current[aisleId]) {
-      clearTimeout(aisleSaveTimeouts.current[aisleId]);
-    }
-
-    // Mark aisle as saving
+  // Instant save function for per-aisle configuration
+  const instantAisleSave = useCallback((aisleId: string, config: AisleConfig) => {
+    // Mark aisle as saving and save immediately
     setSavingAisles(prev => new Set(prev).add(aisleId));
-
-    // Set new timeout
-    const timeout = setTimeout(() => {
-      updateAisleConfigMutation.mutate({ aisleId, config });
-      delete aisleSaveTimeouts.current[aisleId];
-    }, 500);
-
-    aisleSaveTimeouts.current[aisleId] = timeout;
+    updateAisleConfigMutation.mutate({ aisleId, config });
   }, [updateAisleConfigMutation]);
 
   // Handle warehouse-level configuration changes
@@ -249,8 +213,8 @@ export default function WarehouseMap() {
     if (totalBZoneAisles > 0) {
       zones.B = { aisleCount: totalBZoneAisles, defaultStorageType: 'pallet' };
     }
-    debouncedGlobalConfigSave({ totalAisles: value, maxRacks, maxLevels, maxBins, zones });
-  }, [maxRacks, maxLevels, maxBins, totalBZoneAisles, debouncedGlobalConfigSave]);
+    instantGlobalConfigSave({ totalAisles: value, maxRacks, maxLevels, maxBins, zones });
+  }, [maxRacks, maxLevels, maxBins, totalBZoneAisles, instantGlobalConfigSave]);
 
   // Handle Zone B aisle count changes
   const handleBZoneAislesChange = useCallback((value: number) => {
@@ -261,8 +225,8 @@ export default function WarehouseMap() {
     if (value > 0) {
       zones.B = { aisleCount: value, defaultStorageType: 'pallet' };
     }
-    debouncedGlobalConfigSave({ totalAisles, maxRacks, maxLevels, maxBins, zones });
-  }, [totalAisles, maxRacks, maxLevels, maxBins, debouncedGlobalConfigSave]);
+    instantGlobalConfigSave({ totalAisles, maxRacks, maxLevels, maxBins, zones });
+  }, [totalAisles, maxRacks, maxLevels, maxBins, instantGlobalConfigSave]);
 
   // Handle aisle configuration changes
   const handleAisleConfigChange = useCallback((aisleId: string, field: keyof AisleConfig, value: number | string) => {
@@ -272,12 +236,12 @@ export default function WarehouseMap() {
       const current = prev[aisleId] || { maxRacks, maxLevels, maxBins, storageType: defaultStorageType };
       const updated = { ...current, [field]: value };
       
-      // Save with debouncing
-      debouncedAisleSave(aisleId, updated);
+      // Save immediately
+      instantAisleSave(aisleId, updated);
       
       return { ...prev, [aisleId]: updated };
     });
-  }, [maxRacks, maxLevels, maxBins, debouncedAisleSave]);
+  }, [maxRacks, maxLevels, maxBins, instantAisleSave]);
 
   // Parse location code to extract aisle, rack, level, and bin
   const parseLocationCode = (locationCode: string) => {
