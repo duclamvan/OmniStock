@@ -8855,11 +8855,11 @@ router.patch("/shipments/:id/allocation-method", async (req, res) => {
       return res.status(400).json({ message: "Invalid shipment ID" });
     }
     
-    // Validate allocation method
-    const validMethods = ['PER_UNIT', 'CHARGEABLE_WEIGHT', 'VALUE', 'QUANTITY', 'HYBRID'];
-    if (!allocationMethod || !validMethods.includes(allocationMethod)) {
+    // Validate allocation method (null is allowed to reset to auto-selection)
+    const validMethods = ['PER_UNIT', 'CHARGEABLE_WEIGHT', 'VALUE', 'QUANTITY', 'HYBRID', null];
+    if (allocationMethod !== null && !validMethods.includes(allocationMethod)) {
       return res.status(400).json({ 
-        message: `Invalid allocation method. Must be one of: ${validMethods.join(', ')}` 
+        message: `Invalid allocation method. Must be one of: PER_UNIT, CHARGEABLE_WEIGHT, VALUE, QUANTITY, HYBRID, or null to reset to auto-selection` 
       });
     }
     
@@ -8883,13 +8883,15 @@ router.patch("/shipments/:id/allocation-method", async (req, res) => {
       })
       .where(eq(shipments.id, shipmentId));
     
-    console.log(`Saved allocation method ${allocationMethod} for shipment ${shipmentId}`);
+    console.log(`Saved allocation method ${allocationMethod || 'AUTO'} for shipment ${shipmentId}`);
     
     res.json({ 
       success: true,
       shipmentId,
-      allocationMethod,
-      message: `Allocation method set to ${allocationMethod}. This method will be used when calculating landing costs.`
+      allocationMethod: allocationMethod || null,
+      message: allocationMethod 
+        ? `Allocation method set to ${allocationMethod}. This method will be used when calculating landing costs.`
+        : `Allocation method reset to automatic selection.`
     });
   } catch (error) {
     console.error("Error saving allocation method:", error);

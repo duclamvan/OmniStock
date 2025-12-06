@@ -254,7 +254,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     enabled: !!shipmentId
   });
 
-  // Mutation for updating allocation method
+  // Mutation for fetching allocation preview with specific method
   const updateAllocationMethod = useMutation({
     mutationFn: async (method: string) => {
       const endpoint = `/api/imports/shipments/${shipmentId}/landing-cost-preview/${method}`;
@@ -264,10 +264,6 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData([`/api/imports/shipments/${shipmentId}/landing-cost-preview`, selectedMethod], data);
-      toast({
-        title: t('allocationUpdated'),
-        description: t('switchedToMethod', { method: ALLOCATION_METHODS.find(m => m.id === selectedMethod)?.name })
-      });
     },
     onError: (error) => {
       console.error('Method update error:', error);
@@ -279,23 +275,65 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     }
   });
 
+  // Mutation for saving allocation method to shipment (persists for receiving)
+  const saveAllocationMethod = useMutation({
+    mutationFn: async (method: string) => {
+      const response = await fetch(`/api/imports/shipments/${shipmentId}/allocation-method`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allocationMethod: method })
+      });
+      if (!response.ok) throw new Error('Failed to save allocation method');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments', shipmentId] });
+      toast({
+        title: t('allocationSaved') || 'Method Saved',
+        description: t('allocationMethodSavedDesc', { method: ALLOCATION_METHODS.find(m => m.id === data.allocationMethod)?.name }) || `${data.allocationMethod} method will be used when receiving items`
+      });
+    },
+    onError: (error) => {
+      console.error('Save method error:', error);
+      toast({
+        title: t('error'),
+        description: t('failedToSaveAllocationMethod') || 'Failed to save allocation method',
+        variant: "destructive"
+      });
+    }
+  });
+
   // Get current method info
   const currentMethod = useMemo(() => {
     const methodId = selectedMethod || preview?.autoSelectedMethod || preview?.selectedMethod;
     return ALLOCATION_METHODS.find(m => m.id === methodId);
   }, [selectedMethod, preview]);
 
-  // Handle method change
+  // Handle method change - updates preview AND saves to database for receiving
   const handleMethodChange = (method: string) => {
     setSelectedMethod(method);
     setIsManualOverride(true);
+    // Fetch preview with the new method
     updateAllocationMethod.mutate(method);
+    // Save the method to the shipment for use during receiving
+    saveAllocationMethod.mutate(method);
   };
 
   // Reset to automatic selection
-  const handleResetToAuto = () => {
+  const handleResetToAuto = async () => {
     setSelectedMethod(null);
     setIsManualOverride(false);
+    // Clear saved allocation method from the database (null triggers auto-selection)
+    try {
+      await fetch(`/api/imports/shipments/${shipmentId}/allocation-method`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allocationMethod: null })
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments', shipmentId] });
+    } catch (error) {
+      console.log('Could not reset allocation method, using local reset only');
+    }
     refetch();
     toast({
       title: t('resetToAutomatic'),
