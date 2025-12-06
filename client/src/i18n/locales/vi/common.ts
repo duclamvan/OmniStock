@@ -638,15 +638,18 @@ const common = {
     verifyCode: 'Xác minh mã',
     verifyAndLogin: 'Xác minh & Đăng nhập',
     verifyAndSignUp: 'Xác minh & Đăng ký',
-    continueWithReplit: 'Tiếp tục với Replit',
+    continueWithGoogle: 'Tiếp tục với Google',
     continueWithFacebook: 'Tiếp tục với Facebook',
     backToLogin: 'Quay lại đăng nhập',
     backToPhoneInput: 'Quay lại nhập số điện thoại',
     changePhoneNumber: 'Thay đổi số điện thoại',
     
     // Auth Methods
-    replitAuth: 'Xác thực Replit',
+    googleAuth: 'Google',
     smsLogin: 'Đăng nhập SMS',
+    googleSignInNote: 'Tài khoản Google của bạn sẽ được sử dụng để xác thực an toàn. Người dùng đầu tiên đăng ký sẽ tự động trở thành quản trị viên.',
+    authNotConfigured: 'Xác thực chưa được cấu hình',
+    contactAdminForAuth: 'Vui lòng liên hệ quản trị viên để cấu hình thông tin xác thực Google OAuth.',
     orSignInWith: 'Hoặc đăng nhập với',
     orContinueWith: 'Hoặc tiếp tục với',
     

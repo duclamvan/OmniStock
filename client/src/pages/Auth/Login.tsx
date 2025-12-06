@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { LogIn, Shield, Smartphone, ArrowLeft } from "lucide-react";
-import { SiReplit, SiGoogle, SiGithub, SiX, SiApple } from "react-icons/si";
+import { SiGoogle } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +17,7 @@ export default function Login() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [show2FA, setShow2FA] = useState(false);
-  const [authTab, setAuthTab] = useState<"replit" | "sms">("replit");
+  const [authTab, setAuthTab] = useState<"google" | "sms">("google");
   
   // SMS login state (separate from 2FA)
   const [smsPhoneNumber, setSmsPhoneNumber] = useState("");
@@ -26,7 +26,7 @@ export default function Login() {
   const [isSmsLoading, setIsSmsLoading] = useState(false);
   const [smsResendCountdown, setSmsResendCountdown] = useState(0);
   
-  // 2FA state (secondary authentication for Replit users)
+  // 2FA state (secondary authentication for Google users)
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
@@ -46,6 +46,14 @@ export default function Login() {
       });
     }
 
+    if (error === 'auth_not_configured') {
+      toast({
+        title: t('auth.authNotConfigured'),
+        description: t('auth.contactAdminForAuth'),
+        variant: "destructive",
+      });
+    }
+
     if (require2fa === 'true' && phone) {
       setShow2FA(true);
       setPhoneNumber(phone);
@@ -54,7 +62,7 @@ export default function Login() {
         description: t('auth.verifyIdentityWithCode'),
       });
     }
-  }, [toast]);
+  }, [toast, t]);
 
   useEffect(() => {
     if (resendCountdown > 0) {
@@ -70,7 +78,7 @@ export default function Login() {
     }
   }, [smsResendCountdown]);
 
-  const handleReplitLogin = () => {
+  const handleGoogleLogin = () => {
     window.location.href = "/api/login";
   };
 
@@ -284,7 +292,7 @@ export default function Login() {
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
                   maxLength={6}
-                  className="h-12 text-center text-2xl font-mono tracking-widest dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                  className="h-14 text-center text-2xl font-mono tracking-widest dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                   data-testid="input-2fa-code"
                   autoFocus
                 />
@@ -292,7 +300,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
+                className="w-full h-14 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
                 disabled={isLoading || verificationCode.length !== 6}
                 data-testid="button-verify-2fa"
               >
@@ -304,19 +312,19 @@ export default function Login() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-11 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="w-full h-14 text-base dark:border-slate-700 dark:hover:bg-slate-800"
                 onClick={handleSendCode}
                 disabled={isLoading || resendCountdown > 0}
                 data-testid="button-resend-code"
               >
-                <Smartphone className="mr-2 h-4 w-4" />
+                <Smartphone className="mr-2 h-5 w-5" />
                 {resendCountdown > 0 ? t('auth.resendCodeIn', { seconds: resendCountdown }) : t('auth.resendCode')}
               </Button>
 
               <Button
                 type="button"
                 variant="ghost"
-                className="w-full h-11 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="w-full h-14 text-base text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 onClick={() => {
                   setShow2FA(false);
                   setIsCodeSent(false);
@@ -324,7 +332,7 @@ export default function Login() {
                 }}
                 data-testid="button-back-to-login"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 h-5 w-5" />
                 {t('auth.backToLogin')}
               </Button>
             </div>
@@ -351,78 +359,32 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs value={authTab} onValueChange={(value) => setAuthTab(value as "replit" | "sms")} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6" data-testid="tabs-auth-method">
-              <TabsTrigger value="replit" data-testid="tab-replit-auth">
-                <SiReplit className="mr-2 h-4 w-4" />
-                {t('auth.replitAuth')}
+          <Tabs value={authTab} onValueChange={(value) => setAuthTab(value as "google" | "sms")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 h-14" data-testid="tabs-auth-method">
+              <TabsTrigger value="google" className="text-base h-12" data-testid="tab-google-auth">
+                <SiGoogle className="mr-2 h-5 w-5" />
+                Google
               </TabsTrigger>
-              <TabsTrigger value="sms" data-testid="tab-sms-auth">
-                <Smartphone className="mr-2 h-4 w-4" />
+              <TabsTrigger value="sms" className="text-base h-12" data-testid="tab-sms-auth">
+                <Smartphone className="mr-2 h-5 w-5" />
                 {t('auth.smsLogin')}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="replit" className="space-y-4">
+            <TabsContent value="google" className="space-y-4">
               <Button
                 type="button"
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
-                onClick={handleReplitLogin}
+                className="w-full h-14 text-lg bg-white hover:bg-gray-50 text-gray-900 font-medium shadow-lg transition-all border border-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white dark:border-slate-700"
+                onClick={handleGoogleLogin}
                 disabled={isLoading}
-                data-testid="button-replit-login"
+                data-testid="button-google-login"
               >
-                <SiReplit className="mr-2 h-5 w-5" />
-                {t('auth.continueWithReplit')}
+                <SiGoogle className="mr-3 h-6 w-6 text-red-500" />
+                {t('auth.continueWithGoogle')}
               </Button>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300 dark:border-gray-700" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-slate-900 px-3 text-gray-500 dark:text-gray-400 font-medium">
-                    {t('auth.orSignInWith')}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800"
-                  onClick={handleReplitLogin}
-                  data-testid="button-google-login"
-                >
-                  <SiGoogle className="h-5 w-5 text-red-500" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800"
-                  onClick={handleReplitLogin}
-                  data-testid="button-github-login"
-                >
-                  <SiGithub className="h-5 w-5 text-gray-900 dark:text-white" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800"
-                  onClick={handleReplitLogin}
-                  data-testid="button-x-login"
-                >
-                  <SiX className="h-5 w-5 text-black dark:text-white" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800"
-                  onClick={handleReplitLogin}
-                  data-testid="button-apple-login"
-                >
-                  <SiApple className="h-5 w-5 text-black dark:text-white" />
-                </Button>
+              <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                <p>{t('auth.googleSignInNote')}</p>
               </div>
             </TabsContent>
 
@@ -440,7 +402,7 @@ export default function Login() {
                       value={smsPhoneNumber}
                       onChange={(e) => setSmsPhoneNumber(e.target.value)}
                       required
-                      className="h-12 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      className="h-14 text-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                       data-testid="input-sms-phone"
                       autoFocus
                     />
@@ -451,7 +413,7 @@ export default function Login() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
+                    className="w-full h-14 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
                     disabled={isSmsLoading}
                     data-testid="button-send-sms-code"
                   >
@@ -474,7 +436,7 @@ export default function Login() {
                       onChange={(e) => setSmsVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       required
                       maxLength={6}
-                      className="h-12 text-center text-2xl font-mono tracking-widest dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      className="h-14 text-center text-2xl font-mono tracking-widest dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                       data-testid="input-sms-verification-code"
                       autoFocus
                     />
@@ -485,7 +447,7 @@ export default function Login() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
+                    className="w-full h-14 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg transition-all"
                     disabled={isSmsLoading || smsVerificationCode.length !== 6}
                     data-testid="button-verify-sms-code"
                   >
@@ -496,26 +458,26 @@ export default function Login() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full h-11 dark:border-slate-700 dark:hover:bg-slate-800"
+                      className="w-full h-14 text-base dark:border-slate-700 dark:hover:bg-slate-800"
                       onClick={handleSmsSendCode}
                       disabled={isSmsLoading || smsResendCountdown > 0}
                       data-testid="button-resend-sms-code"
                     >
-                      <Smartphone className="mr-2 h-4 w-4" />
+                      <Smartphone className="mr-2 h-5 w-5" />
                       {smsResendCountdown > 0 ? t('auth.resendCodeIn', { seconds: smsResendCountdown }) : t('auth.resendCode')}
                     </Button>
 
                     <Button
                       type="button"
                       variant="ghost"
-                      className="w-full h-11 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      className="w-full h-14 text-base text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                       onClick={() => {
                         setSmsCodeSent(false);
                         setSmsVerificationCode("");
                       }}
                       data-testid="button-back-to-phone"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      <ArrowLeft className="mr-2 h-5 w-5" />
                       {t('auth.backToPhoneInput')}
                     </Button>
                   </div>

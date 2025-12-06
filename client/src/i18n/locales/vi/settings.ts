@@ -1090,7 +1090,6 @@ const settings = {
   colorGray: 'Xám',
   
   // Role Icons
-  roleIcon: 'Biểu tượng',
   iconShield: 'Khiên',
   iconUsers: 'Người dùng',
   iconUserCog: 'Cài đặt người dùng',

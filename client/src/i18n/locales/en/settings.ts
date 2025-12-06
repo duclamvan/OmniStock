@@ -1089,7 +1089,6 @@ const settings = {
   colorGray: 'Gray',
   
   // Role Icons
-  roleIcon: 'Icon',
   iconShield: 'Shield',
   iconUsers: 'Users',
   iconUserCog: 'User Settings',

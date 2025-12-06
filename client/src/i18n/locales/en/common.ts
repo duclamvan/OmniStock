@@ -684,15 +684,18 @@ const common = {
     verifyCode: 'Verify Code',
     verifyAndLogin: 'Verify & Login',
     verifyAndSignUp: 'Verify & Sign Up',
-    continueWithReplit: 'Continue with Replit',
+    continueWithGoogle: 'Continue with Google',
     continueWithFacebook: 'Continue with Facebook',
     backToLogin: 'Back to Login',
     backToPhoneInput: 'Back to Phone Input',
     changePhoneNumber: 'Change Phone Number',
     
     // Auth Methods
-    replitAuth: 'Replit Auth',
+    googleAuth: 'Google',
     smsLogin: 'SMS Login',
+    googleSignInNote: 'Your Google account will be used for secure authentication. First user to register will automatically become the administrator.',
+    authNotConfigured: 'Authentication Not Configured',
+    contactAdminForAuth: 'Please contact the administrator to configure Google OAuth credentials.',
     orSignInWith: 'Or sign in with',
     orContinueWith: 'Or continue with',
     
