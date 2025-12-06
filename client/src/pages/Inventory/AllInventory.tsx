@@ -1258,14 +1258,15 @@ export default function AllInventory() {
               )}
             </div>
             
-            {/* Column Visibility Settings */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 border-slate-300 dark:border-slate-700" data-testid="button-columns-selector">
-                  <Settings className="mr-2 h-4 w-4" />
-                  {t('inventory:toggleColumns')}
-                </Button>
-              </DropdownMenuTrigger>
+            {/* Column Visibility Settings - Desktop Only */}
+            <div className="hidden md:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 border-slate-300 dark:border-slate-700" data-testid="button-columns-selector">
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t('inventory:toggleColumns')}
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{t('inventory:toggleColumnsLabel')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -1387,7 +1388,8 @@ export default function AllInventory() {
                   ))}
                 </ScrollArea>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       </Card>
