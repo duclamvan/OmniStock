@@ -635,6 +635,14 @@ const warehouse = {
   zoneEStaging: 'Zone E - Staging',
   zoneFSpecial: 'Zone F - Special',
   
+  // Location Details Sheet
+  locationDetails: 'Location Details',
+  productCount: 'Product Count',
+  levelBinBreakdown: 'Level & Bin Breakdown',
+  productsStored: 'Products Stored',
+  noProductsStored: 'No products stored in this location',
+  more: 'more',
+  
   // Storage & Location Management
   invalidLocationFormat: 'Invalid location format',
   locationAlreadyAdded: 'Location already added',

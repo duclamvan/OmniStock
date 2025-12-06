@@ -1400,6 +1400,8 @@ const settings = {
   // Shipping checkbox translations
   enableAutoLabelGeneration: 'Bật tạo nhãn tự động',
   enableAutoLabelGenerationDescription: 'Tự động tạo nhãn khi đơn hàng sẵn sàng vận chuyển',
+  enableAutoLabelGenerationLabel: 'Bật tạo nhãn vận chuyển tự động',
+  enableAutoLabelGenerationDescriptionPpl: 'Tự động tạo nhãn vận chuyển PPL khi đơn hàng sẵn sàng giao',
   enableManualLabelEntry: 'Bật nhập nhãn thủ công',
   enableManualLabelEntryDescription: 'Cho phép nhập số theo dõi thủ công thay vì tạo qua API',
   autoPrintLabelsLabel: 'Tự động in nhãn',

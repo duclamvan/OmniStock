@@ -1381,6 +1381,8 @@ const settings = {
   // Shipping checkbox translations
   enableAutoLabelGeneration: 'Enable Auto Label Generation',
   enableAutoLabelGenerationDescription: 'Automatically generate labels when order is marked ready to ship',
+  enableAutoLabelGenerationLabel: 'Enable Automatic Label Generation',
+  enableAutoLabelGenerationDescriptionPpl: 'Automatically generate PPL shipping labels when order is ready to ship',
   enableManualLabelEntry: 'Enable Manual Label Entry',
   enableManualLabelEntryDescription: 'Allow manual entry of tracking numbers instead of API generation',
   autoPrintLabelsLabel: 'Auto-print Labels',

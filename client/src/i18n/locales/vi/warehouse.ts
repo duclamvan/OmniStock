@@ -631,6 +631,14 @@ const warehouse = {
   zoneEStaging: 'Khu vực E - Khu tập kết',
   zoneFSpecial: 'Khu vực F - Đặc biệt',
   
+  // Location Details Sheet
+  locationDetails: 'Chi tiết vị trí',
+  productCount: 'Số lượng sản phẩm',
+  levelBinBreakdown: 'Phân bố theo tầng & ngăn',
+  productsStored: 'Sản phẩm lưu trữ',
+  noProductsStored: 'Không có sản phẩm nào được lưu trữ tại vị trí này',
+  more: 'thêm',
+  
   // Move Inventory Dialog
   moveInventory: 'Di chuyển hàng tồn kho',
   transferInventoryBetweenLocations: 'Chuyển hàng tồn kho giữa các vị trí trong kho',

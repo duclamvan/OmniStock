@@ -44,13 +44,21 @@ interface WarehouseConfig {
   zones?: Record<string, ZoneConfig>; // e.g., { 'A': { aisleCount: 6, defaultStorageType: 'bin' }, 'B': { aisleCount: 3, defaultStorageType: 'pallet' } }
 }
 
+interface LevelBinData {
+  level: string;
+  bin: string;
+  quantity: number;
+  products: Array<{ name: string; sku: string; quantity: number }>;
+}
+
 interface LocationStats {
   aisle: string;
   rack: string;
   totalQuantity: number;
   productCount: number;
   occupancyPercent: number;
-  products: Array<{ name: string; sku: string; quantity: number }>;
+  products: Array<{ name: string; sku: string; quantity: number; level?: string; bin?: string }>;
+  levelBinBreakdown: LevelBinData[];
 }
 
 export default function WarehouseMap() {
@@ -269,7 +277,7 @@ export default function WarehouseMap() {
     });
   }, [maxRacks, maxLevels, maxBins, debouncedAisleSave]);
 
-  // Parse location code to extract aisle and rack (Fix Issue 2)
+  // Parse location code to extract aisle, rack, level, and bin
   const parseLocationCode = (locationCode: string) => {
     // Format examples:
     // - Standard: WH1-A06-R04-L04-B2
@@ -284,19 +292,24 @@ export default function WarehouseMap() {
       return null;
     }
     
-    // Standard format: Find aisle (starts with 'A'), rack (starts with 'R')
+    // Standard format: Find aisle (starts with 'A'), rack (starts with 'R'), level (starts with 'L'), bin (starts with 'B')
     const aislePart = parts.find(p => p.startsWith('A'));
     const rackPart = parts.find(p => p.startsWith('R'));
+    const levelPart = parts.find(p => p.startsWith('L'));
+    const binPart = parts.find(p => p.startsWith('B') && p !== aislePart);
     
     if (aislePart && rackPart) {
       return {
         aisle: aislePart,
         rack: rackPart,
+        level: levelPart || 'L01',
+        bin: binPart || 'B1',
       };
     }
     
     // Zone-based format: Find zone prefix (B for pallets, C for office, etc.)
     const zonePart = parts.find(p => /^[B-Z]\d{2}/.test(p));
+    const palletPart = parts.find(p => p.startsWith('P'));
     
     if (zonePart) {
       // Map zone to virtual "aisle" and "rack" for display
@@ -305,6 +318,8 @@ export default function WarehouseMap() {
       return {
         aisle: zonePart,
         rack: 'R01', // Virtual rack for zone-based locations
+        level: palletPart || 'L01',
+        bin: 'B1',
       };
     }
     
@@ -333,10 +348,11 @@ export default function WarehouseMap() {
     const locationMap = new Map<string, {
       totalQuantity: number;
       productCount: number;
-      products: Array<{ name: string; sku: string; quantity: number }>;
+      products: Array<{ name: string; sku: string; quantity: number; level?: string; bin?: string }>;
+      levelBinMap: Map<string, { quantity: number; products: Array<{ name: string; sku: string; quantity: number }> }>;
     }>();
 
-    // Aggregate by aisle+rack
+    // Aggregate by aisle+rack with level/bin breakdown
     productLocations.forEach((location) => {
       const parsed = parseLocationCode(location.locationCode);
       if (!parsed) return;
@@ -345,7 +361,8 @@ export default function WarehouseMap() {
       const existing = locationMap.get(key) || {
         totalQuantity: 0,
         productCount: 0,
-        products: [],
+        products: [] as Array<{ name: string; sku: string; quantity: number; level?: string; bin?: string }>,
+        levelBinMap: new Map<string, { quantity: number; products: Array<{ name: string; sku: string; quantity: number }> }>(),
       };
 
       existing.totalQuantity += location.quantity;
@@ -354,7 +371,20 @@ export default function WarehouseMap() {
         name: location.productName,
         sku: location.productSku,
         quantity: location.quantity,
+        level: parsed.level,
+        bin: parsed.bin,
       });
+
+      // Track level/bin breakdown
+      const levelBinKey = `${parsed.level}-${parsed.bin}`;
+      const levelBinData = existing.levelBinMap.get(levelBinKey) || { quantity: 0, products: [] };
+      levelBinData.quantity += location.quantity;
+      levelBinData.products.push({
+        name: location.productName,
+        sku: location.productSku,
+        quantity: location.quantity,
+      });
+      existing.levelBinMap.set(levelBinKey, levelBinData);
 
       locationMap.set(key, existing);
     });
@@ -398,6 +428,20 @@ export default function WarehouseMap() {
         const totalQuantity = data?.totalQuantity || 0;
         const occupancyPercent = maxCapacity > 0 ? (totalQuantity / maxCapacity) * 100 : 0;
 
+        // Convert level/bin map to array
+        const levelBinBreakdown: LevelBinData[] = [];
+        if (data?.levelBinMap) {
+          data.levelBinMap.forEach((lbData, lbKey) => {
+            const [level, bin] = lbKey.split('-');
+            levelBinBreakdown.push({
+              level,
+              bin,
+              quantity: lbData.quantity,
+              products: lbData.products,
+            });
+          });
+        }
+
         row.push({
           aisle: aisleCode,
           rack: rackCode,
@@ -405,6 +449,10 @@ export default function WarehouseMap() {
           productCount: data?.productCount || 0,
           occupancyPercent: Math.min(occupancyPercent, 100),
           products: data?.products || [],
+          levelBinBreakdown: levelBinBreakdown.sort((a, b) => {
+            if (a.level !== b.level) return a.level.localeCompare(b.level);
+            return a.bin.localeCompare(b.bin);
+          }),
         });
       }
 
@@ -1022,11 +1070,11 @@ export default function WarehouseMap() {
 
       {/* Details Sheet */}
       <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Info className="h-5 w-5 text-amber-600" />
-              Location Details
+              {t('warehouse:locationDetails')}
             </SheetTitle>
           </SheetHeader>
 
@@ -1036,21 +1084,21 @@ export default function WarehouseMap() {
               <Card>
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Location</span>
-                    <Badge variant="outline" className="font-mono">
+                    <span className="text-sm text-muted-foreground">{t('warehouse:location')}</span>
+                    <Badge variant="outline" className="font-mono text-base px-3 py-1">
                       {selectedLocation.aisle}-{selectedLocation.rack}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Items</span>
+                    <span className="text-sm text-muted-foreground">{t('warehouse:totalItems')}</span>
                     <span className="font-semibold">{selectedLocation.totalQuantity}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Product Count</span>
+                    <span className="text-sm text-muted-foreground">{t('warehouse:productCount')}</span>
                     <span className="font-semibold">{selectedLocation.productCount} SKUs</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Occupancy</span>
+                    <span className="text-sm text-muted-foreground">{t('warehouse:occupancy')}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div 
@@ -1064,10 +1112,93 @@ export default function WarehouseMap() {
                 </CardContent>
               </Card>
 
+              {/* Level & Bin Grid Visual */}
+              {selectedLocation.levelBinBreakdown.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2 p-4">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-amber-600" />
+                      {t('warehouse:levelBinBreakdown')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    {/* Get unique levels and bins */}
+                    {(() => {
+                      const levels = Array.from(new Set(selectedLocation.levelBinBreakdown.map(lb => lb.level))).sort();
+                      const bins = Array.from(new Set(selectedLocation.levelBinBreakdown.map(lb => lb.bin))).sort();
+                      const dataMap = new Map(selectedLocation.levelBinBreakdown.map(lb => [`${lb.level}-${lb.bin}`, lb]));
+                      
+                      return (
+                        <div className="space-y-2">
+                          {/* Bin Headers */}
+                          <div className="flex items-center gap-1">
+                            <div className="w-12 text-xs text-muted-foreground font-medium">{t('warehouse:level')}</div>
+                            {bins.map(bin => (
+                              <div key={bin} className="flex-1 text-center text-xs font-medium text-muted-foreground">
+                                {bin}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Level Rows (reversed so L01 is at bottom like real shelving) */}
+                          {[...levels].reverse().map(level => (
+                            <div key={level} className="flex items-center gap-1">
+                              <div className="w-12 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                {level}
+                              </div>
+                              {bins.map(bin => {
+                                const data = dataMap.get(`${level}-${bin}`);
+                                const hasItems = data && data.quantity > 0;
+                                return (
+                                  <TooltipProvider key={`${level}-${bin}`}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div 
+                                          className={`flex-1 h-10 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                                            hasItems 
+                                              ? 'bg-amber-100 dark:bg-amber-950 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100' 
+                                              : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600'
+                                          }`}
+                                          data-testid={`bin-${level}-${bin}`}
+                                        >
+                                          {hasItems ? (
+                                            <span className="text-xs font-bold">{data.quantity}</span>
+                                          ) : (
+                                            <span className="text-[10px]">-</span>
+                                          )}
+                                        </div>
+                                      </TooltipTrigger>
+                                      {hasItems && (
+                                        <TooltipContent side="top" className="max-w-xs">
+                                          <div className="text-xs space-y-1">
+                                            <p className="font-semibold">{selectedLocation.aisle}-{selectedLocation.rack}-{level}-{bin}</p>
+                                            <p>{t('warehouse:items')}: {data.quantity}</p>
+                                            {data.products.slice(0, 3).map((p, i) => (
+                                              <p key={i} className="text-muted-foreground truncate">{p.sku}: {p.quantity}</p>
+                                            ))}
+                                            {data.products.length > 3 && (
+                                              <p className="text-muted-foreground">+{data.products.length - 3} {t('warehouse:more')}</p>
+                                            )}
+                                          </div>
+                                        </TooltipContent>
+                                      )}
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Products in this location */}
               <div>
-                <h3 className="text-sm font-semibold mb-3">Products Stored</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm font-semibold mb-3">{t('warehouse:productsStored')}</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedLocation.products.map((product, index) => (
                     <Card key={index}>
                       <CardContent className="p-3">
@@ -1075,6 +1206,11 @@ export default function WarehouseMap() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{product.name}</p>
                             <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                            {product.level && product.bin && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                                {product.level}-{product.bin}
+                              </p>
+                            )}
                           </div>
                           <Badge variant="secondary" className="flex-shrink-0">
                             {product.quantity}
@@ -1087,7 +1223,7 @@ export default function WarehouseMap() {
                   {selectedLocation.totalQuantity === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       <Package className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">No products stored in this location</p>
+                      <p className="text-sm">{t('warehouse:noProductsStored')}</p>
                     </div>
                   )}
                 </div>
