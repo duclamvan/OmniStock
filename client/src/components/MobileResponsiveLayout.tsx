@@ -175,12 +175,17 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
   }
 }
 
-// Helper to check if current path matches a nav item (prefix matching)
+// Helper to check if current path matches a nav item (prefix matching for parent sections)
 function isPathActive(currentPath: string, itemPath: string): boolean {
   if (itemPath === '/') {
     return currentPath === '/';
   }
   return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+}
+
+// Helper for exact path matching (used for child menu items)
+function isPathExactActive(currentPath: string, itemPath: string): boolean {
+  return currentPath === itemPath;
 }
 
 export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPadding = false }: MobileResponsiveLayoutProps) {
@@ -669,7 +674,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     <Link key={child.href} href={child.href}>
                       <DropdownMenuItem className={cn(
                         "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
-                        isPathActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
+                        isPathExactActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
                       )}>
                         <span className="text-sm">{child.name}</span>
                         {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
@@ -722,7 +727,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                 <CollapsibleContent className="mt-1">
                   <div className="ml-8 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-2">
                     {item.children.map((child) => {
-                      const isChildActive = isPathActive(location, child.href);
+                      const isChildActive = isPathExactActive(location, child.href);
                       return (
                         <div
                           key={child.href}
@@ -893,7 +898,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   <Link key={child.href} href={child.href}>
                     <DropdownMenuItem className={cn(
                       "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
-                      isPathActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
+                      isPathExactActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
                     )}>
                       <span className="text-sm">{child.name}</span>
                       {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
