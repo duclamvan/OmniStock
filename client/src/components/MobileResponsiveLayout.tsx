@@ -277,7 +277,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'class') {
           const isDark = document.documentElement.classList.contains('dark');
-          setIsDarkMode(isDark);
+          // Only update if different to prevent double re-renders
+          setIsDarkMode(prev => prev !== isDark ? isDark : prev);
         }
       });
     });
