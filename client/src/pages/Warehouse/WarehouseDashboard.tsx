@@ -82,7 +82,7 @@ interface WarehouseDashboardData {
 }
 
 export default function WarehouseDashboard() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'warehouse']);
   const { toast } = useToast();
   const { isAdministrator } = useAuth();
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('');
@@ -443,7 +443,7 @@ export default function WarehouseDashboard() {
             <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
               <div className="flex items-center gap-3">
                 <ClipboardCheck className="h-5 w-5 text-red-600 dark:text-red-400" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('tasks')}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('warehouse:tasks')}</h2>
                 {adminTasks.length > 0 && (
                   <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-3">
                     {adminTasks.length}
@@ -456,41 +456,41 @@ export default function WarehouseDashboard() {
                   <DialogTrigger asChild>
                     <Button size="sm" className="h-9 px-4" data-testid="button-add-task">
                       <Plus className="h-4 w-4 mr-2" />
-                      {t('addTask') || 'Add Task'}
+                      {t('warehouse:addTask')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
-                      <DialogTitle>{t('createTask') || 'Create Task'}</DialogTitle>
+                      <DialogTitle>{t('warehouse:createTask')}</DialogTitle>
                       <DialogDescription>
-                        {t('createTaskDescription') || 'Create a task for warehouse employees'}
+                        {t('warehouse:createTaskDescription')}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="task-title">{t('taskTitle') || 'Task Title'} *</Label>
+                        <Label htmlFor="task-title">{t('warehouse:taskTitle')} *</Label>
                         <Input
                           id="task-title"
                           value={newTask.title}
                           onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder={t('enterTaskTitle') || 'Enter task title'}
+                          placeholder={t('warehouse:enterTaskTitle')}
                           data-testid="input-task-title"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="task-description">{t('description') || 'Description'}</Label>
+                        <Label htmlFor="task-description">{t('common:description')}</Label>
                         <Textarea
                           id="task-description"
                           value={newTask.description}
                           onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
-                          placeholder={t('enterTaskDescription') || 'Enter task description (optional)'}
+                          placeholder={t('warehouse:enterTaskDescription')}
                           rows={3}
                           data-testid="input-task-description"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>{t('priority') || 'Priority'}</Label>
+                          <Label>{t('common:priority')}</Label>
                           <Select
                             value={newTask.priority}
                             onValueChange={(value) => setNewTask(prev => ({ ...prev, priority: value }))}
@@ -499,15 +499,15 @@ export default function WarehouseDashboard() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="low">{t('low') || 'Low'}</SelectItem>
-                              <SelectItem value="medium">{t('medium') || 'Medium'}</SelectItem>
-                              <SelectItem value="high">{t('high') || 'High'}</SelectItem>
-                              <SelectItem value="urgent">{t('urgent') || 'Urgent'}</SelectItem>
+                              <SelectItem value="low">{t('warehouse:low')}</SelectItem>
+                              <SelectItem value="medium">{t('warehouse:medium')}</SelectItem>
+                              <SelectItem value="high">{t('warehouse:high')}</SelectItem>
+                              <SelectItem value="urgent">{t('warehouse:urgent')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>{t('taskType') || 'Type'}</Label>
+                          <Label>{t('warehouse:taskType')}</Label>
                           <Select
                             value={newTask.type}
                             onValueChange={(value) => setNewTask(prev => ({ ...prev, type: value }))}
@@ -516,17 +516,17 @@ export default function WarehouseDashboard() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="general">{t('general') || 'General'}</SelectItem>
-                              <SelectItem value="inventory">{t('inventory') || 'Inventory'}</SelectItem>
-                              <SelectItem value="receiving">{t('receiving') || 'Receiving'}</SelectItem>
-                              <SelectItem value="shipping">{t('shipping') || 'Shipping'}</SelectItem>
-                              <SelectItem value="cleaning">{t('cleaning') || 'Cleaning'}</SelectItem>
+                              <SelectItem value="general">{t('warehouse:general')}</SelectItem>
+                              <SelectItem value="inventory">{t('common:inventory')}</SelectItem>
+                              <SelectItem value="receiving">{t('warehouse:receiving')}</SelectItem>
+                              <SelectItem value="shipping">{t('warehouse:shipping')}</SelectItem>
+                              <SelectItem value="cleaning">{t('warehouse:cleaning')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="task-due-date">{t('dueDate') || 'Due Date'}</Label>
+                        <Label htmlFor="task-due-date">{t('common:dueDate')}</Label>
                         <Input
                           id="task-due-date"
                           type="date"
@@ -542,7 +542,7 @@ export default function WarehouseDashboard() {
                         onClick={() => setIsAddTaskOpen(false)}
                         data-testid="button-cancel-task"
                       >
-                        {t('cancel') || 'Cancel'}
+                        {t('common:cancel')}
                       </Button>
                       <Button
                         onClick={() => createTaskMutation.mutate(newTask)}
@@ -552,12 +552,12 @@ export default function WarehouseDashboard() {
                         {createTaskMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            {t('creating') || 'Creating...'}
+                            {t('warehouse:creating')}
                           </>
                         ) : (
                           <>
                             <Plus className="h-4 w-4 mr-2" />
-                            {t('createTask') || 'Create Task'}
+                            {t('warehouse:createTask')}
                           </>
                         )}
                       </Button>
@@ -603,10 +603,10 @@ export default function WarehouseDashboard() {
             ) : (
               <div className="px-5 py-8 text-center">
                 <ClipboardCheck className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTasksYet') || 'No tasks yet'}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('warehouse:noTasksYet')}</p>
                 {isAdministrator && (
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    {t('clickAddTaskToCreate') || 'Click "Add Task" to create one'}
+                    {t('warehouse:clickAddTaskToCreate')}
                   </p>
                 )}
               </div>
@@ -621,8 +621,8 @@ export default function WarehouseDashboard() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
             <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('allCaughtUp')}</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">{t('noTasksToday')}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('warehouse:allCaughtUp')}</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">{t('warehouse:noTasksToday')}</p>
         </div>
       )}
     </div>
