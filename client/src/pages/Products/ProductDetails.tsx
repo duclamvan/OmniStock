@@ -191,6 +191,7 @@ export default function ProductDetails() {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
     const element = sectionRefs.current[sectionId];
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -375,7 +376,7 @@ export default function ProductDetails() {
           <section 
             id="overview" 
             ref={setSectionRef('overview')}
-            className="scroll-mt-32"
+            className="scroll-mt-44 lg:scroll-mt-24"
           >
             {/* Primary Stats - Location, Stock, Packaging */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -570,7 +571,7 @@ export default function ProductDetails() {
           <section 
             id="stock" 
             ref={setSectionRef('stock')}
-            className="scroll-mt-32 space-y-4"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Box className="h-5 w-5" />
@@ -617,7 +618,7 @@ export default function ProductDetails() {
           <section 
             id="pricing" 
             ref={setSectionRef('pricing')}
-            className="scroll-mt-32 space-y-4"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Euro className="h-5 w-5" />
@@ -716,7 +717,7 @@ export default function ProductDetails() {
           <section 
             id="details" 
             ref={setSectionRef('details')}
-            className="scroll-mt-32 space-y-4"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Tag className="h-5 w-5" />
@@ -804,7 +805,7 @@ export default function ProductDetails() {
           <section 
             id="warehouse" 
             ref={setSectionRef('warehouse')}
-            className="scroll-mt-32 space-y-4"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Warehouse className="h-5 w-5" />
@@ -877,7 +878,7 @@ export default function ProductDetails() {
               <section 
                 id="variants" 
                 ref={setSectionRef('variants')}
-                className="scroll-mt-32 space-y-4"
+                className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
               >
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
@@ -898,7 +899,7 @@ export default function ProductDetails() {
               <section 
                 id="tiered" 
                 ref={setSectionRef('tiered')}
-                className="scroll-mt-32 space-y-4"
+                className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
               >
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
@@ -937,7 +938,7 @@ export default function ProductDetails() {
           <section 
             id="packing" 
             ref={setSectionRef('packing')}
-            className="scroll-mt-32 space-y-4"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -1036,7 +1037,7 @@ export default function ProductDetails() {
           <section 
             id="files" 
             ref={setSectionRef('files')}
-            className="scroll-mt-32 space-y-4 pb-8"
+            className="scroll-mt-44 lg:scroll-mt-24 space-y-4 pb-8"
           >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <FileText className="h-5 w-5" />
