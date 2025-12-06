@@ -127,7 +127,21 @@ export async function setupAuth(app: Express) {
   ));
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  passport.deserializeUser((user: Express.User, cb) => {
+    // Handle invalid or old session data gracefully
+    if (!user || typeof user !== 'object') {
+      return cb(null, false);
+    }
+    
+    // Check if this is a valid user object with required fields
+    const userObj = user as any;
+    if (!userObj.id) {
+      // Invalid session data, force re-authentication
+      return cb(null, false);
+    }
+    
+    return cb(null, user);
+  });
 
   // Login route - redirect to Google OAuth
   app.get("/api/login", passport.authenticate("google", {
