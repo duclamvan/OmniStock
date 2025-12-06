@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Warehouse, Package, Layers, MapPin, Info, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -763,7 +764,7 @@ export default function WarehouseMap() {
                     </h4>
                     {Array.from({ length: totalBZoneAisles }, (_, i) => {
                       const aisleId = `B${String(i + 1).padStart(2, '0')}`;
-                      const config = aisleConfigs[aisleId] || { maxRacks, maxLevels, maxBins: 2, storageType: 'pallet' };
+                      const config = aisleConfigs[aisleId] || { maxRacks, maxLevels: 2, maxBins: 2, storageType: 'pallet' };
                       const isSaving = savingAisles.has(aisleId);
                       const isPallet = config.storageType !== 'bin'; // Default to pallet for Zone B
 
@@ -1088,7 +1089,12 @@ export default function WarehouseMap() {
                           const rackKey = `${location.aisle}-${location.rack}`;
                           if (expandedRack !== rackKey) return null;
 
-                          const aisleConfig = aisleConfigs[location.aisle] || { maxRacks, maxLevels, maxBins };
+                          const isZoneB = location.aisle.startsWith('B');
+                          const aisleConfig = aisleConfigs[location.aisle] || { 
+                            maxRacks, 
+                            maxLevels: isZoneB ? 2 : maxLevels, 
+                            maxBins: isZoneB ? 2 : maxBins 
+                          };
                           const levels = Array.from({ length: aisleConfig.maxLevels }, (_, i) => `L${String(i + 1).padStart(2, '0')}`);
                           const bins = Array.from({ length: aisleConfig.maxBins }, (_, i) => `B${i + 1}`);
                           const dataMap = new Map(location.levelBinBreakdown.map(lb => [`${lb.level}-${lb.bin}`, lb]));
