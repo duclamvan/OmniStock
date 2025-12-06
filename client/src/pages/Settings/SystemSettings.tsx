@@ -28,7 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check, Wrench } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { format } from "date-fns";
@@ -249,6 +250,37 @@ export default function SystemSettings() {
         variant: "destructive",
         title: t('common:error'),
         description: error.message || t('settings:factoryResetFailed'),
+      });
+    },
+  });
+
+  // Maintenance mode state management
+  const { data: maintenanceModeData } = useQuery<{ value: string | boolean }>({
+    queryKey: ['/api/settings', 'maintenance_mode'],
+  });
+  
+  const maintenanceModeEnabled = maintenanceModeData?.value === true || maintenanceModeData?.value === 'true';
+
+  const maintenanceModeMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await apiRequest('POST', '/api/settings', {
+        key: 'maintenance_mode',
+        value: enabled,
+        category: 'system',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: maintenanceModeEnabled ? t('settings:maintenanceModeDisabled') : t('settings:maintenanceModeEnabled'),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: error.message || t('common:saveFailed'),
       });
     },
   });
@@ -633,6 +665,39 @@ export default function SystemSettings() {
 
           {/* Tab 3: Security */}
           <TabsContent value="security" className="space-y-4">
+            {/* Maintenance Mode Card */}
+            <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-700 dark:text-amber-400">
+                  <Wrench className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:maintenanceModeCard')}
+                </CardTitle>
+                <CardDescription className="text-sm">{t('settings:maintenanceModeDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <Alert variant="default" className="mb-4 border-amber-500/50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-700 dark:text-amber-400">{t('settings:maintenanceModeWarningTitle')}</AlertTitle>
+                  <AlertDescription>{t('settings:maintenanceModeWarningDescription')}</AlertDescription>
+                </Alert>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{t('settings:maintenanceModeEnable')}</p>
+                    <p className={`text-sm font-semibold ${maintenanceModeEnabled ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                      {maintenanceModeEnabled ? t('settings:maintenanceModeEnabled') : t('settings:maintenanceModeDisabled')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={maintenanceModeEnabled}
+                    onCheckedChange={(checked) => maintenanceModeMutation.mutate(checked)}
+                    disabled={maintenanceModeMutation.isPending}
+                    data-testid="switch-maintenance-mode"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security Card */}
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">

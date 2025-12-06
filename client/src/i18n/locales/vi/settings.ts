@@ -1473,6 +1473,15 @@ const settings = {
   backupTypeDaily: 'Hàng ngày',
   backupTypeWeekly: 'Hàng tuần',
   backupTypeMonthly: 'Hàng tháng',
+  
+  // Maintenance Mode
+  maintenanceModeCard: 'Chế độ bảo trì',
+  maintenanceModeDescription: 'Khóa hệ thống để cập nhật và bảo trì',
+  maintenanceModeWarningTitle: 'Cảnh báo',
+  maintenanceModeWarningDescription: 'Khi bật, tất cả người dùng không phải quản trị viên sẽ thấy màn hình bảo trì và không thể truy cập hệ thống. Chỉ quản trị viên mới có thể truy cập hệ thống trong quá trình bảo trì.',
+  maintenanceModeEnable: 'Bật chế độ bảo trì',
+  maintenanceModeDisabled: 'Hệ thống đang HOẠT ĐỘNG',
+  maintenanceModeEnabled: 'Hệ thống đang trong CHẾ ĐỘ BẢO TRÌ',
 } as const;
 
 export default settings;

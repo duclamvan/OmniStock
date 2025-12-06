@@ -1,10 +1,12 @@
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, subscribeToMaintenanceMode, getMaintenanceMode, setMaintenanceMode } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useLanguageSync } from "@/hooks/useLanguageSync";
+import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 // Removed auth imports
 import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -449,6 +451,25 @@ function AppContent() {
   
   // Sync language with settings
   useLanguageSync();
+
+  // Track maintenance mode
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(getMaintenanceMode());
+  
+  useEffect(() => {
+    const unsubscribe = subscribeToMaintenanceMode((isMaintenance) => {
+      setIsMaintenanceMode(isMaintenance);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleSystemOnline = () => {
+    setMaintenanceMode(false);
+    setIsMaintenanceMode(false);
+  };
+
+  if (isMaintenanceMode) {
+    return <MaintenanceScreen onSystemOnline={handleSystemOnline} />;
+  }
   
   return (
     <>

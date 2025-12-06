@@ -184,7 +184,7 @@ const common = {
   completed: 'Completed',
   cancelled: 'Cancelled',
   draft: 'Draft',
-  maintenance: 'Maintenance',
+  maintenanceStatus: 'Maintenance',
   rented: 'Rented',
   
   // Units
@@ -1258,6 +1258,15 @@ const common = {
   numberPlaceholder: '123',
   
   // Legal Pages
+  maintenance: {
+    title: 'System Upgrading',
+    message: 'Please wait a few minutes while we improve your experience.',
+    checking: 'Checking...',
+    checkNow: 'Check Now',
+    autoRefresh: 'Auto-checking every 30 seconds',
+    lastChecked: 'Last checked at {{time}}',
+  },
+
   legal: {
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',

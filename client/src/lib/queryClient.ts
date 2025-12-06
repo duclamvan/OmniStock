@@ -1,5 +1,25 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Global maintenance mode state
+let isMaintenanceMode = false;
+let maintenanceListeners: Array<(isMaintenance: boolean) => void> = [];
+
+export function getMaintenanceMode(): boolean {
+  return isMaintenanceMode;
+}
+
+export function setMaintenanceMode(value: boolean): void {
+  isMaintenanceMode = value;
+  maintenanceListeners.forEach(listener => listener(value));
+}
+
+export function subscribeToMaintenanceMode(listener: (isMaintenance: boolean) => void): () => void {
+  maintenanceListeners.push(listener);
+  return () => {
+    maintenanceListeners = maintenanceListeners.filter(l => l !== listener);
+  };
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorData;
@@ -16,6 +36,11 @@ async function throwIfResNotOk(res: Response) {
       errorData = { error: text || res.statusText };
     }
     
+    // Handle 503 maintenance mode response
+    if (res.status === 503 && errorData?.maintenance === true) {
+      setMaintenanceMode(true);
+    }
+    
     // Create an enhanced error object with all the details
     const error = new Error(errorData.error || errorData.message || res.statusText) as any;
     error.status = res.status;
@@ -23,8 +48,14 @@ async function throwIfResNotOk(res: Response) {
     error.hint = errorData.hint;
     error.type = errorData.type;
     error.fullResponse = errorData;
+    error.maintenance = errorData.maintenance;
     
     throw error;
+  } else {
+    // Clear maintenance mode on successful response
+    if (isMaintenanceMode) {
+      setMaintenanceMode(false);
+    }
   }
 }
 

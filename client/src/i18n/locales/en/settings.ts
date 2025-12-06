@@ -1562,6 +1562,15 @@ const settings = {
   accountDataIsUnavailable: 'Account data is unavailable. Please log in again.',
   fileTooLarge: 'File Too Large',
   pleaseSelectAnImageUnder5MB: 'Please select an image under 5MB',
+  
+  // Maintenance Mode
+  maintenanceModeCard: 'Maintenance Mode',
+  maintenanceModeDescription: 'Lock the system for updates and maintenance',
+  maintenanceModeWarningTitle: 'Warning',
+  maintenanceModeWarningDescription: 'When enabled, all non-administrator users will see a maintenance screen and cannot access the system. Only administrators can access the system during maintenance.',
+  maintenanceModeEnable: 'Enable Maintenance Mode',
+  maintenanceModeDisabled: 'System is LIVE',
+  maintenanceModeEnabled: 'System is in MAINTENANCE MODE',
 } as const;
 
 export default settings;

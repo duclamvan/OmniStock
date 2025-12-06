@@ -322,6 +322,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Maintenance mode middleware - checks if system is in maintenance mode
+  // Allows auth, user, and settings routes to pass through so admins can manage it
+  app.use('/api', async (req: any, res, next) => {
+    try {
+      // Allow these routes to pass through even during maintenance
+      // so admins can still log in and toggle maintenance mode off
+      const allowedPaths = ['/api/auth', '/api/user', '/api/settings'];
+      const isAllowedPath = allowedPaths.some(path => req.originalUrl.startsWith(path));
+      
+      if (isAllowedPath) {
+        return next();
+      }
+
+      // Check maintenance mode setting
+      const maintenanceSetting = await storage.getAppSettingByKey('maintenance_mode');
+      const isMaintenanceMode = maintenanceSetting?.value === 'true' || maintenanceSetting?.value === true;
+      
+      if (!isMaintenanceMode) {
+        return next();
+      }
+
+      // If in maintenance mode, check if user is an administrator
+      const isAdmin = req.user?.role === 'administrator';
+      
+      if (isAdmin) {
+        return next();
+      }
+
+      // Non-admin users get blocked during maintenance
+      return res.status(503).json({
+        message: 'System is upgrading. Please wait a few minutes.',
+        maintenance: true
+      });
+    } catch (error) {
+      // If DB is broken during update, fail gracefully and let request through
+      console.error('Maintenance mode check failed:', error);
+      return next();
+    }
+  });
+
   // Test-only endpoint for seeding user roles (RBAC testing)
   // This endpoint allows direct user creation and role assignment for automated tests
   // SECURITY: Protected by shared secret to prevent unauthorized role escalation
@@ -13787,7 +13827,7 @@ Important:
     }
   });
 
-  app.post('/api/settings', isAuthenticated, async (req, res) => {
+  app.post('/api/settings', isAuthenticated, requireRole(['administrator']), async (req, res) => {
     try {
       const data = insertAppSettingSchema.parse(req.body);
       

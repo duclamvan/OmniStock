@@ -180,7 +180,7 @@ const common = {
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   draft: 'Nháp',
-  maintenance: 'Bảo trì',
+  maintenanceStatus: 'Bảo trì',
   rented: 'Đang thuê',
   
   // Units
@@ -1174,6 +1174,15 @@ const common = {
   toggleSidebar: 'Bật/tắt thanh bên',
   
   // Legal Pages
+  maintenance: {
+    title: 'Hệ thống đang nâng cấp',
+    message: 'Vui lòng chờ vài phút trong khi chúng tôi cải thiện trải nghiệm của bạn.',
+    checking: 'Đang kiểm tra...',
+    checkNow: 'Kiểm tra ngay',
+    autoRefresh: 'Tự động kiểm tra mỗi 30 giây',
+    lastChecked: 'Kiểm tra lần cuối lúc {{time}}',
+  },
+
   legal: {
     termsOfService: 'Điều khoản Dịch vụ',
     privacyPolicy: 'Chính sách Bảo mật',
