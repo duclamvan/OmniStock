@@ -38,7 +38,7 @@ import {
 import { SiReplit, SiGoogle, SiGithub, SiFacebook } from "react-icons/si";
 import { format, formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
-import { applyThemePreference, getCurrentTheme } from "@/lib/theme-utils";
+import { useTheme } from "@/components/ThemeProvider";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
@@ -72,12 +72,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function UserSettings() {
   const { toast } = useToast();
   const { i18n, t } = useTranslation();
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return getCurrentTheme() === 'dark';
-    }
-    return false;
-  });
+  const { isDarkMode, setTheme } = useTheme();
 
   const { data: user, isLoading, isError, refetch } = useQuery<User>({
     queryKey: ['/api/users/me'],
@@ -328,8 +323,7 @@ export default function UserSettings() {
   };
 
   const handleThemeChange = (theme: 'light' | 'dark') => {
-    setIsDarkMode(theme === 'dark');
-    applyThemePreference(theme);
+    setTheme(theme);
 
     toast({
       title: t('settings:themeUpdated'),

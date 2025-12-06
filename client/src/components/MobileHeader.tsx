@@ -60,7 +60,7 @@ interface MobileHeaderProps {
   navContent: React.ReactNode;
   dueTicketsCount: number;
   isDarkMode: boolean;
-  setIsDarkMode: (dark: boolean) => void;
+  toggleTheme: () => void;
 }
 
 export function MobileHeader({
@@ -69,7 +69,7 @@ export function MobileHeader({
   navContent,
   dueTicketsCount,
   isDarkMode,
-  setIsDarkMode,
+  toggleTheme,
 }: MobileHeaderProps) {
   const [location] = useLocation();
   const { scrollDir, isPastThreshold, isAtTop } = useScrollDirection();
@@ -478,14 +478,7 @@ export function MobileHeader({
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem 
-                onClick={() => {
-                  setIsDarkMode(!isDarkMode);
-                  if (isDarkMode) {
-                    document.documentElement.classList.remove('dark');
-                  } else {
-                    document.documentElement.classList.add('dark');
-                  }
-                }}
+                onClick={toggleTheme}
                 className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               >
                 {isDarkMode ? (

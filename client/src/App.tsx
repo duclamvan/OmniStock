@@ -12,6 +12,7 @@ import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { LocalizationProvider } from "@/contexts/LocalizationContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
@@ -483,13 +484,15 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SettingsProvider>
-        <LocalizationProvider>
-          <TooltipProvider>
-            <AppContent />
-          </TooltipProvider>
-        </LocalizationProvider>
-      </SettingsProvider>
+      <ThemeProvider>
+        <SettingsProvider>
+          <LocalizationProvider>
+            <TooltipProvider>
+              <AppContent />
+            </TooltipProvider>
+          </LocalizationProvider>
+        </SettingsProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
