@@ -76,8 +76,7 @@ export default function ProductDetails() {
   const [activeSection, setActiveSection] = useState('overview');
   const { toast } = useToast();
   
-  // Store observer reference
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  // Store section references for scroll detection
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isManualScrollingRef = useRef(false);
 
@@ -146,64 +145,45 @@ export default function ProductDetails() {
     { id: 'files', label: t('products:productFiles', 'Files'), icon: FileText },
   ];
 
-  // Create intersection observer once on mount
+  // Use scroll event for precise section detection
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (isManualScrollingRef.current) return;
-        
-        const visibleSections = Object.entries(sectionRefs.current)
-          .filter(([_, el]) => el !== null)
-          .map(([id, el]) => ({
-            id,
-            top: el!.getBoundingClientRect().top
-          }))
-          .filter(({ top }) => top < window.innerHeight * 0.4 && top > -window.innerHeight * 0.5)
-          .sort((a, b) => Math.abs(a.top) - Math.abs(b.top));
-        
-        if (visibleSections.length > 0) {
-          const topSection = visibleSections.reduce((closest, section) => {
-            if (section.top >= 0 && section.top < closest.top) return section;
-            if (closest.top < 0 && section.top > closest.top) return section;
-            return closest;
-          }, visibleSections[0]);
-          
-          setActiveSection(topSection.id);
+    const handleScroll = () => {
+      if (isManualScrollingRef.current) return;
+      
+      const triggerPoint = 120;
+      
+      const sectionsWithPositions = Object.entries(sectionRefs.current)
+        .filter(([_, el]) => el !== null)
+        .map(([id, el]) => ({
+          id,
+          top: el!.getBoundingClientRect().top
+        }))
+        .sort((a, b) => a.top - b.top);
+      
+      let activeId = sectionsWithPositions[0]?.id || 'overview';
+      
+      for (const section of sectionsWithPositions) {
+        if (section.top <= triggerPoint) {
+          activeId = section.id;
+        } else {
+          break;
         }
-      },
-      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
-    );
-
-    // Observe any sections that were already mounted before observer was created
-    // (handles case when data is cached and component renders synchronously)
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref && observerRef.current) {
-        observerRef.current.observe(ref);
       }
-    });
-
+      
+      setActiveSection(activeId);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
-  // Ref callback to register sections with observer when they mount
+  // Ref callback to register sections
   const setSectionRef = useCallback((sectionId: string) => (el: HTMLElement | null) => {
-    const prevRef = sectionRefs.current[sectionId];
-    
-    // Unobserve previous element if it exists
-    if (prevRef && observerRef.current) {
-      observerRef.current.unobserve(prevRef);
-    }
-    
     sectionRefs.current[sectionId] = el;
-    
-    // Observe new element if it exists and observer is ready
-    if (el && observerRef.current) {
-      observerRef.current.observe(el);
-    }
   }, []);
 
   const scrollToSection = (sectionId: string) => {
