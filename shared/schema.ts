@@ -6,19 +6,15 @@ import { relations, sql } from 'drizzle-orm';
 // Users table
 export const users = pgTable('users', {
   id: varchar('id').primaryKey(),
-  googleId: varchar('google_id').unique(), // Google OAuth user ID
+  username: varchar('username').unique(), // Unique username for login
+  passwordHash: text('password_hash'), // Bcrypt hashed password
   email: varchar('email'),
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
   role: varchar('role'), // 'administrator' or 'warehouse_operator' - nullable for pending users
-  // Authentication provider
-  authProvider: varchar('auth_provider').notNull().default('google'), // 'google' | 'sms' | 'email'
-  // Two-Factor Authentication fields
+  // Phone for notifications (not for auth)
   phoneNumber: varchar('phone_number').unique(), // E.164 format: +420123456789
-  phoneVerifiedAt: timestamp('phone_verified_at'), // When phone was verified
-  twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
-  twoFactorVerified: boolean('two_factor_verified').notNull().default(false), // Track if they completed 2FA this session
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });
