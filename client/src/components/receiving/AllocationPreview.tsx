@@ -697,7 +697,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                   <PopoverContent className="w-72" align="end">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm">{t('columnVisibility') || 'Column Visibility'}</h4>
+                        <h4 className="font-medium text-sm">{t('columnVisibility')}</h4>
                         <div className="flex gap-1">
                           <Button 
                             variant="ghost" 
@@ -707,7 +707,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             data-testid="button-show-all-columns"
                           >
                             <Eye className="h-3 w-3 mr-1" />
-                            {t('showAll') || 'All'}
+                            {t('showAll')}
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -717,12 +717,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             data-testid="button-reset-columns"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" />
-                            {t('reset') || 'Reset'}
+                            {t('reset')}
                           </Button>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">{t('coreColumns') || 'Core'}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('coreColumns')}</p>
                         {DEFAULT_COLUMNS.filter(c => c.group === 'core').map(col => (
                           <div key={col.id} className="flex items-center gap-2">
                             <Checkbox 
@@ -732,13 +732,13 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                               data-testid={`checkbox-column-${col.id}`}
                             />
                             <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
-                              {t(col.id) || col.label}
+                              {t(col.id)}
                             </Label>
                           </div>
                         ))}
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">{t('costColumns') || 'Costs'}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('costColumns')}</p>
                         {DEFAULT_COLUMNS.filter(c => c.group === 'costs').map(col => (
                           <div key={col.id} className="flex items-center gap-2">
                             <Checkbox 
@@ -748,13 +748,13 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                               data-testid={`checkbox-column-${col.id}`}
                             />
                             <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
-                              {t(col.id) || col.label}
+                              {t(col.id)}
                             </Label>
                           </div>
                         ))}
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground font-medium">{t('detailedColumns') || 'Detailed'}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('detailedColumns')}</p>
                         {DEFAULT_COLUMNS.filter(c => c.group === 'detailed').map(col => (
                           <div key={col.id} className="flex items-center gap-2">
                             <Checkbox 
@@ -764,7 +764,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                               data-testid={`checkbox-column-${col.id}`}
                             />
                             <Label htmlFor={`col-${col.id}`} className="text-xs cursor-pointer">
-                              {t(col.id) || col.label}
+                              {t(col.id)}
                             </Label>
                           </div>
                         ))}
@@ -805,19 +805,19 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         <TableHead className="text-right w-[80px] p-2">{t('duty')}</TableHead>
                       )}
                       {columnVisibility.brokerage && (
-                        <TableHead className="text-right w-[90px] p-2">{t('brokerage') || 'Customs'}</TableHead>
+                        <TableHead className="text-right w-[90px] p-2">{t('brokerage')}</TableHead>
                       )}
                       {columnVisibility.insurance && (
-                        <TableHead className="text-right w-[80px] p-2">{t('insurance') || 'Insurance'}</TableHead>
+                        <TableHead className="text-right w-[80px] p-2">{t('insurance')}</TableHead>
                       )}
                       {columnVisibility.packaging && (
-                        <TableHead className="text-right w-[80px] p-2">{t('packaging') || 'Packaging'}</TableHead>
+                        <TableHead className="text-right w-[80px] p-2">{t('packaging')}</TableHead>
                       )}
                       {columnVisibility.other && (
                         <TableHead className="text-right w-[80px] p-2">{t('other')}</TableHead>
                       )}
                       {columnVisibility.landingCost && (
-                        <TableHead className="text-right w-[100px] p-2">{t('landingCostUnit') || 'Landing/Unit'}</TableHead>
+                        <TableHead className="text-right w-[100px] p-2">{t('landingCostUnit')}</TableHead>
                       )}
                       {columnVisibility.totalCost && (
                         <TableHead className="text-right w-[100px] p-2">{t('totalCost')}</TableHead>
