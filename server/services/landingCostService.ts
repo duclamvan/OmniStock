@@ -576,6 +576,49 @@ export class LandingCostService {
   }
 
   /**
+   * Allocate with a specific method (user-selected)
+   * Used when the user has explicitly selected an allocation method for the shipment
+   */
+  allocateWithSpecificMethod(
+    items: ItemAllocation[],
+    totalCost: Decimal,
+    method: string
+  ): {
+    allocations: AllocationResult[];
+    method: string;
+    reasoning: string;
+  } {
+    let allocations: AllocationResult[];
+    
+    switch (method) {
+      case 'PER_UNIT':
+        allocations = this.allocateByUnit(items, totalCost);
+        break;
+      case 'CHARGEABLE_WEIGHT':
+        allocations = this.allocateByChargeableWeight(items, totalCost);
+        break;
+      case 'VALUE':
+        allocations = this.allocateByValue(items, totalCost);
+        break;
+      case 'QUANTITY':
+        allocations = this.allocateByQuantity(items, totalCost);
+        break;
+      case 'HYBRID':
+        allocations = this.allocateByHybrid(items, totalCost);
+        break;
+      default:
+        // Fallback to hybrid if method is not recognized
+        allocations = this.allocateByHybrid(items, totalCost);
+    }
+
+    return {
+      allocations,
+      method,
+      reasoning: `User-selected ${method} allocation method`
+    };
+  }
+
+  /**
    * Helper function: Get shipment metrics
    */
   async getShipmentMetrics(shipmentId: number): Promise<{
@@ -969,20 +1012,32 @@ export class LandingCostService {
 
           costSummary[cost.type] = costSummary[cost.type].add(costInBase);
 
-          // Use automatic allocation method selection
-          const shipmentCharacteristics = {
-            unitType: shipment.unitType || undefined,
-            totalWeight: shipment.totalWeight ? Number(shipment.totalWeight) : undefined,
-            totalValue: await this.getShipmentMetrics(shipmentId).then(metrics => metrics.totalValue),
-            itemCount: itemAllocations.length
-          };
+          // Check if user has selected a specific allocation method for this shipment
+          let allocationResult: { allocations: AllocationResult[]; method: string; reasoning: string };
+          
+          if (shipment.allocationMethod) {
+            // Use the user-selected allocation method
+            allocationResult = this.allocateWithSpecificMethod(
+              itemAllocations,
+              costInBase,
+              shipment.allocationMethod
+            );
+          } else {
+            // Fall back to automatic allocation method selection
+            const shipmentCharacteristics = {
+              unitType: shipment.unitType || undefined,
+              totalWeight: shipment.totalWeight ? Number(shipment.totalWeight) : undefined,
+              totalValue: await this.getShipmentMetrics(shipmentId).then(metrics => metrics.totalValue),
+              itemCount: itemAllocations.length
+            };
 
-          const allocationResult = this.allocateWithAutoSelection(
-            itemAllocations,
-            costInBase,
-            cost.type,
-            shipmentCharacteristics
-          );
+            allocationResult = this.allocateWithAutoSelection(
+              itemAllocations,
+              costInBase,
+              cost.type,
+              shipmentCharacteristics
+            );
+          }
 
           const allocations = allocationResult.allocations;
           const basis = allocationResult.method;
