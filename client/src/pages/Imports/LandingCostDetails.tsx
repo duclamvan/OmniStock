@@ -158,30 +158,59 @@ export default function LandingCostDetails() {
     }, {} as Record<string, Product>);
   }, [products]);
 
-  // Initialize price updates when products load
+  // Track if initialization has been done for this data set
+  const [initialized, setInitialized] = useState(false);
+  const initDataRef = useRef<string>('');
+  
+  // Initialize price updates when products load - auto-fill from existing inventory prices
   useEffect(() => {
-    if (landingCostPreview && products && Object.keys(priceUpdates).length === 0) {
-      const initialUpdates: Record<string, PriceUpdate> = {};
-      landingCostPreview.items.forEach(item => {
-        const product = productsBySKU[item.sku];
-        if (product) {
-          const priceEUR = parseFloat(product.priceEur || product.price || '0');
-          const priceCZK = parseFloat(product.priceCzk || '0') || convertCurrency(priceEUR, 'EUR', 'CZK');
+    if (!landingCostPreview || !products) return;
+    
+    // Create a unique key for this data set to detect changes
+    const dataKey = `${landingCostPreview.shipmentId}-${products.length}-${landingCostPreview.items.map(i => i.sku).join(',')}`;
+    
+    // Only initialize if data has changed or not yet initialized
+    if (dataKey === initDataRef.current && initialized) return;
+    
+    const initialUpdates: Record<string, PriceUpdate> = {};
+    let hasUpdates = false;
+    
+    landingCostPreview.items.forEach(item => {
+      const product = productsBySKU[item.sku];
+      // Check if we already have a price update for this item (user-entered)
+      const existingUpdate = priceUpdates[item.sku];
+      
+      // Only initialize if:
+      // 1. Product exists in inventory AND
+      // 2. Either no existing update OR existing update has no user changes
+      if (product && (!existingUpdate || !existingUpdate.hasChanged)) {
+        const priceEUR = parseFloat(product.priceEur || product.price || '0');
+        const priceCZK = parseFloat(product.priceCzk || '0') || (priceEUR > 0 ? convertCurrency(priceEUR, 'EUR', 'CZK') : 0);
+        
+        // Only update if different from existing or not exists
+        if (!existingUpdate || 
+            existingUpdate.priceEUR !== priceEUR || 
+            existingUpdate.priceCZK !== priceCZK) {
           initialUpdates[item.sku] = {
             productId: product.id,
             sku: item.sku,
             priceEUR,
             priceCZK,
             hasChanged: false,
-            version: 0
+            version: existingUpdate?.version ?? 0
           };
+          hasUpdates = true;
         }
-      });
-      if (Object.keys(initialUpdates).length > 0) {
-        setPriceUpdates(initialUpdates);
       }
+    });
+    
+    if (hasUpdates) {
+      setPriceUpdates(prev => ({ ...prev, ...initialUpdates }));
     }
-  }, [landingCostPreview, products, productsBySKU]);
+    
+    initDataRef.current = dataKey;
+    setInitialized(true);
+  }, [landingCostPreview, products, productsBySKU, initialized]);
   
   // Cleanup debounce timers on unmount
   useEffect(() => {
