@@ -1,0 +1,30 @@
+{
+  "period": "weekly",
+  "startDate": "2025-11-29T00:00:00.000Z",
+  "endDate": "2025-12-06T23:59:59.999Z",
+  "generatedAt": "2025-12-06T14:41:15.452Z",
+  "summary": {
+    "totalOrders": 0,
+    "completedOrders": 0,
+    "pendingOrders": 0,
+    "cancelledOrders": 0,
+    "totalRevenue": 0,
+    "totalItemsSold": 0,
+    "averageOrderValue": 0,
+    "newCustomers": 0
+  },
+  "inventory": {
+    "totalProducts": 45,
+    "lowStockProducts": 0,
+    "outOfStockProducts": 1,
+    "stockAdjustments": 0,
+    "itemsReceived": 0
+  },
+  "topProducts": [],
+  "topCustomers": [],
+  "financials": {
+    "totalExpenses": 0,
+    "grossProfit": 0,
+    "expensesByCategory": {}
+  }
+}

@@ -1492,36 +1492,41 @@ export default function POS() {
                   <span className="tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
                 </Button>
                 
-                {/* Quick Cash Amounts - Show 5 rounded options */}
+                {/* Rounded to nearest integer */}
                 {(() => {
-                  const roundedAmounts = [];
-                  const baseAmounts = currency === 'EUR' 
-                    ? [20, 50, 100, 200, 500] 
-                    : [100, 200, 500, 1000, 2000];
-                  
-                  for (const amt of baseAmounts) {
-                    if (amt >= total && roundedAmounts.length < 5) {
-                      roundedAmounts.push(amt);
-                    }
+                  const roundedUp = Math.ceil(total);
+                  if (roundedUp > total) {
+                    return (
+                      <Button
+                        variant={cashReceived === roundedUp.toString() ? "default" : "outline"}
+                        className="h-16 text-lg font-bold"
+                        onClick={() => setCashReceived(roundedUp.toString())}
+                        data-testid={`button-quick-cash-${roundedUp}`}
+                      >
+                        {roundedUp} {currencySymbol}
+                      </Button>
+                    );
                   }
-                  
-                  // If no amounts greater than total, show amounts around the total
-                  if (roundedAmounts.length === 0) {
-                    const nearestUp = Math.ceil(total / (currency === 'EUR' ? 50 : 500)) * (currency === 'EUR' ? 50 : 500);
-                    roundedAmounts.push(nearestUp, nearestUp * 2);
+                  return null;
+                })()}
+                
+                {/* Rounded to nearest 10 */}
+                {(() => {
+                  const roundedUp10 = Math.ceil(total / 10) * 10;
+                  const roundedUp = Math.ceil(total);
+                  if (roundedUp10 > roundedUp) {
+                    return (
+                      <Button
+                        variant={cashReceived === roundedUp10.toString() ? "default" : "outline"}
+                        className="h-16 text-lg font-bold"
+                        onClick={() => setCashReceived(roundedUp10.toString())}
+                        data-testid={`button-quick-cash-${roundedUp10}`}
+                      >
+                        {roundedUp10} {currencySymbol}
+                      </Button>
+                    );
                   }
-                  
-                  return roundedAmounts.slice(0, 5).map((amount) => (
-                    <Button
-                      key={amount}
-                      variant={cashReceived === amount.toString() ? "default" : "outline"}
-                      className="h-16 text-lg font-bold"
-                      onClick={() => setCashReceived(amount.toString())}
-                      data-testid={`button-quick-cash-${amount}`}
-                    >
-                      {amount} {currencySymbol}
-                    </Button>
-                  ));
+                  return null;
                 })()}
               </div>
               
