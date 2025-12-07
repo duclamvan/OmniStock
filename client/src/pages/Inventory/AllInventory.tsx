@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ import {
 
 export default function AllInventory() {
   const { t } = useTranslation(['inventory', 'common']);
+  usePageTitle('Inventory');
   const { toast } = useToast();
   const { canViewImportCost } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");

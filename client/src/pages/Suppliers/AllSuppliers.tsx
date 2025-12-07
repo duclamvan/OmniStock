@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function AllSuppliers() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
+  usePageTitle('Suppliers');
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);

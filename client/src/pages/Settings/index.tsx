@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield } from "lucide-react";
 import GeneralSettings from "./GeneralSettings";
@@ -13,6 +14,7 @@ import RolesSettings from "./RolesSettings";
 export default function Settings() {
   const [location, navigate] = useLocation();
   const { t } = useTranslation(['settings', 'common', 'system']);
+  usePageTitle('Settings');
   const tab = location.split("/")[2] || "general";
 
   return (

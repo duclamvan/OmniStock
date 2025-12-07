@@ -56,6 +56,7 @@ import type { Product, Customer, Category } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { soundEffects } from '@/utils/soundEffects';
 
 interface CartItem {
@@ -307,6 +308,7 @@ function NumPad({ value, onChange, onSubmit, label }: {
 
 export default function POS() {
   const { t } = useTranslation(['common', 'orders', 'products', 'financial']);
+  usePageTitle('Point of Sale');
   const { toast } = useToast();
   const { financialHelpers } = useSettings();
   

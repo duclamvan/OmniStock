@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LogIn, UserPlus, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Progress } from "@/components/ui/progress";
 
 const loginSchema = z.object({
@@ -39,6 +40,7 @@ type CreateAdminFormValues = z.infer<typeof createAdminSchema>;
 export default function Login() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  usePageTitle('Login');
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [redirectProgress, setRedirectProgress] = useState(0);

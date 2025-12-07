@@ -49,6 +49,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { 
   Dialog, 
   DialogContent, 
@@ -1620,6 +1621,7 @@ function PickingListView({
 
 export default function PickPack() {
   const { t } = useTranslation('orders');
+  usePageTitle('Pick & Pack');
   const { toast } = useToast();
   const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
