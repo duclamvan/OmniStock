@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from 'react-i18next';
-import { usePageTitle } from '@/hooks/usePageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +41,6 @@ import {
 
 export default function AllCustomers() {
   const { t } = useTranslation(['customers', 'common']);
-  usePageTitle('Customers');
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

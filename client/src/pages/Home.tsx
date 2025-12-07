@@ -35,7 +35,6 @@ import {
 import { Link } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { useTranslation } from 'react-i18next';
-import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface DashboardMetrics {
   fulfillOrdersToday: number;
@@ -102,7 +101,6 @@ interface ActivityLog {
 
 export default function Home() {
   const { t } = useTranslation(['common', 'dashboard']);
-  usePageTitle('Dashboard');
   
   // Fetch dashboard metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({

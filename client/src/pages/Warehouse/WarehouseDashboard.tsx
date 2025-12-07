@@ -30,7 +30,6 @@ import { useState, useEffect } from 'react';
 import { Link } from "wouter";
 import { formatDate } from "@/lib/currencyUtils";
 import { useTranslation } from 'react-i18next';
-import { usePageTitle } from '@/hooks/usePageTitle';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -84,7 +83,6 @@ interface WarehouseDashboardData {
 
 export default function WarehouseDashboard() {
   const { t } = useTranslation(['common', 'warehouse']);
-  usePageTitle('Warehouse Dashboard');
   const { toast } = useToast();
   const { isAdministrator } = useAuth();
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('');

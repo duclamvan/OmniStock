@@ -1,6 +1,5 @@
 import { useLocation, Link } from "wouter";
 import { useTranslation } from 'react-i18next';
-import { usePageTitle } from '@/hooks/usePageTitle';
 import { ReportsProvider } from "@/contexts/ReportsContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -33,7 +32,6 @@ import ExpenseReports from "./ExpenseReports";
 export default function ReportsIndex() {
   const [location, setLocation] = useLocation();
   const { t } = useTranslation('reports');
-  usePageTitle('Reports');
 
   const reportTabs = [
     { value: '/reports', label: t('overview'), shortLabel: t('overview'), icon: LayoutDashboard },
