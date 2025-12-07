@@ -10,7 +10,6 @@ import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 // Removed auth imports
 import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { PageTitle } from "@/components/PageTitle";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { LocalizationProvider } from "@/contexts/LocalizationContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -475,7 +474,6 @@ function AppContent() {
   
   return (
     <>
-      <PageTitle />
       <OfflineIndicator />
       <Toaster />
       <Router />
