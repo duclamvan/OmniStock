@@ -2567,13 +2567,33 @@ export default function PickPack() {
   });
 
   // Query for order cartons
-  const { data: orderCartons = [], refetch: refetchCartons } = useQuery<OrderCarton[]>({
+  const { data: orderCartons = [], refetch: refetchCartons, isFetching: isFetchingCartons } = useQuery<OrderCarton[]>({
     queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'],
     enabled: !!activePackingOrder?.id,
     staleTime: 0, // Always refetch when invalidated (important for real-time tracking number updates)
     gcTime: 0, // Don't cache at all - always fetch fresh data
     refetchOnMount: 'always', // Always refetch when component mounts
   });
+  
+  // Track the previous order ID to detect order changes and reset state
+  const prevActivePackingOrderId = useRef<string | null>(null);
+  
+  // Reset auto-apply state when switching to a DIFFERENT order to prevent race conditions
+  useEffect(() => {
+    const currentOrderId = activePackingOrder?.id || null;
+    
+    if (prevActivePackingOrderId.current !== currentOrderId) {
+      // Order changed - reset state flags to allow fresh evaluation
+      if (currentOrderId) {
+        console.log(`🔄 Order changed from ${prevActivePackingOrderId.current} to ${currentOrderId} - resetting auto-apply state`);
+        setHasAutoAppliedSuggestions(false);
+        setHasManuallyModifiedCartons(false);
+        setIsCreatingCartons(false);
+        setIsRecalculating(false);
+      }
+      prevActivePackingOrderId.current = currentOrderId;
+    }
+  }, [activePackingOrder?.id]);
 
   // Track which orders we've done initial load for (to merge localStorage with DB on first load only)
   const initialLoadedOrders = useRef(new Set<string>());
@@ -2788,7 +2808,8 @@ export default function PickPack() {
       hasManualMods: hasManuallyModifiedCartons,
       orderCartonsCount: orderCartons.length,
       localCartonsCount: cartons.length,
-      aiEnabled: aiCartonPackingEnabled
+      aiEnabled: aiCartonPackingEnabled,
+      isFetchingCartons: isFetchingCartons
     });
 
     if (!aiCartonPackingEnabled) {
@@ -2797,6 +2818,13 @@ export default function PickPack() {
     }
 
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
+      return;
+    }
+
+    // CRITICAL: Don't auto-apply while cartons query is still fetching
+    // This prevents race condition where orderCartons.length is 0 before data loads
+    if (isFetchingCartons) {
+      console.log('⏸️ Cartons query still fetching, waiting for data before auto-apply');
       return;
     }
 
@@ -2886,7 +2914,7 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, hasManuallyModifiedCartons, aiCartonPackingEnabled]);
+  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, hasManuallyModifiedCartons, aiCartonPackingEnabled, isFetchingCartons]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({

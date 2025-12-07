@@ -11860,6 +11860,16 @@ Important:
         orderId
       });
 
+      // SERVER-SIDE DUPLICATE PREVENTION: Check if a carton with the same cartonNumber already exists
+      const existingCartons = await storage.getOrderCartons(orderId);
+      const duplicateCarton = existingCartons.find(c => c.cartonNumber === cartonData.cartonNumber);
+      
+      if (duplicateCarton) {
+        console.log(`⚠️ Duplicate carton prevented: Order ${orderId} already has carton #${cartonData.cartonNumber}`);
+        // Return the existing carton instead of creating a duplicate
+        return res.json(duplicateCarton);
+      }
+
       const carton = await storage.createOrderCarton(cartonData);
       res.json(carton);
     } catch (error) {
