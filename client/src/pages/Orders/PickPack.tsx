@@ -9152,24 +9152,15 @@ export default function PickPack() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
-                  {/* DHL Link Button */}
-                  <Button
-                    variant="default"
-                    className="w-full bg-yellow-50 dark:bg-yellow-900/300 hover:bg-yellow-600 text-black font-semibold"
-                    onClick={() => {
-                      window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
-                    }}
-                    data-testid="button-dhl-website"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    {t('createLabelOnDhlWebsite')}
-                  </Button>
-                  
-                  {/* DHL Autofill Preparation Button */}
+                  {/* Unified DHL Button - Opens website + Prepares autofill */}
                   <div className="flex gap-2">
                     <Button
-                      variant={dhlAutofillPrepared ? "outline" : "default"}
-                      className={`flex-1 ${dhlAutofillPrepared ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100' : 'bg-yellow-100 hover:bg-yellow-200 text-black'}`}
+                      variant="default"
+                      className={`flex-1 font-semibold ${
+                        dhlAutofillPrepared 
+                          ? 'bg-green-500 hover:bg-green-600 text-white' 
+                          : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                      }`}
                       onClick={() => {
                         const bankData = dhlBankDetails?.value || dhlBankDetails;
                         const autofillData: DHLAutofillData = {
@@ -9209,24 +9200,26 @@ export default function PickPack() {
                         const bookmarkletCode = generateBookmarkletCodeWithData(autofillData);
                         setDhlBookmarkletCode(bookmarkletCode);
                         setDhlAutofillPrepared(true);
-                        setShowDHLBookmarkletDialog(true);
+                        
+                        window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
+                        
                         toast({
                           title: t('dhlAutofillPrepared'),
-                          description: t('dhlAutofillReadyDescription'),
-                          duration: 3000
+                          description: t('dhlAutofillOpenedDescription'),
+                          duration: 5000
                         });
                       }}
-                      data-testid="button-prepare-dhl-autofill"
+                      data-testid="button-dhl-create-label"
                     >
                       {dhlAutofillPrepared ? (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          {t('dhlAutofillReady')}
+                          {t('openDhlAgain')}
                         </>
                       ) : (
                         <>
-                          <Zap className="h-4 w-4 mr-2" />
-                          {t('prepareDhlAutofill')}
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {t('createLabelOnDhlWebsite')}
                         </>
                       )}
                     </Button>
@@ -9235,11 +9228,51 @@ export default function PickPack() {
                       size="icon"
                       className="border-yellow-400 hover:bg-yellow-100"
                       onClick={() => setShowDHLBookmarkletDialog(true)}
+                      title={t('setupInstructions')}
                       data-testid="button-dhl-bookmarklet-help"
                     >
                       <Info className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  {/* Bookmarklet Code Section - Show after first click */}
+                  {dhlAutofillPrepared && dhlBookmarkletCode && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-semibold text-green-800 dark:text-green-200">{t('autofillReady')}</span>
+                      </div>
+                      <p className="text-xs text-green-700 dark:text-green-300">{t('copyBookmarkletInstructions')}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-green-400 bg-white hover:bg-green-100 text-green-700"
+                          onClick={() => {
+                            navigator.clipboard.writeText(dhlBookmarkletCode);
+                            toast({
+                              title: t('copied'),
+                              description: t('bookmarkletCodeCopied'),
+                              duration: 2000
+                            });
+                          }}
+                          data-testid="button-copy-bookmarklet-inline"
+                        >
+                          <Copy className="h-3.5 w-3.5 mr-1.5" />
+                          {t('copyBookmarklet')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                          onClick={() => setShowDHLBookmarkletDialog(true)}
+                          data-testid="button-view-full-instructions"
+                        >
+                          {t('fullInstructions')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Shipping Details - Collapsible */}
                   <div className="space-y-4">

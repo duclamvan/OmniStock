@@ -1703,6 +1703,15 @@ const orders = {
   bookmarkletNote2: 'The bookmarklet works on both Product Selection and Address Input pages - click it on each page.',
   bookmarkletNote3: 'If fields are not filled, refresh the DHL page and try clicking the bookmark again.',
   
+  // DHL Unified Button
+  openDhlAgain: 'Open DHL Again',
+  dhlAutofillOpenedDescription: 'DHL website opened. Copy the bookmarklet code below and use it to autofill.',
+  autofillReady: 'Autofill Ready',
+  copyBookmarkletInstructions: 'Copy the bookmarklet code, add it to your browser bookmarks, then click it on the DHL page to autofill.',
+  copyBookmarklet: 'Copy Bookmarklet',
+  fullInstructions: 'Full Instructions',
+  setupInstructions: 'Setup Instructions',
+  
 } as const;
 
 export default orders;

@@ -1674,6 +1674,15 @@ const orders = {
   bookmarkletNote2: 'Bookmarklet hoạt động trên cả trang Chọn sản phẩm và Nhập địa chỉ - nhấp vào nó trên mỗi trang.',
   bookmarkletNote3: 'Nếu các trường không được điền, làm mới trang DHL và thử nhấp bookmark lại.',
   
+  // DHL Unified Button
+  openDhlAgain: 'Mở lại DHL',
+  dhlAutofillOpenedDescription: 'Trang DHL đã mở. Sao chép mã bookmarklet bên dưới và sử dụng để tự động điền.',
+  autofillReady: 'Autofill Sẵn sàng',
+  copyBookmarkletInstructions: 'Sao chép mã bookmarklet, thêm vào bookmark trình duyệt, sau đó nhấp vào nó trên trang DHL để tự động điền.',
+  copyBookmarklet: 'Sao chép Bookmarklet',
+  fullInstructions: 'Hướng dẫn Chi tiết',
+  setupInstructions: 'Hướng dẫn Cài đặt',
+  
 } as const;
 
 export default orders;
