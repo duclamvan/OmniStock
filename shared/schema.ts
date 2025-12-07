@@ -17,7 +17,7 @@ import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 
 // db/schema.ts
-export const sessions = pgTable("session", {
+export const sessions = pgTable("sessions", {
   sid: varchar("sid").primaryKey().notNull(),
   sess: json("sess").notNull(),
   expire: timestamp("expire", { precision: 6 }).notNull(),
