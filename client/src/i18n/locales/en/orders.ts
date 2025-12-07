@@ -1650,6 +1650,24 @@ const orders = {
   trackingHistory: 'Tracking History',
   estimatedDelivery: 'Estimated Delivery',
   
+  // DHL Bookmarklet Autofill
+  prepareDhlAutofill: 'Prepare DHL Autofill',
+  dhlAutofillReady: 'DHL Autofill Ready',
+  dhlAutofillPrepared: 'DHL Autofill Prepared',
+  dhlAutofillReadyDescription: 'Data saved. Open DHL website and click your bookmarklet to autofill.',
+  dhlBookmarkletTitle: 'DHL Autofill Bookmarklet Setup',
+  dhlBookmarkletDescription: 'Set up a browser bookmark to automatically fill DHL shipping forms with order data.',
+  dhlBookmarkletStep1Title: 'Prepare Order Data',
+  dhlBookmarkletStep1Desc: 'Click "Prepare DHL Autofill" button to save the current order data for autofill.',
+  dhlBookmarkletStep2Title: 'Create Bookmarklet',
+  dhlBookmarkletStep2Desc: 'Copy the code below and create a new browser bookmark. Paste this code as the URL/Location field.',
+  dhlBookmarkletStep3Title: 'Open DHL Website',
+  dhlBookmarkletStep3Desc: 'Navigate to DHL Online Frankieren (Product Selection page or Address Input page).',
+  dhlBookmarkletStep4Title: 'Click Your Bookmarklet',
+  dhlBookmarkletStep4Desc: 'Click the bookmarklet from your bookmarks bar. It will automatically fill all form fields!',
+  dhlBookmarkletNote: 'The bookmarklet works on both the Product Selection page (country, package size, COD) and the Address Input page (recipient/sender details). Click it on each page to fill the forms.',
+  bookmarkletCodeCopied: 'Bookmarklet code copied to clipboard',
+  
 } as const;
 
 export default orders;

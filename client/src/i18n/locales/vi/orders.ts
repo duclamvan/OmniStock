@@ -1621,6 +1621,24 @@ const orders = {
   trackingHistory: 'Lịch sử Theo dõi',
   estimatedDelivery: 'Dự kiến Giao hàng',
   
+  // DHL Bookmarklet Autofill
+  prepareDhlAutofill: 'Chuẩn bị DHL Autofill',
+  dhlAutofillReady: 'DHL Autofill Sẵn sàng',
+  dhlAutofillPrepared: 'Đã chuẩn bị DHL Autofill',
+  dhlAutofillReadyDescription: 'Dữ liệu đã lưu. Mở trang DHL và nhấp bookmark để tự động điền.',
+  dhlBookmarkletTitle: 'Cài đặt DHL Autofill Bookmarklet',
+  dhlBookmarkletDescription: 'Thiết lập bookmark trình duyệt để tự động điền biểu mẫu vận chuyển DHL với dữ liệu đơn hàng.',
+  dhlBookmarkletStep1Title: 'Chuẩn bị dữ liệu đơn hàng',
+  dhlBookmarkletStep1Desc: 'Nhấp nút "Chuẩn bị DHL Autofill" để lưu dữ liệu đơn hàng hiện tại.',
+  dhlBookmarkletStep2Title: 'Tạo Bookmarklet',
+  dhlBookmarkletStep2Desc: 'Sao chép mã bên dưới và tạo bookmark mới trong trình duyệt. Dán mã này vào trường URL/Location.',
+  dhlBookmarkletStep3Title: 'Mở trang DHL',
+  dhlBookmarkletStep3Desc: 'Truy cập DHL Online Frankieren (trang Chọn sản phẩm hoặc trang Nhập địa chỉ).',
+  dhlBookmarkletStep4Title: 'Nhấp Bookmarklet',
+  dhlBookmarkletStep4Desc: 'Nhấp bookmarklet từ thanh bookmark. Nó sẽ tự động điền tất cả các trường!',
+  dhlBookmarkletNote: 'Bookmarklet hoạt động trên cả trang Chọn sản phẩm (quốc gia, kích thước gói, COD) và trang Nhập địa chỉ (người nhận/người gửi). Nhấp vào nó trên mỗi trang để điền biểu mẫu.',
+  bookmarkletCodeCopied: 'Đã sao chép mã bookmarklet vào clipboard',
+  
 } as const;
 
 export default orders;

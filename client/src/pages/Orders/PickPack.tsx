@@ -48,6 +48,7 @@ import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
+import { saveDHLAutofillData, generateBookmarkletCode, COUNTRY_TO_GERMAN, type DHLAutofillData } from "@/lib/dhlBookmarklet";
 import { useTranslation } from 'react-i18next';
 import { 
   Dialog, 
@@ -1799,6 +1800,10 @@ export default function PickPack() {
     gls: true,           // GLS section
     unified: true        // Unified shipping labels section
   });
+  
+  // DHL Bookmarklet dialog state
+  const [showDHLBookmarkletDialog, setShowDHLBookmarkletDialog] = useState(false);
+  const [dhlAutofillPrepared, setDhlAutofillPrepared] = useState(false);
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
     cartonId: string;
@@ -9154,6 +9159,80 @@ export default function PickPack() {
                     <ExternalLink className="h-4 w-4 mr-2" />
                     {t('createLabelOnDhlWebsite')}
                   </Button>
+                  
+                  {/* DHL Autofill Preparation Button */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={dhlAutofillPrepared ? "outline" : "default"}
+                      className={`flex-1 ${dhlAutofillPrepared ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100' : 'bg-yellow-100 hover:bg-yellow-200 text-black'}`}
+                      onClick={() => {
+                        const bankData = dhlBankDetails?.value || dhlBankDetails;
+                        const autofillData: DHLAutofillData = {
+                          orderId: activePackingOrder.orderId || '',
+                          recipient: {
+                            firstName: recipientData.firstName,
+                            lastName: recipientData.lastName,
+                            addressSupplement: recipientData.addressSupplement,
+                            street: recipientData.street,
+                            houseNumber: recipientData.houseNumber,
+                            postalCode: recipientData.postalCode,
+                            city: recipientData.city,
+                            country: COUNTRY_TO_GERMAN[recipientData.country] || recipientData.country,
+                            email: recipientData.email,
+                          },
+                          sender: senderData ? {
+                            firstName: senderData.firstName,
+                            lastName: senderData.lastName,
+                            addressSupplement: senderData.addressSupplement,
+                            street: senderData.street,
+                            houseNumber: senderData.houseNumber,
+                            postalCode: senderData.postalCode,
+                            city: senderData.city,
+                            country: COUNTRY_TO_GERMAN[senderData.country] || senderData.country,
+                            email: senderData.email,
+                          } : undefined,
+                          packageSize: highlightedSize as '2kg' | '5kg' | '10kg' | '20kg',
+                          codEnabled: showCOD,
+                          codAmount: codAmount,
+                          bankDetails: bankData ? {
+                            iban: bankData.iban || '',
+                            bic: bankData.bic || '',
+                            accountHolder: bankData.accountHolder || '',
+                          } : undefined,
+                          timestamp: Date.now(),
+                        };
+                        saveDHLAutofillData(autofillData);
+                        setDhlAutofillPrepared(true);
+                        toast({
+                          title: t('dhlAutofillPrepared'),
+                          description: t('dhlAutofillReadyDescription'),
+                          duration: 3000
+                        });
+                      }}
+                      data-testid="button-prepare-dhl-autofill"
+                    >
+                      {dhlAutofillPrepared ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {t('dhlAutofillReady')}
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          {t('prepareDhlAutofill')}
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="border-yellow-400 hover:bg-yellow-100"
+                      onClick={() => setShowDHLBookmarkletDialog(true)}
+                      data-testid="button-dhl-bookmarklet-help"
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </div>
 
                   {/* Shipping Details - Collapsible */}
                   <div className="space-y-4">
@@ -15469,6 +15548,103 @@ export default function PickPack() {
             >
               <FileText className="h-4 w-4 mr-2" />
               {t('downloadPDF')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* DHL Bookmarklet Instructions Dialog */}
+      <Dialog open={showDHLBookmarkletDialog} onOpenChange={setShowDHLBookmarkletDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-600" />
+              {t('dhlBookmarkletTitle')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('dhlBookmarkletDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">1</span>
+                {t('dhlBookmarkletStep1Title')}
+              </h4>
+              <p className="text-sm text-gray-600 pl-8">
+                {t('dhlBookmarkletStep1Desc')}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">2</span>
+                {t('dhlBookmarkletStep2Title')}
+              </h4>
+              <p className="text-sm text-gray-600 pl-8">
+                {t('dhlBookmarkletStep2Desc')}
+              </p>
+              <div className="pl-8">
+                <div className="relative">
+                  <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-x-auto font-mono max-h-32 overflow-y-auto">
+                    {generateBookmarkletCode()}
+                  </pre>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generateBookmarkletCode());
+                      toast({
+                        title: t('copied'),
+                        description: t('bookmarkletCodeCopied'),
+                        duration: 2000
+                      });
+                    }}
+                    data-testid="button-copy-bookmarklet"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" />
+                    {t('copy')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">3</span>
+                {t('dhlBookmarkletStep3Title')}
+              </h4>
+              <p className="text-sm text-gray-600 pl-8">
+                {t('dhlBookmarkletStep3Desc')}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold">4</span>
+                {t('dhlBookmarkletStep4Title')}
+              </h4>
+              <p className="text-sm text-gray-600 pl-8">
+                {t('dhlBookmarkletStep4Desc')}
+              </p>
+            </div>
+            
+            <Alert className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-200">
+                {t('dhlBookmarkletNote')}
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDHLBookmarkletDialog(false)}
+            >
+              {t('close')}
             </Button>
           </div>
         </DialogContent>
