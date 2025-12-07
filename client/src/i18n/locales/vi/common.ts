@@ -660,7 +660,6 @@ const common = {
     sending: 'Đang gửi...',
     verifying: 'Đang xác minh...',
     processing: 'Đang xử lý...',
-    loggingIn: 'Đang đăng nhập...',
     creatingAccount: 'Đang tạo tài khoản...',
     
     // Success Messages

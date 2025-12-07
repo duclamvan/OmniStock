@@ -706,7 +706,6 @@ const common = {
     sending: 'Sending...',
     verifying: 'Verifying...',
     processing: 'Processing...',
-    loggingIn: 'Logging in...',
     creatingAccount: 'Creating account...',
     
     // Success Messages

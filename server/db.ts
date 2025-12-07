@@ -1,18 +1,31 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pg from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+// Build connection from PG* environment variables (direct Neon connection)
+const pgHost = process.env.PGHOST;
+const pgPort = process.env.PGPORT || '5432';
+const pgUser = process.env.PGUSER;
+const pgPassword = process.env.PGPASSWORD;
+const pgDatabase = process.env.PGDATABASE;
+
+if (!pgHost || !pgUser || !pgPassword || !pgDatabase) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "Database credentials (PGHOST, PGUSER, PGPASSWORD, PGDATABASE) must be set.",
   );
 }
 
-export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 10000, // 10 seconds for Neon cold starts
+// Build connection string from PG* variables
+const connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require`;
+
+// Use standard pg driver with direct Neon connection
+export const pool = new Pool({
+  connectionString,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
-export const db = drizzle({ client: pool, schema });
+
+export const db = drizzle(pool, { schema });

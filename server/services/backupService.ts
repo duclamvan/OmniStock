@@ -279,62 +279,92 @@ export async function deleteBackup(id: number): Promise<boolean> {
 }
 
 export async function cleanupExpiredBackups(): Promise<number> {
-  const now = new Date();
-  
-  const expiredBackups = await db.select()
-    .from(databaseBackups)
-    .where(lte(databaseBackups.expiresAt, now));
-  
-  let deletedCount = 0;
-  
-  for (const backup of expiredBackups) {
-    if (backup.filePath && fs.existsSync(backup.filePath)) {
-      try {
-        fs.unlinkSync(backup.filePath);
-        console.log(`🗑️ Cleaned up expired backup: ${backup.fileName}`);
-      } catch (error) {
-        console.error(`Failed to delete backup file ${backup.filePath}:`, error);
+  try {
+    const now = new Date();
+    
+    const expiredBackups = await db.select()
+      .from(databaseBackups)
+      .where(lte(databaseBackups.expiresAt, now));
+    
+    let deletedCount = 0;
+    
+    for (const backup of expiredBackups) {
+      if (backup.filePath && fs.existsSync(backup.filePath)) {
+        try {
+          fs.unlinkSync(backup.filePath);
+          console.log(`🗑️ Cleaned up expired backup: ${backup.fileName}`);
+        } catch (error) {
+          console.error(`Failed to delete backup file ${backup.filePath}:`, error);
+        }
       }
+      
+      await db.delete(databaseBackups).where(eq(databaseBackups.id, backup.id));
+      deletedCount++;
     }
     
-    await db.delete(databaseBackups).where(eq(databaseBackups.id, backup.id));
-    deletedCount++;
+    if (deletedCount > 0) {
+      console.log(`🧹 Cleaned up ${deletedCount} expired backups`);
+    }
+    
+    return deletedCount;
+  } catch (error: any) {
+    if (error?.code === '42P01') {
+      console.log('⚠️ Backup table not available - skipping cleanup');
+      return 0;
+    }
+    throw error;
   }
-  
-  if (deletedCount > 0) {
-    console.log(`🧹 Cleaned up ${deletedCount} expired backups`);
-  }
-  
-  return deletedCount;
 }
 
 export async function getLastSuccessfulBackup() {
-  const [backup] = await db.select()
-    .from(databaseBackups)
-    .where(eq(databaseBackups.status, 'completed'))
-    .orderBy(desc(databaseBackups.completedAt))
-    .limit(1);
-  return backup;
+  try {
+    const [backup] = await db.select()
+      .from(databaseBackups)
+      .where(eq(databaseBackups.status, 'completed'))
+      .orderBy(desc(databaseBackups.completedAt))
+      .limit(1);
+    return backup;
+  } catch (error: any) {
+    if (error?.code === '42P01') {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getBackupStats() {
-  const allBackups = await db.select().from(databaseBackups);
-  
-  const completed = allBackups.filter(b => b.status === 'completed');
-  const failed = allBackups.filter(b => b.status === 'failed');
-  const totalSize = completed.reduce((sum, b) => sum + (b.fileSize || 0), 0);
-  
-  const lastBackup = await getLastSuccessfulBackup();
-  
-  return {
-    totalBackups: allBackups.length,
-    completedBackups: completed.length,
-    failedBackups: failed.length,
-    totalSizeBytes: totalSize,
-    totalSizeFormatted: formatBytes(totalSize),
-    lastBackupAt: lastBackup?.completedAt || null,
-    lastBackupFileName: lastBackup?.fileName || null,
-  };
+  try {
+    const allBackups = await db.select().from(databaseBackups);
+    
+    const completed = allBackups.filter(b => b.status === 'completed');
+    const failed = allBackups.filter(b => b.status === 'failed');
+    const totalSize = completed.reduce((sum, b) => sum + (b.fileSize || 0), 0);
+    
+    const lastBackup = await getLastSuccessfulBackup();
+    
+    return {
+      totalBackups: allBackups.length,
+      completedBackups: completed.length,
+      failedBackups: failed.length,
+      totalSizeBytes: totalSize,
+      totalSizeFormatted: formatBytes(totalSize),
+      lastBackupAt: lastBackup?.completedAt || null,
+      lastBackupFileName: lastBackup?.fileName || null,
+    };
+  } catch (error: any) {
+    if (error?.code === '42P01') {
+      return {
+        totalBackups: 0,
+        completedBackups: 0,
+        failedBackups: 0,
+        totalSizeBytes: 0,
+        totalSizeFormatted: '0 B',
+        lastBackupAt: null,
+        lastBackupFileName: null,
+      };
+    }
+    throw error;
+  }
 }
 
 function formatBytes(bytes: number): string {
@@ -351,7 +381,13 @@ let lastAutoBackupCheck: Date | null = null;
 export async function startBackupScheduler() {
   console.log('🔄 Starting backup scheduler...');
   
-  await cleanupExpiredBackups();
+  try {
+    await cleanupExpiredBackups();
+  } catch (error: any) {
+    if (error?.code !== '42P01') {
+      console.error('Failed to cleanup expired backups:', error);
+    }
+  }
   
   backupSchedulerInterval = setInterval(async () => {
     try {
@@ -397,17 +433,25 @@ export async function startBackupScheduler() {
       await cleanupExpiredBackups();
       
       lastAutoBackupCheck = now;
-    } catch (error) {
-      console.error('Backup scheduler error:', error);
+    } catch (error: any) {
+      if (error?.code !== '42P01') {
+        console.error('Backup scheduler error:', error);
+      }
     }
   }, 60 * 60 * 1000);
   
-  const settings = await getBackupSettings();
-  if (settings.enabled) {
-    const lastBackup = await getLastSuccessfulBackup();
-    if (!lastBackup) {
-      console.log('📦 No previous backup found, creating initial backup...');
-      await createBackup('auto_daily');
+  try {
+    const settings = await getBackupSettings();
+    if (settings.enabled) {
+      const lastBackup = await getLastSuccessfulBackup();
+      if (!lastBackup) {
+        console.log('📦 No previous backup found, creating initial backup...');
+        await createBackup('auto_daily');
+      }
+    }
+  } catch (error: any) {
+    if (error?.code !== '42P01') {
+      console.error('Failed to check/create initial backup:', error);
     }
   }
   

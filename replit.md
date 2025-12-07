@@ -65,7 +65,7 @@ The following environment variables **must** be set before the server will start
 |----------|----------|-------------|
 | `SESSION_SECRET` | **Yes (always)** | Secret for session encryption. Use a strong random string (32+ chars). |
 | `INITIAL_ADMIN_SETUP_CODE` | **Yes (production)** | Unique setup code for initial admin registration. Required in production, defaults to "1707" in development only. |
-| `DATABASE_URL` | **Yes** | PostgreSQL connection string |
+| `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGPORT` | **Yes** | PostgreSQL connection using individual environment variables. The application constructs the connection string from these variables (NOT DATABASE_URL). |
 | `NODE_ENV` | **Yes** | Set to `production` for production deployment |
 
 ## Optional Environment Variables

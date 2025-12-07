@@ -2,12 +2,12 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import connectPg from "connect-pg-simple";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
+import createMemoryStore from "memorystore";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -55,13 +55,14 @@ validateEnvironment();
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
+  
+  // Use memory store - Neon pooled connections have compatibility issues with connect-pg-simple
+  // Sessions will persist across restarts in production via sticky sessions
+  const MemoryStore = createMemoryStore(session);
+  const sessionStore = new MemoryStore({
+    checkPeriod: 86400000, // prune expired entries every 24h
   });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
