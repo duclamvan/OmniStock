@@ -48,7 +48,7 @@ import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
-import { saveDHLAutofillData, generateBookmarkletCode, COUNTRY_TO_GERMAN, type DHLAutofillData } from "@/lib/dhlBookmarklet";
+import { generateBookmarkletCodeWithData, COUNTRY_TO_GERMAN, type DHLAutofillData } from "@/lib/dhlBookmarklet";
 import { useTranslation } from 'react-i18next';
 import { 
   Dialog, 
@@ -1804,6 +1804,7 @@ export default function PickPack() {
   // DHL Bookmarklet dialog state
   const [showDHLBookmarkletDialog, setShowDHLBookmarkletDialog] = useState(false);
   const [dhlAutofillPrepared, setDhlAutofillPrepared] = useState(false);
+  const [dhlBookmarkletCode, setDhlBookmarkletCode] = useState<string>('');
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
     cartonId: string;
@@ -2595,6 +2596,9 @@ export default function PickPack() {
         setHasManuallyModifiedCartons(false);
         setIsCreatingCartons(false);
         setIsRecalculating(false);
+        // Clear stale DHL bookmarklet state when switching orders
+        setDhlAutofillPrepared(false);
+        setDhlBookmarkletCode('');
       }
       prevActivePackingOrderId.current = currentOrderId;
     }
@@ -9201,8 +9205,10 @@ export default function PickPack() {
                           } : undefined,
                           timestamp: Date.now(),
                         };
-                        saveDHLAutofillData(autofillData);
+                        const bookmarkletCode = generateBookmarkletCodeWithData(autofillData);
+                        setDhlBookmarkletCode(bookmarkletCode);
                         setDhlAutofillPrepared(true);
+                        setShowDHLBookmarkletDialog(true);
                         toast({
                           title: t('dhlAutofillPrepared'),
                           description: t('dhlAutofillReadyDescription'),
@@ -15588,20 +15594,23 @@ export default function PickPack() {
               <div className="pl-8">
                 <div className="relative">
                   <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-x-auto font-mono max-h-32 overflow-y-auto">
-                    {generateBookmarkletCode()}
+                    {dhlBookmarkletCode || t('clickPrepareFirst')}
                   </pre>
                   <Button
                     variant="outline"
                     size="sm"
                     className="absolute top-2 right-2"
                     onClick={() => {
-                      navigator.clipboard.writeText(generateBookmarkletCode());
-                      toast({
-                        title: t('copied'),
-                        description: t('bookmarkletCodeCopied'),
-                        duration: 2000
-                      });
+                      if (dhlBookmarkletCode) {
+                        navigator.clipboard.writeText(dhlBookmarkletCode);
+                        toast({
+                          title: t('copied'),
+                          description: t('bookmarkletCodeCopied'),
+                          duration: 2000
+                        });
+                      }
                     }}
+                    disabled={!dhlBookmarkletCode}
                     data-testid="button-copy-bookmarklet"
                   >
                     <Copy className="h-3.5 w-3.5 mr-1" />

@@ -1636,8 +1636,9 @@ const orders = {
   dhlBookmarkletStep3Desc: 'Truy cập DHL Online Frankieren (trang Chọn sản phẩm hoặc trang Nhập địa chỉ).',
   dhlBookmarkletStep4Title: 'Nhấp Bookmarklet',
   dhlBookmarkletStep4Desc: 'Nhấp bookmarklet từ thanh bookmark. Nó sẽ tự động điền tất cả các trường!',
-  dhlBookmarkletNote: 'Bookmarklet hoạt động trên cả trang Chọn sản phẩm (quốc gia, kích thước gói, COD) và trang Nhập địa chỉ (người nhận/người gửi). Nhấp vào nó trên mỗi trang để điền biểu mẫu.',
+  dhlBookmarkletNote: 'Bookmarklet chứa dữ liệu đơn hàng cụ thể và hoạt động trên cả trang Chọn sản phẩm (quốc gia, kích thước gói, COD) và trang Nhập địa chỉ (người nhận/người gửi). Nhấp vào nó trên mỗi trang để điền biểu mẫu.',
   bookmarkletCodeCopied: 'Đã sao chép mã bookmarklet vào clipboard',
+  clickPrepareFirst: 'Nhấp nút "Chuẩn bị DHL Autofill" trước để tạo mã bookmarklet',
   
 } as const;
 

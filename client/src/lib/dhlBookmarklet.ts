@@ -106,12 +106,10 @@ export const COUNTRY_TO_GERMAN: Record<string, string> = {
   'UK': 'Vereinigtes Königreich',
 };
 
-export function generateBookmarkletCode(): string {
+export function generateBookmarkletCodeWithData(data: DHLAutofillData): string {
+  const dataStr = JSON.stringify(data).replace(/'/g, "\\'");
   return `javascript:(function(){
-  var KEY='wms_dhl_autofill_data';
-  var data;
-  try{data=JSON.parse(localStorage.getItem(KEY));}catch(e){alert('No DHL autofill data found. Please prepare data in WMS first.');return;}
-  if(!data){alert('No DHL autofill data found. Please prepare data in WMS first.');return;}
+  var data=${dataStr};
   
   var url=window.location.href;
   var isProductPage=url.includes('ShipmentEditorProductSelection');
@@ -208,26 +206,8 @@ export function generateBookmarkletCode(): string {
 })();`;
 }
 
-export function generateReadableBookmarklet(): string {
-  return `
-/*
- * DHL Autofill Bookmarklet for WMS
- * 
- * INSTALLATION:
- * 1. Create a new bookmark in your browser
- * 2. Name it "DHL Autofill"
- * 3. Copy the minified code below into the URL field
- * 4. Save the bookmark
- * 
- * USAGE:
- * 1. In WMS, click "Prepare DHL Autofill" button
- * 2. Open DHL website: https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html
- * 3. Click your "DHL Autofill" bookmark
- * 4. Navigate to address page and click bookmark again
- * 
- * MINIFIED CODE (copy this into bookmark URL):
- */
-
-${generateBookmarkletCode()}
-`;
+export function generateBookmarkletCode(): string {
+  return `javascript:(function(){
+  alert('This is a template bookmarklet. Please copy the order-specific bookmarklet from your WMS instead.');
+})();`;
 }

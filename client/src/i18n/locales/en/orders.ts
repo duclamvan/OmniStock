@@ -1665,8 +1665,9 @@ const orders = {
   dhlBookmarkletStep3Desc: 'Navigate to DHL Online Frankieren (Product Selection page or Address Input page).',
   dhlBookmarkletStep4Title: 'Click Your Bookmarklet',
   dhlBookmarkletStep4Desc: 'Click the bookmarklet from your bookmarks bar. It will automatically fill all form fields!',
-  dhlBookmarkletNote: 'The bookmarklet works on both the Product Selection page (country, package size, COD) and the Address Input page (recipient/sender details). Click it on each page to fill the forms.',
+  dhlBookmarkletNote: 'The bookmarklet contains order-specific data and works on both the Product Selection page (country, package size, COD) and the Address Input page (recipient/sender details). Click it on each page to fill the forms.',
   bookmarkletCodeCopied: 'Bookmarklet code copied to clipboard',
+  clickPrepareFirst: 'Click "Prepare DHL Autofill" button first to generate the bookmarklet code',
   
 } as const;
 
