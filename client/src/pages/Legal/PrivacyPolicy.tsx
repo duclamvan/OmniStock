@@ -10,8 +10,8 @@ export default function PrivacyPolicy() {
   const lastUpdated = "December 6, 2025";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 overflow-x-hidden">
+      <div className="container max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="mb-6">
           <Link href="/login">
             <Button variant="ghost" size="sm" className="gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
@@ -22,19 +22,19 @@ export default function PrivacyPolicy() {
         </div>
 
         <Card className="shadow-xl border-0 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-10 text-white">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center">
-                <Shield className="h-7 w-7" />
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 text-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Shield className="h-6 w-6 sm:h-7 sm:w-7" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">{t('legal.privacyPolicy')}</h1>
-                <p className="text-indigo-100 mt-1">{t('legal.lastUpdated')}: {lastUpdated}</p>
+                <h1 className="text-2xl sm:text-3xl font-bold">{t('legal.privacyPolicy')}</h1>
+                <p className="text-indigo-100 mt-1 text-sm sm:text-base">{t('legal.lastUpdated')}: {lastUpdated}</p>
               </div>
             </div>
           </div>
 
-          <CardContent className="px-8 py-8 space-y-8">
+          <CardContent className="px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
             <section>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 {t('legal.privacyIntro')}

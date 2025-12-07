@@ -315,12 +315,12 @@ export default function Bundles() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{t('inventory:productBundles')}</h1>
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('inventory:productBundles')}</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               {t('inventory:createBundle')}
             </Button>
@@ -330,7 +330,7 @@ export default function Bundles() {
               <DialogTitle>{editingBundle ? t('inventory:editBundle') : t('inventory:createNewBundle')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <Label htmlFor="name">{t('inventory:bundleName')}</Label>
                   <Input
@@ -362,7 +362,7 @@ export default function Bundles() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
                   <Label htmlFor="priceCzk">{t('inventory:priceCzk')}</Label>
                   <Input
@@ -563,9 +563,10 @@ export default function Bundles() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <Button
                   variant="outline"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setIsCreateDialogOpen(false);
                     setEditingBundle(null);
@@ -575,6 +576,7 @@ export default function Bundles() {
                   {t('inventory:cancel')}
                 </Button>
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={handleSubmit}
                   disabled={createBundleMutation.isPending || updateBundleMutation.isPending}
                 >

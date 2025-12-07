@@ -169,7 +169,7 @@ export default function AddWarehouse() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
+    <div className="p-2 sm:p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-3 md:pb-4 gap-3">
         <div className="flex items-center gap-2 md:gap-4">

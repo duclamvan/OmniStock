@@ -615,7 +615,7 @@ export default function SupplierProcessing() {
 
   return (
     <TooltipProvider>
-      <div className="px-4 py-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="p-2 sm:p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -1738,7 +1738,7 @@ export default function SupplierProcessing() {
                     />
                     <p className="text-xs text-muted-foreground">{t('oneVariantPerLine')}</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="seriesQuantity">{t('quantityEach')}</Label>
                       <Input

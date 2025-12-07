@@ -911,10 +911,10 @@ export default function CreateBundle() {
   const totals = calculateTotalPrice();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -923,20 +923,22 @@ export default function CreateBundle() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{t('inventory:createNewBundle')}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('inventory:createNewBundle')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {t('inventory:combineProductsIntoBundleOffering')}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col-reverse sm:flex-row gap-2">
           <Button
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => setLocation('/inventory/bundles')}
           >
             {t('inventory:cancel')}
           </Button>
           <Button
+            className="w-full sm:w-auto"
             onClick={handleSubmit}
             disabled={createBundleMutation.isPending}
           >

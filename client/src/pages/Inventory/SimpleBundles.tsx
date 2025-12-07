@@ -74,23 +74,23 @@ export default function SimpleBundles() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold">{t('inventory:productBundles')}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('inventory:productBundles')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('inventory:manageBundledProductOfferings')}
           </p>
         </div>
-        <Button onClick={() => setLocation('/inventory/bundles/create')}>
+        <Button className="w-full sm:w-auto" onClick={() => setLocation('/inventory/bundles/create')}>
           <Plus className="mr-2 h-4 w-4" />
           {t('inventory:createBundle')}
         </Button>
       </div>
 
       {/* Search and View Toggle */}
-      <div className="flex gap-4 items-center">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -132,7 +132,7 @@ export default function SimpleBundles() {
           </CardContent>
         </Card>
       ) : viewMode === 'grid' ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredBundles.map(bundle => (
             <Card key={bundle.id} className="hover:shadow-lg transition-shadow flex flex-col h-full overflow-hidden">
               {/* Bundle Image */}

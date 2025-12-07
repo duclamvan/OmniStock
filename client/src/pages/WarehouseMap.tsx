@@ -536,7 +536,7 @@ export default function WarehouseMap() {
   const isLoading = warehousesLoading || configLoading || locationsLoading;
 
   return (
-    <div className="container mx-auto p-3 md:p-4 space-y-3 md:space-y-4">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 md:space-y-4 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
@@ -863,55 +863,55 @@ export default function WarehouseMap() {
           </Card>
 
           <Card className="border-green-200 dark:border-green-800">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t('warehouse:freeLocations')}</p>
                   {isLoading ? (
-                    <Skeleton className="h-8 w-16 mt-1" />
+                    <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold text-green-700 dark:text-green-400" data-testid="stat-free-locations">
+                    <p className="text-xl md:text-2xl font-bold text-green-700 dark:text-green-400 truncate" data-testid="stat-free-locations">
                       {stats.freeLocations}
                     </p>
                   )}
                 </div>
-                <Package className="h-8 w-8 text-green-300 dark:text-green-700" />
+                <Package className="h-6 w-6 md:h-8 md:w-8 text-green-300 dark:text-green-700 shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-blue-200 dark:border-blue-800">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t('warehouse:occupied')}</p>
                   {isLoading ? (
-                    <Skeleton className="h-8 w-16 mt-1" />
+                    <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400" data-testid="stat-occupied-locations">
+                    <p className="text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-400 truncate" data-testid="stat-occupied-locations">
                       {stats.occupiedLocations}
                     </p>
                   )}
                 </div>
-                <Layers className="h-8 w-8 text-blue-300 dark:text-blue-700" />
+                <Layers className="h-6 w-6 md:h-8 md:w-8 text-blue-300 dark:text-blue-700 shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-purple-200 dark:border-purple-800">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t('warehouse:totalItems')}</p>
                   {isLoading ? (
-                    <Skeleton className="h-8 w-16 mt-1" />
+                    <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400" data-testid="stat-total-items">
+                    <p className="text-xl md:text-2xl font-bold text-purple-700 dark:text-purple-400 truncate" data-testid="stat-total-items">
                       {stats.totalItems}
                     </p>
                   )}
                 </div>
-                <Package className="h-8 w-8 text-purple-300 dark:text-purple-700" />
+                <Package className="h-6 w-6 md:h-8 md:w-8 text-purple-300 dark:text-purple-700 shrink-0" />
               </div>
             </CardContent>
           </Card>

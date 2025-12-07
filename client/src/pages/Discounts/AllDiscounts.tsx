@@ -445,21 +445,21 @@ export default function AllDiscounts() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('discounts:pageTitle')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('discounts:pageSubtitle')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
                 {t('common:export')}
               </Button>
@@ -478,7 +478,7 @@ export default function AllDiscounts() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/discounts/add">
-            <Button data-testid="button-add-discount">
+            <Button className="w-full sm:w-auto" data-testid="button-add-discount">
               <Plus className="h-4 w-4 mr-2" />
               {t('discounts:addDiscount')}
             </Button>
@@ -655,7 +655,7 @@ export default function AllDiscounts() {
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0 sm:p-4 md:p-6 overflow-x-auto">
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredSales?.map((sale: any) => {

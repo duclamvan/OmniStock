@@ -854,27 +854,27 @@ export default function POS() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-100 dark:bg-gray-900 overflow-x-hidden overflow-y-auto lg:overflow-hidden">
       {/* Left Panel - Products */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <Receipt className="h-6 w-6" />
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2 sm:p-4 shadow-lg">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg">
+                <Receipt className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Point of Sale</h1>
-                <p className="text-xs text-blue-100">Davie Supply POS System</p>
+                <h1 className="text-base sm:text-xl font-bold">Point of Sale</h1>
+                <p className="text-[10px] sm:text-xs text-blue-100 hidden sm:block">Davie Supply POS System</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Warehouse Selector */}
               <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-                <SelectTrigger className="w-40 h-10 bg-white/10 border-white/20 text-white" data-testid="select-warehouse">
-                  <Warehouse className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-24 sm:w-40 h-8 sm:h-10 bg-white/10 border-white/20 text-white text-xs sm:text-sm" data-testid="select-warehouse">
+                  <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   <SelectValue placeholder="Warehouse" />
                 </SelectTrigger>
                 <SelectContent>
@@ -890,23 +890,23 @@ export default function POS() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 text-white hover:bg-white/10"
+                className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10"
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 data-testid="button-toggle-sound"
               >
-                {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+                {soundEnabled ? <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" /> : <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />}
               </Button>
             </div>
           </div>
         </div>
 
         {/* Unified Search & Scan Bar */}
-        <div className="bg-white dark:bg-gray-800 px-4 py-3 border-b flex items-center gap-2">
-          <form onSubmit={handleBarcodeSubmit} className="relative flex-1">
+        <div className="bg-white dark:bg-gray-800 px-2 sm:px-4 py-2 sm:py-3 border-b flex flex-wrap sm:flex-nowrap items-center gap-2">
+          <form onSubmit={handleBarcodeSubmit} className="relative flex-1 min-w-0 order-1 w-full sm:w-auto">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
-              <Search className="h-5 w-5" />
-              <div className="h-4 w-px bg-gray-300 dark:bg-gray-600" />
-              <Scan className="h-4 w-4" />
+              <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block" />
+              <Scan className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
             </div>
             <Input
               ref={barcodeInputRef}
@@ -918,7 +918,7 @@ export default function POS() {
                 setSearchQuery(val);
               }}
               className={cn(
-                "pl-20 pr-10 h-14 text-base font-medium border-2 transition-all duration-200",
+                "pl-10 sm:pl-20 pr-10 h-10 sm:h-14 text-sm sm:text-base font-medium border-2 transition-all duration-200",
                 scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
                 scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
                 !scanFeedback && "border-gray-200 dark:border-gray-700"
@@ -934,18 +934,18 @@ export default function POS() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8"
                 onClick={() => { setBarcodeInput(''); setSearchQuery(''); }}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             )}
           </form>
           
           {/* Category Filter */}
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-36 h-14" data-testid="select-category">
-              <Grid3X3 className="h-4 w-4 mr-1.5" />
+            <SelectTrigger className="w-28 sm:w-36 h-10 sm:h-14 order-2 text-xs sm:text-sm" data-testid="select-category">
+              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -958,33 +958,33 @@ export default function POS() {
           </Select>
           
           {/* View Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
+          <div className="flex bg-muted rounded-lg p-0.5 sm:p-1 order-3">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-12 w-12"
+              className="h-9 w-9 sm:h-12 sm:w-12"
               onClick={() => setViewMode('grid')}
               data-testid="button-view-grid"
             >
-              <Grid3X3 className="h-5 w-5" />
+              <Grid3X3 className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-12 w-12"
+              className="h-9 w-9 sm:h-12 sm:w-12"
               onClick={() => setViewMode('list')}
               data-testid="button-view-list"
             >
-              <List className="h-5 w-5" />
+              <List className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
         </div>
 
         {/* Products Grid/List */}
-        <ScrollArea className="flex-1">
-          <div className="p-4">
+        <ScrollArea className="flex-1 min-h-[300px] lg:min-h-0">
+          <div className="p-2 sm:p-4">
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3">
                 {filteredItems.map((product: any) => {
                   const cartItem = cart.find(item => item.id === product.id && item.type === (product.itemType || 'product'));
                   const isInCart = !!cartItem;
@@ -1115,36 +1115,36 @@ export default function POS() {
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="w-[420px] bg-white dark:bg-gray-800 border-l flex flex-col shadow-xl">
+      <div className="w-full lg:w-[420px] bg-white dark:bg-gray-800 border-t lg:border-t-0 lg:border-l flex flex-col shadow-xl lg:max-h-screen">
         {/* Cart Header */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <ShoppingCart className="h-6 w-6" />
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-2 sm:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg">
+                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Cart</h2>
-                <p className="text-sm text-gray-300">{totalItems} items</p>
+                <h2 className="text-base sm:text-xl font-bold">Cart</h2>
+                <p className="text-xs sm:text-sm text-gray-300">{totalItems} items</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Currency Toggle */}
-              <div className="flex bg-white/10 rounded-lg p-1">
+              <div className="flex bg-white/10 rounded-lg p-0.5 sm:p-1">
                 <Button
                   variant={currency === 'EUR' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={cn("h-8 px-3", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('EUR')}
                   data-testid="button-currency-eur"
                 >
-                  <Euro className="h-4 w-4 mr-1" />
+                  <Euro className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                   EUR
                 </Button>
                 <Button
                   variant={currency === 'CZK' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={cn("h-8 px-3", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('CZK')}
                   data-testid="button-currency-czk"
                 >
@@ -1156,11 +1156,11 @@ export default function POS() {
                   variant="ghost"
                   size="sm"
                   onClick={clearCart}
-                  className="text-red-300 hover:text-red-200 hover:bg-red-500/20"
+                  className="text-red-300 hover:text-red-200 hover:bg-red-500/20 h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
                   data-testid="button-clear-cart"
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Clear</span>
                 </Button>
               )}
             </div>
@@ -1168,24 +1168,24 @@ export default function POS() {
         </div>
 
         {/* Customer Selection */}
-        <div className="p-3 border-b bg-gray-50 dark:bg-gray-900">
+        <div className="p-2 sm:p-3 border-b bg-gray-50 dark:bg-gray-900">
           <Button
             variant="outline"
-            className="w-full h-12 justify-start text-left"
+            className="w-full h-10 sm:h-12 justify-start text-left text-sm sm:text-base"
             onClick={() => setShowCustomerSearch(true)}
             data-testid="button-select-customer"
           >
-            <User className="h-5 w-5 mr-3 text-muted-foreground" />
-            <div className="flex-1">
+            <User className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-muted-foreground" />
+            <div className="flex-1 truncate">
               {selectedCustomer ? (
                 <span className="font-medium">{customerName}</span>
               ) : (
-                <span className="text-muted-foreground">Walk-in Customer (tap to select)</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">Walk-in Customer (tap to select)</span>
               )}
             </div>
             {selectedCustomer && (
               <X 
-                className="h-4 w-4 text-muted-foreground hover:text-foreground" 
+                className="h-4 w-4 text-muted-foreground hover:text-foreground flex-shrink-0" 
                 onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(''); }}
               />
             )}
@@ -1193,13 +1193,13 @@ export default function POS() {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-auto" ref={cartScrollRef}>
-          <div className="p-3 space-y-2">
+        <div className="flex-1 overflow-auto max-h-[300px] lg:max-h-none" ref={cartScrollRef}>
+          <div className="p-2 sm:p-3 space-y-2">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <ShoppingCart className="h-20 w-20 mb-4 opacity-20" />
-                <p className="text-lg font-medium">Cart is empty</p>
-                <p className="text-sm">Scan or click products to add</p>
+              <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-muted-foreground">
+                <ShoppingCart className="h-12 w-12 sm:h-20 sm:w-20 mb-3 sm:mb-4 opacity-20" />
+                <p className="text-base sm:text-lg font-medium">Cart is empty</p>
+                <p className="text-xs sm:text-sm">Scan or click products to add</p>
               </div>
             ) : (
               cart.map((item) => (
@@ -1274,33 +1274,33 @@ export default function POS() {
 
         {/* Cart Footer */}
         {cart.length > 0 && (
-          <div className="border-t bg-gray-50 dark:bg-gray-900 p-4 space-y-4">
+          <div className="border-t bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 space-y-2 sm:space-y-4">
             {/* Quick Actions */}
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
                 onClick={() => setShowDiscountDialog(true)}
                 data-testid="button-add-discount"
               >
-                <Percent className="h-4 w-4 mr-1" />
+                <Percent className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 {discount > 0 ? `${discount.toFixed(2)} ${currencySymbol}` : 'Discount'}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
                 onClick={() => setShowNotesDialog(true)}
                 data-testid="button-add-notes"
               >
-                <FileText className="h-4 w-4 mr-1" />
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 {orderNotes ? 'Edit Notes' : 'Add Notes'}
               </Button>
             </div>
 
             {/* Totals */}
-            <div className="space-y-2 text-base">
+            <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
@@ -1311,7 +1311,7 @@ export default function POS() {
                   <span className="font-medium tabular-nums">-{discount.toFixed(2)} {currencySymbol}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold pt-2 border-t">
+              <div className="flex justify-between text-lg sm:text-xl font-bold pt-2 border-t">
                 <span>Total</span>
                 <span className="text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
               </div>
@@ -1320,7 +1320,7 @@ export default function POS() {
             {/* Checkout Button */}
             <Button
               size="lg"
-              className="w-full h-16 text-xl font-bold"
+              className="w-full h-12 sm:h-16 text-base sm:text-xl font-bold"
               onClick={handleCheckout}
               disabled={createOrderMutation.isPending}
               data-testid="button-checkout"
@@ -1329,7 +1329,7 @@ export default function POS() {
                 'Processing...'
               ) : (
                 <>
-                  <CreditCard className="h-6 w-6 mr-3" />
+                  <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
                   Pay {total.toFixed(2)} {currencySymbol}
                 </>
               )}

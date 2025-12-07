@@ -419,7 +419,7 @@ export default function ShippingManagement() {
   };
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8" data-testid="shipping-management">
+    <div className="p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 overflow-x-hidden" data-testid="shipping-management">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="title-shipping">{t('shipping:shippingManagement')}</h1>
         <p className="text-sm sm:text-base text-muted-foreground">{t('shipping:manageMultiCarrierShipping')}</p>

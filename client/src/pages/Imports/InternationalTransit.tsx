@@ -764,7 +764,7 @@ export default function InternationalTransit() {
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
         <div>
@@ -2215,7 +2215,7 @@ export default function InternationalTransit() {
             return (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {/* Compact Overview */}
-                <div className="grid grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg text-xs">
                   <div>
                     <p className="text-muted-foreground">{t('items')}</p>
                     <p className="font-semibold text-sm">{totalItems} {t('units')}</p>
@@ -2386,7 +2386,7 @@ export default function InternationalTransit() {
                     </div>
                     
                     {/* Desktop Table View */}
-                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                    <div className="hidden md:block border rounded-lg overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/50">
@@ -2508,7 +2508,7 @@ export default function InternationalTransit() {
                 )}
 
                 {/* Compact Tracking & Timeline */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(viewShipmentDetails.trackingNumber || viewShipmentDetails.endTrackingNumber) && (
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm flex items-center gap-2">

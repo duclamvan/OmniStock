@@ -348,7 +348,7 @@ export default function StockLookup() {
   const isLoading = productsLoading;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6 overflow-x-hidden">
       {/* Header - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 py-3">

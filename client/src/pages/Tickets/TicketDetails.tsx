@@ -175,39 +175,40 @@ export default function TicketDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => window.history.back()}
+            className="shrink-0"
             data-testid="button-back"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-bold tracking-tight" data-testid="text-title">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words" data-testid="text-title">
                 {ticket.title}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {getStatusBadge(ticket.status)}
               {getPriorityBadge(ticket.priority)}
             </div>
           </div>
         </div>
-        <Button onClick={() => navigate(`/tickets/edit/${ticket.id}`)} data-testid="button-edit">
+        <Button onClick={() => navigate(`/tickets/edit/${ticket.id}`)} className="w-full sm:w-auto" data-testid="button-edit">
           <Edit className="mr-2 h-4 w-4" />
           {t('edit')}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column: Ticket Details & Comments */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Ticket Information */}
           <Card>
             <CardContent className="pt-6 space-y-6">
@@ -254,7 +255,7 @@ export default function TicketDetails() {
               )}
 
               {/* Metadata - Small and subtle */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('ticketId')}</p>
                   <p className="text-sm font-medium font-mono text-slate-700 dark:text-slate-300" data-testid="text-ticket-id">
@@ -350,7 +351,7 @@ export default function TicketDetails() {
                   className="min-h-[100px]"
                   data-testid="textarea-comment"
                 />
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -364,6 +365,7 @@ export default function TicketDetails() {
                   <Button
                     onClick={handleAddComment}
                     disabled={!commentText.trim() || addCommentMutation.isPending}
+                    className="w-full sm:w-auto"
                     data-testid="button-add-comment"
                   >
                     {addCommentMutation.isPending ? (
@@ -385,8 +387,8 @@ export default function TicketDetails() {
         </div>
 
         {/* Right Column: Quick Actions */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-20 space-y-4">
+        <div className="lg:col-span-1 order-first lg:order-last">
+          <div className="lg:sticky lg:top-20 space-y-4">
             <Card className="border-2 border-blue-200 dark:border-blue-700">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white">
                 <CardTitle>{t('quickActions')}</CardTitle>

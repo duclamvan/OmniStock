@@ -337,28 +337,29 @@ export default function AddPreOrder() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => window.history.back()}
+          className="flex-shrink-0"
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight" data-testid="heading-add-pre-order">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate" data-testid="heading-add-pre-order">
             {t('createPreOrder')}
           </h1>
-          <p className="text-slate-600 mt-1 text-sm md:text-base">
+          <p className="text-slate-600 mt-1 text-xs sm:text-sm md:text-base">
             {t('addNewCustomerPreOrder')}
           </p>
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -935,11 +936,12 @@ export default function AddPreOrder() {
         </Card>
 
         {/* Submit Button */}
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate('/orders/pre-orders')}
+            className="w-full sm:w-auto"
             data-testid="button-cancel"
           >
             {tCommon('cancel')}
@@ -947,6 +949,7 @@ export default function AddPreOrder() {
           <Button
             type="submit"
             disabled={isSubmitting || !selectedCustomer || items.length === 0}
+            className="w-full sm:w-auto"
             data-testid="button-submit"
           >
             <Save className="h-4 w-4 mr-2" />

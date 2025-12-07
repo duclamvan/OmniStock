@@ -1719,8 +1719,8 @@ export default function ProductForm() {
   const isPending = isEditMode ? updateProductMutation.isPending : createProductMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 overflow-x-hidden">
+      <div className="container mx-auto px-2 sm:px-4 py-3 md:py-6 max-w-7xl">
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm mb-4 md:mb-6 p-3 md:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

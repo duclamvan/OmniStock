@@ -250,7 +250,7 @@ export default function ReceiveImportMobile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b dark:border-slate-700">
         <div className="flex items-center justify-between p-4">

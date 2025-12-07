@@ -269,7 +269,7 @@ export default function WarehouseDetails() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+    <div className="space-y-4 md:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-3 md:gap-4">
         <div className="flex items-center gap-2 md:gap-4">

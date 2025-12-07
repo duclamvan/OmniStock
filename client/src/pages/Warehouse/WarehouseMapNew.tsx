@@ -98,7 +98,7 @@ export default function WarehouseMapNew() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-2 sm:p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <Link href="/warehouses">

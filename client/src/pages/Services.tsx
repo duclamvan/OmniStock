@@ -294,15 +294,15 @@ export default function Services() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('system:services')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('system:manageServicesRepairsMaintenance')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('system:services')}</h1>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('system:manageServicesRepairsMaintenance')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleAddNew} data-testid="button-add-service">
+            <Button onClick={handleAddNew} className="w-full sm:w-auto" data-testid="button-add-service">
               <Plus className="h-4 w-4 mr-2" />
               {t('system:addService')}
             </Button>
@@ -336,7 +336,7 @@ export default function Services() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="priceCzk">{t('system:priceCZK')}</Label>
                   <Input
@@ -363,13 +363,11 @@ export default function Services() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1" data-testid="button-save-service">
-                  {editingService ? t('system:updateService') : t('system:createService')}
-                </Button>
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setIsDialogOpen(false);
                     setEditingService(null);
@@ -377,6 +375,9 @@ export default function Services() {
                   }}
                 >
                   {t('system:cancel')}
+                </Button>
+                <Button type="submit" className="w-full sm:flex-1" data-testid="button-save-service">
+                  {editingService ? t('system:updateService') : t('system:createService')}
                 </Button>
               </div>
             </form>
@@ -404,7 +405,7 @@ export default function Services() {
               </CollapsibleTrigger>
               <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" onClick={handleAddNewType} data-testid="button-add-service-type">
+                  <Button size="sm" onClick={handleAddNewType} className="w-full sm:w-auto" data-testid="button-add-service-type">
                     <Plus className="h-4 w-4 mr-2" />
                     {t('system:addType')}
                   </Button>
@@ -459,13 +460,11 @@ export default function Services() {
                       </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
-                      <Button type="submit" className="flex-1" data-testid="button-save-type">
-                        {editingType ? t('system:updateType') : t('system:createType')}
-                      </Button>
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
                       <Button
                         type="button"
                         variant="outline"
+                        className="w-full sm:w-auto"
                         onClick={() => {
                           setIsTypeDialogOpen(false);
                           setEditingType(null);
@@ -473,6 +472,9 @@ export default function Services() {
                         }}
                       >
                         {t('system:cancel')}
+                      </Button>
+                      <Button type="submit" className="w-full sm:flex-1" data-testid="button-save-type">
+                        {editingType ? t('system:updateType') : t('system:createType')}
                       </Button>
                     </div>
                   </form>

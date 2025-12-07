@@ -256,7 +256,7 @@ export default function ShipmentLabels() {
   ];
 
   return (
-    <div className="p-4 space-y-4" data-testid="page-shipment-labels">
+    <div className="p-2 sm:p-4 md:p-6 space-y-4 overflow-x-hidden" data-testid="page-shipment-labels">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">

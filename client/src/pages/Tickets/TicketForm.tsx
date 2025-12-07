@@ -283,32 +283,33 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => window.history.back()}
+          className="shrink-0"
           data-testid="button-back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             {mode === "edit" ? t('editTicket') : t('newTicket')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {mode === "edit" ? t('updateTicketDetails') : t('createNewSupportTicket')}
           </p>
         </div>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left: Main Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Customer Selection */}
               <Card>
                 <CardHeader className="pb-4">
@@ -634,8 +635,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
             </div>
 
             {/* Right: Summary/Actions */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-20">
+            <div className="lg:col-span-1 order-first lg:order-last">
+              <div className="lg:sticky lg:top-20">
                 <Card className="shadow-md">
                   <CardHeader className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-b">
                     <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('ticketSummary')}</CardTitle>

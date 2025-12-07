@@ -287,24 +287,24 @@ export default function AddDiscount() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-2 sm:p-4 md:p-6 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => window.history.back()}
-          className="mb-4"
+          className="mb-3 sm:mb-4 w-full sm:w-auto justify-start"
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t('discounts:backToDiscounts')}
         </Button>
-        <h1 className="text-3xl font-bold">{t('discounts:addPageTitle')}</h1>
-        <p className="text-muted-foreground mt-1">{t('discounts:addPageSubtitle')}</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('discounts:addPageTitle')}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">{t('discounts:addPageSubtitle')}</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader>
@@ -1152,12 +1152,13 @@ export default function AddDiscount() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 sm:justify-end pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate("/discounts")}
             disabled={createDiscountMutation.isPending}
+            className="w-full sm:w-auto"
             data-testid="button-cancel"
           >
             {t('common:cancel')}
@@ -1165,7 +1166,7 @@ export default function AddDiscount() {
           <Button 
             type="submit" 
             disabled={createDiscountMutation.isPending}
-            className="min-w-[160px]"
+            className="w-full sm:w-auto sm:min-w-[160px]"
             data-testid="button-submit"
           >
             {createDiscountMutation.isPending ? (

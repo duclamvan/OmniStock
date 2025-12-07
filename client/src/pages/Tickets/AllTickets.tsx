@@ -467,21 +467,21 @@ export default function AllTickets() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('supportTickets')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('trackCustomerSupportTickets')}
           </p>
         </div>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
                 {t('export')}
               </Button>
@@ -500,7 +500,7 @@ export default function AllTickets() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/tickets/add">
-            <Button data-testid="button-add-ticket">
+            <Button className="w-full sm:w-auto" data-testid="button-add-ticket">
               <Plus className="h-4 w-4 mr-2" />
               {t('newTicket')}
             </Button>

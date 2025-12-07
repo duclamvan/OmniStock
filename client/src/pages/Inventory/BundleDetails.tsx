@@ -182,19 +182,19 @@ export default function BundleDetails() {
     : '0';
 
   return (
-    <div className="px-mobile py-mobile max-w-7xl mx-auto space-y-4">
+    <div className="p-2 sm:p-4 md:p-6 max-w-7xl mx-auto space-y-4 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Package className="h-6 w-6" />
-              {bundle.name}
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="line-clamp-1">{bundle.name}</span>
             </h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <Badge 
                 variant={bundle.isActive ? "default" : "secondary"}
                 className="text-xs"
@@ -206,37 +206,40 @@ export default function BundleDetails() {
                 )}
               </Badge>
               {bundle.sku && (
-                <span className="text-sm text-muted-foreground">SKU: {bundle.sku}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">SKU: {bundle.sku}</span>
               )}
             </div>
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none"
             onClick={() => duplicateMutation.mutate()}
             disabled={duplicateMutation.isPending}
           >
-            <Copy className="h-4 w-4 mr-2" />
-            {t('inventory:duplicateBundle')}
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('inventory:duplicateBundle')}</span>
           </Button>
           
           <Link href={`/inventory/bundles/${id}/edit`}>
-            <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              {t('inventory:edit')}
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+              <Edit className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('inventory:edit')}</span>
             </Button>
           </Link>
           
           <Button
             variant={bundle.isActive ? "secondary" : "default"}
             size="sm"
+            className="flex-1 sm:flex-none"
             onClick={() => toggleActiveMutation.mutate()}
             disabled={toggleActiveMutation.isPending}
           >
-            {bundle.isActive ? t('inventory:deactivateBundle') : t('inventory:activateBundle')}
+            <span className="hidden sm:inline">{bundle.isActive ? t('inventory:deactivateBundle') : t('inventory:activateBundle')}</span>
+            <span className="sm:hidden">{bundle.isActive ? t('inventory:deactivate') : t('inventory:activate')}</span>
           </Button>
           
           <AlertDialog>

@@ -261,7 +261,7 @@ export default function WarehouseDashboard() {
   const dateStr = today.toLocaleDateString(currentLocale, { month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Today's Header - Big and Clear */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

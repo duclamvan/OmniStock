@@ -194,13 +194,13 @@ export default function AddExpense() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12 overflow-x-hidden">
       <form onSubmit={form.handleSubmit(onSubmit)}>
         {/* Action Bar */}
         <div className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <Button
                   type="button"
                   variant="ghost"
@@ -211,8 +211,8 @@ export default function AddExpense() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('addExpense')}</h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('businessExpenseRecord')}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{t('addExpense')}</h1>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('businessExpenseRecord')}</p>
                 </div>
               </div>
             </div>
@@ -220,8 +220,8 @@ export default function AddExpense() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* Left: Main Form */}
             <div className="lg:col-span-2 space-y-6">
               {/* Expense Header */}

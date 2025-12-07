@@ -442,7 +442,7 @@ export default function AddReturn() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-2 sm:p-4 md:p-6 max-w-7xl mx-auto overflow-x-hidden">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -454,14 +454,14 @@ export default function AddReturn() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t('inventory:backToReturns')}
         </Button>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:addReturn')}</h1>
-            <p className="text-muted-foreground dark:text-gray-400 mt-1">{t('inventory:processCustomerReturns')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:addReturn')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground dark:text-gray-400 mt-1">{t('inventory:processCustomerReturns')}</p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p className="text-sm text-muted-foreground">{t('inventory:returnIdLabel')}</p>
-            <p className="text-2xl font-bold text-primary">{returnId}</p>
+            <p className="text-xl sm:text-2xl font-bold text-primary">{returnId}</p>
           </div>
         </div>
       </div>
@@ -919,10 +919,11 @@ export default function AddReturn() {
             </Card>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => navigate("/returns")}
                 data-testid="button-cancel"
               >
@@ -931,7 +932,7 @@ export default function AddReturn() {
               <Button
                 type="submit"
                 disabled={createReturnMutation.isPending}
-                className="bg-teal-600 hover:bg-teal-700"
+                className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700"
                 data-testid="button-submit"
               >
                 <Save className="h-4 w-4 mr-2" />

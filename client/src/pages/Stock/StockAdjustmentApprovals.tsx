@@ -338,68 +338,68 @@ export default function StockAdjustmentApprovals() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             {t('stockAdjustmentApprovals')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
             {t('reviewAndApproveRequests')}
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="w-full">
+          <CardHeader className="p-3 sm:pb-2 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
               {t('totalRequests')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalRequests}</p>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{totalRequests}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+        <Card className="w-full">
+          <CardHeader className="p-3 sm:pb-2 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400">
               {t('pendingApproval')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{pendingRequests}</p>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{pendingRequests}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">
+        <Card className="w-full">
+          <CardHeader className="p-3 sm:pb-2 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400">
               {t('approved')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{approvedRequests}</p>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{approvedRequests}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">
+        <Card className="w-full">
+          <CardHeader className="p-3 sm:pb-2 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">
               {t('rejected')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{rejectedRequests}</p>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{rejectedRequests}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+      <Card className="w-full">
+        <CardContent className="p-3 sm:p-4 md:pt-6 md:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4 md:flex-row">
+            <div className="flex-1 w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -407,14 +407,14 @@ export default function StockAdjustmentApprovals() {
                   placeholder={t('searchByProductReasonId')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 w-full"
                   data-testid="input-search-requests"
                 />
               </div>
             </div>
-            <div className="md:w-48">
+            <div className="w-full md:w-48">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger data-testid="select-status-filter">
+                <SelectTrigger className="w-full" data-testid="select-status-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -430,8 +430,8 @@ export default function StockAdjustmentApprovals() {
       </Card>
 
       {/* Requests Table */}
-      <Card>
-        <CardContent className="p-0 sm:p-6">
+      <Card className="w-full">
+        <CardContent className="p-0 sm:p-4 md:p-6">
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -581,7 +581,7 @@ export default function StockAdjustmentApprovals() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden sm:block">
+              <div className="hidden sm:block overflow-x-auto">
                 <DataTable
                   columns={columns}
                   data={filteredRequests}

@@ -174,11 +174,11 @@ export default function ServiceDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 overflow-x-hidden">
       {/* Action Bar - Hidden on print */}
       <div className="bg-white dark:bg-slate-900 border-b print:hidden sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -192,11 +192,12 @@ export default function ServiceDetails() {
             <h2 className="font-semibold text-sm">{t('financial:serviceBill')}</h2>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrint}
+              className="hidden sm:flex"
               data-testid="button-print"
             >
               <Printer className="h-4 w-4 mr-2" />
@@ -205,36 +206,65 @@ export default function ServiceDetails() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handlePrint}
+              className="sm:hidden"
+              data-testid="button-print-mobile"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => navigate(`/services/${id}/edit`)}
+              className="hidden sm:flex"
               data-testid="button-edit"
             >
               <Edit className="h-4 w-4 mr-2" />
               {t('common:edit')}
             </Button>
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/services/${id}/edit`)}
+              className="sm:hidden"
+              data-testid="button-edit-mobile"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
               variant="destructive"
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
+              className="hidden sm:flex"
               data-testid="button-delete"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               {t('common:delete')}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="sm:hidden"
+              data-testid="button-delete-mobile"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Bill Document */}
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-2 sm:p-4 md:p-6">
         <div className="bg-white dark:bg-slate-900 shadow-lg rounded-lg border border-slate-200 dark:border-slate-800">
           {/* Bill Header */}
-          <div className="p-8 border-b-4 border-slate-900 dark:border-slate-700">
-            <div className="flex justify-between items-start mb-8">
+          <div className="p-4 sm:p-6 md:p-8 border-b-4 border-slate-900 dark:border-slate-700">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 sm:mb-8">
               {/* Company Info */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Wrench className="h-6 w-6 text-slate-700 dark:text-slate-300" />
-                  <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('financial:serviceBill_title')}</h1>
+                  <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700 dark:text-slate-300" />
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">{t('financial:serviceBill_title')}</h1>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 font-medium">Davie Supply</p>
                 <p className="text-sm text-slate-500 dark:text-slate-500">{t('financial:professionalServiceRepair')}</p>
@@ -337,7 +367,7 @@ export default function ServiceDetails() {
           </div>
 
           {/* Service Description */}
-          <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">{t('financial:serviceDescription')}</h3>
             <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2" data-testid="text-service-name">
               {service.name}
@@ -350,7 +380,7 @@ export default function ServiceDetails() {
           </div>
 
           {/* Itemized Parts & Services */}
-          <div className="px-8 py-6">
+          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6">
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-4">{t('financial:partsAndMaterialsUsed')}</h3>
             
             {/* Items Table */}
@@ -442,7 +472,7 @@ export default function ServiceDetails() {
 
           {/* Notes Section */}
           {service.notes && (
-            <div className="px-8 py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+            <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
               <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-2">{t('financial:additionalNotes')}</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap" data-testid="text-notes">
                 {service.notes}
@@ -451,7 +481,7 @@ export default function ServiceDetails() {
           )}
 
           {/* Footer */}
-          <div className="px-8 py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
             <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-500">
               <p>{t('financial:thankYouForBusiness')}</p>
               <p data-testid="text-updated-at">

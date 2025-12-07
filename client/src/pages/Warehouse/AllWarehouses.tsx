@@ -379,19 +379,19 @@ export default function AllWarehouses() {
   }
 
   return (
-    <div className="space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-6">
+    <div className="space-y-4 md:space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('warehouse:warehouseManagement')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('warehouse:monitorManageFacilities')}
           </p>
         </div>
-        <Link href="/warehouses/add">
-          <Button data-testid="button-add-warehouse">
+        <Link href="/warehouses/add" className="w-full sm:w-auto">
+          <Button data-testid="button-add-warehouse" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             {t('warehouse:addWarehouse')}
           </Button>

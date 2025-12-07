@@ -443,7 +443,7 @@ export default function UserSettings() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4 pb-20">
+    <div className="space-y-6 max-w-4xl mx-auto p-2 sm:p-4 md:p-6 pb-20 overflow-x-hidden">
       {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-purple-500/5 to-blue-500/10 dark:from-primary/20 dark:via-purple-500/10 dark:to-blue-500/20 p-6 md:p-8">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />

@@ -425,10 +425,10 @@ export default function AddService() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 overflow-x-hidden">
       {/* Action Bar */}
       <div className="bg-white dark:bg-slate-900 border-b sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -451,15 +451,15 @@ export default function AddService() {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="max-w-7xl mx-auto p-2 sm:p-4 md:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Main Bill Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Bill Document */}
               <div className="bg-white dark:bg-slate-900 shadow-lg rounded-lg border border-slate-200 dark:border-slate-800">
                 {/* Bill Header */}
-                <div className="p-8 border-b-4 border-slate-900 dark:border-slate-700">
-                  <div className="flex justify-between items-start mb-6">
+                <div className="p-4 sm:p-6 md:p-8 border-b-4 border-slate-900 dark:border-slate-700">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Wrench className="h-6 w-6 text-slate-700 dark:text-slate-300" />
@@ -685,7 +685,7 @@ export default function AddService() {
                 </div>
 
                 {/* Service Details Section */}
-                <div className="p-8 border-b border-slate-200 dark:border-slate-700">
+                <div className="p-4 sm:p-6 md:p-8 border-b border-slate-200 dark:border-slate-700">
                   <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                     <FileText className="h-3 w-3" />
                     {t('financial:serviceDetails_section')}
@@ -814,8 +814,8 @@ export default function AddService() {
                 </div>
 
                 {/* Parts/Items Section */}
-                <div className="p-8">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="p-4 sm:p-6 md:p-8">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
                     <div>
                       <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2">
                         <Package className="h-3 w-3" />
@@ -829,7 +829,7 @@ export default function AddService() {
                       type="button"
                       onClick={addServiceItem}
                       size="sm"
-                      className="shadow-md"
+                      className="shadow-md w-full sm:w-auto"
                       data-testid="button-add-part"
                     >
                       <Plus className="h-4 w-4 mr-2" />

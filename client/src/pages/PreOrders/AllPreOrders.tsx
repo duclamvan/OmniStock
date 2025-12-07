@@ -557,21 +557,21 @@ export default function AllPreOrders() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight" data-testid="heading-pre-orders">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight" data-testid="heading-pre-orders">
             {t('preOrders')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('manageCustomerPreOrders')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
                 {tCommon('export')}
               </Button>
@@ -589,6 +589,7 @@ export default function AllPreOrders() {
           </DropdownMenu>
           <Button 
             onClick={() => setLocation('/orders/pre-orders/add')}
+            className="w-full sm:w-auto"
             data-testid="button-add-pre-order"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -813,7 +814,7 @@ export default function AllPreOrders() {
             </DropdownMenuContent>
           </DropdownMenu>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0 sm:p-4 md:p-6 overflow-x-auto">
           {!filteredPreOrders || filteredPreOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4">
               <ShoppingCart className="h-12 w-12 text-slate-400 mb-4" />

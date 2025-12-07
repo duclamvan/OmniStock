@@ -229,7 +229,7 @@ export default function EditReturn() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-2 sm:p-4 md:p-6 max-w-4xl mx-auto overflow-x-hidden">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -240,14 +240,15 @@ export default function EditReturn() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t('inventory:backToReturns')}
         </Button>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:editReturn')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('inventory:updateReturnInformation')}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:editReturn')}</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('inventory:updateReturnInformation')}</p>
           </div>
           <Button
             variant="destructive"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
@@ -550,10 +551,11 @@ export default function EditReturn() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => navigate("/returns")}
               >
                 {t('common:cancel')}
@@ -561,7 +563,7 @@ export default function EditReturn() {
               <Button
                 type="submit"
                 disabled={updateReturnMutation.isPending}
-                className="bg-teal-600 hover:bg-teal-700"
+                className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {t('common:saveChanges')}

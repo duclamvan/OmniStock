@@ -165,7 +165,7 @@ export default function ActivityLog() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">

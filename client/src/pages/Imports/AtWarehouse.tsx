@@ -1661,7 +1661,7 @@ export default function AtWarehouse() {
   }
 
   return (
-    <div className="pb-20 md:pb-6">
+    <div className="pb-20 md:pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 mb-4 md:mb-6">
         <div className="p-4 md:p-6 space-y-3 md:space-y-0">
@@ -1739,7 +1739,7 @@ export default function AtWarehouse() {
                 {extractedItems.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-base font-semibold">{t('extractedItems', { count: extractedItems.length })}</Label>
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="border rounded-lg overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>

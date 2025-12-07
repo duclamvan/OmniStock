@@ -302,32 +302,33 @@ export default function PreOrderDetails() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-6">
+    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => window.history.back()}
+            className="flex-shrink-0"
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold" data-testid="heading-pre-order-details">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate" data-testid="heading-pre-order-details">
               {t('preOrderDetails')}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
               {preOrder.customer?.name || t('unknownCustomer')}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <Button
             onClick={() => setShowSendReminderDialog(true)}
-            className="bg-primary"
+            className="bg-primary w-full sm:w-auto"
             data-testid="button-send-reminder"
           >
             <Send className="h-4 w-4 mr-2" />
@@ -336,7 +337,7 @@ export default function PreOrderDetails() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-actions">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-actions">
                 <MoreVertical className="h-4 w-4 mr-2" />
                 {tCommon('actions')}
               </Button>

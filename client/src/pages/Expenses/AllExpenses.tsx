@@ -503,21 +503,21 @@ export default function AllExpenses() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('expenses')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('trackBusinessExpenses')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-slate-200 dark:border-slate-700" data-testid="button-export">
+              <Button variant="outline" className="w-full sm:w-auto border-slate-200 dark:border-slate-700" data-testid="button-export">
                 <Download className="h-4 w-4 mr-2" />
                 {t('export')}
               </Button>
@@ -535,7 +535,7 @@ export default function AllExpenses() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={() => navigate('/expenses/add')} data-testid="button-add-expense">
+          <Button onClick={() => navigate('/expenses/add')} className="w-full sm:w-auto" data-testid="button-add-expense">
             <Plus className="h-4 w-4 mr-2" />
             {t('addExpense')}
           </Button>

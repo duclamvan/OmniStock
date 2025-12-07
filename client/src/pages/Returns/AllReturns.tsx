@@ -401,21 +401,21 @@ export default function AllReturns() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('inventory:returns')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('inventory:manageProductsDescription')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export-returns">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export-returns">
                 <FileDown className="mr-2 h-4 w-4" />
                 {t('inventory:export')}
               </Button>
@@ -433,8 +433,8 @@ export default function AllReturns() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/returns/add">
-            <Button data-testid="button-add-return">
+          <Link href="/returns/add" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto" data-testid="button-add-return">
               <Plus className="mr-2 h-4 w-4" />
               {t('inventory:addReturn')}
             </Button>

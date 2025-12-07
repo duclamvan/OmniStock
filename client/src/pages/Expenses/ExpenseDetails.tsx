@@ -136,7 +136,7 @@ export default function ExpenseDetails() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -148,12 +148,13 @@ export default function ExpenseDetails() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-mobile-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('expenseDetails')}</h1>
-            <p className="text-muted-foreground dark:text-gray-400">{expense.expenseId}</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('expenseDetails')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground dark:text-gray-400">{expense.expenseId}</p>
           </div>
         </div>
         <Button
           variant="outline"
+          className="w-full sm:w-auto"
           onClick={() => navigate(`/expenses/edit/${id}`)}
         >
           <Edit className="mr-2 h-4 w-4" />
@@ -207,9 +208,9 @@ export default function ExpenseDetails() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-3 sm:p-6">
           {/* Amount and Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <DollarSign className="h-5 w-5 text-muted-foreground" />

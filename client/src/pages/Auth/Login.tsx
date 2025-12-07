@@ -369,7 +369,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-4 overflow-x-hidden">
       <Card className="w-full max-w-sm shadow-xl border-0 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl">
         <CardHeader className="space-y-4 pb-4 pt-8">
           <div className="flex items-center justify-center">

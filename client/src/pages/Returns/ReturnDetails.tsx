@@ -68,9 +68,9 @@ export default function ReturnDetails() {
   const totalValue = returnData.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Button
             variant="ghost"
@@ -81,20 +81,20 @@ export default function ReturnDetails() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('inventory:returns')}
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:returnDetails')}</h1>
-          <p className="text-gray-600">{t('inventory:returnIdLabel')}: {returnData.returnId}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:returnDetails')}</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('inventory:returnIdLabel')}: {returnData.returnId}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Printer className="h-4 w-4 mr-2" />
             {t('common:print')}
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Share2 className="h-4 w-4 mr-2" />
             {t('common:share')}
           </Button>
-          <Link href={`/returns/${id}/edit`}>
-            <Button variant="outline" size="sm">
+          <Link href={`/returns/${id}/edit`} className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <Edit className="h-4 w-4 mr-2" />
               {t('common:edit')}
             </Button>
@@ -103,61 +103,61 @@ export default function ReturnDetails() {
       </div>
 
       {/* Status and Type Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{t('inventory:status')}</p>
-                <Badge className={`mt-2 ${statusColors[returnData.status] || 'bg-gray-100 text-gray-800'}`}>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">{t('inventory:status')}</p>
+                <Badge className={`mt-2 text-xs ${statusColors[returnData.status] || 'bg-gray-100 text-gray-800'}`}>
                   {returnData.status?.charAt(0).toUpperCase() + returnData.status?.slice(1)}
                 </Badge>
               </div>
-              <RefreshCw className="h-8 w-8 text-gray-400" />
+              <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{t('inventory:returnType')}</p>
-                <Badge className={`mt-2 ${returnTypeDisplayMap[returnData.returnType]?.color || 'bg-gray-100 text-gray-800'}`}>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">{t('inventory:returnType')}</p>
+                <Badge className={`mt-2 text-xs ${returnTypeDisplayMap[returnData.returnType]?.color || 'bg-gray-100 text-gray-800'}`}>
                   {returnTypeDisplayMap[returnData.returnType]?.label || returnData.returnType}
                 </Badge>
               </div>
-              <Package className="h-8 w-8 text-gray-400" />
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{t('inventory:totalItems')}</p>
-                <p className="text-2xl font-bold">{totalItems}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">{t('inventory:totalItems')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{totalItems}</p>
               </div>
-              <Package className="h-8 w-8 text-gray-400" />
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{t('inventory:totalValue')}</p>
-                <p className="text-2xl font-bold">€{totalValue.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">{t('inventory:totalValue')}</p>
+                <p className="text-lg sm:text-2xl font-bold">€{totalValue.toFixed(2)}</p>
               </div>
-              <Hash className="h-8 w-8 text-gray-400" />
+              <Hash className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {/* Return Information */}
         <Card className="md:col-span-2">
           <CardHeader>

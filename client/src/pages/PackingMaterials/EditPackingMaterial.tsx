@@ -401,7 +401,7 @@ export default function EditPackingMaterial() {
   }
 
   return (
-    <div className="container mx-auto py-3 md:py-6 px-2 md:px-4 max-w-5xl pb-24 md:pb-6">
+    <div className="container mx-auto py-3 md:py-6 px-2 md:px-4 max-w-5xl pb-24 md:pb-6 overflow-x-hidden">
       <div className="mb-4 md:mb-6">
         <Button variant="ghost" size="sm" data-testid="button-back" onClick={() => window.history.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />

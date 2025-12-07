@@ -273,12 +273,12 @@ export default function EditDiscount() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-2 sm:p-4 md:p-6 max-w-6xl mx-auto overflow-x-hidden">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
           <div className="space-y-4">
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </div>
         </div>
       </div>
@@ -286,18 +286,18 @@ export default function EditDiscount() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
+    <div className="p-2 sm:p-4 md:p-6 max-w-6xl mx-auto overflow-x-hidden">
+      <div className="mb-4 sm:mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => window.history.back()}
-          className="mb-4"
+          className="mb-3 sm:mb-4 w-full sm:w-auto justify-start"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t('common:back')}
         </Button>
-        <h1 className="text-2xl font-bold">{t('discounts:editDiscount')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t('discounts:editDiscount')}</h1>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>

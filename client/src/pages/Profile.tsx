@@ -291,7 +291,7 @@ export default function Profile() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Profile Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-800 dark:to-purple-800 rounded-lg p-8 shadow-lg">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">

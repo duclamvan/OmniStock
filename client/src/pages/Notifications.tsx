@@ -117,7 +117,7 @@ export default function Notifications() {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-6">
+    <div className="container max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100" data-testid="heading-notifications">{t('system:notifications')}</h1>
         <p className="text-muted-foreground dark:text-gray-400">{t('system:viewAndManageNotifications')}</p>
