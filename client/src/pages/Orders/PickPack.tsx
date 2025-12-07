@@ -126,6 +126,7 @@ import {
   Download,
   Star,
   BookmarkCheck,
+  Bookmark,
   ShoppingBasket,
   Trophy,
   Flame,
@@ -15561,7 +15562,7 @@ export default function PickPack() {
 
       {/* DHL Bookmarklet Instructions Dialog */}
       <Dialog open={showDHLBookmarkletDialog} onOpenChange={setShowDHLBookmarkletDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-yellow-600" />
@@ -15572,78 +15573,139 @@ export default function PickPack() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">1</span>
-                {t('dhlBookmarkletStep1Title')}
-              </h4>
-              <p className="text-sm text-gray-600 pl-8">
-                {t('dhlBookmarkletStep1Desc')}
-              </p>
+          <div className="space-y-6 mt-4">
+            {/* First Time Setup Section */}
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+              <h3 className="font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2 mb-3">
+                <Bookmark className="h-5 w-5" />
+                {t('firstTimeSetup')}
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Step A: Get the bookmarklet code */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 flex items-center justify-center text-sm font-bold">A</span>
+                    {t('setupStepA')}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 pl-8">
+                    {t('setupStepADesc')}
+                  </p>
+                  <div className="pl-8">
+                    <div className="relative">
+                      <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-x-auto font-mono max-h-24 overflow-y-auto border">
+                        {dhlBookmarkletCode || t('clickPrepareFirst')}
+                      </pre>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700"
+                        onClick={() => {
+                          if (dhlBookmarkletCode) {
+                            navigator.clipboard.writeText(dhlBookmarkletCode);
+                            toast({
+                              title: t('copied'),
+                              description: t('bookmarkletCodeCopied'),
+                              duration: 2000
+                            });
+                          }
+                        }}
+                        disabled={!dhlBookmarkletCode}
+                        data-testid="button-copy-bookmarklet"
+                      >
+                        <Copy className="h-3.5 w-3.5 mr-1" />
+                        {t('copy')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step B: Create bookmark */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 flex items-center justify-center text-sm font-bold">B</span>
+                    {t('setupStepB')}
+                  </h4>
+                  <div className="pl-8 space-y-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{t('setupStepBDesc')}</p>
+                    <div className="bg-white dark:bg-gray-800 rounded border p-3 space-y-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('chromeInstructions')}:</p>
+                      <ol className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4 list-decimal">
+                        <li>{t('chromeStep1')}</li>
+                        <li>{t('chromeStep2')}</li>
+                        <li>{t('chromeStep3')}</li>
+                        <li>{t('chromeStep4')}</li>
+                      </ol>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded border p-3 space-y-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('firefoxInstructions')}:</p>
+                      <ol className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4 list-decimal">
+                        <li>{t('firefoxStep1')}</li>
+                        <li>{t('firefoxStep2')}</li>
+                        <li>{t('firefoxStep3')}</li>
+                        <li>{t('firefoxStep4')}</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">2</span>
-                {t('dhlBookmarkletStep2Title')}
-              </h4>
-              <p className="text-sm text-gray-600 pl-8">
-                {t('dhlBookmarkletStep2Desc')}
-              </p>
-              <div className="pl-8">
-                <div className="relative">
-                  <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-x-auto font-mono max-h-32 overflow-y-auto">
-                    {dhlBookmarkletCode || t('clickPrepareFirst')}
-                  </pre>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      if (dhlBookmarkletCode) {
-                        navigator.clipboard.writeText(dhlBookmarkletCode);
-                        toast({
-                          title: t('copied'),
-                          description: t('bookmarkletCodeCopied'),
-                          duration: 2000
-                        });
-                      }
-                    }}
-                    disabled={!dhlBookmarkletCode}
-                    data-testid="button-copy-bookmarklet"
-                  >
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    {t('copy')}
-                  </Button>
+
+            {/* Separator */}
+            <Separator />
+
+            {/* Daily Usage Section */}
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+              <h3 className="font-bold text-yellow-900 dark:text-yellow-100 flex items-center gap-2 mb-3">
+                <PlayCircle className="h-5 w-5" />
+                {t('dailyUsage')}
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep1Title')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep1Desc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep2Title')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep2Desc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep3Title')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep3Desc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 flex items-center justify-center text-sm font-bold flex-shrink-0">4</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep4Title')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep4Desc')}</p>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">3</span>
-                {t('dhlBookmarkletStep3Title')}
-              </h4>
-              <p className="text-sm text-gray-600 pl-8">
-                {t('dhlBookmarkletStep3Desc')}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold">4</span>
-                {t('dhlBookmarkletStep4Title')}
-              </h4>
-              <p className="text-sm text-gray-600 pl-8">
-                {t('dhlBookmarkletStep4Desc')}
-              </p>
-            </div>
-            
-            <Alert className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-200">
-                {t('dhlBookmarkletNote')}
+            {/* Important Notes */}
+            <Alert className="bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                <strong>{t('importantNotes')}:</strong>
+                <ul className="list-disc pl-4 mt-1 space-y-1">
+                  <li>{t('bookmarkletNote1')}</li>
+                  <li>{t('bookmarkletNote2')}</li>
+                  <li>{t('bookmarkletNote3')}</li>
+                </ul>
               </AlertDescription>
             </Alert>
           </div>

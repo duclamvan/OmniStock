@@ -1640,6 +1640,40 @@ const orders = {
   bookmarkletCodeCopied: 'Đã sao chép mã bookmarklet vào clipboard',
   clickPrepareFirst: 'Nhấp nút "Chuẩn bị DHL Autofill" trước để tạo mã bookmarklet',
   
+  // DHL Bookmarklet - First Time Setup Section
+  firstTimeSetup: 'Thiết lập Lần đầu (Chỉ Một lần)',
+  setupStepA: 'Sao chép Mã Bookmarklet',
+  setupStepADesc: 'Đầu tiên, nhấp "Chuẩn bị DHL Autofill" trên một đơn hàng, sau đó sao chép mã bên dưới.',
+  setupStepB: 'Tạo Bookmark Trình duyệt',
+  setupStepBDesc: 'Tạo bookmark mới trong trình duyệt và dán mã vào URL.',
+  chromeInstructions: 'Chrome/Edge',
+  chromeStep1: 'Nhấp chuột phải vào thanh bookmark → "Thêm trang..."',
+  chromeStep2: 'Đặt tên "DHL Autofill"',
+  chromeStep3: 'Trong trường URL, dán mã đã sao chép',
+  chromeStep4: 'Nhấp "Lưu"',
+  firefoxInstructions: 'Firefox',
+  firefoxStep1: 'Nhấp chuột phải vào thanh bookmark → "Thêm Bookmark..."',
+  firefoxStep2: 'Đặt tên "DHL Autofill"',
+  firefoxStep3: 'Trong trường Location, dán mã đã sao chép',
+  firefoxStep4: 'Nhấp "Lưu"',
+  
+  // DHL Bookmarklet - Daily Usage Section
+  dailyUsage: 'Sử dụng Hàng ngày (Mỗi Đơn hàng)',
+  usageStep1Title: 'Chuẩn bị Dữ liệu Đơn hàng',
+  usageStep1Desc: 'Nhấp nút "Chuẩn bị DHL Autofill" cho đơn hàng bạn muốn gửi.',
+  usageStep2Title: 'Cập nhật Bookmark',
+  usageStep2Desc: 'Sao chép mã mới và cập nhật URL bookmark (nhấp chuột phải → Sửa).',
+  usageStep3Title: 'Mở Trang DHL',
+  usageStep3Desc: 'Truy cập DHL Online Frankieren (www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html)',
+  usageStep4Title: 'Nhấp Bookmark',
+  usageStep4Desc: 'Nhấp bookmark "DHL Autofill" trên trang Chọn sản phẩm hoặc Nhập địa chỉ. Biểu mẫu sẽ được điền tự động!',
+  
+  // DHL Bookmarklet - Notes
+  importantNotes: 'Lưu ý Quan trọng',
+  bookmarkletNote1: 'Bạn cần cập nhật mã bookmark cho mỗi đơn hàng mới (mỗi đơn có dữ liệu khác nhau).',
+  bookmarkletNote2: 'Bookmarklet hoạt động trên cả trang Chọn sản phẩm và Nhập địa chỉ - nhấp vào nó trên mỗi trang.',
+  bookmarkletNote3: 'Nếu các trường không được điền, làm mới trang DHL và thử nhấp bookmark lại.',
+  
 } as const;
 
 export default orders;

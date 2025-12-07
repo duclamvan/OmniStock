@@ -1669,6 +1669,40 @@ const orders = {
   bookmarkletCodeCopied: 'Bookmarklet code copied to clipboard',
   clickPrepareFirst: 'Click "Prepare DHL Autofill" button first to generate the bookmarklet code',
   
+  // DHL Bookmarklet - First Time Setup Section
+  firstTimeSetup: 'First Time Setup (One-Time Only)',
+  setupStepA: 'Copy the Bookmarklet Code',
+  setupStepADesc: 'First, click "Prepare DHL Autofill" on an order, then copy the code below.',
+  setupStepB: 'Create a Browser Bookmark',
+  setupStepBDesc: 'Create a new bookmark in your browser and paste the code as the URL.',
+  chromeInstructions: 'Chrome/Edge',
+  chromeStep1: 'Right-click bookmarks bar → "Add page..."',
+  chromeStep2: 'Name it "DHL Autofill"',
+  chromeStep3: 'In URL field, paste the copied code',
+  chromeStep4: 'Click "Save"',
+  firefoxInstructions: 'Firefox',
+  firefoxStep1: 'Right-click bookmarks bar → "Add Bookmark..."',
+  firefoxStep2: 'Name it "DHL Autofill"',
+  firefoxStep3: 'In Location field, paste the copied code',
+  firefoxStep4: 'Click "Save"',
+  
+  // DHL Bookmarklet - Daily Usage Section
+  dailyUsage: 'Daily Usage (Every Order)',
+  usageStep1Title: 'Prepare Order Data',
+  usageStep1Desc: 'Click "Prepare DHL Autofill" button for the order you want to ship.',
+  usageStep2Title: 'Update Your Bookmark',
+  usageStep2Desc: 'Copy the new code and update your bookmark URL (right-click → Edit).',
+  usageStep3Title: 'Open DHL Website',
+  usageStep3Desc: 'Go to DHL Online Frankieren (www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html)',
+  usageStep4Title: 'Click Your Bookmark',
+  usageStep4Desc: 'Click "DHL Autofill" bookmark on the Product Selection or Address pages. Forms will be filled automatically!',
+  
+  // DHL Bookmarklet - Notes
+  importantNotes: 'Important Notes',
+  bookmarkletNote1: 'You need to update the bookmark code for each new order (each order has different data).',
+  bookmarkletNote2: 'The bookmarklet works on both Product Selection and Address Input pages - click it on each page.',
+  bookmarkletNote3: 'If fields are not filled, refresh the DHL page and try clicking the bookmark again.',
+  
 } as const;
 
 export default orders;
