@@ -15599,7 +15599,7 @@ export default function PickPack() {
 
       {/* DHL Bookmarklet Instructions Dialog */}
       <Dialog open={showDHLBookmarkletDialog} onOpenChange={setShowDHLBookmarkletDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto z-[9999]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-yellow-600" />
