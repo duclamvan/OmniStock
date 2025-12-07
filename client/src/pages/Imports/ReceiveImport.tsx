@@ -189,7 +189,7 @@ export default function ReceiveImport() {
   const progressPercentage = totalItems > 0 ? (checkedCount / totalItems) * 100 : 0;
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
         <div className="p-4 md:p-0">
@@ -238,7 +238,7 @@ export default function ReceiveImport() {
       </div>
 
       {/* Progress Card */}
-      <Card className="mx-4 md:mx-0">
+      <Card className="mx-2 sm:mx-4 md:mx-0 w-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base md:text-lg">{t('receivingProgress')}</CardTitle>
           <CardDescription className="text-xs md:text-sm">
@@ -257,8 +257,8 @@ export default function ReceiveImport() {
       </Card>
 
       {/* Quick Actions */}
-      <Card className="mx-4 md:mx-0">
-        <CardContent className="p-4 md:pt-6">
+      <Card className="mx-2 sm:mx-4 md:mx-0 w-full">
+        <CardContent className="p-2 sm:p-4 md:pt-6">
           <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
               <Button
@@ -287,13 +287,13 @@ export default function ReceiveImport() {
       </Card>
 
       {/* Receiving Checklist */}
-      <Card className="mx-4 md:mx-0">
+      <Card className="mx-2 sm:mx-4 md:mx-0 w-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base md:text-lg">{t('receivingChecklist')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0 md:p-6">
           {/* Mobile Card Layout */}
-          <div className="md:hidden space-y-3 p-4">
+          <div className="md:hidden space-y-3 p-2 sm:p-4">
             {receivingItems.map((item) => (
               <Card key={item.id} className="border-2">
                 <CardContent className="p-4">
@@ -381,7 +381,7 @@ export default function ReceiveImport() {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block">
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -475,7 +475,7 @@ export default function ReceiveImport() {
 
       {/* Inventory Impact Preview */}
       {checkedCount > 0 && (
-        <Card className="mx-4 md:mx-0">
+        <Card className="mx-2 sm:mx-4 md:mx-0 w-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg">{t('inventoryImpactPreview')}</CardTitle>
             <CardDescription className="text-xs md:text-sm">
@@ -497,7 +497,7 @@ export default function ReceiveImport() {
                 </AlertDescription>
               </Alert>
               
-              <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 text-center">
                 <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <p className="text-xl md:text-2xl font-bold text-blue-600">{checkedCount}</p>
                   <p className="text-xs md:text-sm text-muted-foreground">{t('itemsToAdd')}</p>

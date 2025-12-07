@@ -72,7 +72,7 @@ export default function ReportsIndex() {
 
   return (
     <ReportsProvider>
-      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0" data-testid="reports-container">
+      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0 overflow-x-hidden" data-testid="reports-container">
         <div className="px-2 sm:px-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('reports')}</h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">{t('businessOverviewDesc')}</p>

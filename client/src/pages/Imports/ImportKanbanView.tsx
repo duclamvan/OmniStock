@@ -910,10 +910,10 @@ export default function ImportKanbanView() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-0 gap-4">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 -mx-2 sm:-mx-4 md:-mx-6 px-2 sm:px-4 md:px-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between py-3 md:py-0 gap-3 sm:gap-4">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href="/imports">
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -931,38 +931,40 @@ export default function ImportKanbanView() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-              <TabsList className="grid w-full grid-cols-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full sm:w-auto">
+              <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
                 <TabsTrigger value="kanban">{t('workflow')}</TabsTrigger>
                 <TabsTrigger value="table">{t('table')}</TabsTrigger>
                 <TabsTrigger value="timeline">{t('timeline')}</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{t('refresh')}</span>
-            </Button>
-            <Link href="/imports/consolidate">
-              <Button variant="outline" size="sm">
-                <Package className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">{t('consolidate')}</span>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                <RefreshCw className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('refresh')}</span>
               </Button>
-            </Link>
-            <Link href="/imports/orders/new">
-              <Button size="sm">
-                <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">{t('newOrder')}</span>
-              </Button>
-            </Link>
+              <Link href="/imports/consolidate" className="flex-1 sm:flex-initial">
+                <Button variant="outline" size="sm" className="w-full">
+                  <Package className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('consolidate')}</span>
+                </Button>
+              </Link>
+              <Link href="/imports/orders/new" className="flex-1 sm:flex-initial">
+                <Button size="sm" className="w-full">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('newOrder')}</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="mx-4 md:mx-0">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-3">
+      <Card className="w-full">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -973,7 +975,7 @@ export default function ImportKanbanView() {
               />
             </div>
             <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={t('allWarehouses')} />
               </SelectTrigger>
               <SelectContent>
@@ -984,7 +986,7 @@ export default function ImportKanbanView() {
               </SelectContent>
             </Select>
             <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-full md:w-36">
+              <SelectTrigger className="w-full sm:w-36">
                 <SelectValue placeholder={t('allPriorities')} />
               </SelectTrigger>
               <SelectContent>
@@ -1000,15 +1002,15 @@ export default function ImportKanbanView() {
       </Card>
 
       {viewMode === "kanban" ? (
-        /* Kanban View */
-        <ScrollArea className="w-full px-4 md:px-0">
-          <div className="flex flex-col md:flex-row gap-3 pb-4">
+        /* Kanban View - Horizontal scroll on mobile */
+        <ScrollArea className="w-full">
+          <div className="flex overflow-x-auto pb-4 gap-3 sm:gap-4 -mx-2 px-2 sm:mx-0 sm:px-0 md:grid md:grid-cols-4">
             {columns.map((column) => {
               const filteredItems = filterItems(column.items || []);
               return (
                 <div
                   key={column.id}
-                  className="flex-shrink-0 w-full md:w-64"
+                  className="flex-shrink-0 w-[260px] sm:w-[280px] md:w-full"
                   onDragOver={(e) => handleDragOver(e, column.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}

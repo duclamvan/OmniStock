@@ -541,7 +541,7 @@ export default function ReceiptDetails() {
   const hasMissingItems = receipt.items?.some((item: ReceiptItem) => item.missingQuantity > 0);
 
   return (
-    <div className="container mx-auto p-3 md:p-4">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Compact Header */}
       <div className="mb-3">
         <Link href="/receiving">
@@ -567,8 +567,8 @@ export default function ReceiptDetails() {
         </div>
 
         {/* Compact Info Bar */}
-        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border rounded-lg p-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border rounded-lg p-2 sm:p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 text-xs">
             <div>
               <p className="text-muted-foreground mb-0.5">{t('receivedBy')}</p>
               <p className="font-medium flex items-center gap-1">
@@ -711,7 +711,7 @@ export default function ReceiptDetails() {
       {receipt.shipment && (
         <div className="bg-white dark:bg-gray-900 border rounded-lg p-3 mb-3">
           <h3 className="text-sm font-semibold mb-2">Shipment Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
               <p className="text-muted-foreground mb-0.5">Shipment Name</p>
               <p className="font-medium">{receipt.shipment.shipmentName || `Shipment #${receipt.shipment.id}`}</p>
@@ -1223,7 +1223,7 @@ export default function ReceiptDetails() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {scanningEnabled && (
                   <div>
                     <Label>{t('barcode')}</Label>
@@ -1236,12 +1236,12 @@ export default function ReceiptDetails() {
                           barcode: e.target.value
                         })}
                         placeholder={t('scanOrEnterBarcode')}
-                        className="pl-10"
+                        className="pl-10 h-12 text-base"
                       />
                     </div>
                   </div>
                 )}
-                <div className={scanningEnabled ? "" : "col-span-2"}>
+                <div className={scanningEnabled ? "" : "sm:col-span-2"}>
                   <Label>{t('condition')}</Label>
                   <Select
                     value={selectedItem.condition}
@@ -1263,7 +1263,7 @@ export default function ReceiptDetails() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t('warehouseLocation')}</Label>
                   <Input
@@ -1273,6 +1273,7 @@ export default function ReceiptDetails() {
                       warehouseLocation: e.target.value
                     })}
                     placeholder={t('egA123')}
+                    className="h-11"
                   />
                 </div>
                 <div>
@@ -1284,6 +1285,7 @@ export default function ReceiptDetails() {
                       additionalLocation: e.target.value
                     })}
                     placeholder={t('egShelf2')}
+                    className="h-11"
                   />
                 </div>
               </div>
@@ -1312,11 +1314,11 @@ export default function ReceiptDetails() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedItem(null)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setSelectedItem(null)} className="w-full sm:w-auto">
                 {t('cancel')}
               </Button>
-              <Button onClick={saveItemVerification}>
+              <Button onClick={saveItemVerification} className="w-full sm:w-auto">
                 {t('saveVerification')}
               </Button>
             </DialogFooter>
@@ -1351,11 +1353,11 @@ export default function ReceiptDetails() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVerifyDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowVerifyDialog(false)} className="w-full sm:w-auto">
               {t('cancel')}
             </Button>
-            <Button onClick={handleCompleteVerification}>
+            <Button onClick={handleCompleteVerification} className="w-full sm:w-auto">
               {t('completeVerification')}
             </Button>
           </DialogFooter>
@@ -1381,11 +1383,11 @@ export default function ReceiptDetails() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowApprovalDialog(false)} className="w-full sm:w-auto">
               {t('cancel')}
             </Button>
-            <Button onClick={() => handleApproval()}>
+            <Button onClick={() => handleApproval()} className="w-full sm:w-auto">
               {t('approveAndAddToInventory')}
             </Button>
           </DialogFooter>

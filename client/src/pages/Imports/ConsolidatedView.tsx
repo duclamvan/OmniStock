@@ -110,10 +110,10 @@ export default function ConsolidatedView() {
   }, {});
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-4 md:p-0">
+        <div className="flex items-center justify-between p-2 sm:p-4 md:p-0">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href="/imports">
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -131,7 +131,7 @@ export default function ConsolidatedView() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="h-4 w-4 md:mr-2" />
             <span className="hidden md:inline">{t('imports:export')}</span>
           </Button>
@@ -139,7 +139,7 @@ export default function ConsolidatedView() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 px-4 md:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 px-2 sm:px-4 md:px-0">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -216,7 +216,7 @@ export default function ConsolidatedView() {
       </div>
 
       {/* Analysis Tabs */}
-      <Tabs defaultValue="products" className="px-4 md:px-0">
+      <Tabs defaultValue="products" className="px-2 sm:px-4 md:px-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="products">{t('imports:products')}</TabsTrigger>
           <TabsTrigger value="suppliers">{t('imports:supplier')}</TabsTrigger>
@@ -225,8 +225,8 @@ export default function ConsolidatedView() {
 
         <TabsContent value="products" className="space-y-4">
           {/* Search and View Toggle */}
-          <Card>
-            <CardContent className="p-4">
+          <Card className="w-full">
+            <CardContent className="p-2 sm:p-4">
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="flex-1">
                   <div className="relative">
@@ -239,11 +239,12 @@ export default function ConsolidatedView() {
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     variant={viewType === "grid" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewType("grid")}
+                    className="flex-1 sm:flex-none"
                   >
                     {t('imports:grid')}
                   </Button>
@@ -251,6 +252,7 @@ export default function ConsolidatedView() {
                     variant={viewType === "list" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewType("list")}
+                    className="flex-1 sm:flex-none"
                   >
                     {t('imports:list')}
                   </Button>
@@ -367,9 +369,9 @@ export default function ConsolidatedView() {
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className="w-full">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[800px]">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-4">{t('imports:product')}</th>
@@ -429,7 +431,7 @@ export default function ConsolidatedView() {
         </TabsContent>
 
         <TabsContent value="suppliers" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Supplier Performance */}
             <Card>
               <CardHeader>

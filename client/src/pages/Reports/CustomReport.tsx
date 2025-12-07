@@ -263,7 +263,7 @@ export default function CustomReport() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Test Notification System - Remove in production */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-3">
@@ -274,10 +274,10 @@ export default function CustomReport() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('clickButtonsToTest')}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             <Button
               onClick={triggerSuccessToast}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
               size="sm"
               data-testid="button-success-toast"
             >
@@ -287,6 +287,7 @@ export default function CustomReport() {
             <Button
               onClick={triggerErrorToast}
               variant="destructive"
+              className="w-full sm:w-auto"
               size="sm"
               data-testid="button-error-toast"
             >
@@ -295,7 +296,7 @@ export default function CustomReport() {
             </Button>
             <Button
               onClick={triggerInfoToast}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               size="sm"
               data-testid="button-info-toast"
             >
@@ -305,6 +306,7 @@ export default function CustomReport() {
             <Button
               onClick={triggerMultipleToasts}
               variant="outline"
+              className="w-full sm:w-auto"
               size="sm"
               data-testid="button-multiple-toasts"
             >

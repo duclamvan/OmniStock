@@ -307,33 +307,30 @@ export default function GeneralSettings() {
     <Form {...form}>
       <form className="space-y-6">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto gap-2">
-            <TabsTrigger value="profile" className="flex items-center gap-2 px-3 py-2" data-testid="tab-profile">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:tabCompany')}</span>
-              <span className="sm:hidden">{t('settings:tabCompany')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="localization" className="flex items-center gap-2 px-3 py-2" data-testid="tab-localization">
-              <Globe className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:tabLocalization')}</span>
-              <span className="sm:hidden">{t('settings:tabLocalization')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="flex items-center gap-2 px-3 py-2" data-testid="tab-operations">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:tabOperations')}</span>
-              <span className="sm:hidden">{t('settings:tabOperations')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="customer" className="flex items-center gap-2 px-3 py-2" data-testid="tab-customer">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:tabCustomer')}</span>
-              <span className="sm:hidden">{t('settings:tabCustomer')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2 px-3 py-2" data-testid="tab-security">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:tabSecurity')}</span>
-              <span className="sm:hidden">{t('settings:tabSecurity')}</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-3 lg:grid-cols-5 h-auto gap-1 sm:gap-2 p-1">
+              <TabsTrigger value="profile" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-profile">
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:tabCompany')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="localization" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-localization">
+                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:tabLocalization')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="operations" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-operations">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:tabOperations')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="customer" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-customer">
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:tabCustomer')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-security">
+                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:tabSecurity')}</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Tab 1: Company Profile */}
           <TabsContent value="profile" className="space-y-4 mt-4">
@@ -1550,7 +1547,7 @@ export default function GeneralSettings() {
               variant={hasPendingChanges ? "default" : "outline"}
               onClick={() => saveAllPending()}
               disabled={saveMutation.isPending || !hasPendingChanges}
-              className="min-h-[44px]" 
+              className="w-full sm:w-auto min-h-[44px]" 
               data-testid="button-save"
             >
               {saveMutation.isPending ? (

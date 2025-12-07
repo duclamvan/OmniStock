@@ -1753,8 +1753,8 @@ export default function AddCustomer() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6 pb-8 p-2 sm:p-4 md:p-6 overflow-x-hidden">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -1762,9 +1762,9 @@ export default function AddCustomer() {
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('common:back')}
+          <span className="hidden sm:inline">{t('common:back')}</span>
         </Button>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
           {isEditMode ? t('customers.editCustomer') : t('customers.addCustomer')}
         </h1>
       </div>
@@ -3057,11 +3057,12 @@ export default function AddCustomer() {
           </Card>
         )}
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate('/customers')}
+            className="w-full sm:w-auto"
             data-testid="button-cancel"
           >
             {t('customers.cancel')}
@@ -3069,6 +3070,7 @@ export default function AddCustomer() {
           <Button
             type="submit"
             disabled={createOrUpdateCustomerMutation.isPending}
+            className="w-full sm:w-auto"
             data-testid="button-submit"
           >
             {createOrUpdateCustomerMutation.isPending ? (
@@ -3084,7 +3086,7 @@ export default function AddCustomer() {
       </form>
 
       <AlertDialog open={deleteBillingIndex !== null} onOpenChange={() => setDeleteBillingIndex(null)}>
-        <AlertDialogContent data-testid="dialog-deleteBillingConfirm">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-lg" data-testid="dialog-deleteBillingConfirm">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('customers.deleteBillingAddress')}</AlertDialogTitle>
             <AlertDialogDescription>

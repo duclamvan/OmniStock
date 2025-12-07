@@ -273,29 +273,29 @@ export default function ReviewApprove() {
   const { shipment, receipt, items } = receiptData;
 
   return (
-    <div className="container mx-auto py-8 max-w-7xl">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 lg:py-8 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link href="/receiving">
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" className="h-10 w-10 sm:h-auto sm:w-auto sm:px-3">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('reviewApprove')}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{t('reviewApprove')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {t('reviewApproveDesc')}
             </p>
           </div>
         </div>
-        <Badge variant={hasDiscrepancies ? "warning" : "default"} className="text-sm px-3 py-1">
+        <Badge variant={hasDiscrepancies ? "warning" : "default"} className="text-sm px-3 py-1 self-start sm:self-auto">
           {hasDiscrepancies ? t('hasDiscrepancies') : t('noIssues')}
         </Badge>
       </div>
 
       {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Shipment Details & Items */}
         <div className="lg:col-span-2 space-y-6">
           {/* Shipment Details Card */}
@@ -307,14 +307,14 @@ export default function ReviewApprove() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('shipmentName')}</p>
                   <p className="font-medium">{shipment?.name || t('na', { ns: 'common' })}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('trackingNumber')}</p>
-                  <p className="font-medium font-mono">{shipment?.trackingNumber || t('na', { ns: 'common' })}</p>
+                  <p className="font-medium font-mono break-all">{shipment?.trackingNumber || t('na', { ns: 'common' })}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('carrier')}</p>
@@ -362,7 +362,7 @@ export default function ReviewApprove() {
             </CardHeader>
             <CardContent>
               {/* Desktop Table - Hidden on Mobile */}
-              <div className="hidden md:block rounded-lg border overflow-hidden">
+              <div className="hidden md:block rounded-lg border overflow-hidden overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -601,7 +601,7 @@ export default function ReviewApprove() {
                           </div>
 
                           {/* Quantities Grid */}
-                          <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
                             <div className="text-center p-3 bg-muted/30 rounded-lg">
                               <p className="text-xs text-muted-foreground mb-1">{t('expected')}</p>
                               <p className="font-bold text-lg">{expectedQty}</p>
@@ -876,14 +876,14 @@ export default function ReviewApprove() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', { ns: 'common' })}</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto">{t('cancel', { ns: 'common' })}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowApproveDialog(false);
                 approveMutation.mutate();
               }}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
               {approveMutation.isPending ? `${t('approving')}...` : t('confirmApproval')}
             </AlertDialogAction>
@@ -915,8 +915,8 @@ export default function ReviewApprove() {
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', { ns: 'common' })}</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto">{t('cancel', { ns: 'common' })}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (!rejectionReason.trim()) {
@@ -930,7 +930,7 @@ export default function ReviewApprove() {
                 setShowRejectDialog(false);
                 rejectMutation.mutate();
               }}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
             >
               {rejectMutation.isPending ? `${t('rejecting')}...` : t('confirmRejection')}
             </AlertDialogAction>

@@ -800,24 +800,24 @@ function FloatingScanButton({
                 {bulkScanState.totalScanned > 0 && (
                   <div className="space-y-3">
                     {/* Summary Stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                           {bulkScanState.totalScanned}
                         </div>
-                        <div className="text-xs text-blue-600/80 dark:text-blue-400/80">{t('totalScanned')}</div>
+                        <div className="text-[10px] sm:text-xs text-blue-600/80 dark:text-blue-400/80">{t('totalScanned')}</div>
                       </div>
-                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      <div className="p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                           {bulkScanState.matched}
                         </div>
-                        <div className="text-xs text-green-600/80 dark:text-green-400/80">{t('matched')}</div>
+                        <div className="text-[10px] sm:text-xs text-green-600/80 dark:text-green-400/80">{t('matched')}</div>
                       </div>
-                      <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
-                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      <div className="p-2 sm:p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
                           {bulkScanState.unmatched}
                         </div>
-                        <div className="text-xs text-red-600/80 dark:text-red-400/80">{t('unmatched')}</div>
+                        <div className="text-[10px] sm:text-xs text-red-600/80 dark:text-red-400/80">{t('unmatched')}</div>
                       </div>
                     </div>
 
@@ -2567,14 +2567,14 @@ function QuickStorageSheet({
                                 })()}
 
                                 {/* Quick Stats */}
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-2 sm:p-3 border dark:border-gray-800">
                                     <p className="text-xs text-muted-foreground">{t('received')}</p>
-                                    <p className="text-lg font-bold">{item.receivedQuantity}</p>
+                                    <p className="text-base sm:text-lg font-bold">{item.receivedQuantity}</p>
                                   </div>
-                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-2 sm:p-3 border dark:border-gray-800">
                                     <p className="text-xs text-muted-foreground">{t('remaining')}</p>
-                                    <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{itemRemainingQty}</p>
+                                    <p className="text-base sm:text-lg font-bold text-amber-700 dark:text-amber-400">{itemRemainingQty}</p>
                                   </div>
                                 </div>
 
@@ -3133,10 +3133,10 @@ function QuickStorageSheet({
                 )}
                 
                 {/* Quantity Info */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 text-center">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2 sm:p-3 text-center">
                     <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('received')}</p>
-                    <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{currentItem.receivedQuantity}</p>
+                    <p className="text-lg sm:text-xl font-bold text-blue-700 dark:text-blue-300">{currentItem.receivedQuantity}</p>
                   </div>
                   <div className={`rounded-lg p-3 text-center ${
                     remainingQuantity === 0 
@@ -4126,14 +4126,14 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={revertToReceiveMutation.isPending}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={revertToReceiveMutation.isPending} className="w-full sm:w-auto">
               {t('common:cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmRevert}
               disabled={revertToReceiveMutation.isPending}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
             >
               {revertToReceiveMutation.isPending ? t('common:processing') : t('confirmRevert')}
             </AlertDialogAction>
@@ -4453,7 +4453,7 @@ export default function ReceivingList() {
 
   return (
     <ReceivingSessionProvider>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen overflow-x-hidden">
         {/* Camera View Overlay */}
         {barcodeScanner.isActive && (
           <CameraViewOverlay
@@ -4794,11 +4794,11 @@ export default function ReceivingList() {
                 data-testid="input-product-search"
               />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUnmatchedDialog(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowUnmatchedDialog(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button onClick={() => setShowUnmatchedDialog(false)}>
+              <Button onClick={() => setShowUnmatchedDialog(false)} className="w-full sm:w-auto">
                 Match Product
               </Button>
             </DialogFooter>

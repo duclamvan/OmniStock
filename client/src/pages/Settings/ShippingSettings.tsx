@@ -248,33 +248,35 @@ export default function ShippingSettings() {
     <Form {...form}>
       <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="ppl-cz" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
-            <TabsTrigger value="ppl-cz" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              <span className="hidden sm:inline">PPL CZ</span>
-              <span className="sm:hidden">PPL</span>
-            </TabsTrigger>
-            <TabsTrigger value="gls-de" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">GLS DE</span>
-              <span className="sm:hidden">GLS</span>
-            </TabsTrigger>
-            <TabsTrigger value="dhl-de" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              <span className="hidden sm:inline">DHL DE</span>
-              <span className="sm:hidden">DHL</span>
-            </TabsTrigger>
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:general')}</span>
-              <span className="sm:hidden">{t('settings:general').substring(0, 3)}</span>
-            </TabsTrigger>
-            <TabsTrigger value="rules" className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('settings:rules')}</span>
-              <span className="sm:hidden">{t('settings:rules')}</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 mb-4">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-5 gap-1 p-1">
+              <TabsTrigger value="ppl-cz" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">PPL CZ</span>
+                <span className="sm:hidden">PPL</span>
+              </TabsTrigger>
+              <TabsTrigger value="gls-de" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">GLS DE</span>
+                <span className="sm:hidden">GLS</span>
+              </TabsTrigger>
+              <TabsTrigger value="dhl-de" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">DHL DE</span>
+                <span className="sm:hidden">DHL</span>
+              </TabsTrigger>
+              <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:general')}</span>
+                <span className="sm:hidden">{t('settings:general').substring(0, 3)}</span>
+              </TabsTrigger>
+              <TabsTrigger value="rules" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:rules')}</span>
+                <span className="sm:hidden">{t('settings:rules')}</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* PPL CZ Tab */}
           <TabsContent value="ppl-cz" className="space-y-4">
@@ -1811,7 +1813,7 @@ export default function ShippingSettings() {
               variant={hasPendingChanges ? "default" : "outline"}
               onClick={() => saveAllPending()}
               disabled={saveMutation.isPending || !hasPendingChanges}
-              className="min-h-[44px]" 
+              className="w-full sm:w-auto min-h-[44px]" 
               data-testid="button-save"
             >
               {saveMutation.isPending ? (

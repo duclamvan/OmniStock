@@ -266,7 +266,7 @@ export default function OrderReports() {
   }
 
   return (
-    <div className="space-y-6" data-testid="order-reports">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden" data-testid="order-reports">
       <ReportHeader
         title={t('orderReportsTitle')}
         description={t('orderReportsDesc')}

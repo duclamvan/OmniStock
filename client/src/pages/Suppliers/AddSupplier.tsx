@@ -158,7 +158,7 @@ export default function AddSupplier() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-8">
+    <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto pb-8 p-2 sm:p-4 md:p-6 -m-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-4">
         <Button 
@@ -171,8 +171,8 @@ export default function AddSupplier() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:addSupplier')}</h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:addSupplier')}</h1>
+          <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
       </div>
 
@@ -182,13 +182,13 @@ export default function AddSupplier() {
           <Accordion type="multiple" defaultValue={["basic-info", "contact-details"]} className="space-y-4">
             {/* Basic Information */}
             <AccordionItem value="basic-info" className="border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
-              <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <AccordionTrigger className="px-4 sm:px-6 py-3 sm:py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                   {t('inventory:supplierInfo')}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
+              <AccordionContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -302,13 +302,13 @@ export default function AddSupplier() {
 
             {/* Contact Details */}
             <AccordionItem value="contact-details" className="border-l-4 border-l-green-500 dark:border-l-green-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
-              <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <AccordionTrigger className="px-4 sm:px-6 py-3 sm:py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                   {t('inventory:contactInfo')}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
+              <AccordionContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -383,13 +383,13 @@ export default function AddSupplier() {
 
             {/* Address Information */}
             <AccordionItem value="address-info" className="border-l-4 border-l-purple-500 dark:border-l-purple-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
-              <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <AccordionTrigger className="px-4 sm:px-6 py-3 sm:py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                   {t('inventory:addressInfo')}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
+              <AccordionContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="address"
@@ -453,13 +453,13 @@ export default function AddSupplier() {
 
             {/* Additional Information */}
             <AccordionItem value="additional-info" className="border-l-4 border-l-orange-500 dark:border-l-orange-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
-              <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <AccordionTrigger className="px-4 sm:px-6 py-3 sm:py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                   {t('inventory:additionalInfo')}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
+              <AccordionContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="taxId"
@@ -506,12 +506,13 @@ export default function AddSupplier() {
           </Accordion>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setLocation("/suppliers")}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
               data-testid="button-cancel"
             >
               {t('common:cancel')}
@@ -519,7 +520,7 @@ export default function AddSupplier() {
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="min-w-[140px]"
+              className="w-full sm:w-auto min-w-[140px]"
               data-testid="button-submit"
             >
               {isSubmitting ? (

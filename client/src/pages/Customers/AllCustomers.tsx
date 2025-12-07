@@ -446,21 +446,21 @@ export default function AllCustomers() {
   }
 
   return (
-    <div className="space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-6">
+    <div className="space-y-4 sm:space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {t('customers:customers')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             {t('customers:monitorCustomerRelationships')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export-customers">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export-customers">
                 <FileDown className="h-4 w-4 mr-2" />
                 {t('common:export')}
               </Button>
@@ -476,8 +476,8 @@ export default function AllCustomers() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/customers/add">
-            <Button data-testid="button-add-customer">
+          <Link href="/customers/add" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto" data-testid="button-add-customer">
               <Plus className="h-4 w-4 mr-2" />
               {t('customers:addCustomer')}
             </Button>
@@ -800,7 +800,7 @@ export default function AllCustomers() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-lg bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-gray-900 dark:text-gray-100">{t('customers:deleteCustomer')}</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-700 dark:text-gray-300">

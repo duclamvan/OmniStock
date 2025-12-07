@@ -312,9 +312,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   // Remove loading state to prevent UI refresh indicators
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-2 sm:p-4 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h3 className="text-base sm:text-lg font-semibold">{t('customers.customPrices')}</h3>
+        <h3 className="text-sm sm:text-base md:text-lg font-semibold">{t('customers.customPrices')}</h3>
         <TooltipProvider>
           <div className="flex gap-1 self-end">
             <Tooltip>
@@ -346,9 +346,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                   <p>{t('customers.bulkImportPrices')}</p>
                 </TooltipContent>
               </Tooltip>
-            <DialogContent className="max-w-2xl bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">{t('customers.bulkImportCustomerPrices')}</DialogTitle>
+                <DialogTitle className="text-sm sm:text-base text-gray-900 dark:text-gray-100">{t('customers.bulkImportCustomerPrices')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -361,15 +361,17 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     onChange={(e) => setCsvContent(e.target.value)}
                   />
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                   <Button
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => setIsBulkDialogOpen(false)}
                   >
                     {t('customers.cancel')}
                   </Button>
                   <Button
                     onClick={handleBulkImport}
+                    className="w-full sm:w-auto"
                     disabled={!csvContent.trim() || bulkImportMutation.isPending}
                   >
                     {t('customers.import')}
@@ -400,9 +402,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 <p>{t('customers.addPrice')}</p>
               </TooltipContent>
             </Tooltip>
-            <DialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+            <DialogContent className="max-w-[95vw] sm:max-w-lg bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">{t('customers.addCustomPrice')}</DialogTitle>
+                <DialogTitle className="text-sm sm:text-base text-gray-900 dark:text-gray-100">{t('customers.addCustomPrice')}</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -498,7 +500,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     />
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="price"
@@ -539,7 +541,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="validFrom"
@@ -583,15 +585,16 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     )}
                   />
 
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                     <Button
                       type="button"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => setIsAddDialogOpen(false)}
                     >
                       {t('customers.cancel')}
                     </Button>
-                    <Button type="submit" disabled={createPriceMutation.isPending}>
+                    <Button type="submit" className="w-full sm:w-auto" disabled={createPriceMutation.isPending}>
                       {t('customers.addPrice')}
                     </Button>
                   </div>
@@ -605,13 +608,13 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
 
       {prices.length === 0 ? (
         <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 mb-4">
-                <Tag className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-100 dark:bg-slate-700 mb-3 sm:mb-4">
+                <Tag className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400 dark:text-slate-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">0</p>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('customers.noCustomPrices')}</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">0</p>
+              <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('customers.noCustomPrices')}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {t('customers.addCustomPricesToOverride')}
               </p>

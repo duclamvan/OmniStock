@@ -1164,10 +1164,10 @@ export default function CreatePurchase() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Mobile-First Sticky Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-4 md:p-0">
+        <div className="flex items-center justify-between p-2 sm:p-4 md:p-0">
           <div className="flex items-center gap-2 md:gap-4">
             <Button 
               variant="ghost" 
@@ -1235,8 +1235,8 @@ export default function CreatePurchase() {
         </div>
       </div>
 
-      <div className="px-4 md:px-6 pb-20 md:pb-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+      <div className="px-2 sm:px-4 md:px-6 pb-20 md:pb-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-4 md:gap-8">
         {/* Left Column - Form */}
         <div className="space-y-6">
           {/* Order Details */}
@@ -1252,7 +1252,7 @@ export default function CreatePurchase() {
                   <DollarSign className="h-4 w-4 text-primary" />
                   <span>{t('currencyAndPayment')}</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="purchase-currency" className="text-xs text-muted-foreground">{t('currency')} *</Label>
                     <Select value={purchaseCurrency} onValueChange={(value) => {
@@ -1517,7 +1517,7 @@ export default function CreatePurchase() {
                   <Truck className="h-4 w-4 text-primary" />
                   <span>{t('shippingDetails')}</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
                     <Select value={shippingCurrency} onValueChange={setShippingCurrency}>

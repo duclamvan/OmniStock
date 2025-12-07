@@ -241,10 +241,10 @@ export default function ConsolidatedWarehouseView() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-0 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between p-2 sm:p-4 md:p-0 gap-4">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href="/imports">
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -262,9 +262,9 @@ export default function ConsolidatedWarehouseView() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -274,11 +274,11 @@ export default function ConsolidatedWarehouseView() {
                 <SelectItem value="365">{t('imports:lastYear')}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
               <RefreshCw className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">{t('imports:refresh')}</span>
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
               <Download className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">{t('imports:export')}</span>
             </Button>
@@ -287,8 +287,8 @@ export default function ConsolidatedWarehouseView() {
       </div>
 
       {/* Warehouse Selector */}
-      <div className="px-4 md:px-0">
-        <div className="grid grid-cols-3 gap-2 md:gap-4">
+      <div className="px-2 sm:px-4 md:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-4">
           {Object.entries(warehouseData).map(([key, warehouse]) => (
             <Card 
               key={key}
@@ -339,7 +339,7 @@ export default function ConsolidatedWarehouseView() {
       </div>
 
       {/* Warehouse Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 sm:px-4 md:px-0">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -406,7 +406,7 @@ export default function ConsolidatedWarehouseView() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="px-4 md:px-0">
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="px-2 sm:px-4 md:px-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">{t('imports:overview')}</TabsTrigger>
           <TabsTrigger value="inventory">{t('imports:inventory')}</TabsTrigger>
@@ -414,7 +414,7 @@ export default function ConsolidatedWarehouseView() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Recent Activity */}
             <Card>
               <CardHeader>
@@ -509,8 +509,8 @@ export default function ConsolidatedWarehouseView() {
 
         <TabsContent value="inventory" className="space-y-4">
           {/* Search Bar */}
-          <Card>
-            <CardContent className="p-4">
+          <Card className="w-full">
+            <CardContent className="p-2 sm:p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

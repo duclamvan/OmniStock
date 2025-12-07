@@ -362,7 +362,7 @@ export default function FinancialReports() {
   }
 
   return (
-    <div className="space-y-6" data-testid="financial-reports">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden" data-testid="financial-reports">
       <ReportHeader
         title={t('financialReport')}
         description={t('financialOverviewDesc')}

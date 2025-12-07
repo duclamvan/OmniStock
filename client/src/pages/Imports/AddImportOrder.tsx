@@ -194,10 +194,10 @@ export default function AddImportOrder() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Mobile-First Header */}
-      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-4 md:p-0">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 -mx-2 sm:-mx-4 md:-mx-6 px-2 sm:px-4 md:px-6">
+        <div className="flex items-center justify-between py-3 md:py-0 gap-3">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href="/imports">
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -216,15 +216,15 @@ export default function AddImportOrder() {
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6 px-4 md:px-0">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         {/* Order Details - Mobile Optimized */}
-        <Card>
-          <CardHeader className="pb-3 md:pb-6">
-            <CardTitle className="text-base md:text-lg">{t('orderDetails')}</CardTitle>
-            <CardDescription className="text-xs md:text-sm">{t('basicInformation')}</CardDescription>
+        <Card className="w-full">
+          <CardHeader className="pb-2 sm:pb-4 md:pb-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{t('orderDetails')}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">{t('basicInformation')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="supplierId"
@@ -370,12 +370,12 @@ export default function AddImportOrder() {
         </Card>
 
         {/* Order Items - Mobile Optimized */}
-        <Card>
-          <CardHeader className="pb-3 md:pb-6">
-            <div className="flex items-center justify-between">
+        <Card className="w-full">
+          <CardHeader className="pb-2 sm:pb-4 md:pb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div>
-                <CardTitle className="text-base md:text-lg">{t('orderItems')}</CardTitle>
-                <CardDescription className="text-xs md:text-sm">
+                <CardTitle className="text-sm sm:text-base md:text-lg">{t('orderItems')}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {items.length} {items.length === 1 ? t('item') : t('items')} • {totalQuantity} {t('common:units', 'units')}
                 </CardDescription>
               </div>
@@ -383,16 +383,17 @@ export default function AddImportOrder() {
                 type="button"
                 size="sm"
                 onClick={() => setShowItemForm(true)}
-                className="h-8 md:h-9"
+                className="h-8 md:h-9 w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">{t('addItem')}</span>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('addItem')}</span>
+                <span className="sm:hidden">{t('addItem')}</span>
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6">
             {items.length === 0 ? (
-              <div className="text-center py-8 md:py-12">
+              <div className="text-center py-6 sm:py-8 md:py-12">
                 <Package className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm md:text-base text-muted-foreground">{t('noItemsYet')}</p>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">{t('addFirstItem')}</p>
@@ -442,7 +443,7 @@ export default function AddImportOrder() {
                 </div>
 
                 {/* Desktop View - Table */}
-                <div className="hidden md:block">
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

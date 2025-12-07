@@ -307,10 +307,10 @@ export default function EditImportOrder() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Mobile-First Header */}
-      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-4 md:p-0">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 -mx-2 sm:-mx-4 md:-mx-6 px-2 sm:px-4 md:px-6">
+        <div className="flex items-center justify-between py-3 md:py-0 gap-3">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href={`/imports/orders/${id}`}>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -330,15 +330,15 @@ export default function EditImportOrder() {
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6 px-4 md:px-0">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         {/* Order Details - Mobile Optimized */}
-        <Card>
-          <CardHeader className="pb-3 md:pb-6">
-            <CardTitle className="text-base md:text-lg">{t('orderDetails')}</CardTitle>
-            <CardDescription className="text-xs md:text-sm">{t('updateOrderInfo')}</CardDescription>
+        <Card className="w-full">
+          <CardHeader className="pb-2 sm:pb-4 md:pb-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{t('orderDetails')}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">{t('updateOrderInfo')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="supplierId"
@@ -527,12 +527,12 @@ export default function EditImportOrder() {
         </Card>
 
         {/* Order Items - Mobile Optimized */}
-        <Card>
-          <CardHeader className="pb-3 md:pb-6">
-            <div className="flex items-center justify-between">
+        <Card className="w-full">
+          <CardHeader className="pb-2 sm:pb-4 md:pb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div>
-                <CardTitle className="text-base md:text-lg">{t('orderItems')}</CardTitle>
-                <CardDescription className="text-xs md:text-sm">
+                <CardTitle className="text-sm sm:text-base md:text-lg">{t('orderItems')}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {items.length} {items.length === 1 ? t('item') : t('items')} • {totalQuantity} {t('common:units', 'units')}
                 </CardDescription>
               </div>

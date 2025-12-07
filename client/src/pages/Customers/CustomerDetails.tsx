@@ -288,10 +288,10 @@ export default function CustomerDetails() {
   const customerDuration = getCustomerDuration();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 overflow-x-hidden">
       {/* Header Section */}
       <div className="bg-white dark:bg-slate-800 border-b dark:border-gray-700 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
               <Button
@@ -435,10 +435,10 @@ export default function CustomerDetails() {
       </div>
 
       {/* Tabs Section */}
-      <div className="max-w-7xl mx-auto px-4 lg:px-6 pb-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-6">
         <Tabs defaultValue="details" className="space-y-6">
           {/* Sticky Tab Navigation */}
-          <div className="sticky top-[113px] lg:top-[105px] z-10 bg-gray-50 dark:bg-slate-900 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b dark:border-gray-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-800/80">
+          <div className="sticky top-[113px] lg:top-[105px] z-10 bg-gray-50 dark:bg-slate-900 -mx-2 sm:-mx-4 lg:-mx-6 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 border-b dark:border-gray-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-800/80">
             <TabsList className="w-full lg:w-auto h-auto p-1 bg-slate-100 dark:bg-slate-700">
               <TabsTrigger 
                 value="details" 

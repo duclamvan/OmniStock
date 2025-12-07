@@ -150,10 +150,10 @@ export default function ShipmentTracking() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-4 md:p-0">
+        <div className="flex items-center justify-between p-2 sm:p-4 md:p-0">
           <div className="flex items-center gap-2 md:gap-4">
             <Link href="/imports">
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -175,7 +175,7 @@ export default function ShipmentTracking() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 sm:px-4 md:px-0">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -226,8 +226,8 @@ export default function ShipmentTracking() {
       </div>
 
       {/* Search */}
-      <Card className="mx-4 md:mx-0">
-        <CardContent className="p-4">
+      <Card className="mx-2 sm:mx-4 md:mx-0 w-full">
+        <CardContent className="p-2 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -241,7 +241,7 @@ export default function ShipmentTracking() {
       </Card>
 
       {/* Shipments List */}
-      <div className="px-4 md:px-0 space-y-4">
+      <div className="px-2 sm:px-4 md:px-0 space-y-4">
         {displayShipments.map((shipment: Shipment) => (
           <Card key={shipment.id} className="cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setSelectedShipment(shipment)}>

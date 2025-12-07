@@ -273,7 +273,7 @@ export default function ExpenseReports() {
   }
 
   return (
-    <div className="space-y-6" data-testid="expense-reports">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden" data-testid="expense-reports">
       <ReportHeader
         title={t('expenseReport')}
         description={t('expenseAnalysisDesc')}

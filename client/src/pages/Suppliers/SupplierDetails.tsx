@@ -155,31 +155,31 @@ export default function SupplierDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 -m-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 truncate">{supplier.name}</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 truncate">{supplier.name}</h1>
         </div>
-        <Button onClick={() => setLocation(`/suppliers/${id}/edit`)} className="shrink-0">
+        <Button onClick={() => setLocation(`/suppliers/${id}/edit`)} className="shrink-0 w-full sm:w-auto" size="sm">
           <Pencil className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">{t('inventory:editSupplier')}</span>
         </Button>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Contact Information */}
           <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-900 dark:text-gray-100">{t('inventory:contactInfo')}</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-gray-100">{t('inventory:contactInfo')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
               {supplier.contactPerson && (
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('inventory:contactPerson')}</p>
@@ -257,10 +257,10 @@ export default function SupplierDetails() {
 
           {/* Products */}
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <div className="space-y-4">
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                   {t('inventory:supplierProducts')} ({filteredProducts.length} of {supplierProducts.length})
                 </CardTitle>
                 {supplierProducts.length > 0 && (
@@ -276,7 +276,7 @@ export default function SupplierDetails() {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               {supplierProducts.length === 0 ? (
                 <p className="text-slate-500 dark:text-slate-400">{t('inventory:noProductsFromSupplier')}</p>
               ) : filteredProducts.length === 0 ? (
@@ -309,10 +309,10 @@ export default function SupplierDetails() {
           
           {/* Purchase History */}
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <div className="space-y-4">
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <ShoppingCart className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 dark:text-cyan-400" />
                   {t('inventory:supplierPurchases')} ({filteredPurchases.length} of {supplierPurchases.length})
                 </CardTitle>
                 {supplierPurchases.length > 0 && (
@@ -328,9 +328,9 @@ export default function SupplierDetails() {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               {supplierPurchases.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noPurchaseHistory')}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('inventory:noPurchaseHistory')}</p>
               ) : filteredPurchases.length === 0 ? (
                 <p className="text-slate-500 dark:text-slate-400">{t('inventory:noPurchasesMatchSearch')}</p>
               ) : (
@@ -378,10 +378,10 @@ export default function SupplierDetails() {
 
           {/* Files & Documents */}
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
                   {t('inventory:filesDocuments')} ({supplierFiles.length})
                 </CardTitle>
                 <ObjectUploader
@@ -396,9 +396,9 @@ export default function SupplierDetails() {
                 </ObjectUploader>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               {supplierFiles.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400">{t('inventory:noFilesUploaded')}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('inventory:noFilesUploaded')}</p>
               ) : (
                 <div className="space-y-2">
                   {supplierFiles.map((file) => (
@@ -445,10 +445,10 @@ export default function SupplierDetails() {
         <div className="space-y-6">
           {/* Purchase Stats */}
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-slate-100">{t('inventory:totalPurchases')}</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-sm sm:text-base text-slate-900 dark:text-slate-100">{t('inventory:totalPurchases')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                   <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -503,24 +503,24 @@ export default function SupplierDetails() {
           {/* Notes */}
           {supplier.notes && (
             <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500 dark:text-slate-400" />
                   {t('inventory:notes')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{supplier.notes}</p>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{supplier.notes}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Metadata */}
           <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-slate-100">{t('inventory:additionalInformation')}</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-sm sm:text-base text-slate-900 dark:text-slate-100">{t('inventory:additionalInformation')}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               <div className="space-y-2 text-sm">
                 <div>
                   <p className="text-slate-600 dark:text-slate-400">{t('inventory:supplierId')}</p>

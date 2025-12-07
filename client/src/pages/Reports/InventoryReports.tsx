@@ -367,7 +367,7 @@ export default function InventoryReports() {
   }
 
   return (
-    <div className="space-y-6" data-testid="inventory-reports">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden" data-testid="inventory-reports">
       <ReportHeader
         title={t('inventoryReportsTitle')}
         description={t('inventoryReportsDesc')}
@@ -510,7 +510,7 @@ export default function InventoryReports() {
       {/* Dead Stock Report */}
       <Card data-testid="card-dead-stock">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-slate-600" />
@@ -518,14 +518,14 @@ export default function InventoryReports() {
               </CardTitle>
               <CardDescription>{t('deadStockDesc')}</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="dead-stock-days" className="text-sm">{t('daysThreshold')}:</Label>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <Label htmlFor="dead-stock-days" className="text-sm whitespace-nowrap">{t('daysThreshold')}:</Label>
               <Input
                 id="dead-stock-days"
                 type="number"
                 value={deadStockDays}
                 onChange={(e) => setDeadStockDays(parseInt(e.target.value) || 200)}
-                className="w-24"
+                className="w-full sm:w-24"
                 min={1}
                 data-testid="input-dead-stock-days"
               />
@@ -583,7 +583,7 @@ export default function InventoryReports() {
       {/* Reorder Alerts */}
       <Card data-testid="card-reorder-alerts">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
@@ -595,7 +595,7 @@ export default function InventoryReports() {
               onClick={() => sendReorderAlertsMutation.mutate()}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
               disabled={sendReorderAlertsMutation.isPending}
               data-testid="button-send-email-alerts"
             >
@@ -669,26 +669,26 @@ export default function InventoryReports() {
               {t('colorTrendTracking')}
             </CardTitle>
             <CardDescription className="mb-4">{t('colorTrendDesc')}</CardDescription>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-start" className="text-sm">{t('startDate')}:</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <Label htmlFor="color-trends-start" className="text-sm whitespace-nowrap">{t('startDate')}:</Label>
                 <Input
                   id="color-trends-start"
                   type="date"
                   value={colorTrendsStartDate}
                   onChange={(e) => setColorTrendsStartDate(e.target.value)}
-                  className="w-40"
+                  className="w-full sm:w-40"
                   data-testid="input-color-trends-start"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-end" className="text-sm">{t('endDate')}:</Label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <Label htmlFor="color-trends-end" className="text-sm whitespace-nowrap">{t('endDate')}:</Label>
                 <Input
                   id="color-trends-end"
                   type="date"
                   value={colorTrendsEndDate}
                   onChange={(e) => setColorTrendsEndDate(e.target.value)}
-                  className="w-40"
+                  className="w-full sm:w-40"
                   data-testid="input-color-trends-end"
                 />
               </div>
@@ -769,10 +769,11 @@ export default function InventoryReports() {
                 </CardTitle>
                 <CardDescription className="mt-1">{t('stockAdjustmentHistoryDesc')}</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   onClick={handleExportStockHistoryExcel}
                   data-testid="button-export-history-excel"
                 >
@@ -782,6 +783,7 @@ export default function InventoryReports() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   onClick={handleExportStockHistoryPDF}
                   data-testid="button-export-history-pdf"
                 >
@@ -790,9 +792,9 @@ export default function InventoryReports() {
                 </Button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="history-start-date" className="text-sm">{t('startDate')}:</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <Label htmlFor="history-start-date" className="text-sm whitespace-nowrap">{t('startDate')}:</Label>
                 <Input
                   id="history-start-date"
                   type="date"
@@ -801,12 +803,12 @@ export default function InventoryReports() {
                     setAdjustmentHistoryStartDate(e.target.value);
                     setAdjustmentHistoryOffset(0);
                   }}
-                  className="w-40"
+                  className="w-full sm:w-40"
                   data-testid="input-history-start-date"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="history-end-date" className="text-sm">{t('endDate')}:</Label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <Label htmlFor="history-end-date" className="text-sm whitespace-nowrap">{t('endDate')}:</Label>
                 <Input
                   id="history-end-date"
                   type="date"
@@ -815,7 +817,7 @@ export default function InventoryReports() {
                     setAdjustmentHistoryEndDate(e.target.value);
                     setAdjustmentHistoryOffset(0);
                   }}
-                  className="w-40"
+                  className="w-full sm:w-40"
                   data-testid="input-history-end-date"
                 />
               </div>
@@ -901,14 +903,15 @@ export default function InventoryReports() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="text-sm text-slate-500">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
+                <div className="text-sm text-slate-500 text-center sm:text-left">
                   {t('showing')} {adjustmentHistoryOffset + 1}-{Math.min(adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT, stockAdjustmentHistoryTotal)} {t('of')} {stockAdjustmentHistoryTotal} {t('records')}
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     onClick={() => setAdjustmentHistoryOffset(Math.max(0, adjustmentHistoryOffset - ADJUSTMENT_HISTORY_LIMIT))}
                     disabled={adjustmentHistoryOffset === 0}
                     data-testid="button-history-previous"
@@ -919,6 +922,7 @@ export default function InventoryReports() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     onClick={() => setAdjustmentHistoryOffset(adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT)}
                     disabled={adjustmentHistoryOffset + ADJUSTMENT_HISTORY_LIMIT >= stockAdjustmentHistoryTotal}
                     data-testid="button-history-next"

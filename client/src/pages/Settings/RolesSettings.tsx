@@ -605,43 +605,45 @@ export default function RolesSettings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 h-14">
-          <TabsTrigger
-            value="manage-roles"
-            className="h-12 text-base min-h-[56px]"
-            data-testid="tab-manage-roles"
-          >
-            <Shield className="h-4 w-4 mr-2" />
-            {t('settings:manageRoles')}
-          </TabsTrigger>
-          <TabsTrigger
-            value="assign-users"
-            className="h-12 text-base min-h-[56px]"
-            data-testid="tab-assign-users"
-          >
-            <Users className="h-4 w-4 mr-2" />
-            {t('settings:assignUsers')}
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-2 h-auto sm:h-14 gap-1 p-1">
+            <TabsTrigger
+              value="manage-roles"
+              className="h-10 sm:h-12 text-sm sm:text-base min-h-[40px] sm:min-h-[56px] px-3 sm:px-4 whitespace-nowrap"
+              data-testid="tab-manage-roles"
+            >
+              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              {t('settings:manageRoles')}
+            </TabsTrigger>
+            <TabsTrigger
+              value="assign-users"
+              className="h-10 sm:h-12 text-sm sm:text-base min-h-[40px] sm:min-h-[56px] px-3 sm:px-4 whitespace-nowrap"
+              data-testid="tab-assign-users"
+            >
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              {t('settings:assignUsers')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="manage-roles" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Lock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                   {t('settings:rolesList')}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {t('settings:rolesListDescription')}
                 </CardDescription>
               </div>
               <Button
                 onClick={openCreateDialog}
-                className="min-h-[56px] min-w-[56px] md:min-w-auto"
+                className="w-full sm:w-auto min-h-[44px] sm:min-h-[56px] sm:min-w-[56px]"
                 data-testid="button-add-role"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
                 {t('settings:addRole')}
               </Button>
             </CardHeader>
@@ -678,13 +680,13 @@ export default function RolesSettings() {
                         onOpenChange={() => toggleRoleExpanded(role.id)}
                       >
                         <div className="border rounded-lg">
-                          <div className="flex items-center justify-between p-4 min-h-[72px]">
-                            <div className="flex items-center gap-4 flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 gap-3 sm:gap-4 min-h-[auto] sm:min-h-[72px]">
+                            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                               <CollapsibleTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="min-h-[44px] min-w-[44px] p-0"
+                                  className="min-h-[40px] sm:min-h-[44px] min-w-[40px] sm:min-w-[44px] p-0 flex-shrink-0"
                                   data-testid={`button-expand-role-${role.id}`}
                                 >
                                   {isExpanded ? (
@@ -696,26 +698,26 @@ export default function RolesSettings() {
                               </CollapsibleTrigger>
 
                               <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center ${getRoleColorClass(role.color)}`}
+                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getRoleColorClass(role.color)}`}
                               >
-                                <SectionIcon className="h-5 w-5 text-white" />
+                                <SectionIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium truncate">
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                  <span className="font-medium truncate text-sm sm:text-base">
                                     {getRoleDisplayName(role)}
                                   </span>
-                                  <Badge variant={role.isSystem ? "secondary" : "outline"}>
+                                  <Badge variant={role.isSystem ? "secondary" : "outline"} className="text-xs">
                                     {role.isSystem ? t('settings:systemRole') : t('settings:customRole')}
                                   </Badge>
                                   {role.name === 'administrator' && (
-                                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs">
                                       {t('settings:fullAccess')}
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                                   {role.name === 'administrator' ? (
                                     <span className="text-amber-600 dark:text-amber-400 font-medium">{t('settings:allPermissions')}</span>
                                   ) : (
@@ -726,15 +728,16 @@ export default function RolesSettings() {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full sm:w-auto pl-10 sm:pl-0">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openEditDialog(role)}
-                                className="min-h-[44px] min-w-[44px]"
+                                className="flex-1 sm:flex-none min-h-[40px] sm:min-h-[44px] sm:min-w-[44px]"
                                 data-testid={`button-edit-role-${role.id}`}
                               >
                                 <Pencil className="h-4 w-4" />
+                                <span className="sm:hidden ml-2">{t('settings:editRole')}</span>
                                 <span className="hidden sm:inline ml-2">{t('settings:editRole')}</span>
                               </Button>
                               {!role.isSystem && (
@@ -742,10 +745,11 @@ export default function RolesSettings() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openDeleteDialog(role)}
-                                  className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
+                                  className="flex-1 sm:flex-none min-h-[40px] sm:min-h-[44px] sm:min-w-[44px] text-destructive hover:text-destructive"
                                   data-testid={`button-delete-role-${role.id}`}
                                 >
                                   <Trash2 className="h-4 w-4" />
+                                  <span className="sm:hidden ml-2">{t('settings:deleteRole')}</span>
                                   <span className="hidden sm:inline ml-2">{t('settings:deleteRole')}</span>
                                 </Button>
                               )}
@@ -753,17 +757,17 @@ export default function RolesSettings() {
                           </div>
 
                           <CollapsibleContent>
-                            <div className="px-4 pb-4 pt-2 border-t">
+                            <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 border-t">
                               {role.name === 'administrator' ? (
-                                <div className="flex items-center gap-4 py-6 px-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                                  <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full">
-                                    <Crown className="h-8 w-8 text-white" />
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 py-4 sm:py-6 px-3 sm:px-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                                  <div className="p-2 sm:p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex-shrink-0">
+                                    <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                                   </div>
                                   <div>
-                                    <h4 className="font-semibold text-lg text-amber-800 dark:text-amber-300">
+                                    <h4 className="font-semibold text-base sm:text-lg text-amber-800 dark:text-amber-300">
                                       {t('settings:fullAccessTitle')}
                                     </h4>
-                                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                                    <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">
                                       {t('settings:fullAccessDescription')}
                                     </p>
                                   </div>
@@ -818,12 +822,12 @@ export default function RolesSettings() {
 
         <TabsContent value="assign-users" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Lock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 {t('settings:userRolesManagement')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 {t('settings:assignRolesToControlAccess')}
               </CardDescription>
             </CardHeader>
@@ -873,7 +877,7 @@ export default function RolesSettings() {
                                 disabled={updateUserRoleMutation.isPending}
                               >
                                 <SelectTrigger
-                                  className="w-[180px] min-h-[44px]"
+                                  className="w-full sm:w-[180px] min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
                                   data-testid={`select-role-${user.id}`}
                                 >
                                   <SelectValue placeholder={t('settings:selectRole')} />

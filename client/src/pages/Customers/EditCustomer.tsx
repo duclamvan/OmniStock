@@ -383,9 +383,9 @@ export default function EditCustomer() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="outline"
             size="icon"
@@ -394,7 +394,7 @@ export default function EditCustomer() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">{t('customers:editCustomer')}</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('customers:editCustomer')}</h1>
         </div>
       </div>
 
@@ -1140,10 +1140,11 @@ export default function EditCustomer() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-4">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => navigate("/customers")}
               data-testid="button-cancel"
             >
@@ -1151,6 +1152,7 @@ export default function EditCustomer() {
             </Button>
             <Button 
               type="submit" 
+              className="w-full sm:w-auto"
               disabled={updateCustomerMutation.isPending}
               data-testid="button-save"
             >
@@ -1178,9 +1180,9 @@ export default function EditCustomer() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!addressToDelete} onOpenChange={(open) => !open && setAddressToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('customers:deleteShippingAddress')}</AlertDialogTitle>
+            <AlertDialogTitle className="text-sm sm:text-base">{t('customers:deleteShippingAddress')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('customers:confirmDeleteShippingAddress')}
             </AlertDialogDescription>

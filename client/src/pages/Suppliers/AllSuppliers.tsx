@@ -526,18 +526,18 @@ export default function AllSuppliers() {
   }
 
   return (
-    <div className="space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-6">
+    <div className="space-y-4 sm:space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{t('inventory:suppliers')}</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('inventory:manageProductsDescription')}</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{t('inventory:suppliers')}</h1>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg" data-testid="button-export">
-                <Download className="mr-2 h-5 w-5" />
+              <Button variant="outline" size="default" className="w-full sm:w-auto" data-testid="button-export">
+                <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 {t('inventory:export')}
               </Button>
             </DropdownMenuTrigger>
@@ -554,8 +554,8 @@ export default function AllSuppliers() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
-            <Plus className="mr-2 h-5 w-5" />
+          <Button onClick={() => navigate('/suppliers/new')} size="default" className="w-full sm:w-auto" data-testid="button-add-supplier">
+            <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
             {t('inventory:addSupplier')}
           </Button>
         </div>

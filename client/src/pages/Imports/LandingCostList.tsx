@@ -150,7 +150,7 @@ export default function LandingCostList() {
 
   if (isLoading || isLoadingCosts) {
     return (
-      <div className="container mx-auto p-3 md:p-6">
+      <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -166,7 +166,7 @@ export default function LandingCostList() {
   }
 
   return (
-    <div className="container mx-auto p-3 md:p-6">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -182,7 +182,7 @@ export default function LandingCostList() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -331,7 +331,7 @@ export default function LandingCostList() {
                     </div>
 
                     {/* Cost Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-muted/30 dark:bg-muted/20 rounded-lg p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-muted/30 dark:bg-muted/20 rounded-lg p-3">
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">{t('shippingCost')}</p>
                         <p className="font-semibold">{getShippingCostDisplay(shipment)}</p>
@@ -433,7 +433,7 @@ export default function LandingCostList() {
                   {/* Right Section - Actions */}
                   <div className="flex flex-col gap-2 w-full md:w-auto md:shrink-0">
                     <Link href={`/imports/landing-costs/${shipment.id}`}>
-                      <Button size="sm" className="w-full" data-testid={`button-view-costs-${shipment.id}`}>
+                      <Button size="sm" className="w-full sm:w-auto" data-testid={`button-view-costs-${shipment.id}`}>
                         <Calculator className="h-4 w-4 mr-2" />
                         {t('viewCosts')}
                         <ArrowRight className="h-4 w-4 ml-2" />

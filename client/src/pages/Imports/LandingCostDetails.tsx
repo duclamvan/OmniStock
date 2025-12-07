@@ -538,7 +538,7 @@ export default function LandingCostDetails() {
 
   if (isLoading || !shipment) {
     return (
-      <div className="container mx-auto p-4 md:p-6">
+      <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-24 w-full" />
@@ -564,7 +564,7 @@ export default function LandingCostDetails() {
   };
 
   return (
-    <div className="container mx-auto p-3 md:p-4 max-w-6xl">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-6xl overflow-x-hidden">
       {/* Header */}
       <div className="mb-4">
         <Link href="/imports/landing-costs">
@@ -592,7 +592,7 @@ export default function LandingCostDetails() {
         {/* Shipment Info Bar */}
         <Card className="mb-4">
           <CardContent className="p-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
               <div>
                 <p className="text-muted-foreground mb-0.5">{t('carrier') || 'Carrier'}</p>
                 <p className="font-medium flex items-center gap-1">
@@ -822,7 +822,7 @@ export default function LandingCostDetails() {
                       </div>
 
                       {/* Cost Breakdown Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                         {/* Purchase Price */}
                         <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
                           <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">

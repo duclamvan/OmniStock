@@ -154,10 +154,10 @@ export default function ImportOrderDetails() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+    <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-0 gap-4">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 -mx-2 sm:-mx-4 md:-mx-6 px-2 sm:px-4 md:px-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between py-3 md:py-0 gap-3 sm:gap-4">
           <div className="flex items-center gap-2 md:gap-4">
             <Button 
               variant="ghost" 
@@ -191,26 +191,26 @@ export default function ImportOrderDetails() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{t('export')}</span>
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('export')}</span>
             </Button>
-            <Button variant="outline" size="sm">
-              <Printer className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{t('print')}</span>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+              <Printer className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('print')}</span>
             </Button>
-            <Button size="sm">
-              <Edit className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{t('editOrder')}</span>
+            <Button size="sm" className="flex-1 sm:flex-initial">
+              <Edit className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('editOrder')}</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <Card className="mx-4 md:mx-0">
-        <CardContent className="p-4">
+      <Card className="w-full">
+        <CardContent className="p-3 sm:p-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('orderProgress')}</span>
@@ -226,60 +226,60 @@ export default function ImportOrderDetails() {
       </Card>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mx-4 md:mx-0">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{t('totalItems')}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('totalItems')}</span>
             </div>
-            <p className="text-2xl font-bold">{order.totalItems.toLocaleString()}</p>
+            <p className="text-lg sm:text-2xl font-bold">{order.totalItems.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{t('orderValue')}</span>
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('orderValue')}</span>
             </div>
-            <p className="text-2xl font-bold">{formatCurrency(order.totalValue, order.currency)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatCurrency(order.totalValue, order.currency)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Truck className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{t('shippingCost')}</span>
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('shippingCost')}</span>
             </div>
-            <p className="text-2xl font-bold">{formatCurrency(order.shippingCost || 0, order.currency)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatCurrency(order.shippingCost || 0, order.currency)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{t('totalLanded')}</span>
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('totalLanded')}</span>
             </div>
-            <p className="text-2xl font-bold">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-4 md:mx-0">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
           <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
           <TabsTrigger value="items">{t('items')} ({order.items.length})</TabsTrigger>
           <TabsTrigger value="costs">{t('costs')}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('orderInformation')}</CardTitle>
+        <TabsContent value="overview" className="space-y-3 sm:space-y-4">
+          <Card className="w-full">
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-sm sm:text-base">{t('orderInformation')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -343,13 +343,13 @@ export default function ImportOrderDetails() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="items" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('orderItems')}</CardTitle>
+        <TabsContent value="items" className="space-y-3 sm:space-y-4">
+          <Card className="w-full">
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-sm sm:text-base">{t('orderItems')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="p-3 sm:p-6">
+              <div className="space-y-2 overflow-x-auto">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex-1">
@@ -369,13 +369,13 @@ export default function ImportOrderDetails() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="costs" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('costBreakdown')}</CardTitle>
+        <TabsContent value="costs" className="space-y-3 sm:space-y-4">
+          <Card className="w-full">
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-sm sm:text-base">{t('costBreakdown')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-3 sm:p-6">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">{t('productValue')}</span>
                   <span className="font-medium">{formatCurrency(order.totalValue, order.currency)}</span>

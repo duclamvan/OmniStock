@@ -230,12 +230,12 @@ export default function AllImports() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">{t('importOrders')}</h1>
-        <Link href="/imports/orders/new">
-          <Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h1 className="text-xl sm:text-2xl font-semibold">{t('importOrders')}</h1>
+        <Link href="/imports/orders/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             {t('newImportOrder')}
           </Button>
@@ -271,89 +271,89 @@ export default function AllImports() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalOrders')}</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('totalOrders')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.total}</p>
               </div>
-              <Package className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('pending')}</p>
-                <p className="text-2xl font-bold">{stats.pending}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('pending')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.pending}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('inTransit')}</p>
-                <p className="text-2xl font-bold">{stats.inTransit}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('inTransit')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.inTransit}</p>
               </div>
-              <Ship className="h-8 w-8 text-purple-500" />
+              <Ship className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('delivered')}</p>
-                <p className="text-2xl font-bold">{stats.delivered}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('delivered')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.delivered}</p>
               </div>
-              <Truck className="h-8 w-8 text-green-500" />
+              <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('received')}</p>
-                <p className="text-2xl font-bold">{stats.received}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('received')}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.received}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-teal-500" />
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-teal-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalValue')}</p>
-                <p className="text-xl font-bold">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('totalValue')}</p>
+                <p className="text-base sm:text-xl font-bold">
                   ${stats.totalValue.toLocaleString()}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-500" />
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('filters')}</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">{t('filters')}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
+        <CardContent className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
@@ -366,7 +366,7 @@ export default function AllImports() {
               </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={t('allStatuses')} />
               </SelectTrigger>
               <SelectContent>
@@ -384,11 +384,11 @@ export default function AllImports() {
       </Card>
 
       {/* Orders Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('importOrders')}</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">{t('importOrders')}</CardTitle>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0 sm:p-6 overflow-x-auto">
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredOrders?.map((order: any) => (

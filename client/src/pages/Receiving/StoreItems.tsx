@@ -304,10 +304,10 @@ export default function StoreItems() {
   
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
         <div className="space-y-4">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-4 w-96" />
+          <Skeleton className="h-10 w-full sm:w-64" />
+          <Skeleton className="h-4 w-full sm:w-96" />
           <Skeleton className="h-64 w-full" />
         </div>
       </div>
@@ -315,31 +315,31 @@ export default function StoreItems() {
   }
   
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-7xl overflow-x-hidden">
       <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/receiving/details/${id}`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/receiving/details/${id}`)} className="h-10 px-3">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('back', { ns: 'common' })}
+            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{t('warehouse:storeItems')}</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold">{t('warehouse:storeItems')}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {t('warehouse:assignWarehouseLocations')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-xs sm:text-sm">
             {receiptData?.receipt?.shipmentName || `Receipt #${id}`}
           </Badge>
           <Button 
             onClick={() => saveLocationsMutation.mutate()}
             disabled={completedItems === 0 || isSaving}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -367,7 +367,7 @@ export default function StoreItems() {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Item List */}
         <div className="lg:col-span-1">
           <Card className="h-full">

@@ -297,32 +297,34 @@ export default function FinancialSettings() {
     <Form {...form}>
       <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-            <TabsTrigger value="pricing" className="flex items-center gap-1 sm:gap-2">
-              <Percent className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:pricing')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="tax" className="flex items-center gap-1 sm:gap-2">
-              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:taxVAT')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="currency" className="flex items-center gap-1 sm:gap-2">
-              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:currency')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoicing" className="flex items-center gap-1 sm:gap-2">
-              <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:invoicing')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="accounting" className="flex items-center gap-1 sm:gap-2">
-              <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:accounting')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="expenses" className="flex items-center gap-1 sm:gap-2">
-              <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('financial:expenseCategories')}</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-3 lg:grid-cols-6 gap-1 p-1">
+              <TabsTrigger value="pricing" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Percent className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:pricing')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="tax" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:taxVAT')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="currency" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:currency')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="invoicing" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Receipt className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:invoicing')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounting" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:accounting')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="expenses" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Wallet className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('financial:expenseCategories')}</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Tab 1: Pricing */}
           <TabsContent value="pricing" className="space-y-4">
@@ -1280,7 +1282,7 @@ export default function FinancialSettings() {
               variant={hasPendingChanges ? "default" : "outline"}
               onClick={() => saveAllPending()}
               disabled={!hasPendingChanges}
-              className="min-h-[44px]" 
+              className="w-full sm:w-auto min-h-[44px]" 
               data-testid="button-save"
             >
               {hasPendingChanges ? (

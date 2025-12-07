@@ -1914,7 +1914,7 @@ export default function StartReceiving() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl relative">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-4xl relative overflow-x-hidden">
       {/* Visual Feedback Components */}
       <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
       <ScanLineAnimation isActive={scanMode} />
@@ -1984,18 +1984,18 @@ export default function StartReceiving() {
             className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full" 
           />
         </div>
-        <div className="grid grid-cols-3 gap-3 mt-4 text-sm">
+        <div className="grid grid-cols-3 gap-1 sm:gap-3 mt-4 text-xs sm:text-sm">
           <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-gray-900 dark:text-gray-100">{scannedParcels}/{parcelCount}</div>
-            <div className="text-xs text-muted-foreground">{unitLabel}</div>
+            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{scannedParcels}/{parcelCount}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">{unitLabel}</div>
           </div>
           <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
-            <div className="text-xs text-muted-foreground">{t('items')}</div>
+            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">{t('items')}</div>
           </div>
           <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
-            <div className="text-xs text-muted-foreground">{t('verified')}</div>
+            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">{t('verified')}</div>
           </div>
         </div>
       </div>
@@ -3007,11 +3007,11 @@ export default function StartReceiving() {
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
               onClick={() => setCurrentStep(1)}
-              className="flex-1"
+              className="w-full sm:flex-1 h-12"
             >
               Back to Step 1
             </Button>
@@ -3022,7 +3022,7 @@ export default function StartReceiving() {
                 receivingItems.some(item => item.status === 'pending') ||
                 receivingItems.length === 0
               }
-              className="flex-1"
+              className="w-full sm:flex-1 h-12"
               size="lg"
             >
               {completeReceivingMutation.isPending ? (

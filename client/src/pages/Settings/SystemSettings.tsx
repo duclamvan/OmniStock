@@ -305,28 +305,30 @@ export default function SystemSettings() {
     <Form {...form}>
       <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="system" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2">
-              <SettingsIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:system')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2">
-              <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:data')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2">
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:security')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-1 sm:gap-2">
-              <Plug className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:integrations')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-1 sm:gap-2">
-              <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{t('settings:aiAutomation')}</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-5 gap-1 p-1">
+              <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <SettingsIcon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:system')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Database className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:data')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:security')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Plug className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:integrations')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Bot className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('settings:aiAutomation')}</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Tab 1: System */}
           <TabsContent value="system" className="space-y-4">

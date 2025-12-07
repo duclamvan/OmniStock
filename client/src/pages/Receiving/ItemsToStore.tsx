@@ -271,22 +271,22 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
         </div>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('unitCost')}</p>
-            <p className="font-mono font-medium">{formatCurrency(unitCost, currency)}</p>
+            <p className="font-mono font-medium text-sm">{formatCurrency(unitCost, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('shipping')}</p>
-            <p className="font-mono font-medium text-blue-600 dark:text-blue-400">{formatCurrency(shippingCost, currency)}</p>
+            <p className="font-mono font-medium text-sm text-blue-600 dark:text-blue-400">{formatCurrency(shippingCost, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('landingCost')}</p>
-            <p className="font-mono font-semibold">{formatCurrency(landingCost, currency)}</p>
+            <p className="font-mono font-semibold text-sm">{formatCurrency(landingCost, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('landing')} ({displayCurrency})</p>
-            <p className="font-mono font-semibold text-amber-700 dark:text-amber-400">
+            <p className="font-mono font-semibold text-sm text-amber-700 dark:text-amber-400">
               {displayCurrency === 'EUR' ? `€${landingCostConverted.toFixed(2)}` : `${landingCostConverted.toFixed(0)} Kč`}
             </p>
           </div>
@@ -297,7 +297,7 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
           <Label htmlFor={`retail-price-mobile-${index}`} className="text-xs text-muted-foreground mb-2 block">
             {t('setRetailPrice')}
           </Label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <Input
               id={`retail-price-mobile-${index}`}
               type="number"
@@ -309,7 +309,7 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
             />
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t('retail')} ({displayCurrency})</p>
-              <p className="font-mono font-semibold text-amber-700 dark:text-amber-400 mt-1">
+              <p className="font-mono font-semibold text-sm text-amber-700 dark:text-amber-400 mt-1">
                 {displayCurrency === 'EUR' ? `€${retailPriceConverted.toFixed(2)}` : `${retailPriceConverted.toFixed(0)} Kč`}
               </p>
             </div>
@@ -1202,7 +1202,7 @@ export default function ItemsToStore() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 md:p-6 overflow-x-hidden">
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-32 w-full" />
@@ -1214,7 +1214,7 @@ export default function ItemsToStore() {
 
   if (!storageData || receiptsWithItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 md:p-6 overflow-x-hidden">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Boxes className="h-16 w-16 text-muted-foreground mb-4" />
@@ -1222,6 +1222,7 @@ export default function ItemsToStore() {
             <Button
               variant="outline"
               onClick={() => window.history.back()}
+              className="w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               {t('backToReceiving')}
@@ -1233,7 +1234,7 @@ export default function ItemsToStore() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 overflow-x-hidden">
       {/* Mobile Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b dark:border-gray-800 shadow-sm">
         <div className="flex items-center justify-between p-4">
@@ -1539,7 +1540,7 @@ export default function ItemsToStore() {
                       </div>
 
                       {/* Quick Stats */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
                           <p className="text-xs text-muted-foreground">Received</p>
                           <p className="text-lg font-bold">{item.receivedQuantity}</p>
@@ -2026,18 +2027,18 @@ export default function ItemsToStore() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {currentItem.sku && (
                       <div>
                         <p className="text-xs text-muted-foreground">SKU</p>
-                        <p className="font-mono text-sm">{currentItem.sku}</p>
+                        <p className="font-mono text-sm break-all">{currentItem.sku}</p>
                       </div>
                     )}
 
                     {currentItem.barcode && (
                       <div>
                         <p className="text-xs text-muted-foreground">Barcode</p>
-                        <p className="font-mono text-xs">{currentItem.barcode}</p>
+                        <p className="font-mono text-xs break-all">{currentItem.barcode}</p>
                       </div>
                     )}
                   </div>
@@ -2053,10 +2054,10 @@ export default function ItemsToStore() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
                       <p className="text-xs text-muted-foreground">Tracking #</p>
-                      <p className="font-mono text-xs">{currentItem.shipmentTrackingNumber || 'N/A'}</p>
+                      <p className="font-mono text-xs break-all">{currentItem.shipmentTrackingNumber || 'N/A'}</p>
                     </div>
 
                     <div>
