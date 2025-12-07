@@ -9201,9 +9201,11 @@ export default function PickPack() {
                         setDhlBookmarkletCode(bookmarkletCode);
                         setDhlAutofillPrepared(true);
                         
-                        window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
-                        
                         setShowDHLBookmarkletDialog(true);
+                        
+                        setTimeout(() => {
+                          window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
+                        }, 100);
                         
                         toast({
                           title: t('dhlAutofillPrepared'),
