@@ -319,7 +319,7 @@ export default function ProductDetails() {
   const productBundles = bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="w-full px-4 py-3">
@@ -718,7 +718,7 @@ export default function ProductDetails() {
                             {t('products:viewHistory', 'View History')} ({costHistory.length})
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+                        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden">
                           <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                               <History className="h-5 w-5" />
@@ -733,7 +733,7 @@ export default function ProductDetails() {
                             
                             {/* Summary Stats */}
                             {costTrend && (
-                              <div className="grid grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div className="p-3 rounded-lg border bg-card">
                                   <p className="text-xs text-muted-foreground">{t('products:latestCost', 'Latest Cost')}</p>
                                   <p className="text-lg font-bold">{formatCurrency(costTrend.latest, 'CZK')}</p>
@@ -762,8 +762,8 @@ export default function ProductDetails() {
                             )}
                             
                             {/* History Table */}
-                            <div className="border rounded-lg overflow-hidden">
-                              <Table>
+                            <div className="border rounded-lg overflow-x-auto">
+                              <Table className="min-w-[320px]">
                                 <TableHeader>
                                   <TableRow className="bg-muted/30">
                                     <TableHead className="text-xs">{t('common:date', 'Date')}</TableHead>
@@ -797,23 +797,23 @@ export default function ProductDetails() {
                       </Dialog>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                     {product.importCostUsd && (
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
                         <p className="text-xs text-muted-foreground mb-1">USD</p>
-                        <p className="text-lg font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
+                        <p className="text-base sm:text-lg font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
                       </div>
                     )}
                     {landingCostCzk > 0 && (
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
                         <p className="text-xs text-muted-foreground mb-1">CZK</p>
-                        <p className="text-lg font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
+                        <p className="text-base sm:text-lg font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
                       </div>
                     )}
                     {landingCostEur > 0 && (
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
                         <p className="text-xs text-muted-foreground mb-1">EUR</p>
-                        <p className="text-lg font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
+                        <p className="text-base sm:text-lg font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
                       </div>
                     )}
                   </div>
@@ -1052,23 +1052,23 @@ export default function ProductDetails() {
                   {t('products:tieredPricing')}
                 </h2>
                 
-                <div className="rounded-xl border bg-card overflow-hidden">
-                  <Table>
+                <div className="rounded-xl border bg-card overflow-x-auto">
+                  <Table className="min-w-[320px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('products:quantityRange')}</TableHead>
-                        <TableHead className="text-right">{t('products:priceCzk')}</TableHead>
-                        <TableHead className="text-right">{t('products:priceEur')}</TableHead>
+                        <TableHead className="whitespace-nowrap">{t('products:quantityRange')}</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">{t('products:priceCzk')}</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">{t('products:priceEur')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tieredPricing.map((tier: any) => (
                         <TableRow key={tier.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium whitespace-nowrap">
                             {tier.minQuantity}+ {t('common:units')}
                           </TableCell>
-                          <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

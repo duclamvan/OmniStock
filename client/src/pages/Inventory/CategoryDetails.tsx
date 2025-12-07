@@ -311,39 +311,43 @@ export default function CategoryDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => window.history.back()}
+            className="flex-shrink-0 h-9 w-9"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <FolderOpen className="h-6 w-6 text-muted-foreground" />
-              <h1 className="text-2xl font-bold">{category.name}</h1>
+              <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
+              <h1 className="text-lg sm:text-2xl font-bold truncate">{category.name}</h1>
             </div>
             {category.description && (
-              <p className="text-muted-foreground mt-1">{category.description}</p>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{category.description}</p>
             )}
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline"
             onClick={() => setShowMoveDialog(true)}
             disabled={otherProducts.length === 0}
+            className="flex-1 sm:flex-none"
+            size="sm"
           >
             <MoveRight className="mr-2 h-4 w-4" />
-            {t('moveProductsHere')}
+            <span className="hidden xs:inline">{t('moveProductsHere')}</span>
+            <span className="xs:hidden">{t('move')}</span>
           </Button>
-          <Link href={`/inventory/categories/${id}/edit`}>
-            <Button variant="outline">
+          <Link href={`/inventory/categories/${id}/edit`} className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full" size="sm">
               <Edit className="mr-2 h-4 w-4" />
               {t('edit')}
             </Button>
@@ -352,6 +356,8 @@ export default function CategoryDetails() {
             variant="destructive"
             onClick={handleDelete}
             disabled={categoryProducts.length > 0}
+            className="flex-1 sm:flex-none"
+            size="sm"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             {t('delete')}
@@ -360,29 +366,29 @@ export default function CategoryDetails() {
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t('totalProducts')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 p-3 sm:p-6">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-muted-foreground" />
-              <span className="text-2xl font-bold">{categoryProducts.length}</span>
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+              <span className="text-xl sm:text-2xl font-bold">{categoryProducts.length}</span>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t('totalStockValue')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="pt-0 p-3 sm:p-6">
+            <div className="text-lg sm:text-2xl font-bold truncate">
               €{categoryProducts.reduce((sum, p) => 
                 sum + (p.quantity * parseFloat(p.priceEur)), 0
               ).toFixed(2)}
@@ -390,16 +396,16 @@ export default function CategoryDetails() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="col-span-2 sm:col-span-1">
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t('created')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 p-3 sm:p-6">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <span className="text-lg">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+              <span className="text-sm sm:text-lg">
                 {format(new Date(category.createdAt), 'MMM dd, yyyy')}
               </span>
             </div>
@@ -409,11 +415,11 @@ export default function CategoryDetails() {
 
       {/* Products Table */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>{t('productsInCategory')}</CardTitle>
-            <Link href={`/inventory/add?categoryId=${id}`}>
-              <Button size="sm">
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <CardTitle className="text-base sm:text-lg">{t('productsInCategory')}</CardTitle>
+            <Link href={`/inventory/add?categoryId=${id}`} className="w-full sm:w-auto">
+              <Button size="sm" className="w-full sm:w-auto">
                 <Package className="mr-2 h-4 w-4" />
                 {t('addProduct')}
               </Button>
@@ -422,21 +428,23 @@ export default function CategoryDetails() {
         </CardHeader>
         <CardContent className="p-0">
           {categoryProducts.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-2" />
-              <p>{t('noProductsInCategoryYet')}</p>
+            <div className="text-center py-8 sm:py-12 px-4 text-muted-foreground">
+              <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2" />
+              <p className="text-sm sm:text-base">{t('noProductsInCategoryYet')}</p>
               <Link href={`/inventory/add?categoryId=${id}`}>
-                <Button className="mt-4" variant="outline">
+                <Button className="mt-4 w-full sm:w-auto" variant="outline">
                   {t('addFirstProduct')}
                 </Button>
               </Link>
             </div>
           ) : (
-            <DataTable
-              columns={productColumns}
-              data={categoryProducts}
-              getRowKey={(row) => row.id}
-            />
+            <div className="overflow-x-auto">
+              <DataTable
+                columns={productColumns}
+                data={categoryProducts}
+                getRowKey={(row) => row.id}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
@@ -461,7 +469,7 @@ export default function CategoryDetails() {
 
       {/* Move Products Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
-        <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl h-[85vh] sm:h-[80vh] flex flex-col p-0">
           <div className="px-6 py-4 border-b">
             <DialogTitle>{t('moveProductsToCategory', { categoryName: category?.name })}</DialogTitle>
             <DialogDescription>
@@ -534,13 +542,14 @@ export default function CategoryDetails() {
             </div>
           </div>
           
-          <div className="border-t px-6 py-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+          <div className="border-t px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowMoveDialog(false)} className="w-full sm:w-auto">
               {t('cancel')}
             </Button>
             <Button
               onClick={handleMoveProducts}
               disabled={selectedProducts.length === 0 || moveProductsMutation.isPending}
+              className="w-full sm:w-auto"
             >
               {moveProductsMutation.isPending ? (
                 <>

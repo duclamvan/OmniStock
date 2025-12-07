@@ -2270,7 +2270,7 @@ export default function EditOrder() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 overflow-x-hidden">
       <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
         {/* Header - Mobile Optimized */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
@@ -5280,7 +5280,7 @@ export default function EditOrder() {
               {t('chooseVariantsFor')}: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedProductForVariant?.name}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-900/50">

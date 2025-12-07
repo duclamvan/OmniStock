@@ -6603,18 +6603,18 @@ export default function PickPack() {
                 {t('excellentWork', { orderId: activePackingOrder.orderId })}
               </p>
               
-              <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
-                <div className="grid grid-cols-3 gap-2 lg:gap-4">
-                  <div>
-                    <p className="text-xs lg:text-sm text-gray-500">{t('time')}</p>
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-4 text-center">
+                  <div className="p-2 sm:p-0">
+                    <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{t('time')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600 dark:text-amber-400">{formatTimer(packingTimer)}</p>
                   </div>
-                  <div>
-                    <p className="text-xs lg:text-sm text-gray-500">{t('cartons')}</p>
+                  <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
+                    <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{t('cartons')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-600 dark:text-indigo-400">{cartons.length}</p>
                   </div>
-                  <div>
-                    <p className="text-xs lg:text-sm text-gray-500">{t('weight')}</p>
+                  <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
+                    <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{t('weight')}</p>
                     <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">
                       {cartons.length > 0 
                         ? `${cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(2)} kg`
@@ -6726,7 +6726,7 @@ export default function PickPack() {
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Optimized Header - Packing Mode */}
         <div className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-6 py-2.5 lg:py-3">
@@ -11744,7 +11744,7 @@ export default function PickPack() {
 
     return (
       <>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Header - Ultra Compact for Mobile */}
         <div className="bg-gradient-to-r from-blue-700 dark:from-blue-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
@@ -12671,16 +12671,16 @@ export default function PickPack() {
                     
                     {/* Stats Summary */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-md border border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                        <div className="p-2 sm:p-0">
                           <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
                           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
                         </div>
-                        <div>
+                        <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                           <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
                           <p className="text-lg font-bold text-green-600 dark:text-green-400">{activePickingOrder.totalItems}</p>
                         </div>
-                        <div>
+                        <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                           <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
                           <p className="text-lg font-bold text-purple-600 dark:text-purple-400">100%</p>
                         </div>
@@ -12918,16 +12918,16 @@ export default function PickPack() {
           {/* Stats */}
           <div className="p-4 sm:p-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-5 shadow-md border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                <div className="p-2 sm:p-0">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
                   <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
                 </div>
-                <div>
+                <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
                   <p className="text-xl font-bold text-green-600 dark:text-green-400">{activePickingOrder.totalItems}</p>
                 </div>
-                <div>
+                <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
                   <p className="text-xl font-bold text-purple-600 dark:text-purple-400">100%</p>
                 </div>
@@ -13042,7 +13042,7 @@ export default function PickPack() {
 
   // Main Dashboard View
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       {/* Header with Navigation and Overview */}
       <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 sm:px-6 py-4">
@@ -13331,7 +13331,7 @@ export default function PickPack() {
                           <Award className="h-5 w-5 text-amber-500" />
                           {t('recentAchievements', 'Recent Achievements')}
                         </h3>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
                             <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
                               <Zap className="h-5 w-5 text-white" />

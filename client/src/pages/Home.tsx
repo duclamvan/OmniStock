@@ -102,59 +102,48 @@ interface ActivityLog {
 export default function Home() {
   const { t } = useTranslation(['common', 'dashboard']);
   
-  // Fetch dashboard metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
   });
 
-  // Fetch low stock products
   const { data: lowStockProducts = [], isLoading: stockLoading } = useQuery<LowStockProduct[]>({
     queryKey: ['/api/products/low-stock'],
   });
 
-  // Fetch recent orders
   const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<RecentOrder[]>({
     queryKey: ['/api/orders'],
   });
 
-  // Fetch unpaid orders
   const { data: unpaidOrders = [] } = useQuery<any[]>({
     queryKey: ['/api/orders/unpaid'],
   });
 
-  // Fetch stock adjustment requests
   const { data: stockAdjustmentRequests = [] } = useQuery<any[]>({
     queryKey: ['/api/stock-adjustment-requests'],
     staleTime: 0,
     refetchInterval: 30000,
   });
 
-  // Fetch shipments waiting to be received
   const { data: shipmentsToReceive = [] } = useQuery<any[]>({
     queryKey: ['/api/imports/shipments/to-receive'],
   });
 
-  // Fetch shipments currently being received
   const { data: shipmentsReceiving = [] } = useQuery<any[]>({
     queryKey: ['/api/imports/shipments/receiving'],
   });
 
-  // Fetch customers for insights
   const { data: customers = [] } = useQuery<any[]>({
     queryKey: ['/api/customers'],
   });
 
-  // Fetch products for insights
   const { data: products = [] } = useQuery<any[]>({
     queryKey: ['/api/products'],
   });
 
-  // Fetch recently received items
   const { data: recentlyReceived, isLoading: receivedLoading } = useQuery<RecentlyReceivedData>({
     queryKey: ['/api/dashboard/recently-received'],
   });
 
-  // Fetch employee activities
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
     queryKey: ['/api/dashboard/activities', 5],
   });
@@ -162,7 +151,6 @@ export default function Home() {
   const pendingAdjustments = stockAdjustmentRequests.filter(req => req.status === 'pending');
   const pendingReceivingCount = (shipmentsToReceive?.length || 0) + (shipmentsReceiving?.length || 0);
 
-  // Calculate order pipeline counts from recent orders
   const orderStatusCounts: OrderStatusCounts = {
     pending: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'pending').length,
     to_fulfill: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'to_fulfill').length,
@@ -173,16 +161,13 @@ export default function Home() {
     cancelled: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'cancelled').length,
   };
 
-  // Calculate payment stats
   const paidOrders = recentOrders.filter((o: RecentOrder) => o.paymentStatus === 'paid');
   const paymentRate = recentOrders.length > 0 ? (paidOrders.length / recentOrders.length) * 100 : 0;
 
-  // Calculate total unpaid amount from unpaid orders API
   const totalUnpaidAmount = Array.isArray(unpaidOrders) 
     ? unpaidOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || '0'), 0) 
     : 0;
 
-  // Calculate fulfillment rate
   const fulfilledOrders = recentOrders.filter((o: RecentOrder) => ['shipped', 'delivered'].includes(o.orderStatus));
   const fulfillmentRate = recentOrders.length > 0 ? (fulfilledOrders.length / recentOrders.length) * 100 : 0;
 
@@ -228,28 +213,28 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="w-full max-w-full overflow-x-hidden space-y-3 sm:space-y-4 md:space-y-6 px-1 sm:px-0">
       {/* Header with Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 truncate">
             {t('dashboard:title')}
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">
             {t('dashboard:subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-          <Link href="/orders/add" className="flex-1 sm:flex-initial min-w-[120px]">
-            <Button size="sm" className="w-full sm:w-auto min-h-[44px]" data-testid="button-new-order">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('newOrder')}
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <Link href="/orders/add" className="flex-1 sm:flex-initial">
+            <Button size="sm" className="w-full sm:w-auto min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm" data-testid="button-new-order">
+              <Plus className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
+              <span className="truncate">{t('newOrder')}</span>
             </Button>
           </Link>
-          <Link href="/orders/pick-pack" className="flex-1 sm:flex-initial min-w-[120px]">
-            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" data-testid="button-pick-pack">
-              <PackageCheck className="h-4 w-4 mr-2" />
-              {t('pickAndPack')}
+          <Link href="/orders/pick-pack" className="flex-1 sm:flex-initial">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm" data-testid="button-pick-pack">
+              <PackageCheck className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
+              <span className="truncate">{t('pickAndPack')}</span>
             </Button>
           </Link>
         </div>
@@ -258,59 +243,59 @@ export default function Home() {
       {/* Critical Alerts Banner */}
       {(pendingAdjustments.length > 0 || lowStockProducts.length > 5) && (
         <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200 dark:border-orange-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg shrink-0">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">
+                    {t('dashboard:attentionRequired')}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 truncate">
+                    {pendingAdjustments.length > 0 && `${pendingAdjustments.length} ${t('dashboard:pendingApprovals')}`}
+                    {pendingAdjustments.length > 0 && lowStockProducts.length > 5 && ' • '}
+                    {lowStockProducts.length > 5 && `${lowStockProducts.length} ${t('dashboard:lowStockItems')}`}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">
-                  {t('dashboard:attentionRequired')}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {pendingAdjustments.length > 0 && `${pendingAdjustments.length} ${t('dashboard:pendingApprovals')}`}
-                  {pendingAdjustments.length > 0 && lowStockProducts.length > 5 && ' • '}
-                  {lowStockProducts.length > 5 && `${lowStockProducts.length} ${t('dashboard:lowStockItems')}`}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {pendingAdjustments.length > 0 && (
-                  <Link href="/stock/approvals">
-                    <Button size="sm" variant="outline" className="min-h-[36px]" data-testid="button-view-approvals">
-                      {t('dashboard:reviewApprovals')}
-                    </Button>
-                  </Link>
-                )}
-              </div>
+              {pendingAdjustments.length > 0 && (
+                <Link href="/stock/approvals" className="w-full sm:w-auto shrink-0">
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[36px] text-xs sm:text-sm" data-testid="button-view-approvals">
+                    {t('dashboard:reviewApprovals')}
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Executive Summary - Key Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Today's Revenue */}
         <Card className="relative overflow-hidden">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-3 sm:p-4 md:p-5">
             {metricsLoading ? (
               <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-28" />
+                <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+                <Skeleton className="h-6 sm:h-8 w-20 sm:w-28" />
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:todayRevenue')}</p>
-                  <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
-                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-start sm:items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                  <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{t('dashboard:todayRevenue')}</p>
+                  <div className="p-1 sm:p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-md sm:rounded-lg shrink-0">
+                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
                   {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-500 shrink-0" />
+                  <span className="text-[9px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate">
                     {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')} {t('dashboard:profit')}
                   </span>
                 </div>
@@ -321,26 +306,26 @@ export default function Home() {
 
         {/* Orders to Fulfill */}
         <Card className="relative overflow-hidden">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-3 sm:p-4 md:p-5">
             {metricsLoading ? (
               <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+                <Skeleton className="h-6 sm:h-8 w-12 sm:w-16" />
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:toFulfill')}</p>
-                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                    <PackageCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-start sm:items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                  <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{t('dashboard:toFulfill')}</p>
+                  <div className="p-1 sm:p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-md sm:rounded-lg shrink-0">
+                    <PackageCheck className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {metrics?.fulfillOrdersToday || 0}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
-                  <ShoppingCart className="h-3 w-3 text-blue-500" />
-                  <span className="text-xs text-muted-foreground">
+                  <ShoppingCart className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-500 shrink-0" />
+                  <span className="text-[9px] sm:text-xs text-muted-foreground truncate">
                     {t('dashboard:ofTotal', { count: metrics?.totalOrdersToday || 0 })}
                   </span>
                 </div>
@@ -351,41 +336,41 @@ export default function Home() {
 
         {/* Fulfillment Rate */}
         <Card className="relative overflow-hidden">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:fulfillmentRate')}</p>
-              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-                <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <CardContent className="p-3 sm:p-4 md:p-5">
+            <div className="flex items-start sm:items-center justify-between mb-1.5 sm:mb-2 gap-1">
+              <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{t('dashboard:fulfillmentRate')}</p>
+              <div className="p-1 sm:p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-md sm:rounded-lg shrink-0">
+                <Target className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
               {fulfillmentRate.toFixed(0)}%
             </p>
-            <Progress value={fulfillmentRate} className="h-1.5 mt-2" />
+            <Progress value={fulfillmentRate} className="h-1 sm:h-1.5 mt-1.5 sm:mt-2" />
           </CardContent>
         </Card>
 
         {/* Profit Margin */}
         <Card className="relative overflow-hidden">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-3 sm:p-4 md:p-5">
             {metricsLoading ? (
               <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+                <Skeleton className="h-6 sm:h-8 w-12 sm:w-16" />
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard:profitMargin')}</p>
-                  <div className="p-1.5 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg">
-                    <BarChart3 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                <div className="flex items-start sm:items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                  <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{t('dashboard:profitMargin')}</p>
+                  <div className="p-1 sm:p-1.5 bg-cyan-100 dark:bg-cyan-900/50 rounded-md sm:rounded-lg shrink-0">
+                    <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-600 dark:text-cyan-400" />
                   </div>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {profitMargin}%
                 </p>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[9px] sm:text-xs text-muted-foreground">
                     {t('dashboard:thisMonth')}
                   </span>
                 </div>
@@ -396,68 +381,68 @@ export default function Home() {
       </div>
 
       {/* Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         
         {/* Left Column - Orders & Operations */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           
           {/* Pick & Pack Flow */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <PackageCheck className="h-5 w-5 text-blue-600" />
-                    {t('dashboard:pickPackFlow')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                    <PackageCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 shrink-0" />
+                    <span className="truncate">{t('dashboard:pickPackFlow')}</span>
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-1">
+                  <CardDescription className="text-[10px] sm:text-xs md:text-sm mt-0.5 sm:mt-1 line-clamp-1">
                     {t('dashboard:pickPackFlowDesc')}
                   </CardDescription>
                 </div>
-                <Link href="/orders/pick-pack">
-                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-all-orders">
+                <Link href="/orders/pick-pack" className="shrink-0">
+                  <Button variant="ghost" size="sm" className="h-8 sm:min-h-[36px] text-xs sm:text-sm px-2 sm:px-3" data-testid="button-view-all-orders">
                     {t('viewAll')}
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2 md:gap-3">
                 <Link href="/orders?status=pending" className="block">
-                  <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="pipeline-pending">
-                    <p className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400">{orderStatusCounts.pending}</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">{t('dashboard:pending')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="pipeline-pending">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400">{orderStatusCounts.pending}</p>
+                    <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:pending')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=to_fulfill" className="block">
-                  <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="pipeline-to-fulfill">
-                    <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{orderStatusCounts.to_fulfill}</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{t('dashboard:toFulfillStatus')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="pipeline-to-fulfill">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{orderStatusCounts.to_fulfill}</p>
+                    <p className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:toFulfillStatus')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=picking" className="block">
-                  <div className="text-center p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer" data-testid="pipeline-picking">
-                    <p className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400">{orderStatusCounts.picking}</p>
-                    <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-1">{t('dashboard:picking')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer" data-testid="pipeline-picking">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400">{orderStatusCounts.picking}</p>
+                    <p className="text-[10px] sm:text-xs text-indigo-700 dark:text-indigo-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:picking')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=packed" className="block">
-                  <div className="text-center p-3 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors cursor-pointer" data-testid="pipeline-packed">
-                    <p className="text-2xl sm:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{orderStatusCounts.packed}</p>
-                    <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1">{t('dashboard:packed')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors cursor-pointer" data-testid="pipeline-packed">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{orderStatusCounts.packed}</p>
+                    <p className="text-[10px] sm:text-xs text-cyan-700 dark:text-cyan-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:packed')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=shipped" className="block">
-                  <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="pipeline-shipped">
-                    <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{orderStatusCounts.shipped}</p>
-                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">{t('dashboard:shipped')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="pipeline-shipped">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{orderStatusCounts.shipped}</p>
+                    <p className="text-[10px] sm:text-xs text-purple-700 dark:text-purple-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:shipped')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=delivered" className="block">
-                  <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" data-testid="pipeline-delivered">
-                    <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{orderStatusCounts.delivered}</p>
-                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">{t('dashboard:delivered')}</p>
+                  <div className="text-center p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" data-testid="pipeline-delivered">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{orderStatusCounts.delivered}</p>
+                    <p className="text-[10px] sm:text-xs text-green-700 dark:text-green-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:delivered')}</p>
                   </div>
                 </Link>
               </div>
@@ -465,72 +450,72 @@ export default function Home() {
           </Card>
 
           {/* Payments & Financial Health */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-green-600" />
-                    {t('dashboard:paymentsFinancial')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                    <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 shrink-0" />
+                    <span className="truncate">{t('dashboard:paymentsFinancial')}</span>
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-1">
+                  <CardDescription className="text-[10px] sm:text-xs md:text-sm mt-0.5 sm:mt-1 line-clamp-1">
                     {t('dashboard:paymentsFinancialDesc')}
                   </CardDescription>
                 </div>
-                <Link href="/orders/pay-later">
-                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-unpaid">
+                <Link href="/orders/pay-later" className="shrink-0">
+                  <Button variant="ghost" size="sm" className="h-8 sm:min-h-[36px] text-xs sm:text-sm px-2 sm:px-3" data-testid="button-view-unpaid">
                     {t('dashboard:viewUnpaid')}
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                 {/* Payment Rate */}
-                <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BadgeCheck className="h-4 w-4 text-green-600" />
-                    <span className="text-xs font-medium text-green-700 dark:text-green-300">{t('dashboard:paymentRate')}</span>
+                <div className="p-2.5 sm:p-3 md:p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <BadgeCheck className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium text-green-700 dark:text-green-300 truncate">{t('dashboard:paymentRate')}</span>
                   </div>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{paymentRate.toFixed(0)}%</p>
-                  <Progress value={paymentRate} className="h-1.5 mt-2" />
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">{paymentRate.toFixed(0)}%</p>
+                  <Progress value={paymentRate} className="h-1 sm:h-1.5 mt-1.5 sm:mt-2" />
                 </div>
 
                 {/* Unpaid Orders */}
-                <div className="p-4 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-4 w-4 text-red-600" />
-                    <span className="text-xs font-medium text-red-700 dark:text-red-300">{t('dashboard:unpaidOrders')}</span>
+                <div className="p-2.5 sm:p-3 md:p-4 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium text-red-700 dark:text-red-300 truncate">{t('dashboard:unpaidOrders')}</span>
                   </div>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
                     {Array.isArray(unpaidOrders) ? unpaidOrders.length : 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard:ordersAwaiting')}</p>
+                  <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">{t('dashboard:ordersAwaiting')}</p>
                 </div>
 
                 {/* Outstanding Amount */}
-                <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CircleDollarSign className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('dashboard:outstanding')}</span>
+                <div className="p-2.5 sm:p-3 md:p-4 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <CircleDollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300 truncate">{t('dashboard:outstanding')}</span>
                   </div>
-                  <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400 truncate">
                     {formatCurrency(totalUnpaidAmount, 'EUR')}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard:toCollect')}</p>
+                  <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">{t('dashboard:toCollect')}</p>
                 </div>
 
                 {/* Monthly Revenue */}
-                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('dashboard:monthRevenue')}</span>
+                <div className="p-2.5 sm:p-3 md:p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 truncate">{t('dashboard:monthRevenue')}</span>
                   </div>
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400 truncate">
                     {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
                   </p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  <p className="text-[9px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 truncate">
                     {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')} {t('dashboard:profit')}
                   </p>
                 </div>
@@ -539,73 +524,73 @@ export default function Home() {
           </Card>
 
           {/* Recent Orders */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 pb-3">
-              <div>
-                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-emerald-600" />
-                  {t('recentOrders')}
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 md:p-6 pb-2 sm:pb-3 gap-2">
+              <div className="min-w-0">
+                <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 shrink-0" />
+                  <span className="truncate">{t('recentOrders')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">
+                <CardDescription className="text-[10px] sm:text-xs md:text-sm mt-0.5 sm:mt-1 line-clamp-1">
                   {t('dashboard:recentOrdersDesc')}
                 </CardDescription>
               </div>
-              <Link href="/orders">
-                <Button variant="ghost" size="sm" className="min-h-[36px]">
+              <Link href="/orders" className="shrink-0">
+                <Button variant="ghost" size="sm" className="h-8 sm:min-h-[36px] text-xs sm:text-sm px-2 sm:px-3">
                   {t('viewAll')}
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
               {ordersLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                <div className="space-y-2 sm:space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 sm:h-16 w-full" />)}
                 </div>
               ) : recentOrders.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {recentOrders.slice(0, 5).map((order) => (
                     <Link key={order.id} href={`/orders/${order.id}`}>
-                      <div className="group flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" data-testid={`order-row-${order.id}`}>
-                        <Avatar className="h-9 w-9 shrink-0">
+                      <div className="group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" data-testid={`order-row-${order.id}`}>
+                        <Avatar className="h-7 w-7 sm:h-9 sm:w-9 shrink-0">
                           <AvatarImage src={order.customer?.imageUrl} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-xs font-semibold">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-[10px] sm:text-xs font-semibold">
                             {(order.customer?.name || 'W').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-gray-900 dark:text-white font-mono">{order.orderId}</span>
-                            <Badge className={`${getStatusColor(order.orderStatus || 'pending')} text-[10px] px-1.5 py-0`}>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white font-mono truncate">{order.orderId}</span>
+                            <Badge className={`${getStatusColor(order.orderStatus || 'pending')} text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 shrink-0`}>
                               {(order.orderStatus || 'pending').replace(/_/g, ' ')}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                             {order.customer?.name || t('walkInCustomer')} • {formatDate(order.createdAt)}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-bold text-sm text-gray-900 dark:text-white">
+                        <div className="text-right shrink-0 min-w-0">
+                          <p className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                             {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
                           </p>
                           {order.totalCost && (
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <p className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 truncate">
                               +{formatCurrency(parseFloat(order.grandTotal) - parseFloat(order.totalCost), order.currency as any)}
                             </p>
                           )}
                         </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 shrink-0 hidden sm:block" />
                       </div>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <XCircle className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">{t('noRecentOrders')}</p>
+                <div className="text-center py-6 sm:py-8">
+                  <XCircle className="h-8 w-8 sm:h-10 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('noRecentOrders')}</p>
                   <Link href="/orders/add">
-                    <Button variant="outline" size="sm" className="mt-3">
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button variant="outline" size="sm" className="mt-2 sm:mt-3 text-xs sm:text-sm">
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                       {t('createOrder')}
                     </Button>
                   </Link>
@@ -616,33 +601,33 @@ export default function Home() {
         </div>
 
         {/* Right Column - Tasks & Insights */}
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
           
           {/* Warehouse Operations Tasks */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-orange-600" />
-                {t('dashboard:warehouseTasks')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 shrink-0" />
+                <span className="truncate">{t('dashboard:warehouseTasks')}</span>
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-[10px] sm:text-xs md:text-sm line-clamp-1">
                 {t('dashboard:warehouseTasksDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0 space-y-2 sm:space-y-3">
               {/* Pending Receiving */}
               <Link href="/receiving">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="task-receiving">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="task-receiving">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900 rounded-lg shrink-0">
+                      <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:pendingReceiving')}</p>
-                      <p className="text-xs text-muted-foreground">{t('dashboard:shipmentsToReceive')}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{t('dashboard:pendingReceiving')}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t('dashboard:shipmentsToReceive')}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 shrink-0 text-[10px] sm:text-xs">
                     {pendingReceivingCount}
                   </Badge>
                 </div>
@@ -650,17 +635,17 @@ export default function Home() {
 
               {/* Stock Approvals */}
               <Link href="/stock/approvals">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer" data-testid="task-approvals">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                      <ClipboardCheck className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer" data-testid="task-approvals">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shrink-0">
+                      <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:stockApprovals')}</p>
-                      <p className="text-xs text-muted-foreground">{t('dashboard:pendingApprovalDesc')}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{t('dashboard:stockApprovals')}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t('dashboard:pendingApprovalDesc')}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className={pendingAdjustments.length > 0 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" : ""}>
+                  <Badge variant="secondary" className={`shrink-0 text-[10px] sm:text-xs ${pendingAdjustments.length > 0 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" : ""}`}>
                     {pendingAdjustments.length}
                   </Badge>
                 </div>
@@ -668,17 +653,17 @@ export default function Home() {
 
               {/* Low Stock */}
               <Link href="/inventory?lowStock=true">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="task-low-stock">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="task-low-stock">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-amber-100 dark:bg-amber-900 rounded-lg shrink-0">
+                      <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:lowStockAlerts')}</p>
-                      <p className="text-xs text-muted-foreground">{t('dashboard:needsReorder')}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{t('dashboard:lowStockAlerts')}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t('dashboard:needsReorder')}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className={lowStockProducts.length > 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" : ""}>
+                  <Badge variant="secondary" className={`shrink-0 text-[10px] sm:text-xs ${lowStockProducts.length > 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" : ""}`}>
                     {lowStockProducts.length}
                   </Badge>
                 </div>
@@ -686,17 +671,17 @@ export default function Home() {
 
               {/* Pick & Pack */}
               <Link href="/orders/pick-pack">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="task-pick-pack">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                      <PackageCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="task-pick-pack">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900 rounded-lg shrink-0">
+                      <PackageCheck className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-white">{t('dashboard:ordersToPack')}</p>
-                      <p className="text-xs text-muted-foreground">{t('dashboard:readyForFulfillment')}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{t('dashboard:ordersToPack')}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t('dashboard:readyForFulfillment')}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 shrink-0 text-[10px] sm:text-xs">
                     {orderStatusCounts.to_fulfill + orderStatusCounts.picking}
                   </Badge>
                 </div>
@@ -705,76 +690,78 @@ export default function Home() {
           </Card>
 
           {/* Recent Receiving */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <PackageOpen className="h-5 w-5 text-teal-600" />
-                    {t('dashboard:recentReceiving')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                    <PackageOpen className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600 shrink-0" />
+                    <span className="truncate">{t('dashboard:recentReceiving')}</span>
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
+                  <CardDescription className="text-[10px] sm:text-xs md:text-sm line-clamp-1">
                     {t('dashboard:recentReceivingDesc')}
                   </CardDescription>
                 </div>
-                <Link href="/receiving">
-                  <Button variant="ghost" size="sm" className="min-h-[36px]" data-testid="button-view-receiving">
+                <Link href="/receiving" className="shrink-0">
+                  <Button variant="ghost" size="sm" className="h-8 sm:min-h-[36px] text-xs sm:text-sm px-2 sm:px-3" data-testid="button-view-receiving">
                     {t('dashboard:viewReceiving')}
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
               {receivedLoading ? (
-                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-10 sm:h-12 w-full" />
               ) : recentlyReceived && recentlyReceived.products.length > 0 ? (
-                <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30">
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                     <span className="font-medium text-teal-700 dark:text-teal-400">
                       {t('dashboard:recentlyReceived')}
                     </span>{' '}
-                    {recentlyReceived.products.slice(0, 5).join(', ')}
-                    {recentlyReceived.products.length > 5 && ` ${t('dashboard:andMore', { count: recentlyReceived.products.length - 5 })}`}
+                    <span className="line-clamp-2">
+                      {recentlyReceived.products.slice(0, 5).join(', ')}
+                      {recentlyReceived.products.length > 5 && ` ${t('dashboard:andMore', { count: recentlyReceived.products.length - 5 })}`}
+                    </span>
                   </p>
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <PackageOpen className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">{t('dashboard:noRecentReceiving')}</p>
+                <div className="text-center py-3 sm:py-4">
+                  <PackageOpen className="h-6 w-6 sm:h-8 sm:w-8 text-gray-300 mx-auto mb-1.5 sm:mb-2" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard:noRecentReceiving')}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Employee Activity */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-indigo-600" />
-                {t('dashboard:employeeActivity')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 shrink-0" />
+                <span className="truncate">{t('dashboard:employeeActivity')}</span>
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-[10px] sm:text-xs md:text-sm line-clamp-1">
                 {t('dashboard:employeeActivityDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
               {activitiesLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                <div className="space-y-1.5 sm:space-y-2">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 sm:h-12 w-full" />)}
                 </div>
               ) : activities.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {activities.slice(0, 5).map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-testid={`activity-row-${activity.id}`}>
-                      <Avatar className="h-8 w-8 shrink-0">
+                    <div key={activity.id} className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-testid={`activity-row-${activity.id}`}>
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
                         <AvatarImage src={activity.user?.profileImageUrl} />
-                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-xs font-semibold">
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-[10px] sm:text-xs font-semibold">
                           {(activity.user?.firstName || 'U').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 dark:text-white truncate">
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                           <span className="font-medium">
                             {activity.user?.firstName || 'User'}
                           </span>{' '}
@@ -782,74 +769,74 @@ export default function Home() {
                             {getActionText(activity.action)} {getEntityText(activity.entityType)}
                           </span>
                         </p>
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                           {activity.entityId}
                         </p>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0">
+                      <span className="text-[9px] sm:text-xs text-muted-foreground shrink-0 whitespace-nowrap">
                         {formatTimeAgo(activity.createdAt)}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <UserCheck className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">{t('dashboard:noRecentActivity')}</p>
+                <div className="text-center py-3 sm:py-4">
+                  <UserCheck className="h-6 w-6 sm:h-8 sm:w-8 text-gray-300 mx-auto mb-1.5 sm:mb-2" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard:noRecentActivity')}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Business Insights */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Activity className="h-5 w-5 text-cyan-600" />
-                {t('dashboard:businessInsights')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 shrink-0" />
+                <span className="truncate">{t('dashboard:businessInsights')}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0 space-y-3 sm:space-y-4">
               {/* Customer Stats */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm text-muted-foreground">{t('dashboard:totalCustomers')}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{t('dashboard:totalCustomers')}</span>
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white">{customers.length}</span>
+                <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm shrink-0">{customers.length}</span>
               </div>
               
               <Separator />
               
               {/* Product Stats */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm text-muted-foreground">{t('dashboard:totalProducts')}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <Package className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{t('dashboard:totalProducts')}</span>
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white">{products.length}</span>
+                <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm shrink-0">{products.length}</span>
               </div>
               
               <Separator />
               
               {/* Total Orders */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-emerald-500" />
-                  <span className="text-sm text-muted-foreground">{t('dashboard:ordersThisMonth')}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{t('dashboard:ordersThisMonth')}</span>
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white">{recentOrders.length}</span>
+                <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm shrink-0">{recentOrders.length}</span>
               </div>
               
               <Separator />
               
               {/* Avg Order Value */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-muted-foreground">{t('dashboard:avgOrderValue')}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{t('dashboard:avgOrderValue')}</span>
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white">
+                <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm shrink-0">
                   {recentOrders.length > 0 
                     ? formatCurrency(
                         recentOrders.reduce((sum, o) => sum + parseFloat(o.grandTotal || '0'), 0) / recentOrders.length,
@@ -863,37 +850,37 @@ export default function Home() {
           </Card>
 
           {/* Quick Actions */}
-          <Card>
-            <CardHeader className="p-4 sm:p-6 pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-600" />
-                {t('quickActions')}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+              <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 shrink-0" />
+                <span className="truncate">{t('quickActions')}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="grid grid-cols-2 gap-2">
+            <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                 <Link href="/orders/add">
-                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-new-order">
-                    <Plus className="h-5 w-5" />
-                    <span className="text-xs">{t('newOrder')}</span>
+                  <Button variant="outline" className="w-full h-auto py-2.5 sm:py-3 flex-col gap-0.5 sm:gap-1 text-xs sm:text-sm" data-testid="quick-new-order">
+                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-[10px] sm:text-xs truncate">{t('newOrder')}</span>
                   </Button>
                 </Link>
                 <Link href="/inventory/add">
-                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-add-product">
-                    <Package className="h-5 w-5" />
-                    <span className="text-xs">{t('addProduct')}</span>
+                  <Button variant="outline" className="w-full h-auto py-2.5 sm:py-3 flex-col gap-0.5 sm:gap-1 text-xs sm:text-sm" data-testid="quick-add-product">
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-[10px] sm:text-xs truncate">{t('addProduct')}</span>
                   </Button>
                 </Link>
                 <Link href="/customers/add">
-                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-add-customer">
-                    <Users className="h-5 w-5" />
-                    <span className="text-xs">{t('addCustomer')}</span>
+                  <Button variant="outline" className="w-full h-auto py-2.5 sm:py-3 flex-col gap-0.5 sm:gap-1 text-xs sm:text-sm" data-testid="quick-add-customer">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-[10px] sm:text-xs truncate">{t('addCustomer')}</span>
                   </Button>
                 </Link>
                 <Link href="/receiving">
-                  <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1" data-testid="quick-receiving">
-                    <Truck className="h-5 w-5" />
-                    <span className="text-xs">{t('receiveGoods')}</span>
+                  <Button variant="outline" className="w-full h-auto py-2.5 sm:py-3 flex-col gap-0.5 sm:gap-1 text-xs sm:text-sm" data-testid="quick-receiving">
+                    <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-[10px] sm:text-xs truncate">{t('receiveGoods')}</span>
                   </Button>
                 </Link>
               </div>

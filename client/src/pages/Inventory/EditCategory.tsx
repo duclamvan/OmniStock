@@ -108,19 +108,20 @@ export default function EditCategory() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="px-3 sm:px-4 md:px-6 max-w-2xl mx-auto space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => window.history.back()}
+          className="flex-shrink-0 h-9 w-9"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{t('editCategory')}</h1>
-          <p className="text-muted-foreground">{t('updateCategoryInformation')}</p>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('editCategory')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('updateCategoryInformation')}</p>
         </div>
       </div>
 
@@ -201,17 +202,19 @@ export default function EditCategory() {
                 )}
               />
 
-              <div className="flex justify-end gap-4">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate('/inventory/categories')}
+                  className="w-full sm:w-auto"
                 >
                   {t('cancel')}
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={updateMutation.isPending}
+                  className="w-full sm:w-auto"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {updateMutation.isPending ? t('updating') : t('updateCategory')}

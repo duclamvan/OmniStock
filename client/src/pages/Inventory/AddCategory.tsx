@@ -114,25 +114,26 @@ export default function AddCategory() {
   };
 
   return (
-    <div className="px-mobile py-mobile max-w-7xl mx-auto">
+    <div className="px-3 sm:px-4 md:px-6 py-4 md:py-6 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => window.history.back()}
           data-testid="button-back"
+          className="flex-shrink-0 h-9 w-9"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{t('addCategory')}</h1>
-          <p className="text-muted-foreground">{t('createNewCategoryAI')}</p>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('addCategory')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('createNewCategoryAI')}</p>
         </div>
       </div>
 
       {/* Form */}
-      <Card className="max-w-4xl">
+      <Card className="w-full max-w-4xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {t('categoryInformation')}
@@ -174,7 +175,7 @@ export default function AddCategory() {
               />
 
               {/* Translations Grid */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="nameCz"
@@ -242,12 +243,13 @@ export default function AddCategory() {
               />
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate('/inventory/categories')}
                   data-testid="button-cancel"
+                  className="w-full sm:w-auto"
                 >
                   {t('cancel')}
                 </Button>
@@ -255,6 +257,7 @@ export default function AddCategory() {
                   type="submit" 
                   disabled={createMutation.isPending}
                   data-testid="button-create-category"
+                  className="w-full sm:w-auto"
                 >
                   {createMutation.isPending ? (
                     <>

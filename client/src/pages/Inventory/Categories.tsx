@@ -265,15 +265,15 @@ export default function Categories() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('categories')}</h1>
-          <p className="text-gray-500 dark:text-gray-400">{t('manageProductCategories')}</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('categories')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('manageProductCategories')}</p>
         </div>
-        <Link href="/inventory/categories/add">
-          <Button data-testid="button-add-category">
+        <Link href="/inventory/categories/add" className="w-full sm:w-auto">
+          <Button data-testid="button-add-category" className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             {t('addCategory')}
           </Button>
@@ -281,50 +281,50 @@ export default function Categories() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-3 sm:p-4 md:pt-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   {t('totalCategories')}
                 </p>
-                <p className="text-3xl font-bold mt-2">{categories.length}</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 sm:mt-2">{categories.length}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-                <FolderOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
+                <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-3 sm:p-4 md:pt-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   {t('withProducts')}
                 </p>
-                <p className="text-3xl font-bold mt-2">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 sm:mt-2">
                   {categoriesWithCount.filter(c => (c.productCount ?? 0) > 0).length}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
-                <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center flex-shrink-0">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+        <Card className="col-span-2 sm:col-span-1">
+          <CardContent className="p-3 sm:p-4 md:pt-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   {t('totalProducts')}
                 </p>
-                <p className="text-3xl font-bold mt-2">{products.length}</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 sm:mt-2">{products.length}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center">
-                <Package className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center flex-shrink-0">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

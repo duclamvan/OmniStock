@@ -774,7 +774,7 @@ export default function OrderDetails() {
     t('orders:lowPriority');
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0 overflow-x-hidden">
       {/* Clean Header */}
       <Card>
         <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">

@@ -943,7 +943,7 @@ export default function AllInventory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -1183,22 +1183,22 @@ export default function AllInventory() {
       {/* Recently Received Goods Banner */}
       {recentReceipts.length > 0 && (
         <Card className="border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg flex-shrink-0">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-green-900 dark:text-green-100">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-green-900 dark:text-green-100 truncate">
                     {t('receiving:recentArrivals', { count: recentReceipts.length })}
                   </h3>
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                  <p className="text-xs sm:text-sm text-green-700 dark:text-green-300">
                     {t('receiving:goodsApprovedInLast7Days')}
                   </p>
                 </div>
               </div>
-              <Badge variant="outline" className="border-green-300 dark:border-green-800 text-green-700 dark:text-green-300 bg-white dark:bg-green-950/50">
+              <Badge variant="outline" className="border-green-300 dark:border-green-800 text-green-700 dark:text-green-300 bg-white dark:bg-green-950/50 flex-shrink-0">
                 {recentReceipts.length} {recentReceipts.length === 1 ? t('common:receipt') : t('common:receipts')}
               </Badge>
             </div>
@@ -1208,14 +1208,14 @@ export default function AllInventory() {
 
       {/* Filters & Search */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3 md:pb-4 px-3 md:px-6">
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">{t('inventory:filtersSearch')}</CardTitle>
+            <Filter className="h-4 w-4 md:h-5 md:w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-base md:text-lg">{t('inventory:filtersSearch')}</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="px-3 md:px-6">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-4">
             {/* Search */}
             <div className="md:col-span-1">
               <div className="relative">
