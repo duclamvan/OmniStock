@@ -37,6 +37,24 @@ The system now supports **dynamic role creation and management** with granular s
 - **twoFactorRateLimiter**: 10 requests per 15 minutes (2FA operations)
 - Prevents brute force attacks, credential stuffing, and API abuse
 
+**Account Lockout Protection**:
+- 5 failed login attempts triggers 15-minute account lockout
+- Failed attempts reset after 30 minutes of inactivity
+- Clear lockout on successful login
+- Provides remaining attempts feedback to users
+
+**Password Complexity Requirements**:
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character (@$!%*?&#^()_+-=[]{}|;:',.<>/\`~)
+
+**CSRF Protection**:
+- SameSite=strict cookies in production
+- Origin header validation for state-changing requests
+- Non-default session cookie name for security
+
 **Security Headers (Helmet.js)**:
 - **Production CSP**: Strict Content Security Policy - scriptSrc allows only 'self' (no unsafe-inline/eval), styleSrc allows 'self' and 'unsafe-inline' for React compatibility
 - **HSTS**: Strict Transport Security enabled with 1-year max-age and includeSubDomains

@@ -1487,7 +1487,6 @@ const settings = {
 
   // ShippingSettings - PPL CZ Section
   pplCzSenderAddressTitle: 'Địa chỉ người gửi PPL CZ',
-  pplCzSenderAddressDescription: 'Địa chỉ người gửi mặc định cho lô hàng PPL (định dạng JSON)',
   senderAddressJsonLabel: 'Địa chỉ người gửi (JSON)',
   senderAddressJsonDescriptionPpl: 'Nhập địa chỉ người gửi theo định dạng JSON. Sẽ được sử dụng làm mặc định cho tất cả lô hàng PPL.',
   pplCzPackageLimitsTitle: 'Giới hạn gói hàng PPL CZ',
@@ -1543,7 +1542,6 @@ const settings = {
   paketL: 'Gói L',
   glsPackageSizeRatesDescription: 'Bảng giá theo kích thước gói hàng GLS cho vận chuyển nội địa Đức',
   glsDeSenderAddressTitle: 'Địa chỉ người gửi GLS DE',
-  glsDeSenderAddressDescription: 'Địa chỉ người gửi mặc định cho lô hàng GLS (định dạng JSON)',
   senderAddressJsonDescriptionGls: 'Nhập địa chỉ người gửi theo định dạng JSON. Sẽ được sử dụng làm mặc định cho tất cả lô hàng GLS.',
 
   // ShippingSettings - DHL DE Section
@@ -1559,7 +1557,6 @@ const settings = {
   priceEur: 'Giá (EUR)',
   nachnahmeCodFee: 'Nachnahme (Phí COD)',
   dhlDeSenderAddressTitle: 'Địa chỉ người gửi DHL DE',
-  dhlDeSenderAddressDescription: 'Địa chỉ người gửi mặc định cho lô hàng DHL (định dạng JSON)',
   senderAddressJsonDescriptionDhl: 'Nhập địa chỉ người gửi theo định dạng JSON. Sẽ được sử dụng làm mặc định cho tất cả lô hàng DHL.',
 
   // ShippingSettings - General Tab
@@ -1568,11 +1565,8 @@ const settings = {
   addCountryPlaceholder: '+ Thêm quốc gia...',
   countryCarrierMappingDescription: 'Khi chọn khách hàng từ quốc gia đã ánh xạ, đơn vị vận chuyển của đơn hàng sẽ được tự động thiết lập.',
   quickSelectButtonsTitle: 'Nút chọn nhanh',
-  quickSelectButtonsDescription: 'Cấu hình các nút chọn nhanh chi phí vận chuyển',
   quickSelectCzkLabel: 'Chọn nhanh CZK',
-  quickSelectCzkDescription: 'Chi phí vận chuyển bằng CZK phân cách bằng dấu phẩy để chọn nhanh',
   quickSelectEurLabel: 'Chọn nhanh EUR',
-  quickSelectEurDescription: 'Chi phí vận chuyển bằng EUR phân cách bằng dấu phẩy để chọn nhanh',
   availableCarriersLabel: 'Đơn vị vận chuyển có sẵn',
   availableCarriersListDescription: 'Danh sách đơn vị vận chuyển có sẵn phân cách bằng dấu phẩy',
   shippingCostsTitle: 'Chi phí vận chuyển',
@@ -1586,7 +1580,6 @@ const settings = {
   freeShippingThresholdCzk: 'Ngưỡng miễn phí vận chuyển (CZK)',
   freeShippingCzkDescription: 'Giá trị đơn hàng để miễn phí vận chuyển bằng CZK',
   volumetricWeightDivisorLabel: 'Hệ số chia trọng lượng thể tích',
-  volumetricWeightDivisorDescription: 'Hệ số chia để tính trọng lượng thể tích (Dài × Rộng × Cao / Hệ số)',
 
   // ShippingSettings - Rules Tab
   labelGenerationTitle: 'Tạo nhãn',
@@ -1594,18 +1587,14 @@ const settings = {
   defaultLabelSizeLabel: 'Kích thước nhãn mặc định',
   labelFormatLabel: 'Định dạng nhãn',
   includePackingSlipLabel: 'Bao gồm phiếu đóng gói',
-  includePackingSlipDescription: 'Bao gồm phiếu đóng gói với nhãn vận chuyển',
   includeInvoiceLabel: 'Bao gồm hóa đơn',
-  includeInvoiceDescription: 'Bao gồm hóa đơn với nhãn vận chuyển',
   trackingSettingsTitle: 'Theo dõi',
   trackingSettingsDescription: 'Cấu hình cập nhật theo dõi và thông báo',
-  enableTrackingDescription: 'Bật tính năng theo dõi lô hàng',
   trackingUpdateFrequencyLabel: 'Tần suất cập nhật theo dõi (giờ)',
   trackingUpdateFrequencyDescription: 'Tần suất kiểm tra cập nhật theo dõi (1-24 giờ)',
   sendTrackingEmailLabel: 'Gửi email theo dõi cho khách hàng',
   sendTrackingEmailDescription: 'Gửi mã theo dõi qua email cho khách hàng khi tạo lô hàng',
   includeEstimatedDeliveryLabel: 'Bao gồm ngày giao hàng dự kiến',
-  includeEstimatedDeliveryDescription: 'Bao gồm ngày giao hàng dự kiến trong thông báo theo dõi',
 } as const;
 
 export default settings;

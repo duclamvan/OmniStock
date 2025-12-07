@@ -4,19 +4,42 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { z } from "zod";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import createMemoryStore from "memorystore";
 
+// Password complexity requirements
+const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .refine(
+    (val) => /[a-z]/.test(val),
+    "Password must contain at least one lowercase letter"
+  )
+  .refine(
+    (val) => /[A-Z]/.test(val),
+    "Password must contain at least one uppercase letter"
+  )
+  .refine(
+    (val) => /\d/.test(val),
+    "Password must contain at least one number"
+  )
+  .refine(
+    (val) => /[@$!%*?&#^()_+\-=\[\]{}|;:',.<>\/\\`~]/.test(val),
+    "Password must contain at least one special character (@$!%*?&#^()_+-=[]{}|;:',.<>/\\`~)"
+  );
+
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   email: z.string().email().optional(),
@@ -25,8 +48,72 @@ const registerSchema = z.object({
 const initialAdminSchema = z.object({
   setupCode: z.string().min(1, "Setup code is required"),
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
 });
+
+// Account lockout tracking (in-memory - should be moved to database for production clusters)
+interface LockoutInfo {
+  failedAttempts: number;
+  lockedUntil: Date | null;
+  lastFailedAttempt: Date | null;
+}
+
+const lockoutStore = new Map<string, LockoutInfo>();
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINUTES = 15;
+const FAILED_ATTEMPT_WINDOW_MINUTES = 30;
+
+function checkAccountLockout(username: string): { isLocked: boolean; remainingMinutes?: number } {
+  const info = lockoutStore.get(username.toLowerCase());
+  if (!info || !info.lockedUntil) {
+    return { isLocked: false };
+  }
+  
+  const now = new Date();
+  if (info.lockedUntil > now) {
+    const remainingMs = info.lockedUntil.getTime() - now.getTime();
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    return { isLocked: true, remainingMinutes };
+  }
+  
+  // Lockout expired, reset
+  lockoutStore.delete(username.toLowerCase());
+  return { isLocked: false };
+}
+
+function recordFailedLogin(username: string): { isNowLocked: boolean; attemptsRemaining: number } {
+  const key = username.toLowerCase();
+  const now = new Date();
+  let info = lockoutStore.get(key);
+  
+  if (!info) {
+    info = { failedAttempts: 0, lockedUntil: null, lastFailedAttempt: null };
+  }
+  
+  // Reset if last failed attempt was outside the window
+  if (info.lastFailedAttempt) {
+    const windowMs = FAILED_ATTEMPT_WINDOW_MINUTES * 60 * 1000;
+    if (now.getTime() - info.lastFailedAttempt.getTime() > windowMs) {
+      info.failedAttempts = 0;
+    }
+  }
+  
+  info.failedAttempts++;
+  info.lastFailedAttempt = now;
+  
+  if (info.failedAttempts >= MAX_FAILED_ATTEMPTS) {
+    info.lockedUntil = new Date(now.getTime() + LOCKOUT_DURATION_MINUTES * 60 * 1000);
+    lockoutStore.set(key, info);
+    return { isNowLocked: true, attemptsRemaining: 0 };
+  }
+  
+  lockoutStore.set(key, info);
+  return { isNowLocked: false, attemptsRemaining: MAX_FAILED_ATTEMPTS - info.failedAttempts };
+}
+
+function clearFailedLogins(username: string): void {
+  lockoutStore.delete(username.toLowerCase());
+}
 
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -55,6 +142,7 @@ validateEnvironment();
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
+  const isProduction = process.env.NODE_ENV === "production";
   
   // Use memory store - Neon pooled connections have compatibility issues with connect-pg-simple
   // Sessions will persist across restarts in production via sticky sessions
@@ -69,14 +157,47 @@ export function getSession() {
     resave: false,
     saveUninitialized: false,
     rolling: true,
+    name: "sid", // Use a non-default session name for security
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "strict" : "lax", // Stricter in production for CSRF protection
       maxAge: sessionTtl,
+      path: "/",
     },
   });
 }
+
+// CSRF token generation and validation for extra protection
+export function generateCsrfToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// CSRF protection middleware for state-changing operations
+export const csrfProtection: RequestHandler = (req, res, next) => {
+  // Skip CSRF check for GET, HEAD, OPTIONS requests (safe methods)
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+  
+  // For API requests from same origin, the SameSite cookie + origin header check provides protection
+  const origin = req.get("origin");
+  const host = req.get("host");
+  
+  // If there's an origin header, validate it matches our host
+  if (origin) {
+    const originUrl = new URL(origin);
+    const expectedHost = host?.split(":")[0]; // Remove port for comparison
+    const originHost = originUrl.hostname;
+    
+    if (originHost !== expectedHost && originHost !== "localhost" && originHost !== "127.0.0.1") {
+      console.warn(`CSRF protection blocked request from origin: ${origin}, expected host: ${host}`);
+      return res.status(403).json({ message: "CSRF validation failed" });
+    }
+  }
+  
+  return next();
+};
 
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
@@ -139,6 +260,17 @@ export async function setupAuth(app: Express) {
       });
     }
 
+    const { username } = validation.data;
+
+    // Check if account is locked
+    const lockoutStatus = checkAccountLockout(username);
+    if (lockoutStatus.isLocked) {
+      return res.status(429).json({
+        message: `Account temporarily locked. Please try again in ${lockoutStatus.remainingMinutes} minutes.`,
+        lockedUntil: lockoutStatus.remainingMinutes,
+      });
+    }
+
     passport.authenticate("local", (err: any, user: User | false, info: any) => {
       if (err) {
         console.error("Authentication error:", err);
@@ -146,8 +278,24 @@ export async function setupAuth(app: Express) {
       }
 
       if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+        // Record failed login attempt
+        const lockoutResult = recordFailedLogin(username);
+        
+        if (lockoutResult.isNowLocked) {
+          return res.status(429).json({
+            message: `Too many failed attempts. Account locked for ${LOCKOUT_DURATION_MINUTES} minutes.`,
+            lockedUntil: LOCKOUT_DURATION_MINUTES,
+          });
+        }
+        
+        return res.status(401).json({
+          message: info?.message || "Invalid credentials",
+          attemptsRemaining: lockoutResult.attemptsRemaining,
+        });
       }
+
+      // Clear failed login attempts on successful login
+      clearFailedLogins(username);
 
       req.login(user, (loginErr) => {
         if (loginErr) {

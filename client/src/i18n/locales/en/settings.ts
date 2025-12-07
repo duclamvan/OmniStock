@@ -1694,7 +1694,6 @@ const settings = {
   sendTrackingEmailLabel: 'Send Tracking Email to Customer',
   sendTrackingEmailDescription: 'Send tracking number via email to customer when shipment is created',
   includeEstimatedDeliveryLabel: 'Include Estimated Delivery',
-  includeEstimatedDeliveryDescription: 'Include estimated delivery date in tracking notifications',
 } as const;
 
 export default settings;
