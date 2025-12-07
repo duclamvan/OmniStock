@@ -6243,28 +6243,28 @@ export default function PickPack() {
   const getOrderStatusDisplay = (order: PickPackOrder) => {
     // Check the pickStatus and packStatus fields for actual status
     if (order.pickStatus === 'in_progress') {
-      return { label: 'Picking', color: 'bg-blue-100 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-200 dark:text-blue-100 border-blue-300 dark:border-blue-700 dark:border-blue-700' };
+      return { label: t('orders:picking'), color: 'bg-blue-100 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-200 dark:text-blue-100 border-blue-300 dark:border-blue-700 dark:border-blue-700' };
     }
     if (order.packStatus === 'in_progress') {
-      return { label: 'Packing', color: 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 dark:text-amber-200 border-amber-300 dark:border-amber-700 dark:border-amber-700' };
+      return { label: t('orders:packing'), color: 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 dark:text-amber-200 border-amber-300 dark:border-amber-700 dark:border-amber-700' };
     }
     if (order.status === 'ready_to_ship' && order.packStatus === 'completed') {
-      return { label: 'Ready', color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-300 dark:border-green-700 dark:border-green-700' };
+      return { label: t('orders:ready'), color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-300 dark:border-green-700 dark:border-green-700' };
     }
     if (order.status === 'shipped') {
-      return { label: 'Shipped', color: 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' };
+      return { label: t('orders:shipped'), color: 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 dark:border-emerald-700' };
     }
     if (order.pickStatus === 'not_started' || !order.pickStatus) {
-      return { label: 'Pending', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700' };
+      return { label: t('orders:pending'), color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700' };
     }
     if (order.packStatus === 'completed' && order.status === 'ready_to_ship') {
-      return { label: 'Ready to Ship', color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-200 dark:border-green-700 dark:border-green-700' };
+      return { label: t('orders:readyToShip'), color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-200 dark:border-green-700 dark:border-green-700' };
     }
     if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
-      return { label: 'Awaiting Packing', color: 'bg-yellow-100 dark:bg-yellow-900/30 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700 dark:border-yellow-700' };
+      return { label: t('orders:awaitingPacking'), color: 'bg-yellow-100 dark:bg-yellow-900/30 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700 dark:border-yellow-700' };
     }
     // Removed redundant condition - already handled above
-    return { label: 'Pending', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700' };
+    return { label: t('orders:pending'), color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700' };
   };
 
   // Statistics

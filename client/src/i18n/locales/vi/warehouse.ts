@@ -896,6 +896,10 @@ const warehouse = {
   taskCreationFailed: 'Không thể tạo công việc',
   taskCompleted: 'Hoàn thành công việc thành công',
   taskCompletionFailed: 'Không thể hoàn thành công việc',
+  
+  // Zone Management
+  maximumZonesReached: 'Đã đạt số khu vực tối đa',
+  cannotDeleteZoneA: 'Không thể xóa Khu vực A',
 } as const;
 
 export default warehouse;

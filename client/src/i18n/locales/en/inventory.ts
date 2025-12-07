@@ -168,6 +168,9 @@ const inventory = {
   exportFormat: 'Export Format',
   exportAsXLSX: 'Export as XLSX',
   exportAsPDF: 'Export as PDF',
+  returnsReport: 'Returns Report',
+  exportedReturnsToPDF: 'Exported {{count}} return(s) to PDF',
+  failedToExportReturnsToPDF: 'Failed to export returns to PDF',
   importXLS: 'Import XLS',
   toggleColumns: 'Columns',
   basicInfo: 'Basic Info',
@@ -873,6 +876,7 @@ const inventory = {
   removeImage: 'Remove Image',
   imageUploadError: 'Image Upload Error',
   failedToUploadImage: 'Failed to upload image. Bundle will be saved without image.',
+  failedToFetchProducts: 'Failed to fetch products',
   
   // Confirmation Messages
   thisCannotBeUndone: 'This action cannot be undone.',
@@ -1173,6 +1177,30 @@ const inventory = {
   showingOrdersOf: 'Showing {{visible}} of {{total}} orders',
   subtotal: 'Subtotal',
   createReturn: 'Create Return',
+  
+  // Supplier Export Headers
+  exportColumnName: 'Name',
+  exportColumnCompany: 'Company',
+  exportColumnContactPerson: 'Contact Person',
+  exportColumnEmail: 'Email',
+  exportColumnPhone: 'Phone',
+  exportColumnCountry: 'Country',
+  exportColumnTotalPurchases: 'Total Purchases',
+  exportColumnLastPurchaseDate: 'Last Purchase Date',
+  exportColumnLastPurchase: 'Last Purchase',
+  exportColumnAddress: 'Address',
+  exportColumnWebsite: 'Website',
+  suppliersReport: 'Suppliers Report',
+  
+  // Supplier Details Labels
+  skuPrefix: 'SKU:',
+  stockPrefix: 'Stock:',
+  qtyPrefix: 'Qty:',
+  naLabel: 'N/A',
+  
+  // Supplier Form Validation
+  supplierNameRequired: 'Supplier name is required',
+  invalidEmailAddress: 'Invalid email address',
   
 } as const;
 

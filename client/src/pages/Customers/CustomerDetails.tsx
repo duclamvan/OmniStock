@@ -256,11 +256,11 @@ export default function CustomerDetails() {
     
     // Ranking badges
     if (customer.customerRank === 'TOP10') {
-      badges.push({ label: 'TOP 10', icon: Trophy, color: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400' });
+      badges.push({ label: t('customers:top10Badge'), icon: Trophy, color: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400' });
     } else if (customer.customerRank === 'TOP50') {
-      badges.push({ label: 'TOP 50', icon: Award, color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' });
+      badges.push({ label: t('customers:top50Badge'), icon: Award, color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' });
     } else if (customer.customerRank === 'TOP100') {
-      badges.push({ label: 'TOP 100', icon: Star, color: 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' });
+      badges.push({ label: t('customers:top100Badge'), icon: Star, color: 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' });
     }
     
     // Activity badges

@@ -56,6 +56,7 @@ const orders = {
   cancelled: 'Cancelled',
   processing: 'Processing',
   onHold: 'On Hold',
+  awaitingPacking: 'Awaiting Packing',
   
   // Payment Status
   paid: 'Paid',
@@ -388,6 +389,7 @@ const orders = {
   pickupPoint: 'Pickup Point',
   addNewAddress: 'Add New Address',
   editAddress: 'Edit Address',
+  copyAddress: 'Copy address',
   deleteAddress: 'Delete Address',
   setAsDefault: 'Set as Default',
   
@@ -540,10 +542,13 @@ const orders = {
   returningCustomers: 'Returning Customers',
   
   // Table Headers
+  orderIdHeader: 'Order ID',
   customerNameHeader: 'Customer',
   statusHeader: 'Status',
   totalHeader: 'Total',
   dateHeader: 'Date',
+  shippingMethodHeader: 'Shipping Method',
+  paymentMethodHeader: 'Payment Method',
   actionsHeader: 'Actions',
   
   // Confirmation

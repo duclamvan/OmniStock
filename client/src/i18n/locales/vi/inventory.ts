@@ -168,6 +168,13 @@ const inventory = {
   addProduct: 'Thêm sản phẩm',
   exportToXLSX: 'Xuất Excel',
   exportToPDF: 'Xuất PDF',
+  exportAsXLSX: 'Xuất Excel',
+  exportAsPDF: 'Xuất PDF',
+  returnsReport: 'Báo cáo trả hàng',
+  exportedReturnsToPDF: 'Đã xuất {{count}} phiếu trả hàng sang PDF',
+  failedToExportReturnsToPDF: 'Không thể xuất phiếu trả hàng sang PDF',
+  exportFormat: 'Định dạng xuất',
+  importXLS: 'Nhập Excel',
   importFromExcel: 'Nhập từ Excel',
   showArchive: 'Hiện kho lưu trữ',
   showActive: 'Hiện đang hoạt động',
@@ -267,10 +274,6 @@ const inventory = {
   viewActiveProducts: 'Xem sản phẩm hoạt động',
   viewArchive: 'Xem kho lưu trữ',
   searchProducts: 'Tìm kiếm sản phẩm...',
-  exportFormat: 'Định dạng xuất',
-  exportAsXLSX: 'Xuất dạng XLSX',
-  exportAsPDF: 'Xuất dạng PDF',
-  importXLS: 'Nhập XLS',
   toggleColumns: 'Cột',
   basicInfo: 'Thông tin cơ bản',
   stockInfo: 'Tồn kho',
@@ -972,6 +975,7 @@ const inventory = {
   removeImage: 'Xóa hình ảnh',
   imageUploadError: 'Lỗi tải hình ảnh',
   failedToUploadImage: 'Không thể tải hình ảnh. Gói sẽ được lưu mà không có hình ảnh.',
+  failedToFetchProducts: 'Không thể tải sản phẩm',
   
   // Confirmation Messages
   thisCannotBeUndone: 'Hành động này không thể hoàn tác.',
@@ -1248,6 +1252,30 @@ const inventory = {
   deleteThisReturn: 'Thao tác này sẽ xóa vĩnh viễn trả hàng này. Hành động không thể hoàn tác',
   typeHere: 'Nhập tại đây...',
   typeHereNote: 'Nhập tại đây',
+  
+  // Supplier Export Headers
+  exportColumnName: 'Tên',
+  exportColumnCompany: 'Công ty',
+  exportColumnContactPerson: 'Người liên hệ',
+  exportColumnEmail: 'Email',
+  exportColumnPhone: 'Điện thoại',
+  exportColumnCountry: 'Quốc gia',
+  exportColumnTotalPurchases: 'Tổng mua hàng',
+  exportColumnLastPurchaseDate: 'Ngày mua hàng cuối',
+  exportColumnLastPurchase: 'Mua hàng cuối',
+  exportColumnAddress: 'Địa chỉ',
+  exportColumnWebsite: 'Website',
+  suppliersReport: 'Báo cáo nhà cung cấp',
+  
+  // Supplier Details Labels
+  skuPrefix: 'SKU:',
+  stockPrefix: 'Tồn kho:',
+  qtyPrefix: 'SL:',
+  naLabel: 'N/A',
+  
+  // Supplier Form Validation
+  supplierNameRequired: 'Tên nhà cung cấp là bắt buộc',
+  invalidEmailAddress: 'Địa chỉ email không hợp lệ',
   
 } as const;
 

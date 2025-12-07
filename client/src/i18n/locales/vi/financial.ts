@@ -186,6 +186,7 @@ const financial = {
   // POS
   pos: 'POS',
   pointOfSale: 'Điểm bán hàng',
+  posReceipt: 'Hóa đơn bán hàng',
   addedToCart: 'Đã thêm vào giỏ',
   pleaseSelectWarehouse: 'Vui lòng chọn kho',
   saleCompletedSuccessfully: 'Bán hàng thành công',
@@ -205,6 +206,17 @@ const financial = {
   invoiceGeneratedSuccessfully: 'Tạo hóa đơn thành công',
   failedToGenerateInvoice: 'Tạo hóa đơn thất bại',
   sku: 'SKU',
+  productNotFound: 'Không tìm thấy sản phẩm',
+  noProductWithBarcode: 'Không có sản phẩm với mã vạch "{{barcode}}"',
+  orderNumber: 'Đơn hàng #',
+  cashReceived: 'Tiền mặt đã nhận',
+  change: 'Tiền thừa',
+  thankYouForPurchase: 'Cảm ơn quý khách đã mua hàng!',
+  poweredByPOS: 'Phần mềm Davie Supply POS',
+  printReceipt: 'In hóa đơn',
+  confirm: 'Xác nhận',
+  items: 'Sản phẩm',
+  time: 'Thời gian',
   
   // Services
   services: 'Dịch vụ',

@@ -576,7 +576,7 @@ export default function EditBundle() {
         });
         
         if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+          throw new Error(t('inventory:failedToUploadImage'));
         }
         
         const uploadData = await uploadResponse.json();

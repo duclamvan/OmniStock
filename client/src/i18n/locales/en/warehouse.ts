@@ -955,6 +955,10 @@ const warehouse = {
   taskCreationFailed: 'Failed to create task',
   taskCompleted: 'Task completed successfully',
   taskCompletionFailed: 'Failed to complete task',
+  
+  // Zone Management
+  maximumZonesReached: 'Maximum zones reached',
+  cannotDeleteZoneA: 'Cannot delete Zone A',
 } as const;
 
 export default warehouse;

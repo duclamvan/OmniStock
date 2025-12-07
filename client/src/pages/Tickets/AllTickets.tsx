@@ -370,25 +370,25 @@ export default function AllTickets() {
   const handleExportXLSX = () => {
     try {
       const exportData = filteredTickets.map(ticket => ({
-        'Ticket ID': ticket.ticketId || '-',
-        'Subject': ticket.subject || '-',
-        'Customer': ticket.customerName || '-',
-        'Priority': ticket.priority === 'urgent' ? 'Urgent'
-          : ticket.priority === 'high' ? 'High'
-          : ticket.priority === 'normal' ? 'Normal'
-          : ticket.priority === 'low' ? 'Low'
+        [t('ticketId')]: ticket.ticketId || '-',
+        [t('subject')]: ticket.subject || '-',
+        [t('customer')]: ticket.customerName || '-',
+        [t('priority')]: ticket.priority === 'urgent' ? t('urgent')
+          : ticket.priority === 'high' ? t('high')
+          : ticket.priority === 'normal' ? t('normal')
+          : ticket.priority === 'low' ? t('low')
           : ticket.priority || '-',
-        'Status': ticket.status === 'open' ? 'Open'
-          : ticket.status === 'in_progress' ? 'In Progress'
-          : ticket.status === 'resolved' ? 'Resolved'
-          : ticket.status === 'closed' ? 'Closed'
+        [t('status')]: ticket.status === 'open' ? t('open')
+          : ticket.status === 'in_progress' ? t('inProgress')
+          : ticket.status === 'resolved' ? t('resolved')
+          : ticket.status === 'closed' ? t('closed')
           : ticket.status || '-',
-        'Category': ticket.category || '-',
-        'Created Date': format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
-        'Updated Date': format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
+        [t('category')]: ticket.category || '-',
+        [t('createdDate')]: format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
+        [t('updatedDate')]: format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
       }));
 
-      exportToXLSX(exportData, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`, 'Tickets');
+      exportToXLSX(exportData, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`, t('tickets'));
       
       toast({
         title: t('success'),
@@ -410,15 +410,15 @@ export default function AllTickets() {
         ticketId: ticket.ticketId || '-',
         subject: ticket.subject || '-',
         customer: ticket.customerName || '-',
-        priority: ticket.priority === 'urgent' ? 'Urgent'
-          : ticket.priority === 'high' ? 'High'
-          : ticket.priority === 'normal' ? 'Normal'
-          : ticket.priority === 'low' ? 'Low'
+        priority: ticket.priority === 'urgent' ? t('urgent')
+          : ticket.priority === 'high' ? t('high')
+          : ticket.priority === 'normal' ? t('normal')
+          : ticket.priority === 'low' ? t('low')
           : ticket.priority || '-',
-        status: ticket.status === 'open' ? 'Open'
-          : ticket.status === 'in_progress' ? 'In Progress'
-          : ticket.status === 'resolved' ? 'Resolved'
-          : ticket.status === 'closed' ? 'Closed'
+        status: ticket.status === 'open' ? t('open')
+          : ticket.status === 'in_progress' ? t('inProgress')
+          : ticket.status === 'resolved' ? t('resolved')
+          : ticket.status === 'closed' ? t('closed')
           : ticket.status || '-',
         category: ticket.category || '-',
         createdDate: format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
@@ -426,17 +426,17 @@ export default function AllTickets() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'ticketId', header: 'Ticket ID' },
-        { key: 'subject', header: 'Subject' },
-        { key: 'customer', header: 'Customer' },
-        { key: 'priority', header: 'Priority' },
-        { key: 'status', header: 'Status' },
-        { key: 'category', header: 'Category' },
-        { key: 'createdDate', header: 'Created Date' },
-        { key: 'updatedDate', header: 'Updated Date' },
+        { key: 'ticketId', header: t('ticketId') },
+        { key: 'subject', header: t('subject') },
+        { key: 'customer', header: t('customer') },
+        { key: 'priority', header: t('priority') },
+        { key: 'status', header: t('status') },
+        { key: 'category', header: t('category') },
+        { key: 'createdDate', header: t('createdDate') },
+        { key: 'updatedDate', header: t('updatedDate') },
       ];
 
-      exportToPDF('Tickets Report', exportData, columns, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('ticketsReport'), exportData, columns, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
         title: t('success'),

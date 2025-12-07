@@ -991,14 +991,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       // Define columns
       const columns: PDFColumn[] = [
-        { key: 'orderId', header: 'Order ID' },
-        { key: 'customer', header: 'Customer' },
-        { key: 'items', header: 'Items' },
-        { key: 'total', header: 'Total' },
-        { key: 'status', header: 'Status' },
-        { key: 'date', header: 'Date' },
-        { key: 'shippingMethod', header: 'Shipping Method' },
-        { key: 'paymentMethod', header: 'Payment Method' },
+        { key: 'orderId', header: t('orders:orderIdHeader') },
+        { key: 'customer', header: t('orders:customerNameHeader') },
+        { key: 'items', header: t('orders:items') },
+        { key: 'total', header: t('orders:totalHeader') },
+        { key: 'status', header: t('orders:statusHeader') },
+        { key: 'date', header: t('orders:dateHeader') },
+        { key: 'shippingMethod', header: t('orders:shippingMethodHeader') },
+        { key: 'paymentMethod', header: t('orders:paymentMethodHeader') },
       ];
 
       // Call export function

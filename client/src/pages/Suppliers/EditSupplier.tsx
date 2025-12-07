@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from 'react-i18next';
@@ -81,10 +81,10 @@ const getCountryFlag = (country: string): string => {
   return countryFlags[country] || '🌍';
 };
 
-const insertSupplierSchema = z.object({
-  name: z.string().min(1, "Supplier name is required"),
+const createSupplierSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t('inventory:supplierNameRequired')),
   contactPerson: z.string().optional(),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  email: z.string().email(t('inventory:invalidEmailAddress')).optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -94,11 +94,22 @@ const insertSupplierSchema = z.object({
   website: z.string().optional(),
   taxId: z.string().optional(),
 });
-type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+
+type InsertSupplier = {
+  name: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  zipCode?: string;
+  country?: string;
+  notes?: string;
+  website?: string;
+  taxId?: string;
+};
 type Supplier = any;
 type SupplierFile = any;
-
-const formSchema = insertSupplierSchema.extend({});
 
 export default function EditSupplier() {
   const [, setLocation] = useLocation();
@@ -167,8 +178,10 @@ export default function EditSupplier() {
     }
   };
 
+  const supplierSchema = useMemo(() => createSupplierSchema(t), [t]);
+
   const form = useForm<InsertSupplier>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(supplierSchema),
     defaultValues: {
       name: "",
       contactPerson: "",

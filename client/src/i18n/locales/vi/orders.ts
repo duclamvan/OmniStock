@@ -56,6 +56,7 @@ const orders = {
   cancelled: 'Đã hủy',
   processing: 'Đang xử lý',
   onHold: 'Tạm giữ',
+  awaitingPacking: 'Chờ đóng gói',
   
   // Payment Status
   paid: 'Đã thanh toán',
@@ -382,6 +383,7 @@ const orders = {
   pickupPoint: 'Điểm lấy hàng',
   addNewAddress: 'Thêm địa chỉ mới',
   editAddress: 'Sửa địa chỉ',
+  copyAddress: 'Sao chép địa chỉ',
   deleteAddress: 'Xóa địa chỉ',
   setAsDefault: 'Đặt làm mặc định',
   
@@ -534,10 +536,13 @@ const orders = {
   returningCustomers: 'Khách quay lại',
   
   // Table Headers
+  orderIdHeader: 'Mã đơn hàng',
   customerNameHeader: 'Khách hàng',
   statusHeader: 'Trạng thái',
   totalHeader: 'Tổng cộng',
   dateHeader: 'Ngày',
+  shippingMethodHeader: 'Phương thức giao hàng',
+  paymentMethodHeader: 'Phương thức thanh toán',
   actionsHeader: 'Thao tác',
   
   // Confirmation

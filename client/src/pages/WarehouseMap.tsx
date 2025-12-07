@@ -242,7 +242,7 @@ export default function WarehouseMap() {
       const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       const nextLetter = allLetters.find(l => !usedLetters.includes(l));
       if (!nextLetter) {
-        toast({ title: t('common:error'), description: 'Maximum zones reached', variant: 'destructive' });
+        toast({ title: t('common:error'), description: t('warehouse:maximumZonesReached'), variant: 'destructive' });
         return prev;
       }
       const updated = { 
@@ -259,7 +259,7 @@ export default function WarehouseMap() {
   // Delete a zone
   const handleDeleteZone = useCallback((zoneId: string) => {
     if (zoneId === 'A') {
-      toast({ title: t('common:error'), description: 'Cannot delete Zone A', variant: 'destructive' });
+      toast({ title: t('common:error'), description: t('warehouse:cannotDeleteZoneA'), variant: 'destructive' });
       return;
     }
     setZones(prev => {
@@ -345,8 +345,8 @@ export default function WarehouseMap() {
     if (zoneLetter === 'A') return null; // Zone A is the default, no special label
     const zoneConfig = zones[zoneLetter];
     if (!zoneConfig) return null;
-    const storageType = zoneConfig.defaultStorageType === 'pallet' ? 'Pallets' : 'Bins';
-    return `Zone ${zoneLetter} - ${storageType}`;
+    const storageType = zoneConfig.defaultStorageType === 'pallet' ? t('warehouse:pallets') : t('warehouse:bins');
+    return `${t('warehouse:zone')} ${zoneLetter} - ${storageType}`;
   };
   
   // Helper function to check if a zone uses pallet storage

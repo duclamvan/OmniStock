@@ -370,7 +370,7 @@ export default function AllReturns() {
         { key: 'reason', header: t('inventory:reason') },
       ];
 
-      exportToPDF('Returns Report', exportData, columns, 'returns');
+      exportToPDF(t('inventory:returnsReport'), exportData, columns, 'returns');
       
       toast({
         title: t('common:success'),

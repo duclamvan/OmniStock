@@ -706,6 +706,8 @@ const common = {
     invalidSetupCode: 'Mã thiết lập không hợp lệ',
     confirmPasswordPlaceholder: 'Xác nhận mật khẩu của bạn',
     passwordsDontMatch: 'Mật khẩu không khớp',
+    usernameMinLength: 'Tên đăng nhập phải có ít nhất 3 ký tự',
+    passwordMinLength: 'Mật khẩu phải có ít nhất 8 ký tự',
     firstTimeSetup: 'Thiết lập lần đầu',
     setupDescription: 'Tạo tài khoản quản trị viên để bắt đầu',
     
@@ -1305,6 +1307,10 @@ const common = {
     
     privacyAgreementNote: 'Bằng cách sử dụng Davie Supply, bạn đồng ý với việc thu thập và sử dụng thông tin của bạn như được mô tả trong Chính sách Bảo mật này.',
   },
+  
+  // Currency symbols
+  currencyCzk: 'Kč',
+  currencyEur: '€',
   
 } as const;
 

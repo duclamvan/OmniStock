@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { queryClient } from '@/lib/queryClient';
@@ -42,18 +42,27 @@ interface CustomerPrice {
   variant?: ProductVariant | null;
 }
 
-const customerPriceSchema = z.object({
-  productId: z.string().min(1, 'Product is required'),
+const createCustomerPriceSchema = (t: (key: string) => string) => z.object({
+  productId: z.string().min(1, t('customers:productRequired')),
   variantId: z.string().optional(),
-  price: z.coerce.number().positive('Price must be positive'),
+  price: z.coerce.number().positive(t('customers:pricePositive')),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
-  validFrom: z.string().min(1, 'Valid from date is required'),
+  validFrom: z.string().min(1, t('customers:validFromRequired')),
   validTo: z.string().optional(),
   isActive: z.boolean().default(true),
   notes: z.string().optional(),
 });
 
-type CreateCustomerPriceInput = z.infer<typeof customerPriceSchema>;
+type CreateCustomerPriceInput = {
+  productId: string;
+  variantId?: string;
+  price: number;
+  currency: 'CZK' | 'EUR' | 'USD' | 'VND' | 'CNY';
+  validFrom: string;
+  validTo?: string;
+  isActive: boolean;
+  notes?: string;
+};
 
 interface CustomerPricesProps {
   customerId: string;
@@ -68,6 +77,8 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [productSearch, setProductSearch] = useState('');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  const customerPriceSchema = useMemo(() => createCustomerPriceSchema(t), [t]);
 
   const { data: prices = [], isLoading } = useQuery<CustomerPrice[]>({
     queryKey: [`/api/customers/${customerId}/prices`],

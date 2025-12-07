@@ -187,18 +187,18 @@ export default function AllSuppliers() {
       }
 
       const exportData = filteredSuppliers.map(supplier => ({
-        Name: supplier.name || '',
-        Company: supplier.name || '',
-        'Contact Person': supplier.contactPerson || '',
-        Email: supplier.email || '',
-        Phone: supplier.phone || '',
-        Country: supplier.country || '',
-        'Total Purchases': `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
-        'Last Purchase Date': supplier.lastPurchaseDate 
+        [t('inventory:exportColumnName')]: supplier.name || '',
+        [t('inventory:exportColumnCompany')]: supplier.name || '',
+        [t('inventory:exportColumnContactPerson')]: supplier.contactPerson || '',
+        [t('inventory:exportColumnEmail')]: supplier.email || '',
+        [t('inventory:exportColumnPhone')]: supplier.phone || '',
+        [t('inventory:exportColumnCountry')]: supplier.country || '',
+        [t('inventory:exportColumnTotalPurchases')]: `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
+        [t('inventory:exportColumnLastPurchaseDate')]: supplier.lastPurchaseDate 
           ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
           : t('inventory:never'),
-        Address: supplier.address || '',
-        Website: supplier.website || '',
+        [t('inventory:exportColumnAddress')]: supplier.address || '',
+        [t('inventory:exportColumnWebsite')]: supplier.website || '',
       }));
 
       exportToXLSX(exportData, 'suppliers', 'Suppliers');
@@ -229,13 +229,13 @@ export default function AllSuppliers() {
       }
 
       const columns: PDFColumn[] = [
-        { key: 'name', header: 'Name' },
-        { key: 'contactPerson', header: 'Contact Person' },
-        { key: 'email', header: 'Email' },
-        { key: 'phone', header: 'Phone' },
-        { key: 'country', header: 'Country' },
-        { key: 'totalPurchases', header: 'Total Purchases' },
-        { key: 'lastPurchaseDate', header: 'Last Purchase' },
+        { key: 'name', header: t('inventory:exportColumnName') },
+        { key: 'contactPerson', header: t('inventory:exportColumnContactPerson') },
+        { key: 'email', header: t('inventory:exportColumnEmail') },
+        { key: 'phone', header: t('inventory:exportColumnPhone') },
+        { key: 'country', header: t('inventory:exportColumnCountry') },
+        { key: 'totalPurchases', header: t('inventory:exportColumnTotalPurchases') },
+        { key: 'lastPurchaseDate', header: t('inventory:exportColumnLastPurchase') },
       ];
 
       const exportData = filteredSuppliers.map(supplier => ({
@@ -250,7 +250,7 @@ export default function AllSuppliers() {
           : t('inventory:never'),
       }));
 
-      exportToPDF('Suppliers Report', exportData, columns, 'suppliers');
+      exportToPDF(t('inventory:suppliersReport'), exportData, columns, 'suppliers');
       
       toast({
         title: t('common:success'),

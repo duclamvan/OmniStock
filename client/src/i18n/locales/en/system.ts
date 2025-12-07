@@ -403,6 +403,10 @@ const system = {
   failedToLoadTickets: 'Failed to load tickets',
   exportSuccessTickets: 'Exported {count} ticket(s) to {format}',
   exportFailedTickets: 'Failed to export tickets to {format}',
+  ticketsReport: 'Tickets Report',
+  createdDate: 'Created Date',
+  updatedDate: 'Updated Date',
+  normal: 'Normal',
   
   // Ticket Details
   edit: 'Edit',

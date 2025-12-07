@@ -336,10 +336,10 @@ export default function BundleDetails() {
                           <div className="flex items-center gap-2">
                             <div className="text-right">
                               <p className="text-sm font-semibold">
-                                {(parseFloat(group.product.priceCzk || '0') * totalQuantity).toFixed(2)} Kč
+                                {(parseFloat(group.product.priceCzk || '0') * totalQuantity).toFixed(2)} {t('common:currencyCzk')}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                €{(parseFloat(group.product.priceEur || '0') * totalQuantity).toFixed(2)}
+                                {t('common:currencyEur')}{(parseFloat(group.product.priceEur || '0') * totalQuantity).toFixed(2)}
                               </p>
                             </div>
                             {hasMultipleVariants && (
@@ -479,8 +479,8 @@ export default function BundleDetails() {
             <CardContent className="pt-0 space-y-3">
               <div>
                 <p className="text-xs text-muted-foreground">{t('inventory:basePrice')}</p>
-                <p className="text-lg font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
-                <p className="text-xs text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
+                <p className="text-lg font-bold">{basePrice.totalCzk.toFixed(2)} {t('common:currencyCzk')}</p>
+                <p className="text-xs text-muted-foreground">{t('common:currencyEur')}{basePrice.totalEur.toFixed(2)}</p>
               </div>
               
               <Separator />
@@ -488,10 +488,10 @@ export default function BundleDetails() {
               <div>
                 <p className="text-xs text-muted-foreground">{t('inventory:bundlePrice')}</p>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                  {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
+                  {parseFloat(bundle.priceCzk || '0').toFixed(2)} {t('common:currencyCzk')}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  €{parseFloat(bundle.priceEur || '0').toFixed(2)}
+                  {t('common:currencyEur')}{parseFloat(bundle.priceEur || '0').toFixed(2)}
                 </p>
               </div>
               
@@ -500,10 +500,10 @@ export default function BundleDetails() {
               <div>
                 <p className="text-xs text-muted-foreground">{t('inventory:customerSavings')}</p>
                 <Badge variant="default" className="bg-green-500 mt-1">
-                  {savingsPercentage}% OFF
+                  {savingsPercentage}% {t('inventory:off')}
                 </Badge>
                 <p className="text-xs mt-2">
-                  {t('inventory:savings')}: {savings.czk.toFixed(2)} Kč (€{savings.eur.toFixed(2)})
+                  {t('inventory:savings')}: {savings.czk.toFixed(2)} {t('common:currencyCzk')} ({t('common:currencyEur')}{savings.eur.toFixed(2)})
                 </p>
               </div>
             </CardContent>
@@ -581,10 +581,10 @@ export default function BundleDetails() {
                     const bundlePriceCzk = parseFloat(bundle.priceCzk || '0');
                     const netProfitCzk = bundlePriceCzk - totalImportCostCzk;
                     return netProfitCzk.toFixed(2);
-                  })()} Kč
+                  })()} {t('common:currencyCzk')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  €{(() => {
+                  {t('common:currencyEur')}{(() => {
                     const totalImportCostEur = bundle.items.reduce((sum, item) => 
                       sum + (parseFloat(item.product.importCostEur || '0') * item.quantity), 0
                     );

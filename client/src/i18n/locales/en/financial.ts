@@ -186,6 +186,7 @@ const financial = {
   // POS
   pos: 'POS',
   pointOfSale: 'Point of Sale',
+  posReceipt: 'Point of Sale Receipt',
   addedToCart: 'Added to cart',
   pleaseSelectWarehouse: 'Please select a warehouse',
   saleCompletedSuccessfully: 'Sale completed successfully',
@@ -205,6 +206,17 @@ const financial = {
   invoiceGeneratedSuccessfully: 'Invoice generated successfully',
   failedToGenerateInvoice: 'Failed to generate invoice',
   sku: 'SKU',
+  productNotFound: 'Product not found',
+  noProductWithBarcode: 'No product with barcode "{{barcode}}"',
+  orderNumber: 'Order #',
+  cashReceived: 'Cash Received',
+  change: 'Change',
+  thankYouForPurchase: 'Thank you for your purchase!',
+  poweredByPOS: 'Powered by Davie Supply POS',
+  printReceipt: 'Print Receipt',
+  confirm: 'Confirm',
+  items: 'Items',
+  time: 'Time',
   
   // Services
   services: 'Services',

@@ -255,8 +255,10 @@ export default function WarehouseDashboard() {
   }, 0);
 
   const today = new Date();
-  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const { i18n } = useTranslation();
+  const currentLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+  const dayName = today.toLocaleDateString(currentLocale, { weekday: 'long' });
+  const dateStr = today.toLocaleDateString(currentLocale, { month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
     <div className="space-y-6">

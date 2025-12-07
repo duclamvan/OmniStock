@@ -403,6 +403,10 @@ const system = {
   failedToLoadTickets: 'Không thể tải phiếu',
   exportSuccessTickets: 'Đã xuất {count} phiếu sang {format}',
   exportFailedTickets: 'Không thể xuất phiếu sang {format}',
+  ticketsReport: 'Báo cáo phiếu hỗ trợ',
+  createdDate: 'Ngày tạo',
+  updatedDate: 'Ngày cập nhật',
+  normal: 'Bình thường',
   
   // Ticket Details
   edit: 'Sửa',

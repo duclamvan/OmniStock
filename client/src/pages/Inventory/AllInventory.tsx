@@ -116,7 +116,7 @@ export default function AllInventory() {
         credentials: 'include',
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch products');
+        throw new Error(t('inventory:failedToFetchProducts'));
       }
       return response.json();
     },

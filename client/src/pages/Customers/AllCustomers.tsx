@@ -160,13 +160,13 @@ export default function AllCustomers() {
               <span className="truncate max-w-[120px] lg:max-w-none">{customer.name}</span>
               {customer.hasPayLaterBadge && (
                 <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-yellow-50 border-yellow-300 text-yellow-700 hidden sm:flex">
-                  Pay Later
+                  {t('customers:payLater')}
                 </Badge>
               )}
             </div>
           </Link>
           {customer.facebookName && (
-            <div className="text-xs text-gray-500 truncate max-w-[120px] lg:max-w-none">FB: {customer.facebookName}</div>
+            <div className="text-xs text-gray-500 truncate max-w-[120px] lg:max-w-none">{t('customers:fbPrefix')} {customer.facebookName}</div>
           )}
         </div>
       ),
@@ -240,7 +240,7 @@ export default function AllCustomers() {
                 rel="noopener noreferrer"
                 className="lg:hidden"
               >
-                <Button size="icon" variant="ghost" className="h-7 w-7" title="Open in Messenger">
+                <Button size="icon" variant="ghost" className="h-7 w-7" title={t('customers:openInMessenger')}>
                   <MessageCircle className="h-3 w-3" />
                 </Button>
               </a>
@@ -252,7 +252,7 @@ export default function AllCustomers() {
                 rel="noopener noreferrer"
                 className="hidden lg:block"
               >
-                <Button size="sm" variant="ghost" title="Open in Messenger">
+                <Button size="sm" variant="ghost" title={t('customers:openInMessenger')}>
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </a>
@@ -359,13 +359,13 @@ export default function AllCustomers() {
       }
 
       const exportData = filteredCustomers.map(customer => ({
-        "Name": customer.name || '',
-        "Email": customer.email || '',
-        "Phone": customer.phone || '',
-        "Country": customer.country || '',
-        "Last Purchase": customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
-        "Order Count": customer.orderCount || 0,
-        "Total Spent": formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
+        [t('common:name')]: customer.name || '',
+        [t('common:email')]: customer.email || '',
+        [t('common:phone')]: customer.phone || '',
+        [t('common:country')]: customer.country || '',
+        [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
+        [t('customers:totalOrders')]: customer.orderCount || 0,
+        [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
       }));
 
       exportToXLSX(exportData, 'customers', t('customers:customers'));
@@ -396,13 +396,13 @@ export default function AllCustomers() {
       }
 
       const columns: PDFColumn[] = [
-        { key: "name", header: "Name" },
-        { key: "email", header: "Email" },
-        { key: "phone", header: "Phone" },
-        { key: "country", header: "Country" },
-        { key: "lastPurchase", header: "Last Purchase" },
-        { key: "orderCount", header: "Order Count" },
-        { key: "totalSpent", header: "Total Spent" },
+        { key: "name", header: t('common:name') },
+        { key: "email", header: t('common:email') },
+        { key: "phone", header: t('common:phone') },
+        { key: "country", header: t('common:country') },
+        { key: "lastPurchase", header: t('customers:lastPurchase') },
+        { key: "orderCount", header: t('customers:totalOrders') },
+        { key: "totalSpent", header: t('customers:totalSpent') },
       ];
 
       const exportData = filteredCustomers.map(customer => ({

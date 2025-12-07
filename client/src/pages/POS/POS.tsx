@@ -157,30 +157,30 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
       <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
         <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <h2 className="text-xl font-bold">DAVIE SUPPLY</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Point of Sale Receipt</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('financial:posReceipt')}</p>
         </div>
         
         <div className="space-y-1.5 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Date:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('financial:date')}:</span>
             <span className="font-medium">{data.date.toLocaleDateString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Time:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('financial:time')}:</span>
             <span className="font-medium">{data.date.toLocaleTimeString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Order #:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('financial:orderNumber')}:</span>
             <span className="font-medium">{data.orderId}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Customer:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('common:customer')}:</span>
             <span className="font-medium">{data.customerName}</span>
           </div>
         </div>
         
         <div className="border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <div className="font-bold mb-3 text-base">Items:</div>
+          <div className="font-bold mb-3 text-base">{t('financial:items')}:</div>
           {data.items.map((item, idx) => (
             <div key={idx} className="flex justify-between text-sm mb-2">
               <span className="flex-1 pr-3">
@@ -200,7 +200,7 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
           </div>
           {data.discount > 0 && (
             <div className="flex justify-between text-green-600 dark:text-green-400">
-              <span>Discount:</span>
+              <span>{t('financial:discount')}:</span>
               <span>-{data.currency} {data.discount.toFixed(2)}</span>
             </div>
           )}
@@ -218,33 +218,33 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
           {data.cashReceived && (
             <>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Cash Received:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('financial:cashReceived')}:</span>
                 <span className="font-medium">{data.currency} {data.cashReceived.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-green-600 dark:text-green-400 font-bold">
-                <span>Change:</span>
+                <span>{t('financial:change')}:</span>
                 <span>{data.currency} {(data.change || 0).toFixed(2)}</span>
               </div>
             </>
           )}
           {data.notes && (
             <div className="mt-3 pt-3 border-t dark:border-slate-600">
-              <span className="font-medium">Notes:</span>
+              <span className="font-medium">{t('common:notes')}:</span>
               <p className="text-gray-600 dark:text-gray-400 mt-1">{data.notes}</p>
             </div>
           )}
         </div>
         
         <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Thank you for your purchase!</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Powered by Davie Supply POS</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('financial:thankYouForPurchase')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('financial:poweredByPOS')}</p>
         </div>
       </div>
       
       <div className="no-print flex gap-3 justify-center mt-6">
         <Button size="lg" onClick={handlePrint} className="px-8" data-testid="button-print-receipt">
           <Printer className="h-5 w-5 mr-2" />
-          Print Receipt
+          {t('financial:printReceipt')}
         </Button>
         <Button size="lg" variant="outline" onClick={onClose} data-testid="button-close-receipt">
           {t('common:close')}
@@ -260,6 +260,7 @@ function NumPad({ value, onChange, onSubmit, label }: {
   onSubmit: () => void;
   label: string;
 }) {
+  const { t } = useTranslation(['financial']);
   const handleKey = (key: string) => {
     if (key === 'C') {
       onChange('');
@@ -299,7 +300,7 @@ function NumPad({ value, onChange, onSubmit, label }: {
       </div>
       <Button size="lg" className="w-full h-14 text-xl" onClick={onSubmit}>
         <Check className="h-6 w-6 mr-2" />
-        Confirm
+        {t('financial:confirm')}
       </Button>
     </div>
   );
@@ -569,8 +570,8 @@ export default function POS() {
       if (soundEnabled) await soundEffects.playErrorBeep();
       setScanFeedback('error');
       toast({
-        title: 'Product not found',
-        description: `No product with barcode "${barcode}"`,
+        title: t('financial:productNotFound'),
+        description: t('financial:noProductWithBarcode', { barcode }),
         variant: 'destructive',
       });
     }

@@ -56,18 +56,18 @@ const contactInfoSchema = z.object({
     .or(z.literal('')),
 });
 
-const passwordSchema = z.object({
+const createPasswordSchema = (t: (key: string) => string) => z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8),
   confirmPassword: z.string().min(1),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: t('auth.passwordsDontMatch'),
   path: ["confirmPassword"],
 });
 
 type PersonalInfoFormValues = z.infer<typeof personalInfoSchema>;
 type ContactInfoFormValues = z.infer<typeof contactInfoSchema>;
-type PasswordFormValues = z.infer<typeof passwordSchema>;
+type PasswordFormValues = z.infer<ReturnType<typeof createPasswordSchema>>;
 
 export default function UserSettings() {
   const { toast } = useToast();
@@ -114,6 +114,7 @@ export default function UserSettings() {
   });
 
   // Password Form
+  const passwordSchema = createPasswordSchema(t);
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {

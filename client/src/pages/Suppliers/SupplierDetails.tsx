@@ -292,13 +292,13 @@ export default function SupplierDetails() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{product.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">SKU: {product.sku}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:skuPrefix')} {product.sku}</p>
                       </div>
                       <div className="text-right ml-2">
                         <p className="font-medium text-slate-900 dark:text-slate-100">
                           {product.priceEur && formatCurrency(parseFloat(product.priceEur), 'EUR')}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Stock: {product.quantity}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:stockPrefix')} {product.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -344,7 +344,7 @@ export default function SupplierDetails() {
                         <div>
                           <p className="font-medium text-slate-900 dark:text-slate-100">{purchase.productName}</p>
                           <p className="text-sm text-slate-500 dark:text-slate-400">
-                            SKU: {purchase.sku || 'N/A'} • Qty: {purchase.quantity}
+                            {t('inventory:skuPrefix')} {purchase.sku || t('inventory:naLabel')} • {t('inventory:qtyPrefix')} {purchase.quantity}
                           </p>
                         </div>
                         <div className="text-right">

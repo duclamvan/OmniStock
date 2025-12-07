@@ -3038,7 +3038,7 @@ export default function AddOrder() {
                                     });
                                   }}
                                   data-testid={`button-copy-address-${address.id}`}
-                                  title="Copy address"
+                                  title={t('orders:copyAddress')}
                                 >
                                   <Copy className="h-4 w-4 text-slate-600" />
                                 </Button>
@@ -3054,7 +3054,7 @@ export default function AddOrder() {
                                       setShowShippingModal(true);
                                     }}
                                     data-testid={`button-edit-address-${address.id}`}
-                                    title="Edit address"
+                                    title={t('orders:editAddress')}
                                   >
                                     <Pencil className="h-4 w-4 text-slate-600" />
                                   </Button>

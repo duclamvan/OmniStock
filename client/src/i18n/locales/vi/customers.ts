@@ -146,6 +146,9 @@ const customers = {
   atRisk: 'Có rủi ro',
   inactive: 'Không hoạt động',
   active: 'Hoạt động',
+  top10Badge: 'TOP 10',
+  top50Badge: 'TOP 50',
+  top100Badge: 'TOP 100',
   dormant: 'Ngủ đông',
   
   // Customer Analytics

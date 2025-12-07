@@ -752,6 +752,8 @@ const common = {
     invalidSetupCode: 'Invalid setup code',
     confirmPasswordPlaceholder: 'Confirm your password',
     passwordsDontMatch: 'Passwords do not match',
+    usernameMinLength: 'Username must be at least 3 characters',
+    passwordMinLength: 'Password must be at least 8 characters',
     firstTimeSetup: 'First Time Setup',
     setupDescription: 'Create your administrator account to get started',
     
@@ -1389,6 +1391,10 @@ const common = {
     
     privacyAgreementNote: 'By using Davie Supply, you consent to the collection and use of your information as described in this Privacy Policy.',
   },
+  
+  // Currency symbols
+  currencyCzk: 'Kč',
+  currencyEur: '€',
   
 } as const;
 

@@ -14,27 +14,27 @@ import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { Progress } from "@/components/ui/progress";
 
-const loginSchema = z.object({
-  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+const createLoginSchema = (t: (key: string) => string) => z.object({
+  username: z.string().min(3, { message: t('auth.usernameMinLength') }),
+  password: z.string().min(8, { message: t('auth.passwordMinLength') }),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<ReturnType<typeof createLoginSchema>>;
 
-const createAdminSchema = z.object({
-  setupCode: z.string().min(1, { message: "Setup code is required" }),
-  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  confirmPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
+const createAdminSchema = (t: (key: string) => string) => z.object({
+  setupCode: z.string().min(1, { message: t('auth.setupCodeRequired') }),
+  username: z.string().min(3, { message: t('auth.usernameMinLength') }),
+  password: z.string().min(8, { message: t('auth.passwordMinLength') }),
+  confirmPassword: z.string().min(8, { message: t('auth.passwordMinLength') }),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  message: t('auth.passwordsDontMatch'),
   path: ["confirmPassword"],
 }).refine((data) => data.setupCode === "1707", {
-  message: "Invalid setup code",
+  message: t('auth.invalidSetupCode'),
   path: ["setupCode"],
 });
 
-type CreateAdminFormValues = z.infer<typeof createAdminSchema>;
+type CreateAdminFormValues = z.infer<ReturnType<typeof createAdminSchema>>;
 
 export default function Login() {
   const { toast } = useToast();
@@ -43,6 +43,9 @@ export default function Login() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [redirectProgress, setRedirectProgress] = useState(0);
   const [redirectMessage, setRedirectMessage] = useState("");
+
+  const loginSchema = createLoginSchema(t);
+  const adminSchema = createAdminSchema(t);
 
   const { data: hasUsersData, isLoading: isCheckingUsers } = useQuery<{ hasUsers: boolean }>({
     queryKey: ['/api/auth/has-users'],
@@ -57,7 +60,7 @@ export default function Login() {
   });
 
   const createAdminForm = useForm<CreateAdminFormValues>({
-    resolver: zodResolver(createAdminSchema),
+    resolver: zodResolver(adminSchema),
     defaultValues: {
       setupCode: "",
       username: "",

@@ -3781,7 +3781,7 @@ export default function ProductForm() {
                           <div>
                             <Label htmlFor="bulkPriceCzk" className="text-sm font-medium">{t('products:units.bulkPriceCzk', 'Bulk Price (CZK)')}</Label>
                             <div className="relative mt-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">Kč</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyCzk')}</span>
                               <Input 
                                 type="number"
                                 step="0.01"
@@ -3797,7 +3797,7 @@ export default function ProductForm() {
                           <div>
                             <Label htmlFor="bulkPriceEur" className="text-sm font-medium">{t('products:units.bulkPriceEur', 'Bulk Price (EUR)')}</Label>
                             <div className="relative mt-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyEur')}</span>
                               <Input 
                                 type="number"
                                 step="0.01"
