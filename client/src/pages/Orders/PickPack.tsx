@@ -9203,6 +9203,8 @@ export default function PickPack() {
                         
                         window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
                         
+                        setShowDHLBookmarkletDialog(true);
+                        
                         toast({
                           title: t('dhlAutofillPrepared'),
                           description: t('dhlAutofillOpenedDescription'),
