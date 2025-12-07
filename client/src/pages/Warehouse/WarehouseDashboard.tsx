@@ -82,7 +82,7 @@ interface WarehouseDashboardData {
 }
 
 export default function WarehouseDashboard() {
-  const { t } = useTranslation(['common', 'warehouse']);
+  const { t, i18n } = useTranslation(['common', 'warehouse']);
   const { toast } = useToast();
   const { isAdministrator } = useAuth();
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('');
@@ -255,7 +255,6 @@ export default function WarehouseDashboard() {
   }, 0);
 
   const today = new Date();
-  const { i18n } = useTranslation();
   const currentLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
   const dayName = today.toLocaleDateString(currentLocale, { weekday: 'long' });
   const dateStr = today.toLocaleDateString(currentLocale, { month: 'long', day: 'numeric', year: 'numeric' });
