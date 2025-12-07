@@ -60,7 +60,7 @@ interface RecentOrder {
     name?: string;
     imageUrl?: string;
   };
-  status: string;
+  orderStatus: string;
   paymentStatus?: string;
   grandTotal: string;
   totalCost?: string;
@@ -164,13 +164,13 @@ export default function Home() {
 
   // Calculate order pipeline counts from recent orders
   const orderStatusCounts: OrderStatusCounts = {
-    pending: recentOrders.filter((o: RecentOrder) => o.status === 'pending').length,
-    to_fulfill: recentOrders.filter((o: RecentOrder) => o.status === 'to_fulfill').length,
-    picking: recentOrders.filter((o: RecentOrder) => o.status === 'picking').length,
-    packed: recentOrders.filter((o: RecentOrder) => o.status === 'packed').length,
-    shipped: recentOrders.filter((o: RecentOrder) => o.status === 'shipped').length,
-    delivered: recentOrders.filter((o: RecentOrder) => o.status === 'delivered').length,
-    cancelled: recentOrders.filter((o: RecentOrder) => o.status === 'cancelled').length,
+    pending: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'pending').length,
+    to_fulfill: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'to_fulfill').length,
+    picking: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'picking').length,
+    packed: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'packed').length,
+    shipped: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'shipped').length,
+    delivered: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'delivered').length,
+    cancelled: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'cancelled').length,
   };
 
   // Calculate payment stats
@@ -183,7 +183,7 @@ export default function Home() {
     : 0;
 
   // Calculate fulfillment rate
-  const fulfilledOrders = recentOrders.filter((o: RecentOrder) => ['shipped', 'delivered'].includes(o.status));
+  const fulfilledOrders = recentOrders.filter((o: RecentOrder) => ['shipped', 'delivered'].includes(o.orderStatus));
   const fulfillmentRate = recentOrders.length > 0 ? (fulfilledOrders.length / recentOrders.length) * 100 : 0;
 
   const getStatusColor = (status: string) => {
@@ -576,8 +576,8 @@ export default function Home() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm text-gray-900 dark:text-white font-mono">{order.orderId}</span>
-                            <Badge className={`${getStatusColor(order.status || 'pending')} text-[10px] px-1.5 py-0`}>
-                              {(order.status || 'pending').replace(/_/g, ' ')}
+                            <Badge className={`${getStatusColor(order.orderStatus || 'pending')} text-[10px] px-1.5 py-0`}>
+                              {(order.orderStatus || 'pending').replace(/_/g, ' ')}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
