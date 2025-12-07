@@ -1711,6 +1711,12 @@ const orders = {
   copyBookmarklet: 'Copy Bookmarklet',
   fullInstructions: 'Full Instructions',
   setupInstructions: 'Setup Instructions',
+  createLabelOnDHL: 'Create Label on DHL Website',
+  openDhlWebsite: 'Open DHL Website',
+  viewSetupInstructions: 'View setup instructions',
+  dragToBookmarksBar: 'Drag to bookmarks bar',
+  dragToBookmarksBarDesc: 'Drag this button to your bookmarks bar to save it!',
+  orRightClickAddBookmark: 'Or right-click and "Add to Bookmarks"',
   
 } as const;
 

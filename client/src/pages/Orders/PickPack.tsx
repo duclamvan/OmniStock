@@ -47,8 +47,9 @@ import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomple
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
+import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
-import { generateBookmarkletCodeWithData, COUNTRY_TO_GERMAN, type DHLAutofillData } from "@/lib/dhlBookmarklet";
+import { COUNTRY_TO_GERMAN } from "@/lib/dhlBookmarklet";
 import { useTranslation } from 'react-i18next';
 import { 
   Dialog, 
@@ -1802,10 +1803,6 @@ export default function PickPack() {
     unified: true        // Unified shipping labels section
   });
   
-  // DHL Bookmarklet dialog state
-  const [showDHLBookmarkletDialog, setShowDHLBookmarkletDialog] = useState(false);
-  const [dhlAutofillPrepared, setDhlAutofillPrepared] = useState(false);
-  const [dhlBookmarkletCode, setDhlBookmarkletCode] = useState<string>('');
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
     cartonId: string;
@@ -2597,9 +2594,6 @@ export default function PickPack() {
         setHasManuallyModifiedCartons(false);
         setIsCreatingCartons(false);
         setIsRecalculating(false);
-        // Clear stale DHL bookmarklet state when switching orders
-        setDhlAutofillPrepared(false);
-        setDhlBookmarkletCode('');
       }
       prevActivePackingOrderId.current = currentOrderId;
     }
@@ -9064,6 +9058,7 @@ export default function PickPack() {
             const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
               firstName: shippingAddr.firstName || '',
               lastName: shippingAddr.lastName || '',
+              company: shippingAddr.company || '',
               addressSupplement: shippingAddr.addressSupplement || '',
               street: shippingAddr.street || '',
               houseNumber: shippingAddr.streetNumber || '',
@@ -9071,9 +9066,11 @@ export default function PickPack() {
               city: shippingAddr.city || '',
               country: shippingAddr.country || 'Germany',
               email: shippingAddr.email || '',
+              phone: shippingAddr.tel || '',
             } : {
               firstName: '',
               lastName: '',
+              company: '',
               addressSupplement: '',
               street: '',
               houseNumber: '',
@@ -9081,12 +9078,14 @@ export default function PickPack() {
               city: '',
               country: 'Germany',
               email: '',
+              phone: '',
             };
 
             const dhlSenderData = dhlSenderAddress?.value || dhlSenderAddress;
             const senderData = dhlSenderData ? {
               firstName: dhlSenderData.firstName || '',
               lastName: dhlSenderData.lastName || '',
+              company: dhlSenderData.company || '',
               addressSupplement: dhlSenderData.addressSupplement || '',
               street: dhlSenderData.street || '',
               houseNumber: dhlSenderData.houseNumber || '',
@@ -9094,6 +9093,7 @@ export default function PickPack() {
               city: dhlSenderData.city || '',
               country: dhlSenderData.country || 'Germany',
               email: dhlSenderData.email || '',
+              phone: dhlSenderData.phone || '',
             } : undefined;
 
             const totalWeight = cartons.reduce((sum, carton) => {
@@ -9152,131 +9152,44 @@ export default function PickPack() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
-                  {/* Unified DHL Button - Opens website + Prepares autofill */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="default"
-                      className={`flex-1 font-semibold ${
-                        dhlAutofillPrepared 
-                          ? 'bg-green-500 hover:bg-green-600 text-white' 
-                          : 'bg-yellow-500 hover:bg-yellow-600 text-black'
-                      }`}
-                      onClick={() => {
-                        const bankData = dhlBankDetails?.value || dhlBankDetails;
-                        const autofillData: DHLAutofillData = {
-                          orderId: activePackingOrder.orderId || '',
-                          recipient: {
-                            firstName: recipientData.firstName,
-                            lastName: recipientData.lastName,
-                            addressSupplement: recipientData.addressSupplement,
-                            street: recipientData.street,
-                            houseNumber: recipientData.houseNumber,
-                            postalCode: recipientData.postalCode,
-                            city: recipientData.city,
-                            country: COUNTRY_TO_GERMAN[recipientData.country] || recipientData.country,
-                            email: recipientData.email,
-                          },
-                          sender: senderData ? {
-                            firstName: senderData.firstName,
-                            lastName: senderData.lastName,
-                            addressSupplement: senderData.addressSupplement,
-                            street: senderData.street,
-                            houseNumber: senderData.houseNumber,
-                            postalCode: senderData.postalCode,
-                            city: senderData.city,
-                            country: COUNTRY_TO_GERMAN[senderData.country] || senderData.country,
-                            email: senderData.email,
-                          } : undefined,
-                          packageSize: highlightedSize as '2kg' | '5kg' | '10kg' | '20kg',
-                          codEnabled: showCOD,
-                          codAmount: codAmount,
-                          bankDetails: bankData ? {
-                            iban: bankData.iban || '',
-                            bic: bankData.bic || '',
-                            accountHolder: bankData.accountHolder || '',
-                          } : undefined,
-                          timestamp: Date.now(),
-                        };
-                        const bookmarkletCode = generateBookmarkletCodeWithData(autofillData);
-                        setDhlBookmarkletCode(bookmarkletCode);
-                        setDhlAutofillPrepared(true);
-                        
-                        setShowDHLBookmarkletDialog(true);
-                        
-                        setTimeout(() => {
-                          window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
-                        }, 100);
-                        
-                        toast({
-                          title: t('dhlAutofillPrepared'),
-                          description: t('dhlAutofillOpenedDescription'),
-                          duration: 5000
-                        });
-                      }}
-                      data-testid="button-dhl-create-label"
-                    >
-                      {dhlAutofillPrepared ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {t('openDhlAgain')}
-                        </>
-                      ) : (
-                        <>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          {t('createLabelOnDhlWebsite')}
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="border-yellow-400 hover:bg-yellow-100"
-                      onClick={() => setShowDHLBookmarkletDialog(true)}
-                      title={t('setupInstructions')}
-                      data-testid="button-dhl-bookmarklet-help"
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Bookmarklet Code Section - Show after first click */}
-                  {dhlAutofillPrepared && dhlBookmarkletCode && (
-                    <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-800 dark:text-green-200">{t('autofillReady')}</span>
-                      </div>
-                      <p className="text-xs text-green-700 dark:text-green-300">{t('copyBookmarkletInstructions')}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 border-green-400 bg-white hover:bg-green-100 text-green-700"
-                          onClick={() => {
-                            navigator.clipboard.writeText(dhlBookmarkletCode);
-                            toast({
-                              title: t('copied'),
-                              description: t('bookmarkletCodeCopied'),
-                              duration: 2000
-                            });
-                          }}
-                          data-testid="button-copy-bookmarklet-inline"
-                        >
-                          <Copy className="h-3.5 w-3.5 mr-1.5" />
-                          {t('copyBookmarklet')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-100"
-                          onClick={() => setShowDHLBookmarkletDialog(true)}
-                          data-testid="button-view-full-instructions"
-                        >
-                          {t('fullInstructions')}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  {/* DHL Autofill Button Component */}
+                  <DHLAutofillButton
+                    recipientData={{
+                      firstName: recipientData.firstName,
+                      lastName: recipientData.lastName,
+                      company: recipientData.company,
+                      street: recipientData.street,
+                      houseNumber: recipientData.houseNumber,
+                      postalCode: recipientData.postalCode,
+                      city: recipientData.city,
+                      country: COUNTRY_TO_GERMAN[recipientData.country] || recipientData.country,
+                      email: recipientData.email,
+                      phone: recipientData.phone,
+                    }}
+                    senderData={senderData ? {
+                      firstName: senderData.firstName,
+                      lastName: senderData.lastName,
+                      company: senderData.company,
+                      street: senderData.street,
+                      houseNumber: senderData.houseNumber,
+                      postalCode: senderData.postalCode,
+                      city: senderData.city,
+                      email: senderData.email,
+                      phone: senderData.phone,
+                    } : undefined}
+                    bankData={(() => {
+                      const bankData = dhlBankDetails?.value || dhlBankDetails;
+                      return bankData ? {
+                        iban: bankData.iban || '',
+                        bic: bankData.bic || '',
+                        accountHolder: bankData.accountHolder || '',
+                      } : undefined;
+                    })()}
+                    orderId={activePackingOrder.orderId || ''}
+                    codAmount={showCOD ? codAmount : 0}
+                    weight={totalWeight}
+                    cartonCount={orderCartons.length || 1}
+                  />
 
                   {/* Shipping Details - Collapsible */}
                   <div className="space-y-4">
@@ -15592,167 +15505,6 @@ export default function PickPack() {
             >
               <FileText className="h-4 w-4 mr-2" />
               {t('downloadPDF')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* DHL Bookmarklet Instructions Dialog */}
-      <Dialog open={showDHLBookmarkletDialog} onOpenChange={setShowDHLBookmarkletDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-600" />
-              {t('dhlBookmarkletTitle')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('dhlBookmarkletDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 mt-4">
-            {/* First Time Setup Section */}
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2 mb-3">
-                <Bookmark className="h-5 w-5" />
-                {t('firstTimeSetup')}
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Step A: Get the bookmarklet code */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 flex items-center justify-center text-sm font-bold">A</span>
-                    {t('setupStepA')}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 pl-8">
-                    {t('setupStepADesc')}
-                  </p>
-                  <div className="pl-8">
-                    <div className="relative">
-                      <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-x-auto font-mono max-h-24 overflow-y-auto border">
-                        {dhlBookmarkletCode || t('clickPrepareFirst')}
-                      </pre>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700"
-                        onClick={() => {
-                          if (dhlBookmarkletCode) {
-                            navigator.clipboard.writeText(dhlBookmarkletCode);
-                            toast({
-                              title: t('copied'),
-                              description: t('bookmarkletCodeCopied'),
-                              duration: 2000
-                            });
-                          }
-                        }}
-                        disabled={!dhlBookmarkletCode}
-                        data-testid="button-copy-bookmarklet"
-                      >
-                        <Copy className="h-3.5 w-3.5 mr-1" />
-                        {t('copy')}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step B: Create bookmark */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 flex items-center justify-center text-sm font-bold">B</span>
-                    {t('setupStepB')}
-                  </h4>
-                  <div className="pl-8 space-y-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{t('setupStepBDesc')}</p>
-                    <div className="bg-white dark:bg-gray-800 rounded border p-3 space-y-2">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('chromeInstructions')}:</p>
-                      <ol className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4 list-decimal">
-                        <li>{t('chromeStep1')}</li>
-                        <li>{t('chromeStep2')}</li>
-                        <li>{t('chromeStep3')}</li>
-                        <li>{t('chromeStep4')}</li>
-                      </ol>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded border p-3 space-y-2">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('firefoxInstructions')}:</p>
-                      <ol className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4 list-decimal">
-                        <li>{t('firefoxStep1')}</li>
-                        <li>{t('firefoxStep2')}</li>
-                        <li>{t('firefoxStep3')}</li>
-                        <li>{t('firefoxStep4')}</li>
-                      </ol>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Separator */}
-            <Separator />
-
-            {/* Daily Usage Section */}
-            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-              <h3 className="font-bold text-yellow-900 dark:text-yellow-100 flex items-center gap-2 mb-3">
-                <PlayCircle className="h-5 w-5" />
-                {t('dailyUsage')}
-              </h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep1Title')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep1Desc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep2Title')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep2Desc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep3Title')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep3Desc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 flex items-center justify-center text-sm font-bold flex-shrink-0">4</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('usageStep4Title')}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('usageStep4Desc')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Important Notes */}
-            <Alert className="bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
-                <strong>{t('importantNotes')}:</strong>
-                <ul className="list-disc pl-4 mt-1 space-y-1">
-                  <li>{t('bookmarkletNote1')}</li>
-                  <li>{t('bookmarkletNote2')}</li>
-                  <li>{t('bookmarkletNote3')}</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-          </div>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowDHLBookmarkletDialog(false)}
-            >
-              {t('close')}
             </Button>
           </div>
         </DialogContent>

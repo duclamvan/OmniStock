@@ -1682,6 +1682,12 @@ const orders = {
   copyBookmarklet: 'Sao chép Bookmarklet',
   fullInstructions: 'Hướng dẫn Chi tiết',
   setupInstructions: 'Hướng dẫn Cài đặt',
+  createLabelOnDHL: 'Tạo Nhãn trên Trang DHL',
+  openDhlWebsite: 'Mở Trang DHL',
+  viewSetupInstructions: 'Xem hướng dẫn cài đặt',
+  dragToBookmarksBar: 'Kéo vào thanh bookmark',
+  dragToBookmarksBarDesc: 'Kéo nút này vào thanh bookmark để lưu!',
+  orRightClickAddBookmark: 'Hoặc nhấp chuột phải và "Thêm vào Bookmark"',
   
 } as const;
 
