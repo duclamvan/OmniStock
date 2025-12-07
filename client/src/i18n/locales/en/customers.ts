@@ -33,6 +33,7 @@ const customers = {
   customerType: 'Customer Type',
   retail: 'Retail',
   wholesale: 'Wholesale',
+  distributor: 'Distributor',
   vip: 'VIP',
   
   // Financial
@@ -61,6 +62,13 @@ const customers = {
   customerUnblacklisted: 'Customer has been removed from blacklist',
   failedToUpdateBlacklist: 'Failed to update blacklist status',
   updateType: 'Update Type',
+  updateTypeDescription: 'Select a new customer type to apply to {{count}} selected customer(s)',
+  selectCustomerType: 'Select customer type',
+  selectedCustomersPreview: 'Selected customers',
+  customerTypeUpdatedSuccess: 'Updated customer type for {{count}} customer(s) successfully',
+  failedToUpdateCustomerType: 'Failed to update customer type',
+  emailServiceNotConfigured: 'Email Service Not Configured',
+  emailServiceComingSoon: 'Email functionality is coming soon. Please configure an email service to enable this feature.',
   sendingEmailToCustomers: 'Sending email to {{count}} customer(s)',
   updatingTypeForCustomers: 'Updating type for {{count}} customer(s)',
   exportingCustomers: 'Exporting {{count}} customer(s)',

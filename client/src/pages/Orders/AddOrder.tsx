@@ -2063,14 +2063,6 @@ export default function AddOrder() {
     return results.slice(0, 8).map(r => r.item);
   }, [allCustomers, debouncedCustomerSearch]);
 
-  // Dummy function for calculateTotals, as it's not provided in the original code snippet
-  // This needs to be implemented or removed if not used elsewhere.
-  const calculateTotals = () => {
-    // This function is called when discountId changes, implying it should recalculate totals.
-    // For now, we'll leave it as a placeholder.
-    console.log("calculateTotals called");
-  };
-
   // Fetch available discounts (assuming this is needed for the discount dropdown)
   const { data: discounts } = useQuery({
     queryKey: ['/api/discounts'],

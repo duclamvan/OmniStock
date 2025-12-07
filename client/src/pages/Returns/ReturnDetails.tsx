@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Package, Calendar, User, ShoppingCart, 
   RefreshCw, MessageSquare, Truck, Hash, Edit, Printer, Share2, Check 
@@ -19,6 +20,27 @@ export default function ReturnDetails() {
   const { id } = useParams();
   const { t } = useTranslation(['inventory', 'common']);
   const { inventorySettings } = useSettings();
+  const { toast } = useToast();
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: t('common:copied'),
+        description: t('common:urlCopied'),
+      });
+    } catch (error) {
+      toast({
+        title: t('common:error'),
+        description: t('common:failedToCopyUrl'),
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: returnData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/returns/${id}`],
@@ -85,11 +107,11 @@ export default function ReturnDetails() {
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('inventory:returnIdLabel')}: {returnData.returnId}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             {t('common:print')}
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleShare}>
             <Share2 className="h-4 w-4 mr-2" />
             {t('common:share')}
           </Button>

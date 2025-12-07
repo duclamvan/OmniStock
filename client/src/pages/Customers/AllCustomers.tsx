@@ -12,7 +12,23 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
@@ -44,7 +60,10 @@ export default function AllCustomers() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUpdateTypeDialog, setShowUpdateTypeDialog] = useState(false);
+  const [selectedCustomerType, setSelectedCustomerType] = useState<string>("");
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([]);
+  const [isUpdatingType, setIsUpdatingType] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -141,6 +160,76 @@ export default function AllCustomers() {
       });
     },
   });
+
+  const handleUpdateTypeConfirm = async () => {
+    if (!selectedCustomerType || selectedCustomers.length === 0) return;
+    
+    setIsUpdatingType(true);
+    try {
+      await Promise.all(
+        selectedCustomers.map(customer => 
+          apiRequest('PATCH', `/api/customers/${customer.id}`, {
+            customerType: selectedCustomerType,
+          })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      toast({
+        title: t('common:success'),
+        description: t('customers:customerTypeUpdatedSuccess', { count: selectedCustomers.length }),
+      });
+      setSelectedCustomers([]);
+      setShowUpdateTypeDialog(false);
+      setSelectedCustomerType("");
+    } catch (error: any) {
+      console.error("Customer type update error:", error);
+      toast({
+        title: t('common:error'),
+        description: t('customers:failedToUpdateCustomerType'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingType(false);
+    }
+  };
+
+  const handleExportSelectedXLSX = (customers: any[]) => {
+    try {
+      if (!customers || customers.length === 0) {
+        toast({
+          title: t('common:noData'),
+          description: t('customers:noCustomersToExport'),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = customers.map(customer => ({
+        [t('common:name')]: customer.name || '',
+        [t('common:email')]: customer.email || '',
+        [t('common:phone')]: customer.phone || '',
+        [t('common:country')]: customer.country || '',
+        [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
+        [t('customers:totalOrders')]: customer.orderCount || 0,
+        [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
+      }));
+
+      exportToXLSX(exportData, 'customers-selected', t('customers:customers'));
+      
+      toast({
+        title: t('common:exportSuccessful'),
+        description: t('customers:exportedCustomersToXLSX', { count: customers.length }),
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: t('common:exportFailed'),
+        description: t('customers:failedToExportCustomersToXLSX'),
+        variant: "destructive",
+      });
+    }
+  };
 
   // Calculate stats
   const totalRevenue = filteredCustomers?.reduce((sum: number, c: any) => 
@@ -298,8 +387,8 @@ export default function AllCustomers() {
       label: t('common:sendEmail'),
       action: (customers: any[]) => {
         toast({
-          title: t('common:sendEmail'),
-          description: t('customers:sendingEmailToCustomers', { count: customers.length }),
+          title: t('customers:emailServiceNotConfigured'),
+          description: t('customers:emailServiceComingSoon'),
         });
       },
     },
@@ -307,10 +396,9 @@ export default function AllCustomers() {
       type: "button" as const,
       label: t('customers:updateType'),
       action: (customers: any[]) => {
-        toast({
-          title: t('customers:updateType'),
-          description: t('customers:updatingTypeForCustomers', { count: customers.length }),
-        });
+        setSelectedCustomers(customers);
+        setSelectedCustomerType("");
+        setShowUpdateTypeDialog(true);
       },
     },
     {
@@ -326,10 +414,7 @@ export default function AllCustomers() {
       type: "button" as const,
       label: t('common:export'),
       action: (customers: any[]) => {
-        toast({
-          title: t('common:export'),
-          description: t('customers:exportingCustomers', { count: customers.length }),
-        });
+        handleExportSelectedXLSX(customers);
       },
     },
   ];
@@ -815,6 +900,63 @@ export default function AllCustomers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Update Customer Type Dialog */}
+      <Dialog open={showUpdateTypeDialog} onOpenChange={setShowUpdateTypeDialog}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <UserCog className="h-5 w-5" />
+              {t('customers:updateType')}
+            </DialogTitle>
+            <DialogDescription className="text-gray-700 dark:text-gray-300">
+              {t('customers:updateTypeDescription', { count: selectedCustomers.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customerType" className="text-gray-900 dark:text-gray-100">
+                {t('customers:customerType')}
+              </Label>
+              <Select value={selectedCustomerType} onValueChange={setSelectedCustomerType}>
+                <SelectTrigger id="customerType" className="bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100" data-testid="select-customer-type">
+                  <SelectValue placeholder={t('customers:selectCustomerType')} />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+                  <SelectItem value="retail" data-testid="option-retail">{t('customers:retail')}</SelectItem>
+                  <SelectItem value="wholesale" data-testid="option-wholesale">{t('customers:wholesale')}</SelectItem>
+                  <SelectItem value="distributor" data-testid="option-distributor">{t('customers:distributor')}</SelectItem>
+                  <SelectItem value="vip" data-testid="option-vip">{t('customers:vip')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedCustomers.length > 0 && (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {t('customers:selectedCustomersPreview')}: {selectedCustomers.slice(0, 3).map(c => c.name).join(', ')}
+                {selectedCustomers.length > 3 && ` +${selectedCustomers.length - 3} ${t('common:more')}`}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowUpdateTypeDialog(false)}
+              className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+              data-testid="button-cancel-update-type"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleUpdateTypeConfirm}
+              disabled={!selectedCustomerType || isUpdatingType}
+              className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800"
+              data-testid="button-confirm-update-type"
+            >
+              {isUpdatingType ? t('common:updating') : t('customers:updateType')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

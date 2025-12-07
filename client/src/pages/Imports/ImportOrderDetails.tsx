@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   ArrowLeft,
   Package,
@@ -75,44 +77,43 @@ export default function ImportOrderDetails() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Mock data - in real app, this would come from API
-  const mockOrderDetails: ImportOrderDetails = {
-    id: id || "imp-001",
-    orderNumber: "IMP-2025-001",
-    supplier: "Shenzhen Electronics Co",
-    supplierCountry: "China",
-    destination: "USA Warehouse",
-    status: "in_transit",
-    priority: "high",
-    totalItems: 500,
-    totalValue: 25000,
-    currency: "USD",
-    estimatedArrival: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUpdated: new Date().toISOString(),
-    assignee: "John Doe",
-    tags: ["Electronics", "Urgent"],
-    progress: 60,
-    documents: 3,
-    comments: 2,
-    trackingNumber: "CN2025SHIP445",
-    shippingMethod: "Sea Freight",
-    shippingCost: 1500,
-    customsDuty: 2500,
-    taxes: 2000,
-    totalLandedCost: 31000,
-    items: [
-      { id: "1", name: "USB-C Cables", quantity: 200, sku: "USB-C-001", unitPrice: 50, totalPrice: 10000 },
-      { id: "2", name: "Wireless Chargers", quantity: 150, sku: "WC-002", unitPrice: 66.67, totalPrice: 10000 },
-      { id: "3", name: "Phone Cases", quantity: 100, sku: "PC-003", unitPrice: 40, totalPrice: 4000 },
-      { id: "4", name: "Screen Protectors", quantity: 50, sku: "SP-004", unitPrice: 20, totalPrice: 1000 }
-    ]
-  };
-
-  const { data: order = mockOrderDetails, isLoading } = useQuery({
-    queryKey: [`/api/import-orders/${id}`],
+  const { data: order, isLoading, error } = useQuery<ImportOrderDetails>({
+    queryKey: ['/api/import-orders', id],
     enabled: !!id
   });
+
+  const handleExport = () => {
+    if (!order) return;
+    
+    const columns: PDFColumn[] = [
+      { key: 'name', header: t('itemName') },
+      { key: 'sku', header: 'SKU' },
+      { key: 'quantity', header: t('quantity') },
+      { key: 'unitPrice', header: t('unitPrice') },
+      { key: 'totalPrice', header: t('totalPrice') }
+    ];
+
+    const exportData = order.items.map(item => ({
+      name: item.name,
+      sku: item.sku || '-',
+      quantity: item.quantity,
+      unitPrice: formatCurrency(item.unitPrice || 0, order.currency),
+      totalPrice: formatCurrency(item.totalPrice || 0, order.currency)
+    }));
+
+    const title = `${t('importOrder')} - ${order.orderNumber}`;
+    const filename = `import-order-${order.orderNumber}`;
+    
+    exportToPDF(title, exportData, columns, filename);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleEdit = () => {
+    navigate(`/imports/orders/${id}/edit`);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -144,10 +145,38 @@ export default function ImportOrderDetails() {
 
   if (isLoading) {
     return (
+      <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-32" />
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Activity className="h-8 w-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">{t('loadingOrderDetails')}</p>
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-lg font-semibold mb-2">{t('orderNotFound')}</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {t('orderNotFoundDescription')}
+          </p>
+          <Button onClick={() => navigate("/imports/kanban")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('backToKanban')}
+          </Button>
         </div>
       </div>
     );
@@ -192,15 +221,32 @@ export default function ImportOrderDetails() {
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto justify-end">
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 sm:flex-initial"
+              onClick={handleExport}
+              data-testid="button-export"
+            >
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('export')}</span>
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 sm:flex-initial"
+              onClick={handlePrint}
+              data-testid="button-print"
+            >
               <Printer className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('print')}</span>
             </Button>
-            <Button size="sm" className="flex-1 sm:flex-initial">
+            <Button 
+              size="sm" 
+              className="flex-1 sm:flex-initial"
+              onClick={handleEdit}
+              data-testid="button-edit"
+            >
               <Edit className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('editOrder')}</span>
             </Button>

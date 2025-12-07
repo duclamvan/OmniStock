@@ -33,6 +33,7 @@ const customers = {
   customerType: 'Loại khách hàng',
   retail: 'Bán lẻ',
   wholesale: 'Bán sỉ',
+  distributor: 'Nhà phân phối',
   vip: 'VIP',
   
   // Financial
@@ -224,6 +225,13 @@ const customers = {
   customerUnblacklisted: 'Khách hàng đã được xóa khỏi danh sách đen',
   failedToUpdateBlacklist: 'Không thể cập nhật trạng thái danh sách đen',
   updateType: 'Cập nhật loại',
+  updateTypeDescription: 'Chọn loại khách hàng mới để áp dụng cho {{count}} khách hàng đã chọn',
+  selectCustomerType: 'Chọn loại khách hàng',
+  selectedCustomersPreview: 'Khách hàng đã chọn',
+  customerTypeUpdatedSuccess: 'Đã cập nhật loại cho {{count}} khách hàng thành công',
+  failedToUpdateCustomerType: 'Cập nhật loại khách hàng thất bại',
+  emailServiceNotConfigured: 'Dịch vụ email chưa được cấu hình',
+  emailServiceComingSoon: 'Chức năng email sẽ sớm ra mắt. Vui lòng cấu hình dịch vụ email để kích hoạt tính năng này.',
   sendingEmailToCustomers: 'Đang gửi email cho {{count}} khách hàng',
   updatingTypeForCustomers: 'Đang cập nhật loại cho {{count}} khách hàng',
   exportingCustomers: 'Đang xuất {{count}} khách hàng',

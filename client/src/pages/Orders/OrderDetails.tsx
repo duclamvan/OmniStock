@@ -80,6 +80,7 @@ import { CustomerBadges } from '@/components/CustomerBadges';
 import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
@@ -696,11 +697,76 @@ export default function OrderDetails() {
   };
 
   const handleExport = () => {
-    // Export order as PDF/CSV logic would go here
-    toast({
-      title: t('orders:exportOrder'),
-      description: t('orders:exportOrderDesc'),
-    });
+    try {
+      if (!order) {
+        toast({
+          title: t('common:warning'),
+          description: t('orders:noDataToExport'),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get customer name
+      const customerName = order.customer?.name || order.customer?.firstName 
+        ? `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim()
+        : t('orders:walkInCustomer');
+
+      // Prepare order items for export
+      const itemsData = order.items?.map((item: any, index: number) => ({
+        index: index + 1,
+        productName: item.productName || item.name || 'N/A',
+        sku: item.sku || 'N/A',
+        quantity: item.quantity || 0,
+        unitPrice: formatCurrency(parseFloat(item.price || '0'), order.currency || 'EUR'),
+        total: formatCurrency(parseFloat(item.price || '0') * (item.quantity || 0), order.currency || 'EUR'),
+      })) || [];
+
+      // Create summary rows
+      const summaryData = [
+        ...itemsData,
+        { index: '', productName: '---', sku: '', quantity: '', unitPrice: t('orders:subtotal'), total: formatCurrency(parseFloat(order.subtotal || '0'), order.currency || 'EUR') },
+        { index: '', productName: '', sku: '', quantity: '', unitPrice: t('orders:shipping'), total: formatCurrency(parseFloat(order.shippingCost || '0'), order.currency || 'EUR') },
+        { index: '', productName: '', sku: '', quantity: '', unitPrice: t('orders:tax'), total: formatCurrency(parseFloat(order.tax || '0'), order.currency || 'EUR') },
+        ...(parseFloat(order.discount || '0') > 0 ? [{ index: '', productName: '', sku: '', quantity: '', unitPrice: t('orders:discount'), total: `-${formatCurrency(parseFloat(order.discount || '0'), order.currency || 'EUR')}` }] : []),
+        { index: '', productName: '', sku: '', quantity: '', unitPrice: t('orders:grandTotal'), total: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR') },
+      ];
+
+      // Define columns for the PDF
+      const columns: PDFColumn[] = [
+        { key: 'index', header: '#' },
+        { key: 'productName', header: t('orders:product') },
+        { key: 'sku', header: t('orders:sku') },
+        { key: 'quantity', header: t('orders:qty') },
+        { key: 'unitPrice', header: t('orders:unitPrice') },
+        { key: 'total', header: t('orders:total') },
+      ];
+
+      // Create document title with order info
+      const orderStatusText = order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || '';
+      const paymentStatusText = order.paymentStatus?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || '';
+      const title = `${t('orders:order')} #${order.orderId} - ${customerName}
+${t('orders:date')}: ${formatDate(order.orderDate || order.createdAt)}
+${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentStatusText}`;
+
+      // Generate filename
+      const filename = `order-${order.orderId}-${new Date().toISOString().slice(0, 10)}`;
+
+      // Export to PDF
+      exportToPDF(title, summaryData, columns, filename);
+
+      toast({
+        title: t('common:success'),
+        description: t('orders:exportSuccessPDF'),
+      });
+    } catch (error) {
+      console.error('Error exporting order to PDF:', error);
+      toast({
+        title: t('common:error'),
+        description: t('orders:exportFailed'),
+        variant: "destructive",
+      });
+    }
   };
 
   // Remove loading state to prevent UI refresh indicators
