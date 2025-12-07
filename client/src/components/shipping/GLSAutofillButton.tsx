@@ -668,7 +668,7 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
             <div className="space-y-2">
               <h3 className="font-semibold text-sm sm:text-base">2. Or copy manually:</h3>
               <div className="relative">
-                <pre className="p-2 sm:p-3 bg-muted rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
+                <pre className="p-2 sm:p-3 bg-muted rounded text-xs overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all max-h-24">
                   {generateBookmarklet().displayCode}
                 </pre>
                 <Button
