@@ -117,7 +117,7 @@ export function DHLAutofillButton({
         accountHolder: bankData.accountHolder || '',
       } : undefined,
       weight: weight || 0,
-      cartonCount: cartonCount || 1,
+      cartonCount: 1, // DHL DE always handles 1 carton (COD), rest goes via GLS
       timestamp: Date.now(),
     };
 
@@ -329,7 +329,7 @@ export function DHLAutofillButton({
           data-testid="button-dhl-create-label"
         >
           <ExternalLink className="h-4 w-4" />
-          Ship DHL DE{cartonCount && cartonCount > 0 ? ` (${cartonCount} ${cartonCount === 1 ? 'carton' : 'cartons'})` : ''}
+          Ship DHL DE (1 carton + COD)
         </Button>
 
         <Button
@@ -491,7 +491,7 @@ export function DHLAutofillButton({
 Order ID: {orderId}
 COD Amount: {codAmount ? `€${codAmount.toFixed(2)}` : 'None'}
 Weight: {weight ? `${weight} kg` : 'Not specified'}
-Cartons: {cartonCount || 1}
+Cartons: 1 (DHL COD only, rest via GLS)
                     </pre>
                   </div>
                 </div>
