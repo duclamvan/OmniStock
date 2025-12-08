@@ -9,6 +9,8 @@ import { z } from "zod";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 
 // Password complexity requirements
 const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -142,14 +144,16 @@ function validateEnvironment() {
 validateEnvironment();
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000;
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days default
   const isProduction = process.env.NODE_ENV === "production";
   
-  // Use memory store - Neon pooled connections have compatibility issues with connect-pg-simple
-  // Sessions will persist across restarts in production via sticky sessions
-  const MemoryStore = createMemoryStore(session);
-  const sessionStore = new MemoryStore({
-    checkPeriod: 86400000, // prune expired entries every 24h
+  // Use PostgreSQL session store for persistent "Remember Device" functionality
+  const PgSession = connectPgSimple(session);
+  const sessionStore = new PgSession({
+    pool: pool,
+    tableName: 'session',
+    createTableIfMissing: true,
+    pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
   });
   
   return session({
