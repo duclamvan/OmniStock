@@ -423,98 +423,50 @@ results.push(inp);
 }
 return results;
 }
-function findSectionStart(sectionName){
-var els=document.querySelectorAll('h1,h2,h3,h4,h5,h6,div,span,p');
-for(var i=0;i<els.length;i++){
-var el=els[i];
-var txt=(el.textContent||'').trim();
-if(txt.toLowerCase()===sectionName.toLowerCase()||txt.toLowerCase().startsWith(sectionName.toLowerCase())){
-if(txt.length<50)return el;
-}
-}
-return null;
-}
-function findFieldInSection(sectionEl,labelText){
-if(!sectionEl)return null;
-var container=sectionEl.parentElement;
-while(container&&container.tagName!=='BODY'){
-var inputs=container.querySelectorAll('input');
-for(var i=0;i<inputs.length;i++){
-var inp=inputs[i];
-if(inp.type==='checkbox'||inp.type==='hidden')continue;
-if(inp.offsetParent===null)continue;
-var wrapper=inp.parentElement;
-if(wrapper){
-var wt=wrapper.textContent||'';
-if(wt.toLowerCase().includes(labelText.toLowerCase())&&wt.length<100){
-return inp;
-}
-}
-}
-container=container.parentElement;
-}
-return null;
-}
 function fillAddressPage(){
 L('Filling Address Page...');
 var allInputs=[];
 var allLabels=[];
 var allValues=[];
-var empfSection=findSectionStart('Empfänger');
-var absSection=findSectionStart('Absender');
-L('Sections: Empf='+(empfSection?'Y':'N')+' Abs='+(absSection?'Y':'N'));
-var recipientFields=[
-{label:'vor- und nachname',val:(data.recipient.firstName+' '+data.recipient.lastName).trim(),name:'R:Name'},
-{label:'adresszusatz',val:data.recipient.company||'',name:'R:Adresszusatz'},
-{label:'plz',val:data.recipient.postalCode,name:'R:PLZ'},
-{label:'wohnort',val:data.recipient.city,name:'R:City'},
-{label:'straße',val:data.recipient.street,name:'R:Street'},
-{label:'hausnummer',val:data.recipient.houseNumber,name:'R:HouseNo'},
-{label:'e-mail',val:data.recipient.email||'',name:'R:Email'}
-];
-for(var i=0;i<recipientFields.length;i++){
-var fd=recipientFields[i];
-if(!fd.val)continue;
-var inp=empfSection?findFieldInSection(empfSection,fd.label):null;
-if(!inp){var matches=findAllFieldsByLabel(fd.label);if(matches.length>0)inp=matches[0];}
-if(inp){
-allInputs.push(inp);
-allLabels.push(fd.name);
-allValues.push(fd.val);
-L('Found '+fd.name);
-}else{
-L('NOT FOUND: '+fd.name);
+var fieldLabels=['vor- und nachname','adresszusatz','plz','wohnort','straße','hausnummer'];
+var fieldMap={};
+for(var k=0;k<fieldLabels.length;k++){
+fieldMap[fieldLabels[k]]=findAllFieldsByLabel(fieldLabels[k]);
+L(fieldLabels[k]+': '+fieldMap[fieldLabels[k]].length+' found');
 }
-}
+var emailFields=findAllFieldsByLabel('e-mail');
+L('e-mail: '+emailFields.length+' found');
+var rName=(data.recipient.firstName+' '+data.recipient.lastName).trim();
+var rCompany=data.recipient.company||'';
+var rPLZ=data.recipient.postalCode||'';
+var rCity=data.recipient.city||'';
+var rStreet=data.recipient.street||'';
+var rHouse=data.recipient.houseNumber||'';
+var rEmail=data.recipient.email||'';
+if(rName&&fieldMap['vor- und nachname'][0]){allInputs.push(fieldMap['vor- und nachname'][0]);allLabels.push('R:Name');allValues.push(rName);}
+if(rCompany&&fieldMap['adresszusatz'][0]){allInputs.push(fieldMap['adresszusatz'][0]);allLabels.push('R:Company');allValues.push(rCompany);}
+if(rPLZ&&fieldMap['plz'][0]){allInputs.push(fieldMap['plz'][0]);allLabels.push('R:PLZ');allValues.push(rPLZ);}
+if(rCity&&fieldMap['wohnort'][0]){allInputs.push(fieldMap['wohnort'][0]);allLabels.push('R:City');allValues.push(rCity);}
+if(rStreet&&fieldMap['straße'][0]){allInputs.push(fieldMap['straße'][0]);allLabels.push('R:Street');allValues.push(rStreet);}
+if(rHouse&&fieldMap['hausnummer'][0]){allInputs.push(fieldMap['hausnummer'][0]);allLabels.push('R:House');allValues.push(rHouse);}
+if(rEmail&&emailFields[0]){allInputs.push(emailFields[0]);allLabels.push('R:Email');allValues.push(rEmail);}
 if(data.sender){
-L('Filling Sender...');
-var senderFields=[
-{label:'vor- und nachname',val:(data.sender.firstName+' '+data.sender.lastName).trim(),name:'S:Name'},
-{label:'adresszusatz',val:data.sender.company||'',name:'S:Adresszusatz'},
-{label:'plz',val:data.sender.postalCode,name:'S:PLZ'},
-{label:'wohnort',val:data.sender.city,name:'S:City'},
-{label:'straße',val:data.sender.street,name:'S:Street'},
-{label:'hausnummer',val:data.sender.houseNumber,name:'S:HouseNo'},
-{label:'e-mail',val:data.sender.email||'',name:'S:Email'}
-];
-for(var j=0;j<senderFields.length;j++){
-var sf=senderFields[j];
-if(!sf.val)continue;
-var sinp=absSection?findFieldInSection(absSection,sf.label):null;
-if(!sinp){
-var smatches=findAllFieldsByLabel(sf.label);
-if(smatches.length>=2)sinp=smatches[1];
-else if(smatches.length===1)sinp=smatches[0];
-}
-if(sinp){
-allInputs.push(sinp);
-allLabels.push(sf.name);
-allValues.push(sf.val);
-L('Found '+sf.name);
-}else{
-L('NOT FOUND: '+sf.name);
-}
-}
+L('--- Sender ---');
+var sName=(data.sender.firstName+' '+data.sender.lastName).trim();
+var sCompany=data.sender.company||'';
+var sPLZ=data.sender.postalCode||'';
+var sCity=data.sender.city||'';
+var sStreet=data.sender.street||'';
+var sHouse=data.sender.houseNumber||'';
+var sEmail=data.sender.email||'';
+if(sName&&fieldMap['vor- und nachname'][1]){allInputs.push(fieldMap['vor- und nachname'][1]);allLabels.push('S:Name');allValues.push(sName);}
+if(sCompany&&fieldMap['adresszusatz'][1]){allInputs.push(fieldMap['adresszusatz'][1]);allLabels.push('S:Company');allValues.push(sCompany);}
+if(sPLZ&&fieldMap['plz'][1]){allInputs.push(fieldMap['plz'][1]);allLabels.push('S:PLZ');allValues.push(sPLZ);}
+if(sCity&&fieldMap['wohnort'][1]){allInputs.push(fieldMap['wohnort'][1]);allLabels.push('S:City');allValues.push(sCity);}
+if(sStreet&&fieldMap['straße'][1]){allInputs.push(fieldMap['straße'][1]);allLabels.push('S:Street');allValues.push(sStreet);}
+if(sHouse&&fieldMap['hausnummer'][1]){allInputs.push(fieldMap['hausnummer'][1]);allLabels.push('S:House');allValues.push(sHouse);}
+if(sEmail&&emailFields.length>1&&emailFields[1]){allInputs.push(emailFields[1]);allLabels.push('S:Email');allValues.push(sEmail);}
+else if(sEmail&&emailFields.length===1){allInputs.push(emailFields[0]);allLabels.push('S:Email');allValues.push(sEmail);}
 }
 L('Found '+allInputs.length+' total fields');
 var aidx=0;
