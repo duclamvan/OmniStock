@@ -13594,6 +13594,204 @@ Important:
     }
   });
 
+  // AI-powered Address Parsing Endpoint
+  app.post('/api/addresses/parse', isAuthenticated, async (req: any, res) => {
+    try {
+      const { rawAddress } = req.body;
+
+      if (!rawAddress || typeof rawAddress !== 'string' || rawAddress.trim().length < 5) {
+        return res.status(400).json({ 
+          message: 'Raw address must be at least 5 characters long',
+          fields: {},
+          confidence: 'low'
+        });
+      }
+
+      const apiKey = process.env.DEEPSEEK_API_KEY;
+      if (!apiKey) {
+        // Fallback to basic regex parsing when AI is not configured
+        console.log('DEEPSEEK_API_KEY not configured, using basic parsing');
+        const basicParsed = parseAddressBasic(rawAddress);
+        return res.json(basicParsed);
+      }
+
+      const deepseek = new OpenAI({
+        apiKey: apiKey,
+        baseURL: 'https://api.deepseek.com'
+      });
+
+      const prompt = `Parse the following raw address/contact text into structured fields.
+Return ONLY a valid JSON object with this exact structure:
+{
+  "firstName": "First/given name",
+  "lastName": "Last/family name",
+  "company": "Company name if present",
+  "email": "Email address if present",
+  "phone": "Phone number if present",
+  "street": "Street name without number",
+  "streetNumber": "House/street number",
+  "city": "City or town",
+  "zipCode": "Postal/ZIP code",
+  "country": "Country name"
+}
+
+Raw text to parse:
+${rawAddress}
+
+Important rules:
+- Extract any available fields from the text
+- For Vietnamese names: the first word is typically the family name (lastName), the rest are given names (firstName)
+- For European addresses: format is typically "Street Number, Postal City, Country"
+- For Czech addresses: format is typically "Street Number, PostalCode City"
+- Leave fields as empty string if not found
+- Phone numbers should include country code if present
+- Return ONLY the JSON, no additional text or explanation`;
+
+      const completion = await deepseek.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an address parsing expert. Parse addresses and contact information into structured fields. Always respond with valid JSON only, no additional text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.1
+      });
+
+      const content = completion.choices[0]?.message?.content?.trim() || '';
+      
+      // Parse the JSON response
+      let parsed;
+      try {
+        // Remove any markdown code block markers
+        const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanContent);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', content);
+        // Fallback to basic parsing
+        const basicParsed = parseAddressBasic(rawAddress);
+        return res.json(basicParsed);
+      }
+
+      // Determine confidence based on how many fields were extracted
+      const fieldCount = Object.values(parsed).filter(v => v && String(v).trim()).length;
+      let confidence: 'high' | 'medium' | 'low' = 'low';
+      if (fieldCount >= 6) confidence = 'high';
+      else if (fieldCount >= 3) confidence = 'medium';
+
+      res.json({
+        fields: {
+          firstName: parsed.firstName || '',
+          lastName: parsed.lastName || '',
+          company: parsed.company || '',
+          email: parsed.email || '',
+          tel: parsed.phone || parsed.tel || '',
+          street: parsed.street || '',
+          streetNumber: parsed.streetNumber || '',
+          city: parsed.city || '',
+          zipCode: parsed.zipCode || parsed.postalCode || '',
+          country: parsed.country || ''
+        },
+        confidence
+      });
+    } catch (error) {
+      console.error('Error parsing address:', error);
+      // Return a basic fallback response
+      res.json({
+        fields: {},
+        confidence: 'low',
+        error: 'Failed to parse address'
+      });
+    }
+  });
+
+  // Helper function for basic address parsing without AI
+  function parseAddressBasic(rawAddress: string): { fields: Record<string, string>; confidence: 'high' | 'medium' | 'low' } {
+    const fields: Record<string, string> = {
+      firstName: '',
+      lastName: '',
+      company: '',
+      email: '',
+      tel: '',
+      street: '',
+      streetNumber: '',
+      city: '',
+      zipCode: '',
+      country: ''
+    };
+
+    const lines = rawAddress.split('\n').map(l => l.trim()).filter(Boolean);
+    const allText = rawAddress.replace(/\n/g, ' ');
+
+    // Extract email
+    const emailMatch = allText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) fields.email = emailMatch[0];
+
+    // Extract phone - look for various formats
+    const phoneMatch = allText.match(/(?:\+\d{1,3}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}/);
+    if (phoneMatch) fields.tel = phoneMatch[0].trim();
+
+    // Extract postal code (European format: 4-5 digits, sometimes with space)
+    const zipMatch = allText.match(/\b(\d{3}\s?\d{2}|\d{4,5})\b/);
+    if (zipMatch) fields.zipCode = zipMatch[1].replace(/\s/g, '');
+
+    // Country detection
+    const countryPatterns: Record<string, string> = {
+      'czech|česk|czechia|cz': 'Czech Republic',
+      'germany|deutschland|german|de': 'Germany',
+      'austria|österreich|at': 'Austria',
+      'poland|polska|pl': 'Poland',
+      'slovakia|slovensko|sk': 'Slovakia',
+      'hungary|magyarország|hu': 'Hungary',
+      'vietnam|việt nam|vn': 'Vietnam'
+    };
+
+    for (const [pattern, country] of Object.entries(countryPatterns)) {
+      if (new RegExp(pattern, 'i').test(allText)) {
+        fields.country = country;
+        break;
+      }
+    }
+
+    // Try to extract name from first line
+    if (lines.length > 0) {
+      const firstLine = lines[0];
+      // Skip if it looks like an address or company
+      if (!firstLine.match(/\d/) && !firstLine.toLowerCase().includes('s.r.o') && !firstLine.toLowerCase().includes('gmbh')) {
+        const nameParts = firstLine.split(/\s+/);
+        if (nameParts.length >= 2) {
+          fields.lastName = nameParts[0];
+          fields.firstName = nameParts.slice(1).join(' ');
+        } else if (nameParts.length === 1) {
+          fields.firstName = nameParts[0];
+        }
+      }
+    }
+
+    // Extract street and number
+    for (const line of lines) {
+      const streetMatch = line.match(/^([A-Za-zÀ-žА-яа-я\s]+)\s+(\d+[a-zA-Z]?(?:\/\d+)?)$/);
+      if (streetMatch) {
+        fields.street = streetMatch[1].trim();
+        fields.streetNumber = streetMatch[2];
+        break;
+      }
+    }
+
+    // Determine confidence
+    const fieldCount = Object.values(fields).filter(v => v && v.trim()).length;
+    let confidence: 'high' | 'medium' | 'low' = 'low';
+    if (fieldCount >= 5) confidence = 'medium';
+    if (fieldCount >= 7) confidence = 'high';
+
+    return { fields, confidence };
+  }
+
   // ARES Lookup Endpoint (Czech company registry)
   app.get('/api/tax/ares-lookup', isAuthenticated, async (req, res) => {
     try {
