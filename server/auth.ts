@@ -9,8 +9,6 @@ import { z } from "zod";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import createMemoryStore from "memorystore";
-import connectPgSimple from "connect-pg-simple";
-import { pool } from "./db";
 
 // Password complexity requirements
 const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -143,16 +141,15 @@ function validateEnvironment() {
 // Run validation immediately
 validateEnvironment();
 
-// Create session store once at module load to avoid duplicate index creation
+// Session configuration
 const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days default
 const isProduction = process.env.NODE_ENV === "production";
 
-const PgSession = connectPgSimple(session);
-const sessionStore = new PgSession({
-  pool: pool,
-  tableName: 'session',
-  createTableIfMissing: true, // Auto-create table if missing
-  pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
+// Use MemoryStore for reliable session handling
+// Note: Sessions don't persist across server restarts, but "Remember Device" still extends cookie life
+const MemoryStore = createMemoryStore(session);
+const sessionStore = new MemoryStore({
+  checkPeriod: 86400000, // Prune expired entries every 24 hours
 });
 
 // Memoize the session middleware to ensure single instance
