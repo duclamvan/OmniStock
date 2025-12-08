@@ -148,11 +148,12 @@ export function getSession() {
   const isProduction = process.env.NODE_ENV === "production";
   
   // Use PostgreSQL session store for persistent "Remember Device" functionality
+  // Table created manually to avoid "index already exists" error on restart
   const PgSession = connectPgSimple(session);
   const sessionStore = new PgSession({
     pool: pool,
     tableName: 'session',
-    createTableIfMissing: true,
+    createTableIfMissing: false,
     pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
   });
   
@@ -309,22 +310,33 @@ export async function setupAuth(app: Express) {
         }
 
         // Extend session for "Remember Device" (30 days instead of 7 days)
+        // Must set maxAge, originalMaxAge, and expires for PostgreSQL session store
         if (rememberDevice && req.session.cookie) {
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+          req.session.cookie.maxAge = thirtyDays;
+          (req.session.cookie as any).originalMaxAge = thirtyDays;
+          req.session.cookie.expires = new Date(Date.now() + thirtyDays);
         }
 
-        return res.json({
-          message: "Login successful",
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: user.profileImageUrl,
-            role: user.role,
-            createdAt: user.createdAt,
-          },
+        // Save session to persist the extended TTL to PostgreSQL
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+          }
+          
+          return res.json({
+            message: "Login successful",
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              profileImageUrl: user.profileImageUrl,
+              role: user.role,
+              createdAt: user.createdAt,
+            },
+          });
         });
       });
     })(req, res, next);
