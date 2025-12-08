@@ -171,57 +171,116 @@ export function DHLAutofillButton({
 
     const bookmarkletLogic = `(function(){
 var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
+console.log('DHL Autofill data:',data);
 var fc=0;
-function fill(sel,val,lbl){
-if(!val)return;
+function clickBtn(txt){
+var btns=document.querySelectorAll('button,div[role="button"],span,label');
+for(var i=0;i<btns.length;i++){
+var b=btns[i];
+if(b.textContent&&b.textContent.toLowerCase().includes(txt.toLowerCase())){
+b.click();
+console.log('Clicked: '+txt);
+return true;
+}
+}
+return false;
+}
+function fill(sel,val){
+if(!val)return false;
 var el=document.querySelector(sel);
 if(el){
 el.value=val;
 el.dispatchEvent(new Event('input',{bubbles:true}));
 el.dispatchEvent(new Event('change',{bubbles:true}));
+el.dispatchEvent(new Event('blur',{bubbles:true}));
 fc++;
-console.log('Filled '+lbl+': '+val);
+console.log('Filled: '+val);
+return true;
 }
+return false;
 }
-function fillByLabel(txt,val,lbl){
-if(!val)return;
-var labels=document.querySelectorAll('label');
-for(var i=0;i<labels.length;i++){
-var lb=labels[i];
-if(lb.textContent&&lb.textContent.toLowerCase().includes(txt.toLowerCase())){
-var inp=lb.querySelector('input')||document.getElementById(lb.htmlFor);
-if(!inp&&lb.parentElement)inp=lb.parentElement.querySelector('input');
-if(inp){
-inp.value=val;
-inp.dispatchEvent(new Event('input',{bubbles:true}));
-inp.dispatchEvent(new Event('change',{bubbles:true}));
-fc++;
-console.log('Filled '+lbl+': '+val);
+function selectCountry(){
+var countryInput=document.querySelector('input[placeholder*="Ziel"],input[aria-label*="Ziel"],input[name*="country"]');
+if(countryInput){
+countryInput.value='Deutschland';
+countryInput.dispatchEvent(new Event('input',{bubbles:true}));
+countryInput.dispatchEvent(new Event('change',{bubbles:true}));
+setTimeout(function(){
+var opts=document.querySelectorAll('[role="option"],li[data-value],div[class*="option"]');
+for(var i=0;i<opts.length;i++){
+if(opts[i].textContent.toLowerCase().includes('deutschland')){
+opts[i].click();
+console.log('Selected Deutschland');
 return;
 }
 }
+countryInput.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));
+},300);
+fc++;
 }
 }
-fillByLabel('vorname',data.recipient.firstName,'Vorname');
-fillByLabel('nachname',data.recipient.lastName,'Nachname');
-fillByLabel('firma',data.recipient.company,'Firma');
-fillByLabel('stra',data.recipient.street,'Strasse');
-fillByLabel('hausnummer',data.recipient.houseNumber,'Hausnummer');
-fillByLabel('postleitzahl',data.recipient.postalCode,'PLZ');
-fillByLabel('ort',data.recipient.city,'Ort');
-fillByLabel('e-mail',data.recipient.email,'Email');
-fillByLabel('telefon',data.recipient.phone,'Telefon');
-fill('input[name*="firstName"],input[id*="firstName"]',data.recipient.firstName,'FirstName');
-fill('input[name*="lastName"],input[id*="lastName"]',data.recipient.lastName,'LastName');
-fill('input[name*="street"],input[id*="street"]',data.recipient.street,'Street');
-fill('input[name*="postalCode"],input[id*="postalCode"],input[name*="plz"]',data.recipient.postalCode,'PostalCode');
-fill('input[name*="city"],input[id*="city"]',data.recipient.city,'City');
-if(data.codAmount&&data.codAmount>0&&data.bank){
-fill('input[name*="iban"],input[id*="iban"]',data.bank.iban,'IBAN');
-fill('input[name*="bic"],input[id*="bic"]',data.bank.bic,'BIC');
-fill('input[name*="betrag"],input[id*="betrag"]',data.codAmount.toFixed(2),'Betrag');
+function selectPackage(){
+var weight=data.weight||5;
+var pkgSize='5 kg';
+if(weight<=2)pkgSize='2 kg';
+else if(weight<=5)pkgSize='5 kg';
+else if(weight<=10)pkgSize='10 kg';
+else pkgSize='20 kg';
+var cards=document.querySelectorAll('[class*="product"],[class*="card"],[class*="paket"],button');
+for(var i=0;i<cards.length;i++){
+var c=cards[i];
+if(c.textContent&&c.textContent.includes(pkgSize)&&c.textContent.toLowerCase().includes('paket')){
+var btn=c.querySelector('button')||c;
+btn.click();
+console.log('Selected package: '+pkgSize);
+fc++;
+return;
 }
-alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nFilled '+fc+' fields');
+}
+clickBtn(pkgSize+' - Paket')||clickBtn('5 kg - Paket')||clickBtn('Paket');
+}
+function enableCOD(){
+var nachnahme=document.querySelectorAll('input[type="checkbox"],div[role="checkbox"],label');
+for(var i=0;i<nachnahme.length;i++){
+var n=nachnahme[i];
+var txt=n.textContent||n.getAttribute('aria-label')||'';
+if(txt.toLowerCase().includes('nachnahme')){
+if(n.tagName==='INPUT'){
+if(!n.checked){n.click();console.log('Checked Nachnahme');}
+}else{
+n.click();console.log('Clicked Nachnahme');
+}
+fc++;
+return true;
+}
+}
+return clickBtn('Nachnahme');
+}
+function fillCODDetails(){
+if(data.bank&&data.bank.iban){
+fill('input[name*="iban"],input[id*="iban"],input[placeholder*="IBAN"]',data.bank.iban);
+fill('input[name*="bic"],input[id*="bic"],input[placeholder*="BIC"]',data.bank.bic);
+}
+if(data.codAmount&&data.codAmount>0){
+fill('input[name*="betrag"],input[id*="betrag"],input[placeholder*="Betrag"],input[type="number"]',data.codAmount.toFixed(2));
+fill('input[name*="verwendungszweck"],input[id*="verwendungszweck"],input[placeholder*="Verwendungszweck"]',data.orderId);
+}
+}
+selectCountry();
+setTimeout(function(){
+selectPackage();
+setTimeout(function(){
+if(data.codAmount&&data.codAmount>0){
+enableCOD();
+setTimeout(function(){
+fillCODDetails();
+alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount+'\\nFilled '+fc+' fields');
+},800);
+}else{
+alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nFilled '+fc+' fields');
+}
+},500);
+},500);
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
@@ -236,7 +295,7 @@ alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nFilled '+fc+' field
   }, [bookmarkletCode]);
 
   const openDHLPage = () => {
-    window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
+    window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html?type=ShipmentEditorProductSelection', '_blank');
   };
 
   const handleButtonClick = () => {
