@@ -30,6 +30,7 @@ interface DHLAutofillButtonProps {
     firstName: string;
     lastName: string;
     company?: string;
+    addressSupplement?: string;
     street: string;
     houseNumber?: string;
     postalCode: string;
@@ -102,7 +103,7 @@ export function DHLAutofillButton({
       sender: senderData ? {
         firstName: senderData.firstName || '',
         lastName: senderData.lastName || '',
-        company: senderData.company || '',
+        company: senderData.company || senderData.addressSupplement || '',
         street: senderData.street || '',
         houseNumber: senderData.houseNumber || '',
         postalCode: senderData.postalCode || '',
@@ -149,7 +150,7 @@ export function DHLAutofillButton({
       sender: senderData ? {
         firstName: senderData.firstName || '',
         lastName: senderData.lastName || '',
-        company: senderData.company || '',
+        company: senderData.company || senderData.addressSupplement || '',
         street: senderData.street || '',
         houseNumber: senderData.houseNumber || '',
         postalCode: senderData.postalCode || '',
