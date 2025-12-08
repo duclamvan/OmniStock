@@ -345,12 +345,36 @@ selectPackage();
 setTimeout(function(){
 if(data.codAmount>0){
 clickNachnahme();
+L('Waiting for Nachnahme form...');
 setTimeout(function(){
 clickNachnahme();
 setTimeout(function(){
-fillAllCOD();
+var checkCount=0;
+function waitForForm(){
+var inputs=document.querySelectorAll('input');
+var ibanFound=false;
+for(var i=0;i<inputs.length;i++){
+var p=inputs[i].parentElement;
+if(p&&p.textContent&&p.textContent.toLowerCase().includes('iban')){
+ibanFound=true;
+break;
+}
+}
+if(ibanFound){
+L('Nachnahme form ready');
+setTimeout(fillAllCOD,500);
+}else if(checkCount<20){
+checkCount++;
+L('Waiting... '+checkCount);
+setTimeout(waitForForm,300);
+}else{
+L('Timeout waiting for form');
+alert('Nachnahme form not found. Please ensure the COD section is expanded and try again.');
+}
+}
+waitForForm();
+},1500);
 },1000);
-},600);
 }else{
 alert('DHL Autofill Done (no COD)\\n\\n'+log.join('\\n'));
 }
