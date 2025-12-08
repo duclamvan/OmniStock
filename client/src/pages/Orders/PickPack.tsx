@@ -8246,6 +8246,7 @@ export default function PickPack() {
                 const senderData = dhlSenderData ? {
                   firstName: dhlSenderData.firstName || '',
                   lastName: dhlSenderData.lastName || '',
+                  company: dhlSenderData.company || dhlSenderData.addressSupplement || '',
                   addressSupplement: dhlSenderData.addressSupplement || '',
                   street: dhlSenderData.street || '',
                   houseNumber: dhlSenderData.houseNumber || '',
@@ -9076,7 +9077,7 @@ export default function PickPack() {
             const senderData = dhlSenderData ? {
               firstName: dhlSenderData.firstName || '',
               lastName: dhlSenderData.lastName || '',
-              company: dhlSenderData.company || '',
+              company: dhlSenderData.company || dhlSenderData.addressSupplement || '',
               addressSupplement: dhlSenderData.addressSupplement || '',
               street: dhlSenderData.street || '',
               houseNumber: dhlSenderData.houseNumber || '',
