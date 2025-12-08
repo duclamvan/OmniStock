@@ -173,7 +173,20 @@ export function DHLAutofillButton({
 var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
 console.log('DHL data:',data);
 var log=[];
-function L(m){console.log(m);log.push(m);}
+var okCount=0;
+var failCount=0;
+function L(m){console.log(m);log.push(m);if(m.startsWith('OK '))okCount++;if(m.startsWith('FAIL '))failCount++;}
+function showSuccess(title,nextStep,showDetails){
+var msg='\\u2705 '+title+'\\n\\n';
+msg+='Filled: '+okCount+' fields';
+if(failCount>0)msg+=' | Failed: '+failCount;
+msg+='\\n\\n\\u27A1 NEXT: '+nextStep;
+if(showDetails){msg+='\\n\\n--- Log ---\\n';for(var i=0;i<log.length;i++)msg+=log[i]+'\\n';}
+alert(msg);
+}
+function showError(title,instruction){
+alert('\\u274C '+title+'\\n\\n'+instruction);
+}
 function insertText(el,text){
 if(!el||!text)return false;
 el.focus();
@@ -356,7 +369,7 @@ L('Found '+codInputs.length+' COD fields by label');
 var idx=0;
 function fillNext(){
 if(idx>=codInputs.length||idx>=values.length){
-alert('DHL Autofill Done!\\n\\n'+log.join('\\n'));
+showSuccess('Product Page Complete!','Click WEITER to proceed to address entry.',false);
 return;
 }
 var inp=codInputs[idx];
@@ -457,7 +470,7 @@ L('Found '+allInputs.length+' total fields');
 var aidx=0;
 function fillAddrNext(){
 if(aidx>=allInputs.length){
-alert('DHL Address Autofill Done!\\n\\n'+log.join('\\n'));
+showSuccess('Address Page Complete!','Verify addresses, then click WEITER to proceed to package contents.',false);
 return;
 }
 var inp=allInputs[aidx];
@@ -506,14 +519,14 @@ L('Waiting... '+checkCount);
 setTimeout(waitForForm,300);
 }else{
 L('Timeout waiting for form');
-alert('Nachnahme form not found. Please ensure the COD section is expanded and try again.');
+showError('COD Form Not Found','Scroll down and click on "Nachnahme" to expand it, then run bookmarklet again.');
 }
 }
 waitForForm();
 },1500);
 },1000);
 }else{
-alert('DHL Product Selection Done (no COD)\\n\\n'+log.join('\\n'));
+showSuccess('Product Page Complete!','Click WEITER to proceed to address entry.',false);
 }
 },600);
 },600);
@@ -553,20 +566,20 @@ setTimeout(fillAllCOD,500);
 checkCount++;
 setTimeout(waitForForm2,300);
 }else{
-alert('Nachnahme form not found.');
+showError('COD Form Not Found','Scroll down and click on "Nachnahme" to expand it, then run bookmarklet again.');
 }
 }
 waitForForm2();
 },1500);
 },1000);
 }else{
-alert('DHL Done (no COD)\\n\\n'+log.join('\\n'));
+showSuccess('Product Page Complete!','Click WEITER to proceed to address entry.',false);
 }
 },600);
 },600);
 }else{
 L('Unknown page');
-alert('DHL page not recognized.\\n\\nURL: '+url.substring(0,60)+'\\n\\nPlease navigate to Product Selection or Address Input page.');
+showError('Page Not Recognized','Navigate to Product Selection or Address Input page first.');
 }
 }
 detectPageAndFill();
