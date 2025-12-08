@@ -30,6 +30,7 @@ import {
   Loader2,
   Truck,
 } from 'lucide-react';
+import { europeanCountries, getCountryFlag } from '@/lib/countries';
 
 // Note: Validation messages will be handled via form errors display
 const shippingAddressSchema = z.object({
@@ -59,47 +60,6 @@ interface ShippingAddressModalProps {
   title?: string;
   description?: string;
 }
-
-const europeanCountries = [
-  { code: 'CZ', name: 'Czech Republic' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'AT', name: 'Austria' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'SK', name: 'Slovakia' },
-  { code: 'HU', name: 'Hungary' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'GB', name: 'United Kingdom' },
-];
-
-const getCountryFlag = (countryCode: string): string => {
-  const codeMap: { [key: string]: string } = {
-    'Czech Republic': 'CZ',
-    'Germany': 'DE',
-    'Austria': 'AT',
-    'Poland': 'PL',
-    'Slovakia': 'SK',
-    'Hungary': 'HU',
-    'France': 'FR',
-    'Italy': 'IT',
-    'Spain': 'ES',
-    'Netherlands': 'NL',
-    'Belgium': 'BE',
-    'United Kingdom': 'GB',
-    'USA': 'US',
-    'Canada': 'CA',
-  };
-  
-  const code = codeMap[countryCode] || countryCode;
-  const codePoints = code
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
-};
 
 export function ShippingAddressModal({
   open,

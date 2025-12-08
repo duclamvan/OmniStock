@@ -13695,7 +13695,7 @@ Important rules:
           streetNumber: parsed.streetNumber || '',
           city: parsed.city || '',
           zipCode: parsed.zipCode || parsed.postalCode || '',
-          country: parsed.country || ''
+          country: normalizeCountryName(parsed.country || '')
         },
         confidence
       });
@@ -13709,6 +13709,271 @@ Important rules:
       });
     }
   });
+
+  // Helper function to normalize country names to match dropdown menu items
+  function normalizeCountryName(country: string): string {
+    if (!country) return '';
+    
+    const normalized = country.trim().toLowerCase();
+    
+    // Map of variations to standard country names (matching europeanCountries in countries.ts)
+    const countryMappings: Record<string, string> = {
+      // Czech Republic variations
+      'czech': 'Czech Republic',
+      'czechia': 'Czech Republic',
+      'czech republic': 'Czech Republic',
+      'česká republika': 'Czech Republic',
+      'ceska republika': 'Czech Republic',
+      'cz': 'Czech Republic',
+      'tschechien': 'Czech Republic',
+      'tschechische republik': 'Czech Republic',
+      
+      // Germany variations
+      'germany': 'Germany',
+      'deutschland': 'Germany',
+      'de': 'Germany',
+      'german': 'Germany',
+      'bundesrepublik deutschland': 'Germany',
+      'německo': 'Germany',
+      'nemecko': 'Germany',
+      
+      // Austria variations
+      'austria': 'Austria',
+      'österreich': 'Austria',
+      'osterreich': 'Austria',
+      'at': 'Austria',
+      'rakousko': 'Austria',
+      
+      // Poland variations
+      'poland': 'Poland',
+      'polska': 'Poland',
+      'pl': 'Poland',
+      'polen': 'Poland',
+      'polsko': 'Poland',
+      
+      // Slovakia variations
+      'slovakia': 'Slovakia',
+      'slovensko': 'Slovakia',
+      'slovak republic': 'Slovakia',
+      'sk': 'Slovakia',
+      'slowakei': 'Slovakia',
+      
+      // Hungary variations
+      'hungary': 'Hungary',
+      'magyarország': 'Hungary',
+      'magyarorszag': 'Hungary',
+      'hu': 'Hungary',
+      'ungarn': 'Hungary',
+      'maďarsko': 'Hungary',
+      'madarsko': 'Hungary',
+      
+      // France variations
+      'france': 'France',
+      'fr': 'France',
+      'frankreich': 'France',
+      'francie': 'France',
+      
+      // Italy variations
+      'italy': 'Italy',
+      'italia': 'Italy',
+      'it': 'Italy',
+      'italien': 'Italy',
+      'itálie': 'Italy',
+      'italie': 'Italy',
+      
+      // Spain variations
+      'spain': 'Spain',
+      'españa': 'Spain',
+      'espana': 'Spain',
+      'es': 'Spain',
+      'spanien': 'Spain',
+      'španělsko': 'Spain',
+      'spanelsko': 'Spain',
+      
+      // Netherlands variations
+      'netherlands': 'Netherlands',
+      'holland': 'Netherlands',
+      'the netherlands': 'Netherlands',
+      'nl': 'Netherlands',
+      'niederlande': 'Netherlands',
+      'holandsko': 'Netherlands',
+      'nizozemsko': 'Netherlands',
+      
+      // Belgium variations
+      'belgium': 'Belgium',
+      'belgique': 'Belgium',
+      'belgië': 'Belgium',
+      'belgie': 'Belgium',
+      'be': 'Belgium',
+      'belgien': 'Belgium',
+      'belgio': 'Belgium',
+      
+      // United Kingdom variations
+      'united kingdom': 'United Kingdom',
+      'uk': 'United Kingdom',
+      'gb': 'United Kingdom',
+      'great britain': 'United Kingdom',
+      'england': 'United Kingdom',
+      'großbritannien': 'United Kingdom',
+      'grossbritannien': 'United Kingdom',
+      'velká británie': 'United Kingdom',
+      'velka britanie': 'United Kingdom',
+      'spojené království': 'United Kingdom',
+      'spojene kralovstvi': 'United Kingdom',
+      'anglie': 'United Kingdom',
+      
+      // Switzerland variations
+      'switzerland': 'Switzerland',
+      'schweiz': 'Switzerland',
+      'suisse': 'Switzerland',
+      'svizzera': 'Switzerland',
+      'ch': 'Switzerland',
+      'švýcarsko': 'Switzerland',
+      'svycarsko': 'Switzerland',
+      
+      // Vietnam variations
+      'vietnam': 'Vietnam',
+      'việt nam': 'Vietnam',
+      'viet nam': 'Vietnam',
+      'vn': 'Vietnam',
+      
+      // Portugal variations
+      'portugal': 'Portugal',
+      'pt': 'Portugal',
+      
+      // Romania variations
+      'romania': 'Romania',
+      'românia': 'Romania',
+      'ro': 'Romania',
+      'rumänien': 'Romania',
+      
+      // Bulgaria variations
+      'bulgaria': 'Bulgaria',
+      'българия': 'Bulgaria',
+      'bg': 'Bulgaria',
+      'bulgarien': 'Bulgaria',
+      
+      // Croatia variations
+      'croatia': 'Croatia',
+      'hrvatska': 'Croatia',
+      'hr': 'Croatia',
+      'kroatien': 'Croatia',
+      
+      // Slovenia variations
+      'slovenia': 'Slovenia',
+      'slovenija': 'Slovenia',
+      'si': 'Slovenia',
+      'slowenien': 'Slovenia',
+      
+      // Greece variations
+      'greece': 'Greece',
+      'ελλάδα': 'Greece',
+      'ellada': 'Greece',
+      'gr': 'Greece',
+      'griechenland': 'Greece',
+      
+      // Denmark variations
+      'denmark': 'Denmark',
+      'danmark': 'Denmark',
+      'dk': 'Denmark',
+      'dänemark': 'Denmark',
+      
+      // Sweden variations
+      'sweden': 'Sweden',
+      'sverige': 'Sweden',
+      'se': 'Sweden',
+      'schweden': 'Sweden',
+      
+      // Norway variations
+      'norway': 'Norway',
+      'norge': 'Norway',
+      'no': 'Norway',
+      'norwegen': 'Norway',
+      
+      // Finland variations
+      'finland': 'Finland',
+      'suomi': 'Finland',
+      'fi': 'Finland',
+      'finnland': 'Finland',
+      
+      // Ireland variations
+      'ireland': 'Ireland',
+      'éire': 'Ireland',
+      'eire': 'Ireland',
+      'ie': 'Ireland',
+      'irland': 'Ireland',
+      
+      // Luxembourg variations
+      'luxembourg': 'Luxembourg',
+      'luxemburg': 'Luxembourg',
+      'lu': 'Luxembourg',
+      
+      // Serbia variations
+      'serbia': 'Serbia',
+      'србија': 'Serbia',
+      'srbija': 'Serbia',
+      'rs': 'Serbia',
+      'serbien': 'Serbia',
+      
+      // Ukraine variations
+      'ukraine': 'Ukraine',
+      'україна': 'Ukraine',
+      'ukraina': 'Ukraine',
+      'ua': 'Ukraine',
+      
+      // Turkey variations
+      'turkey': 'Turkey',
+      'türkiye': 'Turkey',
+      'turkiye': 'Turkey',
+      'tr': 'Turkey',
+      'türkei': 'Turkey',
+      
+      // Other common countries
+      'usa': 'United States',
+      'united states': 'United States',
+      'united states of america': 'United States',
+      'us': 'United States',
+      'america': 'United States',
+      
+      'canada': 'Canada',
+      'ca': 'Canada',
+      'kanada': 'Canada',
+      
+      'china': 'China',
+      'cn': 'China',
+      '中国': 'China',
+      
+      'japan': 'Japan',
+      'jp': 'Japan',
+      '日本': 'Japan',
+      
+      'south korea': 'South Korea',
+      'korea': 'South Korea',
+      'kr': 'South Korea',
+      '한국': 'South Korea',
+      
+      'australia': 'Australia',
+      'au': 'Australia',
+      'australien': 'Australia',
+    };
+    
+    // Try exact match first
+    if (countryMappings[normalized]) {
+      return countryMappings[normalized];
+    }
+    
+    // Try partial match
+    for (const [key, value] of Object.entries(countryMappings)) {
+      if (normalized.includes(key) || key.includes(normalized)) {
+        return value;
+      }
+    }
+    
+    // Return original with proper capitalization if no match found
+    return country.split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+  }
 
   // Helper function for basic address parsing without AI
   function parseAddressBasic(rawAddress: string): { fields: Record<string, string>; confidence: 'high' | 'medium' | 'low' } {
@@ -13781,6 +14046,11 @@ Important rules:
         fields.streetNumber = streetMatch[2];
         break;
       }
+    }
+
+    // Normalize country name to match dropdown menu items
+    if (fields.country) {
+      fields.country = normalizeCountryName(fields.country);
     }
 
     // Determine confidence
