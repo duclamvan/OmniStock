@@ -258,34 +258,65 @@ el.click();L('Clicked Nachnahme');return true;
 }
 return false;
 }
-function fillField(label,value,next){
-if(!value){next();return;}
-waitFor(function(){return findInput(label);},function(inp){
-if(inp){
-insertText(inp,value);
-inp.dispatchEvent(new Event('blur',{bubbles:true}));
-L('Filled '+label+': '+value);
-}
-setTimeout(next,150);
-},3000);
-}
 function fillAllCOD(){
 var iban=data.bank?data.bank.iban:'';
 var bic=data.bank?data.bank.bic:'';
 var holder=data.bank?data.bank.accountHolder:'';
 var amt=data.codAmount?data.codAmount.toFixed(2):'';
 var ref=data.orderId||'';
-fillField('iban',iban,function(){
-fillField('bic',bic,function(){
-fillField('kontoinhaber',holder,function(){
-fillField('betrag',amt,function(){
-fillField('verwendungszweck',ref,function(){
+var nachnahmeSection=null;
+var allEls=document.querySelectorAll('*');
+for(var i=0;i<allEls.length;i++){
+var el=allEls[i];
+if(el.textContent&&el.textContent.includes('Nachnahme')&&el.textContent.includes('Pflichtfeld')){
+nachnahmeSection=el;
+break;
+}
+}
+if(!nachnahmeSection){
+var labels=document.querySelectorAll('label,div,span');
+for(var i=0;i<labels.length;i++){
+if(labels[i].textContent&&labels[i].textContent.includes('Nachnahme')){
+nachnahmeSection=labels[i].closest('div[class]')||labels[i].parentElement.parentElement;
+break;
+}
+}
+}
+var inputs=nachnahmeSection?nachnahmeSection.querySelectorAll('input'):document.querySelectorAll('input');
+var codInputs=[];
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+if(inp.type!=='checkbox'&&inp.type!=='hidden'&&inp.offsetParent!==null){
+codInputs.push(inp);
+}
+}
+L('Found '+codInputs.length+' COD inputs');
+var values=[iban,bic,holder,amt,ref];
+var labels=['IBAN','BIC','Kontoinhaber','Betrag','Verwendungszweck'];
+var idx=0;
+function fillNext(){
+if(idx>=codInputs.length||idx>=values.length){
 alert('DHL Autofill Done!\\n\\n'+log.join('\\n'));
-});
-});
-});
-});
-});
+return;
+}
+var inp=codInputs[idx];
+var val=values[idx];
+var lbl=labels[idx];
+if(val){
+inp.scrollIntoView({block:'center'});
+setTimeout(function(){
+insertText(inp,val);
+inp.dispatchEvent(new Event('blur',{bubbles:true}));
+L('Filled '+lbl+': '+val);
+idx++;
+setTimeout(fillNext,200);
+},100);
+}else{
+idx++;
+fillNext();
+}
+}
+fillNext();
 }
 selectCountry();
 setTimeout(function(){
@@ -295,10 +326,9 @@ if(data.codAmount>0){
 clickNachnahme();
 setTimeout(function(){
 clickNachnahme();
-waitFor(function(){return findInput('iban');},function(inp){
-if(inp){fillAllCOD();}
-else{alert('COD form not found. Please click Nachnahme manually, then run bookmarklet again.');}
-},4000);
+setTimeout(function(){
+fillAllCOD();
+},1000);
 },600);
 }else{
 alert('DHL Autofill Done (no COD)\\n\\n'+log.join('\\n'));
