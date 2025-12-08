@@ -1536,16 +1536,157 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('Storage.updateOrder - Received updates for order', id, ':', orderUpdates);
       
-      // Clear any cached prepared statements that might reference old enum types
-      await db.execute(sql`DISCARD ALL`);
+      // Build dynamic SET clause for raw SQL to avoid Drizzle enum type inference issues
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
       
-      const [updated] = await db
-        .update(orders)
-        .set({ ...orderUpdates, updatedAt: new Date() })
-        .where(eq(orders.id, id))
-        .returning();
-      console.log('Storage.updateOrder - Result currency:', updated?.currency);
-      return updated || undefined;
+      // Map of field names to column names
+      const fieldToColumn: Record<string, string> = {
+        customerId: 'customer_id',
+        orderType: 'order_type',
+        saleType: 'sale_type',
+        currency: 'currency',
+        priority: 'priority',
+        orderStatus: 'order_status',
+        paymentStatus: 'payment_status',
+        shippingMethod: 'shipping_method',
+        paymentMethod: 'payment_method',
+        discountType: 'discount_type',
+        discountValue: 'discount_value',
+        taxInvoiceEnabled: 'tax_invoice_enabled',
+        taxRate: 'tax_rate',
+        shippingCost: 'shipping_cost',
+        actualShippingCost: 'actual_shipping_cost',
+        adjustment: 'adjustment',
+        codAmount: 'cod_amount',
+        codCurrency: 'cod_currency',
+        notes: 'notes',
+        shippingAddressId: 'shipping_address_id',
+        subtotal: 'subtotal',
+        taxAmount: 'tax_amount',
+        grandTotal: 'grand_total',
+        selectedDocumentIds: 'selected_document_ids',
+        trackingNumber: 'tracking_number',
+        fulfillmentStage: 'fulfillment_stage',
+        pickStatus: 'pick_status',
+        packStatus: 'pack_status',
+        pickedBy: 'picked_by',
+        packedBy: 'packed_by',
+        pickStartTime: 'pick_start_time',
+        pickEndTime: 'pick_end_time',
+        packStartTime: 'pack_start_time',
+        packEndTime: 'pack_end_time',
+        finalWeight: 'final_weight',
+        cartonUsed: 'carton_used',
+        modifiedAfterPacking: 'modified_after_packing',
+        modificationNotes: 'modification_notes',
+        pplBatchId: 'ppl_batch_id',
+        pplShipmentNumbers: 'ppl_shipment_numbers',
+        pplLabelData: 'ppl_label_data',
+        pplStatus: 'ppl_status',
+        allocated: 'allocated',
+      };
+      
+      for (const [field, column] of Object.entries(fieldToColumn)) {
+        if (field in orderUpdates && orderUpdates[field] !== undefined) {
+          // Handle array types (cast to text[])
+          if (field === 'selectedDocumentIds' || field === 'pplShipmentNumbers') {
+            setClauses.push(`${column} = $${paramIndex}::text[]`);
+          } else if (field === 'pplLabelData') {
+            setClauses.push(`${column} = $${paramIndex}::jsonb`);
+          } else {
+            setClauses.push(`${column} = $${paramIndex}`);
+          }
+          values.push(orderUpdates[field]);
+          paramIndex++;
+        }
+      }
+      
+      // Always update updated_at
+      setClauses.push(`updated_at = NOW()`);
+      
+      if (setClauses.length === 1) {
+        // Only updated_at, nothing to update
+        const result = await db.select().from(orders).where(eq(orders.id, id));
+        return result[0] || undefined;
+      }
+      
+      values.push(id);
+      const query = `UPDATE orders SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+      console.log('Storage.updateOrder - Raw SQL query:', query);
+      console.log('Storage.updateOrder - Values:', values);
+      
+      // Use raw pool query to completely bypass Drizzle ORM type inference
+      const { pool } = await import('./db.js');
+      const result = await pool.query(query, values);
+      const rows = result.rows;
+      console.log('Storage.updateOrder - Result rowCount:', result.rowCount);
+      
+      // Map snake_case back to camelCase for the return value
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        return {
+          id: row.id,
+          orderId: row.order_id,
+          customerId: row.customer_id,
+          shippingAddressId: row.shipping_address_id,
+          billerId: row.biller_id,
+          currency: row.currency,
+          orderStatus: row.order_status,
+          paymentStatus: row.payment_status,
+          priority: row.priority,
+          subtotal: row.subtotal,
+          discountType: row.discount_type,
+          discountValue: row.discount_value,
+          discount: row.discount,
+          taxRate: row.tax_rate,
+          taxAmount: row.tax_amount,
+          tax: row.tax,
+          totalCost: row.total_cost,
+          shippingMethod: row.shipping_method,
+          paymentMethod: row.payment_method,
+          shippingCost: row.shipping_cost,
+          actualShippingCost: row.actual_shipping_cost,
+          adjustment: row.adjustment,
+          grandTotal: row.grand_total,
+          notes: row.notes,
+          attachmentUrl: row.attachment_url,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          shippedAt: row.shipped_at,
+          pickStatus: row.pick_status,
+          packStatus: row.pack_status,
+          pickedBy: row.picked_by,
+          packedBy: row.packed_by,
+          pickStartTime: row.pick_start_time,
+          pickEndTime: row.pick_end_time,
+          packStartTime: row.pack_start_time,
+          packEndTime: row.pack_end_time,
+          finalWeight: row.final_weight,
+          cartonUsed: row.carton_used,
+          modifiedAfterPacking: row.modified_after_packing,
+          modificationNotes: row.modification_notes,
+          lastModifiedAt: row.last_modified_at,
+          previousPackStatus: row.previous_pack_status,
+          selectedDocumentIds: row.selected_document_ids,
+          trackingNumber: row.tracking_number,
+          orderType: row.order_type,
+          saleType: row.sale_type,
+          includedDocuments: row.included_documents,
+          fulfillmentStage: row.fulfillment_stage,
+          pickingStartedAt: row.picking_started_at,
+          packingStartedAt: row.packing_started_at,
+          pplBatchId: row.ppl_batch_id,
+          pplShipmentNumbers: row.ppl_shipment_numbers,
+          pplLabelData: row.ppl_label_data,
+          pplStatus: row.ppl_status,
+          codAmount: row.cod_amount,
+          codCurrency: row.cod_currency,
+          allocated: row.allocated,
+        } as Order;
+      }
+      return undefined;
     } catch (error) {
       console.error('Error updating order:', error);
       return undefined;
