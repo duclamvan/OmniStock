@@ -527,21 +527,7 @@ export default function ShippingSettings() {
                                 return (
                                   <div key={code} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                                     <span className="text-lg w-8">{countryFlags[code] || '🌍'}</span>
-                                    <span className="text-sm font-medium w-24">{countryNames[code] || code}</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-muted-foreground">{t('settings:baseLabel')}</span>
-                                      <Input
-                                        type="number"
-                                        value={rate?.baseFee || 0}
-                                        onChange={(e) => updateCountryRate(code, 'baseFee', parseFloat(e.target.value) || 0)}
-                                        onBlur={handleTextBlur('ppl_shipping_rates')}
-                                        className="w-20"
-                                        min="0"
-                                        step="1"
-                                        data-testid={`input-${code}-basefee`}
-                                      />
-                                      <span className="text-xs text-muted-foreground">CZK</span>
-                                    </div>
+                                    <span className="text-sm font-medium flex-1">{countryNames[code] || code}</span>
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-muted-foreground">{t('settings:perKgLabel')}</span>
                                       <Input
