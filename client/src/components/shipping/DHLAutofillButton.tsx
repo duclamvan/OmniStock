@@ -423,11 +423,46 @@ results.push(inp);
 }
 return results;
 }
+function findSectionStart(sectionName){
+var els=document.querySelectorAll('h1,h2,h3,h4,h5,h6,div,span,p');
+for(var i=0;i<els.length;i++){
+var el=els[i];
+var txt=(el.textContent||'').trim();
+if(txt.toLowerCase()===sectionName.toLowerCase()||txt.toLowerCase().startsWith(sectionName.toLowerCase())){
+if(txt.length<50)return el;
+}
+}
+return null;
+}
+function findFieldInSection(sectionEl,labelText){
+if(!sectionEl)return null;
+var container=sectionEl.parentElement;
+while(container&&container.tagName!=='BODY'){
+var inputs=container.querySelectorAll('input');
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+if(inp.type==='checkbox'||inp.type==='hidden')continue;
+if(inp.offsetParent===null)continue;
+var wrapper=inp.parentElement;
+if(wrapper){
+var wt=wrapper.textContent||'';
+if(wt.toLowerCase().includes(labelText.toLowerCase())&&wt.length<100){
+return inp;
+}
+}
+}
+container=container.parentElement;
+}
+return null;
+}
 function fillAddressPage(){
 L('Filling Address Page...');
 var allInputs=[];
 var allLabels=[];
 var allValues=[];
+var empfSection=findSectionStart('Empfänger');
+var absSection=findSectionStart('Absender');
+L('Sections: Empf='+(empfSection?'Y':'N')+' Abs='+(absSection?'Y':'N'));
 var recipientFields=[
 {label:'vor- und nachname',val:(data.recipient.firstName+' '+data.recipient.lastName).trim(),name:'R:Name'},
 {label:'adresszusatz',val:data.recipient.company||'',name:'R:Adresszusatz'},
@@ -435,14 +470,15 @@ var recipientFields=[
 {label:'wohnort',val:data.recipient.city,name:'R:City'},
 {label:'straße',val:data.recipient.street,name:'R:Street'},
 {label:'hausnummer',val:data.recipient.houseNumber,name:'R:HouseNo'},
-{label:'e-mail des empfängers',val:data.recipient.email||'',name:'R:Email'}
+{label:'e-mail',val:data.recipient.email||'',name:'R:Email'}
 ];
 for(var i=0;i<recipientFields.length;i++){
 var fd=recipientFields[i];
 if(!fd.val)continue;
-var matches=findAllFieldsByLabel(fd.label);
-if(matches.length>0){
-allInputs.push(matches[0]);
+var inp=empfSection?findFieldInSection(empfSection,fd.label):null;
+if(!inp){var matches=findAllFieldsByLabel(fd.label);if(matches.length>0)inp=matches[0];}
+if(inp){
+allInputs.push(inp);
 allLabels.push(fd.name);
 allValues.push(fd.val);
 L('Found '+fd.name);
@@ -464,14 +500,14 @@ var senderFields=[
 for(var j=0;j<senderFields.length;j++){
 var sf=senderFields[j];
 if(!sf.val)continue;
+var sinp=absSection?findFieldInSection(absSection,sf.label):null;
+if(!sinp){
 var smatches=findAllFieldsByLabel(sf.label);
-if(smatches.length>=2){
-allInputs.push(smatches[1]);
-allLabels.push(sf.name);
-allValues.push(sf.val);
-L('Found '+sf.name+' (2nd match)');
-}else if(smatches.length===1&&sf.label==='e-mail'){
-allInputs.push(smatches[0]);
+if(smatches.length>=2)sinp=smatches[1];
+else if(smatches.length===1)sinp=smatches[0];
+}
+if(sinp){
+allInputs.push(sinp);
 allLabels.push(sf.name);
 allValues.push(sf.val);
 L('Found '+sf.name);
