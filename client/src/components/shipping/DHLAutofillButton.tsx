@@ -374,6 +374,58 @@ fillNext();
 }
 fillNext();
 }
+function fillAddressPage(){
+L('Filling Address Page...');
+var addressFields=[
+{label:'vor- und nachname',val:(data.recipient.firstName+' '+data.recipient.lastName).trim(),name:'Name'},
+{label:'adresszusatz',val:data.recipient.company||'',name:'Adresszusatz'},
+{label:'plz',val:data.recipient.postalCode,name:'PLZ'},
+{label:'wohnort',val:data.recipient.city,name:'City'},
+{label:'straße',val:data.recipient.street,name:'Street'},
+{label:'hausnummer',val:data.recipient.houseNumber,name:'HouseNo'},
+{label:'e-mail',val:data.recipient.email||'',name:'Email'}
+];
+var addrInputs=[];
+var addrLabels=[];
+var addrValues=[];
+for(var i=0;i<addressFields.length;i++){
+var fd=addressFields[i];
+if(!fd.val)continue;
+var inp=findFieldByLabel(fd.label);
+if(inp){
+addrInputs.push(inp);
+addrLabels.push(fd.name);
+addrValues.push(fd.val);
+L('Found '+fd.name);
+}else{
+L('NOT FOUND: '+fd.name);
+}
+}
+L('Found '+addrInputs.length+' address fields');
+var aidx=0;
+function fillAddrNext(){
+if(aidx>=addrInputs.length){
+alert('DHL Address Autofill Done!\\n\\n'+log.join('\\n'));
+return;
+}
+var inp=addrInputs[aidx];
+var val=addrValues[aidx];
+var lbl=addrLabels[aidx];
+fillOneField(inp,val,lbl,function(){
+aidx++;
+fillAddrNext();
+});
+}
+setTimeout(fillAddrNext,500);
+}
+function detectPageAndFill(){
+var url=window.location.href;
+var pageText=document.body.textContent||'';
+if(url.includes('AddressInput')||pageText.includes('Adressdaten')||pageText.includes('Empfänger aus Adressbuch')){
+L('Detected: Address Page');
+fillAddressPage();
+}else if(url.includes('ProductSelection')||pageText.includes('Produktauswahl')||pageText.includes('Versandmarke')){
+L('Detected: Product Selection Page');
 selectCountry();
 setTimeout(function(){
 selectPackage();
@@ -411,10 +463,16 @@ waitForForm();
 },1500);
 },1000);
 }else{
-alert('DHL Autofill Done (no COD)\\n\\n'+log.join('\\n'));
+alert('DHL Product Selection Done (no COD)\\n\\n'+log.join('\\n'));
 }
 },600);
 },600);
+}else{
+L('Unknown page - trying address fill');
+fillAddressPage();
+}
+}
+detectPageAndFill();
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
