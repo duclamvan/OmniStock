@@ -258,41 +258,55 @@ el.click();L('Clicked Nachnahme');return true;
 }
 return false;
 }
+function findFieldByLabel(labelText){
+var inputs=document.querySelectorAll('input');
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+if(inp.type==='checkbox'||inp.type==='hidden')continue;
+var wrapper=inp.parentElement;
+if(wrapper){
+var wrapperText=wrapper.textContent||'';
+if(wrapperText.toLowerCase().includes(labelText.toLowerCase())&&wrapperText.length<100){
+if(inp.offsetParent!==null)return inp;
+}
+}
+var prev=inp.previousElementSibling;
+if(prev&&prev.textContent&&prev.textContent.toLowerCase().includes(labelText.toLowerCase())){
+if(inp.offsetParent!==null)return inp;
+}
+}
+return null;
+}
 function fillAllCOD(){
 var iban=data.bank?data.bank.iban:'';
 var bic=data.bank?data.bank.bic:'';
 var holder=data.bank?data.bank.accountHolder:'';
 var amt=data.codAmount?data.codAmount.toFixed(2):'';
 var ref=data.orderId||'';
-var nachnahmeSection=null;
-var allEls=document.querySelectorAll('*');
-for(var i=0;i<allEls.length;i++){
-var el=allEls[i];
-if(el.textContent&&el.textContent.includes('Nachnahme')&&el.textContent.includes('Pflichtfeld')){
-nachnahmeSection=el;
-break;
-}
-}
-if(!nachnahmeSection){
-var labels=document.querySelectorAll('label,div,span');
-for(var i=0;i<labels.length;i++){
-if(labels[i].textContent&&labels[i].textContent.includes('Nachnahme')){
-nachnahmeSection=labels[i].closest('div[class]')||labels[i].parentElement.parentElement;
-break;
-}
-}
-}
-var inputs=nachnahmeSection?nachnahmeSection.querySelectorAll('input'):document.querySelectorAll('input');
+var fieldDefs=[
+{label:'iban',val:iban,name:'IBAN'},
+{label:'bic',val:bic,name:'BIC'},
+{label:'kontoinhaber',val:holder,name:'Kontoinhaber'},
+{label:'betrag',val:amt,name:'Betrag'},
+{label:'verwendungszweck',val:ref,name:'Verwendungszweck'}
+];
 var codInputs=[];
-for(var i=0;i<inputs.length;i++){
-var inp=inputs[i];
-if(inp.type!=='checkbox'&&inp.type!=='hidden'&&inp.offsetParent!==null){
+var labels=[];
+var values=[];
+for(var i=0;i<fieldDefs.length;i++){
+var fd=fieldDefs[i];
+if(!fd.val)continue;
+var inp=findFieldByLabel(fd.label);
+if(inp){
 codInputs.push(inp);
+labels.push(fd.name);
+values.push(fd.val);
+L('Found '+fd.name+' field');
+}else{
+L('NOT FOUND: '+fd.name);
 }
 }
-L('Found '+codInputs.length+' COD inputs');
-var values=[iban,bic,holder,amt,ref];
-var labels=['IBAN','BIC','Kontoinhaber','Betrag','Verwendungszweck'];
+L('Found '+codInputs.length+' COD fields by label');
 var idx=0;
 function forceType(inp,val,retries,cb){
 inp.scrollIntoView({block:'center'});
