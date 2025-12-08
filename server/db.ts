@@ -21,12 +21,11 @@ if (!pgHost || !pgUser || !pgPassword || !pgDatabase) {
 const connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require`;
 
 // Use standard pg driver with direct Neon connection
-// Increased timeouts for Neon serverless cold starts (can take 15+ seconds)
 export const pool = new Pool({
   connectionString,
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 30000, // 30 seconds for Neon cold starts
+  connectionTimeoutMillis: 10000,
 });
 
 export const db = drizzle(pool, { schema });
