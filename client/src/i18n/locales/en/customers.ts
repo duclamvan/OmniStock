@@ -91,6 +91,7 @@ const customers = {
   taxBusinessInfo: 'Tax & Business Information',
   facebookId: 'Facebook ID',
   facebookName: 'Facebook Name',
+  fbPrefix: 'FB:',
   vatNumber: 'VAT Number',
   vatStatus: 'VAT Status',
   valid: 'Valid',

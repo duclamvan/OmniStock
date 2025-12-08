@@ -99,6 +99,7 @@ const customers = {
   facebookIntegration: 'Tích hợp Facebook',
   facebookId: 'Facebook ID',
   facebookName: 'Tên Facebook',
+  fbPrefix: 'FB:',
   facebookConnected: 'Đã kết nối Facebook',
   disconnectFacebook: 'Ngắt kết nối Facebook',
   connectFacebook: 'Kết nối Facebook',
