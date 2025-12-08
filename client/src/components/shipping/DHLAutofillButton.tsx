@@ -173,16 +173,24 @@ export function DHLAutofillButton({
 var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
 console.log('DHL Autofill data:',data);
 var fc=0;
-function setVal(el,val){
+function typeInField(el,val){
 if(!el||!val)return false;
+el.click();
+el.focus();
+el.value='';
 var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
 ns.call(el,val);
+el.dispatchEvent(new Event('focus',{bubbles:true}));
 el.dispatchEvent(new Event('input',{bubbles:true}));
 el.dispatchEvent(new Event('change',{bubbles:true}));
-el.dispatchEvent(new Event('blur',{bubbles:true}));
 fc++;
-console.log('Set value:',val);
+console.log('Typed:',val);
 return true;
+}
+function pressTab(el){
+if(!el)return;
+el.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',keyCode:9,code:'Tab',bubbles:true}));
+el.dispatchEvent(new Event('blur',{bubbles:true}));
 }
 function selectCountry(){
 var inputs=document.querySelectorAll('input');
@@ -190,43 +198,40 @@ for(var i=0;i<inputs.length;i++){
 var inp=inputs[i];
 var parent=inp.closest('[class*="country"],[class*="ziel"],[class*="destination"]')||inp.parentElement;
 if(parent&&parent.textContent&&(parent.textContent.includes('Zielland')||parent.textContent.includes('Zielregion'))){
-inp.focus();
 inp.click();
-setVal(inp,'Deutschland');
+inp.focus();
+inp.value='';
+var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+ns.call(inp,'Deutschland');
+inp.dispatchEvent(new Event('input',{bubbles:true}));
+inp.dispatchEvent(new Event('change',{bubbles:true}));
 setTimeout(function(){
 inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
+inp.dispatchEvent(new KeyboardEvent('keypress',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
 inp.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
-console.log('Country Enter pressed');
-},200);
+console.log('Country selected');
+fc++;
+},300);
 return;
 }
-}
-var firstInput=document.querySelector('input[type="text"]');
-if(firstInput){
-firstInput.focus();
-firstInput.click();
-setVal(firstInput,'Deutschland');
-setTimeout(function(){
-firstInput.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
-},200);
 }
 }
 function selectPackage(){
 var weight=data.weight||5;
-var pkgText='5 kg - Paket';
-if(weight<=2)pkgText='2 kg - Paket';
-else if(weight<=5)pkgText='5 kg - Paket';
-else if(weight<=10)pkgText='10 kg - Paket';
-else pkgText='20 kg - Paket';
+var targetKg='5 kg';
+if(weight<=2)targetKg='2 kg';
+else if(weight<=5)targetKg='5 kg';
+else if(weight<=10)targetKg='10 kg';
+else targetKg='20 kg';
 var btns=document.querySelectorAll('button');
 for(var i=0;i<btns.length;i++){
 var btn=btns[i];
 var card=btn.closest('[class*="product"],[class*="card"]')||btn.parentElement.parentElement;
 if(card&&card.textContent){
 var txt=card.textContent;
-if(txt.includes(pkgText.split(' - ')[0])&&txt.toLowerCase().includes('paket')&&!txt.toLowerCase().includes('päckchen')){
+if(txt.includes(targetKg)&&txt.toLowerCase().includes('paket')&&!txt.toLowerCase().includes('päckchen')){
 btn.click();
-console.log('Selected:',pkgText);
+console.log('Selected package:',targetKg);
 fc++;
 return;
 }
@@ -234,42 +239,50 @@ return;
 }
 }
 function enableCOD(){
-var labels=document.querySelectorAll('label,div[class*="checkbox"],span');
-for(var i=0;i<labels.length;i++){
-var lbl=labels[i];
-if(lbl.textContent&&lbl.textContent.includes('Nachnahme')){
-var cb=lbl.querySelector('input[type="checkbox"]');
-if(cb&&!cb.checked){
-cb.click();
-console.log('Checked Nachnahme checkbox');
+var allEls=document.querySelectorAll('*');
+for(var i=0;i<allEls.length;i++){
+var el=allEls[i];
+if(el.textContent&&el.textContent.includes('Nachnahme')&&el.textContent.length<100){
+var cb=el.querySelector('input[type="checkbox"]')||el.closest('label,div')?.querySelector('input[type="checkbox"]');
+if(cb){
+if(!cb.checked){cb.click();console.log('Checked Nachnahme');fc++;}
+return true;
+}
+var clickable=el.closest('label')||el.closest('[role="checkbox"]')||el;
+if(clickable&&clickable.click){
+clickable.click();
+console.log('Clicked Nachnahme element');
 fc++;
 return true;
 }
-lbl.click();
-console.log('Clicked Nachnahme label');
-fc++;
-return true;
 }
 }
 return false;
 }
 function fillCODForm(){
-var inputs=document.querySelectorAll('input');
+var fields=[
+{match:'iban',val:data.bank?data.bank.iban:''},
+{match:'bic',val:data.bank?data.bank.bic:''},
+{match:'kontoinhaber',val:data.bank?data.bank.accountHolder:''},
+{match:'betrag',val:data.codAmount?data.codAmount.toFixed(2):''},
+{match:'verwendungszweck',val:data.orderId}
+];
+var inputs=document.querySelectorAll('input[type="text"],input:not([type])');
+var filledInputs=[];
+for(var f=0;f<fields.length;f++){
+var field=fields[f];
+if(!field.val)continue;
 for(var i=0;i<inputs.length;i++){
 var inp=inputs[i];
-var wrapper=inp.closest('div')||inp.parentElement;
-var labelTxt=(wrapper&&wrapper.textContent)||inp.placeholder||'';
-labelTxt=labelTxt.toLowerCase();
-if(labelTxt.includes('iban')&&data.bank&&data.bank.iban){
-setVal(inp,data.bank.iban);
-}else if(labelTxt.includes('bic')&&data.bank&&data.bank.bic){
-setVal(inp,data.bank.bic);
-}else if(labelTxt.includes('kontoinhaber')&&data.bank&&data.bank.accountHolder){
-setVal(inp,data.bank.accountHolder);
-}else if(labelTxt.includes('betrag')&&data.codAmount){
-setVal(inp,data.codAmount.toFixed(2));
-}else if(labelTxt.includes('verwendungszweck')){
-setVal(inp,data.orderId);
+if(filledInputs.indexOf(inp)>=0)continue;
+var wrapper=inp.closest('div[class*="field"],div[class*="input"],label')||inp.parentElement;
+var labelTxt=((wrapper&&wrapper.textContent)||inp.placeholder||inp.name||'').toLowerCase();
+if(labelTxt.includes(field.match)){
+typeInField(inp,field.val);
+pressTab(inp);
+filledInputs.push(inp);
+break;
+}
 }
 }
 }
@@ -280,14 +293,17 @@ setTimeout(function(){
 if(data.codAmount&&data.codAmount>0){
 enableCOD();
 setTimeout(function(){
+enableCOD();
+setTimeout(function(){
 fillCODForm();
-alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount.toFixed(2)+'\\nIBAN: '+((data.bank&&data.bank.iban)||'N/A')+'\\nFilled '+fc+' fields');
-},1000);
+alert('DHL Autofill Done!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount.toFixed(2)+'\\nFilled '+fc+' fields\\n\\nPlease verify all fields!');
+},800);
+},500);
 }else{
-alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nNo COD\\nFilled '+fc+' fields');
+alert('DHL Autofill Done!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nNo COD\\nFilled '+fc+' fields');
 }
-},600);
-},600);
+},800);
+},800);
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
