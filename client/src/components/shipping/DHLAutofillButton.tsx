@@ -132,23 +132,47 @@ export function DHLAutofillButton({
   };
 
   const generateBookmarkletCode = () => {
+    const data = {
+      orderId: orderId || '',
+      recipient: {
+        firstName: recipientData.firstName || '',
+        lastName: recipientData.lastName || '',
+        company: recipientData.company || '',
+        street: recipientData.street || '',
+        houseNumber: recipientData.houseNumber || '',
+        postalCode: recipientData.postalCode || '',
+        city: recipientData.city || '',
+        country: recipientData.country || 'Deutschland',
+        email: recipientData.email || '',
+        phone: recipientData.phone || '',
+      },
+      sender: senderData ? {
+        firstName: senderData.firstName || '',
+        lastName: senderData.lastName || '',
+        company: senderData.company || '',
+        street: senderData.street || '',
+        houseNumber: senderData.houseNumber || '',
+        postalCode: senderData.postalCode || '',
+        city: senderData.city || '',
+        email: senderData.email || '',
+        phone: senderData.phone || '',
+      } : undefined,
+      codAmount: codAmount || 0,
+      bank: bankData ? {
+        iban: bankData.iban || '',
+        bic: bankData.bic || '',
+        accountHolder: bankData.accountHolder || '',
+      } : undefined,
+      weight: weight || 0,
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
     const bookmarkletLogic = `
 (function(){
   console.log('🟡 DHL Autofill - Starting...');
   
-  var dataStr = localStorage.getItem('${DHL_STORAGE_KEY}');
-  if (!dataStr) {
-    alert('No DHL autofill data found!\\n\\nPlease click "Prepare Order Data" in your warehouse app first.');
-    return;
-  }
-  
-  var data;
-  try {
-    data = JSON.parse(dataStr);
-  } catch (e) {
-    alert('Failed to parse DHL autofill data. Please prepare order data again.');
-    return;
-  }
+  var data = JSON.parse(decodeURIComponent('${encodedData}'));
   
   console.log('🟡 DHL Autofill - Loaded data:', data);
   
@@ -365,10 +389,10 @@ export function DHLAutofillButton({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <BookmarkIcon className="h-5 w-5 text-yellow-600" />
-              DHL Autofill Setup
+              DHL Autofill - Order {orderId}
             </DialogTitle>
             <DialogDescription className="text-sm">
-              Set up once, then use it anytime to auto-fill the DHL form
+              This bookmarklet contains data for current order. Use it on DHL page.
             </DialogDescription>
           </DialogHeader>
 
@@ -376,9 +400,9 @@ export function DHLAutofillButton({
             <div className="rounded-lg border p-3 sm:p-4 bg-muted">
               <h3 className="font-semibold mb-2 text-sm sm:text-base">📋 How to use:</h3>
               <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
-                <li>Save the bookmarklet below to your bookmarks bar (one-time)</li>
-                <li>Open the DHL page (should be open now)</li>
-                <li>Click the saved bookmarklet to auto-fill</li>
+                <li>DHL page should be open now</li>
+                <li>Drag the button below to your bookmarks bar OR copy the code</li>
+                <li>Click the bookmarklet on the DHL page to auto-fill</li>
                 <li>Verify details and complete shipment</li>
               </ol>
             </div>
@@ -439,9 +463,9 @@ export function DHLAutofillButton({
               <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm sm:text-base">⚠️ Important:</h3>
               <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
                 <li>Works directly on DHL website</li>
-                <li><strong>Save once, use for all future orders</strong></li>
+                <li><strong>Each order has unique bookmarklet with embedded data</strong></li>
                 <li>Always verify auto-filled details</li>
-                <li>Update bookmark only if form fields change</li>
+                <li>Copy or drag the bookmarklet code to use</li>
               </ul>
             </div>
 
