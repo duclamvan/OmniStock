@@ -1535,6 +1535,10 @@ export class DatabaseStorage implements IStorage {
   async updateOrder(id: string, orderUpdates: any): Promise<Order | undefined> {
     try {
       console.log('Storage.updateOrder - Received updates for order', id, ':', orderUpdates);
+      
+      // Clear any cached prepared statements that might reference old enum types
+      await db.execute(sql`DISCARD ALL`);
+      
       const [updated] = await db
         .update(orders)
         .set({ ...orderUpdates, updatedAt: new Date() })
