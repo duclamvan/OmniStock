@@ -171,139 +171,139 @@ export function DHLAutofillButton({
 
     const bookmarkletLogic = `(function(){
 var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
-console.log('DHL Autofill data:',data);
-var fc=0;
-function typeInField(el,val){
-if(!el||!val)return false;
-el.click();
+console.log('DHL data:',data);
+var log=[];
+function L(m){console.log(m);log.push(m);}
+function insertText(el,text){
+if(!el||!text)return false;
 el.focus();
-el.value='';
+el.click();
+el.select&&el.select();
+try{
+if(document.execCommand){
+document.execCommand('selectAll',false,null);
+document.execCommand('insertText',false,text);
+L('execCommand: '+text);
+return el.value===text;
+}
+}catch(e){}
 var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
-ns.call(el,val);
-el.dispatchEvent(new Event('focus',{bubbles:true}));
-el.dispatchEvent(new Event('input',{bubbles:true}));
+ns.call(el,text);
+el.dispatchEvent(new InputEvent('input',{data:text,inputType:'insertText',bubbles:true,cancelable:true}));
 el.dispatchEvent(new Event('change',{bubbles:true}));
-fc++;
-console.log('Typed:',val);
-return true;
+L('InputEvent: '+text);
+return el.value===text;
 }
-function pressTab(el){
-if(!el)return;
-el.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',keyCode:9,code:'Tab',bubbles:true}));
-el.dispatchEvent(new Event('blur',{bubbles:true}));
+function waitFor(fn,cb,maxWait){
+var start=Date.now();
+var check=function(){
+var result=fn();
+if(result){cb(result);return;}
+if(Date.now()-start<(maxWait||5000)){setTimeout(check,200);}
+else{L('Timeout waiting');cb(null);}
+};
+check();
 }
-function selectCountry(){
+function findInput(labelMatch){
 var inputs=document.querySelectorAll('input');
 for(var i=0;i<inputs.length;i++){
 var inp=inputs[i];
-var parent=inp.closest('[class*="country"],[class*="ziel"],[class*="destination"]')||inp.parentElement;
-if(parent&&parent.textContent&&(parent.textContent.includes('Zielland')||parent.textContent.includes('Zielregion'))){
-inp.click();
-inp.focus();
-inp.value='';
-var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
-ns.call(inp,'Deutschland');
-inp.dispatchEvent(new Event('input',{bubbles:true}));
-inp.dispatchEvent(new Event('change',{bubbles:true}));
-setTimeout(function(){
-inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
-inp.dispatchEvent(new KeyboardEvent('keypress',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
-inp.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
-console.log('Country selected');
-fc++;
-},300);
-return;
+var p=inp.parentElement;
+while(p&&p.tagName!=='BODY'){
+var txt=(p.textContent||'').toLowerCase();
+if(txt.includes(labelMatch)&&txt.length<200){
+if(!inp.disabled&&inp.offsetParent!==null)return inp;
 }
+p=p.parentElement;
+}
+}
+return null;
+}
+function selectCountry(){
+var inp=findInput('zielland')||findInput('zielregion')||document.querySelector('input');
+if(inp){
+inp.focus();
+inp.click();
+insertText(inp,'Deutschland');
+setTimeout(function(){
+inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));
+L('Country: Deutschland');
+},200);
 }
 }
 function selectPackage(){
-var weight=data.weight||5;
-var targetKg='5 kg';
-if(weight<=2)targetKg='2 kg';
-else if(weight<=5)targetKg='5 kg';
-else if(weight<=10)targetKg='10 kg';
-else targetKg='20 kg';
+var w=data.weight||5;
+var kg=w<=2?'2 kg':w<=5?'5 kg':w<=10?'10 kg':'20 kg';
 var btns=document.querySelectorAll('button');
 for(var i=0;i<btns.length;i++){
-var btn=btns[i];
-var card=btn.closest('[class*="product"],[class*="card"]')||btn.parentElement.parentElement;
-if(card&&card.textContent){
-var txt=card.textContent;
-if(txt.includes(targetKg)&&txt.toLowerCase().includes('paket')&&!txt.toLowerCase().includes('päckchen')){
-btn.click();
-console.log('Selected package:',targetKg);
-fc++;
+var b=btns[i];
+var c=b.parentElement&&b.parentElement.parentElement;
+if(c&&c.textContent&&c.textContent.includes(kg)&&c.textContent.toLowerCase().includes('paket')&&!c.textContent.toLowerCase().includes('päckchen')){
+b.click();
+L('Package: '+kg);
 return;
 }
 }
 }
-}
-function enableCOD(){
-var allEls=document.querySelectorAll('*');
-for(var i=0;i<allEls.length;i++){
-var el=allEls[i];
-if(el.textContent&&el.textContent.includes('Nachnahme')&&el.textContent.length<100){
-var cb=el.querySelector('input[type="checkbox"]')||el.closest('label,div')?.querySelector('input[type="checkbox"]');
-if(cb){
-if(!cb.checked){cb.click();console.log('Checked Nachnahme');fc++;}
-return true;
-}
-var clickable=el.closest('label')||el.closest('[role="checkbox"]')||el;
-if(clickable&&clickable.click){
-clickable.click();
-console.log('Clicked Nachnahme element');
-fc++;
-return true;
-}
+function clickNachnahme(){
+var labels=document.querySelectorAll('label,div,span');
+for(var i=0;i<labels.length;i++){
+var el=labels[i];
+if(el.textContent&&el.textContent.includes('Nachnahme')&&el.textContent.length<80){
+var cb=el.querySelector('input[type="checkbox"]');
+if(cb&&!cb.checked){cb.click();L('Checked Nachnahme');return true;}
+el.click();L('Clicked Nachnahme');return true;
 }
 }
 return false;
 }
-function fillCODForm(){
-var fields=[
-{match:'iban',val:data.bank?data.bank.iban:''},
-{match:'bic',val:data.bank?data.bank.bic:''},
-{match:'kontoinhaber',val:data.bank?data.bank.accountHolder:''},
-{match:'betrag',val:data.codAmount?data.codAmount.toFixed(2):''},
-{match:'verwendungszweck',val:data.orderId}
-];
-var inputs=document.querySelectorAll('input[type="text"],input:not([type])');
-var filledInputs=[];
-for(var f=0;f<fields.length;f++){
-var field=fields[f];
-if(!field.val)continue;
-for(var i=0;i<inputs.length;i++){
-var inp=inputs[i];
-if(filledInputs.indexOf(inp)>=0)continue;
-var wrapper=inp.closest('div[class*="field"],div[class*="input"],label')||inp.parentElement;
-var labelTxt=((wrapper&&wrapper.textContent)||inp.placeholder||inp.name||'').toLowerCase();
-if(labelTxt.includes(field.match)){
-typeInField(inp,field.val);
-pressTab(inp);
-filledInputs.push(inp);
-break;
+function fillField(label,value,next){
+if(!value){next();return;}
+waitFor(function(){return findInput(label);},function(inp){
+if(inp){
+insertText(inp,value);
+inp.dispatchEvent(new Event('blur',{bubbles:true}));
+L('Filled '+label+': '+value);
 }
+setTimeout(next,150);
+},3000);
 }
-}
+function fillAllCOD(){
+var iban=data.bank?data.bank.iban:'';
+var bic=data.bank?data.bank.bic:'';
+var holder=data.bank?data.bank.accountHolder:'';
+var amt=data.codAmount?data.codAmount.toFixed(2):'';
+var ref=data.orderId||'';
+fillField('iban',iban,function(){
+fillField('bic',bic,function(){
+fillField('kontoinhaber',holder,function(){
+fillField('betrag',amt,function(){
+fillField('verwendungszweck',ref,function(){
+alert('DHL Autofill Done!\\n\\n'+log.join('\\n'));
+});
+});
+});
+});
+});
 }
 selectCountry();
 setTimeout(function(){
 selectPackage();
 setTimeout(function(){
-if(data.codAmount&&data.codAmount>0){
-enableCOD();
+if(data.codAmount>0){
+clickNachnahme();
 setTimeout(function(){
-enableCOD();
-setTimeout(function(){
-fillCODForm();
-alert('DHL Autofill Done!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount.toFixed(2)+'\\nFilled '+fc+' fields\\n\\nPlease verify all fields!');
-},800);
-},500);
+clickNachnahme();
+waitFor(function(){return findInput('iban');},function(inp){
+if(inp){fillAllCOD();}
+else{alert('COD form not found. Please click Nachnahme manually, then run bookmarklet again.');}
+},4000);
+},600);
 }else{
-alert('DHL Autofill Done!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nNo COD\\nFilled '+fc+' fields');
+alert('DHL Autofill Done (no COD)\\n\\n'+log.join('\\n'));
 }
-},800);
-},800);
+},600);
+},600);
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
