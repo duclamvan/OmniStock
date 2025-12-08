@@ -708,6 +708,7 @@ const common = {
     passwordsDontMatch: 'Mật khẩu không khớp',
     usernameMinLength: 'Tên đăng nhập phải có ít nhất 3 ký tự',
     passwordMinLength: 'Mật khẩu phải có ít nhất 8 ký tự',
+    rememberDevice: 'Ghi nhớ thiết bị này',
     firstTimeSetup: 'Thiết lập lần đầu',
     setupDescription: 'Tạo tài khoản quản trị viên để bắt đầu',
     

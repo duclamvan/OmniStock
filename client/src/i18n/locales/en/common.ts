@@ -754,6 +754,7 @@ const common = {
     passwordsDontMatch: 'Passwords do not match',
     usernameMinLength: 'Username must be at least 3 characters',
     passwordMinLength: 'Password must be at least 8 characters',
+    rememberDevice: 'Remember this device',
     firstTimeSetup: 'First Time Setup',
     setupDescription: 'Create your administrator account to get started',
     

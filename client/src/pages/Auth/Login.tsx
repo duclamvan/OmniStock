@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 const createLoginSchema = (t: (key: string) => string) => z.object({
   username: z.string().min(3, { message: t('auth.usernameMinLength') }),
   password: z.string().min(8, { message: t('auth.passwordMinLength') }),
+  rememberDevice: z.boolean().default(false),
 });
 
 type LoginFormValues = z.infer<ReturnType<typeof createLoginSchema>>;
@@ -56,6 +58,7 @@ export default function Login() {
     defaultValues: {
       username: "",
       password: "",
+      rememberDevice: false,
     },
   });
 
@@ -76,6 +79,7 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/auth/login", {
         username: data.username,
         password: data.password,
+        rememberDevice: data.rememberDevice,
       });
 
       if (response.ok) {
@@ -429,6 +433,26 @@ export default function Login() {
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={loginForm.control}
+                name="rememberDevice"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-remember-device"
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm font-normal text-gray-600 dark:text-gray-400 cursor-pointer">
+                      {t('auth.rememberDevice')}
+                    </FormLabel>
                   </FormItem>
                 )}
               />

@@ -35,6 +35,7 @@ const passwordSchema = z.string()
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(1, "Password is required"),
+  rememberDevice: z.boolean().optional().default(false),
 });
 
 const registerSchema = z.object({
@@ -260,7 +261,7 @@ export async function setupAuth(app: Express) {
       });
     }
 
-    const { username } = validation.data;
+    const { username, rememberDevice } = validation.data;
 
     // Check if account is locked
     const lockoutStatus = checkAccountLockout(username);
@@ -301,6 +302,11 @@ export async function setupAuth(app: Express) {
         if (loginErr) {
           console.error("Login error:", loginErr);
           return res.status(500).json({ message: "Failed to create session" });
+        }
+
+        // Extend session for "Remember Device" (30 days instead of 7 days)
+        if (rememberDevice && req.session.cookie) {
+          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
         }
 
         return res.json({
