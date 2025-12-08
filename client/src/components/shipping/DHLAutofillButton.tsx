@@ -374,43 +374,95 @@ fillNext();
 }
 fillNext();
 }
+function findAllFieldsByLabel(labelText){
+var results=[];
+var inputs=document.querySelectorAll('input');
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+if(inp.type==='checkbox'||inp.type==='hidden')continue;
+if(inp.offsetParent===null)continue;
+var wrapper=inp.parentElement;
+if(wrapper){
+var wrapperText=wrapper.textContent||'';
+if(wrapperText.toLowerCase().includes(labelText.toLowerCase())&&wrapperText.length<100){
+results.push(inp);
+continue;
+}
+}
+var prev=inp.previousElementSibling;
+if(prev&&prev.textContent&&prev.textContent.toLowerCase().includes(labelText.toLowerCase())){
+results.push(inp);
+}
+}
+return results;
+}
 function fillAddressPage(){
 L('Filling Address Page...');
-var addressFields=[
-{label:'vor- und nachname',val:(data.recipient.firstName+' '+data.recipient.lastName).trim(),name:'Name'},
-{label:'adresszusatz',val:data.recipient.company||'',name:'Adresszusatz'},
-{label:'plz',val:data.recipient.postalCode,name:'PLZ'},
-{label:'wohnort',val:data.recipient.city,name:'City'},
-{label:'straße',val:data.recipient.street,name:'Street'},
-{label:'hausnummer',val:data.recipient.houseNumber,name:'HouseNo'},
-{label:'e-mail',val:data.recipient.email||'',name:'Email'}
+var allInputs=[];
+var allLabels=[];
+var allValues=[];
+var recipientFields=[
+{label:'vor- und nachname',val:(data.recipient.firstName+' '+data.recipient.lastName).trim(),name:'R:Name'},
+{label:'adresszusatz',val:data.recipient.company||'',name:'R:Adresszusatz'},
+{label:'plz',val:data.recipient.postalCode,name:'R:PLZ'},
+{label:'wohnort',val:data.recipient.city,name:'R:City'},
+{label:'straße',val:data.recipient.street,name:'R:Street'},
+{label:'hausnummer',val:data.recipient.houseNumber,name:'R:HouseNo'},
+{label:'e-mail des empfängers',val:data.recipient.email||'',name:'R:Email'}
 ];
-var addrInputs=[];
-var addrLabels=[];
-var addrValues=[];
-for(var i=0;i<addressFields.length;i++){
-var fd=addressFields[i];
+for(var i=0;i<recipientFields.length;i++){
+var fd=recipientFields[i];
 if(!fd.val)continue;
-var inp=findFieldByLabel(fd.label);
-if(inp){
-addrInputs.push(inp);
-addrLabels.push(fd.name);
-addrValues.push(fd.val);
+var matches=findAllFieldsByLabel(fd.label);
+if(matches.length>0){
+allInputs.push(matches[0]);
+allLabels.push(fd.name);
+allValues.push(fd.val);
 L('Found '+fd.name);
 }else{
 L('NOT FOUND: '+fd.name);
 }
 }
-L('Found '+addrInputs.length+' address fields');
+if(data.sender){
+L('Filling Sender...');
+var senderFields=[
+{label:'vor- und nachname',val:(data.sender.firstName+' '+data.sender.lastName).trim(),name:'S:Name'},
+{label:'adresszusatz',val:data.sender.company||'',name:'S:Adresszusatz'},
+{label:'plz',val:data.sender.postalCode,name:'S:PLZ'},
+{label:'wohnort',val:data.sender.city,name:'S:City'},
+{label:'straße',val:data.sender.street,name:'S:Street'},
+{label:'hausnummer',val:data.sender.houseNumber,name:'S:HouseNo'},
+{label:'e-mail',val:data.sender.email||'',name:'S:Email'}
+];
+for(var j=0;j<senderFields.length;j++){
+var sf=senderFields[j];
+if(!sf.val)continue;
+var smatches=findAllFieldsByLabel(sf.label);
+if(smatches.length>=2){
+allInputs.push(smatches[1]);
+allLabels.push(sf.name);
+allValues.push(sf.val);
+L('Found '+sf.name+' (2nd match)');
+}else if(smatches.length===1&&sf.label==='e-mail'){
+allInputs.push(smatches[0]);
+allLabels.push(sf.name);
+allValues.push(sf.val);
+L('Found '+sf.name);
+}else{
+L('NOT FOUND: '+sf.name);
+}
+}
+}
+L('Found '+allInputs.length+' total fields');
 var aidx=0;
 function fillAddrNext(){
-if(aidx>=addrInputs.length){
+if(aidx>=allInputs.length){
 alert('DHL Address Autofill Done!\\n\\n'+log.join('\\n'));
 return;
 }
-var inp=addrInputs[aidx];
-var val=addrValues[aidx];
-var lbl=addrLabels[aidx];
+var inp=allInputs[aidx];
+var val=allValues[aidx];
+var lbl=allLabels[aidx];
 fillOneField(inp,val,lbl,function(){
 aidx++;
 fillAddrNext();
