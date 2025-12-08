@@ -315,12 +315,27 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Serve static files from uploads directory
   const express = await import('express');
-  app.use('/uploads', express.default.static('uploads'));
-
-  // Auth middleware
+  
+  // Auth middleware - must be set up first
   await setupAuth(app);
+
+  // Protected static file routes - require authentication for enterprise security
+  // These routes serve product images and user uploads
+  const staticFileAuth = (req: any, res: any, next: any) => {
+    // Allow authenticated users to access static files
+    if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+      return next();
+    }
+    // Return 401 for unauthenticated access to protected static files
+    return res.status(401).json({ message: 'Authentication required to access this resource' });
+  };
+
+  // Serve protected static files from uploads directory
+  app.use('/uploads', staticFileAuth, express.default.static('uploads'));
+  
+  // Serve protected static files from public/images directory
+  app.use('/images', staticFileAuth, express.default.static('public/images'));
 
   // PUBLIC endpoint to check if any users exist (for initial setup flow)
   app.get('/api/auth/has-users', async (req, res) => {
