@@ -224,11 +224,12 @@ var inp=findInput('zielland')||findInput('zielregion')||document.querySelector('
 if(inp){
 inp.focus();
 inp.click();
-insertText(inp,'Deutschland');
+insertText(inp,'Deutschlan');
 setTimeout(function(){
 inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));
-L('Country: Deutschland');
-},200);
+inp.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,bubbles:true}));
+L('Country: Deutschlan + Enter');
+},400);
 }
 }
 function selectPackage(){
