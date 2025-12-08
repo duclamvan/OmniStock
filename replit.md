@@ -57,9 +57,23 @@ The system now supports **dynamic role creation and management** with granular s
 
 **Security Headers (Helmet.js)**:
 - **Production CSP**: Strict Content Security Policy - scriptSrc allows only 'self' (no unsafe-inline/eval), styleSrc allows 'self' and 'unsafe-inline' for React compatibility
-- **HSTS**: Strict Transport Security enabled with 1-year max-age and includeSubDomains
-- **Additional directives**: baseUri, formAction, objectSrc restricted to prevent injection attacks
+- **HSTS**: Strict Transport Security enabled with 1-year max-age, includeSubDomains, and preload
+- **X-Frame-Options**: DENY - prevents clickjacking attacks
+- **X-Content-Type-Options**: nosniff - prevents MIME type sniffing
+- **X-DNS-Prefetch-Control**: disabled - prevents DNS prefetching
+- **Additional directives**: baseUri, formAction, objectSrc, frameSrc restricted to prevent injection attacks
 - XSS protection, clickjacking prevention, and referrer policy enforcement
+
+**Private Application - Search Engine Blocking**:
+- **robots.txt**: Disallow all crawlers with `User-agent: * Disallow: /`
+- **Meta tags**: noindex, nofollow, noarchive, nosnippet, noimageindex for all pages
+- **X-Robots-Tag HTTP header**: Applied to all responses to block indexing
+- **Cache-Control**: no-store, no-cache, must-revalidate, private for sensitive pages
+
+**Protected Static File Routes**:
+- **/images** and **/uploads** directories require authentication
+- Static file access returns 401 Unauthorized for unauthenticated requests
+- Prevents unauthorized access to product images and user uploads
 
 **NULL Role Enforcement (Critical)**:
 - `isAuthenticated` middleware checks database user role on every request
