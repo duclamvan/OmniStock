@@ -17,7 +17,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "https:", "wss:"],
-      frameSrc: ["'self'"],
+      frameSrc: ["'none'"], // Block all framing for security
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
@@ -25,9 +25,28 @@ app.use(helmet({
     },
   } : false, // Disabled for Vite dev server compatibility
   crossOriginEmbedderPolicy: false, // Keep disabled for external resources
-  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
+  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  xFrameOptions: { action: "deny" }, // Prevent clickjacking
+  xContentTypeOptions: true, // Prevent MIME type sniffing
+  xDnsPrefetchControl: { allow: false }, // Disable DNS prefetching
+  xPermittedCrossDomainPolicies: { permittedPolicies: "none" }, // Block Adobe cross-domain policies
 }));
+
+// X-Robots-Tag header - Block all search engine indexing (PRIVATE APPLICATION)
+app.use((req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+  next();
+});
+
+// Serve robots.txt to block all crawlers
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`# Block all search engine crawlers - Private Application
+User-agent: *
+Disallow: /
+`);
+});
 
 // Add compression middleware for all responses
 app.use(compression({
