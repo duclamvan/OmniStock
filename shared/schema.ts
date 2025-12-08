@@ -852,7 +852,7 @@ export const orders = pgTable("orders", {
   taxAmount: decimal("tax_amount").default("0"),
   tax: decimal("tax").default("0"),
   totalCost: decimal("total_cost").default("0"),
-  shippingMethod: shippingMethodEnum("shipping_method"),
+  shippingMethod: varchar("shipping_method"),
   paymentMethod: varchar("payment_method"),
   shippingCost: decimal("shipping_cost").default("0"),
   actualShippingCost: decimal("actual_shipping_cost").default("0"),
