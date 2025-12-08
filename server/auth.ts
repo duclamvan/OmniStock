@@ -143,40 +143,40 @@ function validateEnvironment() {
 // Run validation immediately
 validateEnvironment();
 
+// Create session store once at module load to avoid duplicate index creation
+const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days default
+const isProduction = process.env.NODE_ENV === "production";
+
+const PgSession = connectPgSimple(session);
+const sessionStore = new PgSession({
+  pool: pool,
+  tableName: 'session',
+  createTableIfMissing: false, // Table pre-created with proper IF NOT EXISTS
+  pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
+});
+
+// Memoize the session middleware to ensure single instance
+let sessionMiddleware: ReturnType<typeof session> | null = null;
+
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days default
-  const isProduction = process.env.NODE_ENV === "production";
-  
-  // Use PostgreSQL session store for persistent "Remember Device" functionality
-  const PgSession = connectPgSimple(session);
-  const sessionStore = new PgSession({
-    pool: pool,
-    tableName: 'session',
-    createTableIfMissing: true,
-    pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
-    errorLog: (err: Error) => {
-      // Ignore "already exists" errors during startup
-      if (!err.message.includes('already exists')) {
-        console.error('Session store error:', err);
-      }
-    },
-  });
-  
-  return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    rolling: true,
-    name: "sid", // Use a non-default session name for security
-    cookie: {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "strict" : "lax", // Stricter in production for CSRF protection
-      maxAge: sessionTtl,
-      path: "/",
-    },
-  });
+  if (!sessionMiddleware) {
+    sessionMiddleware = session({
+      secret: process.env.SESSION_SECRET!,
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      rolling: true,
+      name: "sid", // Use a non-default session name for security
+      cookie: {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "strict" : "lax", // Stricter in production for CSRF protection
+        maxAge: sessionTtl,
+        path: "/",
+      },
+    });
+  }
+  return sessionMiddleware;
 }
 
 // CSRF token generation and validation for extra protection
