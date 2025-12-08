@@ -156,163 +156,75 @@ export function DHLAutofillButton({
         city: senderData.city || '',
         email: senderData.email || '',
         phone: senderData.phone || '',
-      } : undefined,
+      } : null,
       codAmount: codAmount || 0,
       bank: bankData ? {
         iban: bankData.iban || '',
         bic: bankData.bic || '',
         accountHolder: bankData.accountHolder || '',
-      } : undefined,
+      } : null,
       weight: weight || 0,
     };
 
-    const encodedData = encodeURIComponent(JSON.stringify(data));
+    const jsonStr = JSON.stringify(data);
+    const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
 
-    const bookmarkletLogic = `
-(function(){
-  console.log('🟡 DHL Autofill - Starting...');
-  
-  var data = JSON.parse(decodeURIComponent('${encodedData}'));
-  
-  console.log('🟡 DHL Autofill - Loaded data:', data);
-  
-  var filledCount = 0;
-  var log = [];
-  
-  function trySetValue(selectors, value, label) {
-    if (!value) return false;
-    
-    var selectorList = Array.isArray(selectors) ? selectors : [selectors];
-    
-    for (var i = 0; i < selectorList.length; i++) {
-      var selector = selectorList[i];
-      var elements = document.querySelectorAll(selector);
-      if (elements.length > 0) {
-        elements.forEach(function(el) {
-          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            try {
-              var nativeSetter = Object.getOwnPropertyDescriptor(
-                el.tagName === 'INPUT' ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype,
-                'value'
-              ).set;
-              nativeSetter.call(el, value);
-              
-              el.dispatchEvent(new Event('input', { bubbles: true }));
-              el.dispatchEvent(new Event('change', { bubbles: true }));
-              el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
-              el.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-            } catch (err) {
-              console.error('Failed to set ' + label + ':', err);
-            }
-          }
-        });
-        filledCount++;
-        log.push('✅ ' + label + ': ' + value);
-        console.log('✅ Filled ' + label + ' (' + selector + '): ' + value);
-        return true;
-      }
-    }
-    log.push('❌ ' + label + ' (not found)');
-    console.warn('❌ Could not find field for ' + label);
-    return false;
-  }
-  
-  function findFieldByLabel(labelText, inputType) {
-    var labels = Array.from(document.querySelectorAll('label, div, span'));
-    for (var i = 0; i < labels.length; i++) {
-      var label = labels[i];
-      if (label.textContent && label.textContent.toLowerCase().includes(labelText.toLowerCase())) {
-        var input = label.querySelector('input' + (inputType ? '[type="' + inputType + '"]' : ''));
-        if (!input && label.htmlFor) {
-          input = document.getElementById(label.htmlFor);
-        }
-        if (!input) {
-          var parent = label.parentElement;
-          if (parent) {
-            input = parent.querySelector('input' + (inputType ? '[type="' + inputType + '"]' : ''));
-          }
-        }
-        if (!input) {
-          var next = label.nextElementSibling;
-          while (next && !input) {
-            if (next.tagName === 'INPUT') {
-              input = next;
-            } else {
-              input = next.querySelector('input' + (inputType ? '[type="' + inputType + '"]' : ''));
-            }
-            next = next.nextElementSibling;
-          }
-        }
-        if (input) return input;
-      }
-    }
-    return null;
-  }
-  
-  function setFieldByLabel(labelText, value, fieldLabel, inputType) {
-    var field = findFieldByLabel(labelText, inputType);
-    if (field && value) {
-      field.value = value;
-      field.dispatchEvent(new Event('input', { bubbles: true }));
-      field.dispatchEvent(new Event('change', { bubbles: true }));
-      field.dispatchEvent(new Event('blur', { bubbles: true }));
-      filledCount++;
-      log.push('✅ ' + fieldLabel + ': ' + value);
-      console.log('✅ Filled ' + fieldLabel + ' by label "' + labelText + '": ' + value);
-      return true;
-    }
-    return false;
-  }
-  
-  // Fill recipient details
-  console.log('📝 Filling address form...');
-  
-  // Try German labels first
-  setFieldByLabel('vorname', data.recipient.firstName, 'First Name', 'text');
-  setFieldByLabel('nachname', data.recipient.lastName, 'Last Name', 'text');
-  setFieldByLabel('firma', data.recipient.company, 'Company', 'text');
-  setFieldByLabel('straße', data.recipient.street, 'Street', 'text');
-  setFieldByLabel('hausnummer', data.recipient.houseNumber, 'House Number', 'text');
-  setFieldByLabel('postleitzahl', data.recipient.postalCode, 'Postal Code', 'text');
-  setFieldByLabel('ort', data.recipient.city, 'City', 'text');
-  setFieldByLabel('e-mail', data.recipient.email, 'Email', 'email');
-  setFieldByLabel('telefon', data.recipient.phone, 'Phone', 'tel');
-  
-  // Try English labels
-  setFieldByLabel('first name', data.recipient.firstName, 'First Name EN', 'text');
-  setFieldByLabel('last name', data.recipient.lastName, 'Last Name EN', 'text');
-  setFieldByLabel('street', data.recipient.street, 'Street EN', 'text');
-  setFieldByLabel('house', data.recipient.houseNumber, 'House EN', 'text');
-  setFieldByLabel('postal', data.recipient.postalCode, 'Postal EN', 'text');
-  setFieldByLabel('city', data.recipient.city, 'City EN', 'text');
-  
-  // Try by input name/id patterns
-  trySetValue(['input[name*="firstName"]', 'input[id*="firstName"]', 'input[name*="vorname"]', 'input[id*="vorname"]'], data.recipient.firstName, 'First Name (selector)');
-  trySetValue(['input[name*="lastName"]', 'input[id*="lastName"]', 'input[name*="nachname"]', 'input[id*="nachname"]'], data.recipient.lastName, 'Last Name (selector)');
-  trySetValue(['input[name*="street"]', 'input[id*="street"]', 'input[name*="strasse"]', 'input[id*="strasse"]'], data.recipient.street, 'Street (selector)');
-  trySetValue(['input[name*="houseNumber"]', 'input[id*="houseNumber"]', 'input[name*="hausnummer"]', 'input[id*="hausnummer"]'], data.recipient.houseNumber, 'House Number (selector)');
-  trySetValue(['input[name*="postalCode"]', 'input[id*="postalCode"]', 'input[name*="plz"]', 'input[id*="plz"]'], data.recipient.postalCode, 'Postal Code (selector)');
-  trySetValue(['input[name*="city"]', 'input[id*="city"]', 'input[name*="ort"]', 'input[id*="ort"]'], data.recipient.city, 'City (selector)');
-  
-  // Fill COD/Nachnahme if available
-  if (data.codAmount && data.codAmount > 0) {
-    trySetValue(['input[name*="nachnahme"]', 'input[id*="nachnahme"]', 'input[name*="cod"]', 'input[id*="cod"]'], data.codAmount.toFixed(2), 'COD Amount');
-    
-    // Fill bank details for COD
-    if (data.bank) {
-      trySetValue(['input[name*="iban"]', 'input[id*="iban"]'], data.bank.iban, 'IBAN');
-      trySetValue(['input[name*="bic"]', 'input[id*="bic"]'], data.bank.bic, 'BIC');
-      trySetValue(['input[name*="kontoinhaber"]', 'input[id*="kontoinhaber"]', 'input[name*="accountHolder"]'], data.bank.accountHolder, 'Account Holder');
-    }
-  }
-  
-  // Show summary
-  var summary = '🟡 DHL Autofill Complete!\\n\\nOrder: ' + data.orderId + '\\nFilled ' + filledCount + ' fields\\n\\n' + log.slice(0, 10).join('\\n') + (log.length > 10 ? '\\n... and ' + (log.length - 10) + ' more' : '');
-  console.log(summary);
-  alert(summary);
+    const bookmarkletLogic = `(function(){
+var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
+var fc=0;
+function fill(sel,val,lbl){
+if(!val)return;
+var el=document.querySelector(sel);
+if(el){
+el.value=val;
+el.dispatchEvent(new Event('input',{bubbles:true}));
+el.dispatchEvent(new Event('change',{bubbles:true}));
+fc++;
+console.log('Filled '+lbl+': '+val);
+}
+}
+function fillByLabel(txt,val,lbl){
+if(!val)return;
+var labels=document.querySelectorAll('label');
+for(var i=0;i<labels.length;i++){
+var lb=labels[i];
+if(lb.textContent&&lb.textContent.toLowerCase().includes(txt.toLowerCase())){
+var inp=lb.querySelector('input')||document.getElementById(lb.htmlFor);
+if(!inp&&lb.parentElement)inp=lb.parentElement.querySelector('input');
+if(inp){
+inp.value=val;
+inp.dispatchEvent(new Event('input',{bubbles:true}));
+inp.dispatchEvent(new Event('change',{bubbles:true}));
+fc++;
+console.log('Filled '+lbl+': '+val);
+return;
+}
+}
+}
+}
+fillByLabel('vorname',data.recipient.firstName,'Vorname');
+fillByLabel('nachname',data.recipient.lastName,'Nachname');
+fillByLabel('firma',data.recipient.company,'Firma');
+fillByLabel('stra',data.recipient.street,'Strasse');
+fillByLabel('hausnummer',data.recipient.houseNumber,'Hausnummer');
+fillByLabel('postleitzahl',data.recipient.postalCode,'PLZ');
+fillByLabel('ort',data.recipient.city,'Ort');
+fillByLabel('e-mail',data.recipient.email,'Email');
+fillByLabel('telefon',data.recipient.phone,'Telefon');
+fill('input[name*="firstName"],input[id*="firstName"]',data.recipient.firstName,'FirstName');
+fill('input[name*="lastName"],input[id*="lastName"]',data.recipient.lastName,'LastName');
+fill('input[name*="street"],input[id*="street"]',data.recipient.street,'Street');
+fill('input[name*="postalCode"],input[id*="postalCode"],input[name*="plz"]',data.recipient.postalCode,'PostalCode');
+fill('input[name*="city"],input[id*="city"]',data.recipient.city,'City');
+if(data.codAmount&&data.codAmount>0&&data.bank){
+fill('input[name*="iban"],input[id*="iban"]',data.bank.iban,'IBAN');
+fill('input[name*="bic"],input[id*="bic"]',data.bank.bic,'BIC');
+fill('input[name*="betrag"],input[id*="betrag"]',data.codAmount.toFixed(2),'Betrag');
+}
+alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nFilled '+fc+' fields');
 })();`;
 
-    return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/\s+/g, ' ').trim())}`;
+    return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
   };
 
   const bookmarkletCode = generateBookmarkletCode();
