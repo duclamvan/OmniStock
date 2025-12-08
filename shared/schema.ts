@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   text,
   integer,
   timestamp,
@@ -12,6 +13,19 @@ import {
   json,
   unique,
 } from "drizzle-orm/pg-core";
+
+// Define shipping method enum to match database
+export const shippingMethodEnum = pgEnum('shipping_method', [
+  'GLS',
+  'PPL',
+  'DHL',
+  'DPD',
+  'DHL DE',
+  'DHL CZ',
+  'PPL CZ',
+  'GLS DE',
+  'GLS CZ',
+]);
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
@@ -838,7 +852,7 @@ export const orders = pgTable("orders", {
   taxAmount: decimal("tax_amount").default("0"),
   tax: decimal("tax").default("0"),
   totalCost: decimal("total_cost").default("0"),
-  shippingMethod: varchar("shipping_method"),
+  shippingMethod: shippingMethodEnum("shipping_method"),
   paymentMethod: varchar("payment_method"),
   shippingCost: decimal("shipping_cost").default("0"),
   actualShippingCost: decimal("actual_shipping_cost").default("0"),
