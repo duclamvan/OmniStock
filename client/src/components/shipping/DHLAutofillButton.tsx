@@ -643,7 +643,7 @@ detectPageAndFill();
         <Button
           onClick={handleButtonClick}
           disabled={disabled}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold w-full sm:flex-1"
+          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold w-full sm:flex-1"
           data-testid="button-dhl-create-label"
         >
           <ExternalLink className="h-4 w-4" />
