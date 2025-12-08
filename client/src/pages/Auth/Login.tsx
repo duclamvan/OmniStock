@@ -392,7 +392,16 @@ export default function Login() {
         </CardHeader>
         <CardContent className="space-y-6 px-6 pb-8">
           <Form {...loginForm}>
-            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-5">
+            <form 
+              onSubmit={loginForm.handleSubmit(onLoginSubmit)} 
+              className="space-y-5"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                  e.preventDefault();
+                  loginForm.handleSubmit(onLoginSubmit)();
+                }
+              }}
+            >
               <FormField
                 control={loginForm.control}
                 name="username"
