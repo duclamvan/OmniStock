@@ -375,6 +375,16 @@ export default function AddOrder() {
 
   // Order ID state
   const [orderId, setOrderId] = useState<string | null>(null);
+  
+  // Ref to track customer creation in progress to prevent duplicates
+  const customerCreationInProgress = useRef<Promise<string | null> | null>(null);
+  const createdCustomerIdRef = useRef<string | null>(null);
+  
+  // Reset customer creation refs when selected customer changes
+  useEffect(() => {
+    createdCustomerIdRef.current = null;
+    customerCreationInProgress.current = null;
+  }, [selectedCustomer?.id, selectedCustomer?.name, selectedCustomer?.phone]);
 
   // Shipping notes state
   const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
@@ -1101,32 +1111,64 @@ export default function AddOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Helper function to create customer with deduplication guard
+      const createCustomerWithGuard = async (): Promise<string | null> => {
+        // If we already have a created customer ID from this submission, reuse it
+        if (createdCustomerIdRef.current) {
+          console.log('Reusing already created customer ID:', createdCustomerIdRef.current);
+          return createdCustomerIdRef.current;
+        }
+        
+        // If customer creation is already in progress, wait for it
+        if (customerCreationInProgress.current) {
+          console.log('Customer creation already in progress, waiting...');
+          return await customerCreationInProgress.current;
+        }
+        
+        // Start new customer creation
+        const creationPromise = (async (): Promise<string | null> => {
+          console.log('Creating new customer from quick form:', selectedCustomer);
+          const customerData: any = {
+            name: selectedCustomer.name,
+            phone: selectedCustomer.phone || undefined,
+            email: selectedCustomer.email || undefined,
+            type: selectedCustomer.type || 'regular',
+          };
+
+          // Add social media info for Msg customers
+          if (selectedCustomer.socialMediaApp) {
+            customerData.socialMediaApp = selectedCustomer.socialMediaApp;
+          }
+
+          console.log('Sending customer data:', customerData);
+          const response = await apiRequest('POST', '/api/customers', customerData);
+          const customerResponse = await response.json();
+          console.log('Customer API response:', customerResponse);
+          console.log('New customer created with ID:', customerResponse?.id);
+          
+          // Store the created ID for reuse
+          createdCustomerIdRef.current = customerResponse?.id;
+          return customerResponse?.id;
+        })();
+        
+        customerCreationInProgress.current = creationPromise;
+        
+        try {
+          return await creationPromise;
+        } finally {
+          customerCreationInProgress.current = null;
+        }
+      };
+      
       // Check if we have a customer that needs to be saved (Tel or Msg types)
       if (selectedCustomer && selectedCustomer.needsSaving) {
-        console.log('Creating new customer from quick form:', selectedCustomer);
-        const customerData: any = {
-          name: selectedCustomer.name,
-          phone: selectedCustomer.phone || undefined,
-          email: selectedCustomer.email || undefined,
-          type: selectedCustomer.type || 'regular',
-        };
-
-        // Add social media info for Msg customers
-        if (selectedCustomer.socialMediaApp) {
-          customerData.socialMediaApp = selectedCustomer.socialMediaApp;
-        }
-
-        console.log('Sending customer data:', customerData);
-        const response = await apiRequest('POST', '/api/customers', customerData);
-        const customerResponse = await response.json();
-        console.log('Customer API response:', customerResponse);
-        console.log('New customer created with ID:', customerResponse?.id);
-        data.customerId = customerResponse?.id;
+        const customerId = await createCustomerWithGuard();
+        data.customerId = customerId;
 
         // Also create shipping address if one was added
-        if (selectedShippingAddress && selectedShippingAddress.isNew) {
+        if (selectedShippingAddress && selectedShippingAddress.isNew && customerId) {
           const addressData = {
-            customerId: customerResponse?.id,
+            customerId: customerId,
             firstName: selectedShippingAddress.firstName,
             lastName: selectedShippingAddress.lastName,
             company: selectedShippingAddress.company || undefined,
@@ -1139,63 +1181,88 @@ export default function AddOrder() {
             email: selectedShippingAddress.email || undefined,
             label: selectedShippingAddress.label || undefined,
           };
-          await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+          await apiRequest('POST', `/api/customers/${customerId}/shipping-addresses`, addressData);
         }
       } else if (selectedCustomer && !selectedCustomer.id) {
         // Handle regular new customer creation (from the full customer form)
-        console.log('Creating new customer:', selectedCustomer);
+        // Also use the guard to prevent duplicates
         
-        // Combine street and streetNumber for legacy address field
-        const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
-          .filter(Boolean)
-          .join(' ');
-        
-        const customerData = {
-          name: selectedCustomer.name,
-          facebookName: selectedCustomer.facebookName || undefined,
-          facebookUrl: selectedCustomer.facebookUrl || undefined,
-          email: selectedCustomer.email || undefined,
-          phone: selectedCustomer.phone || undefined,
-          address: fullAddress || undefined,
-          city: selectedCustomer.city || undefined,
-          state: selectedCustomer.state || undefined,
-          zipCode: selectedCustomer.zipCode || undefined,
-          country: selectedCustomer.country || undefined,
-          company: selectedCustomer.company || undefined,
-          type: selectedCustomer.type || 'regular',
-        };
-        console.log('Sending customer data:', customerData);
-        const response = await apiRequest('POST', '/api/customers', customerData);
-        const customerResponse = await response.json();
-        console.log('Customer API response:', customerResponse);
-        console.log('New customer created with ID:', customerResponse?.id);
-        data.customerId = customerResponse?.id;
-        
-        // Auto-create shipping address from customer data if address fields are provided
-        if (selectedCustomer.street || selectedCustomer.city || selectedCustomer.zipCode) {
-          console.log('Auto-creating shipping address for new customer...');
-          const addressData = {
-            customerId: customerResponse?.id,
-            firstName: selectedCustomer.firstName || undefined,
-            lastName: selectedCustomer.lastName || undefined,
-            company: selectedCustomer.company || undefined,
-            street: selectedCustomer.street || '',
-            streetNumber: selectedCustomer.streetNumber || undefined,
-            city: selectedCustomer.city || '',
-            zipCode: selectedCustomer.zipCode || '',
-            country: selectedCustomer.country || '',
-            tel: selectedCustomer.phone || undefined,
-            email: selectedCustomer.email || undefined,
-            pickupPoint: selectedCustomer.pickupPoint || undefined,
-            label: 'Default Address',
-          };
+        // If we already have a created customer ID from this submission, reuse it
+        if (createdCustomerIdRef.current) {
+          console.log('Reusing already created customer ID:', createdCustomerIdRef.current);
+          data.customerId = createdCustomerIdRef.current;
+        } else if (customerCreationInProgress.current) {
+          console.log('Customer creation already in progress, waiting...');
+          data.customerId = await customerCreationInProgress.current;
+        } else {
+          console.log('Creating new customer:', selectedCustomer);
           
-          const addressResponse = await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
-          const createdAddress = await addressResponse.json();
-          console.log('Shipping address created:', createdAddress);
+          const creationPromise = (async (): Promise<string | null> => {
+            // Combine street and streetNumber for legacy address field
+            const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
+              .filter(Boolean)
+              .join(' ');
+            
+            const customerData = {
+              name: selectedCustomer.name,
+              facebookName: selectedCustomer.facebookName || undefined,
+              facebookUrl: selectedCustomer.facebookUrl || undefined,
+              email: selectedCustomer.email || undefined,
+              phone: selectedCustomer.phone || undefined,
+              address: fullAddress || undefined,
+              city: selectedCustomer.city || undefined,
+              state: selectedCustomer.state || undefined,
+              zipCode: selectedCustomer.zipCode || undefined,
+              country: selectedCustomer.country || undefined,
+              company: selectedCustomer.company || undefined,
+              type: selectedCustomer.type || 'regular',
+            };
+            console.log('Sending customer data:', customerData);
+            const response = await apiRequest('POST', '/api/customers', customerData);
+            const customerResponse = await response.json();
+            console.log('Customer API response:', customerResponse);
+            console.log('New customer created with ID:', customerResponse?.id);
+            
+            // Store the created ID for reuse
+            createdCustomerIdRef.current = customerResponse?.id;
+            
+            // Auto-create shipping address from customer data if address fields are provided
+            if (selectedCustomer.street || selectedCustomer.city || selectedCustomer.zipCode) {
+              console.log('Auto-creating shipping address for new customer...');
+              const addressData = {
+                customerId: customerResponse?.id,
+                firstName: selectedCustomer.firstName || undefined,
+                lastName: selectedCustomer.lastName || undefined,
+                company: selectedCustomer.company || undefined,
+                street: selectedCustomer.street || '',
+                streetNumber: selectedCustomer.streetNumber || undefined,
+                city: selectedCustomer.city || '',
+                zipCode: selectedCustomer.zipCode || '',
+                country: selectedCustomer.country || '',
+                tel: selectedCustomer.phone || undefined,
+                email: selectedCustomer.email || undefined,
+                pickupPoint: selectedCustomer.pickupPoint || undefined,
+                label: 'Default Address',
+              };
+              
+              const addressResponse = await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+              const createdAddress = await addressResponse.json();
+              console.log('Shipping address created:', createdAddress);
+              
+              // Link the new shipping address to this order
+              data.shippingAddressId = createdAddress?.id;
+            }
+            
+            return customerResponse?.id;
+          })();
           
-          // Link the new shipping address to this order
-          data.shippingAddressId = createdAddress?.id;
+          customerCreationInProgress.current = creationPromise;
+          
+          try {
+            data.customerId = await creationPromise;
+          } finally {
+            customerCreationInProgress.current = null;
+          }
         }
       } else if (selectedCustomer?.id && !selectedCustomer.id.startsWith('temp-')) {
         // Use existing customer's ID (not a temporary one)
