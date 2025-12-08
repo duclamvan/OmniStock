@@ -237,12 +237,26 @@ var inp=findInput('zielland')||findInput('zielregion')||document.querySelector('
 if(inp){
 inp.focus();
 inp.click();
-insertText(inp,'Deutschlan');
+insertText(inp,'Deutschland');
+L('Typed Deutschland');
 setTimeout(function(){
+var options=document.querySelectorAll('li,div[role="option"],button,a');
+var found=false;
+for(var i=0;i<options.length;i++){
+var opt=options[i];
+var txt=opt.textContent||'';
+if(txt.trim()==='Deutschland'||(txt.includes('Deutschland')&&txt.length<30)){
+opt.click();
+L('Clicked dropdown: '+txt.trim().substring(0,20));
+found=true;
+break;
+}
+}
+if(!found){
 inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));
-inp.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,bubbles:true}));
-L('Country: Deutschlan + Enter');
-},400);
+L('Country: Enter fallback');
+}
+},500);
 }
 }
 function selectPackage(){
