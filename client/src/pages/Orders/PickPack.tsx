@@ -1627,11 +1627,7 @@ export default function PickPack() {
   const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>(() => {
-    // Load selected tab from localStorage
-    const saved = localStorage.getItem('pickpack-selected-tab');
-    return (saved as any) || 'overview';
-  });
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [activePickingOrder, setActivePickingOrder] = useState<PickPackOrder | null>(null);
   const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
@@ -2011,11 +2007,6 @@ export default function PickPack() {
       console.error('Failed to save expanded overview items to localStorage:', error);
     }
   }, [expandedOverviewItems]);
-
-  // Save selected tab to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('pickpack-selected-tab', selectedTab);
-  }, [selectedTab]);
 
   // Save guide collapsed state to localStorage whenever it changes
   useEffect(() => {
