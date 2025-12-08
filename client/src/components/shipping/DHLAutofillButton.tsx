@@ -294,6 +294,31 @@ L('Found '+codInputs.length+' COD inputs');
 var values=[iban,bic,holder,amt,ref];
 var labels=['IBAN','BIC','Kontoinhaber','Betrag','Verwendungszweck'];
 var idx=0;
+function fillOneField(inp,val,lbl,cb){
+inp.scrollIntoView({block:'center'});
+setTimeout(function(){
+inp.click();
+inp.focus();
+setTimeout(function(){
+inp.select&&inp.select();
+setTimeout(function(){
+var ok=insertText(inp,val);
+setTimeout(function(){
+inp.dispatchEvent(new Event('blur',{bubbles:true}));
+if(inp.value===val){
+L('OK '+lbl+': '+val);
+}else{
+L('RETRY '+lbl);
+inp.click();inp.focus();
+insertText(inp,val);
+inp.dispatchEvent(new Event('blur',{bubbles:true}));
+}
+setTimeout(cb,400);
+},200);
+},150);
+},150);
+},200);
+}
 function fillNext(){
 if(idx>=codInputs.length||idx>=values.length){
 alert('DHL Autofill Done!\\n\\n'+log.join('\\n'));
@@ -303,14 +328,10 @@ var inp=codInputs[idx];
 var val=values[idx];
 var lbl=labels[idx];
 if(val){
-inp.scrollIntoView({block:'center'});
-setTimeout(function(){
-insertText(inp,val);
-inp.dispatchEvent(new Event('blur',{bubbles:true}));
-L('Filled '+lbl+': '+val);
+fillOneField(inp,val,lbl,function(){
 idx++;
-setTimeout(fillNext,200);
-},100);
+fillNext();
+});
 }else{
 idx++;
 fillNext();
