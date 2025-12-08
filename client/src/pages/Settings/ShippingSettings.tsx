@@ -466,9 +466,9 @@ export default function ShippingSettings() {
                       markPendingChange('ppl_shipping_rates');
                     };
                     
-                    const updateCodFee = (type: 'cash' | 'card', value: number) => {
+                    const updateCodFee = (type: 'cash' | 'card', key: string, value: number) => {
                       const newRates = { ...parsedRates };
-                      newRates.codFees[type] = { fee: value, currency: 'CZK' };
+                      newRates.codFees[type] = { ...newRates.codFees[type], [key]: value, currency: 'CZK' };
                       field.onChange(JSON.stringify(newRates, null, 2));
                       markPendingChange('ppl_shipping_rates');
                     };
@@ -564,7 +564,7 @@ export default function ShippingSettings() {
                           {/* COD Fees */}
                           <div className="space-y-3">
                             <h4 className="font-medium">{t('settings:dobirkaCodFees')}</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-3">
                               <div className="p-3 rounded-lg border bg-muted/30">
                                 <div className="flex items-center gap-3">
                                   <span className="text-lg">💵</span>
@@ -572,7 +572,7 @@ export default function ShippingSettings() {
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.cash?.fee || 0}
-                                    onChange={(e) => updateCodFee('cash', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('cash', 'fee', parseFloat(e.target.value) || 0)}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
@@ -582,14 +582,14 @@ export default function ShippingSettings() {
                                   <span className="text-sm">CZK</span>
                                 </div>
                               </div>
-                              <div className="p-3 rounded-lg border bg-muted/30">
+                              <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
                                 <div className="flex items-center gap-3">
                                   <span className="text-lg">💳</span>
                                   <span className="text-sm font-medium flex-1">{t('settings:cardPayment')}</span>
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.fee || 0}
-                                    onChange={(e) => updateCodFee('card', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('card', 'fee', parseFloat(e.target.value) || 0)}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
@@ -597,6 +597,33 @@ export default function ShippingSettings() {
                                     data-testid="input-cod-card-fee"
                                   />
                                   <span className="text-sm">CZK</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 ml-8 text-sm">
+                                  <span className="text-muted-foreground">+</span>
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.codFees?.card?.percentFee || 0}
+                                    onChange={(e) => updateCodFee('card', 'percentFee', parseFloat(e.target.value) || 0)}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
+                                    className="w-16"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    data-testid="input-cod-card-percent"
+                                  />
+                                  <span className="text-muted-foreground">%</span>
+                                  <span className="text-muted-foreground">{t('settings:afterAmount') || 'after'}</span>
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.codFees?.card?.thresholdCzk || 0}
+                                    onChange={(e) => updateCodFee('card', 'thresholdCzk', parseFloat(e.target.value) || 0)}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
+                                    className="w-24"
+                                    min="0"
+                                    step="100"
+                                    data-testid="input-cod-card-threshold"
+                                  />
+                                  <span className="text-muted-foreground">CZK</span>
                                 </div>
                               </div>
                             </div>
