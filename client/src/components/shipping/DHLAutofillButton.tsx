@@ -421,12 +421,9 @@ setTimeout(fillAddrNext,500);
 function detectPageAndFill(){
 var url=window.location.href.toLowerCase();
 var pageText=document.body.textContent||'';
-L('URL: '+url.substring(0,100));
-if(url.includes('addressinput')||pageText.includes('Adressdaten')||pageText.includes('Empfänger aus Adressbuch')){
-L('Detected: Address Page');
-fillAddressPage();
-}else if(url.includes('productselection')||pageText.includes('Produktauswahl')||pageText.includes('Versandmarke')||pageText.includes('Services ergänzen')){
-L('Detected: Product Selection Page');
+L('URL: '+url.substring(0,80));
+if(url.includes('productselection')){
+L('Detected: Product Selection Page (by URL)');
 selectCountry();
 setTimeout(function(){
 selectPackage();
@@ -468,9 +465,56 @@ alert('DHL Product Selection Done (no COD)\\n\\n'+log.join('\\n'));
 }
 },600);
 },600);
-}else{
-L('Unknown page - trying address fill');
+}else if(url.includes('addressinput')){
+L('Detected: Address Page (by URL)');
 fillAddressPage();
+}else if(pageText.includes('Adressdaten')||pageText.includes('Vor- und Nachname')){
+L('Detected: Address Page (by content)');
+fillAddressPage();
+}else if(pageText.includes('Produktauswahl')||pageText.includes('Services ergänzen')){
+L('Detected: Product Selection Page (by content)');
+selectCountry();
+setTimeout(function(){
+selectPackage();
+setTimeout(function(){
+if(data.codAmount>0){
+clickNachnahme();
+L('Waiting for Nachnahme form...');
+setTimeout(function(){
+clickNachnahme();
+setTimeout(function(){
+var checkCount=0;
+function waitForForm2(){
+var inputs=document.querySelectorAll('input');
+var ibanFound=false;
+for(var i=0;i<inputs.length;i++){
+var p=inputs[i].parentElement;
+if(p&&p.textContent&&p.textContent.toLowerCase().includes('iban')){
+ibanFound=true;
+break;
+}
+}
+if(ibanFound){
+L('Nachnahme form ready');
+setTimeout(fillAllCOD,500);
+}else if(checkCount<20){
+checkCount++;
+setTimeout(waitForForm2,300);
+}else{
+alert('Nachnahme form not found.');
+}
+}
+waitForForm2();
+},1500);
+},1000);
+}else{
+alert('DHL Done (no COD)\\n\\n'+log.join('\\n'));
+}
+},600);
+},600);
+}else{
+L('Unknown page');
+alert('DHL page not recognized.\\n\\nURL: '+url.substring(0,60)+'\\n\\nPlease navigate to Product Selection or Address Input page.');
 }
 }
 detectPageAndFill();
