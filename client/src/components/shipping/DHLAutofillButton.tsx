@@ -173,97 +173,104 @@ export function DHLAutofillButton({
 var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
 console.log('DHL Autofill data:',data);
 var fc=0;
-function clickBtn(txt){
-var btns=document.querySelectorAll('button,div[role="button"],span,label');
-for(var i=0;i<btns.length;i++){
-var b=btns[i];
-if(b.textContent&&b.textContent.toLowerCase().includes(txt.toLowerCase())){
-b.click();
-console.log('Clicked: '+txt);
-return true;
-}
-}
-return false;
-}
-function fill(sel,val){
-if(!val)return false;
-var el=document.querySelector(sel);
-if(el){
-el.value=val;
+function setVal(el,val){
+if(!el||!val)return false;
+var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+ns.call(el,val);
 el.dispatchEvent(new Event('input',{bubbles:true}));
 el.dispatchEvent(new Event('change',{bubbles:true}));
 el.dispatchEvent(new Event('blur',{bubbles:true}));
 fc++;
-console.log('Filled: '+val);
+console.log('Set value:',val);
 return true;
 }
-return false;
-}
 function selectCountry(){
-var countryInput=document.querySelector('input[placeholder*="Ziel"],input[aria-label*="Ziel"],input[name*="country"]');
-if(countryInput){
-countryInput.value='Deutschland';
-countryInput.dispatchEvent(new Event('input',{bubbles:true}));
-countryInput.dispatchEvent(new Event('change',{bubbles:true}));
+var inputs=document.querySelectorAll('input');
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+var parent=inp.closest('[class*="country"],[class*="ziel"],[class*="destination"]')||inp.parentElement;
+if(parent&&parent.textContent&&(parent.textContent.includes('Zielland')||parent.textContent.includes('Zielregion'))){
+inp.focus();
+inp.click();
+setVal(inp,'Deutschland');
 setTimeout(function(){
-var opts=document.querySelectorAll('[role="option"],li[data-value],div[class*="option"]');
-for(var i=0;i<opts.length;i++){
-if(opts[i].textContent.toLowerCase().includes('deutschland')){
-opts[i].click();
-console.log('Selected Deutschland');
+inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
+inp.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
+console.log('Country Enter pressed');
+},200);
 return;
 }
 }
-countryInput.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));
-},300);
-fc++;
+var firstInput=document.querySelector('input[type="text"]');
+if(firstInput){
+firstInput.focus();
+firstInput.click();
+setVal(firstInput,'Deutschland');
+setTimeout(function(){
+firstInput.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,code:'Enter',bubbles:true}));
+},200);
 }
 }
 function selectPackage(){
 var weight=data.weight||5;
-var pkgSize='5 kg';
-if(weight<=2)pkgSize='2 kg';
-else if(weight<=5)pkgSize='5 kg';
-else if(weight<=10)pkgSize='10 kg';
-else pkgSize='20 kg';
-var cards=document.querySelectorAll('[class*="product"],[class*="card"],[class*="paket"],button');
-for(var i=0;i<cards.length;i++){
-var c=cards[i];
-if(c.textContent&&c.textContent.includes(pkgSize)&&c.textContent.toLowerCase().includes('paket')){
-var btn=c.querySelector('button')||c;
+var pkgText='5 kg - Paket';
+if(weight<=2)pkgText='2 kg - Paket';
+else if(weight<=5)pkgText='5 kg - Paket';
+else if(weight<=10)pkgText='10 kg - Paket';
+else pkgText='20 kg - Paket';
+var btns=document.querySelectorAll('button');
+for(var i=0;i<btns.length;i++){
+var btn=btns[i];
+var card=btn.closest('[class*="product"],[class*="card"]')||btn.parentElement.parentElement;
+if(card&&card.textContent){
+var txt=card.textContent;
+if(txt.includes(pkgText.split(' - ')[0])&&txt.toLowerCase().includes('paket')&&!txt.toLowerCase().includes('päckchen')){
 btn.click();
-console.log('Selected package: '+pkgSize);
+console.log('Selected:',pkgText);
 fc++;
 return;
 }
 }
-clickBtn(pkgSize+' - Paket')||clickBtn('5 kg - Paket')||clickBtn('Paket');
+}
 }
 function enableCOD(){
-var nachnahme=document.querySelectorAll('input[type="checkbox"],div[role="checkbox"],label');
-for(var i=0;i<nachnahme.length;i++){
-var n=nachnahme[i];
-var txt=n.textContent||n.getAttribute('aria-label')||'';
-if(txt.toLowerCase().includes('nachnahme')){
-if(n.tagName==='INPUT'){
-if(!n.checked){n.click();console.log('Checked Nachnahme');}
-}else{
-n.click();console.log('Clicked Nachnahme');
+var labels=document.querySelectorAll('label,div[class*="checkbox"],span');
+for(var i=0;i<labels.length;i++){
+var lbl=labels[i];
+if(lbl.textContent&&lbl.textContent.includes('Nachnahme')){
+var cb=lbl.querySelector('input[type="checkbox"]');
+if(cb&&!cb.checked){
+cb.click();
+console.log('Checked Nachnahme checkbox');
+fc++;
+return true;
 }
+lbl.click();
+console.log('Clicked Nachnahme label');
 fc++;
 return true;
 }
 }
-return clickBtn('Nachnahme');
+return false;
 }
-function fillCODDetails(){
-if(data.bank&&data.bank.iban){
-fill('input[name*="iban"],input[id*="iban"],input[placeholder*="IBAN"]',data.bank.iban);
-fill('input[name*="bic"],input[id*="bic"],input[placeholder*="BIC"]',data.bank.bic);
+function fillCODForm(){
+var inputs=document.querySelectorAll('input');
+for(var i=0;i<inputs.length;i++){
+var inp=inputs[i];
+var wrapper=inp.closest('div')||inp.parentElement;
+var labelTxt=(wrapper&&wrapper.textContent)||inp.placeholder||'';
+labelTxt=labelTxt.toLowerCase();
+if(labelTxt.includes('iban')&&data.bank&&data.bank.iban){
+setVal(inp,data.bank.iban);
+}else if(labelTxt.includes('bic')&&data.bank&&data.bank.bic){
+setVal(inp,data.bank.bic);
+}else if(labelTxt.includes('kontoinhaber')&&data.bank&&data.bank.accountHolder){
+setVal(inp,data.bank.accountHolder);
+}else if(labelTxt.includes('betrag')&&data.codAmount){
+setVal(inp,data.codAmount.toFixed(2));
+}else if(labelTxt.includes('verwendungszweck')){
+setVal(inp,data.orderId);
 }
-if(data.codAmount&&data.codAmount>0){
-fill('input[name*="betrag"],input[id*="betrag"],input[placeholder*="Betrag"],input[type="number"]',data.codAmount.toFixed(2));
-fill('input[name*="verwendungszweck"],input[id*="verwendungszweck"],input[placeholder*="Verwendungszweck"]',data.orderId);
 }
 }
 selectCountry();
@@ -273,14 +280,14 @@ setTimeout(function(){
 if(data.codAmount&&data.codAmount>0){
 enableCOD();
 setTimeout(function(){
-fillCODDetails();
-alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount+'\\nFilled '+fc+' fields');
-},800);
+fillCODForm();
+alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nCOD: EUR '+data.codAmount.toFixed(2)+'\\nIBAN: '+((data.bank&&data.bank.iban)||'N/A')+'\\nFilled '+fc+' fields');
+},1000);
 }else{
-alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nFilled '+fc+' fields');
+alert('DHL Autofill Complete!\\n\\nOrder: '+data.orderId+'\\nWeight: '+data.weight+'kg\\nNo COD\\nFilled '+fc+' fields');
 }
-},500);
-},500);
+},600);
+},600);
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
