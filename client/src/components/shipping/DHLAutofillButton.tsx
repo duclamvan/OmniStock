@@ -277,37 +277,6 @@ if(inp.offsetParent!==null)return inp;
 }
 return null;
 }
-function fillAllCOD(){
-var iban=data.bank?data.bank.iban:'';
-var bic=data.bank?data.bank.bic:'';
-var holder=data.bank?data.bank.accountHolder:'';
-var amt=data.codAmount?data.codAmount.toFixed(2):'';
-var ref=data.orderId||'';
-var fieldDefs=[
-{label:'iban',val:iban,name:'IBAN'},
-{label:'bic',val:bic,name:'BIC'},
-{label:'kontoinhaber',val:holder,name:'Kontoinhaber'},
-{label:'betrag',val:amt,name:'Betrag'},
-{label:'verwendungszweck',val:ref,name:'Verwendungszweck'}
-];
-var codInputs=[];
-var labels=[];
-var values=[];
-for(var i=0;i<fieldDefs.length;i++){
-var fd=fieldDefs[i];
-if(!fd.val)continue;
-var inp=findFieldByLabel(fd.label);
-if(inp){
-codInputs.push(inp);
-labels.push(fd.name);
-values.push(fd.val);
-L('Found '+fd.name+' field');
-}else{
-L('NOT FOUND: '+fd.name);
-}
-}
-L('Found '+codInputs.length+' COD fields by label');
-var idx=0;
 function forceType(inp,val,retries,cb){
 inp.scrollIntoView({block:'center'});
 inp.click();
@@ -354,6 +323,37 @@ L((ok?'OK ':'FAIL ')+lbl+': '+(ok?val:inp.value));
 setTimeout(cb,300);
 });
 }
+function fillAllCOD(){
+var iban=data.bank?data.bank.iban:'';
+var bic=data.bank?data.bank.bic:'';
+var holder=data.bank?data.bank.accountHolder:'';
+var amt=data.codAmount?data.codAmount.toFixed(2):'';
+var ref=data.orderId||'';
+var fieldDefs=[
+{label:'iban',val:iban,name:'IBAN'},
+{label:'bic',val:bic,name:'BIC'},
+{label:'kontoinhaber',val:holder,name:'Kontoinhaber'},
+{label:'betrag',val:amt,name:'Betrag'},
+{label:'verwendungszweck',val:ref,name:'Verwendungszweck'}
+];
+var codInputs=[];
+var labels=[];
+var values=[];
+for(var i=0;i<fieldDefs.length;i++){
+var fd=fieldDefs[i];
+if(!fd.val)continue;
+var inp=findFieldByLabel(fd.label);
+if(inp){
+codInputs.push(inp);
+labels.push(fd.name);
+values.push(fd.val);
+L('Found '+fd.name+' field');
+}else{
+L('NOT FOUND: '+fd.name);
+}
+}
+L('Found '+codInputs.length+' COD fields by label');
+var idx=0;
 function fillNext(){
 if(idx>=codInputs.length||idx>=values.length){
 alert('DHL Autofill Done!\\n\\n'+log.join('\\n'));
