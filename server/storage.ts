@@ -1541,7 +1541,7 @@ export class DatabaseStorage implements IStorage {
       const values: any[] = [];
       let paramIndex = 1;
       
-      // Map of field names to column names
+      // Map of field names to column names (only columns that exist in the database)
       const fieldToColumn: Record<string, string> = {
         customerId: 'customer_id',
         orderType: 'order_type',
@@ -1554,8 +1554,10 @@ export class DatabaseStorage implements IStorage {
         paymentMethod: 'payment_method',
         discountType: 'discount_type',
         discountValue: 'discount_value',
-        taxInvoiceEnabled: 'tax_invoice_enabled',
+        discount: 'discount',
         taxRate: 'tax_rate',
+        taxAmount: 'tax_amount',
+        tax: 'tax',
         shippingCost: 'shipping_cost',
         actualShippingCost: 'actual_shipping_cost',
         adjustment: 'adjustment',
@@ -1564,8 +1566,8 @@ export class DatabaseStorage implements IStorage {
         notes: 'notes',
         shippingAddressId: 'shipping_address_id',
         subtotal: 'subtotal',
-        taxAmount: 'tax_amount',
         grandTotal: 'grand_total',
+        totalCost: 'total_cost',
         selectedDocumentIds: 'selected_document_ids',
         trackingNumber: 'tracking_number',
         fulfillmentStage: 'fulfillment_stage',
@@ -1581,20 +1583,32 @@ export class DatabaseStorage implements IStorage {
         cartonUsed: 'carton_used',
         modifiedAfterPacking: 'modified_after_packing',
         modificationNotes: 'modification_notes',
+        previousPackStatus: 'previous_pack_status',
+        pickingStartedAt: 'picking_started_at',
+        packingStartedAt: 'packing_started_at',
         pplBatchId: 'ppl_batch_id',
         pplShipmentNumbers: 'ppl_shipment_numbers',
         pplLabelData: 'ppl_label_data',
         pplStatus: 'ppl_status',
+        pplCancelledShipments: 'ppl_cancelled_shipments',
+        includedDocuments: 'included_documents',
         allocated: 'allocated',
+        attachmentUrl: 'attachment_url',
+        billerId: 'biller_id',
       };
       
       for (const [field, column] of Object.entries(fieldToColumn)) {
         if (field in orderUpdates && orderUpdates[field] !== undefined) {
           // Handle array types (cast to text[])
-          if (field === 'selectedDocumentIds' || field === 'pplShipmentNumbers') {
+          if (field === 'selectedDocumentIds' || field === 'pplShipmentNumbers' || field === 'pplCancelledShipments') {
             setClauses.push(`${column} = $${paramIndex}::text[]`);
-          } else if (field === 'pplLabelData') {
+          } else if (field === 'pplLabelData' || field === 'includedDocuments') {
+            // Handle jsonb types - need to stringify if object
             setClauses.push(`${column} = $${paramIndex}::jsonb`);
+            const val = orderUpdates[field];
+            values.push(typeof val === 'object' ? JSON.stringify(val) : val);
+            paramIndex++;
+            continue;
           } else {
             setClauses.push(`${column} = $${paramIndex}`);
           }
