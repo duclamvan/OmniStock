@@ -1609,6 +1609,9 @@ export class DatabaseStorage implements IStorage {
             values.push(typeof val === 'object' ? JSON.stringify(val) : val);
             paramIndex++;
             continue;
+          } else if (field === 'shippingMethod') {
+            // Explicitly cast to varchar to avoid Neon connection pool caching old enum type metadata
+            setClauses.push(`${column} = $${paramIndex}::varchar`);
           } else {
             setClauses.push(`${column} = $${paramIndex}`);
           }
