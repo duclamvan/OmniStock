@@ -294,30 +294,51 @@ L('Found '+codInputs.length+' COD inputs');
 var values=[iban,bic,holder,amt,ref];
 var labels=['IBAN','BIC','Kontoinhaber','Betrag','Verwendungszweck'];
 var idx=0;
-function fillOneField(inp,val,lbl,cb){
+function forceType(inp,val,retries,cb){
 inp.scrollIntoView({block:'center'});
+inp.click();
+inp.focus();
+setTimeout(function(){
+inp.value='';
+var ns=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+ns.call(inp,'');
+inp.dispatchEvent(new Event('input',{bubbles:true}));
 setTimeout(function(){
 inp.click();
 inp.focus();
 setTimeout(function(){
-inp.select&&inp.select();
+try{
+document.execCommand('selectAll',false,null);
+document.execCommand('insertText',false,val);
+}catch(e){}
 setTimeout(function(){
-var ok=insertText(inp,val);
-setTimeout(function(){
-inp.dispatchEvent(new Event('blur',{bubbles:true}));
-if(inp.value===val){
-L('OK '+lbl+': '+val);
-}else{
-L('RETRY '+lbl);
-inp.click();inp.focus();
-insertText(inp,val);
-inp.dispatchEvent(new Event('blur',{bubbles:true}));
+if(inp.value!==val){
+ns.call(inp,val);
+inp.dispatchEvent(new InputEvent('input',{data:val,inputType:'insertText',bubbles:true}));
 }
-setTimeout(cb,400);
+inp.dispatchEvent(new Event('change',{bubbles:true}));
+inp.dispatchEvent(new Event('blur',{bubbles:true}));
+setTimeout(function(){
+if(inp.value===val){
+cb(true);
+}else if(retries>0){
+L('Retry left: '+retries);
+forceType(inp,val,retries-1,cb);
+}else{
+cb(false);
+}
+},300);
 },200);
-},150);
-},150);
 },200);
+},200);
+},300);
+}
+function fillOneField(inp,val,lbl,cb){
+L('Filling '+lbl+'...');
+forceType(inp,val,3,function(ok){
+L((ok?'OK ':'FAIL ')+lbl+': '+(ok?val:inp.value));
+setTimeout(cb,300);
+});
 }
 function fillNext(){
 if(idx>=codInputs.length||idx>=values.length){
