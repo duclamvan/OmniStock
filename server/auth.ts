@@ -152,8 +152,14 @@ export function getSession() {
   const sessionStore = new PgSession({
     pool: pool,
     tableName: 'session',
-    createTableIfMissing: true,
+    createTableIfMissing: false, // Table already exists, avoid duplicate index error
     pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
+    errorLog: (err: Error) => {
+      // Ignore "already exists" errors during startup
+      if (!err.message.includes('already exists')) {
+        console.error('Session store error:', err);
+      }
+    },
   });
   
   return session({
