@@ -419,12 +419,13 @@ fillAddrNext();
 setTimeout(fillAddrNext,500);
 }
 function detectPageAndFill(){
-var url=window.location.href;
+var url=window.location.href.toLowerCase();
 var pageText=document.body.textContent||'';
-if(url.includes('AddressInput')||pageText.includes('Adressdaten')||pageText.includes('Empfänger aus Adressbuch')){
+L('URL: '+url.substring(0,100));
+if(url.includes('addressinput')||pageText.includes('Adressdaten')||pageText.includes('Empfänger aus Adressbuch')){
 L('Detected: Address Page');
 fillAddressPage();
-}else if(url.includes('ProductSelection')||pageText.includes('Produktauswahl')||pageText.includes('Versandmarke')){
+}else if(url.includes('productselection')||pageText.includes('Produktauswahl')||pageText.includes('Versandmarke')||pageText.includes('Services ergänzen')){
 L('Detected: Product Selection Page');
 selectCountry();
 setTimeout(function(){
