@@ -151,7 +151,7 @@ const PgSession = connectPgSimple(session);
 const sessionStore = new PgSession({
   pool: pool,
   tableName: 'session',
-  createTableIfMissing: false, // Table pre-created with proper IF NOT EXISTS
+  createTableIfMissing: true, // Auto-create table if missing
   pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
 });
 
