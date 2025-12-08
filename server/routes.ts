@@ -7811,12 +7811,16 @@ Important:
         console.log('Merged selectedDocumentIds into includedDocuments:', finalOrderData.includedDocuments);
       }
 
-      const data = insertOrderSchema.parse({
+      // Convert numeric fields to strings for decimal columns
+      const dataToValidate = {
         ...finalOrderData,
         orderId,
         orderType,
         billerId: req.user?.id || null,
-      });
+        taxRate: finalOrderData.taxRate !== undefined ? String(finalOrderData.taxRate) : undefined,
+      };
+
+      const data = insertOrderSchema.parse(dataToValidate);
 
       // Validation 2: Block Duplicate Orders
       if (orderSettings.blockDuplicateOrdersHours && orderSettings.blockDuplicateOrdersHours > 0) {
