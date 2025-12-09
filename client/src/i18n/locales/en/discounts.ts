@@ -36,6 +36,10 @@ const discounts = {
   freeShipping: 'Free Shipping',
   
   // Discount type descriptions
+  discountType: 'Discount Type',
+  discountByPercentage: 'Discount by percentage',
+  fixedDiscountAmount: 'Fixed discount amount',
+  buyXItemsGetYFree: 'Buy X items, get Y free',
   percentageDesc: 'Discount by percentage',
   fixedAmountDesc: 'Fixed discount amount',
   buyXGetYDesc: 'Buy X items, get Y free',
@@ -108,6 +112,7 @@ const discounts = {
   placeholderDescription: 'Describe the discount and its terms...',
   placeholderPercentage: '10',
   placeholderFixedAmount: '120.00',
+  placeholderFixedAmountCzk: '120',
   placeholderFixedAmountEur: '4.80',
   placeholderBuyQuantity: '2',
   placeholderGetQuantity: '1',

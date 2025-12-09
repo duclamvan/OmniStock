@@ -36,6 +36,10 @@ const discounts = {
   freeShipping: 'Miễn phí vận chuyển',
   
   // Discount type descriptions
+  discountType: 'Loại Giảm giá',
+  discountByPercentage: 'Giảm giá theo phần trăm',
+  fixedDiscountAmount: 'Giảm giá cố định',
+  buyXItemsGetYFree: 'Mua X sản phẩm, tặng Y miễn phí',
   percentageDesc: 'Giảm giá theo phần trăm',
   fixedAmountDesc: 'Giảm giá cố định',
   buyXGetYDesc: 'Mua X sản phẩm, tặng Y miễn phí',
@@ -108,6 +112,7 @@ const discounts = {
   placeholderDescription: 'Mô tả chương trình giảm giá và điều khoản...',
   placeholderPercentage: '10',
   placeholderFixedAmount: '120.00',
+  placeholderFixedAmountCzk: '120',
   placeholderFixedAmountEur: '4.80',
   placeholderBuyQuantity: '2',
   placeholderGetQuantity: '1',
