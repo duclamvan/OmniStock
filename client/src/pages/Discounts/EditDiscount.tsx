@@ -1099,7 +1099,7 @@ export default function EditDiscount() {
                   variant="ghost"
                   className="w-full text-[#6e6e6e] hover:text-red-700 hover:bg-red-50"
                   onClick={() => {
-                    if (confirm(t('discounts:confirmDelete'))) {
+                    if (confirm(t('discounts:deleteConfirmDescription'))) {
                       deleteDiscountMutation.mutate();
                     }
                   }}
