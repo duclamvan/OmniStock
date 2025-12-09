@@ -920,7 +920,7 @@ export default function EditDiscount() {
 
           {/* Summary Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-20">
+            <Card className="sticky top-20 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                 <CardTitle className="text-xl">{t('discounts:discountSummary')}</CardTitle>
               </CardHeader>
