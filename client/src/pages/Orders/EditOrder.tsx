@@ -641,10 +641,11 @@ export default function EditOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - services don't change frequently
   });
 
-  // Fetch available discounts for auto-application
+  // Fetch available discounts for auto-application (always fresh)
   const { data: discounts } = useQuery({
     queryKey: ['/api/discounts'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always fetch fresh discount data
+    refetchOnMount: 'always',
   });
 
   // Fetch variants for all products (map productId -> variants)

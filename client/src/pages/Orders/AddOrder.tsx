@@ -2239,9 +2239,11 @@ export default function AddOrder() {
     return results.slice(0, 8).map(r => r.item);
   }, [allCustomers, debouncedCustomerSearch]);
 
-  // Fetch available discounts (assuming this is needed for the discount dropdown)
+  // Fetch available discounts (always get fresh data)
   const { data: discounts } = useQuery({
     queryKey: ['/api/discounts'],
+    staleTime: 0, // Always fetch fresh discount data
+    refetchOnMount: 'always',
   });
 
   // Function to find applicable discount for a product
