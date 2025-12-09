@@ -26,7 +26,6 @@ import {
   Banknote,
   Settings,
   FileText,
-  Hash,
   Ruler,
   Plus,
   Search,
@@ -52,7 +51,6 @@ type WarehouseFormData = {
   phone?: string;
   email?: string;
   manager?: string;
-  capacity?: number;
   type: "main" | "branch" | "temporary";
   floorArea?: number;
 };
@@ -98,7 +96,6 @@ export default function AddWarehouse() {
     phone: z.string().optional(),
     email: z.string().email(t('common:invalidEmail')).optional().or(z.literal("")),
     manager: z.string().optional(),
-    capacity: z.number().min(0).optional(),
     type: z.enum(["main", "branch", "temporary"]).default("branch"),
     floorArea: z.number().min(0).optional(),
   });
@@ -121,7 +118,6 @@ export default function AddWarehouse() {
       phone: "",
       email: "",
       manager: "",
-      capacity: undefined,
       type: "branch",
       floorArea: undefined,
     },
@@ -300,33 +296,17 @@ export default function AddWarehouse() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="capacity">{t('warehouse:storageCapacity')}</Label>
-                    <div className="relative mt-1">
-                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="capacity"
-                        type="number"
-                        {...form.register("capacity", { valueAsNumber: true })}
-                        placeholder={t('warehouse:capacityPlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="floorArea">{t('warehouse:floorArea')} (m²)</Label>
-                    <div className="relative mt-1">
-                      <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="floorArea"
-                        type="number"
-                        {...form.register("floorArea", { valueAsNumber: true })}
-                        placeholder={t('warehouse:floorAreaPlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
+                <div>
+                  <Label htmlFor="floorArea">{t('warehouse:floorArea')} (m²)</Label>
+                  <div className="relative mt-1">
+                    <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="floorArea"
+                      type="number"
+                      {...form.register("floorArea", { valueAsNumber: true })}
+                      placeholder={t('warehouse:floorAreaPlaceholder')}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
               </CardContent>
