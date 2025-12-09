@@ -687,6 +687,170 @@ export default function OrderDetails() {
     }
   };
 
+  const handlePrintBill = () => {
+    if (!order) return;
+
+    // Format date
+    const orderDate = order.createdAt 
+      ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+
+    // Create plain text bill HTML for printing
+    const billHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Bill - ${order.orderId || order.id}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 80mm;
+            margin: 0 auto;
+          }
+          .bill-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #333;
+          }
+          .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+          }
+          .order-info {
+            font-size: 12px;
+            color: #333;
+          }
+          .items-section {
+            margin: 12px 0;
+          }
+          .item-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 12px;
+          }
+          .item-name {
+            flex: 1;
+            padding-right: 8px;
+          }
+          .item-qty {
+            min-width: 30px;
+            text-align: center;
+          }
+          .item-price {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 500;
+          }
+          .divider {
+            border-top: 1px dashed #333;
+            margin: 12px 0;
+          }
+          .total-section {
+            margin-top: 12px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin: 4px 0;
+          }
+          .grand-total {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #333;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #666;
+          }
+          @media print {
+            body { padding: 10px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="bill-header">
+          <div class="company-name">Davie Supply</div>
+          <div class="order-info">
+            <div>${order.orderId || order.id}</div>
+            <div>${orderDate}</div>
+          </div>
+        </div>
+        
+        <div class="items-section">
+          ${order.items?.map((item: any) => `
+            <div class="item-row">
+              <span class="item-name">${item.productName}</span>
+              <span class="item-qty">x${item.quantity}</span>
+              <span class="item-price">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+            </div>
+          `).join('') || ''}
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="total-section">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+          </div>
+          ${order.discountValue > 0 ? `
+            <div class="total-row" style="color: green;">
+              <span>Discount ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}:</span>
+              <span>-${formatCurrency(
+                order.discountType === 'rate' 
+                  ? (order.subtotal * order.discountValue / 100) 
+                  : order.discountValue || 0, 
+                order.currency || 'EUR'
+              )}</span>
+            </div>
+          ` : ''}
+          ${order.shippingCost > 0 ? `
+            <div class="total-row">
+              <span>Shipping:</span>
+              <span>${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+            </div>
+          ` : ''}
+          ${order.taxAmount > 0 ? `
+            <div class="total-row">
+              <span>Tax (${order.taxRate}%):</span>
+              <span>${formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
+            </div>
+          ` : ''}
+          <div class="total-row grand-total">
+            <span>Total:</span>
+            <span>${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+          </div>
+        </div>
+        
+        <div class="footer">
+          Thank you for your order!
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open a new window and print
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(billHTML);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -1219,6 +1383,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   >
                     <Download className="mr-1.5 h-3.5 w-3.5" />
                     {t('orders:captureOrder')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintBill}
+                    data-testid="button-print-bill"
+                    className="h-8 text-xs"
+                  >
+                    <Printer className="mr-1.5 h-3.5 w-3.5" />
+                    {t('orders:printBill', 'Print Bill')}
                   </Button>
                 </div>
               </div>
