@@ -245,6 +245,7 @@ const products = {
   // ProductForm - Buttons
   saveProduct: 'Save Product',
   updateProduct: 'Update Product',
+  createProduct: 'Create Product',
   cancel: 'Cancel',
   add: 'Add',
   save: 'Save',

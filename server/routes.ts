@@ -4722,10 +4722,13 @@ Important:
       });
 
       res.json(product);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating product:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      if (error?.code === '23505' && error?.constraint === 'products_sku_unique') {
+        return res.status(409).json({ message: "A product with this SKU already exists. Please use a different SKU." });
       }
       res.status(500).json({ message: "Failed to create product" });
     }

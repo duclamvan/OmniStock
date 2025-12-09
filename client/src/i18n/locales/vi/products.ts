@@ -352,6 +352,7 @@ const products = {
   // ProductForm - Buttons
   saveProduct: 'Lưu sản phẩm',
   updateProduct: 'Cập nhật sản phẩm',
+  createProduct: 'Tạo sản phẩm',
   cancel: 'Hủy',
   add: 'Thêm',
   save: 'Lưu',
