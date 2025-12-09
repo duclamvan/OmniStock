@@ -192,6 +192,79 @@ export default function EditDiscount() {
   const watchApplicationScope = form.watch("applicationScope");
   const watchGetProductType = form.watch("getProductType");
 
+  // Track previous discount type to detect changes
+  const previousDiscountType = useRef(watchDiscountType);
+  const isInitialLoad = useRef(true);
+
+  // Clear fields from other discount types when switching types
+  useEffect(() => {
+    // Skip on initial load to allow form to populate from backend data
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      previousDiscountType.current = watchDiscountType;
+      return;
+    }
+
+    // Only clear if the type actually changed
+    if (previousDiscountType.current !== watchDiscountType) {
+      // Clear conversion timers
+      if (czkTimeoutRef.current) {
+        clearTimeout(czkTimeoutRef.current);
+        czkTimeoutRef.current = null;
+      }
+      if (eurTimeoutRef.current) {
+        clearTimeout(eurTimeoutRef.current);
+        eurTimeoutRef.current = null;
+      }
+
+      // Clear fields based on the NEW type (keep only relevant fields)
+      if (watchDiscountType === 'percentage') {
+        // Clear fixed amount fields
+        form.setValue('fixedAmount', undefined);
+        form.setValue('fixedAmountEur', undefined);
+        // Clear buy_x_get_y fields
+        form.setValue('buyQuantity', undefined);
+        form.setValue('getQuantity', undefined);
+        form.setValue('getProductType', 'same_product');
+        form.setValue('getProductId', undefined);
+      } else if (watchDiscountType === 'fixed_amount') {
+        // Clear percentage fields
+        form.setValue('percentage', undefined);
+        // Clear buy_x_get_y fields
+        form.setValue('buyQuantity', undefined);
+        form.setValue('getQuantity', undefined);
+        form.setValue('getProductType', 'same_product');
+        form.setValue('getProductId', undefined);
+      } else if (watchDiscountType === 'buy_x_get_y') {
+        // Clear percentage fields
+        form.setValue('percentage', undefined);
+        // Clear fixed amount fields
+        form.setValue('fixedAmount', undefined);
+        form.setValue('fixedAmountEur', undefined);
+      }
+
+      previousDiscountType.current = watchDiscountType;
+    }
+  }, [watchDiscountType, form]);
+
+  // Clear application scope fields when switching scopes
+  const previousApplicationScope = useRef(watchApplicationScope);
+  useEffect(() => {
+    if (previousApplicationScope.current !== watchApplicationScope) {
+      // Clear fields based on the NEW scope
+      if (watchApplicationScope !== 'specific_product') {
+        form.setValue('productId', undefined);
+      }
+      if (watchApplicationScope !== 'specific_category') {
+        form.setValue('categoryId', undefined);
+      }
+      if (watchApplicationScope !== 'selected_products') {
+        form.setValue('selectedProductIds', []);
+      }
+      previousApplicationScope.current = watchApplicationScope;
+    }
+  }, [watchApplicationScope, form]);
+
   // Generate discount ID when name or start date changes
   useEffect(() => {
     if (watchName && watchStartDate) {
