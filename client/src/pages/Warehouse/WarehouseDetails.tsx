@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
@@ -65,8 +65,18 @@ import { formatDate, formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Warehouse, WarehouseFile, WarehouseFinancialContract } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { cn } from "@/lib/utils";
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  status: 'uploading' | 'complete' | 'error';
+  progress: number;
+  url?: string;
+}
 
 export default function WarehouseDetails() {
   const { t } = useTranslation(['warehouse', 'common']);
@@ -81,6 +91,11 @@ export default function WarehouseDetails() {
   const [targetWarehouseId, setTargetWarehouseId] = useState("");
   const [showDeleteFileDialog, setShowDeleteFileDialog] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<WarehouseFile | null>(null);
+  
+  // File upload state
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // API Queries
   const { data: warehouse, isLoading: warehouseLoading } = useQuery<Warehouse>({
@@ -155,40 +170,132 @@ export default function WarehouseDetails() {
   });
 
   // File upload handlers
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest('POST', '/api/objects/upload');
-    return {
-      method: 'PUT' as const,
-      url: response.uploadURL,
-    };
+  const formatUploadFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleFileUploadComplete = async (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      
-      try {
-        await apiRequest('POST', `/api/warehouses/${id}/files`, {
-          fileName: uploadedFile.name,
-          fileType: uploadedFile.type || 'application/octet-stream',
-          fileUrl: uploadedFile.response?.uploadURL || uploadedFile.uploadURL,
-          fileSize: uploadedFile.size,
+  const getUploadFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <FileImage className="h-4 w-4" />;
+    if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) return <FileSpreadsheet className="h-4 w-4" />;
+    if (type.includes('pdf')) return <FileText className="h-4 w-4" />;
+    return <FileGeneric className="h-4 w-4" />;
+  };
+
+  const handleFileSelect = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    const newFiles: UploadedFile[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxFileSize) {
+        toast({
+          title: t('common:error'),
+          description: `${file.name} exceeds 50MB limit`,
+          variant: "destructive",
         });
+        continue;
+      }
+
+      const uploadFile: UploadedFile = {
+        id: `${Date.now()}-${i}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        status: 'uploading',
+        progress: 0,
+      };
+      newFiles.push(uploadFile);
+    }
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // Upload each file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxFileSize) continue;
+
+      const fileId = newFiles[i]?.id;
+      if (!fileId) continue;
+
+      try {
+        const response = await apiRequest('POST', '/api/objects/upload');
+        const data = await response.json() as { uploadURL: string };
+        const uploadURL = data.uploadURL;
+
+        if (!uploadURL) {
+          throw new Error('No upload URL returned');
+        }
+
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        });
+
+        const fileUrl = uploadURL.split('?')[0];
         
+        // Save file to database immediately
+        await apiRequest('POST', `/api/warehouses/${id}/files`, {
+          fileName: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileUrl: fileUrl,
+          fileSize: file.size,
+        });
+
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'complete', progress: 100, url: fileUrl } : f
+        ));
+
+        // Refresh files list
         queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/files`] });
+        
         toast({
           title: t('common:success'),
           description: t('warehouse:fileUploadedSuccess'),
         });
-      } catch (error: any) {
+      } catch (error) {
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'error' } : f
+        ));
         toast({
           title: t('common:error'),
-          description: error.message || t('warehouse:fileSaveError'),
+          description: `Failed to upload ${file.name}`,
           variant: "destructive",
         });
       }
     }
-  };
+  }, [id, t, toast]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  }, [handleFileSelect]);
+
+  const removeUploadedFile = useCallback((fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  }, []);
 
   // Computed values
   const totalProducts = warehouseProducts.length;
@@ -199,31 +306,34 @@ export default function WarehouseDetails() {
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return warehouseProducts;
     
-    return fuzzySearch(warehouseProducts, searchQuery, {
-      keys: ['name', 'sku', 'barcode', 'primaryLocation'],
+    const results = fuzzySearch(warehouseProducts, searchQuery, {
+      fields: ['name', 'sku', 'barcode', 'primaryLocation'],
       threshold: 0.2,
       fuzzy: true,
       vietnameseNormalization: true,
     });
+    return results.map(r => r.item);
   }, [warehouseProducts, searchQuery]);
 
   // Utility functions
   const getStatusBadge = (status: string) => {
-    const config = {
+    const statusConfigs: Record<string, { label: string; className: string }> = {
       active: { label: t('common:active'), className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
       inactive: { label: t('common:inactive'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
       maintenance: { label: t('common:maintenance'), className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-    }[status as keyof typeof config] || { label: t('common:active'), className: 'bg-emerald-100 text-emerald-800' };
+    };
+    const config = statusConfigs[status] || statusConfigs['active'];
     
     return <Badge className={config.className} data-testid={`badge-status-${status}`}>{config.label}</Badge>;
   };
 
   const getTypeBadge = (type: string) => {
-    const config = {
+    const typeConfigs: Record<string, { label: string; className: string }> = {
       fulfillment: { label: t('warehouse:type.fulfillment'), className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
       storage: { label: t('warehouse:type.storage'), className: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
       transit: { label: t('warehouse:type.transit'), className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-    }[type as keyof typeof config] || { label: t('warehouse:type.fulfillment'), className: 'bg-blue-100 text-blue-800' };
+    };
+    const config = typeConfigs[type] || typeConfigs['fulfillment'];
     
     return <Badge className={config.className} data-testid={`badge-type-${type}`}>{config.label}</Badge>;
   };
@@ -436,10 +546,10 @@ export default function WarehouseDetails() {
                   </div>
                 )}
 
-                {warehouse.description && (
+                {warehouse.notes && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('common:description')}</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300" data-testid="text-description">{warehouse.description}</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:notes')}</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300" data-testid="text-description">{warehouse.notes}</p>
                   </div>
                 )}
               </CardContent>
@@ -484,12 +594,12 @@ export default function WarehouseDetails() {
                   </div>
                 )}
                 
-                {warehouse.managerName && (
+                {warehouse.manager && (
                   <div className="flex items-start gap-2">
                     <User className="h-4 w-4 text-slate-500 mt-0.5" />
                     <div>
                       <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('warehouse:manager')}</p>
-                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-manager">{warehouse.managerName}</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-manager">{warehouse.manager}</p>
                     </div>
                   </div>
                 )}
@@ -606,24 +716,105 @@ export default function WarehouseDetails() {
         <TabsContent value="files" className="space-y-4 mt-6">
           <Card className="border-slate-200 dark:border-slate-800">
             <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                  {t('warehouse:documentsFiles')}
-                </CardTitle>
-                <ObjectUploader
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onUploadComplete={handleFileUploadComplete}
-                  trigger={
-                    <Button size="sm" data-testid="button-upload-file">
-                      <Upload className="h-4 w-4 mr-2" />
-                      {t('warehouse:upload')}
-                    </Button>
-                  }
-                />
-              </div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                {t('warehouse:documentsFiles')}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-6 space-y-4">
+              {/* Inline File Uploader with Drag & Drop */}
+              <div
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all",
+                  isDragging 
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30" 
+                    : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="dropzone-file-upload"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                />
+                <UploadCloud className={cn(
+                  "h-10 w-10 mx-auto mb-3",
+                  isDragging ? "text-blue-500" : "text-slate-400 dark:text-slate-500"
+                )} />
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {isDragging ? t('warehouse:dropFilesHere') || 'Drop files here' : t('warehouse:clickDragFiles')}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {t('warehouse:uploadFileTypes')}
+                </p>
+              </div>
+
+              {/* Currently Uploading Files */}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border",
+                        file.status === 'error' 
+                          ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
+                          : file.status === 'complete'
+                          ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30"
+                          : "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50"
+                      )}
+                    >
+                      <div className="flex-shrink-0">
+                        {getUploadFileIcon(file.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {file.name}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <span>{formatUploadFileSize(file.size)}</span>
+                          {file.status === 'uploading' && (
+                            <span className="text-blue-600">{t('common:uploading') || 'Uploading...'}</span>
+                          )}
+                          {file.status === 'complete' && (
+                            <span className="text-green-600">{t('common:completed') || 'Uploaded'}</span>
+                          )}
+                          {file.status === 'error' && (
+                            <span className="text-red-600">{t('common:failed') || 'Failed'}</span>
+                          )}
+                        </div>
+                        {file.status === 'uploading' && (
+                          <div className="mt-1 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 transition-all animate-pulse"
+                              style={{ width: '50%' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeUploadedFile(file.id);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3 text-slate-400 hover:text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Existing Files List */}
               {filesLoading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
@@ -675,19 +866,8 @@ export default function WarehouseDetails() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <UploadCloud className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">{t('warehouse:noFilesYet')}</p>
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onUploadComplete={handleFileUploadComplete}
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4 mr-2" />
-                        {t('warehouse:uploadFirstFile')}
-                      </Button>
-                    }
-                  />
+                <div className="text-center py-6">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">{t('warehouse:noFilesYet')}</p>
                 </div>
               )}
             </CardContent>
@@ -737,7 +917,7 @@ export default function WarehouseDetails() {
                         <div>
                           <p className="text-xs text-slate-500 dark:text-slate-400">{t('warehouse:monthlyCost')}</p>
                           <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-cost-${contract.id}`}>
-                            {formatCurrency(contract.monthlyCost, contract.currency)}
+                            {formatCurrency(parseFloat(contract.price), contract.currency)}
                           </p>
                         </div>
                         {contract.notes && (
