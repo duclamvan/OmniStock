@@ -408,7 +408,8 @@ const products = {
   images: {
     title: 'Product Images',
     uploadMultiple: 'Upload multiple images for different purposes',
-    count: 'one image###{{count}} images',
+    count_one: 'one image',
+    count_other: '{{count}} images',
     noImagesYet: 'No images uploaded yet',
     uploadInstruction: 'Click on an image category to upload photos',
     autoCompressInfo: 'Images are automatically compressed to WebP format for optimal storage',

@@ -515,7 +515,8 @@ const products = {
   images: {
     title: 'Hình ảnh sản phẩm',
     uploadMultiple: 'Tải lên nhiều hình ảnh cho các mục đích khác nhau',
-    count: 'một hình ảnh###{{count}} hình ảnh',
+    count_one: 'một hình ảnh',
+    count_other: '{{count}} hình ảnh',
     noImagesYet: 'Chưa tải lên hình ảnh nào',
     uploadInstruction: 'Nhấp vào danh mục hình ảnh để tải lên ảnh',
     autoCompressInfo: 'Hình ảnh tự động được nén thành định dạng WebP để tiết kiệm lưu trữ',
