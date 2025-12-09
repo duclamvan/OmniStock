@@ -147,6 +147,13 @@ export default function AllWarehouses() {
     filteredWarehouses = filteredWarehouses.filter(w => w.type === typeFilter);
   }
 
+  // Default sort by createdAt ascending (oldest first, new items at bottom)
+  filteredWarehouses = [...filteredWarehouses].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateA - dateB;
+  });
+
   // Calculate stats
   const activeWarehouses = warehouses.filter(w => w.status === 'active').length;
   const totalItems = warehouses.reduce((sum: number, w: any) => sum + (w.itemCount || 0), 0);
