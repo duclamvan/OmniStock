@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from 'react-i18next';
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +30,24 @@ import {
   Ruler,
   Plus,
   Search,
-  Loader2
+  Loader2,
+  X,
+  File,
+  Image,
+  FileSpreadsheet
 } from "lucide-react";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  status: 'pending' | 'uploading' | 'complete' | 'error';
+  progress?: number;
+  url?: string;
+}
 
 type WarehouseFormData = {
   name: string;
@@ -143,22 +157,114 @@ export default function AddWarehouse() {
     },
   });
 
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest('POST', '/api/objects/upload');
-    return {
-      method: 'PUT' as const,
-      url: response.uploadURL,
-    };
+  // File upload state
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleFileUploadComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      toast({
-        title: t('common:success'),
-        description: t('common:uploadSuccess'),
-      });
-    }
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <Image className="h-4 w-4" />;
+    if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) return <FileSpreadsheet className="h-4 w-4" />;
+    if (type.includes('pdf')) return <FileText className="h-4 w-4" />;
+    return <File className="h-4 w-4" />;
   };
+
+  const handleFileSelect = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    const newFiles: UploadedFile[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxFileSize) {
+        toast({
+          title: t('common:error'),
+          description: `${file.name} exceeds 50MB limit`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      const uploadFile: UploadedFile = {
+        id: `${Date.now()}-${i}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        status: 'uploading',
+        progress: 0,
+      };
+      newFiles.push(uploadFile);
+    }
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // Upload each file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxFileSize) continue;
+
+      const fileId = newFiles[i]?.id;
+      if (!fileId) continue;
+
+      try {
+        const response = await apiRequest('POST', '/api/objects/upload') as unknown as { uploadURL: string };
+        const uploadURL = response.uploadURL;
+
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        });
+
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'complete', progress: 100, url: uploadURL.split('?')[0] } : f
+        ));
+      } catch (error) {
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'error' } : f
+        ));
+        toast({
+          title: t('common:error'),
+          description: `Failed to upload ${file.name}`,
+          variant: "destructive",
+        });
+      }
+    }
+  }, [t, toast]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  }, [handleFileSelect]);
+
+  const removeFile = useCallback((id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  }, []);
 
   const onSubmit = (data: WarehouseFormData) => {
     createWarehouseMutation.mutate(data);
@@ -553,24 +659,94 @@ export default function AddWarehouse() {
                 </CardTitle>
                 <CardDescription className="text-xs md:text-sm">{t('warehouse:documentsDesc')}</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 md:p-6 pt-2 md:pt-3">
-                <ObjectUploader
-                  maxNumberOfFiles={10}
-                  maxFileSize={50 * 1024 * 1024} // 50MB
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onComplete={handleFileUploadComplete}
-                  buttonClassName="w-full h-auto min-h-[140px] border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+              <CardContent className="p-4 md:p-6 pt-2 md:pt-3 space-y-4">
+                {/* Drop Zone */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                  data-testid="file-input-hidden"
+                />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`
+                    w-full min-h-[120px] border-2 border-dashed rounded-lg cursor-pointer
+                    transition-all duration-200 flex flex-col items-center justify-center gap-3 py-6
+                    ${isDragging 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }
+                  `}
+                  data-testid="file-drop-zone"
                 >
-                  <div className="flex flex-col items-center gap-3 text-slate-600 dark:text-slate-400 py-4">
-                    <div className="p-3 rounded-full bg-slate-100 dark:bg-slate-800">
-                      <FileUp className="h-8 w-8 text-slate-500 dark:text-slate-400" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouse:clickDragFiles')}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('warehouse:uploadFileTypes')}</p>
+                  <div className="p-3 rounded-full bg-slate-100 dark:bg-slate-800">
+                    <FileUp className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouse:clickDragFiles')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('warehouse:uploadFileTypes')}</p>
+                  </div>
+                </div>
+
+                {/* Files List */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2" data-testid="files-list">
+                    <h4 className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                      {t('common:files')} ({uploadedFiles.length})
+                    </h4>
+                    <div className="space-y-1.5">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-md w-full"
+                          data-testid={`file-item-${file.id}`}
+                        >
+                          <div className={`
+                            p-1.5 rounded shrink-0
+                            ${file.status === 'complete' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : ''}
+                            ${file.status === 'uploading' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}
+                            ${file.status === 'error' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : ''}
+                            ${file.status === 'pending' ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' : ''}
+                          `}>
+                            {getFileIcon(file.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{file.name}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-slate-500">{formatFileSize(file.size)}</span>
+                              {file.status === 'uploading' && (
+                                <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
+                              )}
+                              {file.status === 'complete' && (
+                                <span className="text-[10px] text-green-600 dark:text-green-400">✓</span>
+                              )}
+                              {file.status === 'error' && (
+                                <span className="text-[10px] text-red-600 dark:text-red-400">{t('common:error')}</span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(file.id);
+                            }}
+                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded shrink-0"
+                            data-testid={`remove-file-${file.id}`}
+                          >
+                            <X className="h-3.5 w-3.5 text-slate-500" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </ObjectUploader>
+                )}
               </CardContent>
             </Card>
 
