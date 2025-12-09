@@ -38,11 +38,11 @@ const createDiscountSchema = (t: any) => z.object({
   name: z.string().min(1, t('discounts:nameRequired')),
   description: z.string().optional(),
   discountType: z.enum(['percentage', 'fixed_amount', 'buy_x_get_y']),
-  percentage: z.coerce.number().min(1).max(100).optional(),
-  fixedAmount: z.coerce.number().min(0.01).optional(),
-  fixedAmountEur: z.coerce.number().min(0.01).optional(),
-  buyQuantity: z.coerce.number().min(1).optional(),
-  getQuantity: z.coerce.number().min(1).optional(),
+  percentage: z.union([z.coerce.number().min(1).max(100), z.literal(''), z.undefined()]).optional(),
+  fixedAmount: z.union([z.coerce.number().min(0), z.literal(''), z.undefined()]).optional(),
+  fixedAmountEur: z.union([z.coerce.number().min(0), z.literal(''), z.undefined()]).optional(),
+  buyQuantity: z.union([z.coerce.number().min(1), z.literal(''), z.undefined()]).optional(),
+  getQuantity: z.union([z.coerce.number().min(1), z.literal(''), z.undefined()]).optional(),
   getProductType: z.enum(['same_product', 'different_product']).optional(),
   getProductId: z.string().optional(),
   status: z.enum(['active', 'inactive', 'finished']),
@@ -55,15 +55,19 @@ const createDiscountSchema = (t: any) => z.object({
     productId: z.string().min(1, t('discounts:productRequired'))
   })).optional(),
 }).refine((data) => {
-  // Validate discount type specific fields
-  if (data.discountType === 'percentage' && (!data.percentage || data.percentage <= 0)) {
-    return false;
+  // Validate discount type specific fields - only check when that type is selected
+  if (data.discountType === 'percentage') {
+    const pct = typeof data.percentage === 'number' ? data.percentage : 0;
+    if (pct <= 0 || pct > 100) return false;
   }
-  if (data.discountType === 'fixed_amount' && (!data.fixedAmount || data.fixedAmount <= 0)) {
-    return false;
+  if (data.discountType === 'fixed_amount') {
+    const amt = typeof data.fixedAmount === 'number' ? data.fixedAmount : 0;
+    if (amt <= 0) return false;
   }
   if (data.discountType === 'buy_x_get_y') {
-    if (!data.buyQuantity || !data.getQuantity || !data.getProductType) {
+    const buyQty = typeof data.buyQuantity === 'number' ? data.buyQuantity : 0;
+    const getQty = typeof data.getQuantity === 'number' ? data.getQuantity : 0;
+    if (buyQty < 1 || getQty < 1 || !data.getProductType) {
       return false;
     }
     if (data.getProductType === 'different_product' && !data.getProductId) {
@@ -128,10 +132,10 @@ export default function EditDiscount() {
       name: "",
       description: "",
       discountType: "percentage",
-      percentage: 10,
-      fixedAmount: 0,
-      buyQuantity: 1,
-      getQuantity: 1,
+      percentage: undefined,
+      fixedAmount: undefined,
+      buyQuantity: undefined,
+      getQuantity: undefined,
       getProductType: "same_product",
       status: "active",
       startDate: "",
@@ -144,22 +148,27 @@ export default function EditDiscount() {
   // Update form when discount data is loaded
   useEffect(() => {
     if (discount) {
+      // Map backend 'type' field to frontend 'discountType', handle different naming conventions
+      const backendType = discount.type || discount.discountType || "percentage";
+      // Convert 'fixed' to 'fixed_amount' if needed
+      const discountType = backendType === 'fixed' ? 'fixed_amount' : backendType;
+      
       const formData: any = {
         name: discount.name,
         description: discount.description || "",
-        discountType: discount.discountType || "percentage",
-        percentage: discount.percentage || 10,
-        fixedAmount: discount.fixedAmount || 0,
-        buyQuantity: discount.buyQuantity || 1,
-        getQuantity: discount.getQuantity || 1,
+        discountType: discountType,
+        percentage: discountType === 'percentage' ? (discount.percentage || undefined) : undefined,
+        fixedAmount: discountType === 'fixed_amount' ? (discount.fixedAmount || discount.value || undefined) : undefined,
+        buyQuantity: discountType === 'buy_x_get_y' ? (discount.buyQuantity || undefined) : undefined,
+        getQuantity: discountType === 'buy_x_get_y' ? (discount.getQuantity || undefined) : undefined,
         getProductType: discount.getProductType || "same_product",
         getProductId: discount.getProductId || undefined,
         status: discount.status,
         startDate: discount.startDate ? new Date(discount.startDate).toISOString().slice(0, 16) : "",
         endDate: discount.endDate ? new Date(discount.endDate).toISOString().slice(0, 16) : "",
-        applicationScope: discount.applicationScope,
+        applicationScope: discount.applicationScope || "all_products",
         productId: discount.productId || undefined,
-        categoryId: discount.categoryId || undefined,
+        categoryId: discount.categoryId ? String(discount.categoryId) : undefined,
       };
 
       if (discount.selectedProductIds) {
@@ -237,13 +246,16 @@ export default function EditDiscount() {
   });
 
   const onSubmit = (data: DiscountFormData) => {
+    // Map frontend 'discountType' back to backend 'type' field
+    const backendType = data.discountType === 'fixed_amount' ? 'fixed' : data.discountType;
+    
     const submitData: any = {
       name: data.name,
       description: data.description,
-      discountType: data.discountType,
+      type: backendType, // Backend uses 'type' not 'discountType'
       status: data.status,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
+      startDate: data.startDate,
+      endDate: data.endDate,
       applicationScope: data.applicationScope,
     };
 
@@ -251,7 +263,7 @@ export default function EditDiscount() {
     if (data.discountType === 'percentage') {
       submitData.percentage = data.percentage;
     } else if (data.discountType === 'fixed_amount') {
-      submitData.fixedAmount = data.fixedAmount;
+      submitData.value = data.fixedAmount; // Backend uses 'value' for fixed amounts
     } else if (data.discountType === 'buy_x_get_y') {
       submitData.buyQuantity = data.buyQuantity;
       submitData.getQuantity = data.getQuantity;
@@ -991,6 +1003,17 @@ export default function EditDiscount() {
                   type="submit"
                   className="w-full"
                   disabled={updateDiscountMutation.isPending}
+                  onClick={() => {
+                    const errors = form.formState.errors;
+                    if (Object.keys(errors).length > 0) {
+                      console.log("Form errors:", errors);
+                      toast({
+                        title: t('common:error'),
+                        description: t('discounts:fillRequiredFields'),
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {updateDiscountMutation.isPending ? t('common:updating') + "..." : t('discounts:updateDiscount')}
