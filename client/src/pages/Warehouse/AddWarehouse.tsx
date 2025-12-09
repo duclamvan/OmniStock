@@ -97,7 +97,7 @@ export default function AddWarehouse() {
     email: z.string().email(t('common:invalidEmail')).optional().or(z.literal("")),
     manager: z.string().optional(),
     type: z.enum(["main", "branch", "temporary"]).default("branch"),
-    floorArea: z.number().min(0).optional(),
+    floorArea: z.number().optional().nullable(),
   });
 
   const form = useForm<WarehouseFormData>({

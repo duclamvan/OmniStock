@@ -2926,7 +2926,27 @@ Important:
 
   app.post('/api/warehouses', isAuthenticated, async (req: any, res) => {
     try {
-      const data = insertWarehouseSchema.parse(req.body);
+      // Transform data to match schema expectations
+      const body = req.body;
+      const warehouseData = {
+        ...body,
+        // Generate ID if not provided (format: WH-XX-YYY)
+        id: body.id || `WH-${body.code || 'NEW'}-${Date.now().toString(36).toUpperCase()}`,
+        // Convert floorArea from number to string if provided
+        floorArea: body.floorArea !== undefined && body.floorArea !== null && body.floorArea !== '' 
+          ? String(body.floorArea) 
+          : undefined,
+        // Convert expenseId from string to number if provided
+        expenseId: body.expenseId && body.expenseId !== '' 
+          ? parseInt(body.expenseId, 10) 
+          : undefined,
+        // Ensure capacity is number or undefined
+        capacity: body.capacity !== undefined && body.capacity !== null && body.capacity !== ''
+          ? parseInt(body.capacity, 10)
+          : undefined,
+      };
+      
+      const data = insertWarehouseSchema.parse(warehouseData);
       const warehouse = await storage.createWarehouse(data);
 
       await storage.createUserActivity({
