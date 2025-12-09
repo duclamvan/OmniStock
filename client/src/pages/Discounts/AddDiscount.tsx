@@ -274,6 +274,15 @@ export default function AddDiscount() {
     createDiscountMutation.mutate(submitData);
   };
 
+  const onFormError = (errors: any) => {
+    console.log("Form validation errors:", errors);
+    toast({
+      title: t('discounts:pleaseFixErrors'),
+      description: t('discounts:fillRequiredFields'),
+      variant: "destructive",
+    });
+  };
+
   const formatPrice = (price: string | number | null | undefined, currency: 'CZK' | 'EUR') => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (numPrice === null || numPrice === undefined || isNaN(numPrice)) return '-';
@@ -304,7 +313,7 @@ export default function AddDiscount() {
         <p className="text-sm sm:text-base text-muted-foreground mt-1">{t('discounts:addPageSubtitle')}</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit, onFormError)} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card className="border-l-4 border-l-blue-500 shadow-sm">
           <CardHeader className="pb-4">
