@@ -141,9 +141,26 @@ export default function AddWarehouse() {
   });
 
   const createWarehouseMutation = useMutation({
-    mutationFn: (data: WarehouseFormData) => 
-      apiRequest('POST', '/api/warehouses', data),
-    onSuccess: () => {
+    mutationFn: async (data: WarehouseFormData) => {
+      const response = await apiRequest('POST', '/api/warehouses', data);
+      return await response.json() as { id: string };
+    },
+    onSuccess: async (warehouse) => {
+      // Save uploaded files to the warehouse
+      const completedFiles = uploadedFiles.filter(f => f.status === 'complete' && f.url);
+      for (const file of completedFiles) {
+        try {
+          await apiRequest('POST', `/api/warehouses/${warehouse.id}/files`, {
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: file.url,
+            fileSize: file.size,
+          });
+        } catch (error) {
+          console.error('Failed to save file:', file.name, error);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
         title: t('common:success'),
@@ -219,8 +236,13 @@ export default function AddWarehouse() {
       if (!fileId) continue;
 
       try {
-        const response = await apiRequest('POST', '/api/objects/upload') as unknown as { uploadURL: string };
-        const uploadURL = response.uploadURL;
+        const response = await apiRequest('POST', '/api/objects/upload');
+        const data = await response.json() as { uploadURL: string };
+        const uploadURL = data.uploadURL;
+
+        if (!uploadURL) {
+          throw new Error('No upload URL returned');
+        }
 
         await fetch(uploadURL, {
           method: 'PUT',
@@ -230,8 +252,9 @@ export default function AddWarehouse() {
           },
         });
 
+        const fileUrl = uploadURL.split('?')[0];
         setUploadedFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, status: 'complete', progress: 100, url: uploadURL.split('?')[0] } : f
+          f.id === fileId ? { ...f, status: 'complete', progress: 100, url: fileUrl } : f
         ));
       } catch (error) {
         setUploadedFiles(prev => prev.map(f => 
