@@ -31,7 +31,7 @@ const availableCountries = [
 ];
 
 const createCustomerFormSchema = (t: (key: string) => string) => z.object({
-  name: z.string().min(1, t('customers.nameRequired')),
+  name: z.string().min(1, t('customers:nameRequired')),
   country: z.string().optional(),
   preferredCurrency: z.enum(['CZK', 'EUR']).default('EUR'),
   facebookName: z.string().optional(),
@@ -40,7 +40,7 @@ const createCustomerFormSchema = (t: (key: string) => string) => z.object({
   billingCompany: z.string().optional(),
   billingFirstName: z.string().optional(),
   billingLastName: z.string().optional(),
-  billingEmail: z.string().email(t('customers.invalidEmail')).optional().or(z.literal("")),
+  billingEmail: z.string().email(t('customers:invalidEmail')).optional().or(z.literal("")),
   billingTel: z.string().optional(),
   billingStreet: z.string().optional(),
   billingStreetNumber: z.string().optional(),
@@ -58,16 +58,16 @@ const createCustomerFormSchema = (t: (key: string) => string) => z.object({
 const createShippingAddressSchema = (t: (key: string) => string) => z.object({
   id: z.string().optional(),
   label: z.string().optional(),
-  firstName: z.string().min(1, t('customers.firstNameRequired')),
-  lastName: z.string().min(1, t('customers.lastNameRequired')),
+  firstName: z.string().min(1, t('customers:firstNameRequired')),
+  lastName: z.string().min(1, t('customers:lastNameRequired')),
   company: z.string().optional(),
-  email: z.string().email(t('customers.invalidEmail')).optional().or(z.literal("")),
+  email: z.string().email(t('customers:invalidEmail')).optional().or(z.literal("")),
   tel: z.string().optional(),
-  street: z.string().min(1, t('customers.streetRequired')),
+  street: z.string().min(1, t('customers:streetRequired')),
   streetNumber: z.string().optional(),
-  city: z.string().min(1, t('customers.cityRequired')),
-  zipCode: z.string().min(1, t('customers.zipCodeRequired')),
-  country: z.string().min(1, t('customers.countryRequired')),
+  city: z.string().min(1, t('customers:cityRequired')),
+  zipCode: z.string().min(1, t('customers:zipCodeRequired')),
+  country: z.string().min(1, t('customers:countryRequired')),
   isPrimary: z.boolean().default(false),
 });
 
@@ -77,7 +77,7 @@ const createBillingAddressSchema = (t: (key: string) => string) => z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   company: z.string().optional(),
-  email: z.string().email(t('customers.invalidEmail')).optional().or(z.literal("")),
+  email: z.string().email(t('customers:invalidEmail')).optional().or(z.literal("")),
   tel: z.string().optional(),
   street: z.string().optional(),
   streetNumber: z.string().optional(),
@@ -769,8 +769,8 @@ export default function AddCustomer() {
       if (!response.ok) {
         if (response.status === 404) {
           toast({
-            title: t('customers.error'),
-            description: t('customers.failedToParseAddress'),
+            title: t('customers:error'),
+            description: t('customers:failedToParseAddress'),
             variant: "destructive",
           });
         }
@@ -785,8 +785,8 @@ export default function AddCustomer() {
       form.setValue('billingCountry', data.country);
       form.setValue('dic', data.dic);
       toast({
-        title: t('customers.success'),
-        description: t('customers.autoFilledFromAres'),
+        title: t('customers:success'),
+        description: t('customers:autoFilledFromAres'),
       });
     } catch (error) {
       console.error('Error fetching ARES data:', error);
@@ -971,15 +971,15 @@ export default function AddCustomer() {
           const addressId = shippingAddresses[editingShippingIndex].id;
           await apiRequest('PATCH', `/api/shipping-addresses/${addressId}`, shippingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.shippingAddressUpdatedSuccessfully'),
+            title: t('customers:success'),
+            description: t('customers:shippingAddressUpdatedSuccessfully'),
           });
         } else {
           // Create new address
           await apiRequest('POST', `/api/customers/${customerId}/shipping-addresses`, shippingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.shippingAddressAddedSuccessfully'),
+            title: t('customers:success'),
+            description: t('customers:shippingAddressAddedSuccessfully'),
           });
         }
         
@@ -992,8 +992,8 @@ export default function AddCustomer() {
         shippingForm.reset();
       } catch (error: any) {
         toast({
-          title: t('customers.error'),
-          description: error.message || t('customers.failedToSaveShippingAddress'),
+          title: t('customers:error'),
+          description: error.message || t('customers:failedToSaveShippingAddress'),
           variant: "destructive",
         });
       }
@@ -1102,15 +1102,15 @@ export default function AddCustomer() {
           const addressId = billingAddresses[editingBillingIndex].id;
           await apiRequest('PATCH', `/api/billing-addresses/${addressId}`, billingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.billingAddressUpdatedSuccessfully'),
+            title: t('customers:success'),
+            description: t('customers:billingAddressUpdatedSuccessfully'),
           });
         } else {
           // Create new address
           await apiRequest('POST', `/api/customers/${customerId}/billing-addresses`, billingData);
           toast({
-            title: t('customers.success'),
-            description: t('customers.billingAddressAddedSuccessfully'),
+            title: t('customers:success'),
+            description: t('customers:billingAddressAddedSuccessfully'),
           });
         }
         
@@ -1123,8 +1123,8 @@ export default function AddCustomer() {
         billingAddressForm.reset();
       } catch (error: any) {
         toast({
-          title: t('customers.error'),
-          description: error.message || t('customers.failedToSaveBillingAddress'),
+          title: t('customers:error'),
+          description: error.message || t('customers:failedToSaveBillingAddress'),
           variant: "destructive",
         });
       }
@@ -1368,15 +1368,15 @@ export default function AddCustomer() {
       setShippingFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
-        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
+        title: t('customers:addressParsed'),
+        description: t('customers:successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawShippingAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: t('customers:parseFailed'),
+        description: error.message || t('customers:failedToParseAddress'),
         variant: "destructive",
       });
     },
@@ -1545,15 +1545,15 @@ export default function AddCustomer() {
       setBillingFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
-        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
+        title: t('customers:addressParsed'),
+        description: t('customers:successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawBillingAddress("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: t('customers:parseFailed'),
+        description: error.message || t('customers:failedToParseAddress'),
         variant: "destructive",
       });
     },
@@ -1649,15 +1649,15 @@ export default function AddCustomer() {
       setBillingAddressFieldConfidence(filledFields);
       
       toast({
-        title: t('customers.addressParsed'),
-        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
+        title: t('customers:addressParsed'),
+        description: t('customers:successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawBillingAddressForm("");
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.parseFailed'),
-        description: error.message || t('customers.failedToParseAddress'),
+        title: t('customers:parseFailed'),
+        description: error.message || t('customers:failedToParseAddress'),
         variant: "destructive",
       });
     },
@@ -1700,15 +1700,15 @@ export default function AddCustomer() {
       
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: t('customers.success'),
-        description: isEditMode ? t('customers.customerUpdated') : t('customers.customerCreated'),
+        title: t('customers:success'),
+        description: isEditMode ? t('customers:customerUpdated') : t('customers:customerCreated'),
       });
       navigate('/customers');
     },
     onError: (error: any) => {
       toast({
-        title: t('customers.error'),
-        description: error.message || (isEditMode ? t('customers.failedToUpdateCustomer') : t('customers.failedToCreateCustomer')),
+        title: t('customers:error'),
+        description: error.message || (isEditMode ? t('customers:failedToUpdateCustomer') : t('customers:failedToCreateCustomer')),
         variant: "destructive",
       });
     },
@@ -1765,7 +1765,7 @@ export default function AddCustomer() {
           <span className="hidden sm:inline">{t('common:back')}</span>
         </Button>
         <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-          {isEditMode ? t('customers.editCustomer') : t('customers.addCustomer')}
+          {isEditMode ? t('customers:editCustomer') : t('customers:addCustomer')}
         </h1>
       </div>
 
@@ -1777,7 +1777,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-500" />
-                    {t('customers.locationBusinessInfo')}
+                    {t('customers:locationBusinessInfo')}
                   </CardTitle>
                   <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", customerDetailsOpen ? "rotate-0" : "-rotate-90")} />
                 </div>
@@ -1787,11 +1787,11 @@ export default function AddCustomer() {
               <CardContent>
             <div className="space-y-4">
                 <div>
-                  <Label htmlFor="facebookUrl" className="text-base font-semibold">{t('customers.facebookUrl')}</Label>
+                  <Label htmlFor="facebookUrl" className="text-base font-semibold">{t('customers:facebookUrl')}</Label>
                   <Input
                     id="facebookUrl"
                     {...form.register('facebookUrl')}
-                    placeholder={t('customers.facebookUrlPlaceholder')}
+                    placeholder={t('customers:facebookUrlPlaceholder')}
                     className="text-base"
                     data-testid="input-facebookUrl"
                     onChange={(e) => {
@@ -1802,7 +1802,7 @@ export default function AddCustomer() {
                     }}
                   />
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('customers.pasteFacebookUrlHint')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('customers:pasteFacebookUrlHint')}</p>
                     {extractedFacebookId && (
                       <>
                         <span className="text-xs text-slate-400">•</span>
@@ -1819,9 +1819,9 @@ export default function AddCustomer() {
                       <div className="flex items-start gap-3 mb-3">
                         <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-base font-bold text-amber-900">{t('customers.customerAlreadyExists')}</p>
+                          <p className="text-base font-bold text-amber-900">{t('customers:customerAlreadyExists')}</p>
                           <p className="text-sm text-amber-700 mt-0.5">
-                            {t('customers.customerWithFacebookIdExistsInDatabase', { facebookId: extractedFacebookId })}
+                            {t('customers:customerWithFacebookIdExistsInDatabase', { facebookId: extractedFacebookId })}
                           </p>
                         </div>
                       </div>
@@ -1852,19 +1852,19 @@ export default function AddCustomer() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                               {duplicateCustomer.billingEmail && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.emailLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers:emailLabel')}</span>
                                   <span className="font-medium text-slate-900 dark:text-slate-100">{duplicateCustomer.billingEmail}</span>
                                 </div>
                               )}
                               {duplicateCustomer.billingTel && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.phoneLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers:phoneLabel')}</span>
                                   <span className="font-medium text-slate-900 dark:text-slate-100">{duplicateCustomer.billingTel}</span>
                                 </div>
                               )}
                               {duplicateCustomer.country && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.countryLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers:countryLabel')}</span>
                                   <span className="font-medium text-slate-900">
                                     {getCountryFlag(duplicateCustomer.country)} {europeanCountries.find(c => c.code === duplicateCustomer.country)?.name || duplicateCustomer.country}
                                   </span>
@@ -1872,7 +1872,7 @@ export default function AddCustomer() {
                               )}
                               {duplicateCustomer.preferredCurrency && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500 dark:text-slate-400">{t('customers.currencyLabel')}</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{t('customers:currencyLabel')}</span>
                                   <Badge variant="outline" className="font-medium">
                                     {duplicateCustomer.preferredCurrency}
                                   </Badge>
@@ -1890,44 +1890,44 @@ export default function AddCustomer() {
                         onClick={() => navigate(`/customers/${duplicateCustomer.id}/edit`)}
                         data-testid="button-go-to-existing-customer"
                       >
-                        {t('customers.goToCustomerProfile', { name: duplicateCustomer.name })}
+                        {t('customers:goToCustomerProfile', { name: duplicateCustomer.name })}
                       </Button>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <Label htmlFor="facebookName" className="text-base font-semibold">{t('customers.facebookName')}</Label>
+                  <Label htmlFor="facebookName" className="text-base font-semibold">{t('customers:facebookName')}</Label>
                   <Input
                     id="facebookName"
                     {...form.register('facebookName')}
-                    placeholder={t('customers.facebookDisplayNamePlaceholder')}
+                    placeholder={t('customers:facebookDisplayNamePlaceholder')}
                     className="text-base"
                     data-testid="input-facebookName"
                   />
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.facebookNameOptionalHint')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:facebookNameOptionalHint')}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="name" className="text-base font-semibold">{t('customers.nameRequiredLabel')}</Label>
+                  <Label htmlFor="name" className="text-base font-semibold">{t('customers:nameRequiredLabel')}</Label>
                   <Input
                     id="name"
                     {...form.register('name', {
                       onChange: () => setIsNameManuallyEdited(true)
                     })}
-                    placeholder={t('customers.customerDisplayNamePlaceholder')}
+                    placeholder={t('customers:customerDisplayNamePlaceholder')}
                     className="text-base"
                     data-testid="input-name"
                   />
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                   )}
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.autoSyncsFacebookName')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:autoSyncsFacebookName')}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="country" className="text-base font-semibold">{t('customers.countryLocation')}</Label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers.selectPrimaryCountryHint')}</p>
+                  <Label htmlFor="country" className="text-base font-semibold">{t('customers:countryLocation')}</Label>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers:selectPrimaryCountryHint')}</p>
                   <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
                     <PopoverTrigger asChild>
                       <Button
@@ -1943,7 +1943,7 @@ export default function AddCustomer() {
                             {selectedCountryData.name}
                           </span>
                         ) : (
-                          t('customers.searchCountryPlaceholder')
+                          t('customers:searchCountryPlaceholder')
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -1951,16 +1951,16 @@ export default function AddCustomer() {
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
-                          placeholder={t('customers.searchCountryPlaceholder')} 
+                          placeholder={t('customers:searchCountryPlaceholder')} 
                           value={countrySearchQuery}
                           onValueChange={setCountrySearchQuery}
                           data-testid="input-country-search"
                         />
                         <CommandList>
-                          <CommandEmpty>{t('customers.noCountryFound')}</CommandEmpty>
+                          <CommandEmpty>{t('customers:noCountryFound')}</CommandEmpty>
                           
                           {pinnedFilteredCountries.length > 0 && (
-                            <CommandGroup heading={t('customers.pinnedCountries')}>
+                            <CommandGroup heading={t('customers:pinnedCountries')}>
                               {pinnedFilteredCountries.map((country) => (
                                 <CommandItem
                                   key={country.code}
@@ -2008,7 +2008,7 @@ export default function AddCustomer() {
                           )}
                           
                           {unpinnedFilteredCountries.length > 0 && (
-                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? t('customers.allCountries') : undefined}>
+                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? t('customers:allCountries') : undefined}>
                               {unpinnedFilteredCountries.map((country) => (
                                 <CommandItem
                                   key={country.code}
@@ -2064,18 +2064,18 @@ export default function AddCustomer() {
                 </div>
 
                 <div>
-                  <Label htmlFor="preferredCurrency" className="text-base font-semibold">{t('customers.preferredCurrency')}</Label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers.defaultCurrencyForOrders')}</p>
+                  <Label htmlFor="preferredCurrency" className="text-base font-semibold">{t('customers:preferredCurrency')}</Label>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('customers:defaultCurrencyForOrders')}</p>
                   <Select
                     value={form.watch('preferredCurrency')}
                     onValueChange={(value: 'CZK' | 'EUR') => form.setValue('preferredCurrency', value)}
                   >
                     <SelectTrigger className="w-full" data-testid="select-preferredCurrency">
-                      <SelectValue placeholder={t('customers.selectCurrency')} />
+                      <SelectValue placeholder={t('customers:selectCurrency')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EUR" data-testid="option-currency-EUR">{t('customers.currencyEurWithName')}</SelectItem>
-                      <SelectItem value="CZK" data-testid="option-currency-CZK">{t('customers.currencyCzkWithName')}</SelectItem>
+                      <SelectItem value="EUR" data-testid="option-currency-EUR">{t('customers:currencyEurWithName')}</SelectItem>
+                      <SelectItem value="CZK" data-testid="option-currency-CZK">{t('customers:currencyCzkWithName')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {form.formState.errors.preferredCurrency && (
@@ -2095,7 +2095,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-orange-500" />
-                    {t('customers.shippingAddresses')}
+                    {t('customers:shippingAddresses')}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {!isAddingShipping && (
@@ -2110,7 +2110,7 @@ export default function AddCustomer() {
                         data-testid="button-addShipping"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        {t('customers.addShippingAddress')}
+                        {t('customers:addShippingAddress')}
                       </Button>
                     )}
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", shippingAddressesOpen ? "rotate-0" : "-rotate-90")} />
@@ -2126,7 +2126,7 @@ export default function AddCustomer() {
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
                     {addr.isPrimary && (
-                      <Badge variant="default" data-testid={`badge-primary-${index}`}>{t('customers.primary')}</Badge>
+                      <Badge variant="default" data-testid={`badge-primary-${index}`}>{t('customers:primary')}</Badge>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -2138,7 +2138,7 @@ export default function AddCustomer() {
                         onClick={() => handleSetPrimary(index)}
                         data-testid={`button-setPrimary-${index}`}
                       >
-                        {t('customers.setPrimary')}
+                        {t('customers:setPrimary')}
                       </Button>
                     )}
                     <Button
@@ -2167,8 +2167,8 @@ export default function AddCustomer() {
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
                   {addr.city && <p>{addr.zipCode} {addr.city}</p>}
                   {addr.country && <p>{addr.country}</p>}
-                  {addr.tel && <p>{t('customers.telLabel')} {addr.tel}</p>}
-                  {addr.email && <p>{t('customers.emailLabel')} {addr.email}</p>}
+                  {addr.tel && <p>{t('customers:telLabel')} {addr.tel}</p>}
+                  {addr.email && <p>{t('customers:emailLabel')} {addr.email}</p>}
                 </div>
               </div>
             ))}
@@ -2176,35 +2176,35 @@ export default function AddCustomer() {
             {isAddingShipping && (
               <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <h4 className="font-semibold mb-4">
-                  {editingShippingIndex !== null ? t('customers.editShippingAddress') : t('customers.addShippingAddressForm')}
+                  {editingShippingIndex !== null ? t('customers:editShippingAddress') : t('customers:addShippingAddressForm')}
                 </h4>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="shippingLabel">{t('customers.label')}</Label>
+                    <Label htmlFor="shippingLabel">{t('customers:label')}</Label>
                     <Input
                       id="shippingLabel"
                       {...shippingForm.register('label', {
                         onChange: () => setIsLabelManuallyEdited(true)
                       })}
-                      placeholder={t('customers.autoGeneratedFromAddress')}
+                      placeholder={t('customers:autoGeneratedFromAddress')}
                       data-testid="input-shippingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t('customers.autoGeneratedEditable')}
+                      {t('customers:autoGeneratedEditable')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawShippingAddress">{t('customers.smartPaste')}</Label>
+                    <Label htmlFor="rawShippingAddress">{t('customers:smartPaste')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      {t('customers.smartPasteDescription')}
+                      {t('customers:smartPasteDescription')}
                     </p>
                     <div className="flex gap-2">
                       <Textarea
                         id="rawShippingAddress"
                         value={rawShippingAddress}
                         onChange={(e) => setRawShippingAddress(e.target.value)}
-                        placeholder={t('customers.addressExamplePlaceholder')}
+                        placeholder={t('customers:addressExamplePlaceholder')}
                         className="min-h-[100px]"
                         data-testid="textarea-rawShippingAddress"
                       />
@@ -2219,10 +2219,10 @@ export default function AddCustomer() {
                       {parseShippingAddressMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t('customers.parsing')}
+                          {t('customers:parsing')}
                         </>
                       ) : (
-                        t('customers.parseFill')
+                        t('customers:parseFill')
                       )}
                     </Button>
                   </div>
@@ -2232,17 +2232,17 @@ export default function AddCustomer() {
                       <span className="w-full border-t-2 border-slate-300 dark:border-slate-600" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers:addressDetails')}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="shippingFirstName">{t('customers.firstNameRequiredLabel')}</Label>
+                      <Label htmlFor="shippingFirstName">{t('customers:firstNameRequiredLabel')}</Label>
                       <Input
                         id="shippingFirstName"
                         {...shippingForm.register('firstName')}
-                        placeholder={t('customers.firstNamePlaceholder')}
+                        placeholder={t('customers:firstNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('firstName', shippingFieldConfidence),
                           shippingForm.formState.errors.firstName && "border-red-500"
@@ -2256,11 +2256,11 @@ export default function AddCustomer() {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="shippingLastName">{t('customers.lastNameRequiredLabel')}</Label>
+                      <Label htmlFor="shippingLastName">{t('customers:lastNameRequiredLabel')}</Label>
                       <Input
                         id="shippingLastName"
                         {...shippingForm.register('lastName')}
-                        placeholder={t('customers.lastNamePlaceholder')}
+                        placeholder={t('customers:lastNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('lastName', shippingFieldConfidence),
                           shippingForm.formState.errors.lastName && "border-red-500"
@@ -2276,11 +2276,11 @@ export default function AddCustomer() {
                   </div>
 
                   <div>
-                    <Label htmlFor="shippingCompany">{t('customers.company')}</Label>
+                    <Label htmlFor="shippingCompany">{t('customers:company')}</Label>
                     <Input
                       id="shippingCompany"
                       {...shippingForm.register('company')}
-                      placeholder={t('customers.companyNamePlaceholder')}
+                      placeholder={t('customers:companyNamePlaceholder')}
                       className={cn(getConfidenceClass('company', shippingFieldConfidence))}
                       data-testid="input-shippingCompany"
                     />
@@ -2290,18 +2290,18 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="shippingEmail">{t('customers.email')}</Label>
+                      <Label htmlFor="shippingEmail">{t('customers:email')}</Label>
                       <Input
                         id="shippingEmail"
                         type="email"
                         {...shippingForm.register('email')}
-                        placeholder={t('customers.emailPlaceholder')}
+                        placeholder={t('customers:emailPlaceholder')}
                         className={cn(getConfidenceClass('email', shippingFieldConfidence))}
                         data-testid="input-shippingEmail"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingTel">{t('customers.tel')}</Label>
+                      <Label htmlFor="shippingTel">{t('customers:tel')}</Label>
                       <Input
                         id="shippingTel"
                         {...shippingForm.register('tel', {
@@ -2322,7 +2322,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder={t('customers.phonePlaceholder')}
+                        placeholder={t('customers:phonePlaceholder')}
                         className={cn(getConfidenceClass('tel', shippingFieldConfidence))}
                         data-testid="input-shippingTel"
                       />
@@ -2333,21 +2333,21 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
-                      <Label htmlFor="shippingStreet">{t('customers.street')}</Label>
+                      <Label htmlFor="shippingStreet">{t('customers:street')}</Label>
                       <Input
                         id="shippingStreet"
                         {...shippingForm.register('street')}
-                        placeholder={t('customers.streetNamePlaceholder')}
+                        placeholder={t('customers:streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', shippingFieldConfidence))}
                         data-testid="input-shippingStreet"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingStreetNumber">{t('customers.number')}</Label>
+                      <Label htmlFor="shippingStreetNumber">{t('customers:number')}</Label>
                       <Input
                         id="shippingStreetNumber"
                         {...shippingForm.register('streetNumber')}
-                        placeholder={t('customers.streetNumberPlaceholder')}
+                        placeholder={t('customers:streetNumberPlaceholder')}
                         className={cn(getConfidenceClass('streetNumber', shippingFieldConfidence))}
                         data-testid="input-shippingStreetNumber"
                       />
@@ -2356,27 +2356,27 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="shippingZipCode">{t('customers.zipCode')}</Label>
+                      <Label htmlFor="shippingZipCode">{t('customers:zipCode')}</Label>
                       <Input
                         id="shippingZipCode"
                         {...shippingForm.register('zipCode')}
-                        placeholder={t('customers.postalCodePlaceholder')}
+                        placeholder={t('customers:postalCodePlaceholder')}
                         className={cn(getConfidenceClass('zipCode', shippingFieldConfidence))}
                         data-testid="input-shippingZipCode"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingCity">{t('customers.city')}</Label>
+                      <Label htmlFor="shippingCity">{t('customers:city')}</Label>
                       <Input
                         id="shippingCity"
                         {...shippingForm.register('city')}
-                        placeholder={t('customers.cityPlaceholder')}
+                        placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', shippingFieldConfidence))}
                         data-testid="input-shippingCity"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="shippingCountry">{t('customers.country')}</Label>
+                      <Label htmlFor="shippingCountry">{t('customers:country')}</Label>
                       <div className="relative" ref={shippingCountryDropdownRef}>
                         <Input
                           id="shippingCountry"
@@ -2390,7 +2390,7 @@ export default function AddCustomer() {
                             }
                           }}
                           onFocus={() => setShowShippingCountryDropdown(true)}
-                          placeholder={t('customers.typeToSearchCountries')}
+                          placeholder={t('customers:typeToSearchCountries')}
                           className={cn(getConfidenceClass('country', shippingFieldConfidence))}
                           data-testid="input-shippingCountry"
                         />
@@ -2434,7 +2434,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers.noCountriesFound')}</div>
+                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers:noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2455,7 +2455,7 @@ export default function AddCustomer() {
                       data-testid="button-cancelShipping"
                     >
                       <X className="h-4 w-4 mr-2" />
-                      {t('customers.cancel')}
+                      {t('customers:cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -2467,8 +2467,8 @@ export default function AddCustomer() {
                             .filter(Boolean)
                             .join(', ');
                           toast({
-                            title: t('customers.validationError'),
-                            description: errorMessages || t('customers.fillInRequiredFields'),
+                            title: t('customers:validationError'),
+                            description: errorMessages || t('customers:fillInRequiredFields'),
                             variant: "destructive",
                           });
                         }
@@ -2476,7 +2476,7 @@ export default function AddCustomer() {
                       data-testid="button-saveShipping"
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      {t('customers.saveAddress')}
+                      {t('customers:saveAddress')}
                     </Button>
                   </div>
                 </div>
@@ -2484,7 +2484,7 @@ export default function AddCustomer() {
             )}
 
             {shippingAddresses.length === 0 && !isAddingShipping && (
-              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers.noShippingAddresses')}</p>
+              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers:noShippingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2498,7 +2498,7 @@ export default function AddCustomer() {
                 <div className="flex items-center justify-between w-full">
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-blue-500" />
-                    {t('customers.billingAddresses')}
+                    {t('customers:billingAddresses')}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {!isAddingBilling && (
@@ -2513,7 +2513,7 @@ export default function AddCustomer() {
                         data-testid="button-addBilling"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        {t('customers.addBillingAddress')}
+                        {t('customers:addBillingAddress')}
                       </Button>
                     )}
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", billingAddressesOpen ? "rotate-0" : "-rotate-90")} />
@@ -2529,7 +2529,7 @@ export default function AddCustomer() {
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold">{addr.label}</h4>
                     {addr.isPrimary && (
-                      <Badge variant="default" data-testid={`badge-billingPrimary-${index}`}>{t('customers.primary')}</Badge>
+                      <Badge variant="default" data-testid={`badge-billingPrimary-${index}`}>{t('customers:primary')}</Badge>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -2541,7 +2541,7 @@ export default function AddCustomer() {
                         onClick={() => handleSetBillingPrimary(index)}
                         data-testid={`button-setBillingPrimary-${index}`}
                       >
-                        {t('customers.setPrimary')}
+                        {t('customers:setPrimary')}
                       </Button>
                     )}
                     <Button
@@ -2570,10 +2570,10 @@ export default function AddCustomer() {
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
                   {addr.city && <p>{addr.zipCode} {addr.city}</p>}
                   {addr.country && <p>{addr.country}</p>}
-                  {addr.tel && <p>{t('customers.telLabel')} {addr.tel}</p>}
-                  {addr.email && <p>{t('customers.emailLabel')} {addr.email}</p>}
-                  {addr.ico && <p>{t('customers.icoLabel')} {addr.ico}</p>}
-                  {addr.vatId && <p>{t('customers.vatIdLabel')} {addr.vatId}</p>}
+                  {addr.tel && <p>{t('customers:telLabel')} {addr.tel}</p>}
+                  {addr.email && <p>{t('customers:emailLabel')} {addr.email}</p>}
+                  {addr.ico && <p>{t('customers:icoLabel')} {addr.ico}</p>}
+                  {addr.vatId && <p>{t('customers:vatIdLabel')} {addr.vatId}</p>}
                 </div>
               </div>
             ))}
@@ -2582,7 +2582,7 @@ export default function AddCustomer() {
               <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold">
-                    {editingBillingIndex !== null ? t('customers.editBillingAddress') : t('customers.addBillingAddressTitle')}
+                    {editingBillingIndex !== null ? t('customers:editBillingAddress') : t('customers:addBillingAddressTitle')}
                   </h4>
                   {shippingAddresses.length > 0 && (
                     <Button
@@ -2603,45 +2603,45 @@ export default function AddCustomer() {
                           billingAddressForm.setValue('zipCode', primaryAddress.zipCode || '');
                           billingAddressForm.setValue('country', primaryAddress.country || '');
                           toast({
-                            title: t('customers.addressCopied'),
-                            description: t('customers.shippingAddressCopiedToBilling'),
+                            title: t('customers:addressCopied'),
+                            description: t('customers:shippingAddressCopiedToBilling'),
                           });
                         }
                       }}
                       data-testid="button-copy-shipping-to-billing"
                     >
                       <Copy className="h-4 w-4 mr-2" />
-                      {t('customers.copyFromShipping')}
+                      {t('customers:copyFromShipping')}
                     </Button>
                   )}
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="billingLabel">{t('customers.label')}</Label>
+                    <Label htmlFor="billingLabel">{t('customers:label')}</Label>
                     <Input
                       id="billingLabel"
                       {...billingAddressForm.register('label', {
                         onChange: () => setIsBillingLabelManuallyEdited(true)
                       })}
-                      placeholder={t('customers.autoGeneratedFromAddress')}
+                      placeholder={t('customers:autoGeneratedFromAddress')}
                       data-testid="input-billingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t('customers.autoGeneratedEditable')}
+                      {t('customers:autoGeneratedEditable')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawBillingAddressForm">{t('customers.smartPaste')}</Label>
+                    <Label htmlFor="rawBillingAddressForm">{t('customers:smartPaste')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      {t('customers.smartPasteDescription')}
+                      {t('customers:smartPasteDescription')}
                     </p>
                     <div className="flex gap-2">
                       <Textarea
                         id="rawBillingAddressForm"
                         value={rawBillingAddressForm}
                         onChange={(e) => setRawBillingAddressForm(e.target.value)}
-                        placeholder={t('customers.addressExamplePlaceholder')}
+                        placeholder={t('customers:addressExamplePlaceholder')}
                         className="min-h-[100px]"
                         data-testid="textarea-rawBillingAddressForm"
                       />
@@ -2656,10 +2656,10 @@ export default function AddCustomer() {
                       {parseBillingAddressFormMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t('customers.parsing')}
+                          {t('customers:parsing')}
                         </>
                       ) : (
-                        t('customers.parseFill')
+                        t('customers:parseFill')
                       )}
                     </Button>
                   </div>
@@ -2669,27 +2669,27 @@ export default function AddCustomer() {
                       <span className="w-full border-t-2 border-slate-300 dark:border-slate-600" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers.addressDetails')}</span>
+                      <span className="bg-slate-50 dark:bg-slate-800 px-2 text-slate-500 dark:text-slate-400 font-semibold">{t('customers:addressDetails')}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingFirstName">{t('customers.firstName')}</Label>
+                      <Label htmlFor="billingFirstName">{t('customers:firstName')}</Label>
                       <Input
                         id="billingFirstName"
                         {...billingAddressForm.register('firstName')}
-                        placeholder={t('customers.firstNamePlaceholder')}
+                        placeholder={t('customers:firstNamePlaceholder')}
                         className={cn(getConfidenceClass('firstName', billingAddressFieldConfidence))}
                         data-testid="input-billingFirstName"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingLastName">{t('customers.lastName')}</Label>
+                      <Label htmlFor="billingLastName">{t('customers:lastName')}</Label>
                       <Input
                         id="billingLastName"
                         {...billingAddressForm.register('lastName')}
-                        placeholder={t('customers.lastNamePlaceholder')}
+                        placeholder={t('customers:lastNamePlaceholder')}
                         className={cn(getConfidenceClass('lastName', billingAddressFieldConfidence))}
                         data-testid="input-billingLastName"
                       />
@@ -2697,11 +2697,11 @@ export default function AddCustomer() {
                   </div>
 
                   <div>
-                    <Label htmlFor="billingCompany">{t('customers.company')}</Label>
+                    <Label htmlFor="billingCompany">{t('customers:company')}</Label>
                     <Input
                       id="billingCompany"
                       {...billingAddressForm.register('company')}
-                      placeholder={t('customers.companyNamePlaceholder')}
+                      placeholder={t('customers:companyNamePlaceholder')}
                       className={cn(getConfidenceClass('company', billingAddressFieldConfidence))}
                       data-testid="input-billingCompany"
                     />
@@ -2711,18 +2711,18 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingEmail">{t('customers.email')}</Label>
+                      <Label htmlFor="billingEmail">{t('customers:email')}</Label>
                       <Input
                         id="billingEmail"
                         type="email"
                         {...billingAddressForm.register('email')}
-                        placeholder={t('customers.emailPlaceholder')}
+                        placeholder={t('customers:emailPlaceholder')}
                         className={cn(getConfidenceClass('email', billingAddressFieldConfidence))}
                         data-testid="input-billingEmail"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingTel">{t('customers.tel')}</Label>
+                      <Label htmlFor="billingTel">{t('customers:tel')}</Label>
                       <Input
                         id="billingTel"
                         {...billingAddressForm.register('tel', {
@@ -2747,7 +2747,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder={t('customers.phonePlaceholder')}
+                        placeholder={t('customers:phonePlaceholder')}
                         className={cn(getConfidenceClass('tel', billingAddressFieldConfidence))}
                         data-testid="input-billingTel"
                       />
@@ -2758,21 +2758,21 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
-                      <Label htmlFor="billingStreet">{t('customers.street')}</Label>
+                      <Label htmlFor="billingStreet">{t('customers:street')}</Label>
                       <Input
                         id="billingStreet"
                         {...billingAddressForm.register('street')}
-                        placeholder={t('customers.streetNamePlaceholder')}
+                        placeholder={t('customers:streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', billingAddressFieldConfidence))}
                         data-testid="input-billingStreet"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingStreetNumber">{t('customers.number')}</Label>
+                      <Label htmlFor="billingStreetNumber">{t('customers:number')}</Label>
                       <Input
                         id="billingStreetNumber"
                         {...billingAddressForm.register('streetNumber')}
-                        placeholder={t('customers.streetNumberPlaceholder')}
+                        placeholder={t('customers:streetNumberPlaceholder')}
                         className={cn(getConfidenceClass('streetNumber', billingAddressFieldConfidence))}
                         data-testid="input-billingStreetNumber"
                       />
@@ -2781,27 +2781,27 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="billingZipCode">{t('customers.zipCode')}</Label>
+                      <Label htmlFor="billingZipCode">{t('customers:zipCode')}</Label>
                       <Input
                         id="billingZipCode"
                         {...billingAddressForm.register('zipCode')}
-                        placeholder={t('customers.postalCodePlaceholder')}
+                        placeholder={t('customers:postalCodePlaceholder')}
                         className={cn(getConfidenceClass('zipCode', billingAddressFieldConfidence))}
                         data-testid="input-billingZipCode"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingCity">{t('customers.city')}</Label>
+                      <Label htmlFor="billingCity">{t('customers:city')}</Label>
                       <Input
                         id="billingCity"
                         {...billingAddressForm.register('city')}
-                        placeholder={t('customers.cityPlaceholder')}
+                        placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
                         data-testid="input-billingCity"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingCountry">{t('customers.country')}</Label>
+                      <Label htmlFor="billingCountry">{t('customers:country')}</Label>
                       <div className="relative" ref={billingCountryDropdownRef}>
                         <Input
                           id="billingCountry"
@@ -2815,7 +2815,7 @@ export default function AddCustomer() {
                             }
                           }}
                           onFocus={() => setShowBillingCountryDropdown(true)}
-                          placeholder={t('customers.typeToSearchCountries')}
+                          placeholder={t('customers:typeToSearchCountries')}
                           className={cn(getConfidenceClass('country', billingAddressFieldConfidence))}
                           data-testid="input-billingCountry"
                         />
@@ -2859,7 +2859,7 @@ export default function AddCustomer() {
                             {europeanCountries.filter(country => 
                               country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
                             ).length === 0 && (
-                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers.noCountriesFound')}</div>
+                              <div className="p-4 text-center text-slate-500 dark:text-slate-400">{t('customers:noCountriesFound')}</div>
                             )}
                           </div>
                         )}
@@ -2872,25 +2872,25 @@ export default function AddCustomer() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {billingAddressForm.watch('country') === 'Czech Republic' && (
                       <div>
-                        <Label htmlFor="billingIco">{t('customers.ico')}</Label>
+                        <Label htmlFor="billingIco">{t('customers:ico')}</Label>
                         <Input
                           id="billingIco"
                           {...billingAddressForm.register('ico')}
-                          placeholder={t('customers.icoPlaceholder')}
+                          placeholder={t('customers:icoPlaceholder')}
                           data-testid="input-billingIco"
                         />
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.czechCompanyRegistrationHint')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:czechCompanyRegistrationHint')}</p>
                       </div>
                     )}
                     <div className={billingAddressForm.watch('country') === 'Czech Republic' ? '' : 'md:col-span-2'}>
-                      <Label htmlFor="billingVatId">{t('customers.vatId')}</Label>
+                      <Label htmlFor="billingVatId">{t('customers:vatId')}</Label>
                       <Input
                         id="billingVatId"
                         {...billingAddressForm.register('vatId')}
-                        placeholder={t('customers.vatNumberExamplePlaceholder')}
+                        placeholder={t('customers:vatNumberExamplePlaceholder')}
                         data-testid="input-billingVatId"
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.companyVatIdHint')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:companyVatIdHint')}</p>
                     </div>
                   </div>
 
@@ -2904,7 +2904,7 @@ export default function AddCustomer() {
                       className="rounded border-gray-300"
                       data-testid="checkbox-billingIsPrimary"
                     />
-                    <Label htmlFor="billingIsPrimary">{t('customers.setAsPrimaryBillingAddress')}</Label>
+                    <Label htmlFor="billingIsPrimary">{t('customers:setAsPrimaryBillingAddress')}</Label>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4 border-t">
@@ -2920,7 +2920,7 @@ export default function AddCustomer() {
                       data-testid="button-cancelBilling"
                     >
                       <X className="h-4 w-4 mr-2" />
-                      {t('customers.cancel')}
+                      {t('customers:cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -2928,7 +2928,7 @@ export default function AddCustomer() {
                       data-testid="button-saveBilling"
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      {t('customers.saveAddress')}
+                      {t('customers:saveAddress')}
                     </Button>
                   </div>
                 </div>
@@ -2936,7 +2936,7 @@ export default function AddCustomer() {
             )}
 
             {billingAddresses.length === 0 && !isAddingBilling && (
-              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers.noBillingAddresses')}</p>
+              <p className="text-center text-slate-500 dark:text-slate-400 py-8">{t('customers:noBillingAddresses')}</p>
             )}
               </CardContent>
             </CollapsibleContent>
@@ -2951,7 +2951,7 @@ export default function AddCustomer() {
                   <div className="flex items-center justify-between w-full">
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-purple-500" />
-                      {t('customers.taxBusinessInformation')}
+                      {t('customers:taxBusinessInformation')}
                     </CardTitle>
                     <ChevronDown className={cn("h-5 w-5 text-slate-500 dark:text-slate-400 transition-transform duration-200", taxInfoOpen ? "rotate-0" : "-rotate-90")} />
                   </div>
@@ -2963,34 +2963,34 @@ export default function AddCustomer() {
                 <div className="space-y-4 pb-4 border-b">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="text-2xl">🇨🇿</span>
-                    {t('customers.czechCompanyInformation')}
+                    {t('customers:czechCompanyInformation')}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="ico">{t('customers.ico')}</Label>
+                      <Label htmlFor="ico">{t('customers:ico')}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="ico"
                           {...form.register('ico')}
-                          placeholder={t('customers.icoPlaceholder')}
+                          placeholder={t('customers:icoPlaceholder')}
                           onBlur={(e) => handleAresLookup(e.target.value)}
                           data-testid="input-ico"
                         />
                         {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.enterIcoToAutofill')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:enterIcoToAutofill')}</p>
                     </div>
                     <div>
-                      <Label htmlFor="dic">{t('customers.dic')}</Label>
+                      <Label htmlFor="dic">{t('customers:dic')}</Label>
                       <Input
                         id="dic"
                         {...form.register('dic')}
-                        placeholder={t('customers.vatNumberCzPlaceholder')}
+                        placeholder={t('customers:vatNumberCzPlaceholder')}
                         readOnly
                         className="bg-slate-50 dark:bg-slate-800"
                         data-testid="input-dic"
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.autoFilledFromAres')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:autoFilledFromAres')}</p>
                     </div>
                   </div>
                 </div>
@@ -3000,16 +3000,16 @@ export default function AddCustomer() {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="text-2xl">🇪🇺</span>
-                    {t('customers.vatInformation')}
+                    {t('customers:vatInformation')}
                   </h4>
                   <div>
-                    <Label htmlFor="vatNumber">{t('customers.vatNumber')}</Label>
+                    <Label htmlFor="vatNumber">{t('customers:vatNumber')}</Label>
                     <div className="flex gap-2 items-start">
                       <div className="flex-1">
                         <Input
                           id="vatNumber"
                           {...form.register('vatNumber')}
-                          placeholder={t('customers.enterVatNumber')}
+                          placeholder={t('customers:enterVatNumber')}
                           onBlur={(e) => {
                             const vatNumber = e.target.value;
                             const country = selectedCountry;
@@ -3019,7 +3019,7 @@ export default function AddCustomer() {
                           }}
                           data-testid="input-vatNumber"
                         />
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers.willBeValidatedVies')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('customers:willBeValidatedVies')}</p>
                       </div>
                       {isValidatingVat && (
                         <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
@@ -3029,12 +3029,12 @@ export default function AddCustomer() {
                           {vatValidationResult.valid ? (
                             <>
                               <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
-                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">{t('customers.valid')}</Badge>
+                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">{t('customers:valid')}</Badge>
                             </>
                           ) : (
                             <>
                               <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
-                              <Badge variant="destructive" data-testid="badge-vatInvalid">{t('customers.invalid')}</Badge>
+                              <Badge variant="destructive" data-testid="badge-vatInvalid">{t('customers:invalid')}</Badge>
                             </>
                           )}
                         </div>
@@ -3042,7 +3042,7 @@ export default function AddCustomer() {
                     </div>
                     {vatValidationResult?.companyName && (
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-2" data-testid="text-vatCompanyName">
-                        {t('customers.companyLabel')} {vatValidationResult.companyName}
+                        {t('customers:companyLabel')} {vatValidationResult.companyName}
                       </p>
                     )}
                     {vatValidationResult?.error && (
@@ -3065,7 +3065,7 @@ export default function AddCustomer() {
             className="w-full sm:w-auto"
             data-testid="button-cancel"
           >
-            {t('customers.cancel')}
+            {t('customers:cancel')}
           </Button>
           <Button
             type="submit"
@@ -3076,10 +3076,10 @@ export default function AddCustomer() {
             {createOrUpdateCustomerMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isEditMode ? t('customers.updating') : t('customers.creating')}
+                {isEditMode ? t('customers:updating') : t('customers:creating')}
               </>
             ) : (
-              isEditMode ? t('customers.updateCustomer') : t('customers.createCustomer')
+              isEditMode ? t('customers:updateCustomer') : t('customers:createCustomer')
             )}
           </Button>
         </div>
@@ -3088,19 +3088,19 @@ export default function AddCustomer() {
       <AlertDialog open={deleteBillingIndex !== null} onOpenChange={() => setDeleteBillingIndex(null)}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-lg" data-testid="dialog-deleteBillingConfirm">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('customers.deleteBillingAddress')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('customers:deleteBillingAddress')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('customers.confirmDeleteBillingAddress')}
+              {t('customers:confirmDeleteBillingAddress')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancelDeleteBilling">{t('customers.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancelDeleteBilling">{t('customers:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBillingAddress}
               className="bg-red-500 hover:bg-red-600"
               data-testid="button-confirmDeleteBilling"
             >
-              {t('customers.delete')}
+              {t('customers:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

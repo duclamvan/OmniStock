@@ -408,6 +408,17 @@ const customers = {
   // AddCustomer Form - Duplicate Detection
   customerAlreadyExists: 'Customer Already Exists',
   
+  // Import XLSX
+  importCustomers: 'Import Customers',
+  importFromXLSX: 'Import from XLSX',
+  importSuccessful: 'Import Successful',
+  importedCustomers: 'Imported {{count}} customer(s)',
+  failedToImportCustomers: 'Failed to import customers',
+  importingCustomers: 'Importing customers...',
+  noValidRowsToImport: 'No valid rows to import',
+  invalidFileFormat: 'Invalid file format. Please upload an XLSX file.',
+  newBadge: 'NEW',
+  
   // AddCustomer Form - Additional Fields
   vatId: 'VAT ID',
   

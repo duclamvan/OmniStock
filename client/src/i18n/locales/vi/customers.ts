@@ -208,6 +208,14 @@ const customers = {
   bulkUpdate: 'Cập nhật hàng loạt',
   mergeCustomers: 'Gộp khách hàng',
   duplicateCustomer: 'Khách hàng trùng lặp',
+  importFromXLSX: 'Nhập từ XLSX',
+  importSuccessful: 'Nhập thành công',
+  importedCustomers: 'Đã nhập {{count}} khách hàng',
+  failedToImportCustomers: 'Nhập khách hàng thất bại',
+  importingCustomers: 'Đang nhập khách hàng...',
+  noValidRowsToImport: 'Không có hàng hợp lệ để nhập',
+  invalidFileFormat: 'Định dạng file không hợp lệ. Vui lòng tải lên file XLSX.',
+  newBadge: 'MỚI',
   
   // Additional Messages
   failedToLoadCustomers: 'Không thể tải danh sách khách hàng',

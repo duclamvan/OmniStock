@@ -404,6 +404,8 @@ export const customers = pgTable("customers", {
   isBlacklisted: boolean("is_blacklisted").default(false), // Whether customer is blacklisted
   blacklistedAt: timestamp("blacklisted_at"), // When customer was blacklisted
   blacklistReason: text("blacklist_reason"), // Reason for blacklisting
+  // Import tracking
+  isNew: boolean("is_new").default(true), // Whether customer is newly imported/created
 });
 
 // Customer shipping addresses (multiple per customer)

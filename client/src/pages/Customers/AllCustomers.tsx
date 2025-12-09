@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp } from "lucide-react";
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,8 @@ export default function AllCustomers() {
   const [selectedCustomerType, setSelectedCustomerType] = useState<string>("");
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([]);
   const [isUpdatingType, setIsUpdatingType] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -247,6 +250,11 @@ export default function AllCustomers() {
           <Link href={`/customers/${customer.id}`}>
             <div className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1 lg:gap-2">
               <span className="truncate max-w-[120px] lg:max-w-none">{customer.name}</span>
+              {customer.isNew && (
+                <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-green-50 border-green-300 text-green-700 hidden sm:flex">
+                  {t('customers:newBadge')}
+                </Badge>
+              )}
               {customer.hasPayLaterBadge && (
                 <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-yellow-50 border-yellow-300 text-yellow-700 hidden sm:flex">
                   {t('customers:payLater')}
@@ -516,6 +524,125 @@ export default function AllCustomers() {
     }
   };
 
+  const handleImportXLSX = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast({
+        title: t('common:error'),
+        description: t('customers:invalidFileFormat'),
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsImporting(true);
+    toast({
+      title: t('customers:importingCustomers'),
+      description: t('common:pleaseWait'),
+    });
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
+
+      if (jsonData.length === 0) {
+        toast({
+          title: t('common:error'),
+          description: t('customers:noValidRowsToImport'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      const mapHeaderToField = (row: Record<string, any>) => {
+        const customer: Record<string, any> = { isNew: true };
+        
+        for (const [key, value] of Object.entries(row)) {
+          const lowerKey = key.toLowerCase().trim();
+          if (lowerKey === 'name' || lowerKey === 'tên' || lowerKey === 'ten') {
+            customer.name = String(value);
+          } else if (lowerKey === 'email') {
+            customer.email = String(value);
+          } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
+            customer.phone = String(value);
+          } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
+            customer.country = String(value);
+          } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi') {
+            customer.address = String(value);
+          } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
+            customer.city = String(value);
+          } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
+            customer.notes = String(value);
+          }
+        }
+        return customer;
+      };
+
+      const validCustomers = jsonData
+        .map(mapHeaderToField)
+        .filter(c => c.name && c.name.trim() !== '');
+
+      if (validCustomers.length === 0) {
+        toast({
+          title: t('common:error'),
+          description: t('customers:noValidRowsToImport'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const customer of validCustomers) {
+        try {
+          await apiRequest('POST', '/api/customers', customer);
+          successCount++;
+        } catch (error) {
+          console.error('Failed to import customer:', customer.name, error);
+          failCount++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+
+      if (successCount > 0) {
+        toast({
+          title: t('customers:importSuccessful'),
+          description: t('customers:importedCustomers', { count: successCount }),
+        });
+      }
+
+      if (failCount > 0) {
+        toast({
+          title: t('common:warning'),
+          description: `${failCount} customer(s) failed to import`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: t('common:error'),
+        description: t('customers:failedToImportCustomers'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px] bg-white dark:bg-slate-900">
@@ -543,6 +670,24 @@ export default function AllCustomers() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportXLSX}
+            accept=".xlsx,.xls"
+            className="hidden"
+            data-testid="input-import-file"
+          />
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            data-testid="button-import-customers"
+          >
+            <FileUp className="h-4 w-4 mr-2" />
+            {isImporting ? t('customers:importingCustomers') : t('customers:importFromXLSX')}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export-customers">
@@ -715,6 +860,11 @@ export default function AllCustomers() {
                             </p>
                           </Link>
                           <div className="flex items-center gap-2 mt-1">
+                            {customer.isNew && (
+                              <Badge variant="outline" className="text-xs px-2 py-0 h-5 bg-green-50 dark:bg-green-900 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300">
+                                {t('customers:newBadge')}
+                              </Badge>
+                            )}
                             {customer.type === 'vip' ? (
                               <Badge variant="default" className="text-xs px-2 py-0 h-5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
                                 <Star className="h-3 w-3 mr-1" />
