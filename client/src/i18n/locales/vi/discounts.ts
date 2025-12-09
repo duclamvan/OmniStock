@@ -86,7 +86,7 @@ const discounts = {
   
   // Edit/Add page headings
   editDiscount: 'Chỉnh sửa Giảm giá',
-  addDiscount: 'Thêm Giảm giá mới',
+  addDiscountPageTitle: 'Thêm Giảm giá mới',
   discountSummary: 'Tóm tắt Giảm giá',
   advancedOptions: 'Tùy chọn Nâng cao',
   discountRules: 'Quy tắc Giảm giá',
@@ -230,6 +230,16 @@ const discounts = {
   tryAdjustingSearch: 'Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc',
   deleteDiscounts: 'Xóa Giảm giá',
   confirmDelete: 'Bạn có chắc chắn muốn xóa {{count}} giảm giá?',
+  
+  // Edit/Add page summary
+  enterName: 'Nhập tên giảm giá',
+  discountValue: 'Giá trị Giảm giá',
+  itemPrice: 'Giá sản phẩm',
+  finalPrice: 'Giá cuối cùng',
+  promotion: 'Khuyến mãi',
+  buyGetFree: 'Mua {{buy}}, Tặng {{get}} Miễn phí',
+  effectiveDiscount: 'Giảm giá hiệu quả',
+  onTotalItems: 'trên tổng {{total}} sản phẩm',
 } as const;
 
 export default discounts;

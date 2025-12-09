@@ -176,6 +176,10 @@ interface OrderItem {
   bundleId?: string | null;
   image?: string | null;
   notes?: string | null;
+  appliedDiscountId?: string | null;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  appliedDiscountScope?: string | null;
 }
 
 // Helper function to get country flag emoji
@@ -790,24 +794,40 @@ export default function EditOrder() {
 
     console.log('✅ Loading order items:', order.items.length);
 
-    const items: OrderItem[] = order.items.map((item: any) => ({
-      id: item.id || `item-${Date.now()}-${Math.random()}`,
-      productId: item.productId,
-      serviceId: item.serviceId,
-      bundleId: item.bundleId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: item.quantity,
-      price: parseFloat(item.price || 0),
-      discount: parseFloat(item.discount || 0),
-      tax: parseFloat(item.tax || 0),
-      total: parseFloat(item.total || 0),
-      landingCost: item.landingCost,
-      variantId: item.variantId,
-      variantName: item.variantName,
-      image: item.image,
-      notes: item.notes,
-    }));
+    const items: OrderItem[] = order.items.map((item: any) => {
+      const discountAmount = parseFloat(item.discount || 0);
+      // Generate a simple label if discount exists but no label was stored
+      let discountLabel = item.appliedDiscountLabel || null;
+      if (!discountLabel && discountAmount > 0 && item.price > 0) {
+        const pct = Math.round((discountAmount / (item.price * item.quantity)) * 100);
+        if (pct > 0 && pct <= 100) {
+          discountLabel = `${pct}%`;
+        }
+      }
+      
+      return {
+        id: item.id || `item-${Date.now()}-${Math.random()}`,
+        productId: item.productId,
+        serviceId: item.serviceId,
+        bundleId: item.bundleId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        price: parseFloat(item.price || 0),
+        discount: discountAmount,
+        tax: parseFloat(item.tax || 0),
+        total: parseFloat(item.total || 0),
+        landingCost: item.landingCost,
+        variantId: item.variantId,
+        variantName: item.variantName,
+        image: item.image,
+        notes: item.notes,
+        appliedDiscountId: item.appliedDiscountId || null,
+        appliedDiscountLabel: discountLabel,
+        appliedDiscountType: item.appliedDiscountType || null,
+        appliedDiscountScope: item.appliedDiscountScope || null,
+      };
+    });
 
     setOrderItems(items);
   }, [existingOrder?.id, existingOrder?.items?.length]); // Re-run when ID or items change
@@ -1793,6 +1813,10 @@ export default function EditOrder() {
         variantName: product.itemType === 'variant' ? product.variantName : null,
         bundleId: product.itemType === 'bundle' ? product.bundleId : null,
         image: product.image || null,
+        appliedDiscountId: applicableDiscount?.id || null,
+        appliedDiscountLabel: discountLabel || null,
+        appliedDiscountType: applicableDiscount?.type || applicableDiscount?.discountType || null,
+        appliedDiscountScope: applicableDiscount?.applicationScope || null,
       };
       setOrderItems(items => [...items, newItem]);
 
@@ -1885,10 +1909,12 @@ export default function EditOrder() {
         // Check for applicable discount
         const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
         let discountAmount = 0;
+        let discountLabel = '';
 
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
           discountAmount = discountResult.amount;
+          discountLabel = applicableDiscount.name || discountResult.label;
         }
         
         const newItem: OrderItem = {
@@ -1905,6 +1931,10 @@ export default function EditOrder() {
           total: productPrice * quantity - discountAmount,
           landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
           image: variant.photo || selectedProductForVariant.image || null,
+          appliedDiscountId: applicableDiscount?.id || null,
+          appliedDiscountLabel: discountLabel || null,
+          appliedDiscountType: applicableDiscount?.type || applicableDiscount?.discountType || null,
+          appliedDiscountScope: applicableDiscount?.applicationScope || null,
         };
         
         setOrderItems(items => [...items, newItem]);
@@ -3878,7 +3908,15 @@ export default function EditOrder() {
                             </TableCell>
                             {showDiscountColumn && (
                               <TableCell className="text-right align-middle">
-                                <div className="flex justify-end">
+                                <div className="flex flex-col items-end gap-1">
+                                  {item.appliedDiscountLabel && (
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap"
+                                    >
+                                      {item.appliedDiscountLabel}
+                                    </Badge>
+                                  )}
                                   <Input
                                     type="number"
                                     step="0.01"

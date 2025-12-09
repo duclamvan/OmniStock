@@ -86,7 +86,7 @@ const discounts = {
   
   // Edit/Add page headings
   editDiscount: 'Edit Discount',
-  addDiscount: 'Add New Discount',
+  addDiscountPageTitle: 'Add New Discount',
   discountSummary: 'Discount Summary',
   advancedOptions: 'Advanced Options',
   discountRules: 'Discount Rules',
@@ -230,6 +230,16 @@ const discounts = {
   tryAdjustingSearch: 'Try adjusting your search or filters',
   deleteDiscounts: 'Delete Discounts',
   confirmDelete: 'Are you sure you want to delete {{count}} discount(s)?',
+  
+  // Edit/Add page summary
+  enterName: 'Enter discount name',
+  discountValue: 'Discount Value',
+  itemPrice: 'Item Price',
+  finalPrice: 'Final Price',
+  promotion: 'Promotion',
+  buyGetFree: 'Buy {{buy}}, Get {{get}} Free',
+  effectiveDiscount: 'Effective Discount',
+  onTotalItems: 'on {{total}} total items',
 } as const;
 
 export default discounts;

@@ -4212,7 +4212,15 @@ export default function AddOrder() {
                             </TableCell>
                             {showDiscountColumn && (
                               <TableCell className="text-right align-middle">
-                                <div className="flex justify-end">
+                                <div className="flex flex-col items-end gap-1">
+                                  {item.appliedDiscountLabel && (
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap"
+                                    >
+                                      {item.appliedDiscountLabel}
+                                    </Badge>
+                                  )}
                                   <MathInput
                                     min={0}
                                     step={0.01}
