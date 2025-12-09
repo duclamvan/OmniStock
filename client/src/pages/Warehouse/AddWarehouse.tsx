@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { WarehouseForm, WarehouseFormData, UploadedFile } from "@/components/warehouse/WarehouseForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollText, Save } from "lucide-react";
 
 export default function AddWarehouse() {
   const { t } = useTranslation(['warehouse', 'common']);
@@ -69,12 +71,38 @@ export default function AddWarehouse() {
     createWarehouseMutation.mutate({ data, uploadedFiles });
   };
 
+  // Financial Contracts Section - shows placeholder since warehouse doesn't exist yet
+  const financialContractsSection = (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-orange-600" />
+              {t('warehouse:financialContracts')}
+            </CardTitle>
+            <CardDescription>{t('warehouse:manageFinancialAgreements')}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50/50">
+          <Save className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+          <p className="text-slate-600 font-medium">{t('warehouse:saveWarehouseFirst')}</p>
+          <p className="text-sm text-slate-500 mt-1">{t('warehouse:contractsAvailableAfterSave')}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <WarehouseForm
       mode="add"
       onSubmit={handleSubmit}
       isSubmitting={createWarehouseMutation.isPending}
       onCancel={() => navigate("/warehouses")}
-    />
+    >
+      {financialContractsSection}
+    </WarehouseForm>
   );
 }

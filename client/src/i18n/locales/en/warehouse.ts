@@ -175,6 +175,8 @@ const warehouse = {
   startDateLabel: 'Start Date',
   endDateLabel: 'End Date',
   contractNotesPlaceholder: 'Add any additional notes about this contract...',
+  saveWarehouseFirst: 'Save warehouse first',
+  contractsAvailableAfterSave: 'Financial contracts can be added after creating the warehouse',
   
   // Warehouse Details
   warehouseDetails: 'Warehouse Details',

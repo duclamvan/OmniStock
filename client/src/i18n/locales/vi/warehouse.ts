@@ -176,6 +176,8 @@ const warehouse = {
   startDateLabel: 'Ngày bắt đầu',
   endDateLabel: 'Ngày kết thúc',
   contractNotesPlaceholder: 'Thêm ghi chú bổ sung về hợp đồng này...',
+  saveWarehouseFirst: 'Lưu kho trước',
+  contractsAvailableAfterSave: 'Hợp đồng tài chính có thể được thêm sau khi tạo kho',
   
   // Warehouse Details
   warehouseDetails: 'Chi tiết kho',
