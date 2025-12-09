@@ -111,7 +111,10 @@ export default function AddWarehouse() {
     email: z.string().email(t('common:invalidEmail')).optional().or(z.literal("")),
     manager: z.string().optional(),
     type: z.enum(["main", "branch", "temporary"]).default("branch"),
-    floorArea: z.number().optional().nullable(),
+    floorArea: z.preprocess(
+      (val) => (val === '' || val === undefined || val === null || Number.isNaN(val) ? undefined : Number(val)),
+      z.number().optional()
+    ),
   });
 
   const form = useForm<WarehouseFormData>({
