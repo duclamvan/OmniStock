@@ -1269,7 +1269,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         <div className={cn(
           "mx-auto",
           !(noPadding || location === '/pos') && "px-mobile py-mobile",
-          layoutWidth === 'full' || location === '/pos' ? 'max-w-full' : 'max-w-7xl'
+          layoutWidth === 'full' || location === '/pos' || location === '/inventory' || location.startsWith('/inventory/') ? 'max-w-full' : 'max-w-7xl'
         )}>
           {children}
         </div>
