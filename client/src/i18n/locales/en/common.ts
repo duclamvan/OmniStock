@@ -718,8 +718,12 @@ const common = {
     // Error Messages
     authenticationFailed: 'Authentication Failed',
     unableToLogin: 'Unable to log in. Please try again.',
-    invalidCredentials: 'Invalid username or password',
+    invalidCredentials: 'The username or password you entered is incorrect. Please check your credentials and try again.',
     tooManyLoginAttempts: 'Too many login attempts. Please try again later.',
+    accountLocked: 'Account Temporarily Locked',
+    accountLockedMessage: 'Your account has been temporarily locked due to too many failed attempts. Please try again in {{minutes}} minutes.',
+    attemptsRemaining: 'You have {{count}} attempt(s) remaining before your account is locked.',
+    lastAttemptWarning: 'Warning: This is your last attempt. Your account will be locked after one more failed attempt.',
     verificationFailed: 'Verification Failed',
     invalidCode: 'Invalid code. Please try again.',
     phoneNumberRequired: 'Phone number is required',

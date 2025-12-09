@@ -93,16 +93,28 @@ export default function Login() {
         await new Promise(resolve => setTimeout(resolve, 50));
         window.location.href = "/";
       } else if (response.status === 429) {
+        const errorData = await response.json();
         toast({
-          title: t('error'),
-          description: t('auth.tooManyLoginAttempts'),
+          title: t('auth.accountLocked'),
+          description: errorData.lockedUntil 
+            ? t('auth.accountLockedMessage', { minutes: errorData.lockedUntil })
+            : t('auth.tooManyLoginAttempts'),
           variant: "destructive",
         });
       } else if (response.status === 401) {
         const errorData = await response.json();
+        const attemptsRemaining = errorData.attemptsRemaining;
+        let description = errorData.message || t('auth.invalidCredentials');
+        
+        if (attemptsRemaining !== undefined && attemptsRemaining > 0) {
+          description = `${description} ${t('auth.attemptsRemaining', { count: attemptsRemaining })}`;
+        } else if (attemptsRemaining === 0) {
+          description = t('auth.lastAttemptWarning');
+        }
+        
         toast({
           title: t('auth.authenticationFailed'),
-          description: errorData.message || t('auth.invalidCredentials'),
+          description,
           variant: "destructive",
         });
       } else {

@@ -219,17 +219,25 @@ export async function setupAuth(app: Express) {
         const user = await storage.getUserByUsername(username);
 
         if (!user) {
-          return done(null, false, { message: "Invalid username or password" });
+          // User not found - return detailed message while maintaining security
+          return done(null, false, { 
+            message: "The username or password you entered is incorrect. Please check your credentials and try again."
+          });
         }
 
         if (!user.passwordHash) {
-          return done(null, false, { message: "Invalid username or password" });
+          return done(null, false, { 
+            message: "This account cannot be accessed with a password. Please contact your administrator."
+          });
         }
 
         const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
         if (!isValidPassword) {
-          return done(null, false, { message: "Invalid username or password" });
+          // Wrong password - return detailed message while maintaining security
+          return done(null, false, { 
+            message: "The username or password you entered is incorrect. Please check your credentials and try again."
+          });
         }
 
         // Authentication successful - log only non-sensitive audit info

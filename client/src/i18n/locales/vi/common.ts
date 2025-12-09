@@ -672,8 +672,12 @@ const common = {
     // Error Messages
     authenticationFailed: 'Xác thực thất bại',
     unableToLogin: 'Không thể đăng nhập. Vui lòng thử lại.',
-    invalidCredentials: 'Tên đăng nhập hoặc mật khẩu không đúng',
+    invalidCredentials: 'Tên đăng nhập hoặc mật khẩu bạn nhập không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.',
     tooManyLoginAttempts: 'Quá nhiều lần đăng nhập. Vui lòng thử lại sau.',
+    accountLocked: 'Tài khoản tạm thời bị khóa',
+    accountLockedMessage: 'Tài khoản của bạn đã bị khóa tạm thời do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau {{minutes}} phút.',
+    attemptsRemaining: 'Bạn còn {{count}} lần thử trước khi tài khoản bị khóa.',
+    lastAttemptWarning: 'Cảnh báo: Đây là lần thử cuối cùng. Tài khoản của bạn sẽ bị khóa sau một lần đăng nhập thất bại nữa.',
     verificationFailed: 'Xác minh thất bại',
     invalidCode: 'Mã không hợp lệ. Vui lòng thử lại.',
     phoneNumberRequired: 'Cần nhập số điện thoại',
