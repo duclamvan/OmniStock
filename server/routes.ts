@@ -10170,8 +10170,21 @@ Important:
 
   app.post('/api/discounts', isAuthenticated, async (req: any, res) => {
     try {
-      // Keep dates as strings - Drizzle date columns expect string format
-      const data = insertDiscountSchema.parse(req.body);
+      // Convert numeric fields to strings for decimal columns
+      const body = { ...req.body };
+      if (typeof body.percentage === 'number') {
+        body.percentage = String(body.percentage);
+      }
+      if (typeof body.value === 'number') {
+        body.value = String(body.value);
+      }
+      if (typeof body.minPurchaseAmount === 'number') {
+        body.minPurchaseAmount = String(body.minPurchaseAmount);
+      }
+      if (typeof body.maxDiscountAmount === 'number') {
+        body.maxDiscountAmount = String(body.maxDiscountAmount);
+      }
+      const data = insertDiscountSchema.parse(body);
       const discount = await storage.createDiscount(data);
 
       await storage.createUserActivity({
