@@ -3960,15 +3960,7 @@ export default function EditOrder() {
                             </TableCell>
                             {showDiscountColumn && (
                               <TableCell className="text-right align-middle">
-                                <div className="flex flex-col items-end gap-1">
-                                  {item.appliedDiscountLabel && (
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap"
-                                    >
-                                      {item.appliedDiscountLabel}
-                                    </Badge>
-                                  )}
+                                <div className="flex justify-end">
                                   <div className="flex items-center gap-1">
                                     <Input
                                       type="number"
@@ -4001,11 +3993,6 @@ export default function EditOrder() {
                                     />
                                     <span className="text-sm text-muted-foreground">%</span>
                                   </div>
-                                  {item.discount > 0 && (
-                                    <span className="text-xs text-green-600 dark:text-green-400">
-                                      -{formatCurrency(item.discount, form.watch('currency'))}
-                                    </span>
-                                  )}
                                 </div>
                               </TableCell>
                             )}
