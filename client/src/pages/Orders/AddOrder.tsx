@@ -4099,8 +4099,7 @@ export default function AddOrder() {
                           {showVatColumn && (
                             <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:vat')}</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:lineTotal')}</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">{t('orders:actionsHeader')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -4290,9 +4289,6 @@ export default function AddOrder() {
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100 align-middle">
-                              {formatCurrency(item.total, form.watch('currency'))}
-                            </TableCell>
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <DropdownMenu>
@@ -4336,7 +4332,7 @@ export default function AddOrder() {
                           {/* Shipping Notes Row */}
                           {item.notes && (
                             <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
-                              <TableCell colSpan={showVatColumn && showDiscountColumn ? 7 : showVatColumn || showDiscountColumn ? 6 : 5} className="py-2 px-3">
+                              <TableCell colSpan={showVatColumn && showDiscountColumn ? 6 : showVatColumn || showDiscountColumn ? 5 : 4} className="py-2 px-3">
                                 <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
                                   <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
