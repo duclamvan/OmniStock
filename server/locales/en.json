@@ -81,7 +81,7 @@
     "totalOrders": "Total Orders",
     "totalSpent": "Total Spent"
   },
-  "warehouses": {
+  "warehouse": {
     "warehouses": "Warehouses",
     "warehouseName": "Warehouse Name",
     "location": "Location",
@@ -89,7 +89,12 @@
     "capacity": "Capacity",
     "addWarehouse": "Add Warehouse",
     "editWarehouse": "Edit Warehouse",
-    "deleteWarehouse": "Delete Warehouse"
+    "deleteWarehouse": "Delete Warehouse",
+    "type": {
+      "fulfillment": "Fulfillment",
+      "storage": "Storage",
+      "transit": "Transit"
+    }
   },
   "inventory": {
     "inventory": "Inventory",

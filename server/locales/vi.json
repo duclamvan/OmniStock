@@ -81,7 +81,7 @@
     "totalOrders": "Tổng đơn hàng",
     "totalSpent": "Tổng chi tiêu"
   },
-  "warehouses": {
+  "warehouse": {
     "warehouses": "Kho hàng",
     "warehouseName": "Tên kho hàng",
     "location": "Vị trí",
@@ -89,7 +89,12 @@
     "capacity": "Sức chứa",
     "addWarehouse": "Thêm kho hàng",
     "editWarehouse": "Chỉnh sửa kho hàng",
-    "deleteWarehouse": "Xóa kho hàng"
+    "deleteWarehouse": "Xóa kho hàng",
+    "type": {
+      "fulfillment": "Giao hàng",
+      "storage": "Lưu trữ",
+      "transit": "Vận chuyển"
+    }
   },
   "inventory": {
     "inventory": "Hàng tồn kho",
