@@ -2280,6 +2280,53 @@ export default function ProductForm() {
                     </p>
                   </div>
 
+                  {/* Wholesale Prices */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">{t('products:formLabels.wholesalePrices')}</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="wholesalePriceCzk" className="text-xs text-slate-500">CZK</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('wholesalePriceCzk')}
+                          placeholder="0.00"
+                          data-testid="input-wholesale-price-czk"
+                          className="mt-1"
+                          onBlur={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('wholesalePriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="wholesalePriceEur" className="text-xs text-slate-500">EUR</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('wholesalePriceEur')}
+                          placeholder="0.00"
+                          data-testid="input-wholesale-price-eur"
+                          className="mt-1"
+                          onBlur={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('wholesalePriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {t('products:formLabels.wholesalePriceHelper')}
+                    </p>
+                  </div>
+
                   {/* Import Costs */}
                   {canAccessFinancialData && (
                     <div>

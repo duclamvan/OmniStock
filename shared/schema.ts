@@ -651,6 +651,8 @@ export const products = pgTable("products", {
   priceUsd: decimal("price_usd"),
   priceVnd: decimal("price_vnd"),
   priceCny: decimal("price_cny"),
+  wholesalePriceCzk: decimal("wholesale_price_czk", { precision: 12, scale: 2 }),
+  wholesalePriceEur: decimal("wholesale_price_eur", { precision: 12, scale: 2 }),
   importCostUsd: decimal("import_cost_usd"),
   importCostCzk: decimal("import_cost_czk"),
   importCostEur: decimal("import_cost_eur"),

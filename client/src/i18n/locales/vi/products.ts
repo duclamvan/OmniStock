@@ -599,6 +599,8 @@ const products = {
     barcode: 'Mã vạch',
     barcodePlaceholder: 'Nhập hoặc quét mã vạch',
     salesPrices: 'Giá bán',
+    wholesalePrices: 'Giá sỉ',
+    wholesalePriceHelper: 'Giá dành cho khách hàng sỉ/B2B',
     autoConvertHelper: 'Tiền tệ tự động chuyển đổi khi rời khỏi ô',
     importCosts: 'Chi phí nhập khẩu',
     autoConvertRealtime: 'Tiền tệ tự động chuyển đổi theo thời gian thực',

@@ -492,6 +492,8 @@ const products = {
     barcode: 'Barcode',
     barcodePlaceholder: 'Enter or scan barcode',
     salesPrices: 'Sales Prices',
+    wholesalePrices: 'Wholesale Prices',
+    wholesalePriceHelper: 'Prices for wholesale/B2B customers',
     autoConvertHelper: 'Currency auto-converts on blur',
     importCosts: 'Import Costs',
     autoConvertRealtime: 'Currency auto-converts in real-time',
