@@ -84,7 +84,7 @@ export default function AddWarehouse() {
 
   const warehouseSchema = z.object({
     name: z.string().min(1, t('warehouse:warehouseNameRequired')),
-    code: z.string().optional(),
+    code: z.string().min(1, t('warehouse:warehouseCodeRequired')),
     location: z.string().optional(),
     status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
     rentedFromDate: z.string().optional(),

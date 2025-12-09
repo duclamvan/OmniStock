@@ -46,6 +46,7 @@ const warehouse = {
   warehouseCreatedSuccess: 'Tạo kho thành công',
   warehouseCreateError: 'Không thể tạo kho',
   warehouseNameRequired: 'Tên kho là bắt buộc',
+  warehouseCodeRequired: 'Mã kho là bắt buộc',
   basicInformation: 'Thông tin cơ bản',
   basicInformationDesc: 'Thông tin chi tiết và nhận diện kho hàng',
   warehouseNamePlaceholder: 'VD: Kho phân phối EU Berlin',

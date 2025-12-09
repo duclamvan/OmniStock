@@ -43,6 +43,7 @@ const warehouse = {
   warehouseCreatedSuccess: 'Warehouse created successfully',
   warehouseCreateError: 'Failed to create warehouse',
   warehouseNameRequired: 'Warehouse name is required',
+  warehouseCodeRequired: 'Warehouse code is required',
   basicInformation: 'Basic Information',
   basicInformationDesc: 'Essential warehouse details and identification',
   warehouseNamePlaceholder: 'e.g., Berlin EU Distribution',
