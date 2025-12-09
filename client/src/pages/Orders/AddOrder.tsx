@@ -182,6 +182,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   discount: number;
+  discountPercentage: number;
   tax: number;
   total: number;
   landingCost?: number | null;
@@ -414,9 +415,9 @@ export default function AddOrder() {
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
-  // Auto-enable discount column if any item has a discount or an applied discount label
+  // Auto-enable discount column if any item has a discount percentage or an applied discount label
   useEffect(() => {
-    const hasDiscounts = orderItems.some(item => item.discount > 0 || item.appliedDiscountLabel);
+    const hasDiscounts = orderItems.some(item => item.discountPercentage > 0 || item.discount > 0 || item.appliedDiscountLabel);
     if (hasDiscounts && !showDiscountColumn) {
       setShowDiscountColumn(true);
     }
@@ -1555,6 +1556,7 @@ export default function AddOrder() {
           quantity: 1,
           price: servicePrice,
           discount: 0,
+          discountPercentage: 0,
           tax: 0,
           total: servicePrice,
         };
@@ -1677,6 +1679,8 @@ export default function AddOrder() {
           allDiscounts: discounts 
         });
         
+        let discountPct = 0;
+        
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
           console.log('🎯 Discount calculation:', { 
@@ -1688,7 +1692,13 @@ export default function AddOrder() {
             applicationScope: applicableDiscount.applicationScope,
             result: discountResult 
           });
-          discountAmount = discountResult.amount;
+          
+          if (applicableDiscount.type === 'percentage') {
+            discountPct = parseFloat(applicableDiscount.percentage || '0');
+            discountAmount = (productPrice * discountPct) / 100;
+          } else {
+            discountAmount = discountResult.amount;
+          }
           discountLabel = applicableDiscount.name || discountResult.label;
           discountId = applicableDiscount.id;
           discountType = applicableDiscount.type || applicableDiscount.discountType;
@@ -1703,6 +1713,7 @@ export default function AddOrder() {
           quantity: 1,
           price: productPrice,
           discount: discountAmount,
+          discountPercentage: discountPct,
           tax: 0,
           total: productPrice - discountAmount,
           landingCost: product.landingCost || product.latestLandingCost || null,
@@ -1781,6 +1792,7 @@ export default function AddOrder() {
       // Check for applicable discount
       const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
       let discountAmount = 0;
+      let discountPct = 0;
       let discountLabel = '';
       let discountId = null;
       let discountType = null;
@@ -1788,7 +1800,12 @@ export default function AddOrder() {
       
       if (applicableDiscount) {
         const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
-        discountAmount = discountResult.amount;
+        if (applicableDiscount.type === 'percentage') {
+          discountPct = parseFloat(applicableDiscount.percentage || '0');
+          discountAmount = (productPrice * quantity * discountPct) / 100;
+        } else {
+          discountAmount = discountResult.amount;
+        }
         discountLabel = applicableDiscount.name || discountResult.label;
         discountId = applicableDiscount.id;
         discountType = applicableDiscount.type || applicableDiscount.discountType;
@@ -1805,6 +1822,7 @@ export default function AddOrder() {
         quantity: quantity,
         price: productPrice,
         discount: discountAmount,
+        discountPercentage: discountPct,
         tax: 0,
         total: productPrice * quantity - discountAmount,
         landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
@@ -1835,31 +1853,28 @@ export default function AddOrder() {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
           
-          // Recalculate discount if quantity changes
-          if (field === 'quantity' && updatedItem.productId) {
-            // First check if there's an existing applied discount
-            if (updatedItem.appliedDiscountId) {
-              const applicableDiscount = (discounts as any[])?.find((d: any) => d.id === updatedItem.appliedDiscountId);
-              if (applicableDiscount) {
-                const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
-                updatedItem.discount = discountResult.amount;
-              }
-            } else {
-              // No discount was applied before, check if one applies now (e.g., buy_x_get_y threshold met)
-              const product = (allProducts as any[])?.find((p: any) => p.id === updatedItem.productId);
-              const applicableDiscount = findApplicableDiscount(updatedItem.productId, product?.categoryId);
-              if (applicableDiscount) {
-                const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
-                updatedItem.discount = discountResult.amount;
-                updatedItem.appliedDiscountId = applicableDiscount.id;
-                updatedItem.appliedDiscountLabel = applicableDiscount.name || discountResult.label;
-                updatedItem.appliedDiscountType = applicableDiscount.type || applicableDiscount.discountType;
-                updatedItem.appliedDiscountScope = applicableDiscount.applicationScope;
-              }
+          // Recalculate discount amount from percentage when quantity or price changes
+          if ((field === 'quantity' || field === 'price') && updatedItem.discountPercentage > 0) {
+            updatedItem.discount = (updatedItem.price * updatedItem.quantity * updatedItem.discountPercentage) / 100;
+          }
+          
+          // Recalculate discount if quantity changes and there's an applied discount (buy_x_get_y may change)
+          if (field === 'quantity' && updatedItem.productId && updatedItem.appliedDiscountId) {
+            const applicableDiscount = (discounts as any[])?.find((d: any) => d.id === updatedItem.appliedDiscountId);
+            if (applicableDiscount && applicableDiscount.type === 'buy_x_get_y') {
+              const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
+              updatedItem.discount = discountResult.amount;
             }
           }
           
-          if (field === 'quantity' || field === 'price' || field === 'discount') {
+          // When user manually changes discountPercentage, recalculate discount amount
+          if (field === 'discountPercentage') {
+            const pct = typeof value === 'number' ? value : parseFloat(value || '0');
+            updatedItem.discountPercentage = pct;
+            updatedItem.discount = (updatedItem.price * updatedItem.quantity * pct) / 100;
+          }
+          
+          if (field === 'quantity' || field === 'price' || field === 'discount' || field === 'discountPercentage') {
             updatedItem.total = (updatedItem.quantity * updatedItem.price) - updatedItem.discount;
           }
           return updatedItem;
@@ -1899,6 +1914,7 @@ export default function AddOrder() {
         quantity: 1,
         price: serviceFee,
         discount: 0,
+        discountPercentage: 0,
         tax: 0,
         total: serviceFee,
       });
@@ -1922,6 +1938,7 @@ export default function AddOrder() {
             quantity: itemQuantity,
             price: unitPrice,
             discount: 0,
+            discountPercentage: 0,
             tax: 0,
             total: lineTotal,
           });
@@ -4250,33 +4267,42 @@ export default function AddOrder() {
                                       {item.appliedDiscountLabel}
                                     </Badge>
                                   )}
-                                  <MathInput
-                                    min={0}
-                                    step={0.01}
-                                    value={item.discount}
-                                    onChange={(val) => updateOrderItem(item.id, 'discount', val)}
-                                    className="w-28 h-10 text-right"
-                                    data-testid={`input-discount-${item.id}`}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === 'Tab') {
-                                        e.preventDefault();
-                                        const nextInput = showVatColumn
-                                          ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                          : null;
-                                        
-                                        if (nextInput) {
-                                          (nextInput as HTMLInputElement).focus();
-                                        } else {
-                                          const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                          if (currentIndex < orderItems.length - 1) {
-                                            const nextItem = orderItems[currentIndex + 1];
-                                            const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                            nextRowInput?.focus();
+                                  <div className="flex items-center gap-1">
+                                    <MathInput
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={item.discountPercentage}
+                                      onChange={(val) => updateOrderItem(item.id, 'discountPercentage', val)}
+                                      className="w-20 h-10 text-right"
+                                      data-testid={`input-discount-${item.id}`}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === 'Tab') {
+                                          e.preventDefault();
+                                          const nextInput = showVatColumn
+                                            ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                            : null;
+                                          
+                                          if (nextInput) {
+                                            (nextInput as HTMLInputElement).focus();
+                                          } else {
+                                            const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                            if (currentIndex < orderItems.length - 1) {
+                                              const nextItem = orderItems[currentIndex + 1];
+                                              const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                              nextRowInput?.focus();
+                                            }
                                           }
                                         }
-                                      }
-                                    }}
-                                  />
+                                      }}
+                                    />
+                                    <span className="text-sm text-muted-foreground">%</span>
+                                  </div>
+                                  {item.discount > 0 && (
+                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                      -{formatCurrency(item.discount, form.watch('currency'))}
+                                    </span>
+                                  )}
                                 </div>
                               </TableCell>
                             )}
@@ -4472,17 +4498,26 @@ export default function AddOrder() {
                             {showDiscountColumn && (
                               <div>
                                 <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  Discount ({form.watch('currency')})
+                                  {t('orders:discountPercent', 'Discount %')}
                                 </Label>
-                                <MathInput
-                                  id={`mobile-discount-${item.id}`}
-                                  min={0}
-                                  step={0.01}
-                                  value={item.discount}
-                                  onChange={(val) => updateOrderItem(item.id, 'discount', val)}
-                                  className="h-11 text-base"
-                                  data-testid={`mobile-input-discount-${item.id}`}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <MathInput
+                                    id={`mobile-discount-${item.id}`}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={item.discountPercentage}
+                                    onChange={(val) => updateOrderItem(item.id, 'discountPercentage', val)}
+                                    className="h-11 text-base flex-1"
+                                    data-testid={`mobile-input-discount-${item.id}`}
+                                  />
+                                  <span className="text-sm text-muted-foreground">%</span>
+                                </div>
+                                {item.discount > 0 && (
+                                  <span className="text-xs text-green-600 dark:text-green-400 mt-1 block">
+                                    -{formatCurrency(item.discount, form.watch('currency'))}
+                                  </span>
+                                )}
                               </div>
                             )}
                             {showVatColumn && (

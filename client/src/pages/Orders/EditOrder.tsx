@@ -168,6 +168,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   discount: number;
+  discountPercentage: number;
   tax: number;
   total: number;
   landingCost?: number | null;
@@ -394,9 +395,9 @@ export default function EditOrder() {
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
-  // Auto-enable discount column if any item has a discount or an applied discount label
+  // Auto-enable discount column if any item has a discount percentage or an applied discount label
   useEffect(() => {
-    const hasDiscounts = orderItems.some(item => item.discount > 0 || item.appliedDiscountLabel);
+    const hasDiscounts = orderItems.some(item => item.discountPercentage > 0 || item.discount > 0 || item.appliedDiscountLabel);
     if (hasDiscounts && !showDiscountColumn) {
       setShowDiscountColumn(true);
     }
@@ -796,10 +797,19 @@ export default function EditOrder() {
 
     const items: OrderItem[] = order.items.map((item: any) => {
       const discountAmount = parseFloat(item.discount || 0);
+      const itemPrice = parseFloat(item.price || 0);
+      const itemQty = item.quantity || 1;
+      
+      // Calculate discountPercentage from stored discount amount if not stored
+      let discountPct = parseFloat(item.discountPercentage || 0);
+      if (discountPct === 0 && discountAmount > 0 && itemPrice > 0 && itemQty > 0) {
+        discountPct = Math.round((discountAmount / (itemPrice * itemQty)) * 100);
+      }
+      
       // Generate a simple label if discount exists but no label was stored
       let discountLabel = item.appliedDiscountLabel || null;
-      if (!discountLabel && discountAmount > 0 && item.price > 0) {
-        const pct = Math.round((discountAmount / (item.price * item.quantity)) * 100);
+      if (!discountLabel && discountAmount > 0 && itemPrice > 0) {
+        const pct = Math.round((discountAmount / (itemPrice * itemQty)) * 100);
         if (pct > 0 && pct <= 100) {
           discountLabel = `${pct}%`;
         }
@@ -812,9 +822,10 @@ export default function EditOrder() {
         bundleId: item.bundleId,
         productName: item.productName,
         sku: item.sku,
-        quantity: item.quantity,
-        price: parseFloat(item.price || 0),
+        quantity: itemQty,
+        price: itemPrice,
         discount: discountAmount,
+        discountPercentage: discountPct,
         tax: parseFloat(item.tax || 0),
         total: parseFloat(item.total || 0),
         landingCost: item.landingCost,
@@ -1687,6 +1698,7 @@ export default function EditOrder() {
           quantity: 1,
           price: servicePrice,
           discount: 0,
+          discountPercentage: 0,
           tax: 0,
           total: servicePrice,
         };
@@ -1804,11 +1816,17 @@ export default function EditOrder() {
       // Check for applicable discount
       const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
       let discountAmount = 0;
+      let discountPct = 0;
       let discountLabel = '';
 
       if (applicableDiscount) {
         const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
-        discountAmount = discountResult.amount;
+        if (applicableDiscount.type === 'percentage') {
+          discountPct = parseFloat(applicableDiscount.percentage || '0');
+          discountAmount = (productPrice * discountPct) / 100;
+        } else {
+          discountAmount = discountResult.amount;
+        }
         discountLabel = applicableDiscount.name || discountResult.label;
       }
 
@@ -1820,6 +1838,7 @@ export default function EditOrder() {
         quantity: 1,
         price: productPrice,
         discount: discountAmount,
+        discountPercentage: discountPct,
         tax: 0,
         total: productPrice - discountAmount,
         landingCost: product.landingCost || product.latestLandingCost || null,
@@ -1923,11 +1942,17 @@ export default function EditOrder() {
         // Check for applicable discount
         const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
         let discountAmount = 0;
+        let discountPct = 0;
         let discountLabel = '';
 
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
-          discountAmount = discountResult.amount;
+          if (applicableDiscount.type === 'percentage') {
+            discountPct = parseFloat(applicableDiscount.percentage || '0');
+            discountAmount = (productPrice * quantity * discountPct) / 100;
+          } else {
+            discountAmount = discountResult.amount;
+          }
           discountLabel = applicableDiscount.name || discountResult.label;
         }
         
@@ -1941,6 +1966,7 @@ export default function EditOrder() {
           quantity: quantity,
           price: productPrice,
           discount: discountAmount,
+          discountPercentage: discountPct,
           tax: 0,
           total: productPrice * quantity - discountAmount,
           landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
@@ -1977,7 +2003,20 @@ export default function EditOrder() {
       items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'price' || field === 'discount') {
+          
+          // Recalculate discount amount from percentage when quantity or price changes
+          if ((field === 'quantity' || field === 'price') && updatedItem.discountPercentage > 0) {
+            updatedItem.discount = (updatedItem.price * updatedItem.quantity * updatedItem.discountPercentage) / 100;
+          }
+          
+          // When user manually changes discountPercentage, recalculate discount amount
+          if (field === 'discountPercentage') {
+            const pct = typeof value === 'number' ? value : parseFloat(value || '0');
+            updatedItem.discountPercentage = pct;
+            updatedItem.discount = (updatedItem.price * updatedItem.quantity * pct) / 100;
+          }
+          
+          if (field === 'quantity' || field === 'price' || field === 'discount' || field === 'discountPercentage') {
             updatedItem.total = (updatedItem.quantity * updatedItem.price) - updatedItem.discount;
           }
           return updatedItem;
@@ -3931,33 +3970,43 @@ export default function EditOrder() {
                                       {item.appliedDiscountLabel}
                                     </Badge>
                                   )}
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={item.discount}
-                                    onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                    className="w-28 h-10 text-right"
-                                    data-testid={`input-discount-${item.id}`}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === 'Tab') {
-                                      e.preventDefault();
-                                      const nextInput = showVatColumn
-                                        ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                        : null;
-                                      
-                                      if (nextInput) {
-                                        (nextInput as HTMLInputElement).focus();
-                                      } else {
-                                        const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                        if (currentIndex < orderItems.length - 1) {
-                                          const nextItem = orderItems[currentIndex + 1];
-                                          const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                          nextRowInput?.focus();
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={item.discountPercentage}
+                                      onChange={(e) => updateOrderItem(item.id, 'discountPercentage', parseFloat(e.target.value) || 0)}
+                                      className="w-20 h-10 text-right"
+                                      data-testid={`input-discount-${item.id}`}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === 'Tab') {
+                                          e.preventDefault();
+                                          const nextInput = showVatColumn
+                                            ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                            : null;
+                                          
+                                          if (nextInput) {
+                                            (nextInput as HTMLInputElement).focus();
+                                          } else {
+                                            const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                            if (currentIndex < orderItems.length - 1) {
+                                              const nextItem = orderItems[currentIndex + 1];
+                                              const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                              nextRowInput?.focus();
+                                            }
+                                          }
                                         }
-                                      }
-                                    }
-                                  }}
-                                  />
+                                      }}
+                                    />
+                                    <span className="text-sm text-muted-foreground">%</span>
+                                  </div>
+                                  {item.discount > 0 && (
+                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                      -{formatCurrency(item.discount, form.watch('currency'))}
+                                    </span>
+                                  )}
                                 </div>
                               </TableCell>
                             )}
@@ -4197,17 +4246,27 @@ export default function EditOrder() {
                             {showDiscountColumn && (
                               <div>
                                 <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  {t('discount')} ({form.watch('currency')})
+                                  {t('orders:discountPercent', 'Discount %')}
                                 </Label>
-                                <Input
-                                  id={`mobile-discount-${item.id}`}
-                                  type="number"
-                                  step="0.01"
-                                  value={item.discount}
-                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                  className="h-11 text-base"
-                                  data-testid={`mobile-input-discount-${item.id}`}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id={`mobile-discount-${item.id}`}
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={item.discountPercentage}
+                                    onChange={(e) => updateOrderItem(item.id, 'discountPercentage', parseFloat(e.target.value) || 0)}
+                                    className="h-11 text-base flex-1"
+                                    data-testid={`mobile-input-discount-${item.id}`}
+                                  />
+                                  <span className="text-sm text-muted-foreground">%</span>
+                                </div>
+                                {item.discount > 0 && (
+                                  <span className="text-xs text-green-600 dark:text-green-400 mt-1 block">
+                                    -{formatCurrency(item.discount, form.watch('currency'))}
+                                  </span>
+                                )}
                               </div>
                             )}
                             {showVatColumn && (
