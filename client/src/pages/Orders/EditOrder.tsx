@@ -3822,7 +3822,6 @@ export default function EditOrder() {
                           {showVatColumn && (
                             <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('tax')}</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('lineTotal')}</TableHead>
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">{t('common:actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -4035,9 +4034,6 @@ export default function EditOrder() {
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100 align-middle">
-                              {formatCurrency(item.total, form.watch('currency'))}
-                            </TableCell>
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <DropdownMenu>
@@ -4100,7 +4096,7 @@ export default function EditOrder() {
                           </TableRow>
                           {item.notes && (
                             <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
-                              <TableCell colSpan={6 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0)}>
+                              <TableCell colSpan={5 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0)}>
                                 <Collapsible
                                   open={expandedNotes.has(item.id)}
                                   onOpenChange={(open) => {
