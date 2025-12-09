@@ -239,21 +239,26 @@ export default function AddDiscount() {
   });
 
   const onSubmit = (data: DiscountFormData) => {
+    // Generate discountId if not set
+    const generatedDiscountId = discountId || `DISC-${Date.now()}`;
+    
     const submitData: any = {
+      discountId: generatedDiscountId,
       name: data.name,
       description: data.description,
-      discountType: data.discountType,
+      type: data.discountType, // Backend uses 'type', not 'discountType'
       status: data.status,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
+      startDate: data.startDate, // Keep as string, backend will parse
+      endDate: data.endDate,     // Keep as string, backend will parse
       applicationScope: data.applicationScope,
     };
 
-    // Add discount type specific fields
+    // Map discount type to backend format and add type-specific fields
     if (data.discountType === 'percentage') {
       submitData.percentage = data.percentage;
     } else if (data.discountType === 'fixed_amount') {
-      submitData.fixedAmount = data.fixedAmount;
+      submitData.type = 'fixed'; // Backend uses 'fixed', not 'fixed_amount'
+      submitData.value = data.fixedAmount; // Backend uses 'value' for fixed amount
     } else if (data.discountType === 'buy_x_get_y') {
       submitData.buyQuantity = data.buyQuantity;
       submitData.getQuantity = data.getQuantity;
