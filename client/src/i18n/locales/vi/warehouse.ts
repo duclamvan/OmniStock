@@ -179,6 +179,7 @@ const warehouse = {
   
   // Warehouse Details
   warehouseDetails: 'Chi tiết kho',
+  mapping: 'Bản đồ',
   overview: 'Tổng quan',
   products: 'Sản phẩm',
   files: 'Tệp tin',

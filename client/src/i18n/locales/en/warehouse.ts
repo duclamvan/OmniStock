@@ -31,6 +31,9 @@ const warehouse = {
     main: 'Main Facility',
     branch: 'Branch',
     temporary: 'Temporary',
+    fulfillment: 'Fulfillment',
+    storage: 'Storage',
+    transit: 'Transit',
   },
   
   // Add/Edit Warehouse
@@ -175,6 +178,7 @@ const warehouse = {
   
   // Warehouse Details
   warehouseDetails: 'Warehouse Details',
+  mapping: 'Mapping',
   overview: 'Overview',
   products: 'Products',
   files: 'Files',
