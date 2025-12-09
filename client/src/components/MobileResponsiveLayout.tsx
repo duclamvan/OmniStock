@@ -1269,7 +1269,21 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         <div className={cn(
           "mx-auto",
           !(noPadding || location === '/pos') && "px-mobile py-mobile",
-          layoutWidth === 'full' || location === '/pos' || location === '/inventory' || location.startsWith('/inventory/') ? 'max-w-full' : 'max-w-7xl'
+          layoutWidth === 'full' || 
+          location === '/pos' || 
+          location === '/inventory' || location.startsWith('/inventory/') ||
+          location === '/packing-materials' || location.startsWith('/packing-materials/') ||
+          location === '/warehouses' || location.startsWith('/warehouses/') ||
+          location === '/customers' || location.startsWith('/customers/') ||
+          location === '/suppliers' || location.startsWith('/suppliers/') ||
+          location === '/discounts' || location.startsWith('/discounts/') ||
+          location === '/returns' || location.startsWith('/returns/') ||
+          location === '/expenses' || location.startsWith('/expenses/') ||
+          location === '/services' || location.startsWith('/services/') ||
+          location === '/tickets' || location.startsWith('/tickets/') ||
+          location === '/orders' || location.startsWith('/orders/') ||
+          location === '/receiving' || location.startsWith('/receiving/')
+            ? 'max-w-full' : 'max-w-7xl'
         )}>
           {children}
         </div>
