@@ -636,6 +636,12 @@ export default function EditOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - services don't change frequently
   });
 
+  // Fetch available discounts for auto-application
+  const { data: discounts } = useQuery({
+    queryKey: ['/api/discounts'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   // Fetch variants for all products (map productId -> variants)
   const { data: productsWithVariants } = useQuery({
     queryKey: ['/api/products-with-variants'],
@@ -1531,6 +1537,98 @@ export default function EditOrder() {
     }
   };
 
+  // Function to find applicable discount for a product
+  const findApplicableDiscount = (productId: string, categoryId?: number | null): any | null => {
+    if (!discounts || !Array.isArray(discounts)) return null;
+    
+    // Use UTC date for consistent comparison
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    
+    // Filter active discounts within date range
+    const activeDiscounts = discounts.filter((discount: any) => {
+      if (discount.status !== 'active') return false;
+      
+      // Check date validity using UTC
+      if (discount.startDate) {
+        const startDate = new Date(discount.startDate);
+        const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+        if (todayUTC < startUTC) return false;
+      }
+      if (discount.endDate) {
+        const endDate = new Date(discount.endDate);
+        const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
+        if (todayUTC > endUTC) return false;
+      }
+      
+      return true;
+    });
+    
+    // Sort by priority: specific_product > selected_products > specific_category > all_products
+    const scopePriority: Record<string, number> = {
+      'specific_product': 1,
+      'selected_products': 2,
+      'specific_category': 3,
+      'all_products': 4,
+    };
+    
+    const sortedDiscounts = [...activeDiscounts].sort((a: any, b: any) => {
+      const priorityA = scopePriority[a.applicationScope] || 5;
+      const priorityB = scopePriority[b.applicationScope] || 5;
+      return priorityA - priorityB;
+    });
+    
+    // Find first matching discount by scope
+    for (const discount of sortedDiscounts) {
+      const scope = discount.applicationScope || 'all_products';
+      
+      if (scope === 'specific_product' && discount.productId === productId) {
+        return discount;
+      } else if (scope === 'selected_products') {
+        const selectedIds = discount.selectedProductIds;
+        if (selectedIds && Array.isArray(selectedIds) && selectedIds.includes(productId)) {
+          return discount;
+        }
+      } else if (scope === 'specific_category') {
+        const discountCategoryId = discount.categoryId ? String(discount.categoryId) : null;
+        const productCategoryId = categoryId ? String(categoryId) : null;
+        if (discountCategoryId && productCategoryId && discountCategoryId === productCategoryId) {
+          return discount;
+        }
+      } else if (scope === 'all_products') {
+        return discount;
+      }
+    }
+    
+    return null;
+  };
+
+  // Function to calculate discount amount for a product
+  const calculateDiscountAmount = (discount: any, price: number, quantity: number): { amount: number; label: string } => {
+    const discountType = discount.type || discount.discountType;
+    
+    if (discountType === 'percentage') {
+      const percentage = parseFloat(discount.percentage || '0');
+      const amount = (price * quantity * percentage) / 100;
+      return { amount, label: `${percentage}% ${t('common:off')}` };
+    } else if (discountType === 'fixed' || discountType === 'fixed_amount') {
+      const fixedAmount = parseFloat(discount.value || discount.fixedAmount || '0');
+      // Fixed amount is applied once per order line, not per unit
+      const amount = Math.min(fixedAmount, price * quantity);
+      return { amount, label: `${formatCurrency(fixedAmount, form.watch('currency'))} ${t('common:off')}` };
+    } else if (discountType === 'buy_x_get_y') {
+      const buyQty = discount.buyQuantity || 1;
+      const getQty = discount.getQuantity || 1;
+      const totalNeeded = buyQty + getQty;
+      const completeSets = Math.floor(quantity / totalNeeded);
+      const freeItems = completeSets * getQty;
+      const amount = freeItems * price;
+      return { amount, label: `${t('discounts:buyXGetY')}: ${buyQty}+${getQty}` };
+    }
+    
+    return { amount: 0, label: '' };
+  };
+
   const addProductToOrder = async (product: any) => {
     // Check if this is a service
     if (product.isService || product.itemType === 'service') {
@@ -1669,6 +1767,17 @@ export default function EditOrder() {
         }
       }
 
+      // Check for applicable discount
+      const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
+      let discountAmount = 0;
+      let discountLabel = '';
+
+      if (applicableDiscount) {
+        const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
+        discountAmount = discountResult.amount;
+        discountLabel = applicableDiscount.name || discountResult.label;
+      }
+
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         productId: product.itemType === 'bundle' ? null : (product.itemType === 'variant' ? product.productId : product.id),
@@ -1676,9 +1785,9 @@ export default function EditOrder() {
         sku: product.sku,
         quantity: 1,
         price: productPrice,
-        discount: 0,
+        discount: discountAmount,
         tax: 0,
-        total: productPrice,
+        total: productPrice - discountAmount,
         landingCost: product.landingCost || product.latestLandingCost || null,
         variantId: product.itemType === 'variant' ? product.variantId : null,
         variantName: product.itemType === 'variant' ? product.variantName : null,
@@ -1686,6 +1795,15 @@ export default function EditOrder() {
         image: product.image || null,
       };
       setOrderItems(items => [...items, newItem]);
+
+      // Show toast if discount was applied
+      if (discountAmount > 0) {
+        toast({
+          title: t('orders:discountApplied'),
+          description: `${discountLabel}: -${formatCurrency(discountAmount, form.watch('currency'))}`,
+        });
+      }
+
       // Auto-focus quantity input for the newly added item
       setTimeout(() => {
         const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
@@ -1763,6 +1881,15 @@ export default function EditOrder() {
             productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
           }
         }
+
+        // Check for applicable discount
+        const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
+        let discountAmount = 0;
+
+        if (applicableDiscount) {
+          const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
+          discountAmount = discountResult.amount;
+        }
         
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
@@ -1773,9 +1900,9 @@ export default function EditOrder() {
           sku: variant.barcode || selectedProductForVariant.sku,
           quantity: quantity,
           price: productPrice,
-          discount: 0,
+          discount: discountAmount,
           tax: 0,
-          total: productPrice * quantity,
+          total: productPrice * quantity - discountAmount,
           landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
           image: variant.photo || selectedProductForVariant.image || null,
         };
@@ -2254,11 +2381,6 @@ export default function EditOrder() {
 
     return results.map(r => r.item).slice(0, 8); // Limit to 8 results for better UX
   }, [allCustomers, debouncedCustomerSearch]);
-
-  // Fetch available discounts (assuming this is needed for the discount dropdown)
-  const { data: discounts } = useQuery({
-    queryKey: ['/api/discounts'],
-  });
 
 
   return (
