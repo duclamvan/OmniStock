@@ -121,6 +121,7 @@ const discounts = {
   productRequired: 'Sản phẩm là bắt buộc',
   categoryRequired: 'Danh mục là bắt buộc',
   fillRequiredFields: 'Vui lòng điền đầy đủ thông tin bắt buộc cho loại và phạm vi giảm giá đã chọn',
+  pleaseFixErrors: 'Vui lòng sửa các lỗi sau trước khi gửi:',
   
   // Tooltips
   tooltipDiscounts: '{{count}} giảm giá',

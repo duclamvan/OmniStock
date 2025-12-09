@@ -121,6 +121,7 @@ const discounts = {
   productRequired: 'Product is required',
   categoryRequired: 'Category is required',
   fillRequiredFields: 'Please fill in all required fields for the selected discount type and scope',
+  pleaseFixErrors: 'Please fix the following errors before submitting:',
   
   // Tooltips
   tooltipDiscounts: '{{count}} discounts',
