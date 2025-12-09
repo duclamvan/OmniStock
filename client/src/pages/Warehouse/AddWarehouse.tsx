@@ -515,47 +515,21 @@ export default function AddWarehouse() {
 
           {/* Sidebar - 1/3 width */}
           <div className="space-y-4 md:space-y-6">
-            {/* File Upload Card */}
+            {/* Quick Actions Card - Move to top */}
             <Card>
-              <CardHeader className="p-4 md:p-6">
+              <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <FileText className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-                  {t('warehouse:documents')}
-                </CardTitle>
-                <CardDescription className="text-xs md:text-sm">{t('warehouse:documentsDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 md:p-6">
-                <ObjectUploader
-                  maxNumberOfFiles={10}
-                  maxFileSize={50 * 1024 * 1024} // 50MB
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onComplete={handleFileUploadComplete}
-                  buttonClassName="w-full border-2 border-dashed border-slate-300 hover:border-blue-400 transition-all duration-200 py-8 bg-slate-50 hover:bg-blue-50"
-                >
-                  <div className="flex flex-col items-center gap-2 text-slate-600">
-                    <FileUp className="h-10 w-10 text-blue-500" />
-                    <p className="text-sm font-medium">{t('warehouse:clickDragFiles')}</p>
-                    <p className="text-xs text-slate-500">{t('warehouse:uploadFileTypes')}</p>
-                  </div>
-                </ObjectUploader>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions Card */}
-            <Card>
-              <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <Settings className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+                  <Settings className="h-4 w-4 md:h-5 md:w-5 text-slate-600" />
                   {t('common:actions')}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 p-4 md:p-6">
+              <CardContent className="space-y-3 p-4 md:p-6 pt-2 md:pt-3">
                 <Button 
                   type="submit" 
-                  className="w-full"
+                  className="w-full h-12 text-base"
                   disabled={createWarehouseMutation.isPending}
                 >
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-5 w-5 mr-2" />
                   {createWarehouseMutation.isPending ? t('warehouse:creating') : t('warehouse:createWarehouse')}
                 </Button>
                 
@@ -567,19 +541,49 @@ export default function AddWarehouse() {
                 >
                   {t('common:cancel')}
                 </Button>
+              </CardContent>
+            </Card>
 
-                <Separator />
+            {/* File Upload Card */}
+            <Card>
+              <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <FileText className="h-4 w-4 md:h-5 md:w-5 text-slate-600" />
+                  {t('warehouse:documents')}
+                </CardTitle>
+                <CardDescription className="text-xs md:text-sm">{t('warehouse:documentsDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 md:p-6 pt-2 md:pt-3">
+                <ObjectUploader
+                  maxNumberOfFiles={10}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleFileUploadComplete}
+                  buttonClassName="w-full h-auto min-h-[140px] border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                >
+                  <div className="flex flex-col items-center gap-3 text-slate-600 dark:text-slate-400 py-4">
+                    <div className="p-3 rounded-full bg-slate-100 dark:bg-slate-800">
+                      <FileUp className="h-8 w-8 text-slate-500 dark:text-slate-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouse:clickDragFiles')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('warehouse:uploadFileTypes')}</p>
+                    </div>
+                  </div>
+                </ObjectUploader>
+              </CardContent>
+            </Card>
 
-                {/* Tips */}
-                <div className="pt-3 space-y-2 text-sm text-slate-600">
-                  <h4 className="font-medium text-slate-700">{t('warehouse:quickTips')}</h4>
-                  <ul className="space-y-1 text-xs">
-                    <li>• {t('warehouse:tip1')}</li>
-                    <li>• {t('warehouse:tip2')}</li>
-                    <li>• {t('warehouse:tip3')}</li>
-                    <li>• {t('warehouse:tip4')}</li>
-                  </ul>
-                </div>
+            {/* Tips Card */}
+            <Card className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+              <CardContent className="p-4 md:p-5">
+                <h4 className="font-medium text-slate-700 dark:text-slate-300 text-sm mb-2">{t('warehouse:quickTips')}</h4>
+                <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                  <li>• {t('warehouse:tip1')}</li>
+                  <li>• {t('warehouse:tip2')}</li>
+                  <li>• {t('warehouse:tip3')}</li>
+                  <li>• {t('warehouse:tip4')}</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
