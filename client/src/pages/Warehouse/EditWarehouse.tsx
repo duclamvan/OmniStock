@@ -12,34 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
-  ArrowLeft, 
-  Save, 
   Trash2, 
-  FileUp, 
-  Calendar, 
-  Building2, 
-  MapPin, 
-  Package, 
-  Phone,
-  Mail,
-  User,
-  AlertCircle,
-  Banknote,
-  Settings,
-  FileText,
-  Hash,
-  Ruler,
   Plus,
   Edit,
   ScrollText,
-  Search,
-  Loader2
 } from "lucide-react";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/currencyUtils";
@@ -67,27 +46,7 @@ import {
   type InsertWarehouseFinancialContract,
   type Warehouse 
 } from "@shared/schema";
-
-type WarehouseFormData = {
-  name: string;
-  code?: string;
-  location?: string;
-  status: "active" | "inactive" | "maintenance" | "rented";
-  rentedFromDate?: string;
-  expenseId?: string;
-  contact?: string;
-  notes?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  zipCode?: string;
-  phone?: string;
-  email?: string;
-  manager?: string;
-  capacity?: number;
-  type: "main" | "branch" | "temporary";
-  floorArea?: number;
-};
+import { WarehouseForm, WarehouseFormData, UploadedFile } from "@/components/warehouse/WarehouseForm";
 
 type ContractFormData = InsertWarehouseFinancialContract & {
   customBillingDays?: number;
@@ -102,47 +61,6 @@ export default function EditWarehouse() {
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<WarehouseFinancialContract | null>(null);
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
-  
-  // Address autocomplete hook
-  const {
-    addressSearch,
-    setAddressSearch,
-    addressSuggestions,
-    showAddressDropdown,
-    setShowAddressDropdown,
-    isLoadingAddressSearch,
-    searchAddresses,
-    selectAddress,
-  } = useAddressAutocomplete({
-    onError: (error) => {
-      toast({
-        title: t('common:error'),
-        description: t('warehouse:geocodeError'),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const warehouseSchema = z.object({
-    name: z.string().min(1, t('warehouse:warehouseNameRequired')),
-    code: z.string().optional(),
-    location: z.string().optional(),
-    status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
-    rentedFromDate: z.string().optional(),
-    expenseId: z.string().optional(),
-    contact: z.string().optional(),
-    notes: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    country: z.string().default("Czech Republic"),
-    zipCode: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().email(t('common:invalidEmail')).optional().or(z.literal("")),
-    manager: z.string().optional(),
-    capacity: z.number().min(0).optional(),
-    type: z.enum(["main", "branch", "temporary"]).default("branch"),
-    floorArea: z.number().min(0).optional(),
-  });
 
   const contractFormSchema = insertWarehouseFinancialContractSchema.omit({ warehouseId: true }).extend({
     contractName: z.string().min(1, t('warehouse:contractNameRequired')),
@@ -177,29 +95,6 @@ export default function EditWarehouse() {
     enabled: !!id,
   });
 
-  const form = useForm<WarehouseFormData>({
-    resolver: zodResolver(warehouseSchema),
-    defaultValues: {
-      name: "",
-      location: "",
-      status: "active",
-      rentedFromDate: "",
-      expenseId: "",
-      contact: "",
-      notes: "",
-      address: "",
-      city: "",
-      country: "Czech Republic",
-      zipCode: "",
-      phone: "",
-      email: "",
-      manager: "",
-      capacity: undefined,
-      type: "branch",
-      floorArea: undefined,
-    },
-  });
-
   const contractForm = useForm<ContractFormData>({
     resolver: zodResolver(contractFormSchema),
     defaultValues: {
@@ -217,39 +112,11 @@ export default function EditWarehouse() {
     },
   });
 
-  useEffect(() => {
-    if (warehouse) {
-      const warehouseData = warehouse as any;
-      form.reset({
-        name: warehouseData.name || "",
-        location: warehouseData.location || "",
-        status: (warehouseData.status as any) || "active",
-        rentedFromDate: warehouseData.rented_from_date || warehouseData.rentedFromDate 
-          ? new Date(warehouseData.rented_from_date || warehouseData.rentedFromDate).toISOString().split('T')[0] 
-          : "",
-        expenseId: (warehouseData.expense_id || warehouseData.expenseId)?.toString() || "",
-        contact: warehouseData.contact || "",
-        notes: warehouseData.notes || "",
-        address: warehouseData.address || "",
-        city: warehouseData.city || "",
-        country: warehouseData.country || "Czech Republic",
-        zipCode: warehouseData.zip_code || warehouseData.zipCode || "",
-        phone: warehouseData.phone || "",
-        email: warehouseData.email || "",
-        manager: warehouseData.manager || "",
-        capacity: warehouseData.capacity ?? undefined,
-        type: (warehouseData.type as any) || "branch",
-        floorArea: (warehouseData.floor_area || warehouseData.floorArea) 
-          ? parseFloat((warehouseData.floor_area || warehouseData.floorArea).toString()) 
-          : undefined,
-      });
-    }
-  }, [warehouse]);
-
   const updateWarehouseMutation = useMutation({
-    mutationFn: async (data: WarehouseFormData) => {
+    mutationFn: async ({ data, uploadedFiles }: { data: WarehouseFormData; uploadedFiles: UploadedFile[] }) => {
       const transformedData = {
         name: data.name,
+        code: data.code,
         location: data.location,
         address: data.address,
         city: data.city,
@@ -268,10 +135,24 @@ export default function EditWarehouse() {
         expense_id: data.expenseId ? parseInt(data.expenseId) : null,
       };
       const response = await apiRequest('PATCH', `/api/warehouses/${id}`, transformedData);
-      return await response.json();
+      const warehouse = await response.json();
+      
+      // Save any new uploaded files
+      const completedFiles = uploadedFiles.filter(f => f.status === 'complete' && f.url);
+      for (const file of completedFiles) {
+        await apiRequest('POST', `/api/warehouses/${id}/files`, {
+          fileName: file.name,
+          fileType: file.type,
+          fileUrl: file.url,
+          fileSize: file.size,
+        });
+      }
+      
+      return warehouse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'files'] });
       toast({
         title: t('common:success'),
         description: t('warehouse:warehouseUpdatedSuccess'),
@@ -395,26 +276,8 @@ export default function EditWarehouse() {
     }
   }, [editingContract]);
 
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest('POST', '/api/objects/upload');
-    const data = await response.json();
-    return {
-      method: 'PUT' as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleFileUploadComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      toast({
-        title: t('common:success'),
-        description: t('warehouse:filesUploadedSuccess'),
-      });
-    }
-  };
-
-  const onSubmit = (data: WarehouseFormData) => {
-    updateWarehouseMutation.mutate(data);
+  const handleSubmit = (data: WarehouseFormData, uploadedFiles: UploadedFile[]) => {
+    updateWarehouseMutation.mutate({ data, uploadedFiles });
   };
 
   const handleDelete = () => {
@@ -548,564 +411,152 @@ export default function EditWarehouse() {
     );
   }
 
-  return (
-    <div className="p-2 sm:p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6 overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-3 md:pb-4 gap-3">
-        <div className="flex items-center gap-2 md:gap-4">
+  // Financial Contracts Section (passed as children to WarehouseForm)
+  const financialContractsSection = (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-orange-600" />
+              {t('warehouse:financialContracts')}
+            </CardTitle>
+            <CardDescription>{t('warehouse:manageFinancialAgreements')}</CardDescription>
+          </div>
           <Button
-            variant="ghost"
+            type="button"
             size="sm"
-            onClick={() => window.history.back()}
-            className="shrink-0"
+            onClick={handleAddContract}
+            data-testid="button-add-contract"
           >
-            <ArrowLeft className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{t('warehouse:backToWarehouses')}</span>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('warehouse:addContract')}
           </Button>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant={warehouse?.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-            {t(`common:${warehouse?.status || 'active'}`)}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            {t(`warehouse:type.${warehouse?.type || 'branch'}`)}
-          </Badge>
-        </div>
-      </div>
-
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{warehouse?.name || t('warehouse:editWarehouse')}</h1>
-        <p className="text-sm md:text-base text-slate-600 mt-1">{t('warehouse:editWarehouseDesc')}</p>
-      </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          {/* Main Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <Building2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                  {t('warehouse:basicInformation')}
-                </CardTitle>
-                <CardDescription className="text-xs md:text-sm">{t('warehouse:basicInformationDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">{t('warehouse:warehouseName')} *</Label>
-                    <Input
-                      id="name"
-                      {...form.register("name")}
-                      placeholder={t('warehouse:warehouseNamePlaceholder')}
-                      className="mt-1"
-                    />
-                    {form.formState.errors.name && (
-                      <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="code">{t('warehouse:warehouseCode')}</Label>
-                    <Input
-                      id="code"
-                      {...form.register("code")}
-                      placeholder={t('warehouse:warehouseCodePlaceholder')}
-                      className="mt-1"
-                      data-testid="input-warehouse-code"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="type">{t('warehouse:warehouseType')}</Label>
-                    <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={t('warehouse:selectType')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="main">{t('warehouse:type.main')}</SelectItem>
-                        <SelectItem value="branch">{t('warehouse:type.branch')}</SelectItem>
-                        <SelectItem value="temporary">{t('warehouse:type.temporary')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="status">{t('warehouse:operatingStatus')}</Label>
-                    <Select value={form.watch("status")} onValueChange={(value: any) => form.setValue("status", value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={t('warehouse:selectStatus')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            {t('common:active')}
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="inactive">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                            {t('common:inactive')}
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="maintenance">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                            {t('common:maintenance')}
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="rented">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            {t('common:rented')}
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="manager">{t('warehouse:warehouseManager')}</Label>
-                  <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="manager"
-                      {...form.register("manager")}
-                      placeholder={t('warehouse:managerPlaceholder')}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="capacity">{t('warehouse:storageCapacity')}</Label>
-                    <div className="relative mt-1">
-                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="capacity"
-                        type="number"
-                        {...form.register("capacity", { valueAsNumber: true })}
-                        placeholder={t('warehouse:capacityPlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="floorArea">{t('warehouse:floorAreaM2')}</Label>
-                    <div className="relative mt-1">
-                      <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="floorArea"
-                        type="number"
-                        {...form.register("floorArea", { valueAsNumber: true })}
-                        placeholder={t('warehouse:floorAreaPlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Location Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                  {t('warehouse:locationAddress')}
-                </CardTitle>
-                <CardDescription>{t('warehouse:locationDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Address Autocomplete Search */}
-                <div className="relative">
-                  <Label htmlFor="addressSearch">{t('warehouse:searchAddress')}</Label>
-                  <div className="relative mt-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="addressSearch"
-                      value={addressSearch}
-                      onChange={(e) => {
-                        setAddressSearch(e.target.value);
-                        searchAddresses(e.target.value);
-                      }}
-                      placeholder={t('warehouse:searchAddressPlaceholder')}
-                      className="pl-10 pr-10"
-                      data-testid="input-address-search"
-                    />
-                    {isLoadingAddressSearch && (
-                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500 animate-spin" />
-                    )}
-                  </div>
-                  
-                  {/* Address Suggestions Dropdown */}
-                  {showAddressDropdown && addressSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {addressSuggestions.map((suggestion, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => selectAddress(suggestion, form.setValue)}
-                          className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm border-b border-slate-100 dark:border-slate-700 last:border-0"
-                        >
-                          <div className="font-medium text-slate-900 dark:text-white">
-                            {suggestion.formatted}
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {[suggestion.city, suggestion.zipCode, suggestion.country].filter(Boolean).join(', ')}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label htmlFor="address">{t('warehouse:streetAddress')}</Label>
-                  <Input
-                    id="address"
-                    {...form.register("address")}
-                    placeholder={t('warehouse:addressPlaceholder')}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="city">{t('warehouse:city')}</Label>
-                    <Input
-                      id="city"
-                      {...form.register("city")}
-                      placeholder={t('warehouse:cityPlaceholder')}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="zipCode">{t('warehouse:zipPostalCode')}</Label>
-                    <Input
-                      id="zipCode"
-                      {...form.register("zipCode")}
-                      placeholder={t('warehouse:zipPlaceholder')}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country">{t('warehouse:country')}</Label>
-                    <Input
-                      id="country"
-                      {...form.register("country")}
-                      placeholder={t('warehouse:countryPlaceholder')}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="phone">{t('warehouse:phoneNumber')}</Label>
-                    <div className="relative mt-1">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="phone"
-                        {...form.register("phone")}
-                        placeholder={t('warehouse:phonePlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">{t('warehouse:emailAddress')}</Label>
-                    <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        {...form.register("email")}
-                        placeholder={t('warehouse:emailPlaceholder')}
-                        className="pl-10"
-                      />
-                    </div>
-                    {form.formState.errors.email && (
-                      <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="contact">{t('warehouse:primaryContact')}</Label>
-                  <Input
-                    id="contact"
-                    {...form.register("contact")}
-                    placeholder={t('warehouse:contactPlaceholder')}
-                    className="mt-1"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Financial Contracts */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <ScrollText className="h-5 w-5 text-orange-600" />
-                      {t('warehouse:financialContracts')}
-                    </CardTitle>
-                    <CardDescription>{t('warehouse:manageFinancialAgreements')}</CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddContract}
-                    data-testid="button-add-contract"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('warehouse:addContract')}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {contractsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : (financialContracts as WarehouseFinancialContract[]).length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
-                    <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                    <p className="text-slate-600 font-medium">{t('warehouse:noFinancialContractsFound')}</p>
-                    <p className="text-sm text-slate-500 mt-1">{t('warehouse:addFirstContractFinancial')}</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(financialContracts as WarehouseFinancialContract[]).map((contract: WarehouseFinancialContract) => (
-                      <Card key={contract.id} className="border-slate-200" data-testid={`card-contract-${contract.id}`}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <CardTitle className="text-base font-semibold text-slate-900" data-testid={`text-contract-name-${contract.id}`}>
-                                {contract.contractName}
-                              </CardTitle>
-                              <p className="text-sm text-slate-500 mt-1 capitalize" data-testid={`text-contract-type-${contract.id}`}>
-                                {contract.contractType}
-                              </p>
-                            </div>
-                            <Badge variant={getStatusBadgeVariant(contract.status || 'active')} data-testid={`badge-status-${contract.id}`}>
-                              {contract.status || 'active'}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-600">{t('warehouse:amount')}</span>
-                              <span className="font-semibold text-slate-900" data-testid={`text-contract-price-${contract.id}`}>
-                                {contract.price} {contract.currency}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-600">{t('warehouse:billingLabel')}</span>
-                              <span className="text-slate-900" data-testid={`text-contract-billing-${contract.id}`}>
-                                {contract.billingPeriod === 'custom' 
-                                  ? t('warehouse:everyXDays', { days: contract.customBillingDays })
-                                  : contract.billingPeriod}
-                              </span>
-                            </div>
-                            {contract.rentalDueDate && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-600">{t('warehouse:dueDate')}</span>
-                                <span className="text-slate-900" data-testid={`text-contract-due-${contract.id}`}>
-                                  {formatDate(contract.rentalDueDate)}
-                                </span>
-                              </div>
-                            )}
-                            {contract.startDate && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-600">{t('warehouse:start')}</span>
-                                <span className="text-slate-900" data-testid={`text-contract-start-${contract.id}`}>
-                                  {formatDate(contract.startDate)}
-                                </span>
-                              </div>
-                            )}
-                            {contract.endDate && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-600">{t('warehouse:end')}</span>
-                                <span className="text-slate-900" data-testid={`text-contract-end-${contract.id}`}>
-                                  {formatDate(contract.endDate)}
-                                </span>
-                              </div>
-                            )}
-                            {contract.notes && (
-                              <div className="pt-2 border-t">
-                                <p className="text-slate-600 text-xs line-clamp-2" data-testid={`text-contract-notes-${contract.id}`}>
-                                  {contract.notes}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => handleEditContract(contract)}
-                              data-testid={`button-edit-contract-${contract.id}`}
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              {t('common:edit')}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => handleDeleteContract(contract.id)}
-                              data-testid={`button-delete-contract-${contract.id}`}
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              {t('common:delete')}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Internal Notes - Separate from contract notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-slate-600" />
-                  {t('warehouse:internalNotes')}
-                </CardTitle>
-                <CardDescription>{t('warehouse:generalWarehouseNotes')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="location">{t('warehouse:locationCode')}</Label>
-                  <Input
-                    id="location"
-                    {...form.register("location")}
-                    placeholder={t('warehouse:locationCodePlaceholder')}
-                    className="mt-1"
-                    data-testid="input-location"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">{t('common:notes')}</Label>
-                  <Textarea
-                    id="notes"
-                    {...form.register("notes")}
-                    placeholder={t('warehouse:notesPlaceholder')}
-                    className="min-h-[120px] mt-1"
-                    data-testid="input-notes"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+      </CardHeader>
+      <CardContent>
+        {contractsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-
-          {/* Sidebar - 1/3 width */}
-          <div className="space-y-6">
-            {/* File Upload Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-purple-600" />
-                  {t('warehouse:documents')}
-                </CardTitle>
-                <CardDescription>{t('warehouse:documentsDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ObjectUploader
-                  maxNumberOfFiles={10}
-                  maxFileSize={50 * 1024 * 1024} // 50MB
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onComplete={handleFileUploadComplete}
-                  buttonClassName="w-full border-2 border-dashed border-slate-300 hover:border-blue-400 transition-all duration-200 py-8 bg-slate-50 hover:bg-blue-50"
-                >
-                  <div className="flex flex-col items-center gap-2 text-slate-600">
-                    <FileUp className="h-10 w-10 text-blue-500" />
-                    <p className="text-sm font-medium">{t('warehouse:clickDragFiles')}</p>
-                    <p className="text-xs text-slate-500">{t('warehouse:uploadFileTypes')}</p>
-                  </div>
-                </ObjectUploader>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  {t('warehouse:actions')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={updateWarehouseMutation.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateWarehouseMutation.isPending ? t('warehouse:saving') : t('warehouse:saveChanges')}
-                </Button>
-                
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate("/warehouses")}
-                >
-                  {t('common:cancel')}
-                </Button>
-
-                <Separator />
-
-                <Button 
-                  type="button"
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleDelete}
-                  disabled={deleteWarehouseMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('warehouse:deleteWarehouseButton')}
-                </Button>
-
-                {/* Status Info */}
-                <div className="pt-3 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>{t('warehouse:created')} {warehouse?.createdAt ? formatDate(warehouse.createdAt) : t('warehouse:never')}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        ) : (financialContracts as WarehouseFinancialContract[]).length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
+            <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-slate-600 font-medium">{t('warehouse:noFinancialContractsFound')}</p>
+            <p className="text-sm text-slate-500 mt-1">{t('warehouse:addFirstContractFinancial')}</p>
           </div>
-        </div>
-      </form>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(financialContracts as WarehouseFinancialContract[]).map((contract: WarehouseFinancialContract) => (
+              <Card key={contract.id} className="border-slate-200" data-testid={`card-contract-${contract.id}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-name-${contract.id}`}>
+                        {contract.contractName}
+                      </CardTitle>
+                      <p className="text-sm text-slate-500 mt-1 capitalize" data-testid={`text-contract-type-${contract.id}`}>
+                        {contract.contractType}
+                      </p>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(contract.status || 'active')} data-testid={`badge-status-${contract.id}`}>
+                      {contract.status || 'active'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">{t('warehouse:amount')}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-price-${contract.id}`}>
+                        {contract.price} {contract.currency}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">{t('warehouse:billingLabel')}</span>
+                      <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-billing-${contract.id}`}>
+                        {contract.billingPeriod === 'custom' 
+                          ? t('warehouse:everyXDays', { days: contract.customBillingDays })
+                          : contract.billingPeriod}
+                      </span>
+                    </div>
+                    {contract.rentalDueDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 dark:text-slate-400">{t('warehouse:dueDate')}</span>
+                        <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-due-${contract.id}`}>
+                          {formatDate(contract.rentalDueDate)}
+                        </span>
+                      </div>
+                    )}
+                    {contract.startDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 dark:text-slate-400">{t('warehouse:start')}</span>
+                        <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-start-${contract.id}`}>
+                          {formatDate(contract.startDate)}
+                        </span>
+                      </div>
+                    )}
+                    {contract.endDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 dark:text-slate-400">{t('warehouse:end')}</span>
+                        <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-end-${contract.id}`}>
+                          {formatDate(contract.endDate)}
+                        </span>
+                      </div>
+                    )}
+                    {contract.notes && (
+                      <div className="pt-2 border-t">
+                        <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2" data-testid={`text-contract-notes-${contract.id}`}>
+                          {contract.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEditContract(contract)}
+                      data-testid={`button-edit-contract-${contract.id}`}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      {t('common:edit')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDeleteContract(contract.id)}
+                      data-testid={`button-delete-contract-${contract.id}`}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      {t('common:delete')}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <>
+      <WarehouseForm
+        mode="edit"
+        warehouse={warehouse}
+        onSubmit={handleSubmit}
+        isSubmitting={updateWarehouseMutation.isPending}
+        onCancel={() => navigate("/warehouses")}
+        onDelete={handleDelete}
+      >
+        {financialContractsSection}
+      </WarehouseForm>
 
       {/* Contract Dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
@@ -1360,6 +811,6 @@ export default function EditWarehouse() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
