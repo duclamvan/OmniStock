@@ -780,3 +780,62 @@ body.pickpack-active-mode aside {
 body.pickpack-active-mode main {
   margin-left: 0 !important;
 }
+
+/* Uppy Theme Overrides - Remove green colors */
+.uppy-Dashboard-browse,
+.uppy-DashboardContent-addMore,
+.uppy-Dashboard-AddFiles-title button {
+  color: hsl(var(--primary)) !important;
+}
+
+.uppy-Dashboard-AddFiles {
+  background: hsl(var(--background)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.uppy-Dashboard-dropFilesHereHint {
+  background: hsl(var(--muted)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.uppy-StatusBar-actions .uppy-StatusBar-actionBtn--upload,
+.uppy-DashboardContent-addMoreCaption {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.uppy-StatusBar.is-waiting .uppy-StatusBar-actions {
+  background: transparent !important;
+}
+
+.uppy-Dashboard-inner {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.uppy-Dashboard-AddFiles-info {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Remove the default green background on drag area */
+.uppy-Dashboard-AddFiles-list {
+  background: transparent !important;
+}
+
+.uppy-Dashboard-Item-action--remove {
+  color: hsl(var(--destructive)) !important;
+}
+
+.uppy-Dashboard-Item-progress .uppy-Dashboard-Item-progressIndicator {
+  fill: hsl(var(--primary)) !important;
+}
+
+/* Dark mode adjustments */
+.dark .uppy-Dashboard-inner {
+  background: hsl(var(--card)) !important;
+}
+
+.dark .uppy-Dashboard-AddFiles {
+  background: hsl(var(--card)) !important;
+}
