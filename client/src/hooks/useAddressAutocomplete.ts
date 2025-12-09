@@ -108,10 +108,12 @@ export function useAddressAutocomplete(options: UseAddressAutocompleteOptions = 
     suggestion: AddressSuggestion,
     setValue: UseFormSetValue<T>
   ) => {
-    // Build full address string
-    const fullAddress = [suggestion.street, suggestion.houseNumber]
-      .filter(Boolean)
-      .join(' ');
+    // Build full address string, avoiding duplicate house numbers
+    // Check if street already contains the house number to prevent duplication
+    let fullAddress = suggestion.street || '';
+    if (suggestion.houseNumber && !fullAddress.includes(suggestion.houseNumber)) {
+      fullAddress = [fullAddress, suggestion.houseNumber].filter(Boolean).join(' ');
+    }
     
     // Update form fields - cast to any to avoid type issues
     setValue('address' as any, fullAddress);
