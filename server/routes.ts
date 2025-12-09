@@ -10170,14 +10170,8 @@ Important:
 
   app.post('/api/discounts', isAuthenticated, async (req: any, res) => {
     try {
-      // Parse dates from strings to Date objects
-      const body = {
-        ...req.body,
-        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
-        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
-      };
-
-      const data = insertDiscountSchema.parse(body);
+      // Keep dates as strings - Drizzle date columns expect string format
+      const data = insertDiscountSchema.parse(req.body);
       const discount = await storage.createDiscount(data);
 
       await storage.createUserActivity({
@@ -10210,14 +10204,8 @@ Important:
 
   app.patch('/api/discounts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      // Parse dates from strings to Date objects
-      const updates = {
-        ...req.body,
-        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
-        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
-      };
-
-      const discount = await storage.updateDiscount(req.params.id, updates);
+      // Keep dates as strings - Drizzle date columns expect string format
+      const discount = await storage.updateDiscount(req.params.id, req.body);
 
       if (!discount) {
         return res.status(404).json({ message: "Discount not found" });
