@@ -414,9 +414,9 @@ export default function AddOrder() {
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
-  // Auto-enable discount column if any item has a discount
+  // Auto-enable discount column if any item has a discount or an applied discount label
   useEffect(() => {
-    const hasDiscounts = orderItems.some(item => item.discount > 0);
+    const hasDiscounts = orderItems.some(item => item.discount > 0 || item.appliedDiscountLabel);
     if (hasDiscounts && !showDiscountColumn) {
       setShowDiscountColumn(true);
     }
@@ -1670,8 +1670,19 @@ export default function AddOrder() {
         let discountType = null;
         let discountScope = null;
         
+        console.log('🎯 Finding discount for product:', product.id, 'category:', product.categoryId);
+        console.log('🎯 Applicable discount found:', applicableDiscount);
+        
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
+          console.log('🎯 Discount calculation result:', { 
+            price: productPrice, 
+            qty: 1, 
+            type: applicableDiscount.type,
+            percentage: applicableDiscount.percentage,
+            value: applicableDiscount.value,
+            result: discountResult 
+          });
           discountAmount = discountResult.amount;
           discountLabel = applicableDiscount.name || discountResult.label;
           discountId = applicableDiscount.id;
