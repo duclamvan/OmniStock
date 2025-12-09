@@ -93,7 +93,9 @@ export default function EditDiscount() {
   type DiscountFormData = z.infer<typeof discountSchema>;
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const id = location.split('/').pop();
+  // URL pattern is /discounts/:id/edit - extract ID from second-to-last segment
+  const pathParts = location.split('/');
+  const id = pathParts[pathParts.length - 2];
   const [discountId, setDiscountId] = useState("");
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
@@ -105,9 +107,9 @@ export default function EditDiscount() {
   const eurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch discount data
-  const { data: discount, isLoading } = useQuery({
-    queryKey: [`/api/discounts/${id}`],
-    enabled: !!id,
+  const { data: discount, isLoading } = useQuery<any>({
+    queryKey: ['/api/discounts', id],
+    enabled: !!id && id !== 'discounts',
   });
 
   // Fetch products
@@ -199,7 +201,7 @@ export default function EditDiscount() {
     mutationFn: (data: any) => apiRequest('PATCH', `/api/discounts/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/discounts/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts', id] });
       toast({
         title: t('common:success'),
         description: t('discounts:discountUpdated'),

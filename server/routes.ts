@@ -10217,8 +10217,24 @@ Important:
 
   app.patch('/api/discounts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      // Keep dates as strings - Drizzle date columns expect string format
-      const discount = await storage.updateDiscount(req.params.id, req.body);
+      // Convert numeric fields to strings for decimal columns
+      const body = { ...req.body };
+      if (typeof body.percentage === 'number') {
+        body.percentage = String(body.percentage);
+      }
+      if (typeof body.value === 'number') {
+        body.value = String(body.value);
+      }
+      if (typeof body.minPurchaseAmount === 'number') {
+        body.minPurchaseAmount = String(body.minPurchaseAmount);
+      }
+      if (typeof body.maxDiscountAmount === 'number') {
+        body.maxDiscountAmount = String(body.maxDiscountAmount);
+      }
+      if (typeof body.fixedAmount === 'number') {
+        body.fixedAmount = String(body.fixedAmount);
+      }
+      const discount = await storage.updateDiscount(req.params.id, body);
 
       if (!discount) {
         return res.status(404).json({ message: "Discount not found" });
