@@ -668,7 +668,6 @@ export default function AddWarehouse() {
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files)}
                   data-testid="file-input-hidden"
