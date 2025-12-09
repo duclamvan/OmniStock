@@ -1584,7 +1584,9 @@ export default function EditOrder() {
       return true;
     });
     
-    // Sort by priority: specific_product > selected_products > specific_category > all_products
+    // Sort by priority: 
+    // 1. Scope: specific_product > selected_products > specific_category > all_products
+    // 2. Type: percentage/fixed > buy_x_get_y (percentage/fixed always give immediate discount)
     const scopePriority: Record<string, number> = {
       'specific_product': 1,
       'selected_products': 2,
@@ -1592,10 +1594,22 @@ export default function EditOrder() {
       'all_products': 4,
     };
     
+    const typePriority: Record<string, number> = {
+      'percentage': 1,
+      'fixed': 1,
+      'fixed_amount': 1,
+      'buy_x_get_y': 2,
+    };
+    
     const sortedDiscounts = [...activeDiscounts].sort((a: any, b: any) => {
-      const priorityA = scopePriority[a.applicationScope] || 5;
-      const priorityB = scopePriority[b.applicationScope] || 5;
-      return priorityA - priorityB;
+      const scopeA = scopePriority[a.applicationScope] || 5;
+      const scopeB = scopePriority[b.applicationScope] || 5;
+      if (scopeA !== scopeB) return scopeA - scopeB;
+      
+      // Within same scope, prioritize percentage/fixed over buy_x_get_y
+      const typeA = typePriority[a.type] || 3;
+      const typeB = typePriority[b.type] || 3;
+      return typeA - typeB;
     });
     
     // Find first matching discount by scope
