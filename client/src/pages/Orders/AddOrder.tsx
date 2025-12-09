@@ -1670,11 +1670,24 @@ export default function AddOrder() {
         let discountType = null;
         let discountScope = null;
         
-        console.log('🎯 Discount lookup:', { productId: product.id, categoryId: product.categoryId, discount: applicableDiscount });
+        console.log('🎯 Discount lookup:', { 
+          productId: product.id, 
+          categoryId: product.categoryId, 
+          discount: applicableDiscount,
+          allDiscounts: discounts 
+        });
         
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
-          console.log('🎯 Discount calculation:', { price: productPrice, qty: 1, type: applicableDiscount.type, percentage: applicableDiscount.percentage, value: applicableDiscount.value, result: discountResult });
+          console.log('🎯 Discount calculation:', { 
+            price: productPrice, 
+            qty: 1, 
+            type: applicableDiscount.type, 
+            percentage: applicableDiscount.percentage, 
+            value: applicableDiscount.value, 
+            applicationScope: applicableDiscount.applicationScope,
+            result: discountResult 
+          });
           discountAmount = discountResult.amount;
           discountLabel = applicableDiscount.name || discountResult.label;
           discountId = applicableDiscount.id;
