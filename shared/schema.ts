@@ -525,7 +525,7 @@ export const warehouses = pgTable("warehouses", {
   id: text("id").primaryKey(), // WH-XX-YY format
   code: text("code"), // Short code like WH1, WH2, etc.
   name: text("name").notNull(),
-  location: text("location").notNull(),
+  location: text("location").default(""),
   address: text("address"),
   city: text("city"),
   country: text("country"),
