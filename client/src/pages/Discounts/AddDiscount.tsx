@@ -436,78 +436,88 @@ export default function AddDiscount() {
             <CardDescription>{t('discounts:percentageDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <RadioGroup 
-              value={watchDiscountType} 
-              onValueChange={(value) => form.setValue('discountType', value as any)}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div 
-                  className={cn(
-                    "border rounded-lg p-4 cursor-pointer transition-all",
-                    watchDiscountType === 'percentage' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
-                  )}
-                  onClick={() => form.setValue('discountType', 'percentage')}
-                  data-testid="option-discount-percentage"
-                >
-                  <label htmlFor="percentage" className="cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="percentage" id="percentage" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 font-medium">
-                          <Percent className="h-4 w-4 text-green-600" />
-                          {t('discounts:percentageOff')}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">{t('discounts:percentageDesc')}</p>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div 
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all",
+                  watchDiscountType === 'percentage' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                )}
+                onClick={() => form.setValue('discountType', 'percentage')}
+                data-testid="option-discount-percentage"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "h-4 w-4 mt-1 rounded-full border-2 flex items-center justify-center shrink-0",
+                    watchDiscountType === 'percentage' ? 'border-green-500' : 'border-muted-foreground/30'
+                  )}>
+                    {watchDiscountType === 'percentage' && (
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Percent className="h-4 w-4 text-green-600" />
+                      {t('discounts:percentageOff')}
                     </div>
-                  </label>
-                </div>
-
-                <div 
-                  className={cn(
-                    "border rounded-lg p-4 cursor-pointer transition-all",
-                    watchDiscountType === 'fixed_amount' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
-                  )}
-                  onClick={() => form.setValue('discountType', 'fixed_amount')}
-                  data-testid="option-discount-fixed"
-                >
-                  <label htmlFor="fixed_amount" className="cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 font-medium">
-                          <Banknote className="h-4 w-4 text-green-600" />
-                          {t('discounts:fixedAmountOff')}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">{t('discounts:fixedAmountDesc')}</p>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                <div 
-                  className={cn(
-                    "border rounded-lg p-4 cursor-pointer transition-all",
-                    watchDiscountType === 'buy_x_get_y' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
-                  )}
-                  onClick={() => form.setValue('discountType', 'buy_x_get_y')}
-                  data-testid="option-discount-buyxgety"
-                >
-                  <label htmlFor="buy_x_get_y" className="cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="buy_x_get_y" id="buy_x_get_y" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 font-medium">
-                          <Gift className="h-4 w-4 text-green-600" />
-                          {t('discounts:buyXGetY')}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">{t('discounts:buyXGetYDesc')}</p>
-                      </div>
-                    </div>
-                  </label>
+                    <p className="text-sm text-muted-foreground mt-1">{t('discounts:percentageDesc')}</p>
+                  </div>
                 </div>
               </div>
-            </RadioGroup>
+
+              <div 
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all",
+                  watchDiscountType === 'fixed_amount' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                )}
+                onClick={() => form.setValue('discountType', 'fixed_amount')}
+                data-testid="option-discount-fixed"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "h-4 w-4 mt-1 rounded-full border-2 flex items-center justify-center shrink-0",
+                    watchDiscountType === 'fixed_amount' ? 'border-green-500' : 'border-muted-foreground/30'
+                  )}>
+                    {watchDiscountType === 'fixed_amount' && (
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Banknote className="h-4 w-4 text-green-600" />
+                      {t('discounts:fixedAmountOff')}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{t('discounts:fixedAmountDesc')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all",
+                  watchDiscountType === 'buy_x_get_y' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                )}
+                onClick={() => form.setValue('discountType', 'buy_x_get_y')}
+                data-testid="option-discount-buyxgety"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "h-4 w-4 mt-1 rounded-full border-2 flex items-center justify-center shrink-0",
+                    watchDiscountType === 'buy_x_get_y' ? 'border-green-500' : 'border-muted-foreground/30'
+                  )}>
+                    {watchDiscountType === 'buy_x_get_y' && (
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Gift className="h-4 w-4 text-green-600" />
+                      {t('discounts:buyXGetY')}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{t('discounts:buyXGetYDesc')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <Separator />
 
