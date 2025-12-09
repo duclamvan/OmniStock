@@ -1662,6 +1662,23 @@ export default function AddOrder() {
           }
         }
 
+        // Check for applicable discount
+        const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
+        let discountAmount = 0;
+        let discountLabel = '';
+        let discountId = null;
+        let discountType = null;
+        let discountScope = null;
+        
+        if (applicableDiscount) {
+          const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
+          discountAmount = discountResult.amount;
+          discountLabel = applicableDiscount.name || discountResult.label;
+          discountId = applicableDiscount.id;
+          discountType = applicableDiscount.type || applicableDiscount.discountType;
+          discountScope = applicableDiscount.applicationScope;
+        }
+
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
           productId: product.id,
@@ -1669,12 +1686,25 @@ export default function AddOrder() {
           sku: product.sku,
           quantity: 1,
           price: productPrice,
-          discount: 0,
+          discount: discountAmount,
           tax: 0,
-          total: productPrice,
+          total: productPrice - discountAmount,
           landingCost: product.landingCost || product.latestLandingCost || null,
           image: product.image || null,
+          appliedDiscountId: discountId,
+          appliedDiscountLabel: discountLabel || null,
+          appliedDiscountType: discountType,
+          appliedDiscountScope: discountScope,
         };
+        
+        // Show toast if discount was applied
+        if (discountAmount > 0) {
+          toast({
+            title: t('orders:discountApplied'),
+            description: `${discountLabel}: -${formatCurrency(discountAmount, form.watch('currency'))}`,
+          });
+        }
+        
         setOrderItems(items => [...items, newItem]);
         // Auto-focus quantity input for the newly added item
         setTimeout(() => {
@@ -1732,6 +1762,23 @@ export default function AddOrder() {
         }
       }
       
+      // Check for applicable discount
+      const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
+      let discountAmount = 0;
+      let discountLabel = '';
+      let discountId = null;
+      let discountType = null;
+      let discountScope = null;
+      
+      if (applicableDiscount) {
+        const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
+        discountAmount = discountResult.amount;
+        discountLabel = applicableDiscount.name || discountResult.label;
+        discountId = applicableDiscount.id;
+        discountType = applicableDiscount.type || applicableDiscount.discountType;
+        discountScope = applicableDiscount.applicationScope;
+      }
+
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         productId: selectedProductForVariant.id,
@@ -1741,11 +1788,15 @@ export default function AddOrder() {
         sku: variant.barcode || selectedProductForVariant.sku,
         quantity: quantity,
         price: productPrice,
-        discount: 0,
+        discount: discountAmount,
         tax: 0,
-        total: productPrice * quantity,
+        total: productPrice * quantity - discountAmount,
         landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
         image: variant.photo || selectedProductForVariant.image || null,
+        appliedDiscountId: discountId,
+        appliedDiscountLabel: discountLabel || null,
+        appliedDiscountType: discountType,
+        appliedDiscountScope: discountScope,
       };
       
       setOrderItems(items => [...items, newItem]);
@@ -1767,6 +1818,31 @@ export default function AddOrder() {
       items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
+          
+          // Recalculate discount if quantity changes
+          if (field === 'quantity' && updatedItem.productId) {
+            // First check if there's an existing applied discount
+            if (updatedItem.appliedDiscountId) {
+              const applicableDiscount = (discounts as any[])?.find((d: any) => d.id === updatedItem.appliedDiscountId);
+              if (applicableDiscount) {
+                const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
+                updatedItem.discount = discountResult.amount;
+              }
+            } else {
+              // No discount was applied before, check if one applies now (e.g., buy_x_get_y threshold met)
+              const product = (allProducts as any[])?.find((p: any) => p.id === updatedItem.productId);
+              const applicableDiscount = findApplicableDiscount(updatedItem.productId, product?.categoryId);
+              if (applicableDiscount) {
+                const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
+                updatedItem.discount = discountResult.amount;
+                updatedItem.appliedDiscountId = applicableDiscount.id;
+                updatedItem.appliedDiscountLabel = applicableDiscount.name || discountResult.label;
+                updatedItem.appliedDiscountType = applicableDiscount.type || applicableDiscount.discountType;
+                updatedItem.appliedDiscountScope = applicableDiscount.applicationScope;
+              }
+            }
+          }
+          
           if (field === 'quantity' || field === 'price' || field === 'discount') {
             updatedItem.total = (updatedItem.quantity * updatedItem.price) - updatedItem.discount;
           }
@@ -2134,6 +2210,101 @@ export default function AddOrder() {
   const { data: discounts } = useQuery({
     queryKey: ['/api/discounts'],
   });
+
+  // Function to find applicable discount for a product
+  const findApplicableDiscount = (productId: string, categoryId?: number | null): any | null => {
+    if (!discounts || !Array.isArray(discounts)) return null;
+    
+    // Use UTC date for consistent comparison
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    
+    // Filter active discounts within date range
+    const activeDiscounts = discounts.filter((discount: any) => {
+      if (discount.status !== 'active') return false;
+      
+      // Check date validity using UTC
+      if (discount.startDate) {
+        const startDate = new Date(discount.startDate);
+        const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+        if (todayUTC < startUTC) return false;
+      }
+      if (discount.endDate) {
+        const endDate = new Date(discount.endDate);
+        const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
+        if (todayUTC > endUTC) return false;
+      }
+      
+      return true;
+    });
+    
+    // Sort by priority: specific_product > selected_products > specific_category > all_products
+    const scopePriority: Record<string, number> = {
+      'specific_product': 1,
+      'selected_products': 2,
+      'specific_category': 3,
+      'all_products': 4,
+    };
+    
+    const sortedDiscounts = [...activeDiscounts].sort((a: any, b: any) => {
+      const priorityA = scopePriority[a.applicationScope] || 5;
+      const priorityB = scopePriority[b.applicationScope] || 5;
+      return priorityA - priorityB;
+    });
+    
+    // Find first matching discount by scope
+    for (const discount of sortedDiscounts) {
+      const scope = discount.applicationScope || 'all_products';
+      
+      if (scope === 'specific_product' && discount.productId === productId) {
+        return discount;
+      } else if (scope === 'selected_products') {
+        // Check if product is in selected products list
+        const selectedIds = discount.selectedProductIds;
+        if (selectedIds && Array.isArray(selectedIds) && selectedIds.includes(productId)) {
+          return discount;
+        }
+      } else if (scope === 'specific_category') {
+        // Check category match (compare as strings to handle type differences)
+        const discountCategoryId = discount.categoryId ? String(discount.categoryId) : null;
+        const productCategoryId = categoryId ? String(categoryId) : null;
+        if (discountCategoryId && productCategoryId && discountCategoryId === productCategoryId) {
+          return discount;
+        }
+      } else if (scope === 'all_products') {
+        return discount;
+      }
+    }
+    
+    return null;
+  };
+
+  // Function to calculate discount amount for a product
+  const calculateDiscountAmount = (discount: any, price: number, quantity: number): { amount: number; label: string } => {
+    const discountType = discount.type || discount.discountType;
+    
+    if (discountType === 'percentage') {
+      const percentage = parseFloat(discount.percentage || '0');
+      const amount = (price * quantity * percentage) / 100;
+      return { amount, label: `${percentage}% ${t('common:off')}` };
+    } else if (discountType === 'fixed' || discountType === 'fixed_amount') {
+      const fixedAmount = parseFloat(discount.value || discount.fixedAmount || '0');
+      // Fixed amount is applied once per order line, not per unit
+      const amount = Math.min(fixedAmount, price * quantity);
+      return { amount, label: `${formatCurrency(fixedAmount, form.watch('currency'))} ${t('common:off')}` };
+    } else if (discountType === 'buy_x_get_y') {
+      // Buy X get Y free calculation: if you buy X items, you get Y free
+      const buyQty = discount.buyQuantity || 1;
+      const getQty = discount.getQuantity || 1;
+      const totalNeeded = buyQty + getQty; // Total items needed for one complete set
+      const completeSets = Math.floor(quantity / totalNeeded);
+      const freeItems = completeSets * getQty;
+      const amount = freeItems * price;
+      return { amount, label: `${t('discounts:buyXGetY')}: ${buyQty}+${getQty}` };
+    }
+    
+    return { amount: 0, label: '' };
+  };
 
 
   return (

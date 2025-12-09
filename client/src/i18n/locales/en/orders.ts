@@ -751,6 +751,7 @@ const orders = {
   discountLabel: 'Discount{{rate}}:',
   grandTotalLabel: 'Grand Total:',
   discountSetTo: 'Discount set to {{amount}}',
+  discountApplied: 'Discount Applied',
   totalRoundedUp: 'Total Rounded Up',
   adjustmentAmount: 'Adjustment: {{amount}}',
   totalAlreadyWhole: 'Total is already a whole number',

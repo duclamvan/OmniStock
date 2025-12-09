@@ -745,6 +745,7 @@ const orders = {
   discountLabel: 'Giảm giá{{rate}}:',
   grandTotalLabel: 'Tổng cộng:',
   discountSetTo: 'Giảm giá được đặt thành {{amount}}',
+  discountApplied: 'Đã áp dụng giảm giá',
   totalRoundedUp: 'Đã làm tròn lên tổng',
   adjustmentAmount: 'Điều chỉnh: {{amount}}',
   totalAlreadyWhole: 'Tổng đã là số nguyên',
