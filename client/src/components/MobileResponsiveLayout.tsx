@@ -1281,7 +1281,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           location === '/expenses' || location.startsWith('/expenses/') ||
           location === '/services' || location.startsWith('/services/') ||
           location === '/tickets' || location.startsWith('/tickets/') ||
-          location === '/orders' || location.startsWith('/orders/') ||
           location === '/receiving' || location.startsWith('/receiving/')
             ? 'max-w-full' : 'max-w-7xl'
         )}>
