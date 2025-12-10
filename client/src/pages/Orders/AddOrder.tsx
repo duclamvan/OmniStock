@@ -391,6 +391,66 @@ export default function AddOrder() {
     customerCreationInProgress.current = null;
   }, [selectedCustomer?.id, selectedCustomer?.name, selectedCustomer?.phone]);
 
+  // Apply customer-specific pricing when customer is selected
+  useEffect(() => {
+    const applyCustomerPricing = async () => {
+      if (!selectedCustomer?.id || orderItems.length === 0) return;
+      
+      try {
+        const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
+        if (!response.ok) return;
+        
+        const customerPrices = await response.json();
+        if (!customerPrices || customerPrices.length === 0) return;
+        
+        const today = new Date();
+        const selectedCurrency = form.watch('currency') || 'EUR';
+        let pricesApplied = 0;
+        
+        setOrderItems(items => items.map(item => {
+          // Skip services and items without productId
+          if (item.serviceId || !item.productId) return item;
+          
+          // Find applicable customer price for this product and currency
+          const applicablePrice = customerPrices.find((cp: any) => {
+            const validFrom = new Date(cp.validFrom);
+            const validTo = cp.validTo ? new Date(cp.validTo) : null;
+            
+            return cp.productId === item.productId &&
+                   cp.currency === selectedCurrency &&
+                   cp.isActive &&
+                   validFrom <= today &&
+                   (!validTo || validTo >= today);
+          });
+          
+          if (applicablePrice) {
+            const newPrice = parseFloat(applicablePrice.price);
+            pricesApplied++;
+            return {
+              ...item,
+              price: newPrice,
+              total: item.quantity * newPrice * (1 - item.discountPercentage / 100) + item.tax,
+              hasCustomerPrice: true
+            };
+          }
+          
+          return item;
+        }));
+        
+        if (pricesApplied > 0) {
+          toast({
+            title: t('orders:customerPriceApplied'),
+            description: t('orders:customerPricesAppliedCount', { count: pricesApplied }),
+          });
+        }
+      } catch (error) {
+        console.error('Error applying customer pricing:', error);
+      }
+    };
+    
+    applyCustomerPricing();
+  }, [selectedCustomer?.id]);
+
   // Shipping notes state
   const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
