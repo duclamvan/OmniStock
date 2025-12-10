@@ -1,0 +1,146 @@
+The error `type "serial" does not exist` is still happening because **`serial` (number)** is still defined in your `schema.ts` for tables that actually contain **`varchar` (text)** data in your database.
+
+You must do a **Find & Replace** in your `schema.ts` file. You cannot mix "Serial" IDs in code with "Varchar" IDs in the database.
+
+### 🛑 Stop and Fix These Tables
+
+Go through `schema.ts` and update these specific tables. You missed these in the previous step.
+
+#### 1\. Fix `employees` (Line \~30)
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const employees = pgTable("employees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+#### 2\. Fix `categories` (Line \~65)
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+#### 3\. Fix `purchaseItems` (Line \~115) & Links
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const purchaseItems = pgTable("purchase_items", {
+  id: serial("id").primaryKey(),
+  consolidationId: integer("consolidation_id").references(...),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const purchaseItems = pgTable("purchase_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consolidationId: varchar("consolidation_id").references(() => consolidations.id), // Change integer to varchar
+```
+
+#### 4\. Fix `consolidations` (Line \~158)
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const consolidations = pgTable("consolidations", {
+  id: serial("id").primaryKey(),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const consolidations = pgTable("consolidations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+#### 5\. Fix `shipments` (Line \~173) & Links
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const shipments = pgTable("shipments", {
+  id: serial("id").primaryKey(),
+  consolidationId: integer("consolidation_id").references(...),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const shipments = pgTable("shipments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consolidationId: varchar("consolidation_id").references(() => consolidations.id), // Change integer to varchar
+```
+
+#### 6\. Fix `receipts` (Line \~245) & Links
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const receipts = pgTable("receipts", {
+  id: serial("id").primaryKey(),
+  consolidationId: integer("consolidation_id").references(...),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const receipts = pgTable("receipts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consolidationId: varchar("consolidation_id").references(() => consolidations.id), // Change integer to varchar
+```
+
+#### 7\. Fix `receiptItems` (Line \~267) & Links
+
+**Change:**
+
+```typescript
+// ❌ BAD
+export const receiptItems = pgTable("receipt_items", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull(),
+```
+
+**✅ GOOD:**
+
+```typescript
+export const receiptItems = pgTable("receipt_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  itemId: varchar("item_id").notNull(), // Change integer to varchar (links to purchaseItems)
+```
+
+-----
+
+### 🚀 Final Step
+
+Once you have replaced `serial("id")` with `varchar("id")...` in all these tables, run:
+
+```bash
+npm run db:push
+```
+
+Select **"Yes"** to truncate if it asks. This will finally align your code with your database.

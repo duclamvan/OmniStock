@@ -41,7 +41,9 @@ export const users = pgTable("users", {
 
 // Employees table
 export const employees = pgTable("employees", {
-  id: serial("id").primaryKey(),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().unique(), // Custom employee ID (e.g., EMP001)
   userId: varchar("user_id").references(() => users.id), // Link to user account for system access
   firstName: varchar("first_name").notNull(),
@@ -99,7 +101,9 @@ export const categories = pgTable("categories", {
 
 // Import Purchases (formerly orders from suppliers)
 export const importPurchases = pgTable("import_purchases", {
-  id: serial("id").primaryKey(),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   supplier: text("supplier").notNull(),
   location: text("location").notNull().default("China"), // Europe, USA, China, Vietnam
   trackingNumber: text("tracking_number"),
@@ -128,8 +132,10 @@ export const importPurchases = pgTable("import_purchases", {
 
 // Purchase Items (items within a purchase)
 export const purchaseItems = pgTable("purchase_items", {
-  id: serial("id").primaryKey(),
-  purchaseId: integer("purchase_id")
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  purchaseId: varchar("purchase_id")
     .notNull()
     .references(() => importPurchases.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -172,7 +178,9 @@ export const purchaseItems = pgTable("purchase_items", {
 
 // Consolidations (grouping items at warehouse)
 export const consolidations = pgTable("consolidations", {
-  id: serial("id").primaryKey(),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   location: text("location").notNull(), // Country destination
   shippingMethod: text("shipping_method").notNull(), // general_air_ddp, sensitive_air_ddp, express_general, express_sensitive, railway_general, railway_sensitive, sea_general, sea_sensitive
@@ -187,7 +195,9 @@ export const consolidations = pgTable("consolidations", {
 
 // Shipments (international transit)
 export const shipments = pgTable("shipments", {
-  id: serial("id").primaryKey(),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   consolidationId: integer("consolidation_id").references(
     () => consolidations.id,
   ),
@@ -262,8 +272,10 @@ export const customItems = pgTable("custom_items", {
 
 // Receiving workflow tables
 export const receipts = pgTable("receipts", {
-  id: serial("id").primaryKey(),
-  shipmentId: integer("shipment_id")
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  shipmentId: varchar("shipment_id")
     .notNull()
     .references(() => shipments.id),
   consolidationId: integer("consolidation_id").references(
@@ -288,8 +300,10 @@ export const receipts = pgTable("receipts", {
 });
 
 export const receiptItems = pgTable("receipt_items", {
-  id: serial("id").primaryKey(),
-  receiptId: integer("receipt_id")
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  receiptId: varchar("receipt_id")
     .notNull()
     .references(() => receipts.id, { onDelete: "cascade" }),
   itemId: integer("item_id").notNull(), // References purchaseItems.id or customItems.id
@@ -651,8 +665,14 @@ export const products = pgTable("products", {
   priceUsd: decimal("price_usd"),
   priceVnd: decimal("price_vnd"),
   priceCny: decimal("price_cny"),
-  wholesalePriceCzk: decimal("wholesale_price_czk", { precision: 12, scale: 2 }),
-  wholesalePriceEur: decimal("wholesale_price_eur", { precision: 12, scale: 2 }),
+  wholesalePriceCzk: decimal("wholesale_price_czk", {
+    precision: 12,
+    scale: 2,
+  }),
+  wholesalePriceEur: decimal("wholesale_price_eur", {
+    precision: 12,
+    scale: 2,
+  }),
   importCostUsd: decimal("import_cost_usd"),
   importCostCzk: decimal("import_cost_czk"),
   importCostEur: decimal("import_cost_eur"),
