@@ -4,22 +4,12 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-// Build connection from PG* environment variables (direct Neon connection)
-const pgHost = process.env.PGHOST;
-const pgPort = process.env.PGPORT || '5432';
-const pgUser = process.env.PGUSER;
-const pgPassword = process.env.PGPASSWORD;
-const pgDatabase = process.env.PGDATABASE;
+// Use DATABASE_URL as the primary connection string (Replit standard)
+const connectionString = process.env.DATABASE_URL;
 
-if (!pgHost || !pgUser || !pgPassword || !pgDatabase) {
-  throw new Error(
-    "Database credentials (PGHOST, PGUSER, PGPASSWORD, PGDATABASE) must be set.",
-  );
+if (!connectionString) {
+  throw new Error("DATABASE_URL must be set for database connection.");
 }
-
-// Build connection string from PG* variables
-// Include options to set search_path to public schema to avoid stale schema path issues
-const connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require&options=-csearch_path%3Dpublic`;
 
 // Use standard pg driver with direct Neon connection
 // Increased timeouts for Neon serverless cold starts (can take 15+ seconds)
@@ -30,10 +20,10 @@ export const pool = new Pool({
   connectionTimeoutMillis: 30000, // 30 seconds for Neon cold starts
 });
 
-// Ensure all connections use the correct search_path (public schema)
-// This fixes issues where pooled connections may have stale search_path from past migrations
+// Ensure all connections use the correct search_path
+// Include pg_catalog for PostgreSQL built-in types like serial, and public for user tables
 pool.on('connect', (client) => {
-  client.query('SET search_path TO public, "$user"');
+  client.query('SET search_path TO public, pg_catalog, "$user"');
 });
 
 // Run startup migration to fix shipping_method column type (converts enum to text if needed)
