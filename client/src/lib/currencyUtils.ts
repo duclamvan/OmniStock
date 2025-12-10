@@ -89,6 +89,22 @@ export function getCurrencySymbol(currency: Currency): string {
   return symbols[currency] || currency;
 }
 
+export function getCurrencyByCountry(country: string): Currency {
+  const countryLower = country?.toLowerCase() || '';
+  
+  const czkCountries = ['czech republic', 'czechia', 'česká republika', 'česko', 'cz'];
+  const usdCountries = ['united states', 'usa', 'us', 'united states of america'];
+  const vndCountries = ['vietnam', 'việt nam', 'vn'];
+  const cnyCountries = ['china', 'zhongguo', '中国', 'cn'];
+  
+  if (czkCountries.some(c => countryLower.includes(c))) return 'CZK';
+  if (usdCountries.some(c => countryLower.includes(c))) return 'USD';
+  if (vndCountries.some(c => countryLower.includes(c))) return 'VND';
+  if (cnyCountries.some(c => countryLower.includes(c))) return 'CNY';
+  
+  return 'EUR';
+}
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '';
   

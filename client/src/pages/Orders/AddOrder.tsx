@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, getCurrencyByCountry } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { getCustomerBadges } from "@/lib/customerBadges";
@@ -2905,6 +2905,12 @@ export default function AddOrder() {
                         if (firstCustomer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
+                        // Auto-set currency based on customer preference or country
+                        const customerCurrency = firstCustomer.preferredCurrency || 
+                          (firstCustomer.country ? getCurrencyByCountry(firstCustomer.country) : null);
+                        if (customerCurrency) {
+                          form.setValue('currency', customerCurrency);
+                        }
                         // Auto-focus product search for fast keyboard navigation
                         setTimeout(() => {
                           productSearchRef.current?.focus();
@@ -2950,6 +2956,12 @@ export default function AddOrder() {
                         // Auto-set payment status to Pay Later if customer has Pay Later badge
                         if (customer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
+                        }
+                        // Auto-set currency based on customer preference or country
+                        const customerCurrency = customer.preferredCurrency || 
+                          (customer.country ? getCurrencyByCountry(customer.country) : null);
+                        if (customerCurrency) {
+                          form.setValue('currency', customerCurrency);
                         }
                         // Auto-focus product search for fast keyboard navigation
                         setTimeout(() => {
