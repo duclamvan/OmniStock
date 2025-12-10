@@ -1814,16 +1814,27 @@ export default function AddOrder() {
       let discountId = null;
       let discountType = null;
       let discountScope = null;
+      let freeItemsCount = 0;
+      let buyXGetYBuyQty: number | undefined;
+      let buyXGetYGetQty: number | undefined;
       
       if (applicableDiscount) {
         const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, quantity);
         if (applicableDiscount.type === 'percentage') {
           discountPct = parseFloat(applicableDiscount.percentage || '0');
           discountAmount = (productPrice * quantity * discountPct) / 100;
+        } else if (applicableDiscount.type === 'buy_x_get_y') {
+          discountAmount = discountResult.amount;
+          freeItemsCount = discountResult.freeItemsCount || 0;
+          buyXGetYBuyQty = discountResult.buyQty;
+          buyXGetYGetQty = discountResult.getQty;
+          discountLabel = discountResult.label;
         } else {
           discountAmount = discountResult.amount;
         }
-        discountLabel = applicableDiscount.name || discountResult.label;
+        if (!discountLabel) {
+          discountLabel = applicableDiscount.name || discountResult.label;
+        }
         discountId = applicableDiscount.id;
         discountType = applicableDiscount.type || applicableDiscount.discountType;
         discountScope = applicableDiscount.applicationScope;
@@ -1848,6 +1859,9 @@ export default function AddOrder() {
         appliedDiscountLabel: discountLabel || null,
         appliedDiscountType: discountType,
         appliedDiscountScope: discountScope,
+        freeItemsCount: freeItemsCount > 0 ? freeItemsCount : undefined,
+        buyXGetYBuyQty,
+        buyXGetYGetQty,
       };
       
       setOrderItems(items => [...items, newItem]);
