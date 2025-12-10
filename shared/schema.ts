@@ -961,6 +961,7 @@ export const orderItems = pgTable("order_items", {
   appliedDiscountLabel: varchar("applied_discount_label"), // Display text like "BUY 2 GET 1", "SALE 20%"
   appliedDiscountType: varchar("applied_discount_type"), // percentage, fixed, buy_x_get_y
   appliedDiscountScope: varchar("applied_discount_scope"), // product, order, customer
+  freeItemsCount: integer("free_items_count"), // For buy_x_get_y: number of free items earned
 });
 
 // Product warehouse locations table

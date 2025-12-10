@@ -96,7 +96,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink } from "lucide-react";
+import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift } from "lucide-react";
 import html2canvas from "html2canvas";
 import logoPath from '@assets/logo_1754349267160.png';
 import { useSettings } from "@/contexts/SettingsContext";
@@ -1477,10 +1477,19 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
                             {item.appliedDiscountLabel && (
-                              <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
-                                <span className="font-medium">{t('orders:offer')}:</span>
-                                <span>{item.appliedDiscountLabel}</span>
-                              </div>
+                              item.appliedDiscountType === 'buy_x_get_y'
+                                ? (item.freeItemsCount && item.freeItemsCount > 0 && (
+                                    <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
+                                      <span className="font-medium">{t('orders:offer')}:</span>
+                                      <span>{item.appliedDiscountLabel}</span>
+                                    </div>
+                                  ))
+                                : (
+                                    <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
+                                      <span className="font-medium">{t('orders:offer')}:</span>
+                                      <span>{item.appliedDiscountLabel}</span>
+                                    </div>
+                                  )
                             )}
                             {item.serviceId && item.notes && (
                               <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1 mb-1.5">
@@ -1568,6 +1577,31 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Free Items Row for Buy X Get Y Offers */}
+                    {item.appliedDiscountType === 'buy_x_get_y' && item.freeItemsCount && item.freeItemsCount > 0 && (
+                      <div className="mt-2 ml-16 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Gift className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                              {item.productName}
+                            </span>
+                            <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                              {t('orders:freeItem')}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-300">
+                              × {item.freeItemsCount}
+                            </span>
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-300">
+                              {formatCurrency(0, order.currency || 'EUR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
