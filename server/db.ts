@@ -29,6 +29,12 @@ export const pool = new Pool({
   connectionTimeoutMillis: 30000, // 30 seconds for Neon cold starts
 });
 
+// Ensure all connections use the correct search_path (public schema)
+// This fixes issues where pooled connections may have stale search_path from past migrations
+pool.on('connect', (client) => {
+  client.query('SET search_path TO public, "$user"');
+});
+
 // Run startup migration to fix shipping_method column type (converts enum to text if needed)
 (async () => {
   try {
