@@ -423,6 +423,54 @@ const financial = {
   years: 'Year(s)',
   none: 'None',
   
+  // Recurring expense additional fields
+  dueNow: 'Due Now',
+  recordExpense: 'Record Expense',
+  startDateOptional: 'Start Date (Optional)',
+  endDateOptional: 'End Date (Optional)',
+  leaveEmptyForNoEndDate: 'Leave empty for no end date',
+  pickStartDate: 'Pick a start date',
+  pickEndDate: 'Pick an end date',
+  recurringSummary: 'Summary',
+  onDayOfMonth: 'On Day of Month',
+  enterDayBetween: 'Enter a day between 1-31',
+  month: 'Month',
+  day: 'Day',
+  processing: 'Processing',
+  notes: 'Notes',
+  billNumber: 'Bill Number',
+  appName: 'Davie Supply',
+  
+  // Day names
+  sunday: 'Sunday',
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  
+  // Month names
+  january: 'January',
+  february: 'February',
+  march: 'March',
+  april: 'April',
+  may: 'May',
+  june: 'June',
+  july: 'July',
+  august: 'August',
+  september: 'September',
+  october: 'October',
+  november: 'November',
+  december: 'December',
+  
+  // Recurring summary templates
+  week: 'week',
+  everyWeeksOn: 'Every {{interval}} {{weeks}} on {{day}}',
+  everyMonthsOnDay: 'Every {{interval}} {{months}} on day {{day}}',
+  everyYearsOn: 'Every {{interval}} {{years}} on {{month}} {{day}}',
+  configureRecurringOptions: 'Configure recurring options above',
+  
   // Payment Methods (already have some, adding missing)
   paypal: 'PayPal',
   check: 'Check',

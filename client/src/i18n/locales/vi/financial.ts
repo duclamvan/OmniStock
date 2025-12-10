@@ -423,6 +423,54 @@ const financial = {
   years: 'Năm',
   none: 'Không có',
   
+  // Recurring expense additional fields
+  dueNow: 'Thanh toán ngay',
+  recordExpense: 'Ghi nhận chi phí',
+  startDateOptional: 'Ngày bắt đầu (Tùy chọn)',
+  endDateOptional: 'Ngày kết thúc (Tùy chọn)',
+  leaveEmptyForNoEndDate: 'Để trống nếu không có ngày kết thúc',
+  pickStartDate: 'Chọn ngày bắt đầu',
+  pickEndDate: 'Chọn ngày kết thúc',
+  recurringSummary: 'Tóm tắt',
+  onDayOfMonth: 'Vào ngày trong tháng',
+  enterDayBetween: 'Nhập ngày từ 1-31',
+  month: 'Tháng',
+  day: 'Ngày',
+  processing: 'Đang xử lý',
+  notes: 'Ghi chú',
+  billNumber: 'Số hóa đơn',
+  appName: 'Davie Supply',
+  
+  // Day names
+  sunday: 'Chủ nhật',
+  monday: 'Thứ hai',
+  tuesday: 'Thứ ba',
+  wednesday: 'Thứ tư',
+  thursday: 'Thứ năm',
+  friday: 'Thứ sáu',
+  saturday: 'Thứ bảy',
+  
+  // Month names
+  january: 'Tháng 1',
+  february: 'Tháng 2',
+  march: 'Tháng 3',
+  april: 'Tháng 4',
+  may: 'Tháng 5',
+  june: 'Tháng 6',
+  july: 'Tháng 7',
+  august: 'Tháng 8',
+  september: 'Tháng 9',
+  october: 'Tháng 10',
+  november: 'Tháng 11',
+  december: 'Tháng 12',
+  
+  // Recurring summary templates
+  week: 'tuần',
+  everyWeeksOn: 'Mỗi {{interval}} {{weeks}} vào {{day}}',
+  everyMonthsOnDay: 'Mỗi {{interval}} {{months}} vào ngày {{day}}',
+  everyYearsOn: 'Mỗi {{interval}} {{years}} vào {{month}} {{day}}',
+  configureRecurringOptions: 'Cấu hình tùy chọn lặp lại ở trên',
+  
   // Payment Methods (already have some, adding missing)
   paypal: 'PayPal',
   check: 'Séc',

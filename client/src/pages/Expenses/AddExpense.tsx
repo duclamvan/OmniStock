@@ -539,13 +539,13 @@ export default function AddExpense() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="0">Sunday</SelectItem>
-                                  <SelectItem value="1">Monday</SelectItem>
-                                  <SelectItem value="2">Tuesday</SelectItem>
-                                  <SelectItem value="3">Wednesday</SelectItem>
-                                  <SelectItem value="4">Thursday</SelectItem>
-                                  <SelectItem value="5">Friday</SelectItem>
-                                  <SelectItem value="6">Saturday</SelectItem>
+                                  <SelectItem value="0">{t('sunday')}</SelectItem>
+                                  <SelectItem value="1">{t('monday')}</SelectItem>
+                                  <SelectItem value="2">{t('tuesday')}</SelectItem>
+                                  <SelectItem value="3">{t('wednesday')}</SelectItem>
+                                  <SelectItem value="4">{t('thursday')}</SelectItem>
+                                  <SelectItem value="5">{t('friday')}</SelectItem>
+                                  <SelectItem value="6">{t('saturday')}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -588,18 +588,18 @@ export default function AddExpense() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="1">January</SelectItem>
-                                    <SelectItem value="2">February</SelectItem>
-                                    <SelectItem value="3">March</SelectItem>
-                                    <SelectItem value="4">April</SelectItem>
-                                    <SelectItem value="5">May</SelectItem>
-                                    <SelectItem value="6">June</SelectItem>
-                                    <SelectItem value="7">July</SelectItem>
-                                    <SelectItem value="8">August</SelectItem>
-                                    <SelectItem value="9">September</SelectItem>
-                                    <SelectItem value="10">October</SelectItem>
-                                    <SelectItem value="11">November</SelectItem>
-                                    <SelectItem value="12">December</SelectItem>
+                                    <SelectItem value="1">{t('january')}</SelectItem>
+                                    <SelectItem value="2">{t('february')}</SelectItem>
+                                    <SelectItem value="3">{t('march')}</SelectItem>
+                                    <SelectItem value="4">{t('april')}</SelectItem>
+                                    <SelectItem value="5">{t('may')}</SelectItem>
+                                    <SelectItem value="6">{t('june')}</SelectItem>
+                                    <SelectItem value="7">{t('july')}</SelectItem>
+                                    <SelectItem value="8">{t('august')}</SelectItem>
+                                    <SelectItem value="9">{t('september')}</SelectItem>
+                                    <SelectItem value="10">{t('october')}</SelectItem>
+                                    <SelectItem value="11">{t('november')}</SelectItem>
+                                    <SelectItem value="12">{t('december')}</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -704,24 +704,26 @@ export default function AddExpense() {
                                 const type = form.watch("recurringType");
                                 
                                 if (type === 'weekly') {
-                                  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                                  const day = days[form.watch("recurringDayOfWeek") || 1];
-                                  return `Every ${interval > 1 ? interval + ' weeks' : 'week'} on ${day}`;
+                                  const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                                  const dayKey = dayKeys[form.watch("recurringDayOfWeek") || 1];
+                                  const day = t(dayKey);
+                                  return t('everyWeeksOn', { interval: interval > 1 ? interval : '', weeks: interval > 1 ? t('weeks') : t('week'), day });
                                 }
                                 
                                 if (type === 'monthly') {
                                   const dayOfMonth = form.watch("recurringDayOfMonth") || 1;
-                                  return `Every ${interval > 1 ? interval + ' months' : 'month'} on day ${dayOfMonth}`;
+                                  return t('everyMonthsOnDay', { interval: interval > 1 ? interval : '', months: interval > 1 ? t('months') : t('month'), day: dayOfMonth });
                                 }
                                 
                                 if (type === 'yearly') {
-                                  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                  const month = months[(form.watch("recurringMonth") || 1) - 1];
+                                  const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+                                  const monthKey = monthKeys[(form.watch("recurringMonth") || 1) - 1];
+                                  const month = t(monthKey);
                                   const day = form.watch("recurringDay") || 1;
-                                  return `Every ${interval > 1 ? interval + ' years' : 'year'} on ${month} ${day}`;
+                                  return t('everyYearsOn', { interval: interval > 1 ? interval : '', years: interval > 1 ? t('years') : t('year'), month, day });
                                 }
                                 
-                                return 'Configure recurring options above';
+                                return t('configureRecurringOptions');
                               })()}
                             </p>
                           </div>
