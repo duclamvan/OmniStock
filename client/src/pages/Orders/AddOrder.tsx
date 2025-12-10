@@ -419,10 +419,14 @@ export default function AddOrder() {
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
-  // Auto-enable discount column if any item has a discount percentage or an applied discount label
+  // Auto-enable discount column if any item has a manual discount percentage (not Buy X Get Y offers)
   useEffect(() => {
-    const hasDiscounts = orderItems.some(item => item.discountPercentage > 0 || item.discount > 0 || item.appliedDiscountLabel);
-    if (hasDiscounts && !showDiscountColumn) {
+    const hasManualDiscounts = orderItems.some(item => 
+      item.discountPercentage > 0 || 
+      item.discount > 0 || 
+      (item.appliedDiscountLabel && item.appliedDiscountType !== 'buy_x_get_y')
+    );
+    if (hasManualDiscounts && !showDiscountColumn) {
       setShowDiscountColumn(true);
     }
   }, [orderItems, showDiscountColumn]);
