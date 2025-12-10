@@ -2358,7 +2358,7 @@ export default function AddOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 overflow-x-hidden">
-      <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
+      <div className="p-3 sm:p-4 lg:p-6 w-full">
         {/* Header - Mobile Optimized */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -2576,11 +2576,11 @@ export default function AddOrder() {
               </Card>
             </div>
 
-            {/* 2-Column Grid for Desktop */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* 2-Column Grid for Desktop - Full Width Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
               
-              {/* Left Column - Main Workflow */}
-              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              {/* Left Column - Main Workflow (3/4 width) */}
+              <div className="lg:col-span-3 space-y-4 sm:space-y-6">
 
             {/* Customer Selection - Mobile Optimized */}
             <Card className="shadow-sm">
