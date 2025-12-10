@@ -6780,7 +6780,12 @@ Important:
       // If includeItems is requested, fetch order items for each order
       if (includeItems) {
         const ordersWithItems = await Promise.all(orders.map(async (order) => {
-          const items = await storage.getOrderItems(order.id);
+          let items: any[] = [];
+          try {
+            items = await storage.getOrderItems(order.id);
+          } catch (itemError) {
+            console.warn(`Failed to fetch items for order ${order.id}, using empty array`);
+          }
 
           // For each item, check if it's part of a bundle and fetch bundle items
           const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {

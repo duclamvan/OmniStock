@@ -2082,6 +2082,7 @@ export const insertServiceSchema = createInsertSchema(services).omit({
 });
 export const insertServiceItemSchema = createInsertSchema(serviceItems).omit({
   id: true,
+  serviceId: true,
   createdAt: true,
   updatedAt: true,
 });
