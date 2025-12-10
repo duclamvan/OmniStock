@@ -10160,11 +10160,24 @@ Important:
   // Sales/Discounts endpoints
   app.get('/api/discounts', isAuthenticated, async (req, res) => {
     try {
+      // Sync expired discount statuses before returning
+      await storage.syncExpiredDiscountStatuses();
       const discounts = await storage.getDiscounts();
       res.json(discounts);
     } catch (error) {
       console.error("Error fetching discounts:", error);
       res.status(500).json({ message: "Failed to fetch discounts" });
+    }
+  });
+  
+  // Manual sync endpoint for admins
+  app.post('/api/discounts/sync-status', isAuthenticated, requireRole(['administrator']), async (req: any, res) => {
+    try {
+      const count = await storage.syncExpiredDiscountStatuses();
+      res.json({ success: true, updatedCount: count, message: `Updated ${count} expired discounts to 'finished' status` });
+    } catch (error) {
+      console.error("Error syncing discount statuses:", error);
+      res.status(500).json({ message: "Failed to sync discount statuses" });
     }
   });
 

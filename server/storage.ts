@@ -172,7 +172,7 @@ import {
   type InsertWarehouseTask
 } from "@shared/schema";
 import { db as database } from "./db";
-import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, gte, lte, lt, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
 import * as badgeService from './services/badgeService';
 
 // Re-export db for backward compatibility with methods still using global db
@@ -3667,6 +3667,33 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting discount:', error);
       return false;
+    }
+  }
+
+  async syncExpiredDiscountStatuses(): Promise<number> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const result = await db
+        .update(discounts)
+        .set({ status: 'finished', updatedAt: new Date() })
+        .where(
+          and(
+            eq(discounts.status, 'active'),
+            lt(discounts.endDate, today.toISOString().split('T')[0])
+          )
+        )
+        .returning();
+      
+      if (result.length > 0) {
+        console.log(`[Discount Sync] Updated ${result.length} expired discounts to 'finished' status`);
+      }
+      
+      return result.length;
+    } catch (error) {
+      console.error('Error syncing expired discount statuses:', error);
+      return 0;
     }
   }
 

@@ -150,5 +150,25 @@ app.use((req, res, next) => {
     } catch (error) {
       console.error('Failed to start report scheduler:', error);
     }
+    
+    // Sync expired discount statuses on startup and every 6 hours
+    try {
+      const { storage } = await import('./storage');
+      const syncDiscounts = async () => {
+        const count = await storage.syncExpiredDiscountStatuses();
+        if (count > 0) {
+          log(`[Discount Sync] Updated ${count} expired discounts to 'finished' status`);
+        }
+      };
+      
+      // Run immediately on startup
+      await syncDiscounts();
+      
+      // Run every 6 hours (21600000 ms)
+      setInterval(syncDiscounts, 6 * 60 * 60 * 1000);
+      log('Discount status sync scheduler started');
+    } catch (error) {
+      console.error('Failed to start discount status sync:', error);
+    }
   });
 })();
