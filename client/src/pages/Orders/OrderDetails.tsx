@@ -96,7 +96,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift } from "lucide-react";
+import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift, Percent, Tag, TrendingDown } from "lucide-react";
 import html2canvas from "html2canvas";
 import logoPath from '@assets/logo_1754349267160.png';
 import { useSettings } from "@/contexts/SettingsContext";
@@ -1476,10 +1476,42 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               </p>
                             )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
-                            {item.appliedDiscountLabel && item.appliedDiscountType !== 'buy_x_get_y' && (
-                              <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
-                                <span className="font-medium">{t('orders:offer')}:</span>
-                                <span>{item.appliedDiscountLabel}</span>
+                            {/* Discount Badge - Enhanced display for different discount types */}
+                            {item.appliedDiscountLabel && (
+                              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                                {/* Discount Type Badge */}
+                                {item.appliedDiscountType === 'percentage' && (
+                                  <div className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-300 dark:border-orange-700 rounded px-1.5 py-0.5 text-xs">
+                                    <Percent className="h-3 w-3" />
+                                    <span className="font-medium">{item.appliedDiscountLabel}</span>
+                                  </div>
+                                )}
+                                {item.appliedDiscountType === 'fixed' && (
+                                  <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-xs">
+                                    <Tag className="h-3 w-3" />
+                                    <span className="font-medium">{item.appliedDiscountLabel}</span>
+                                  </div>
+                                )}
+                                {item.appliedDiscountType === 'buy_x_get_y' && (
+                                  <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border border-green-300 dark:border-green-700 rounded px-1.5 py-0.5 text-xs">
+                                    <Gift className="h-3 w-3" />
+                                    <span className="font-medium">{item.appliedDiscountLabel}</span>
+                                  </div>
+                                )}
+                                {/* Fallback for other/unknown types */}
+                                {!['percentage', 'fixed', 'buy_x_get_y'].includes(item.appliedDiscountType || '') && (
+                                  <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border border-green-300 dark:border-green-700 rounded px-1.5 py-0.5 text-xs">
+                                    <span className="font-medium">{t('orders:offer')}:</span>
+                                    <span>{item.appliedDiscountLabel}</span>
+                                  </div>
+                                )}
+                                {/* Savings indicator */}
+                                {item.discount > 0 && (
+                                  <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded px-1.5 py-0.5 text-xs">
+                                    <TrendingDown className="h-3 w-3" />
+                                    <span className="font-medium">{t('orders:save')} {formatCurrency(item.discount, order.currency || 'EUR')}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
                             {item.serviceId && item.notes && (
