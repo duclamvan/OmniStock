@@ -1570,7 +1570,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     </div>
                     
                     {/* Free Items Row for Buy X Get Y Offers */}
-                    {item.appliedDiscountType === 'buy_x_get_y' && item.freeItemsCount && item.freeItemsCount > 0 && (
+                    {item.appliedDiscountType === 'buy_x_get_y' && (item.freeItemsCount ?? 0) > 0 && (
                       <div className="mt-2 ml-16 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
