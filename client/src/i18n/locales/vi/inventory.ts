@@ -1214,6 +1214,8 @@ const inventory = {
   addItems: 'Thêm hàng',
   itemName: 'Tên hàng',
   searchProduct: 'Tìm kiếm sản phẩm...',
+  searchOrScanProduct: 'Tìm kiếm hoặc quét sản phẩm...',
+  noItemsAddedYet: 'Chưa có hàng nào được thêm',
   noProductFound: 'Không tìm thấy sản phẩm',
   quantityLabel: 'Số lượng',
   quantityPlaceholder: '1',

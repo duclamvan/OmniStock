@@ -737,27 +737,15 @@ export default function AddReturn() {
             {/* Items Returned */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-green-500" />
-                    {t('inventory:itemsReturned')}
-                  </CardTitle>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddItem}
-                    data-testid="button-addItem"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    {t('inventory:addItems')}
-                  </Button>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-green-500" />
+                  {t('inventory:itemsReturned')}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Barcode Scanner Section */}
-                {scanningEnabled && (
-                  <div className="relative">
+                {/* Unified Search/Scan Input with Add Button */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
                     <Input
                       ref={barcodeInputRef}
                       id="barcode-scan"
@@ -770,29 +758,28 @@ export default function AddReturn() {
                           handleBarcodeScan(barcodeInput);
                         }
                       }}
-                      placeholder={t('inventory:scanBarcodeOrSku')}
+                      placeholder={t('inventory:searchOrScanProduct')}
                       className="pl-10"
                       disabled={productsQuery.isLoading}
-                      data-testid="input-barcode-scan"
+                      data-testid="input-search-scan"
                     />
-                    <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
-                )}
+                  <Button
+                    type="button"
+                    variant="default"
+                    onClick={handleAddItem}
+                    data-testid="button-addItem"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t('common:add')}
+                  </Button>
+                </div>
 
                 {fields.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/50 rounded-lg">
-                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">{t('inventory:noItemsAddedYet')}</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAddItem}
-                      data-testid="button-addFirstItem"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      {t('inventory:addFirstItem')}
-                    </Button>
+                  <div className="text-center py-8 bg-muted/50 rounded-lg">
+                    <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground text-sm">{t('inventory:noItemsAddedYet')}</p>
                   </div>
                 ) : (
                   <>

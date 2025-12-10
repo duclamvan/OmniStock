@@ -1164,6 +1164,7 @@ const inventory = {
   typeHere: 'Type here...',
   typeHereNote: 'Type here',
   scanBarcodeOrSku: 'Scan barcode or enter SKU...',
+  searchOrScanProduct: 'Search or scan product...',
   noItemsAddedYet: 'No items added yet',
   addFirstItem: 'Add First Item',
   returnReasonLabel: 'Return Reason',
