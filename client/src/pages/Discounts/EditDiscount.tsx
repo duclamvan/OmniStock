@@ -91,6 +91,76 @@ const createDiscountSchema = (t: any) => z.object({
   path: ["discountType"],
 });
 
+function ProductSelectorItem({ 
+  index, 
+  products, 
+  selectedProductId, 
+  onSelect, 
+  onRemove, 
+  t 
+}: { 
+  index: number;
+  products: Product[];
+  selectedProductId: string;
+  onSelect: (productId: string) => void;
+  onRemove: () => void;
+  t: any;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedProduct = products.find(p => String(p.id) === selectedProductId);
+  
+  return (
+    <div className="flex gap-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="flex-1 justify-between"
+          >
+            {selectedProduct ? selectedProduct.name : t('discounts:searchProducts')}
+            <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput placeholder={t('discounts:searchProducts')} />
+            <CommandEmpty>{t('discounts:noProducts')}</CommandEmpty>
+            <CommandGroup className="max-h-60 overflow-auto">
+              {products.map((product) => (
+                <CommandItem
+                  key={product.id}
+                  onSelect={() => {
+                    onSelect(String(product.id));
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedProductId === String(product.id) ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {product.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onRemove}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 export default function EditDiscount() {
   const { t } = useTranslation(['discounts', 'common']);
   const discountSchema = useMemo(() => createDiscountSchema(t), [t]);
@@ -877,31 +947,15 @@ export default function EditDiscount() {
                   <div className="space-y-2">
                     <Label>{t('discounts:selectedProducts')} {t('discounts:required')}</Label>
                     {fields.map((field, index) => (
-                      <div key={field.id} className="flex gap-2">
-                        <Select
-                          value={form.watch(`selectedProductIds.${index}.productId`)}
-                          onValueChange={(value) => form.setValue(`selectedProductIds.${index}.productId`, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('discounts:searchProducts')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <ProductSelectorItem
+                        key={field.id}
+                        index={index}
+                        products={products}
+                        selectedProductId={form.watch(`selectedProductIds.${index}.productId`) || ''}
+                        onSelect={(productId) => form.setValue(`selectedProductIds.${index}.productId`, productId)}
+                        onRemove={() => remove(index)}
+                        t={t}
+                      />
                     ))}
                     <Button
                       type="button"
