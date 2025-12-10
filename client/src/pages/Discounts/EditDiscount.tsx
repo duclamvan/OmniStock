@@ -1025,14 +1025,14 @@ export default function EditDiscount() {
                     <div>
                       <p className="text-sm text-gray-600">{t('discounts:newSalePrice')}</p>
                       <div className="space-y-1">
-                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')}</p>
-                        <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
+                        <p className="font-semibold text-green-600 text-xl">Kč {Number(form.watch('fixedAmount')) || 0}</p>
+                        <p className="text-sm text-gray-600">≈ €{((Number(form.watch('fixedAmount')) || 0) / 25).toFixed(2)}</p>
                       </div>
                     </div>
                     {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
                       const selectedProduct = products.find(p => String(p.id) === form.watch('productId'));
                       const originalPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
-                      const salePrice = form.watch('fixedAmount');
+                      const salePrice = Number(form.watch('fixedAmount')) || 0;
                       const savings = Math.max(0, originalPrice - salePrice);
                       const savingsPercent = originalPrice > 0 ? ((savings / originalPrice) * 100).toFixed(0) : 0;
                       
