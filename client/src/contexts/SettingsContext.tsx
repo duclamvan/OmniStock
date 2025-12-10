@@ -23,13 +23,14 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
 ];
 
 // Default return types (fallback if not set in app_settings)
+// Only first 3 types enabled by default for cleaner UI
 export const DEFAULT_RETURN_TYPES = [
   { value: 'exchange', labelKey: 'exchangeType', enabled: true },
   { value: 'refund', labelKey: 'refundType', enabled: true },
   { value: 'store_credit', labelKey: 'storeCreditType', enabled: true },
-  { value: 'damaged_goods', labelKey: 'damagedGoods', enabled: true, disposesInventory: true },
-  { value: 'bad_quality', labelKey: 'badQuality', enabled: true, disposesInventory: true },
-  { value: 'guarantee', labelKey: 'guaranteeType', enabled: true },
+  { value: 'damaged_goods', labelKey: 'damagedGoods', enabled: false, disposesInventory: true },
+  { value: 'bad_quality', labelKey: 'badQuality', enabled: false, disposesInventory: true },
+  { value: 'guarantee', labelKey: 'guaranteeType', enabled: false },
 ];
 
 export interface ReturnTypeConfig {

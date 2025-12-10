@@ -171,7 +171,7 @@ import {
   type WarehouseTask,
   type InsertWarehouseTask
 } from "@shared/schema";
-import { db as database, pool } from "./db";
+import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, lt, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
 import * as badgeService from './services/badgeService';
 
@@ -1996,42 +1996,11 @@ export class DatabaseStorage implements IStorage {
 
   // Order Items
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    const { rows } = await pool.query(
-      `SELECT id, order_id as "orderId", product_id as "productId", service_id as "serviceId", 
-              bundle_id as "bundleId", product_name as "productName", sku, quantity, price, discount, 
-              tax, total, variant_id as "variantId", unit_price as "unitPrice", 
-              applied_price as "appliedPrice", currency, customer_price_id as "customerPriceId",
-              picked_quantity as "pickedQuantity", packed_quantity as "packedQuantity", 
-              warehouse_location as "warehouseLocation", barcode, image,
-              pick_start_time as "pickStartTime", pick_end_time as "pickEndTime",
-              pack_start_time as "packStartTime", pack_end_time as "packEndTime", notes,
-              landing_cost as "landingCost", variant_name as "variantName",
-              applied_discount_id as "appliedDiscountId", applied_discount_label as "appliedDiscountLabel",
-              applied_discount_type as "appliedDiscountType", applied_discount_scope as "appliedDiscountScope",
-              free_items_count as "freeItemsCount"
-       FROM order_items WHERE order_id = $1`,
-      [orderId]
-    );
-    return rows as OrderItem[];
+    return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   }
 
   async getAllOrderItems(): Promise<OrderItem[]> {
-    const { rows } = await pool.query(
-      `SELECT id, order_id as "orderId", product_id as "productId", service_id as "serviceId", 
-              bundle_id as "bundleId", product_name as "productName", sku, quantity, price, discount, 
-              tax, total, variant_id as "variantId", unit_price as "unitPrice", 
-              applied_price as "appliedPrice", currency, customer_price_id as "customerPriceId",
-              picked_quantity as "pickedQuantity", packed_quantity as "packedQuantity", 
-              warehouse_location as "warehouseLocation", barcode, image,
-              pick_start_time as "pickStartTime", pick_end_time as "pickEndTime",
-              pack_start_time as "packStartTime", pack_end_time as "packEndTime", notes,
-              landing_cost as "landingCost", variant_name as "variantName",
-              applied_discount_id as "appliedDiscountId", applied_discount_label as "appliedDiscountLabel",
-              applied_discount_type as "appliedDiscountType", applied_discount_scope as "appliedDiscountScope",
-              free_items_count as "freeItemsCount"
-       FROM order_items`
-    );
-    return rows as OrderItem[];
+    return await db.select().from(orderItems);
   }
 
   async createOrderItem(item: any): Promise<OrderItem> {
