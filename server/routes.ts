@@ -1526,7 +1526,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const discountValue = parseFloat(order.discountValue || '0');
 
           // Get order items to calculate import cost
-          const orderItems = await storage.getOrderItems(order.id);
+          let orderItems: any[] = [];
+          try {
+            orderItems = await storage.getOrderItems(order.id);
+          } catch (itemError) {
+            // Skip this order if items can't be fetched (e.g., schema sync issue)
+            console.warn(`Skipping order ${order.id} in profit calculation due to item fetch error`);
+            continue;
+          }
           let totalImportCost = 0;
 
           for (const item of orderItems) {
