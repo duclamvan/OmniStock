@@ -240,6 +240,19 @@ const discounts = {
   buyGetFree: 'Buy {{buy}}, Get {{get}} Free',
   effectiveDiscount: 'Effective Discount',
   onTotalItems: 'on {{total}} total items',
+  
+  // Set Sale Price discount type
+  setSalePrice: 'Set Sale Price',
+  setNewPriceDescription: 'Set a new fixed sale price for products',
+  newSalePrice: 'New Sale Price',
+  salePriceCzk: 'Sale Price (CZK)',
+  salePriceEur: 'Sale Price (EUR)',
+  placeholderSalePriceCzk: 'e.g., 299',
+  placeholderSalePriceEur: 'e.g., 12',
+  originalPrice: 'Original Price',
+  salePrice: 'Sale Price',
+  youSave: 'You Save',
+  specificProductNotSelected: 'Select a product',
 } as const;
 
 export default discounts;

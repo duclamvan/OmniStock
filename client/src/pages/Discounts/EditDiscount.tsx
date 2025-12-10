@@ -593,10 +593,10 @@ export default function EditDiscount() {
                           <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
-                              <Banknote className="h-4 w-4" />
-                              {t('discounts:fixedAmount')}
+                              <Tag className="h-4 w-4" />
+                              {t('discounts:setSalePrice')}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">{t('discounts:fixedDiscountAmount')}</p>
+                            <p className="text-sm text-gray-600 mt-1">{t('discounts:setNewPriceDescription')}</p>
                           </div>
                         </div>
                       </label>
@@ -647,15 +647,15 @@ export default function EditDiscount() {
 
                 {watchDiscountType === 'fixed_amount' && (
                   <div className="space-y-3">
-                    <Label>{t('discounts:discountAmount')} {t('discounts:required')}</Label>
+                    <Label>{t('discounts:newSalePrice')} {t('discounts:required')}</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm text-gray-600">CZK</Label>
+                        <Label className="text-sm text-gray-600">{t('discounts:salePriceCzk')}</Label>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">Kč</span>
                           <Input 
                             type="number"
-                            min="0.01"
+                            min="0"
                             step="0.01"
                             value={form.watch('fixedAmount') || ''}
                             onChange={(e) => {
@@ -663,12 +663,10 @@ export default function EditDiscount() {
                               if (!isNaN(czkValue)) {
                                 form.setValue('fixedAmount', czkValue);
                                 
-                                // Clear any existing timeout
                                 if (czkTimeoutRef.current) {
                                   clearTimeout(czkTimeoutRef.current);
                                 }
                                 
-                                // Set new timeout for auto-conversion
                                 czkTimeoutRef.current = setTimeout(() => {
                                   form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
                                 }, 1500);
@@ -679,20 +677,19 @@ export default function EditDiscount() {
                                 }
                               }
                             }}
-                            placeholder={t('discounts:placeholderFixedAmountCzk')}
+                            placeholder={t('discounts:placeholderSalePriceCzk')}
                             className="max-w-[150px]"
                           />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{t('discounts:autoConversion')}</p>
-                        <p className="text-xs text-muted-foreground">{t('discounts:approxRate')}</p>
                       </div>
                       <div>
-                        <Label className="text-sm text-gray-600">EUR</Label>
+                        <Label className="text-sm text-gray-600">{t('discounts:salePriceEur')}</Label>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">€</span>
                           <Input 
                             type="number"
-                            min="0.01"
+                            min="0"
                             step="0.01"
                             value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
                             onChange={(e) => {
@@ -700,12 +697,10 @@ export default function EditDiscount() {
                               if (!isNaN(eurValue)) {
                                 form.setValue('fixedAmountEur', eurValue);
                                 
-                                // Clear any existing timeout
                                 if (eurTimeoutRef.current) {
                                   clearTimeout(eurTimeoutRef.current);
                                 }
                                 
-                                // Set new timeout for auto-conversion
                                 eurTimeoutRef.current = setTimeout(() => {
                                   form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
                                 }, 1500);
@@ -716,7 +711,7 @@ export default function EditDiscount() {
                                 }
                               }
                             }}
-                            placeholder={t('discounts:placeholderFixedAmountEur')}
+                            placeholder={t('discounts:placeholderSalePriceEur')}
                             className="max-w-[150px]"
                           />
                         </div>
@@ -1028,28 +1023,31 @@ export default function EditDiscount() {
                 {watchDiscountType === 'fixed_amount' && form.watch('fixedAmount') > 0 && (
                   <>
                     <div>
-                      <p className="text-sm text-gray-600">{t('discounts:discountValue')}</p>
+                      <p className="text-sm text-gray-600">{t('discounts:newSalePrice')}</p>
                       <div className="space-y-1">
-                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')} {t('common:off')}</p>
+                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')}</p>
                         <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
                       </div>
                     </div>
                     {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
                       const selectedProduct = products.find(p => String(p.id) === form.watch('productId'));
-                      const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
-                      const discountAmount = form.watch('fixedAmount');
-                      const finalPrice = Math.max(0, productPrice - discountAmount);
+                      const originalPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
+                      const salePrice = form.watch('fixedAmount');
+                      const savings = Math.max(0, originalPrice - salePrice);
+                      const savingsPercent = originalPrice > 0 ? ((savings / originalPrice) * 100).toFixed(0) : 0;
                       
                       return selectedProduct ? (
                         <div className="bg-gray-50 rounded-lg p-3">
                           <p className="text-sm font-medium">{selectedProduct.name}</p>
-                          <p className="text-sm mt-1">{t('discounts:itemPrice')}: Kč {productPrice.toFixed(0)}</p>
+                          <p className="text-sm mt-1 line-through text-gray-500">{t('discounts:originalPrice')}: Kč {originalPrice.toFixed(0)}</p>
                           <p className="text-sm text-green-600 font-semibold">
-                            {t('discounts:discount')}: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
+                            {t('discounts:salePrice')}: Kč {salePrice.toFixed(0)}
                           </p>
-                          <p className="text-sm font-semibold">
-                            {t('discounts:finalPrice')}: Kč {finalPrice.toFixed(0)}
-                          </p>
+                          {savings > 0 && (
+                            <p className="text-xs text-green-600 mt-1">
+                              {t('discounts:youSave')}: Kč {savings.toFixed(0)} ({savingsPercent}%)
+                            </p>
+                          )}
                         </div>
                       ) : null;
                     })()}

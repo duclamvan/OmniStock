@@ -240,6 +240,19 @@ const discounts = {
   buyGetFree: 'Mua {{buy}}, Tặng {{get}} Miễn phí',
   effectiveDiscount: 'Giảm giá hiệu quả',
   onTotalItems: 'trên tổng {{total}} sản phẩm',
+  
+  // Set Sale Price discount type
+  setSalePrice: 'Đặt Giá Sale',
+  setNewPriceDescription: 'Đặt giá bán mới cố định cho sản phẩm',
+  newSalePrice: 'Giá Sale Mới',
+  salePriceCzk: 'Giá Sale (CZK)',
+  salePriceEur: 'Giá Sale (EUR)',
+  placeholderSalePriceCzk: 'VD: 299',
+  placeholderSalePriceEur: 'VD: 12',
+  originalPrice: 'Giá gốc',
+  salePrice: 'Giá Sale',
+  youSave: 'Bạn tiết kiệm',
+  specificProductNotSelected: 'Chọn sản phẩm',
 } as const;
 
 export default discounts;
