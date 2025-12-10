@@ -6783,8 +6783,8 @@ Important:
           let items: any[] = [];
           try {
             items = await storage.getOrderItems(order.id);
-          } catch (itemError) {
-            console.warn(`Failed to fetch items for order ${order.id}, using empty array`);
+          } catch (itemError: any) {
+            console.error(`Failed to fetch items for order ${order.id}:`, itemError?.message || itemError);
           }
 
           // For each item, check if it's part of a bundle and fetch bundle items
