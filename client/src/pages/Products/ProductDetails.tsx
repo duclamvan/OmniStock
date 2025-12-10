@@ -386,9 +386,9 @@ export default function ProductDetails() {
       </div>
 
       <div className="flex">
-        {/* Desktop Sidebar Navigation - Fixed position when scrolled */}
+        {/* Desktop Sidebar Navigation - Sticky position */}
         <aside className="hidden lg:block w-56 shrink-0">
-          <nav className="fixed top-[73px] w-56 h-[calc(100vh-73px)] overflow-y-auto border-r bg-muted/30 p-3 space-y-1">
+          <nav className="sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto border-r bg-muted/30 p-3 space-y-1">
             {navSections.map((section) => {
               const Icon = section.icon;
               return (
