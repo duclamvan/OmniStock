@@ -1476,20 +1476,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               </p>
                             )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
-                            {item.appliedDiscountLabel && (
-                              item.appliedDiscountType === 'buy_x_get_y'
-                                ? (item.freeItemsCount && item.freeItemsCount > 0 && (
-                                    <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
-                                      <span className="font-medium">{t('orders:offer')}:</span>
-                                      <span>{item.appliedDiscountLabel}</span>
-                                    </div>
-                                  ))
-                                : (
-                                    <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
-                                      <span className="font-medium">{t('orders:offer')}:</span>
-                                      <span>{item.appliedDiscountLabel}</span>
-                                    </div>
-                                  )
+                            {item.appliedDiscountLabel && item.appliedDiscountType !== 'buy_x_get_y' && (
+                              <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 border border-green-300 rounded px-1.5 py-0.5 text-xs mb-1.5">
+                                <span className="font-medium">{t('orders:offer')}:</span>
+                                <span>{item.appliedDiscountLabel}</span>
+                              </div>
                             )}
                             {item.serviceId && item.notes && (
                               <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1 mb-1.5">

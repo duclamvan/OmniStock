@@ -4237,18 +4237,10 @@ export default function AddOrder() {
                                       {t('orders:service')}
                                     </Badge>
                                   )}
-                                  {item.appliedDiscountLabel && (
-                                    item.appliedDiscountType === 'buy_x_get_y' 
-                                      ? (item.freeItemsCount && item.freeItemsCount > 0 && (
-                                          <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                            {t('orders:offer')}: {item.appliedDiscountLabel}
-                                          </Badge>
-                                        ))
-                                      : (
-                                          <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                            {t('orders:offer')}: {item.appliedDiscountLabel}
-                                          </Badge>
-                                        )
+                                  {item.appliedDiscountLabel && item.appliedDiscountType !== 'buy_x_get_y' && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
+                                      {t('orders:offer')}: {item.appliedDiscountLabel}
+                                    </Badge>
                                   )}
                                 </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -4522,18 +4514,10 @@ export default function AddOrder() {
                                 {t('orders:service')}
                               </Badge>
                             )}
-                            {item.appliedDiscountLabel && (
-                              item.appliedDiscountType === 'buy_x_get_y'
-                                ? (item.freeItemsCount && item.freeItemsCount > 0 && (
-                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                      {t('orders:offer')}: {item.appliedDiscountLabel}
-                                    </Badge>
-                                  ))
-                                : (
-                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                      {t('orders:offer')}: {item.appliedDiscountLabel}
-                                    </Badge>
-                                  )
+                            {item.appliedDiscountLabel && item.appliedDiscountType !== 'buy_x_get_y' && (
+                              <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
+                                {t('orders:offer')}: {item.appliedDiscountLabel}
+                              </Badge>
                             )}
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
