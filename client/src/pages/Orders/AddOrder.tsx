@@ -4265,7 +4265,7 @@ export default function AddOrder() {
                                   value={item.quantity}
                                   onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
                                   isInteger={true}
-                                  className="w-20 h-10 text-center"
+                                  className="w-16 h-9 text-center"
                                   data-testid={`input-quantity-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -4287,7 +4287,7 @@ export default function AddOrder() {
                                   step={0.01}
                                   value={item.price}
                                   onChange={(val) => updateOrderItem(item.id, 'price', val)}
-                                  className="w-28 h-10 text-right"
+                                  className="w-20 h-9 text-right"
                                   data-testid={`input-price-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
@@ -4323,7 +4323,7 @@ export default function AddOrder() {
                                       step={1}
                                       value={item.discountPercentage}
                                       onChange={(val) => updateOrderItem(item.id, 'discountPercentage', val)}
-                                      className="w-20 h-10 text-right"
+                                      className="w-14 h-9 text-right"
                                       data-testid={`input-discount-${item.id}`}
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter' || e.key === 'Tab') {
@@ -4358,7 +4358,7 @@ export default function AddOrder() {
                                     step={0.01}
                                     value={item.tax}
                                     onChange={(val) => updateOrderItem(item.id, 'tax', val)}
-                                    className="w-28 h-10 text-right"
+                                    className="w-16 h-9 text-right"
                                     data-testid={`input-vat-${item.id}`}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter' || e.key === 'Tab') {
