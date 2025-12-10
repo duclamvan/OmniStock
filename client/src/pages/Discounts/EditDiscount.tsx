@@ -167,7 +167,7 @@ export default function EditDiscount() {
         startDate: discount.startDate ? new Date(discount.startDate).toISOString().slice(0, 16) : "",
         endDate: discount.endDate ? new Date(discount.endDate).toISOString().slice(0, 16) : "",
         applicationScope: discount.applicationScope || "all_products",
-        productId: discount.productId || undefined,
+        productId: discount.productId ? String(discount.productId) : undefined,
         categoryId: discount.categoryId ? String(discount.categoryId) : undefined,
       };
 
@@ -793,7 +793,7 @@ export default function EditDiscount() {
                           className="w-full justify-between"
                         >
                           {form.watch('productId')
-                            ? products.find((product) => product.id === form.watch('productId'))?.name
+                            ? products.find((product) => String(product.id) === form.watch('productId'))?.name
                             : t('discounts:searchProducts')}
                           <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -807,14 +807,14 @@ export default function EditDiscount() {
                               <CommandItem
                                 key={product.id}
                                 onSelect={() => {
-                                  form.setValue('productId', product.id);
+                                  form.setValue('productId', String(product.id));
                                   setProductSearchOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    form.watch('productId') === product.id ? "opacity-100" : "opacity-0"
+                                    form.watch('productId') === String(product.id) ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {product.name}
@@ -950,7 +950,7 @@ export default function EditDiscount() {
                       <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% {t('common:off')}</p>
                     </div>
                     {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
-                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
+                      const selectedProduct = products.find(p => String(p.id) === form.watch('productId'));
                       const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
                       const discountAmount = productPrice * form.watch('percentage') / 100;
                       const finalPrice = productPrice - discountAmount;
@@ -981,7 +981,7 @@ export default function EditDiscount() {
                       </div>
                     </div>
                     {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
-                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
+                      const selectedProduct = products.find(p => String(p.id) === form.watch('productId'));
                       const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
                       const discountAmount = form.watch('fixedAmount');
                       const finalPrice = Math.max(0, productPrice - discountAmount);
