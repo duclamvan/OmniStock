@@ -78,7 +78,8 @@ import {
   Globe,
   Store,
   ShoppingBag,
-  Building2
+  Building2,
+  Gift
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -192,6 +193,9 @@ interface OrderItem {
   appliedDiscountLabel?: string | null;
   appliedDiscountType?: string | null;
   appliedDiscountScope?: string | null;
+  freeItemsCount?: number;
+  buyXGetYBuyQty?: number;
+  buyXGetYGetQty?: number;
 }
 
 // Helper function to get country flag emoji
@@ -1680,6 +1684,9 @@ export default function AddOrder() {
         });
         
         let discountPct = 0;
+        let freeItemsCount = 0;
+        let buyXGetYBuyQty: number | undefined;
+        let buyXGetYGetQty: number | undefined;
         
         if (applicableDiscount) {
           const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
@@ -1703,6 +1710,13 @@ export default function AddOrder() {
           discountId = applicableDiscount.id;
           discountType = applicableDiscount.type || applicableDiscount.discountType;
           discountScope = applicableDiscount.applicationScope;
+          
+          // Track buy_x_get_y info
+          if (discountResult.freeItemsCount !== undefined) {
+            freeItemsCount = discountResult.freeItemsCount;
+            buyXGetYBuyQty = discountResult.buyQty;
+            buyXGetYGetQty = discountResult.getQty;
+          }
         }
 
         const newItem: OrderItem = {
@@ -1722,6 +1736,9 @@ export default function AddOrder() {
           appliedDiscountLabel: discountLabel || null,
           appliedDiscountType: discountType,
           appliedDiscountScope: discountScope,
+          freeItemsCount,
+          buyXGetYBuyQty,
+          buyXGetYGetQty,
         };
         
         // Show toast if discount was applied
@@ -1864,6 +1881,9 @@ export default function AddOrder() {
             if (applicableDiscount && applicableDiscount.type === 'buy_x_get_y') {
               const discountResult = calculateDiscountAmount(applicableDiscount, updatedItem.price, updatedItem.quantity);
               updatedItem.discount = discountResult.amount;
+              updatedItem.freeItemsCount = discountResult.freeItemsCount || 0;
+              updatedItem.buyXGetYBuyQty = discountResult.buyQty;
+              updatedItem.buyXGetYGetQty = discountResult.getQty;
             }
           }
           
@@ -2329,7 +2349,13 @@ export default function AddOrder() {
   };
 
   // Function to calculate discount amount for a product
-  const calculateDiscountAmount = (discount: any, price: number, quantity: number): { amount: number; label: string } => {
+  const calculateDiscountAmount = (discount: any, price: number, quantity: number): { 
+    amount: number; 
+    label: string; 
+    freeItemsCount?: number;
+    buyQty?: number;
+    getQty?: number;
+  } => {
     const discountType = discount.type || discount.discountType;
     
     if (discountType === 'percentage') {
@@ -2349,7 +2375,13 @@ export default function AddOrder() {
       const completeSets = Math.floor(quantity / totalNeeded);
       const freeItems = completeSets * getQty;
       const amount = freeItems * price;
-      return { amount, label: `${t('discounts:buyXGetY')}: ${buyQty}+${getQty}` };
+      return { 
+        amount, 
+        label: `BUY ${buyQty} GET ${getQty}`,
+        freeItemsCount: freeItems,
+        buyQty,
+        getQty
+      };
     }
     
     return { amount: 0, label: '' };
@@ -4374,6 +4406,41 @@ export default function AddOrder() {
                               </TableCell>
                             </TableRow>
                           )}
+                          {/* Free Items Row for Buy X Get Y Offers */}
+                          {item.appliedDiscountType === 'buy_x_get_y' && item.freeItemsCount && item.freeItemsCount > 0 && (
+                            <TableRow className="bg-green-50 dark:bg-green-950/30">
+                              <TableCell className="py-2">
+                                <div className="flex items-center gap-3 pl-12">
+                                  <Gift className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                  <div>
+                                    <span className="font-medium text-green-800 dark:text-green-200">
+                                      {item.productName}
+                                    </span>
+                                    <Badge className="ml-2 text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                                      {t('orders:freeItem')}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center align-middle">
+                                <span className="font-semibold text-green-700 dark:text-green-300">{item.freeItemsCount}</span>
+                              </TableCell>
+                              <TableCell className="text-right align-middle">
+                                <span className="font-semibold text-green-700 dark:text-green-300">{formatCurrency(0, form.watch('currency'))}</span>
+                              </TableCell>
+                              {showDiscountColumn && (
+                                <TableCell className="text-right align-middle">
+                                  <span className="text-green-600 dark:text-green-400">-</span>
+                                </TableCell>
+                              )}
+                              {showVatColumn && (
+                                <TableCell className="text-right align-middle">
+                                  <span className="text-green-600 dark:text-green-400">-</span>
+                                </TableCell>
+                              )}
+                              <TableCell></TableCell>
+                            </TableRow>
+                          )}
                           </Fragment>
                         ))}
                       </TableBody>
@@ -4543,6 +4610,26 @@ export default function AddOrder() {
                             data-testid={`mobile-textarea-notes-${item.id}`}
                           />
                         </div>
+                        
+                        {/* Free Items Display for Buy X Get Y */}
+                        {item.appliedDiscountType === 'buy_x_get_y' && item.freeItemsCount && item.freeItemsCount > 0 && (
+                          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Gift className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <span className="font-medium text-green-800 dark:text-green-200 text-sm">
+                                {t('orders:freeItem')}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-green-700 dark:text-green-300 text-sm">
+                                {item.productName} x {item.freeItemsCount}
+                              </span>
+                              <span className="font-semibold text-green-700 dark:text-green-300">
+                                {formatCurrency(0, form.watch('currency'))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Total Display */}
                         <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">

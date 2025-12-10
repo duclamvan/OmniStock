@@ -90,6 +90,7 @@ const orders = {
   variantName: 'Variant Name',
   bundle: 'Bundle',
   offer: 'OFFER',
+  freeItem: 'FREE',
   scanBarcodeOrSku: 'Scan barcode or SKU...',
   readyToScan: 'Ready to scan...',
   

@@ -90,6 +90,7 @@ const orders = {
   variantName: 'Tên biến thể',
   bundle: 'Combo',
   offer: 'KHUYẾN MÃI',
+  freeItem: 'MIỄN PHÍ',
   scanBarcodeOrSku: 'Quét mã vạch hoặc SKU...',
   readyToScan: 'Sẵn sàng quét...',
   
