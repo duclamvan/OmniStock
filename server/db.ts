@@ -18,7 +18,8 @@ if (!pgHost || !pgUser || !pgPassword || !pgDatabase) {
 }
 
 // Build connection string from PG* variables
-const connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require`;
+// Include options to set search_path to public schema to avoid stale schema path issues
+const connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require&options=-csearch_path%3Dpublic`;
 
 // Use standard pg driver with direct Neon connection
 // Increased timeouts for Neon serverless cold starts (can take 15+ seconds)

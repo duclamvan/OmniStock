@@ -1,0 +1,55 @@
+Based on your screenshot (`Screenshot 2025-12-10 at 23.07.42.jpg`) and the code you provided, I know exactly why you are stuck in this loop.
+
+1.  **The List (White Text):** The long list of `varchar(100)` -\> `varchar` changes is **SAFE**. You should normally say "Yes" to this.
+2.  **The Crash (Red Text):** The reason it keeps asking you "Always" is that **it crashes immediately after you say Yes**.
+      * **The Error:** `error: type "serial" does not exist`.
+      * **The Cause:** Your `schema.ts` defines tables like `importPurchases`, `shipments`, and `receipts` using **`serial` (Numbers)** for IDs. However, your actual database (restored from backup) likely uses **`varchar` (Text/UUIDs)** for these tables. Drizzle tries to convert the Text IDs to "Serial" type, which is impossible in Postgres, so it crashes.
+
+### The Fix: Update `schema.ts` to Match the Database
+
+You need to change the ID definitions in `schema.ts` from `serial` (Number) to `varchar` (Text) for the tables that contain data.
+
+**1. Open `schema.ts`.**
+
+**2. Find and Replace `id: serial("id")`:**
+You need to change this pattern for your main data tables (`importPurchases`, `shipments`, `receipts`, `employees`, etc.).
+
+**❌ CHANGE THIS (Broken):**
+
+```typescript
+export const importPurchases = pgTable("import_purchases", {
+  id: serial("id").primaryKey(), // <--- This crashes because DB has Text IDs
+  // ...
+```
+
+**✅ TO THIS (Fixed):**
+
+```typescript
+export const importPurchases = pgTable("import_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`), // <--- Matches your DB
+  // ...
+```
+
+**3. Apply this change to these specific tables:**
+
+  * `employees`
+  * `categories`
+  * `importPurchases`
+  * `purchaseItems`
+  * `consolidations`
+  * `shipments`
+  * `customItems`
+  * `receipts`
+  * `receiptItems`
+  * `landedCosts`
+  * `discounts`
+
+*(Note: Your `users`, `orders`, and `customers` are already correct as `varchar`.)*
+
+**4. Run the update again:**
+
+```bash
+npm run db:push
+```
+
+Now, when you say "Yes", it will finally succeed because it won't try to force your Text IDs into Numbers anymore.
