@@ -5472,50 +5472,6 @@ export default function AddOrder() {
                       </div>
                     )}
 
-                    {/* Margin Analysis Section */}
-                    {canAccessFinancialData && orderItems.length > 0 && (() => {
-                      const totalLandingCost = orderItems.reduce((sum, item) => 
-                        sum + (item.landingCost || 0) * item.quantity, 0);
-                      const totalSellingPrice = orderItems.reduce((sum, item) => 
-                        sum + item.price * item.quantity, 0);
-                      const totalProfit = totalSellingPrice - totalLandingCost;
-                      const avgMargin = totalLandingCost > 0 
-                        ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
-                        : null;
-
-                      return avgMargin !== null ? (
-                        <>
-                          <div className="pb-3 mb-3 border-b">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium flex items-center gap-1">
-                                <TrendingUp className="h-4 w-4 text-green-600" />
-                                {t('orders:marginAnalysis')}
-                              </span>
-                              <MarginPill
-                                sellingPrice={totalSellingPrice}
-                                landingCost={totalLandingCost}
-                                currency={form.watch('currency')}
-                                showIcon={true}
-                                showProfit={true}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">{t('orders:totalCostColon')}</span>
-                                <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">{t('orders:totalProfitColon')}</span>
-                                <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                                  {formatCurrency(totalProfit, form.watch('currency'))}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      ) : null;
-                    })()}
-
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">{t('orders:subtotalColon')}</span>
@@ -5630,6 +5586,54 @@ export default function AddOrder() {
                       <p className="text-xs text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
                     </div>
 
+                    {/* Collapsible Margin Analysis Section - Desktop */}
+                    {canAccessFinancialData && orderItems.length > 0 && (() => {
+                      const totalLandingCost = orderItems.reduce((sum, item) => 
+                        sum + (item.landingCost || 0) * item.quantity, 0);
+                      const totalSellingPrice = orderItems.reduce((sum, item) => 
+                        sum + item.price * item.quantity, 0);
+                      const totalProfit = totalSellingPrice - totalLandingCost;
+                      const avgMargin = totalLandingCost > 0 
+                        ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
+                        : null;
+
+                      return avgMargin !== null ? (
+                        <Accordion type="single" collapsible className="mt-3">
+                          <AccordionItem value="margin-analysis" className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                              <div className="flex items-center justify-between w-full pr-2">
+                                <span className="text-sm font-medium flex items-center gap-1">
+                                  <TrendingUp className="h-4 w-4 text-green-600" />
+                                  {t('orders:marginAnalysis')}
+                                </span>
+                                <MarginPill
+                                  sellingPrice={totalSellingPrice}
+                                  landingCost={totalLandingCost}
+                                  currency={form.watch('currency')}
+                                  showIcon={false}
+                                  showProfit={false}
+                                />
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-3 pb-3">
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-gray-500">{t('orders:totalCostColon')}</span>
+                                  <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-gray-500">{t('orders:totalProfitColon')}</span>
+                                  <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                                    {formatCurrency(totalProfit, form.watch('currency'))}
+                                  </span>
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      ) : null;
+                    })()}
+
                     {/* Dev-Only Form Errors Display */}
                     {import.meta.env.DEV && Object.keys(form.formState.errors).length > 0 && (
                       <Accordion type="single" collapsible className="mb-3">
@@ -5711,33 +5715,6 @@ export default function AddOrder() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 space-y-3">
-              {/* Margin Analysis Section - Mobile */}
-              {orderItems.length > 0 && (() => {
-                const totalLandingCost = orderItems.reduce((sum, item) => 
-                  sum + (item.landingCost || 0) * item.quantity, 0);
-                const totalSellingPrice = orderItems.reduce((sum, item) => 
-                  sum + item.price * item.quantity, 0);
-                const totalProfit = totalSellingPrice - totalLandingCost;
-                const avgMargin = totalLandingCost > 0 
-                  ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
-                  : null;
-
-                return avgMargin !== null ? (
-                  <div className="pb-3 mb-3 border-b">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{t('orders:margin')}</span>
-                      <MarginPill
-                        sellingPrice={totalSellingPrice}
-                        landingCost={totalLandingCost}
-                        currency={form.watch('currency')}
-                        showIcon={false}
-                        showProfit={true}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('orders:subtotalColon')}</span>
@@ -5850,6 +5827,54 @@ export default function AddOrder() {
                 </div>
                 <p className="text-xs text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
               </div>
+
+              {/* Collapsible Margin Analysis Section - Mobile */}
+              {canAccessFinancialData && orderItems.length > 0 && (() => {
+                const totalLandingCost = orderItems.reduce((sum, item) => 
+                  sum + (item.landingCost || 0) * item.quantity, 0);
+                const totalSellingPrice = orderItems.reduce((sum, item) => 
+                  sum + item.price * item.quantity, 0);
+                const totalProfit = totalSellingPrice - totalLandingCost;
+                const avgMargin = totalLandingCost > 0 
+                  ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
+                  : null;
+
+                return avgMargin !== null ? (
+                  <Accordion type="single" collapsible className="mt-3">
+                    <AccordionItem value="margin-analysis-mobile" className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                        <div className="flex items-center justify-between w-full pr-2">
+                          <span className="text-sm font-medium flex items-center gap-1">
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            {t('orders:marginAnalysis')}
+                          </span>
+                          <MarginPill
+                            sellingPrice={totalSellingPrice}
+                            landingCost={totalLandingCost}
+                            currency={form.watch('currency')}
+                            showIcon={false}
+                            showProfit={false}
+                          />
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-3">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">{t('orders:totalCostColon')}</span>
+                            <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">{t('orders:totalProfitColon')}</span>
+                            <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                              {formatCurrency(totalProfit, form.watch('currency'))}
+                            </span>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                ) : null;
+              })()}
 
               <div className="pt-3 space-y-2">
                 {orderId ? (
