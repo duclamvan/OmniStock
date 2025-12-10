@@ -2368,11 +2368,11 @@ export default function AddOrder() {
       const amount = Math.min(fixedAmount, price * quantity);
       return { amount, label: `${formatCurrency(fixedAmount, form.watch('currency'))} ${t('common:off')}` };
     } else if (discountType === 'buy_x_get_y') {
-      // Buy X get Y free calculation: if you buy X items, you get Y free
+      // Buy X get Y free calculation: for every X items you pay for, you get Y free
       const buyQty = discount.buyQuantity || 1;
       const getQty = discount.getQuantity || 1;
-      const totalNeeded = buyQty + getQty; // Total items needed for one complete set
-      const completeSets = Math.floor(quantity / totalNeeded);
+      // For every buyQty items purchased, customer gets getQty free
+      const completeSets = Math.floor(quantity / buyQty);
       const freeItems = completeSets * getQty;
       const amount = freeItems * price;
       return { 
