@@ -1748,6 +1748,25 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               {/* Pricing Breakdown - Integrated */}
               <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t-2 border-slate-200 dark:border-gray-700">
                 <div className="space-y-3">
+                  {/* Item Discounts - show total discount from all items */}
+                  {(() => {
+                    const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
+                    if (totalItemDiscounts > 0) {
+                      return (
+                        <div className="flex justify-between items-center">
+                          <span className="text-green-700 dark:text-green-500 font-medium flex items-center gap-1.5">
+                            <Tag className="h-3.5 w-3.5" />
+                            {t('orders:itemDiscounts')}
+                          </span>
+                          <span className="font-semibold text-green-700 dark:text-green-500">
+                            -{formatCurrency(totalItemDiscounts, order.currency || 'EUR')}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-slate-700 dark:text-slate-300 font-medium">{t('orders:subtotal')}</span>
                     <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
