@@ -2877,7 +2877,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                 {order?.items?.map((item: any, idx: number) => {
                   const originalPrice = (item.unitPrice || item.price || 0) * item.quantity;
                   const finalPrice = originalPrice - (item.discount || 0);
-                  const discountPercent = originalPrice > 0 ? Math.round((item.discount || 0) / originalPrice * 100) : 0;
+                  const rawDiscountPercent = originalPrice > 0 ? ((item.discount || 0) / originalPrice * 100) : 0;
+                  const discountPercent = rawDiscountPercent % 1 === 0 ? rawDiscountPercent.toFixed(0) : rawDiscountPercent.toFixed(2).replace(/\.?0+$/, '');
                   
                   return (
                     <div key={idx} className="flex items-center gap-3 px-4 py-3">
