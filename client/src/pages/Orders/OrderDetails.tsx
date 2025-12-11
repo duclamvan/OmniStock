@@ -599,7 +599,9 @@ export default function OrderDetails() {
             <div class="pricing-section">
               ${(() => {
                 const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
-                const merchandiseTotal = (order.subtotal || 0) + totalItemDiscounts;
+                const merchandiseTotal = order.items?.reduce((sum: number, item: any) => {
+                  return sum + ((parseFloat(item.unitPrice) || parseFloat(item.price) || 0) * (item.quantity || 0));
+                }, 0) || 0;
                 return totalItemDiscounts > 0 ? `
                   <div class="price-row">
                     <span class="price-label">Tổng hàng hóa</span>
@@ -861,7 +863,9 @@ export default function OrderDetails() {
         <div class="total-section">
           ${(() => {
             const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
-            const merchandiseTotal = (order.subtotal || 0) + totalItemDiscounts;
+            const merchandiseTotal = order.items?.reduce((sum: number, item: any) => {
+              return sum + ((parseFloat(item.unitPrice) || parseFloat(item.price) || 0) * (item.quantity || 0));
+            }, 0) || 0;
             return totalItemDiscounts > 0 ? `
               <div class="total-row">
                 <span>Tổng hàng hóa:</span>
@@ -1796,7 +1800,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   {/* Merchandise Total & Promotional Savings */}
                   {(() => {
                     const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
-                    const merchandiseTotal = (order.subtotal || 0) + totalItemDiscounts;
+                    const merchandiseTotal = order.items?.reduce((sum: number, item: any) => {
+                      return sum + ((parseFloat(item.unitPrice) || parseFloat(item.price) || 0) * (item.quantity || 0));
+                    }, 0) || 0;
                     
                     if (totalItemDiscounts > 0) {
                       return (
