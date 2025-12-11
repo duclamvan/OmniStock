@@ -252,7 +252,13 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      // Invalidate all ticket-related queries including filtered ones (by orderId, customerId, etc.)
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/tickets');
+        }
+      });
       toast({
         title: t('success'),
         description: mode === "edit" ? t('ticketUpdatedSuccessfully') : t('ticketCreatedSuccessfully'),
