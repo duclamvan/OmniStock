@@ -2197,7 +2197,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               {ticket.ticketId}
                             </p>
                           </Link>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1">{ticket.title}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{ticket.description || ticket.title}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant={
                               ticket.status === 'open' ? 'secondary' :
