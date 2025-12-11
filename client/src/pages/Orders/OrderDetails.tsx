@@ -2825,7 +2825,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
 
       {/* Capture Preview Modal */}
       <Dialog open={showCapturePreview} onOpenChange={setShowCapturePreview}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-[520px] max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="text-center">{t('orders:capturePreview')}</DialogTitle>
             <DialogDescription className="text-center text-sm">
@@ -2834,11 +2834,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
           </DialogHeader>
           
           {/* Invoice Preview - This is what gets captured */}
-          <div className="px-4 pb-4">
+          <div className="px-2 pb-4">
             <div 
               ref={capturePreviewRef}
               className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg"
-              style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}
+              style={{ width: '480px', margin: '0 auto' }}
             >
               {/* Header */}
               <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border-b-2 border-slate-200">
@@ -2882,7 +2882,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </div>
                       
                       {/* Info */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0" style={{ maxWidth: '55%' }}>
                         <div className="font-semibold text-slate-900 text-sm leading-tight">{item.productName}</div>
                         <div className="text-xs text-slate-500 mt-0.5">
                           <span className="font-extrabold text-slate-900">{item.quantity}</span>
@@ -2891,21 +2891,21 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </div>
                       
                       {/* Price */}
-                      <div className="text-right flex flex-col items-end">
+                      <div className="text-right flex flex-col items-end flex-shrink-0" style={{ minWidth: '110px' }}>
                         {item.discount > 0 ? (
                           <>
-                            <span className="text-xs text-slate-400 relative inline-block">
+                            <span className="text-xs text-slate-400 relative inline-block whitespace-nowrap">
                               {formatCurrency(originalPrice, order?.currency || 'EUR')}
                               <span 
                                 className="absolute left-0 right-0 top-1/2 bg-slate-400"
                                 style={{ height: '1.5px', transform: 'translateY(-50%)' }}
                               />
                             </span>
-                            <span className="text-xs text-green-600 font-semibold">-{discountPercent}%</span>
-                            <span className="text-base font-bold text-slate-900">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                            <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
+                            <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
                           </>
                         ) : (
-                          <span className="text-base font-bold text-slate-900">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
+                          <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
                         )}
                       </div>
                     </div>
