@@ -4996,8 +4996,8 @@ export default function AddOrder() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="flex flex-col">
-                    <Label htmlFor="codAmount" className="flex items-center gap-2">
-                      <Banknote className="w-4 h-4" />
+                    <Label htmlFor="codAmount" className="flex items-start gap-2">
+                      <Banknote className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
