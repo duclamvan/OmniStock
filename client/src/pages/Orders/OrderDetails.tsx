@@ -2898,7 +2898,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               {formatCurrency(originalPrice, order?.currency || 'EUR')}
                               <span 
                                 className="absolute left-0 right-0 top-1/2 bg-slate-400"
-                                style={{ height: '1.5px', transform: 'translateY(-50%)' }}
+                                style={{ height: '1px', transform: 'translateY(-50%)' }}
                               />
                             </span>
                             <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
