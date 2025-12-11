@@ -315,7 +315,8 @@ const orders = {
   templates: 'Templates',
   
   // Pricing & Calculations
-  itemDiscounts: 'Item Discounts',
+  merchandiseTotal: 'Merchandise Total',
+  promotionalSavings: 'Promotional Savings',
   subtotal: 'Subtotal',
   discount: 'Discount',
   discountType: 'Discount Type',

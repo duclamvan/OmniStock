@@ -309,7 +309,8 @@ const orders = {
   templates: 'Mẫu',
   
   // Pricing & Calculations
-  itemDiscounts: 'Giảm giá sản phẩm',
+  merchandiseTotal: 'Tổng hàng hóa',
+  promotionalSavings: 'Tiết kiệm khuyến mãi',
   subtotal: 'Tạm tính',
   discount: 'Giảm giá',
   discountType: 'Loại giảm giá',
