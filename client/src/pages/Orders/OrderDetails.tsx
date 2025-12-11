@@ -572,14 +572,17 @@ export default function OrderDetails() {
                         </div>
                         <div class="item-info">
                           <div class="item-name">${item.productName}</div>
-                          <div class="item-sku">${item.quantity} × ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
+                          <div class="item-sku"><strong style="font-weight: 800; color: #0f172a;">${item.quantity}</strong> × ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
                     </td>
                     <td class="price-cell" style="vertical-align: middle;">
                       ${item.discount > 0 ? `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
-                          <span style="text-decoration: line-through; color: #94a3b8; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                          <span style="position: relative; color: #94a3b8; font-size: 12px;">
+                            <span style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #94a3b8;"></span>
+                            ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                          </span>
                           <span style="color: #16a34a; font-size: 11px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
                           <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
                         </div>
