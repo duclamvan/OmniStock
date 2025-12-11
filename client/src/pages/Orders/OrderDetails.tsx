@@ -120,6 +120,8 @@ export default function OrderDetails() {
   const [priceValidTo, setPriceValidTo] = useState("");
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
+  const [showCapturePreview, setShowCapturePreview] = useState(false);
+  const capturePreviewRef = useRef<HTMLDivElement>(null);
   const [showBadges, setShowBadges] = useState(() => {
     const saved = localStorage.getItem('orderDetailsBadgesVisible');
     return saved === null ? true : saved === 'true';
@@ -330,20 +332,51 @@ export default function OrderDetails() {
     });
   };
 
-  const handleDownloadInvoice = async () => {
+  const handleDownloadInvoice = () => {
+    if (!order) return;
+    setShowCapturePreview(true);
+  };
+
+  const handleCaptureDownload = async () => {
+    if (!capturePreviewRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(capturePreviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `order-${order.orderId || order.id}_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      setShowCapturePreview(false);
+      toast({
+        title: t('orders:orderCaptured'),
+        description: t('orders:orderCapturedDesc'),
+      });
+    } catch (error) {
+      console.error('Error capturing order:', error);
+      toast({
+        title: t('orders:captureError'),
+        description: t('orders:captureErrorDesc'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const performCaptureDownload = async () => {
     if (!order) return;
     
     try {
-      // Get customer name
-      const customerName = order.customer?.name || order.customer?.firstName 
-        ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()
-        : t('orders:walkInCustomer');
-      
-      // Format date
       const orderDate = order.createdAt 
         ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
         : '';
-
+      
       // Create a professional invoice card HTML
       const invoiceHTML = `
         <!DOCTYPE html>
@@ -582,8 +615,11 @@ export default function OrderDetails() {
                     </td>
                     <td class="price-cell" style="vertical-align: middle; text-align: right;">
                       ${item.discount > 0 ? `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0;">
-                          <del style="color: #94a3b8; font-size: 12px; text-decoration: line-through;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</del>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;">
+                          <span style="position: relative; display: inline-block; color: #94a3b8; font-size: 12px;">
+                            ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                            <span style="position: absolute; left: -2px; right: -2px; top: 50%; height: 1.5px; background-color: #94a3b8; transform: translateY(-50%);"></span>
+                          </span>
                           <span style="color: #16a34a; font-size: 11px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
                           <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
                         </div>
@@ -3165,6 +3201,183 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               disabled={!customPrice || !priceValidFrom}
             >
               {t('orders:createCustomPrice')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Capture Preview Modal */}
+      <Dialog open={showCapturePreview} onOpenChange={setShowCapturePreview}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="text-center">{t('orders:capturePreview')}</DialogTitle>
+            <DialogDescription className="text-center text-sm">
+              {t('orders:capturePreviewDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Invoice Preview - This is what gets captured */}
+          <div className="px-4 pb-4">
+            <div 
+              ref={capturePreviewRef}
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg"
+              style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border-b-2 border-slate-200">
+                <div className="flex justify-center mb-4">
+                  <img src={logoPath} alt="Logo" className="h-12 object-contain" />
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                    {order?.orderId || order?.id}
+                  </div>
+                  <div className="text-sm text-slate-500 mt-1">
+                    {order?.createdAt 
+                      ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                      : ''}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_auto] px-4 py-2 bg-slate-50 border-b border-slate-200">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">SẢN PHẨM</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">THÀNH TIỀN</span>
+              </div>
+              
+              {/* Items */}
+              <div className="divide-y divide-slate-100">
+                {order?.items?.map((item: any, idx: number) => {
+                  const originalPrice = (item.unitPrice || item.price || 0) * item.quantity;
+                  const finalPrice = originalPrice - (item.discount || 0);
+                  const discountPercent = originalPrice > 0 ? Math.round((item.discount || 0) / originalPrice * 100) : 0;
+                  
+                  return (
+                    <div key={idx} className="flex items-center gap-3 px-4 py-3">
+                      {/* Image */}
+                      <div className="w-11 h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {item.image ? (
+                          <img src={item.image} alt={item.productName} className="w-full h-full object-contain" />
+                        ) : (
+                          <Package className="h-5 w-5 text-slate-300" />
+                        )}
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-900 text-sm leading-tight">{item.productName}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          <span className="font-extrabold text-slate-900">{item.quantity}</span>
+                          <span> × {formatCurrency(item.unitPrice || item.price || 0, order?.currency || 'EUR')}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Price */}
+                      <div className="text-right flex flex-col items-end">
+                        {item.discount > 0 ? (
+                          <>
+                            <span className="text-xs text-slate-400 relative inline-block">
+                              {formatCurrency(originalPrice, order?.currency || 'EUR')}
+                              <span 
+                                className="absolute left-0 right-0 top-1/2 bg-slate-400"
+                                style={{ height: '1.5px', transform: 'translateY(-50%)' }}
+                              />
+                            </span>
+                            <span className="text-xs text-green-600 font-semibold">-{discountPercent}%</span>
+                            <span className="text-base font-bold text-slate-900">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                          </>
+                        ) : (
+                          <span className="text-base font-bold text-slate-900">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Pricing Summary */}
+              <div className="bg-slate-50 border-t-2 border-slate-200 px-5 py-4">
+                {(() => {
+                  const totalItemDiscounts = order?.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
+                  const merchandiseTotal = order?.items?.reduce((sum: number, item: any) => {
+                    return sum + ((parseFloat(item.unitPrice) || parseFloat(item.price) || 0) * (item.quantity || 0));
+                  }, 0) || 0;
+                  
+                  return (
+                    <>
+                      {totalItemDiscounts > 0 && (
+                        <>
+                          <div className="flex justify-between py-1.5">
+                            <span className="text-sm text-slate-500 font-medium">Tổng hàng hóa</span>
+                            <span className="text-sm font-semibold text-slate-900">{formatCurrency(merchandiseTotal, order?.currency || 'EUR')}</span>
+                          </div>
+                          <div className="flex justify-between py-1.5">
+                            <span className="text-sm text-green-600 font-medium">Tiết kiệm khuyến mãi</span>
+                            <span className="text-sm font-semibold text-green-600">-{formatCurrency(totalItemDiscounts, order?.currency || 'EUR')}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="flex justify-between py-1.5">
+                        <span className="text-sm text-slate-500 font-medium">Tạm tính</span>
+                        <span className="text-sm font-semibold text-slate-900">{formatCurrency(order?.subtotal || 0, order?.currency || 'EUR')}</span>
+                      </div>
+                      {order?.discountValue > 0 && (
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-green-600 font-medium">
+                            Giảm giá {order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
+                          </span>
+                          <span className="text-sm font-semibold text-green-600">
+                            -{formatCurrency(
+                              order.discountType === 'rate' 
+                                ? (order.subtotal * order.discountValue / 100) 
+                                : order.discountValue || 0, 
+                              order?.currency || 'EUR'
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {order?.taxAmount > 0 && (
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-slate-500 font-medium">Thuế ({order.taxRate}%)</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.taxAmount, order?.currency || 'EUR')}</span>
+                        </div>
+                      )}
+                      {order?.shippingCost > 0 && (
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-slate-500 font-medium">Phí vận chuyển</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.shippingCost, order?.currency || 'EUR')}</span>
+                        </div>
+                      )}
+                      {order?.adjustment != null && Number(order.adjustment) !== 0 && (
+                        <div className="flex justify-between py-1.5">
+                          <span className={cn("text-sm font-medium", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                            Điều chỉnh
+                          </span>
+                          <span className={cn("text-sm font-semibold", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                            {order.adjustment > 0 ? '+' : ''}{formatCurrency(order.adjustment, order?.currency || 'EUR')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="border-t-2 border-slate-300 my-2" />
+                      <div className="flex justify-between py-2">
+                        <span className="text-lg font-bold text-slate-900">Tổng cộng</span>
+                        <span className="text-xl font-extrabold text-slate-900">{formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="p-4 pt-2 border-t">
+            <Button variant="outline" onClick={() => setShowCapturePreview(false)}>
+              {t('orders:cancel')}
+            </Button>
+            <Button onClick={handleCaptureDownload} className="gap-2">
+              <Download className="h-4 w-4" />
+              {t('orders:downloadImage')}
             </Button>
           </DialogFooter>
         </DialogContent>
