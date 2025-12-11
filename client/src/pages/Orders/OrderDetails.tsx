@@ -434,11 +434,6 @@ export default function OrderDetails() {
             .items-table tr:last-child td {
               border-bottom: none;
             }
-            .item-cell {
-              display: flex;
-              align-items: center;
-              gap: 12px;
-            }
             .item-image {
               width: 44px;
               height: 44px;
@@ -456,20 +451,29 @@ export default function OrderDetails() {
               height: 100%;
               object-fit: contain;
             }
-            .item-info {
-              flex: 1;
-              min-width: 0;
-            }
             .item-name {
               font-weight: 600;
               color: #0f172a;
-              margin-bottom: 2px;
+              margin-bottom: 0;
               line-height: 1.3;
               word-break: break-word;
             }
             .item-sku {
               font-size: 12px;
-              color: #94a3b8;
+              color: #64748b;
+              margin-top: 2px;
+            }
+            .item-cell {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            .item-info {
+              flex: 1;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
             }
             .qty-cell {
               text-align: center;
@@ -576,18 +580,15 @@ export default function OrderDetails() {
                         </div>
                       </div>
                     </td>
-                    <td class="price-cell" style="vertical-align: middle;">
+                    <td class="price-cell" style="vertical-align: middle; text-align: right;">
                       ${item.discount > 0 ? `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                          <span style="position: relative; color: #94a3b8; font-size: 12px;">
-                            <span style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #94a3b8;"></span>
-                            ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
-                          </span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0;">
+                          <del style="color: #94a3b8; font-size: 12px; text-decoration: line-through;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</del>
                           <span style="color: #16a34a; font-size: 11px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
                           <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
                         </div>
                       ` : `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
                           <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
                         </div>
                       `}
