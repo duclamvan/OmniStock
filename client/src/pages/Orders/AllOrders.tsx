@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck } from "lucide-react";
 import { TrackingStatusBadge } from "@/components/orders/TrackingStatusBadge";
+import { OrderItemsLoader } from "@/components/orders/OrderItemsLoader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -302,16 +303,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
     queryFn: async () => {
-      const url = filter ? `/api/orders?status=${filter}&includeItems=true` : '/api/orders?includeItems=true';
+      const url = filter ? `/api/orders?status=${filter}` : '/api/orders';
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch orders');
       return response.json();
     },
     retry: false,
-    refetchInterval: 10000, // Refetch every 10 seconds
-    refetchOnWindowFocus: true, // Refetch when user returns to the tab
-    staleTime: 5000, // Consider data stale after 5 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes (formerly cacheTime)
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    staleTime: 5000,
+    gcTime: 300000,
   });
 
   // Error handling
@@ -939,7 +940,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       const exportData = filteredOrders.map((order: any) => ({
         [t('orders:orderId')]: order.orderId || 'N/A',
         [t('orders:customer')]: order.customer?.name || 'N/A',
-        [t('orders:items')]: order.items?.length || 0,
         [t('orders:total')]: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
         [t('orders:status')]: order.orderStatus || 'N/A',
         [t('orders:date')]: formatDate(order.orderDate),
@@ -981,7 +981,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       const exportData = filteredOrders.map((order: any) => ({
         orderId: order.orderId || 'N/A',
         customer: order.customer?.name || 'N/A',
-        items: order.items?.length || 0,
         total: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
         status: order.orderStatus || 'N/A',
         date: formatDate(order.orderDate),
@@ -993,7 +992,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       const columns: PDFColumn[] = [
         { key: 'orderId', header: t('orders:orderIdHeader') },
         { key: 'customer', header: t('orders:customerNameHeader') },
-        { key: 'items', header: t('orders:items') },
         { key: 'total', header: t('orders:totalHeader') },
         { key: 'status', header: t('orders:statusHeader') },
         { key: 'date', header: t('orders:dateHeader') },
@@ -1399,13 +1397,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:items')}</p>
-                      {isLoading ? (
-                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      ) : (
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {t('orders:itemsWithCount', { count: order.items?.length || 0 })}
-                        </p>
-                      )}
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                        <OrderItemsLoader orderId={order.id} variant="compact" />
+                      </div>
                     </div>
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:totalAmount')}</p>
@@ -1419,33 +1413,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     </div>
                   </div>
                   
-                  {/* Order Items Summary (if available) */}
-                  {order.items && order.items.length > 0 && (
-                    <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('orders:itemsColon')}</p>
-                      <div className="space-y-1">
-                        {(expandedItemsOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, idx: number) => (
-                          <p key={idx} className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                            <span className="font-medium text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
-                          </p>
-                        ))}
-                        {order.items.length > 5 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleExpandedItems(order.id);
-                            }}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium cursor-pointer hover:underline transition-colors"
-                            data-testid={`button-toggle-items-${order.id}`}
-                          >
-                            {expandedItemsOrders.has(order.id) 
-                              ? t('orders:showLess')
-                              : t('orders:moreItems', { count: order.items.length - 5 })}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  {/* Order Items Summary - Lazy Loaded */}
+                  <OrderItemsLoader 
+                    orderId={order.id} 
+                    currency={order.currency}
+                    variant="mobile"
+                    maxItems={5}
+                    expanded={expandedItemsOrders.has(order.id)}
+                    onToggleExpand={() => toggleExpandedItems(order.id)}
+                  />
                 </div>
               </div>
             ))}
@@ -1741,37 +1717,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       </div>
                     </div>
 
-                    {/* Order Items */}
-                    {order.items && order.items.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">{t('orders:orderItemsHeader')}</h4>
-                        <div className="space-y-2">
-                          {order.items.map((item: any, index: number) => (
-                            <div
-                              key={item.id || index}
-                              className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
-                                  <span className="text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
-                                </p>
-                                {item.sku && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('orders:sku')} {item.sku}</p>
-                                )}
-                              </div>
-                              <div className="text-right ml-4">
-                                <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                                  {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {formatCurrency(item.price || 0, order.currency || 'EUR')} {t('orders:each')}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {/* Order Items - Lazy Loaded */}
+                    <OrderItemsLoader 
+                      orderId={order.id} 
+                      currency={order.currency}
+                      variant="full"
+                    />
 
                     {/* Order Summary */}
                     <div className="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-950/30 dark:to-slate-800/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
@@ -1953,19 +1904,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           <div className="font-bold text-sm">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
-                      {expandAll && order.items && order.items.length > 0 && (
-                        <div className="mt-1 text-xs text-slate-700 dark:text-slate-300 space-y-0.5">
-                          {order.items.map((item: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between">
-                              <span className="truncate">
-                                {item.quantity}× {item.productName}
-                                {item.sku && <span className="text-slate-500 dark:text-slate-400"> ({item.sku})</span>}
-                              </span>
-                              <span className="ml-2 text-slate-600 dark:text-slate-400">
-                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                              </span>
-                            </div>
-                          ))}
+                      {expandAll && (
+                        <div className="mt-1">
+                          <OrderItemsLoader 
+                            orderId={order.id} 
+                            currency={order.currency}
+                            variant="full"
+                          />
                         </div>
                       )}
                     </div>

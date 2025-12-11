@@ -7789,6 +7789,63 @@ Important:
     }
   });
 
+  // Get order items for a specific order (for lazy loading)
+  app.get('/api/orders/:id/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const orderId = req.params.id;
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Get order items
+      let items: any[] = [];
+      try {
+        items = await storage.getOrderItems(orderId);
+      } catch (itemError: any) {
+        console.error(`Failed to fetch items for order ${orderId}:`, itemError?.message || itemError);
+        return res.json([]);
+      }
+
+      // Enhance items with product data (images, landing costs)
+      const enhancedItems = await Promise.all(items.map(async (item) => {
+        if (item.productId) {
+          const [productData] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId))
+            .limit(1);
+
+          return {
+            ...item,
+            landingCost: productData?.latestLandingCost || null,
+            image: item.image || productData?.imageUrl || null
+          };
+        }
+
+        if (item.bundleId) {
+          const [bundleData] = await db
+            .select()
+            .from(productBundles)
+            .where(eq(productBundles.id, item.bundleId))
+            .limit(1);
+
+          return {
+            ...item,
+            image: item.image || bundleData?.imageUrl || null
+          };
+        }
+
+        return item;
+      }));
+
+      res.json(enhancedItems);
+    } catch (error) {
+      console.error("Error fetching order items:", error);
+      res.status(500).json({ message: "Failed to fetch order items" });
+    }
+  });
+
   // Order Badge endpoints
   app.post('/api/orders/:id/badges/refresh', isAuthenticated, async (req, res) => {
     try {
