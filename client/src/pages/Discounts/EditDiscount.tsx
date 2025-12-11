@@ -904,7 +904,7 @@ export default function EditDiscount() {
                           className="w-full justify-between"
                         >
                           {form.watch('categoryId')
-                            ? categories.find((category) => category.id === form.watch('categoryId'))?.name
+                            ? categories.find((category) => String(category.id) === String(form.watch('categoryId')))?.name
                             : t('discounts:searchCategories')}
                           <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -918,14 +918,14 @@ export default function EditDiscount() {
                               <CommandItem
                                 key={category.id}
                                 onSelect={() => {
-                                  form.setValue('categoryId', category.id);
+                                  form.setValue('categoryId', String(category.id));
                                   setCategorySearchOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    form.watch('categoryId') === category.id ? "opacity-100" : "opacity-0"
+                                    String(form.watch('categoryId')) === String(category.id) ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {category.name}
@@ -1090,7 +1090,7 @@ export default function EditDiscount() {
                             {t('discounts:specificCategory')}
                             {form.watch('categoryId') && (
                               <span className="block text-sm text-gray-600 font-normal mt-1">
-                                {categories.find(c => c.id === form.watch('categoryId'))?.name}
+                                {categories.find(c => String(c.id) === String(form.watch('categoryId')))?.name}
                               </span>
                             )}
                           </>
