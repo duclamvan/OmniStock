@@ -4995,9 +4995,8 @@ export default function AddOrder() {
             {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'PPL CZ' || form.watch('shippingMethod') === 'DHL' || form.watch('shippingMethod') === 'DHL DE') && form.watch('paymentMethod') === 'COD' && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="flex flex-col">
-                    <Label htmlFor="codAmount" className="flex items-start gap-2">
-                      <Banknote className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <Label htmlFor="codAmount">
                       {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
@@ -5012,7 +5011,7 @@ export default function AddOrder() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:cashOnDeliveryOptional')}</p>
                   </div>
 
-                  <div className="flex flex-col">
+                  <div>
                     <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
                     <Select 
                       value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
