@@ -1575,7 +1575,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   </p>
                                   {/* Discount amount */}
                                   <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
-                                    -{formatCurrency(item.discount || 0, order.currency || 'EUR')} {t('orders:off')}
+                                    {item.appliedDiscountType === 'percentage' && item.discountPercentage
+                                      ? `-${parseFloat(String(item.discountPercentage))}% OFF`
+                                      : <>-{formatCurrency(item.discount || 0, order.currency || 'EUR')} {t('orders:off')}</>
+                                    }
                                   </p>
                                   {/* Final price after discount */}
                                   <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
