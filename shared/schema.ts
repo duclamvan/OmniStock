@@ -1238,16 +1238,22 @@ export const discounts = pgTable("discounts", {
   id: serial("id").primaryKey(),
   discountId: text("discount_id").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description"),
   type: text("type").notNull(), // percentage, fixed, buy_x_get_y
   percentage: decimal("percentage", { precision: 5, scale: 2 }),
   value: decimal("value", { precision: 10, scale: 2 }),
   buyQuantity: integer("buy_quantity"), // For buy_x_get_y: buy X
   getQuantity: integer("get_quantity"), // For buy_x_get_y: get Y free
+  getProductType: text("get_product_type"), // same_product, different_product
+  getProductId: text("get_product_id"), // For different_product type
   minOrderAmount: decimal("min_order_amount", { precision: 10, scale: 2 }),
   status: text("status").default("active"), // active, inactive, expired
   startDate: date("start_date"),
   endDate: date("end_date"),
-  applicationScope: text("application_scope").default("order"), // order, product, customer
+  applicationScope: text("application_scope").default("all_products"), // all_products, specific_product, specific_category, selected_products
+  productId: text("product_id"), // For specific_product scope
+  categoryId: text("category_id"), // For specific_category scope
+  selectedProductIds: text("selected_product_ids").array(), // For selected_products scope
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
