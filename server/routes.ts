@@ -8897,12 +8897,13 @@ Important:
       const { dueDate: _, ...restBody } = req.body;
 
       // Convert empty strings to null for foreign key fields
+      // Keep title and description as empty strings if not provided (title is required)
       const cleanBody = {
         ...restBody,
         customerId: restBody.customerId?.trim() || null,
         orderId: restBody.orderId?.trim() || null,
-        title: restBody.title?.trim() || null,
-        description: restBody.description?.trim() || null,
+        title: restBody.title?.trim() || 'Untitled Ticket',
+        description: restBody.description?.trim() || '',
       };
 
       const bodyWithDefaults = {
