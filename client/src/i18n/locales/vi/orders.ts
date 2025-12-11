@@ -40,6 +40,7 @@ const orders = {
   orderSubtotal: 'Tạm tính',
   shippingCost: 'Phí vận chuyển',
   orderNotes: 'Ghi chú đơn hàng',
+  notes: 'Ghi chú',
   paymentMethod: 'Phương thức thanh toán',
   paymentStatus: 'Trạng thái thanh toán',
   priority: 'Độ ưu tiên',

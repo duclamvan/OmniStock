@@ -40,6 +40,7 @@ const orders = {
   orderSubtotal: 'Order Subtotal',
   shippingCost: 'Shipping Cost',
   orderNotes: 'Order Notes',
+  notes: 'Notes',
   paymentMethod: 'Payment Method',
   paymentStatus: 'Payment Status',
   priority: 'Priority',
