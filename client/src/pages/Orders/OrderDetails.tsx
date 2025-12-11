@@ -1279,7 +1279,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   </p>
                                   {/* Discount amount - show as percentage */}
                                   <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
-                                    -{Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}% OFF
+                                    {(() => {
+                                      const originalTotal = (item.unitPrice || item.price || 0) * item.quantity;
+                                      const discountPct = originalTotal > 0 ? ((item.discount || 0) / originalTotal) * 100 : 0;
+                                      if (discountPct >= 1) {
+                                        return `-${Math.round(discountPct)}% OFF`;
+                                      } else if (discountPct > 0) {
+                                        return `-${discountPct.toFixed(1)}% OFF`;
+                                      }
+                                      return '';
+                                    })()}
                                   </p>
                                   {/* Final price after discount */}
                                   <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
