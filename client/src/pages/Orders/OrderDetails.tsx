@@ -2834,11 +2834,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
           </DialogHeader>
           
           {/* Invoice Preview - This is what gets captured */}
-          <div className="px-2 pb-4">
+          <div className="flex justify-center pb-4 px-4">
             <div 
               ref={capturePreviewRef}
               className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg"
-              style={{ width: '480px', margin: '0 auto' }}
+              style={{ width: '460px' }}
             >
               {/* Header */}
               <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border-b-2 border-slate-200">
