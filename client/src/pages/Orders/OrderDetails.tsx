@@ -502,7 +502,11 @@ export default function OrderDetails() {
                 ${item.discount > 0 ? `
                   <span class="item-price" style="display: flex; flex-direction: column; align-items: flex-end;">
                     <span style="text-decoration: line-through; color: #999; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
-                    <span style="color: green; font-size: 11px;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}% OFF</span>
+                    <span style="color: green; font-size: 11px;">-${(() => {
+                      const origTotal = (item.unitPrice || item.price || 0) * item.quantity;
+                      const pct = origTotal > 0 ? ((item.discount || 0) / origTotal) * 100 : 0;
+                      return pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(2).replace(/\.?0+$/, '');
+                    })()}% OFF</span>
                     <span>${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
                   </span>
                 ` : `
