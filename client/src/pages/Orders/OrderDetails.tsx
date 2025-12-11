@@ -579,7 +579,13 @@ export default function OrderDetails() {
                     </td>
                     <td class="qty-cell">${item.quantity}</td>
                     <td class="price-cell">
-                      ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                      ${item.discount > 0 ? `
+                        <div style="text-decoration: line-through; color: #94a3b8; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</div>
+                        <div style="color: #16a34a; font-size: 11px;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}% OFF</div>
+                        <div>${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</div>
+                      ` : `
+                        ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                      `}
                       <div class="unit-price">@ ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
                     </td>
                   </tr>
@@ -588,6 +594,15 @@ export default function OrderDetails() {
             </table>
             
             <div class="pricing-section">
+              ${(() => {
+                const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
+                return totalItemDiscounts > 0 ? `
+                  <div class="price-row discount-row">
+                    <span class="price-label">${t('orders:itemDiscounts')}</span>
+                    <span class="price-value">-${formatCurrency(totalItemDiscounts, order.currency || 'EUR')}</span>
+                  </div>
+                ` : '';
+              })()}
               <div class="price-row">
                 <span class="price-label">${t('orders:subtotal')}</span>
                 <span class="price-value">${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
@@ -819,7 +834,15 @@ export default function OrderDetails() {
               <span class="item-name">${item.productName}</span>
               <div class="item-details">
                 <span class="item-qty">SL: ${item.quantity}</span>
-                <span class="item-price">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                ${item.discount > 0 ? `
+                  <span class="item-price" style="display: flex; flex-direction: column; align-items: flex-end;">
+                    <span style="text-decoration: line-through; color: #999; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                    <span style="color: green; font-size: 11px;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}% OFF</span>
+                    <span>${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
+                  </span>
+                ` : `
+                  <span class="item-price">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                `}
               </div>
             </div>
           `).join('') || ''}
@@ -828,6 +851,15 @@ export default function OrderDetails() {
         <div class="divider"></div>
         
         <div class="total-section">
+          ${(() => {
+            const totalItemDiscounts = order.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
+            return totalItemDiscounts > 0 ? `
+              <div class="total-row" style="color: green;">
+                <span>Giảm giá SP:</span>
+                <span>-${formatCurrency(totalItemDiscounts, order.currency || 'EUR')}</span>
+              </div>
+            ` : '';
+          })()}
           <div class="total-row">
             <span>Tạm tính:</span>
             <span>${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
