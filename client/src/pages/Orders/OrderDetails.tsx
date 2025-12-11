@@ -553,15 +553,15 @@ export default function OrderDetails() {
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 60%;">${t('orders:product')}</th>
-                  <th style="width: 12%; text-align: center;">${t('orders:qty')}</th>
-                  <th style="width: 28%;">${t('orders:price')}</th>
+                  <th style="width: 55%;">SẢN PHẨM</th>
+                  <th style="width: 10%; text-align: center;">SL</th>
+                  <th style="width: 35%;">GIÁ</th>
                 </tr>
               </thead>
               <tbody>
                 ${order.items?.map((item: any) => `
                   <tr>
-                    <td>
+                    <td style="vertical-align: middle;">
                       <div class="item-cell">
                         <div class="item-image">
                           ${item.image 
@@ -577,16 +577,19 @@ export default function OrderDetails() {
                         </div>
                       </div>
                     </td>
-                    <td class="qty-cell">${item.quantity}</td>
-                    <td class="price-cell">
+                    <td class="qty-cell" style="vertical-align: middle;">${item.quantity}</td>
+                    <td class="price-cell" style="vertical-align: middle;">
                       ${item.discount > 0 ? `
-                        <div style="text-decoration: line-through; color: #94a3b8; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</div>
-                        <div style="color: #16a34a; font-size: 11px;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}% OFF</div>
-                        <div>${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                          <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                          <span style="color: #16a34a; font-size: 10px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
+                          <span style="font-weight: 700; font-size: 14px;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
+                        </div>
                       ` : `
-                        ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                          <span style="font-weight: 700; font-size: 14px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                        </div>
                       `}
-                      <div class="unit-price">@ ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
                     </td>
                   </tr>
                 `).join('')}
@@ -599,22 +602,22 @@ export default function OrderDetails() {
                 const merchandiseTotal = (order.subtotal || 0) + totalItemDiscounts;
                 return totalItemDiscounts > 0 ? `
                   <div class="price-row">
-                    <span class="price-label">${t('orders:merchandiseTotal')}</span>
+                    <span class="price-label">Tổng hàng hóa</span>
                     <span class="price-value">${formatCurrency(merchandiseTotal, order.currency || 'EUR')}</span>
                   </div>
                   <div class="price-row discount-row">
-                    <span class="price-label">${t('orders:promotionalSavings')}</span>
+                    <span class="price-label">Tiết kiệm khuyến mãi</span>
                     <span class="price-value">-${formatCurrency(totalItemDiscounts, order.currency || 'EUR')}</span>
                   </div>
                 ` : '';
               })()}
               <div class="price-row">
-                <span class="price-label">${t('orders:subtotal')}</span>
+                <span class="price-label">Tạm tính</span>
                 <span class="price-value">${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
               </div>
               ${order.discountValue > 0 ? `
                 <div class="price-row discount-row">
-                  <span class="price-label">${t('orders:discount')} ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}</span>
+                  <span class="price-label">Giảm giá ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}</span>
                   <span class="price-value">-${formatCurrency(
                     order.discountType === 'rate' 
                       ? (order.subtotal * order.discountValue / 100) 
@@ -625,25 +628,25 @@ export default function OrderDetails() {
               ` : ''}
               ${order.taxAmount > 0 ? `
                 <div class="price-row">
-                  <span class="price-label">${t('orders:tax')} (${order.taxRate}%)</span>
+                  <span class="price-label">Thuế (${order.taxRate}%)</span>
                   <span class="price-value">${formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               ${order.shippingCost > 0 ? `
                 <div class="price-row">
-                  <span class="price-label">${t('orders:shipping')}</span>
+                  <span class="price-label">Phí vận chuyển</span>
                   <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               ${order.adjustment != null && Number(order.adjustment) !== 0 ? `
                 <div class="price-row">
-                  <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">${t('orders:adjustment')}</span>
+                  <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">Điều chỉnh</span>
                   <span class="price-value" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">${order.adjustment > 0 ? '+' : ''}${formatCurrency(order.adjustment || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
               <div class="total-divider"></div>
               <div class="total-row">
-                <span class="total-label">${t('orders:grandTotal')}</span>
+                <span class="total-label">Tổng cộng</span>
                 <span class="total-value">${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
               </div>
             </div>
