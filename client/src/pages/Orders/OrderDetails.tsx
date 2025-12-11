@@ -690,18 +690,24 @@ export default function OrderDetails() {
   const handlePrintBill = () => {
     if (!order) return;
 
-    // Format date
-    const orderDate = order.createdAt 
-      ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    // Format date and time in Vietnamese
+    const orderDateTime = order.createdAt 
+      ? new Date(order.createdAt).toLocaleString('vi-VN', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
       : '';
 
-    // Create plain text bill HTML for printing
+    // Create plain text bill HTML for printing - Vietnamese only
     const billHTML = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Bill - ${order.orderId || order.id}</title>
+        <title>Hóa đơn - ${order.orderId || order.id}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
@@ -717,35 +723,48 @@ export default function OrderDetails() {
             border-bottom: 1px dashed #333;
           }
           .company-name {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
           }
           .order-info {
             font-size: 12px;
             color: #333;
+          }
+          .order-info div {
+            margin: 2px 0;
           }
           .items-section {
             margin: 12px 0;
           }
           .item-row {
             display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
+            flex-wrap: wrap;
+            margin: 10px 0;
             font-size: 12px;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 8px;
           }
           .item-name {
-            flex: 1;
-            padding-right: 8px;
+            width: 100%;
+            margin-bottom: 4px;
+            font-weight: 500;
+          }
+          .item-details {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 13px;
           }
           .item-qty {
-            min-width: 30px;
-            text-align: center;
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
           }
           .item-price {
-            min-width: 60px;
+            font-weight: 600;
+            font-size: 14px;
             text-align: right;
-            font-weight: 500;
           }
           .divider {
             border-top: 1px dashed #333;
@@ -757,20 +776,27 @@ export default function OrderDetails() {
           .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
-            margin: 4px 0;
+            font-size: 13px;
+            margin: 6px 0;
+          }
+          .total-row span:last-child {
+            font-weight: 600;
+            font-size: 14px;
           }
           .grand-total {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            margin-top: 8px;
-            padding-top: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
             border-top: 2px solid #333;
+          }
+          .grand-total span:last-child {
+            font-size: 18px;
           }
           .footer {
             text-align: center;
             margin-top: 20px;
-            font-size: 11px;
+            font-size: 12px;
             color: #666;
           }
           @media print {
@@ -782,8 +808,8 @@ export default function OrderDetails() {
         <div class="bill-header">
           <div class="company-name">Davie Supply</div>
           <div class="order-info">
-            <div>${order.orderId || order.id}</div>
-            <div>${orderDate}</div>
+            <div><strong>Mã đơn:</strong> ${order.orderId || order.id}</div>
+            <div><strong>Ngày giờ:</strong> ${orderDateTime}</div>
           </div>
         </div>
         
@@ -791,8 +817,10 @@ export default function OrderDetails() {
           ${order.items?.map((item: any) => `
             <div class="item-row">
               <span class="item-name">${item.productName}</span>
-              <span class="item-qty">x${item.quantity}</span>
-              <span class="item-price">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+              <div class="item-details">
+                <span class="item-qty">SL: ${item.quantity}</span>
+                <span class="item-price">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+              </div>
             </div>
           `).join('') || ''}
         </div>
@@ -801,12 +829,12 @@ export default function OrderDetails() {
         
         <div class="total-section">
           <div class="total-row">
-            <span>Subtotal:</span>
+            <span>Tạm tính:</span>
             <span>${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
           </div>
           ${order.discountValue > 0 ? `
             <div class="total-row" style="color: green;">
-              <span>Discount ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}:</span>
+              <span>Giảm giá ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}:</span>
               <span>-${formatCurrency(
                 order.discountType === 'rate' 
                   ? (order.subtotal * order.discountValue / 100) 
@@ -817,24 +845,24 @@ export default function OrderDetails() {
           ` : ''}
           ${order.shippingCost > 0 ? `
             <div class="total-row">
-              <span>Shipping:</span>
+              <span>Phí vận chuyển:</span>
               <span>${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
             </div>
           ` : ''}
           ${order.taxAmount > 0 ? `
             <div class="total-row">
-              <span>Tax (${order.taxRate}%):</span>
+              <span>Thuế (${order.taxRate}%):</span>
               <span>${formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
             </div>
           ` : ''}
           <div class="total-row grand-total">
-            <span>Total:</span>
+            <span>Tổng cộng:</span>
             <span>${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
           </div>
         </div>
         
         <div class="footer">
-          Thank you for your order!
+          Cảm ơn quý khách đã mua hàng!
         </div>
       </body>
       </html>
