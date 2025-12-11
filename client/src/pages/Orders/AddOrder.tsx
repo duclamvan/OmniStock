@@ -4995,7 +4995,7 @@ export default function AddOrder() {
             {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'PPL CZ' || form.watch('shippingMethod') === 'DHL' || form.watch('shippingMethod') === 'DHL DE') && form.watch('paymentMethod') === 'COD' && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
+                  <div className="flex flex-col">
                     <Label htmlFor="codAmount" className="flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
                       {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
@@ -5006,18 +5006,19 @@ export default function AddOrder() {
                       min="0"
                       placeholder="0.00"
                       {...form.register('codAmount', { valueAsNumber: true })}
+                      className="mt-1"
                       data-testid="input-dobirka-amount"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:cashOnDeliveryOptional')}</p>
                   </div>
 
-                  <div>
+                  <div className="flex flex-col">
                     <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
                     <Select 
                       value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
-                      <SelectTrigger data-testid="select-dobirka-currency">
+                      <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
                         <SelectValue placeholder={t('orders:selectCurrency')} />
                       </SelectTrigger>
                       <SelectContent>
