@@ -549,13 +549,27 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     
     // Apply search filter
     if (searchQuery) {
-      const results = fuzzySearch(filtered, searchQuery, {
-        fields: ['orderId', 'customer.name', 'customer.facebookName'],
-        threshold: 0.2,
-        fuzzy: true,
-        vietnameseNormalization: true,
-      });
-      filtered = results.map(r => r.item);
+      const query = searchQuery.trim();
+      
+      // Check if searching for order ID number (digits only or with common prefixes)
+      const isOrderIdSearch = /^[\d-]+$/.test(query) || query.toLowerCase().startsWith('ord');
+      
+      if (isOrderIdSearch) {
+        // Direct substring match on orderId for number searches
+        const lowerQuery = query.toLowerCase();
+        filtered = filtered.filter((order: any) => 
+          order.orderId?.toLowerCase().includes(lowerQuery)
+        );
+      } else {
+        // Use fuzzy search for name/text searches
+        const results = fuzzySearch(filtered, query, {
+          fields: ['orderId', 'customer.name', 'customer.facebookName'],
+          threshold: 0.2,
+          fuzzy: true,
+          vietnameseNormalization: true,
+        });
+        filtered = results.map(r => r.item);
+      }
     }
     
     return filtered;
