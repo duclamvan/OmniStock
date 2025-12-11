@@ -553,9 +553,8 @@ export default function OrderDetails() {
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 55%;">SẢN PHẨM</th>
-                  <th style="width: 10%; text-align: center;">SL</th>
-                  <th style="width: 35%;">GIÁ</th>
+                  <th style="width: 65%;">SẢN PHẨM</th>
+                  <th style="width: 35%;">THÀNH TIỀN</th>
                 </tr>
               </thead>
               <tbody>
@@ -573,21 +572,20 @@ export default function OrderDetails() {
                         </div>
                         <div class="item-info">
                           <div class="item-name">${item.productName}</div>
-                          <div class="item-sku">${item.sku || '-'}</div>
+                          <div class="item-sku">${item.quantity} × ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
                     </td>
-                    <td class="qty-cell" style="vertical-align: middle;">${item.quantity}</td>
                     <td class="price-cell" style="vertical-align: middle;">
                       ${item.discount > 0 ? `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                          <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
-                          <span style="color: #16a34a; font-size: 10px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
-                          <span style="font-weight: 700; font-size: 14px;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+                          <span style="text-decoration: line-through; color: #94a3b8; font-size: 12px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                          <span style="color: #16a34a; font-size: 11px; font-weight: 600;">-${Math.round(((item.discount || 0) / ((item.unitPrice || item.price || 0) * item.quantity)) * 100)}%</span>
+                          <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}</span>
                         </div>
                       ` : `
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                          <span style="font-weight: 700; font-size: 14px;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                          <span style="font-weight: 700; font-size: 15px; color: #0f172a;">${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}</span>
                         </div>
                       `}
                     </td>
