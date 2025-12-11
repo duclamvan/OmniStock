@@ -50,6 +50,15 @@ interface SearchResult {
       status: string;
     }>;
   }>;
+  orders: Array<{
+    id: string;
+    orderId: string;
+    customerName: string;
+    grandTotal: string | number;
+    currency: string;
+    orderStatus: string;
+    createdAt: string;
+  }>;
 }
 
 interface GlobalSearchProps {
@@ -131,7 +140,8 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
 
   const totalResults = (results?.inventoryItems.length || 0) + 
                        (results?.shipmentItems.length || 0) + 
-                       (results?.customers.length || 0);
+                       (results?.customers.length || 0) +
+                       (results?.orders?.length || 0);
 
   return (
     <div ref={searchRef} className="relative w-full sm:max-w-2xl">
@@ -255,6 +265,46 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                       <Badge variant={item.status === 'received' ? 'default' : 'secondary'}>
                         {item.status}
                       </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Orders Section */}
+              {results && results.orders?.length > 0 && (
+                <div className="mb-4">
+                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <ShoppingCart className="h-3 w-3" />
+                    {t('common:orders')} ({results.orders.length})
+                  </div>
+                  {results.orders.map((order) => (
+                    <button
+                      key={order.id}
+                      onClick={() => {
+                        setLocation(`/orders/${order.id}`);
+                        setSearchQuery('');
+                        setShowResults(false);
+                      }}
+                      className="w-full px-3 py-2 hover:bg-accent dark:hover:bg-gray-700 rounded-md flex items-center gap-3 text-left transition-colors"
+                      data-testid={`search-result-order-${order.id}`}
+                    >
+                      <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/20 rounded flex items-center justify-center flex-shrink-0">
+                        <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate text-gray-900 dark:text-gray-100">#{order.orderId}</div>
+                        <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
+                          {order.customerName}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {formatCurrency(parseFloat(String(order.grandTotal || '0')), order.currency)}
+                        </div>
+                        <div className="text-xs text-muted-foreground dark:text-gray-400">
+                          {order.createdAt ? new Date(order.createdAt).toLocaleDateString('cs-CZ') : ''}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>

@@ -2724,10 +2724,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // STEP: Search for orders by orderId (supports partial number matching like "3870" -> "ORD-251113-3870")
+      const orderCandidates = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .where(
+          sql`LOWER(${orders.orderId}) LIKE ${`%${normalizedQuery.toLowerCase()}%`}`
+        )
+        .orderBy(desc(orders.createdAt))
+        .limit(10);
+
+      // Get customer names for matched orders
+      const orderResults = await Promise.all(
+        orderCandidates.map(async (order) => {
+          let customerName = 'Walk-in Customer';
+          if (order.customerId) {
+            const [customer] = await db
+              .select({ name: customers.name })
+              .from(customers)
+              .where(eq(customers.id, order.customerId))
+              .limit(1);
+            if (customer) {
+              customerName = customer.name || 'Unknown';
+            }
+          }
+          return {
+            id: order.id,
+            orderId: order.orderId || 'N/A',
+            customerName,
+            grandTotal: order.grandTotal || '0',
+            currency: order.currency || 'CZK',
+            orderStatus: order.orderStatus || 'pending',
+            createdAt: order.createdAt
+          };
+        })
+      );
+
       res.json({
         inventoryItems,
         shipmentItems,
-        customers: customersWithStats
+        customers: customersWithStats,
+        orders: orderResults
       });
     } catch (error) {
       console.error("Error in global search:", error);
