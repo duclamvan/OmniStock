@@ -1440,7 +1440,16 @@ export default function AddOrder() {
       productName: item.productName,
       sku: item.sku,
       quantity: item.quantity,
-      price: item.price
+      price: item.price,
+      // Discount information for AI optimization
+      discount: item.discount,
+      discountPercentage: item.discountPercentage,
+      appliedDiscountId: item.appliedDiscountId,
+      appliedDiscountLabel: item.appliedDiscountLabel,
+      appliedDiscountType: item.appliedDiscountType,
+      freeItemsCount: item.freeItemsCount,
+      buyXGetYBuyQty: item.buyXGetYBuyQty,
+      buyXGetYGetQty: item.buyXGetYGetQty
     }));
 
     // Get shipping country code from customer with comprehensive mapping

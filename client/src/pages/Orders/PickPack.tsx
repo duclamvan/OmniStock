@@ -2185,7 +2185,17 @@ export default function PickPack() {
       productId: item.productId || '',
       productName: item.productName,
       sku: item.sku,
-      quantity: item.quantity
+      quantity: item.quantity,
+      price: item.price || 0,
+      // Discount information for AI optimization
+      discount: item.discount || 0,
+      discountPercentage: item.discountPercentage || 0,
+      appliedDiscountId: item.appliedDiscountId,
+      appliedDiscountLabel: item.appliedDiscountLabel,
+      appliedDiscountType: item.appliedDiscountType,
+      freeItemsCount: item.freeItemsCount || 0,
+      buyXGetYBuyQty: item.buyXGetYBuyQty,
+      buyXGetYGetQty: item.buyXGetYGetQty
     }));
 
     // Use the shipping country from the active packing order

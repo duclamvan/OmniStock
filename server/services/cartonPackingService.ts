@@ -18,6 +18,12 @@ export interface PackingPlanItem {
   heightCm?: number;
   aiEstimated: boolean;
   isBulkWrappable?: boolean;
+  // Discount information
+  discount?: number;
+  discountPercentage?: number;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  freeItemsCount?: number;
 }
 
 export interface PackingPlanCarton {
@@ -74,6 +80,12 @@ interface OrderItemWithDimensions {
   volumeCm3: number;
   aiEstimated: boolean;
   isBulkWrappable?: boolean;
+  // Discount information
+  discount?: number;
+  discountPercentage?: number;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  freeItemsCount?: number;
 }
 
 export interface PackingOptions {
@@ -233,7 +245,13 @@ export async function optimizeCartonPacking(
         heightCm,
         volumeCm3,
         aiEstimated,
-        isBulkWrappable
+        isBulkWrappable,
+        // Discount information passed from order
+        discount: orderItem.discount,
+        discountPercentage: orderItem.discountPercentage,
+        appliedDiscountLabel: orderItem.appliedDiscountLabel,
+        appliedDiscountType: orderItem.appliedDiscountType,
+        freeItemsCount: orderItem.freeItemsCount
       });
     }
 
@@ -295,7 +313,12 @@ export async function optimizeCartonPacking(
           widthCm: item.widthCm,
           heightCm: item.heightCm,
           aiEstimated: item.aiEstimated,
-          isBulkWrappable: item.isBulkWrappable
+          isBulkWrappable: item.isBulkWrappable,
+          discount: item.discount,
+          discountPercentage: item.discountPercentage,
+          appliedDiscountLabel: item.appliedDiscountLabel,
+          appliedDiscountType: item.appliedDiscountType,
+          freeItemsCount: item.freeItemsCount
         }));
         
         partialCartons.push({
@@ -351,7 +374,12 @@ export async function optimizeCartonPacking(
               widthCm: item.widthCm,
               heightCm: item.heightCm,
               aiEstimated: item.aiEstimated,
-              isBulkWrappable: item.isBulkWrappable
+              isBulkWrappable: item.isBulkWrappable,
+              discount: item.discount,
+              discountPercentage: item.discountPercentage,
+              appliedDiscountLabel: item.appliedDiscountLabel,
+              appliedDiscountType: item.appliedDiscountType,
+              freeItemsCount: item.freeItemsCount
             });
             partial.totalWeightKg = newTotalWeight;
             partial.totalVolumeCm3 = newTotalVolume;
@@ -397,7 +425,12 @@ export async function optimizeCartonPacking(
               widthCm: item.widthCm,
               heightCm: item.heightCm,
               aiEstimated: item.aiEstimated,
-              isBulkWrappable: item.isBulkWrappable
+              isBulkWrappable: item.isBulkWrappable,
+              discount: item.discount,
+              discountPercentage: item.discountPercentage,
+              appliedDiscountLabel: item.appliedDiscountLabel,
+              appliedDiscountType: item.appliedDiscountType,
+              freeItemsCount: item.freeItemsCount
             }],
             totalWeightKg: itemTotalWeight,
             totalVolumeCm3: itemTotalVolume
