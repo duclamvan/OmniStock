@@ -241,8 +241,11 @@ export default function EditDiscount() {
         categoryId: discount.categoryId ? String(discount.categoryId) : undefined,
       };
 
-      if (discount.selectedProductIds) {
-        formData.selectedProductIds = discount.selectedProductIds.map((id: string) => ({ productId: id }));
+      // Handle selectedProductIds - ensure it's an array of objects with productId
+      if (discount.selectedProductIds && Array.isArray(discount.selectedProductIds) && discount.selectedProductIds.length > 0) {
+        formData.selectedProductIds = discount.selectedProductIds.map((id: string) => ({ productId: String(id) }));
+      } else {
+        formData.selectedProductIds = [];
       }
 
       form.reset(formData);
