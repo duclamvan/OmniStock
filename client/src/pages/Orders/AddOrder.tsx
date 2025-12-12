@@ -80,7 +80,8 @@ import {
   Building2,
   Gift,
   Eye,
-  EyeOff
+  EyeOff,
+  Check
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
