@@ -2041,10 +2041,19 @@ export default function AddOrder() {
     
     if (!allocation) return;
     
-    // Calculate how many free slots this item currently uses (its own quantity)
-    // and how many additional slots are available
-    const currentFreeQty = currentItem.quantity;
-    const maxFreeQuantity = currentFreeQty + allocation.remainingFreeSlots;
+    // Calculate max free quantity allowed for this item
+    // freeItemsEarned = total free slots from paid items
+    // We need to subtract OTHER free items (not this one) to get what's available for this item
+    const otherFreeItemsQty = orderItems
+      .filter(item => 
+        item.isFreeItem && 
+        item.id !== id && 
+        item.categoryId?.toString() === currentItem.categoryId?.toString() &&
+        item.appliedDiscountId === currentItem.appliedDiscountId
+      )
+      .reduce((sum, item) => sum + item.quantity, 0);
+    
+    const maxFreeQuantity = Math.max(0, allocation.freeItemsEarned - otherFreeItemsQty);
     
     if (newQuantity <= maxFreeQuantity) {
       // All fits in free slots - just update quantity
