@@ -21,7 +21,6 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, getCurrencyByCountry } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
-import { getCustomerBadges } from "@/lib/customerBadges";
 import { useOrderDefaults, useFinancialDefaults } from "@/hooks/useAppSettings";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Badge } from "@/components/ui/badge";
@@ -3498,20 +3497,33 @@ export default function AddOrder() {
                             <CheckCircle className="h-5 w-5 text-green-600" />
                           </div>
                           
-                          {/* Badges */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {getCustomerBadges(selectedCustomer).map((badge, index) => (
-                              <Badge 
-                                key={index} 
-                                variant={badge.variant} 
-                                className={badge.className}
-                                data-testid={`badge-${badge.label.toLowerCase().replace(/\s+/g, '-')}`}
-                              >
-                                {badge.icon && <badge.icon className="h-3 w-3 mr-1" />}
-                                {badge.label}
-                              </Badge>
-                            ))}
-                          </div>
+                          {/* Customer Badges - Comprehensive badges like in orders table */}
+                          {!selectedCustomer.id?.startsWith('temp-') && (
+                            <CustomerBadges 
+                              badges={selectedCustomer.badges}
+                              customer={{
+                                type: selectedCustomer.type,
+                                totalSpent: selectedCustomer.totalSpent,
+                                customerRank: selectedCustomer.customerRank,
+                                country: selectedCustomer.country,
+                                totalOrders: selectedCustomer.totalOrders,
+                                firstOrderDate: selectedCustomer.firstOrderDate,
+                                lastOrderDate: selectedCustomer.lastOrderDate,
+                                averageOrderValue: selectedCustomer.averageOrderValue,
+                              }}
+                              currency={form.watch('currency') || 'EUR'}
+                            />
+                          )}
+                          {/* Currency Badge */}
+                          {selectedCustomer.preferredCurrency && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                              data-testid="badge-currency"
+                            >
+                              {selectedCustomer.preferredCurrency}
+                            </Badge>
+                          )}
                         </div>
                         
                         <Button
@@ -3592,15 +3604,6 @@ export default function AddOrder() {
                         </div>
                       )}
 
-                      {/* Customer Badges */}
-                      {!selectedCustomer.id?.startsWith('temp-') && selectedCustomer.badges && (
-                        <div className="mt-2">
-                          <CustomerBadges 
-                            badges={selectedCustomer.badges} 
-                            currency={form.watch('currency') || 'EUR'} 
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </CardContent>
