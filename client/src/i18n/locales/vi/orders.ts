@@ -779,6 +779,8 @@ const orders = {
   freeItemLimitReached: 'Đã đạt giới hạn miễn phí',
   freeItemSplitMessage: '{{free}} sản phẩm miễn phí, {{paid}} sản phẩm tính giá thường',
   freeItemsAvailable: 'Có {{count}} sản phẩm miễn phí',
+  buyXGetYOffer: 'Khuyến mãi Mua X Tặng Y',
+  getFreeItems: 'Được tặng {{count}} MIỄN PHÍ',
   addProductFromCategory: 'Thêm sản phẩm từ danh mục {{category}}',
   totalRoundedUp: 'Đã làm tròn lên tổng',
   adjustmentAmount: 'Điều chỉnh: {{amount}}',

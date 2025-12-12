@@ -1136,8 +1136,30 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
             <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {order.items?.map((item: any, index: number) => (
-                  <div key={item.id || index} className="px-3 sm:px-6 py-3 sm:py-4">
+                {order.items?.map((item: any, index: number) => {
+                  const isBuyXGetY = item.appliedDiscountType === 'buy_x_get_y';
+                  const hasFreeItems = (item.freeItemsCount ?? 0) > 0;
+                  const isFreeItem = item.isFreeItem === true || (item.unitPrice === 0 && item.appliedDiscountType === 'buy_x_get_y');
+                  
+                  return (
+                  <div key={item.id || index} className={cn(
+                    "px-3 sm:px-6 py-3 sm:py-4",
+                    isBuyXGetY && hasFreeItems && "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-l-4 border-l-green-500",
+                    isFreeItem && "bg-green-50 dark:bg-green-950/30 border-l-4 border-l-green-400"
+                  )}>
+                    {/* Buy X Get Y Offer Banner */}
+                    {isBuyXGetY && hasFreeItems && (
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-200 dark:border-green-800">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-600 dark:bg-green-700 text-white rounded-full text-xs font-bold shadow-sm">
+                          <Gift className="h-3.5 w-3.5" />
+                          <span>{t('orders:buyXGetYOffer')}</span>
+                        </div>
+                        <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                          {t('orders:getFreeItems', { count: item.freeItemsCount })}
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="flex items-start gap-3">
                       {showPickingMode && (
                         <div data-hide-in-screenshot>
@@ -1158,16 +1180,34 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       )}
                       
                       {/* Product Image */}
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 relative">
                         {item.image ? (
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className="w-12 h-12 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
+                            className={cn(
+                              "w-12 h-12 object-contain rounded border bg-slate-50 dark:bg-slate-900",
+                              isBuyXGetY && hasFreeItems ? "border-green-300 dark:border-green-700" : "border-slate-200 dark:border-gray-700"
+                            )}
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                          <div className={cn(
+                            "w-12 h-12 rounded border flex items-center justify-center",
+                            isBuyXGetY && hasFreeItems 
+                              ? "bg-green-100 dark:bg-green-900/50 border-green-300 dark:border-green-700" 
+                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700"
+                          )}>
+                            {isBuyXGetY && hasFreeItems ? (
+                              <Gift className="h-6 w-6 text-green-500 dark:text-green-400" />
+                            ) : (
+                              <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                            )}
+                          </div>
+                        )}
+                        {/* Offer indicator badge on image */}
+                        {isBuyXGetY && hasFreeItems && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow">
+                            <Gift className="h-3 w-3 text-white" />
                           </div>
                         )}
                       </div>
@@ -1401,7 +1441,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Picking Progress */}

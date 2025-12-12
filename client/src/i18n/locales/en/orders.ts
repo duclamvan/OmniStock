@@ -775,6 +775,8 @@ const orders = {
   freeItemLimitReached: 'Free Item Limit Reached',
   freeItemSplitMessage: '{{free}} item(s) added free, {{paid}} item(s) added at regular price',
   freeItemsAvailable: '{{count}} free item(s) available',
+  buyXGetYOffer: 'Buy X Get Y Offer',
+  getFreeItems: 'Get {{count}} FREE',
   addProductFromCategory: 'Add a product from {{category}} category',
   totalRoundedUp: 'Total Rounded Up',
   adjustmentAmount: 'Adjustment: {{amount}}',
