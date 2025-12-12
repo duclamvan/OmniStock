@@ -4730,64 +4730,60 @@ export default function AddOrder() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right align-middle">
-                              <div className="flex flex-col items-end gap-0.5">
+                              <div className="flex items-center justify-end gap-2">
+                                {/* Cost & Profit column for admin - shown to the left of price */}
+                                {(showCostInfo || showProfitInfo) && canViewImportCost && !item.isFreeItem && (
+                                  <div className="flex flex-col items-end text-xs leading-tight">
+                                    {showCostInfo && item.landingCost && (
+                                      <span className="text-slate-500 dark:text-slate-400">
+                                        {formatCurrency(item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                    {showProfitInfo && item.landingCost && item.price > 0 && (
+                                      <span className={`font-medium ${(item.price - item.landingCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {formatCurrency(item.price - item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Price input/display */}
                                 {item.isFreeItem ? (
-                                  <>
+                                  <div className="flex flex-col items-end gap-0.5">
                                     <span className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
                                     {item.originalPrice && item.originalPrice > 0 && (
                                       <span className="text-xs text-slate-400 line-through">{formatCurrency(item.originalPrice, form.watch('currency'))}</span>
                                     )}
-                                  </>
+                                  </div>
                                 ) : (
-                                  <>
-                                    <MathInput
-                                      min={0}
-                                      step={0.01}
-                                      value={item.price}
-                                      onChange={(val) => updateOrderItem(item.id, 'price', val)}
-                                      className="w-20 h-9 text-right"
-                                      data-testid={`input-price-${item.id}`}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === 'Tab') {
-                                          e.preventDefault();
-                                          const nextInput = showDiscountColumn
-                                            ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
-                                            : showVatColumn
-                                            ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                            : null;
-                                          
-                                          if (nextInput) {
-                                            (nextInput as HTMLInputElement).focus();
-                                          } else {
-                                            const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                            if (currentIndex < orderItems.length - 1) {
-                                              const nextItem = orderItems[currentIndex + 1];
-                                              const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                              nextRowInput?.focus();
-                                            }
+                                  <MathInput
+                                    min={0}
+                                    step={0.01}
+                                    value={item.price}
+                                    onChange={(val) => updateOrderItem(item.id, 'price', val)}
+                                    className="w-20 h-9 text-right"
+                                    data-testid={`input-price-${item.id}`}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === 'Tab') {
+                                        e.preventDefault();
+                                        const nextInput = showDiscountColumn
+                                          ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
+                                          : showVatColumn
+                                          ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                          : null;
+                                        
+                                        if (nextInput) {
+                                          (nextInput as HTMLInputElement).focus();
+                                        } else {
+                                          const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                          if (currentIndex < orderItems.length - 1) {
+                                            const nextItem = orderItems[currentIndex + 1];
+                                            const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                            nextRowInput?.focus();
                                           }
                                         }
-                                      }}
-                                    />
-                                  </>
-                                )}
-                                {/* Inline Cost & Profit display for admin */}
-                                {(showCostInfo || showProfitInfo) && canViewImportCost && !item.isFreeItem && (
-                                  <div className="flex items-center gap-1.5 text-xs mt-0.5">
-                                    {showCostInfo && item.landingCost && (
-                                      <span className="text-slate-500 dark:text-slate-400">
-                                        {t('orders:cost')}: {formatCurrency(item.landingCost, form.watch('currency'))}
-                                      </span>
-                                    )}
-                                    {showCostInfo && showProfitInfo && item.landingCost && (
-                                      <span className="text-slate-300 dark:text-slate-600">|</span>
-                                    )}
-                                    {showProfitInfo && item.landingCost && item.price > 0 && (
-                                      <span className={`font-medium ${(item.price - item.landingCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {t('orders:profit')}: {formatCurrency(item.price - item.landingCost, form.watch('currency'))}
-                                      </span>
-                                    )}
-                                  </div>
+                                      }
+                                    }}
+                                  />
                                 )}
                               </div>
                             </TableCell>
