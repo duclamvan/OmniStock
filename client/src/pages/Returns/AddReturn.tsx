@@ -96,9 +96,9 @@ export default function AddReturn() {
     queryKey: ['/api/customers'],
   });
 
-  // Fetch orders
+  // Fetch orders with items included
   const { data: orders = [] } = useQuery<any[]>({
-    queryKey: ['/api/orders'],
+    queryKey: ['/api/orders?includeItems=true'],
   });
 
   // Fetch products
