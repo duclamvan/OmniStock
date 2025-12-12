@@ -100,6 +100,8 @@ interface Product {
   name: string;
   sku: string;
   priceEur: string | null;
+  priceCzk: string | null;
+  priceUsd: string | null;
   categoryId: string | null;
 }
 
@@ -315,6 +317,38 @@ export default function AddService() {
     setProductSearchTerms(newSearchTerms);
   };
 
+  const selectedCurrency = form.watch('currency') || 'EUR';
+  
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: Record<string, string> = {
+      'USD': '$',
+      'EUR': '€',
+      'CZK': 'Kč',
+      'VND': '₫',
+      'CNY': '¥'
+    };
+    return symbols[currency] || currency;
+  };
+  
+  const currencySymbol = getCurrencySymbol(selectedCurrency);
+
+  const formatCurrency = (amount: number) => {
+    return selectedCurrency === 'CZK' 
+      ? `${amount.toFixed(2)} ${currencySymbol}`
+      : `${currencySymbol}${amount.toFixed(2)}`;
+  };
+  
+  const getProductPrice = (product: Product): string => {
+    if (selectedCurrency === 'CZK' && product.priceCzk) {
+      return product.priceCzk;
+    } else if (selectedCurrency === 'USD' && product.priceUsd) {
+      return product.priceUsd;
+    } else if (product.priceEur) {
+      return product.priceEur;
+    }
+    return '0';
+  };
+
   const handleProductNameChange = (index: number, searchTerm: string) => {
     setProductSearchTerms(prev => ({ ...prev, [index]: searchTerm }));
     
@@ -326,14 +360,15 @@ export default function AddService() {
     );
     
     if (matchingProduct) {
-      // Product from inventory - auto-fill price
+      // Product from inventory - auto-fill price based on selected currency
+      const productPrice = getProductPrice(matchingProduct);
       updated[index] = {
         ...updated[index],
         productId: matchingProduct.id,
         productName: matchingProduct.name,
         sku: matchingProduct.sku,
-        unitPrice: matchingProduct.priceEur || '0',
-        totalPrice: (updated[index].quantity * parseFloat(matchingProduct.priceEur || '0')).toFixed(2),
+        unitPrice: productPrice,
+        totalPrice: (updated[index].quantity * parseFloat(productPrice)).toFixed(2),
         isCustom: false,
       };
     } else {
@@ -356,14 +391,15 @@ export default function AddService() {
     
     setProductSearchTerms(prev => ({ ...prev, [index]: product.name }));
     
+    const productPrice = getProductPrice(product);
     const updated = [...serviceItems];
     updated[index] = {
       ...updated[index],
       productId: product.id,
       productName: product.name,
       sku: product.sku,
-      unitPrice: product.priceEur || '0',
-      totalPrice: (updated[index].quantity * parseFloat(product.priceEur || '0')).toFixed(2),
+      unitPrice: productPrice,
+      totalPrice: (updated[index].quantity * parseFloat(productPrice)).toFixed(2),
       isCustom: false,
     };
     setServiceItems(updated);
@@ -381,21 +417,6 @@ export default function AddService() {
     }
     
     setServiceItems(updated);
-  };
-
-  const formatCurrency = (amount: number) => {
-    const currency = form.watch('currency') || 'EUR';
-    const symbols: Record<string, string> = {
-      'USD': '$',
-      'EUR': '€',
-      'CZK': 'Kč',
-      'VND': '₫',
-      'CNY': '¥'
-    };
-    const symbol = symbols[currency] || currency;
-    return currency === 'CZK' 
-      ? `${amount.toFixed(2)} ${symbol}`
-      : `${symbol}${amount.toFixed(2)}`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -786,7 +807,7 @@ export default function AddService() {
 
                     <div>
                       <Label htmlFor="serviceCost" className="text-sm font-medium mb-2">
-                        {t('financial:serviceLaborCost')} (€)
+                        {t('financial:serviceLaborCost')} ({currencySymbol})
                       </Label>
                       <Input
                         id="serviceCost"
@@ -905,7 +926,7 @@ export default function AddService() {
                                         data-testid={`suggestion-${product.id}`}
                                       >
                                         <span className="font-medium">{product.name}</span>
-                                        <span className="text-xs text-slate-500">€{parseFloat(product.priceEur || '0').toFixed(2)}</span>
+                                        <span className="text-xs text-slate-500">{formatCurrency(parseFloat(getProductPrice(product)))}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -927,7 +948,7 @@ export default function AddService() {
 
                               {/* Unit Price - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:price')} (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:price')} ({currencySymbol})</Label>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -940,7 +961,7 @@ export default function AddService() {
 
                               {/* Total - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs font-medium mb-1.5 block">{t('common:total')} (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">{t('common:total')} ({currencySymbol})</Label>
                                 <Input
                                   type="text"
                                   value={formatCurrency(parseFloat(item.totalPrice || '0'))}
