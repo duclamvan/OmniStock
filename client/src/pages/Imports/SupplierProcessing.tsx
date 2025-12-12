@@ -605,7 +605,7 @@ export default function SupplierProcessing() {
 
   if (isLoading) {
     return (
-      <div className="px-4 py-4 md:p-6">
+      <div className="p-2 sm:p-3 lg:p-4">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -615,7 +615,7 @@ export default function SupplierProcessing() {
 
   return (
     <TooltipProvider>
-      <div className="p-2 sm:p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
+      <div className="p-2 sm:p-3 lg:p-4 space-y-3 lg:space-y-4 overflow-x-hidden w-full max-w-none">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -631,7 +631,7 @@ export default function SupplierProcessing() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 lg:gap-3">
           <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium">{t('totalPurchases')}</CardTitle>
