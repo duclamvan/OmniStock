@@ -1165,6 +1165,32 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       
                       {/* Product Image */}
                       <div className="flex-shrink-0 relative">
+                        {/* Offer Badge - positioned above image */}
+                        {item.appliedDiscountLabel && (
+                          <div className="absolute -top-2 -left-1 z-10">
+                            {item.appliedDiscountType === 'buy_x_get_y' ? (
+                              <div className="flex items-center gap-0.5 bg-green-600 text-white rounded px-1 py-0.5 text-[9px] font-bold shadow-sm">
+                                <Gift className="h-2.5 w-2.5" />
+                                <span>OFFER</span>
+                              </div>
+                            ) : item.appliedDiscountType === 'percentage' ? (
+                              <div className="flex items-center gap-0.5 bg-orange-500 text-white rounded px-1 py-0.5 text-[9px] font-bold shadow-sm">
+                                <Percent className="h-2.5 w-2.5" />
+                                <span>SALE</span>
+                              </div>
+                            ) : item.appliedDiscountType === 'fixed' ? (
+                              <div className="flex items-center gap-0.5 bg-blue-500 text-white rounded px-1 py-0.5 text-[9px] font-bold shadow-sm">
+                                <Tag className="h-2.5 w-2.5" />
+                                <span>DEAL</span>
+                              </div>
+                            ) : isPromotionalFreeItem ? (
+                              <div className="flex items-center gap-0.5 bg-green-600 text-white rounded px-1 py-0.5 text-[9px] font-bold shadow-sm">
+                                <Gift className="h-2.5 w-2.5" />
+                                <span>FREE</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
                         {item.image ? (
                           <img 
                             src={item.image} 
