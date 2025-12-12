@@ -4560,38 +4560,41 @@ export default function AddOrder() {
                                   )}
                                 </div>
                                 
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-2">
-                                    {item.serviceId && <Wrench className="h-4 w-4 text-orange-500" />}
+                                <div className="flex flex-col gap-1 min-w-0">
+                                  <div className="flex items-start gap-1">
+                                    {item.serviceId && <Wrench className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />}
                                     <span className={`font-medium ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
                                       {item.productName}
                                     </span>
-                                  {item.isFreeItem && (
-                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
-                                      {t('orders:freeItem')}
-                                    </Badge>
-                                  )}
-                                  {item.variantName && (
-                                    <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
-                                      {item.variantName}
-                                    </Badge>
-                                  )}
-                                  {item.bundleId && (
-                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                      {t('orders:bundle')}
-                                    </Badge>
-                                  )}
-                                  {item.serviceId && (
-                                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                      {t('orders:service')}
-                                    </Badge>
-                                  )}
-                                  {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
-                                    <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                      {t('orders:offer')}: {item.appliedDiscountLabel}
-                                    </Badge>
-                                  )}
-                                </div>
+                                  </div>
+                                  {/* Badges row - separate from product name for better alignment */}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {item.isFreeItem && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                                        {t('orders:freeItem')}
+                                      </Badge>
+                                    )}
+                                    {item.variantName && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700">
+                                        {item.variantName}
+                                      </Badge>
+                                    )}
+                                    {item.bundleId && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
+                                        {t('orders:bundle')}
+                                      </Badge>
+                                    )}
+                                    {item.serviceId && (
+                                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                        {t('orders:service')}
+                                      </Badge>
+                                    )}
+                                    {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
+                                        {t('orders:offer')}: {item.appliedDiscountLabel}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
                                 </span>
