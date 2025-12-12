@@ -1194,6 +1194,10 @@ const orders = {
   addCarton: 'Add Carton',
   aiOptimize: 'AI Optimize',
   standardBox: 'Standard Box',
+  itemQuantityWeight: '×{{quantity}} ({{weight}} kg)',
+  carrierValid: 'Meets carrier requirements',
+  carrierInvalid: 'Exceeds limits',
+  estimatedShipping: 'Est. shipping',
 
   // PickPack.tsx - Comprehensive Translation Keys
   // Default values & placeholders

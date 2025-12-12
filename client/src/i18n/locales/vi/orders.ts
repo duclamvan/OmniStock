@@ -483,6 +483,19 @@ const orders = {
   cartonType: 'Loại thùng',
   recommendedCartons: 'Thùng đề xuất',
   
+  // AICartonPackingPanel Component
+  cartonPacking: 'Đóng gói thùng',
+  addCarton: 'Thêm thùng',
+  aiOptimize: 'Tối ưu AI',
+  standardBox: 'Thùng tiêu chuẩn',
+  itemQuantityWeight: '×{{quantity}} ({{weight}} kg)',
+  carrierValid: 'Đạt yêu cầu vận chuyển',
+  carrierInvalid: 'Vượt giới hạn',
+  estimatedShipping: 'Phí vận chuyển ước tính',
+  cartonsCount: '{{count}} thùng',
+  cartonsCount_plural: '{{count}} thùng',
+  totalWeight: 'Tổng khối lượng: {{weight}} kg',
+  
   // AllOrders Page
   allOrders: 'Tất cả đơn hàng',
   ordersToFulfill: 'Đơn hàng chờ xử lý',
