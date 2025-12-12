@@ -1901,6 +1901,9 @@ export default function AddOrder() {
       return;
     }
     
+    // Track consumed free slots within this batch to prevent over-allocation
+    const consumedFreeSlots: Record<string, number> = {};
+    
     for (const [variantId, quantity] of variantsToAdd) {
       const variant = productVariants.find(v => v.id === variantId);
       if (!variant) continue;
@@ -1935,33 +1938,100 @@ export default function AddOrder() {
       const productCategoryId = selectedProductForVariant.categoryId?.toString() || null;
       const availableFreeSlot = findAvailableFreeSlots(productCategoryId);
       
-      // If there are available free slots for this category, add as free item
-      if (availableFreeSlot && availableFreeSlot.remainingFreeSlots > 0) {
-        const newItem: OrderItem = {
-          id: Math.random().toString(36).substr(2, 9),
-          productId: selectedProductForVariant.id,
-          variantId: variant.id,
-          variantName: variant.name,
-          productName: `${selectedProductForVariant.name} - ${variant.name}`,
-          sku: variant.barcode || selectedProductForVariant.sku,
-          quantity: quantity,
-          price: 0,
-          originalPrice: productPrice,
-          discount: 0,
-          discountPercentage: 0,
-          tax: 0,
-          total: 0,
-          landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
-          image: variant.photo || selectedProductForVariant.image || null,
-          appliedDiscountId: availableFreeSlot.discountId,
-          appliedDiscountLabel: availableFreeSlot.discountName,
-          appliedDiscountType: 'buy_x_get_y',
-          appliedDiscountScope: 'specific_category',
-          categoryId: productCategoryId,
-          isFreeItem: true,
-        };
+      // Calculate effective remaining slots (subtract already consumed in this batch)
+      const discountKey = availableFreeSlot ? `${availableFreeSlot.discountId}-${availableFreeSlot.categoryId}` : '';
+      const alreadyConsumed = consumedFreeSlots[discountKey] || 0;
+      const effectiveRemainingSlots = availableFreeSlot 
+        ? Math.max(0, availableFreeSlot.remainingFreeSlots - alreadyConsumed) 
+        : 0;
+      
+      // If there are available free slots for this category, split between free and paid
+      if (availableFreeSlot && effectiveRemainingSlots > 0) {
+        const freeQty = Math.min(quantity, effectiveRemainingSlots);
         
-        setOrderItems(items => [...items, newItem]);
+        // Track consumed slots for this batch
+        consumedFreeSlots[discountKey] = alreadyConsumed + freeQty;
+        const paidQty = quantity - freeQty;
+        
+        // Add free item(s)
+        if (freeQty > 0) {
+          const freeItem: OrderItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            productId: selectedProductForVariant.id,
+            variantId: variant.id,
+            variantName: variant.name,
+            productName: `${selectedProductForVariant.name} - ${variant.name}`,
+            sku: variant.barcode || selectedProductForVariant.sku,
+            quantity: freeQty,
+            price: 0,
+            originalPrice: productPrice,
+            discount: 0,
+            discountPercentage: 0,
+            tax: 0,
+            total: 0,
+            landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+            image: variant.photo || selectedProductForVariant.image || null,
+            appliedDiscountId: availableFreeSlot.discountId,
+            appliedDiscountLabel: availableFreeSlot.discountName,
+            appliedDiscountType: 'buy_x_get_y',
+            appliedDiscountScope: 'specific_category',
+            categoryId: productCategoryId,
+            isFreeItem: true,
+          };
+          
+          setOrderItems(items => [...items, freeItem]);
+        }
+        
+        // Add paid item(s) if there's overflow
+        if (paidQty > 0) {
+          // Check for applicable discount for paid items
+          const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
+          let discountAmount = 0;
+          let discountPct = 0;
+          let discountLabel = '';
+          let discountId = null;
+          let discountType = null;
+          let discountScope = null;
+          
+          if (applicableDiscount && (applicableDiscount.type || applicableDiscount.discountType) !== 'buy_x_get_y') {
+            const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, paidQty);
+            if (applicableDiscount.type === 'percentage') {
+              discountPct = parseFloat(applicableDiscount.percentage || '0');
+              discountAmount = (productPrice * paidQty * discountPct) / 100;
+            } else {
+              discountAmount = discountResult.amount;
+            }
+            discountLabel = applicableDiscount.name || discountResult.label;
+            discountId = applicableDiscount.id;
+            discountType = applicableDiscount.type || applicableDiscount.discountType;
+            discountScope = applicableDiscount.applicationScope;
+          }
+          
+          const paidItem: OrderItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            productId: selectedProductForVariant.id,
+            variantId: variant.id,
+            variantName: variant.name,
+            productName: `${selectedProductForVariant.name} - ${variant.name}`,
+            sku: variant.barcode || selectedProductForVariant.sku,
+            quantity: paidQty,
+            price: productPrice,
+            discount: discountAmount,
+            discountPercentage: discountPct,
+            tax: 0,
+            total: productPrice * paidQty - discountAmount,
+            landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+            image: variant.photo || selectedProductForVariant.image || null,
+            appliedDiscountId: discountId,
+            appliedDiscountLabel: discountLabel || null,
+            appliedDiscountType: discountType,
+            appliedDiscountScope: discountScope,
+            categoryId: productCategoryId,
+            isFreeItem: false,
+          };
+          
+          setOrderItems(items => [...items, paidItem]);
+        }
       } else {
         // Check for applicable discount (non Buy X Get Y)
         const applicableDiscount = findApplicableDiscount(selectedProductForVariant.id, selectedProductForVariant.categoryId);
