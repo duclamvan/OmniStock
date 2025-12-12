@@ -1137,49 +1137,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
                 {order.items?.map((item: any, index: number) => {
-                  const isBuyXGetY = item.appliedDiscountType === 'buy_x_get_y';
-                  const hasFreeItems = (item.freeItemsCount ?? 0) > 0;
-                  // Detect free items: explicit flag, or price is 0 (likely a promotional free item)
                   const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.price) || 0;
-                  const isFreeItem = item.isFreeItem === true || 
-                    (unitPrice === 0 && item.appliedDiscountType === 'buy_x_get_y') ||
-                    (unitPrice === 0 && item.appliedDiscountLabel?.toLowerCase().includes('buy'));
-                  // Also detect if this is a zero-price promotional item
+                  // Detect promotional free items (price = 0)
                   const isPromotionalFreeItem = unitPrice === 0 && item.quantity > 0;
                   
                   return (
-                  <div key={item.id || index} className={cn(
-                    "px-3 sm:px-6 py-3 sm:py-4",
-                    isBuyXGetY && hasFreeItems && "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-l-4 border-l-green-500",
-                    (isFreeItem || isPromotionalFreeItem) && "bg-green-50 dark:bg-green-950/30 border-l-4 border-l-green-400"
-                  )}>
-                    {/* Buy X Get Y Offer Banner */}
-                    {isBuyXGetY && hasFreeItems && (
-                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-200 dark:border-green-800">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-600 dark:bg-green-700 text-white rounded-full text-xs font-bold shadow-sm">
-                          <Gift className="h-3.5 w-3.5" />
-                          <span>{t('orders:buyXGetYOffer')}</span>
-                        </div>
-                        <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                          {t('orders:getFreeItems', { count: item.freeItemsCount })}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Free Item Badge for promotional items with price 0 */}
-                    {isPromotionalFreeItem && !isBuyXGetY && (
-                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-200 dark:border-green-800">
-                        <Badge className="text-xs px-2 py-0.5 bg-green-600 text-white border-green-600 dark:bg-green-700 dark:border-green-700">
-                          <Gift className="h-3 w-3 mr-1" />
-                          {t('orders:freeItem')}
-                        </Badge>
-                        {item.appliedDiscountLabel && (
-                          <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                            {item.appliedDiscountLabel}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  <div key={item.id || index} className="px-3 sm:px-6 py-3 sm:py-4">
                     
                     <div className="flex items-start gap-3">
                       {showPickingMode && (
@@ -1206,29 +1169,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className={cn(
-                              "w-12 h-12 object-contain rounded border bg-slate-50 dark:bg-slate-900",
-                              (isBuyXGetY && hasFreeItems) || isPromotionalFreeItem ? "border-green-300 dark:border-green-700" : "border-slate-200 dark:border-gray-700"
-                            )}
+                            className="w-12 h-12 object-contain rounded border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-gray-700"
                           />
                         ) : (
-                          <div className={cn(
-                            "w-12 h-12 rounded border flex items-center justify-center",
-                            (isBuyXGetY && hasFreeItems) || isPromotionalFreeItem
-                              ? "bg-green-100 dark:bg-green-900/50 border-green-300 dark:border-green-700" 
-                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700"
-                          )}>
-                            {(isBuyXGetY && hasFreeItems) || isPromotionalFreeItem ? (
-                              <Gift className="h-6 w-6 text-green-500 dark:text-green-400" />
-                            ) : (
-                              <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
-                            )}
-                          </div>
-                        )}
-                        {/* Offer indicator badge on image */}
-                        {((isBuyXGetY && hasFreeItems) || isPromotionalFreeItem) && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow">
-                            <Gift className="h-3 w-3 text-white" />
+                          <div className="w-12 h-12 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
+                            <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                           </div>
                         )}
                       </div>
@@ -1272,9 +1217,20 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 {item.productName}
                               </p>
                             )}
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t('orders:skuColon')} {item.sku}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders:skuColon')} {item.sku}</p>
+                              {/* Promotional Free Item Badge - inline with SKU */}
+                              {isPromotionalFreeItem && item.appliedDiscountLabel && (
+                                <>
+                                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">{item.appliedDiscountLabel}</span>
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-green-600 text-white border-green-600 dark:bg-green-500 dark:border-green-500 font-bold">
+                                    {t('orders:freeItem')}
+                                  </Badge>
+                                </>
+                              )}
+                            </div>
                             {/* Discount Badge - Enhanced display for different discount types */}
-                            {item.appliedDiscountLabel && (
+                            {item.appliedDiscountLabel && !isPromotionalFreeItem && (
                               <div className="flex flex-wrap gap-1.5 mb-1.5">
                                 {/* Discount Type Badge */}
                                 {item.appliedDiscountType === 'percentage' && (
@@ -1372,6 +1328,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                     </p>
                                   </>
                                 )
+                              ) : isPromotionalFreeItem ? (
+                                <p className="font-bold text-base text-green-600 dark:text-green-400">
+                                  {formatCurrency(0, order.currency || 'EUR')}
+                                </p>
                               ) : (
                                 <p className="font-bold text-base text-slate-900 dark:text-slate-100">
                                   {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
@@ -1419,46 +1379,20 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </div>
                     </div>
                     
-                    {/* Free Items Row for Buy X Get Y Offers - Styled like AddOrder */}
+                    {/* Free Items Row for Buy X Get Y Offers - Minimal */}
                     {item.appliedDiscountType === 'buy_x_get_y' && (item.freeItemsCount ?? 0) > 0 && (
-                      <div className="px-3 sm:px-6 py-3 sm:py-4 bg-green-50 dark:bg-green-950/30 border-t border-green-200 dark:border-green-800">
-                        <div className="flex items-start gap-3">
-                          {/* Gift Icon */}
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
-                              <Gift className="h-6 w-6 text-green-600 dark:text-green-400" />
-                            </div>
-                          </div>
-                          
-                          {/* Free Item Details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-sm text-green-800 dark:text-green-200">
-                                    {item.productName}
-                                  </span>
-                                  <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
-                                    {t('orders:freeItem')}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-green-600 dark:text-green-400">{t('orders:qtyColon')}</span>
-                                  <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                                    {item.freeItemsCount}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              {/* Free Price */}
-                              <div className="text-right">
-                                <p className="font-bold text-base text-green-700 dark:text-green-300">
-                                  {formatCurrency(0, order.currency || 'EUR')}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                      <div className="mt-2 ml-15 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">+{item.freeItemsCount}×</span>
+                          <span className="text-xs text-slate-700 dark:text-slate-300">{item.productName}</span>
+                          <span className="text-xs text-green-600 dark:text-green-400 font-medium">{item.appliedDiscountLabel}</span>
+                          <Badge className="text-[10px] px-1.5 py-0 bg-green-600 text-white border-green-600 dark:bg-green-500 dark:border-green-500 font-bold">
+                            {t('orders:freeItem')}
+                          </Badge>
                         </div>
+                        <span className="font-bold text-sm text-green-600 dark:text-green-400">
+                          {formatCurrency(0, order.currency || 'EUR')}
+                        </span>
                       </div>
                     )}
                   </div>
