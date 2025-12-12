@@ -1612,38 +1612,26 @@ export default function AddOrder() {
   const addProductToOrder = async (product: any) => {
     // Check if this is a service
     if (product.isService) {
-      // Check if service already exists in order
-      const existingItem = orderItems.find(item => item.serviceId === product.id);
-
-      if (existingItem) {
-        setOrderItems(items =>
-          items.map(item =>
-            item.serviceId === product.id
-              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
-              : item
-          )
-        );
-      } else {
-        const servicePrice = parseFloat(product.totalCost || '0');
-        const newItem: OrderItem = {
-          id: Math.random().toString(36).substr(2, 9),
-          serviceId: product.id,
-          productName: product.name,
-          sku: 'SERVICE',
-          quantity: 1,
-          price: servicePrice,
-          discount: 0,
-          discountPercentage: 0,
-          tax: 0,
-          total: servicePrice,
-        };
-        setOrderItems(items => [...items, newItem]);
-        // Auto-focus quantity input for the newly added item
-        setTimeout(() => {
-          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-          quantityInput?.focus();
-        }, 100);
-      }
+      // Always add as a new line (even if service already exists)
+      const servicePrice = parseFloat(product.totalCost || '0');
+      const newItem: OrderItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        serviceId: product.id,
+        productName: product.name,
+        sku: 'SERVICE',
+        quantity: 1,
+        price: servicePrice,
+        discount: 0,
+        discountPercentage: 0,
+        tax: 0,
+        total: servicePrice,
+      };
+      setOrderItems(items => [...items, newItem]);
+      // Auto-focus quantity input for the newly added item
+      setTimeout(() => {
+        const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+        quantityInput?.focus();
+      }, 100);
     } else {
       // Check if product has variants
       try {
@@ -1664,171 +1652,159 @@ export default function AddOrder() {
       } catch (error) {
         console.error('Error fetching variants:', error);
       }
-      // Handle regular product
-      const existingItem = orderItems.find(item => item.productId === product.id);
+      // Handle regular product - always add as a new line
+      // Get the price based on the selected currency
+      const selectedCurrency = form.watch('currency') || 'EUR';
+      let productPrice = 0;
 
-      if (existingItem) {
-        setOrderItems(items =>
-          items.map(item =>
-            item.productId === product.id
-              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
-              : item
-          )
-        );
-      } else {
-        // Get the price based on the selected currency
-        const selectedCurrency = form.watch('currency') || 'EUR';
-        let productPrice = 0;
+      // Check for customer-specific pricing if a customer is selected
+      if (selectedCustomer?.id) {
+        try {
+          const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
+          if (response.ok) {
+            const customerPrices = await response.json();
+            const today = new Date();
 
-        // Check for customer-specific pricing if a customer is selected
-        if (selectedCustomer?.id) {
-          try {
-            const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
-            if (response.ok) {
-              const customerPrices = await response.json();
-              const today = new Date();
+            // Find applicable customer price for this product and currency
+            const applicablePrice = customerPrices.find((cp: any) => {
+              const validFrom = new Date(cp.validFrom);
+              const validTo = cp.validTo ? new Date(cp.validTo) : null;
 
-              // Find applicable customer price for this product and currency
-              const applicablePrice = customerPrices.find((cp: any) => {
-                const validFrom = new Date(cp.validFrom);
-                const validTo = cp.validTo ? new Date(cp.validTo) : null;
+              return cp.productId === product.id &&
+                     cp.currency === selectedCurrency &&
+                     cp.isActive &&
+                     validFrom <= today &&
+                     (!validTo || validTo >= today);
+            });
 
-                return cp.productId === product.id &&
-                       cp.currency === selectedCurrency &&
-                       cp.isActive &&
-                       validFrom <= today &&
-                       (!validTo || validTo >= today);
+            if (applicablePrice) {
+              productPrice = parseFloat(applicablePrice.price);
+              toast({
+                title: t('orders:customerPriceApplied'),
+                description: t('orders:customerPriceAppliedDesc', { price: productPrice, currency: selectedCurrency }),
               });
-
-              if (applicablePrice) {
-                productPrice = parseFloat(applicablePrice.price);
-                toast({
-                  title: t('orders:customerPriceApplied'),
-                  description: t('orders:customerPriceAppliedDesc', { price: productPrice, currency: selectedCurrency }),
-                });
-              }
             }
-          } catch (error) {
-            console.error('Error fetching customer prices:', error);
           }
+        } catch (error) {
+          console.error('Error fetching customer prices:', error);
         }
+      }
 
-        // If no customer price found, use default product price (considering sale type)
-        if (productPrice === 0) {
-          const currentSaleType = form.watch('saleType') || 'retail';
-          
-          if (currentSaleType === 'wholesale') {
-            // Use bulk/wholesale prices if available
-            if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
-              productPrice = parseFloat(product.bulkPriceCzk);
-            } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
-              productPrice = parseFloat(product.bulkPriceEur);
-            } else if (product.bulkPriceEur || product.bulkPriceCzk) {
-              productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
-            }
-          }
-          
-          // Fallback to retail prices if no wholesale price or retail mode
-          if (productPrice === 0) {
-            if (selectedCurrency === 'CZK' && product.priceCzk) {
-              productPrice = parseFloat(product.priceCzk);
-            } else if (selectedCurrency === 'EUR' && product.priceEur) {
-              productPrice = parseFloat(product.priceEur);
-            } else {
-              // Fallback to any available price if specific currency price is not available
-              productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
-            }
-          }
-        }
-
-        // Check for applicable discount
-        const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
-        let discountAmount = 0;
-        let discountLabel = '';
-        let discountId = null;
-        let discountType = null;
-        let discountScope = null;
+      // If no customer price found, use default product price (considering sale type)
+      if (productPrice === 0) {
+        const currentSaleType = form.watch('saleType') || 'retail';
         
-        console.log('🎯 Discount lookup:', { 
-          productId: product.id, 
-          categoryId: product.categoryId, 
-          discount: applicableDiscount,
-          allDiscounts: discounts 
+        if (currentSaleType === 'wholesale') {
+          // Use bulk/wholesale prices if available
+          if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+            productPrice = parseFloat(product.bulkPriceCzk);
+          } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+            productPrice = parseFloat(product.bulkPriceEur);
+          } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+            productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+          }
+        }
+        
+        // Fallback to retail prices if no wholesale price or retail mode
+        if (productPrice === 0) {
+          if (selectedCurrency === 'CZK' && product.priceCzk) {
+            productPrice = parseFloat(product.priceCzk);
+          } else if (selectedCurrency === 'EUR' && product.priceEur) {
+            productPrice = parseFloat(product.priceEur);
+          } else {
+            // Fallback to any available price if specific currency price is not available
+            productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          }
+        }
+      }
+
+      // Check for applicable discount
+      const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
+      let discountAmount = 0;
+      let discountLabel = '';
+      let discountId = null;
+      let discountType = null;
+      let discountScope = null;
+      
+      console.log('🎯 Discount lookup:', { 
+        productId: product.id, 
+        categoryId: product.categoryId, 
+        discount: applicableDiscount,
+        allDiscounts: discounts 
+      });
+      
+      let discountPct = 0;
+      let freeItemsCount = 0;
+      let buyXGetYBuyQty: number | undefined;
+      let buyXGetYGetQty: number | undefined;
+      
+      if (applicableDiscount) {
+        const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
+        console.log('🎯 Discount calculation:', { 
+          price: productPrice, 
+          qty: 1, 
+          type: applicableDiscount.type, 
+          percentage: applicableDiscount.percentage, 
+          value: applicableDiscount.value, 
+          applicationScope: applicableDiscount.applicationScope,
+          result: discountResult 
         });
         
-        let discountPct = 0;
-        let freeItemsCount = 0;
-        let buyXGetYBuyQty: number | undefined;
-        let buyXGetYGetQty: number | undefined;
-        
-        if (applicableDiscount) {
-          const discountResult = calculateDiscountAmount(applicableDiscount, productPrice, 1);
-          console.log('🎯 Discount calculation:', { 
-            price: productPrice, 
-            qty: 1, 
-            type: applicableDiscount.type, 
-            percentage: applicableDiscount.percentage, 
-            value: applicableDiscount.value, 
-            applicationScope: applicableDiscount.applicationScope,
-            result: discountResult 
-          });
-          
-          if (applicableDiscount.type === 'percentage') {
-            discountPct = parseFloat(applicableDiscount.percentage || '0');
-            discountAmount = (productPrice * discountPct) / 100;
-          } else {
-            discountAmount = discountResult.amount;
-          }
-          discountLabel = applicableDiscount.name || discountResult.label;
-          discountId = applicableDiscount.id;
-          discountType = applicableDiscount.type || applicableDiscount.discountType;
-          discountScope = applicableDiscount.applicationScope;
-          
-          // Track buy_x_get_y info
-          if (discountResult.freeItemsCount !== undefined) {
-            freeItemsCount = discountResult.freeItemsCount;
-            buyXGetYBuyQty = discountResult.buyQty;
-            buyXGetYGetQty = discountResult.getQty;
-          }
+        if (applicableDiscount.type === 'percentage') {
+          discountPct = parseFloat(applicableDiscount.percentage || '0');
+          discountAmount = (productPrice * discountPct) / 100;
+        } else {
+          discountAmount = discountResult.amount;
         }
-
-        const newItem: OrderItem = {
-          id: Math.random().toString(36).substr(2, 9),
-          productId: product.id,
-          productName: product.name,
-          sku: product.sku,
-          quantity: 1,
-          price: productPrice,
-          discount: discountAmount,
-          discountPercentage: discountPct,
-          tax: 0,
-          total: productPrice - discountAmount,
-          landingCost: product.landingCost || product.latestLandingCost || null,
-          image: product.image || null,
-          appliedDiscountId: discountId,
-          appliedDiscountLabel: discountLabel || null,
-          appliedDiscountType: discountType,
-          appliedDiscountScope: discountScope,
-          freeItemsCount,
-          buyXGetYBuyQty,
-          buyXGetYGetQty,
-        };
+        discountLabel = applicableDiscount.name || discountResult.label;
+        discountId = applicableDiscount.id;
+        discountType = applicableDiscount.type || applicableDiscount.discountType;
+        discountScope = applicableDiscount.applicationScope;
         
-        // Show toast if discount was applied
-        if (discountAmount > 0) {
-          toast({
-            title: t('orders:discountApplied'),
-            description: `${discountLabel}: -${formatCurrency(discountAmount, form.watch('currency'))}`,
-          });
+        // Track buy_x_get_y info
+        if (discountResult.freeItemsCount !== undefined) {
+          freeItemsCount = discountResult.freeItemsCount;
+          buyXGetYBuyQty = discountResult.buyQty;
+          buyXGetYGetQty = discountResult.getQty;
         }
-        
-        setOrderItems(items => [...items, newItem]);
-        // Auto-focus quantity input for the newly added item
-        setTimeout(() => {
-          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-          quantityInput?.focus();
-        }, 100);
       }
+
+      const newItem: OrderItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: 1,
+        price: productPrice,
+        discount: discountAmount,
+        discountPercentage: discountPct,
+        tax: 0,
+        total: productPrice - discountAmount,
+        landingCost: product.landingCost || product.latestLandingCost || null,
+        image: product.image || null,
+        appliedDiscountId: discountId,
+        appliedDiscountLabel: discountLabel || null,
+        appliedDiscountType: discountType,
+        appliedDiscountScope: discountScope,
+        freeItemsCount,
+        buyXGetYBuyQty,
+        buyXGetYGetQty,
+      };
+      
+      // Show toast if discount was applied
+      if (discountAmount > 0) {
+        toast({
+          title: t('orders:discountApplied'),
+          description: `${discountLabel}: -${formatCurrency(discountAmount, form.watch('currency'))}`,
+        });
+      }
+      
+      setOrderItems(items => [...items, newItem]);
+      // Auto-focus quantity input for the newly added item
+      setTimeout(() => {
+        const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+        quantityInput?.focus();
+      }, 100);
     }
     setProductSearch("");
     setShowProductDropdown(false);
