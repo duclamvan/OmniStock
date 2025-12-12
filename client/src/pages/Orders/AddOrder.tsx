@@ -401,6 +401,16 @@ export default function AddOrder() {
   // Track if changes were made after order creation
   const [hasChangesAfterSave, setHasChangesAfterSave] = useState(false);
   
+  // Ref to track saved order items for change detection
+  const savedOrderItemsRef = useRef<string>('');
+  
+  // Helper to mark changes after save
+  const markChangesAfterSave = useCallback(() => {
+    if (orderId) {
+      setHasChangesAfterSave(true);
+    }
+  }, [orderId]);
+  
   // Ref to track customer creation in progress to prevent duplicates
   const customerCreationInProgress = useRef<Promise<string | null> | null>(null);
   const createdCustomerIdRef = useRef<string | null>(null);
@@ -410,66 +420,6 @@ export default function AddOrder() {
     createdCustomerIdRef.current = null;
     customerCreationInProgress.current = null;
   }, [selectedCustomer?.id, selectedCustomer?.name, selectedCustomer?.phone]);
-
-  // Apply customer-specific pricing when customer is selected
-  useEffect(() => {
-    const applyCustomerPricing = async () => {
-      if (!selectedCustomer?.id || orderItems.length === 0) return;
-      
-      try {
-        const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
-        if (!response.ok) return;
-        
-        const customerPrices = await response.json();
-        if (!customerPrices || customerPrices.length === 0) return;
-        
-        const today = new Date();
-        const selectedCurrency = form.watch('currency') || 'EUR';
-        let pricesApplied = 0;
-        
-        setOrderItems(items => items.map(item => {
-          // Skip services and items without productId
-          if (item.serviceId || !item.productId) return item;
-          
-          // Find applicable customer price for this product and currency
-          const applicablePrice = customerPrices.find((cp: any) => {
-            const validFrom = new Date(cp.validFrom);
-            const validTo = cp.validTo ? new Date(cp.validTo) : null;
-            
-            return cp.productId === item.productId &&
-                   cp.currency === selectedCurrency &&
-                   cp.isActive &&
-                   validFrom <= today &&
-                   (!validTo || validTo >= today);
-          });
-          
-          if (applicablePrice) {
-            const newPrice = parseFloat(applicablePrice.price);
-            pricesApplied++;
-            return {
-              ...item,
-              price: newPrice,
-              total: item.quantity * newPrice * (1 - item.discountPercentage / 100) + item.tax,
-              hasCustomerPrice: true
-            };
-          }
-          
-          return item;
-        }));
-        
-        if (pricesApplied > 0) {
-          toast({
-            title: t('orders:customerPriceApplied'),
-            description: t('orders:customerPricesAppliedCount', { count: pricesApplied }),
-          });
-        }
-      } catch (error) {
-        console.error('Error applying customer pricing:', error);
-      }
-    };
-    
-    applyCustomerPricing();
-  }, [selectedCustomer?.id]);
 
   // Shipping notes state
   const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
@@ -795,6 +745,88 @@ export default function AddOrder() {
       setShowDiscount(true);
     }
   }, [form.watch('discountValue'), showDiscount]);
+
+  // Track form changes after order creation using form's watch
+  useEffect(() => {
+    if (!orderId) return;
+    
+    // Subscribe to all form changes
+    const subscription = form.watch(() => {
+      setHasChangesAfterSave(true);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [orderId, form]);
+  
+  // Track order items changes after order creation
+  useEffect(() => {
+    if (!orderId) return;
+    
+    const currentItems = JSON.stringify(orderItems);
+    if (savedOrderItemsRef.current && currentItems !== savedOrderItemsRef.current) {
+      setHasChangesAfterSave(true);
+    }
+  }, [orderId, orderItems]);
+
+  // Apply customer-specific pricing when customer is selected
+  useEffect(() => {
+    const applyCustomerPricing = async () => {
+      if (!selectedCustomer?.id || orderItems.length === 0) return;
+      
+      try {
+        const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
+        if (!response.ok) return;
+        
+        const customerPrices = await response.json();
+        if (!customerPrices || customerPrices.length === 0) return;
+        
+        const today = new Date();
+        const selectedCurrency = form.watch('currency') || 'EUR';
+        let pricesApplied = 0;
+        
+        setOrderItems(items => items.map(item => {
+          // Skip services and items without productId
+          if (item.serviceId || !item.productId) return item;
+          
+          // Find applicable customer price for this product and currency
+          const applicablePrice = customerPrices.find((cp: any) => {
+            const validFrom = new Date(cp.validFrom);
+            const validTo = cp.validTo ? new Date(cp.validTo) : null;
+            
+            return cp.productId === item.productId &&
+                   cp.currency === selectedCurrency &&
+                   cp.isActive &&
+                   validFrom <= today &&
+                   (!validTo || validTo >= today);
+          });
+          
+          if (applicablePrice) {
+            const newPrice = parseFloat(applicablePrice.price);
+            pricesApplied++;
+            return {
+              ...item,
+              price: newPrice,
+              total: item.quantity * newPrice * (1 - item.discountPercentage / 100) + item.tax,
+              hasCustomerPrice: true
+            };
+          }
+          
+          return item;
+        }));
+        
+        if (pricesApplied > 0) {
+          toast({
+            title: t('orders:customerPriceApplied'),
+            description: t('orders:customerPricesAppliedCount', { count: pricesApplied }),
+          });
+        }
+      } catch (error) {
+        console.error('Error applying customer pricing:', error);
+      }
+    };
+    
+    applyCustomerPricing();
+  }, [selectedCustomer?.id]);
 
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
@@ -1414,6 +1446,10 @@ export default function AddOrder() {
       
       // Set the order ID so packing optimization can be run
       setOrderId(createdOrder.id);
+      
+      // Save the current order items snapshot for change detection
+      savedOrderItemsRef.current = JSON.stringify(orderItems);
+      setHasChangesAfterSave(false);
       
       // Save packing plan if one was generated before order creation
       if (packingPlan) {
@@ -5921,25 +5957,47 @@ export default function AddOrder() {
 
                     <div className="pt-3 space-y-2">
                       {orderId ? (
-                        <>
-                          <Button 
-                            type="button" 
-                            className="w-full" 
-                            size="lg" 
-                            onClick={() => setLocation(`/orders/${orderId}`)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            {t('orders:viewOrder')}
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            className="w-full" 
-                            onClick={() => setLocation('/orders')}
-                          >
-                            {t('orders:backToOrders')}
-                          </Button>
-                        </>
+                        hasChangesAfterSave ? (
+                          <>
+                            <Button 
+                              type="submit" 
+                              className="w-full" 
+                              size="lg"
+                              disabled={createOrderMutation.isPending}
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              className="w-full" 
+                              onClick={() => setLocation(`/orders/${orderId}`)}
+                            >
+                              {t('orders:cancelChanges')}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              type="button" 
+                              className="w-full" 
+                              size="lg" 
+                              onClick={() => setLocation(`/orders/${orderId}`)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {t('orders:viewOrder')}
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              className="w-full" 
+                              onClick={() => setLocation('/orders')}
+                            >
+                              {t('orders:backToOrders')}
+                            </Button>
+                          </>
+                        )
                       ) : (
                         <>
                           <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
@@ -6133,25 +6191,47 @@ export default function AddOrder() {
 
               <div className="pt-3 space-y-2">
                 {orderId ? (
-                  <>
-                    <Button 
-                      type="button" 
-                      className="w-full" 
-                      size="lg" 
-                      onClick={() => setLocation(`/orders/${orderId}`)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      {t('orders:viewOrder')}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => setLocation('/orders')}
-                    >
-                      {t('orders:backToOrders')}
-                    </Button>
-                  </>
+                  hasChangesAfterSave ? (
+                    <>
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        size="lg"
+                        disabled={createOrderMutation.isPending}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={() => setLocation(`/orders/${orderId}`)}
+                      >
+                        {t('orders:cancelChanges')}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        type="button" 
+                        className="w-full" 
+                        size="lg" 
+                        onClick={() => setLocation(`/orders/${orderId}`)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {t('orders:viewOrder')}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={() => setLocation('/orders')}
+                      >
+                        {t('orders:backToOrders')}
+                      </Button>
+                    </>
+                  )
                 ) : (
                   <>
                     <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
