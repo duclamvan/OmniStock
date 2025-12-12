@@ -30,9 +30,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Euro,
   Scan
 } from "lucide-react";
+import { getCurrencySymbol, Currency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
 import {
   Command,
@@ -86,6 +86,8 @@ export default function AddReturn() {
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [currency, setCurrency] = useState<Currency>("EUR");
   const [barcodeInput, setBarcodeInput] = useState("");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -206,6 +208,7 @@ export default function AddReturn() {
 
   const handleOrderSelect = (order: any) => {
     setSelectedOrder(order);
+    setCurrency((order.currency || 'EUR') as Currency);
     
     // Auto-populate items from order
     if (order.items && order.items.length > 0) {
@@ -413,8 +416,6 @@ export default function AddReturn() {
     }
   };
 
-  const selectedCustomer = customers.find((c: any) => c.id === watchCustomerId);
-  
   // Calculate totals
   const returnTotal = fields.reduce((sum, field, index) => {
     const quantity = form.watch(`items.${index}.quantity`) || 0;
@@ -509,6 +510,15 @@ export default function AddReturn() {
                                 form.setValue("customerId", customer.id);
                                 form.setValue("orderId", ""); // Reset order when customer changes
                                 setSelectedOrder(null);
+                                setSelectedCustomer(customer);
+                                // Auto-detect currency from customer's most recent order
+                                const customerOrdersList = orders.filter((o: any) => o.customerId === customer.id);
+                                if (customerOrdersList.length > 0) {
+                                  const latestOrder = customerOrdersList.sort((a: any, b: any) => 
+                                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                                  )[0];
+                                  setCurrency((latestOrder.currency || 'EUR') as Currency);
+                                }
                                 setCustomerSearchOpen(false);
                               }}
                               data-testid={`option-customer-${customer.id}`}
@@ -552,7 +562,7 @@ export default function AddReturn() {
                         <ShoppingCart className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
+                    <PopoverContent className="w-[400px] p-0" align="start">
                       <Command>
                         <CommandInput placeholder={t('inventory:searchOrder')} data-testid="input-order-search" />
                         <CommandEmpty>{t('inventory:noOrderFound')}</CommandEmpty>
@@ -567,18 +577,30 @@ export default function AddReturn() {
                                 setOrderSearchOpen(false);
                               }}
                               data-testid={`option-order-${order.id}`}
+                              className="flex items-start py-3"
                             >
                               <Check
                                 className={cn(
-                                  "mr-2 h-4 w-4",
+                                  "mr-2 h-4 w-4 mt-0.5",
                                   watchOrderId === order.id ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              <div className="flex flex-col">
-                                <span className="font-medium">#{order.id.slice(0, 8).toUpperCase()}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {format(new Date(order.createdAt), 'dd/MM/yyyy')} • €{order.totalPrice?.toFixed(2) || '0.00'}
-                                </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-medium">#{order.id.toUpperCase()}</span>
+                                  <Badge variant="outline" className="capitalize text-xs shrink-0">
+                                    {order.status || 'pending'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm text-muted-foreground mt-1">
+                                  <span>{format(new Date(order.createdAt), 'dd/MM/yyyy')}</span>
+                                  <span className="font-medium text-foreground">
+                                    {getCurrencySymbol((order.currency || 'EUR') as Currency)}{order.totalPrice?.toFixed(2) || '0.00'}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  {order.items?.length || 0} {t('inventory:items')}
+                                </div>
                               </div>
                             </CommandItem>
                           ))}
@@ -859,7 +881,7 @@ export default function AddReturn() {
                               </div>
 
                               <div>
-                                <Label className="text-sm font-medium">{t('inventory:priceLabel')} (€) *</Label>
+                                <Label className="text-sm font-medium">{t('inventory:priceLabel')} ({getCurrencySymbol(currency)}) *</Label>
                                 <Input 
                                   type="number"
                                   step="0.01"
@@ -890,7 +912,7 @@ export default function AddReturn() {
                           <div className="text-sm">
                             <span className="text-muted-foreground">{t('inventory:subtotal')}: </span>
                             <span className="font-semibold">
-                              €{((form.watch(`items.${index}.quantity`) || 0) * (form.watch(`items.${index}.price`) || 0)).toFixed(2)}
+                              {getCurrencySymbol(currency)}{((form.watch(`items.${index}.quantity`) || 0) * (form.watch(`items.${index}.price`) || 0)).toFixed(2)}
                             </span>
                           </div>
                         </div>
@@ -981,8 +1003,7 @@ export default function AddReturn() {
                   <div className="flex justify-between items-center pt-2 border-t">
                     <span className="text-base font-semibold">{t('inventory:totalRefund')}</span>
                     <span className="text-xl font-bold text-teal-600">
-                      <Euro className="h-5 w-5 inline mr-1" />
-                      {returnTotal.toFixed(2)}
+                      {getCurrencySymbol(currency)}{returnTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1006,7 +1027,7 @@ export default function AddReturn() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t('inventory:originalTotal')}</span>
                     <span className="text-sm font-semibold">
-                      €{selectedOrder.totalPrice?.toFixed(2) || '0.00'}
+                      {getCurrencySymbol(currency)}{selectedOrder.totalPrice?.toFixed(2) || '0.00'}
                     </span>
                   </div>
 
@@ -1059,7 +1080,7 @@ export default function AddReturn() {
                               {format(new Date(order.createdAt), 'dd/MM/yyyy')}
                             </p>
                           </div>
-                          <p className="text-sm font-semibold">€{order.totalPrice?.toFixed(2) || '0.00'}</p>
+                          <p className="text-sm font-semibold">{getCurrencySymbol((order.currency || 'EUR') as Currency)}{order.totalPrice?.toFixed(2) || '0.00'}</p>
                         </div>
                       </div>
                     ))}
