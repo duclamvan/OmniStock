@@ -763,6 +763,8 @@ const orders = {
   discountApplied: 'Đã áp dụng giảm giá',
   freeItemAdded: 'Đã thêm sản phẩm miễn phí',
   addedAsFreeItem: 'được thêm như sản phẩm miễn phí',
+  freeItemLimitReached: 'Đã đạt giới hạn miễn phí',
+  freeItemSplitMessage: '{{free}} sản phẩm miễn phí, {{paid}} sản phẩm tính giá thường',
   freeItemsAvailable: 'Có {{count}} sản phẩm miễn phí',
   addProductFromCategory: 'Thêm sản phẩm từ danh mục {{category}}',
   totalRoundedUp: 'Đã làm tròn lên tổng',

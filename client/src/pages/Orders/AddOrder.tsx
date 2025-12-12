@@ -2027,6 +2027,101 @@ export default function AddOrder() {
   };
 
   const updateOrderItem = (id: string, field: keyof OrderItem, value: any) => {
+    // Special handling for quantity changes on free items (Buy X Get Y)
+    if (field === 'quantity') {
+      const currentItem = orderItems.find(item => item.id === id);
+      if (currentItem?.isFreeItem && currentItem.categoryId && currentItem.appliedDiscountId) {
+        const newQuantity = typeof value === 'number' ? value : parseInt(value || '1');
+        const oldQuantity = currentItem.quantity;
+        
+        // If increasing quantity, check available free slots
+        if (newQuantity > oldQuantity) {
+          // Find the allocation for this category/discount
+          const allocation = buyXGetYAllocations.find(
+            alloc => alloc.categoryId === currentItem.categoryId?.toString() && 
+                     alloc.discountId === currentItem.appliedDiscountId
+          );
+          
+          if (allocation) {
+            // Calculate max free quantity allowed: current free item qty + remaining slots
+            const maxFreeQuantity = oldQuantity + allocation.remainingFreeSlots;
+            
+            if (newQuantity > maxFreeQuantity) {
+              // Need to split: keep max free in this item, create paid item for remainder
+              const freeQuantity = maxFreeQuantity;
+              const paidQuantity = newQuantity - maxFreeQuantity;
+              
+              if (freeQuantity > 0) {
+                // Update free item with max allowed free quantity
+                setOrderItems(items => {
+                  const updatedItems = items.map(item => {
+                    if (item.id === id) {
+                      return { ...item, quantity: freeQuantity, total: 0 };
+                    }
+                    return item;
+                  });
+                  
+                  // Add new paid item for the remainder
+                  // Use originalPrice if available, fallback to current price (for older data)
+                  const paidPrice = currentItem.originalPrice || currentItem.price || 0;
+                  const newPaidItem: OrderItem = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    productId: currentItem.productId,
+                    productName: currentItem.productName,
+                    sku: currentItem.sku,
+                    variantId: currentItem.variantId,
+                    variantName: currentItem.variantName,
+                    quantity: paidQuantity,
+                    price: paidPrice,
+                    discount: 0,
+                    discountPercentage: 0,
+                    tax: 0,
+                    total: paidQuantity * paidPrice,
+                    landingCost: currentItem.landingCost,
+                    image: currentItem.image,
+                    categoryId: currentItem.categoryId,
+                    isFreeItem: false,
+                  };
+                  
+                  return [...updatedItems, newPaidItem];
+                });
+                
+                toast({
+                  title: t('orders:freeItemLimitReached'),
+                  description: t('orders:freeItemSplitMessage', { free: freeQuantity, paid: paidQuantity }),
+                });
+                return;
+              } else {
+                // No free slots left - convert entire item to paid
+                // Use originalPrice if available, fallback to current price (for older data)
+                const paidPrice = currentItem.originalPrice || currentItem.price || 0;
+                setOrderItems(items =>
+                  items.map(item => {
+                    if (item.id === id) {
+                      return {
+                        ...item,
+                        quantity: newQuantity,
+                        price: paidPrice,
+                        isFreeItem: false,
+                        total: newQuantity * paidPrice,
+                        originalPrice: undefined,
+                        appliedDiscountId: undefined,
+                        appliedDiscountLabel: undefined,
+                        appliedDiscountType: undefined,
+                        appliedDiscountScope: undefined,
+                      };
+                    }
+                    return item;
+                  })
+                );
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+    
     setOrderItems(items =>
       items.map(item => {
         if (item.id === id) {

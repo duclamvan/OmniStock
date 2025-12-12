@@ -769,6 +769,8 @@ const orders = {
   discountApplied: 'Discount Applied',
   freeItemAdded: 'Free Item Added',
   addedAsFreeItem: 'added as a free item',
+  freeItemLimitReached: 'Free Item Limit Reached',
+  freeItemSplitMessage: '{{free}} item(s) added free, {{paid}} item(s) added at regular price',
   freeItemsAvailable: '{{count}} free item(s) available',
   addProductFromCategory: 'Add a product from {{category}} category',
   totalRoundedUp: 'Total Rounded Up',
