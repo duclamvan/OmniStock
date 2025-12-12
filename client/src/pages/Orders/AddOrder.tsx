@@ -4731,21 +4731,6 @@ export default function AddOrder() {
                             </TableCell>
                             <TableCell className="text-right align-middle">
                               <div className="flex items-center justify-end gap-2">
-                                {/* Cost & Profit column for admin - shown to the left of price */}
-                                {(showCostInfo || showProfitInfo) && canViewImportCost && !item.isFreeItem && (
-                                  <div className="flex flex-col items-end text-xs leading-tight">
-                                    {showCostInfo && item.landingCost && (
-                                      <span className="text-slate-500 dark:text-slate-400">
-                                        {formatCurrency(item.landingCost, form.watch('currency'))}
-                                      </span>
-                                    )}
-                                    {showProfitInfo && item.landingCost && item.price > 0 && (
-                                      <span className={`font-medium ${(item.price - item.landingCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {formatCurrency(item.price - item.landingCost, form.watch('currency'))}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
                                 {/* Price input/display */}
                                 {item.isFreeItem ? (
                                   <div className="flex flex-col items-end gap-0.5">
@@ -4784,6 +4769,21 @@ export default function AddOrder() {
                                       }
                                     }}
                                   />
+                                )}
+                                {/* Cost & Profit column for admin - shown to the right of price */}
+                                {(showCostInfo || showProfitInfo) && canViewImportCost && !item.isFreeItem && (
+                                  <div className="flex flex-col items-start text-xs leading-tight">
+                                    {showCostInfo && item.landingCost && (
+                                      <span className="text-slate-500 dark:text-slate-400">
+                                        C: {formatCurrency(item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                    {showProfitInfo && item.landingCost && item.price > 0 && (
+                                      <span className={`font-medium ${(item.price - item.landingCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        P: {formatCurrency(item.price - item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </TableCell>
