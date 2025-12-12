@@ -148,9 +148,7 @@ export const purchaseItems = pgTable("purchase_items", {
   status: text("status").notNull().default("ordered"),
   trackingNumber: text("tracking_number"),
   warehouseLocation: text("warehouse_location"),
-  consolidationId: varchar("consolidation_id").references(
-    () => consolidations.id,
-  ),
+  consolidationId: integer("consolidation_id"),
   imageUrl: text("image_url"),
   notes: text("notes"),
   processingTimeDays: integer("processing_time_days"),
@@ -198,9 +196,7 @@ export const shipments = pgTable("shipments", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  consolidationId: varchar("consolidation_id").references(
-    () => consolidations.id,
-  ),
+  consolidationId: integer("consolidation_id"),
   carrier: text("carrier").notNull(),
   trackingNumber: text("tracking_number").notNull(),
   endCarrier: text("end_carrier"),
@@ -235,7 +231,7 @@ export const shipments = pgTable("shipments", {
 // Delivery History (for AI predictions)
 export const deliveryHistory = pgTable("delivery_history", {
   id: serial("id").primaryKey(),
-  shipmentId: varchar("shipment_id").references(() => shipments.id),
+  shipmentId: integer("shipment_id"),
   carrier: text("carrier").notNull(),
   origin: text("origin").notNull(),
   destination: text("destination").notNull(),
@@ -278,9 +274,7 @@ export const receipts = pgTable("receipts", {
   shipmentId: varchar("shipment_id")
     .notNull()
     .references(() => shipments.id),
-  consolidationId: varchar("consolidation_id").references(
-    () => consolidations.id,
-  ),
+  consolidationId: integer("consolidation_id"),
   receivedBy: text("received_by").notNull(), // Employee who received
   receivedAt: timestamp("received_at").notNull().defaultNow(),
   parcelCount: integer("parcel_count").notNull(),
@@ -306,7 +300,7 @@ export const receiptItems = pgTable("receipt_items", {
   receiptId: varchar("receipt_id")
     .notNull()
     .references(() => receipts.id, { onDelete: "cascade" }),
-  itemId: varchar("item_id").notNull(), // References purchaseItems.id or customItems.id
+  itemId: integer("item_id").notNull(), // References purchaseItems.id or customItems.id
   itemType: text("item_type").notNull(), // 'purchase' or 'custom'
   productId: text("product_id"), // Product ID for linking with products table
   sku: text("sku"), // SKU for the item
@@ -329,9 +323,7 @@ export const receiptItems = pgTable("receipt_items", {
 
 export const landedCosts = pgTable("landed_costs", {
   id: serial("id").primaryKey(),
-  receiptId: varchar("receipt_id")
-    .notNull()
-    .references(() => receipts.id),
+  receiptId: integer("receipt_id").notNull(),
   calculationMethod: text("calculation_method").notNull(), // weight, volume, price, average
   baseCost: decimal("base_cost", { precision: 10, scale: 2 }).notNull(),
   shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }).notNull(),
@@ -1400,9 +1392,7 @@ export const preOrderItems = pgTable("pre_order_items", {
   itemDescription: text("item_description"),
   quantity: integer("quantity").notNull(),
   arrivedQuantity: integer("arrived_quantity").notNull().default(0),
-  purchaseItemId: varchar("purchase_item_id").references(
-    () => purchaseItems.id,
-  ), // link to import items
+  purchaseItemId: integer("purchase_item_id"), // link to import items
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1423,9 +1413,7 @@ export const userActivities = pgTable("user_activities", {
 // Shipment costs breakdown
 export const shipmentCosts = pgTable("shipment_costs", {
   id: serial("id").primaryKey(),
-  shipmentId: varchar("shipment_id")
-    .notNull()
-    .references(() => shipments.id, { onDelete: "cascade" }),
+  shipmentId: integer("shipment_id").notNull(),
   type: text("type").notNull(), // FREIGHT, BROKERAGE, INSURANCE, PACKAGING, OTHER
   mode: text("mode"), // AIR, SEA, COURIER - optional, for freight only
   volumetricDivisor: integer("volumetric_divisor"), // e.g., 5000, 6000
@@ -1444,9 +1432,7 @@ export const shipmentCosts = pgTable("shipment_costs", {
 // Shipment cartons tracking
 export const shipmentCartons = pgTable("shipment_cartons", {
   id: serial("id").primaryKey(),
-  shipmentId: varchar("shipment_id")
-    .notNull()
-    .references(() => shipments.id, { onDelete: "cascade" }),
+  shipmentId: integer("shipment_id").notNull(),
   customItemId: integer("custom_item_id")
     .notNull()
     .references(() => customItems.id, { onDelete: "cascade" }),
@@ -1462,9 +1448,7 @@ export const shipmentCartons = pgTable("shipment_cartons", {
 // Cost allocations to items
 export const costAllocations = pgTable("cost_allocations", {
   id: serial("id").primaryKey(),
-  shipmentId: varchar("shipment_id")
-    .notNull()
-    .references(() => shipments.id, { onDelete: "cascade" }),
+  shipmentId: integer("shipment_id").notNull(),
   customItemId: integer("custom_item_id")
     .notNull()
     .references(() => customItems.id, { onDelete: "cascade" }),
@@ -1497,22 +1481,16 @@ export const productCostHistory = pgTable("product_cost_history", {
 // Junction tables for many-to-many relationships
 export const consolidationItems = pgTable("consolidation_items", {
   id: serial("id").primaryKey(),
-  consolidationId: varchar("consolidation_id")
-    .notNull()
-    .references(() => consolidations.id, { onDelete: "cascade" }),
-  itemId: varchar("item_id").notNull(), // References either purchaseItems.id or customItems.id
+  consolidationId: integer("consolidation_id").notNull(),
+  itemId: integer("item_id").notNull(), // References either purchaseItems.id or customItems.id
   itemType: text("item_type").notNull(), // 'purchase' or 'custom'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const shipmentItems = pgTable("shipment_items", {
   id: serial("id").primaryKey(),
-  shipmentId: varchar("shipment_id")
-    .notNull()
-    .references(() => shipments.id, { onDelete: "cascade" }),
-  consolidationId: varchar("consolidation_id")
-    .notNull()
-    .references(() => consolidations.id),
+  shipmentId: integer("shipment_id").notNull(),
+  consolidationId: integer("consolidation_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -2877,9 +2855,7 @@ export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
 // Employee Incidents - tracks mistakes, incidents, and performance issues
 export const employeeIncidents = pgTable("employee_incidents", {
   id: serial("id").primaryKey(),
-  employeeId: varchar("employee_id")
-    .notNull()
-    .references(() => employees.id, { onDelete: "cascade" }),
+  employeeId: integer("employee_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   type: varchar("type", { length: 50 }).notNull().default("mistake"), // mistake, safety, quality, attendance, policy, other
