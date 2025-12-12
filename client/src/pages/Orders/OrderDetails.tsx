@@ -1299,7 +1299,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 item.appliedDiscountType === 'buy_x_get_y' ? (
                                   <>
                                     {/* Buy X Get Y: Show paid quantity × unit price (no percentage display) */}
-                                    <p className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                    <p className="font-bold text-base text-green-600 dark:text-green-400">
                                       {formatCurrency((item.unitPrice || item.price || 0) * (item.quantity - (item.freeItemsCount ?? 0)), order.currency || 'EUR')}
                                     </p>
                                   </>
@@ -1323,7 +1323,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                       })()}
                                     </p>
                                     {/* Final price after discount */}
-                                    <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
+                                    <p className="font-bold text-base text-green-600 dark:text-green-400 mt-0.5">
                                       {formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}
                                     </p>
                                   </>
@@ -1333,7 +1333,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   {formatCurrency(0, order.currency || 'EUR')}
                                 </p>
                               ) : (
-                                <p className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                <p className="font-bold text-base text-green-600 dark:text-green-400">
                                   {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                                 </p>
                               )}
