@@ -70,6 +70,7 @@ interface DataTableProps<T> {
     selectedRows: Set<string>;
     selectedItems: T[];
     bulkActions: BulkAction<T>[];
+    clearSelection: () => void;
   }) => React.ReactNode;
 }
 
@@ -393,6 +394,7 @@ export function DataTable<T>({
         selectedRows,
         selectedItems: sortedData.filter(item => selectedRows.has(getRowKey(item))),
         bulkActions,
+        clearSelection: () => setSelectedRows(new Set()),
       })}
 
       {/* Table */}

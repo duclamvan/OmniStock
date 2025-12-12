@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -91,6 +91,9 @@ export default function AllDiscounts() {
     }
   }, [error, toast, t]);
 
+  // Reference to clear selection function from DataTable
+  const clearSelectionRef = useRef<(() => void) | null>(null);
+
   const deleteSaleMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map(id => apiRequest('DELETE', `/api/discounts/${id}`)));
@@ -102,6 +105,7 @@ export default function AllDiscounts() {
         description: t('discounts:deletedCount', { count: selectedSales.length }),
       });
       setSelectedSales([]);
+      clearSelectionRef.current?.();
     },
     onError: (error: any) => {
       console.error("Sale delete error:", error);
@@ -111,6 +115,48 @@ export default function AllDiscounts() {
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
           ? t('discounts:cannotDelete')
           : errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => apiRequest('PATCH', `/api/discounts/${id}`, { status: 'active' })));
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
+      toast({
+        title: t('common:success'),
+        description: t('discounts:activatedCount', { count: variables.length }),
+      });
+      clearSelectionRef.current?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('discounts:failedToActivate'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => apiRequest('PATCH', `/api/discounts/${id}`, { status: 'inactive' })));
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
+      toast({
+        title: t('common:success'),
+        description: t('discounts:deactivatedCount', { count: variables.length }),
+      });
+      clearSelectionRef.current?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('discounts:failedToDeactivate'),
         variant: "destructive",
       });
     },
@@ -297,20 +343,14 @@ export default function AllDiscounts() {
       type: "button" as const,
       label: t('discounts:activate'),
       action: (sales: any[]) => {
-        toast({
-          title: t('discounts:activateSales'),
-          description: t('discounts:activatingCount', { count: sales.length }),
-        });
+        activateMutation.mutate(sales.map(s => s.id));
       },
     },
     {
       type: "button" as const,
       label: t('discounts:deactivate'),
       action: (sales: any[]) => {
-        toast({
-          title: t('discounts:deactivateSales'),
-          description: t('discounts:deactivatingCount', { count: sales.length }),
-        });
+        deactivateMutation.mutate(sales.map(s => s.id));
       },
     },
     {
@@ -825,8 +865,9 @@ export default function AllDiscounts() {
               getRowKey={(sale) => sale.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
-              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-                selectedRows.size > 0 && (
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions, clearSelection }) => {
+                clearSelectionRef.current = clearSelection;
+                return selectedRows.size > 0 && (
                   <div className="px-4 sm:px-0 pb-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className="text-xs h-6 px-2">
@@ -850,8 +891,8 @@ export default function AllDiscounts() {
                       })}
                     </div>
                   </div>
-                )
-              )}
+                );
+              }}
             />
           </div>
         </CardContent>

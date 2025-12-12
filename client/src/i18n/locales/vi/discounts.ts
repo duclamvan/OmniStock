@@ -76,6 +76,10 @@ const discounts = {
   deactivateSales: 'Vô hiệu hóa Khuyến mãi',
   activatingCount: 'Đang kích hoạt {{count}} khuyến mãi...',
   deactivatingCount: 'Đang vô hiệu hóa {{count}} khuyến mãi...',
+  activatedCount: 'Đã kích hoạt thành công {{count}} giảm giá',
+  deactivatedCount: 'Đã vô hiệu hóa thành công {{count}} giảm giá',
+  failedToActivate: 'Không thể kích hoạt giảm giá',
+  failedToDeactivate: 'Không thể vô hiệu hóa giảm giá',
   exportingCount: 'Đang xuất {{count}} giảm giá...',
   
   // Form sections

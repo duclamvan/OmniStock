@@ -76,6 +76,10 @@ const discounts = {
   deactivateSales: 'Deactivate Sales',
   activatingCount: 'Activating {{count}} sales...',
   deactivatingCount: 'Deactivating {{count}} sales...',
+  activatedCount: 'Successfully activated {{count}} discounts',
+  deactivatedCount: 'Successfully deactivated {{count}} discounts',
+  failedToActivate: 'Failed to activate discounts',
+  failedToDeactivate: 'Failed to deactivate discounts',
   exportingCount: 'Exporting {{count}} discounts...',
   
   // Form sections
