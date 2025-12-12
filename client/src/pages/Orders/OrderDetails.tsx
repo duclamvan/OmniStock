@@ -1261,7 +1261,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-slate-500 dark:text-slate-400">{t('orders:qtyColon')}</span>
                                 <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                  {item.quantity}
+                                  {/* For Buy X Get Y, show paid quantity (total - free) */}
+                                  {item.appliedDiscountType === 'buy_x_get_y' && (item.freeItemsCount ?? 0) > 0
+                                    ? item.quantity - (item.freeItemsCount ?? 0)
+                                    : item.quantity}
                                 </span>
                               </div>
                               
@@ -1276,29 +1279,38 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           <div className="flex items-start gap-2">
                             <div className="text-right">
                               {item.discount > 0 ? (
-                                <>
-                                  {/* Original price (strikethrough) */}
-                                  <p className="text-xs text-slate-400 dark:text-slate-500 line-through">
-                                    {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
-                                  </p>
-                                  {/* Discount amount - show as percentage */}
-                                  <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
-                                    {(() => {
-                                      const originalTotal = (item.unitPrice || item.price || 0) * item.quantity;
-                                      const discountPct = originalTotal > 0 ? ((item.discount || 0) / originalTotal) * 100 : 0;
-                                      if (discountPct >= 1) {
-                                        return `-${Math.round(discountPct)}% OFF`;
-                                      } else if (discountPct > 0) {
-                                        return `-${discountPct.toFixed(1)}% OFF`;
-                                      }
-                                      return '';
-                                    })()}
-                                  </p>
-                                  {/* Final price after discount */}
-                                  <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
-                                    {formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}
-                                  </p>
-                                </>
+                                item.appliedDiscountType === 'buy_x_get_y' ? (
+                                  <>
+                                    {/* Buy X Get Y: Show paid quantity × unit price (no percentage display) */}
+                                    <p className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                      {formatCurrency((item.unitPrice || item.price || 0) * (item.quantity - (item.freeItemsCount ?? 0)), order.currency || 'EUR')}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    {/* Original price (strikethrough) */}
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 line-through">
+                                      {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                                    </p>
+                                    {/* Discount amount - show as percentage (not for Buy X Get Y) */}
+                                    <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
+                                      {(() => {
+                                        const originalTotal = (item.unitPrice || item.price || 0) * item.quantity;
+                                        const discountPct = originalTotal > 0 ? ((item.discount || 0) / originalTotal) * 100 : 0;
+                                        if (discountPct >= 1) {
+                                          return `-${Math.round(discountPct)}% OFF`;
+                                        } else if (discountPct > 0) {
+                                          return `-${discountPct.toFixed(1)}% OFF`;
+                                        }
+                                        return '';
+                                      })()}
+                                    </p>
+                                    {/* Final price after discount */}
+                                    <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
+                                      {formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}
+                                    </p>
+                                  </>
+                                )
                               ) : (
                                 <p className="font-bold text-base text-slate-900 dark:text-slate-100">
                                   {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
@@ -1346,26 +1358,44 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </div>
                     </div>
                     
-                    {/* Free Items Row for Buy X Get Y Offers */}
+                    {/* Free Items Row for Buy X Get Y Offers - Styled like AddOrder */}
                     {item.appliedDiscountType === 'buy_x_get_y' && (item.freeItemsCount ?? 0) > 0 && (
-                      <div className="mt-2 ml-16 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Gift className="h-4 w-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                              {item.productName}
-                            </span>
-                            <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
-                              {t('orders:freeItem')}
-                            </Badge>
+                      <div className="px-3 sm:px-6 py-3 sm:py-4 bg-green-50 dark:bg-green-950/30 border-t border-green-200 dark:border-green-800">
+                        <div className="flex items-start gap-3">
+                          {/* Gift Icon */}
+                          <div className="flex-shrink-0">
+                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
+                              <Gift className="h-6 w-6 text-green-600 dark:text-green-400" />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm font-semibold text-green-700 dark:text-green-300">
-                              × {item.freeItemsCount}
-                            </span>
-                            <span className="text-sm font-semibold text-green-700 dark:text-green-300">
-                              {formatCurrency(0, order.currency || 'EUR')}
-                            </span>
+                          
+                          {/* Free Item Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-sm text-green-800 dark:text-green-200">
+                                    {item.productName}
+                                  </span>
+                                  <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                                    {t('orders:freeItem')}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-green-600 dark:text-green-400">{t('orders:qtyColon')}</span>
+                                  <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                                    {item.freeItemsCount}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Free Price */}
+                              <div className="text-right">
+                                <p className="font-bold text-base text-green-700 dark:text-green-300">
+                                  {formatCurrency(0, order.currency || 'EUR')}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
