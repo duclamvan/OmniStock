@@ -1086,6 +1086,8 @@ const orders = {
   partsCost: 'Phí linh kiện',
   serviceFee: 'Phí dịch vụ',
   servicePart: 'Linh kiện dịch vụ',
+  serviceParts: 'Dịch vụ - Linh kiện',
+  includeServiceBill: 'Bao gồm hóa đơn dịch vụ',
   applyToOrder: 'Thêm vào đơn',
   applied: 'Đã thêm',
   serviceApplied: 'Đã thêm dịch vụ',

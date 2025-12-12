@@ -1082,6 +1082,8 @@ const orders = {
   partsCost: 'Parts Cost',
   serviceFee: 'Service Fee',
   servicePart: 'Service Part',
+  serviceParts: 'Service - Parts',
+  includeServiceBill: 'Include Service Bill',
   applyToOrder: 'Add to Order',
   applied: 'Applied',
   serviceApplied: 'Service Applied',

@@ -201,6 +201,7 @@ interface OrderItem {
   categoryId?: string | null;
   isFreeItem?: boolean;
   originalPrice?: number;
+  isServicePart?: boolean;
 }
 
 interface BuyXGetYAllocation {
@@ -876,10 +877,14 @@ export default function AddOrder() {
 
   // Track which pending services have been applied to the order
   const [appliedServiceIds, setAppliedServiceIds] = useState<Set<string>>(new Set());
+  
+  // Auto-check Service BILL when a service is applied
+  const [includeServiceBill, setIncludeServiceBill] = useState(false);
 
   // Reset applied services when customer changes
   useEffect(() => {
     setAppliedServiceIds(new Set());
+    setIncludeServiceBill(false);
   }, [selectedCustomer?.id]);
 
   // Mutation to create new shipping address
@@ -2306,7 +2311,25 @@ export default function AddOrder() {
         const serviceItems = await response.json();
         for (const item of serviceItems) {
           const itemQuantity = parseInt(item.quantity) || 1;
-          const unitPrice = parseFloat(item.unitPrice || '0');
+          
+          // Get price from inventory product if available, fallback to service item price
+          let unitPrice = parseFloat(item.unitPrice || '0');
+          let productImage = null;
+          
+          // If we have product data from inventory, use its price and image
+          if (item.product) {
+            productImage = item.product.image || null;
+            
+            // Get price based on selected currency
+            if (selectedCurrency === 'CZK' && item.product.priceCzk) {
+              unitPrice = parseFloat(item.product.priceCzk);
+            } else if (selectedCurrency === 'EUR' && item.product.priceEur) {
+              unitPrice = parseFloat(item.product.priceEur);
+            } else if (item.product.priceEur || item.product.priceCzk) {
+              unitPrice = parseFloat(item.product.priceEur || item.product.priceCzk || '0');
+            }
+          }
+          
           const lineTotal = unitPrice * itemQuantity;
           newItems.push({
             id: Math.random().toString(36).substr(2, 9),
@@ -2320,6 +2343,8 @@ export default function AddOrder() {
             discountPercentage: 0,
             tax: 0,
             total: lineTotal,
+            image: productImage,
+            isServicePart: true,
           });
         }
       }
@@ -2331,6 +2356,8 @@ export default function AddOrder() {
     if (newItems.length > 0) {
       setOrderItems(items => [...items, ...newItems]);
       setAppliedServiceIds(prev => new Set([...prev, service.id]));
+      // Auto-check Service BILL when a service is applied
+      setIncludeServiceBill(true);
       toast({
         title: t('orders:serviceApplied'),
         description: t('orders:serviceAppliedDesc', { name: service.name }),
@@ -2518,9 +2545,11 @@ export default function AddOrder() {
         image: item.image || undefined,
         landingCost: item.landingCost?.toString() || undefined,
         notes: item.notes || undefined,
+        isServicePart: item.isServicePart || undefined,
       })),
       includedDocuments: {
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
+        includeServiceBill: includeServiceBill,
       },
     };
 
@@ -4738,9 +4767,14 @@ export default function AddOrder() {
                                         {t('orders:bundle')}
                                       </Badge>
                                     )}
-                                    {item.serviceId && (
+                                    {item.serviceId && !item.isServicePart && (
                                       <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
                                         {t('orders:service')}
+                                      </Badge>
+                                    )}
+                                    {item.isServicePart && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-600">
+                                        {t('orders:serviceParts')}
                                       </Badge>
                                     )}
                                     {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
@@ -5076,9 +5110,14 @@ export default function AddOrder() {
                                 {t('orders:bundle')}
                               </Badge>
                             )}
-                            {item.serviceId && (
+                            {item.serviceId && !item.isServicePart && (
                               <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
                                 {t('orders:service')}
+                              </Badge>
+                            )}
+                            {item.isServicePart && (
+                              <Badge className="text-xs px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-600">
+                                {t('orders:serviceParts')}
                               </Badge>
                             )}
                             {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
@@ -5788,6 +5827,26 @@ export default function AddOrder() {
               </div>
             </CardHeader>
             <CardContent className="p-3 space-y-3">
+              {/* Service BILL Checkbox - Shows when a service is applied */}
+              {appliedServiceIds.size > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-700 rounded-lg">
+                  <Checkbox
+                    id="include-service-bill"
+                    checked={includeServiceBill}
+                    onCheckedChange={(checked) => setIncludeServiceBill(checked === true)}
+                    className="border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                    data-testid="checkbox-include-service-bill"
+                  />
+                  <label
+                    htmlFor="include-service-bill"
+                    className="text-sm font-medium text-orange-800 dark:text-orange-300 cursor-pointer flex items-center gap-2"
+                  >
+                    <Wrench className="h-4 w-4" />
+                    {t('orders:includeServiceBill')}
+                  </label>
+                </div>
+              )}
+              
               {/* Files List Section */}
               <div className="space-y-4">
                 {/* Uploaded Files */}
