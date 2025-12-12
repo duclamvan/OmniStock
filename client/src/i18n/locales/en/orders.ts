@@ -683,8 +683,9 @@ const orders = {
   vat: 'VAT',
   disc: 'Disc',
   cost: 'Cost',
+  profit: 'Profit',
   showItemCost: 'Show Item Cost',
-  showMargin: 'Show Margin',
+  showProfit: 'Show Profit',
   
   // AddOrder Page - Shipping and Discount
   addSpecialInstructions: 'Add special instructions for packing or shipping...',

@@ -449,8 +449,8 @@ export default function AddOrder() {
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
-  const [showCostColumn, setShowCostColumn] = useState(false);
-  const [showMarginColumn, setShowMarginColumn] = useState(false);
+  const [showCostInfo, setShowCostInfo] = useState(false);
+  const [showProfitInfo, setShowProfitInfo] = useState(false);
 
   // Auto-enable discount column only for manual discounts (not Buy X Get Y offers)
   useEffect(() => {
@@ -4532,10 +4532,10 @@ export default function AddOrder() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem
-                        onClick={() => setShowCostColumn(!showCostColumn)}
-                        data-testid="menu-toggle-cost-column"
+                        onClick={() => setShowCostInfo(!showCostInfo)}
+                        data-testid="menu-toggle-cost-info"
                       >
-                        {showCostColumn ? (
+                        {showCostInfo ? (
                           <Eye className="h-4 w-4 mr-2 text-green-600" />
                         ) : (
                           <EyeOff className="h-4 w-4 mr-2 text-slate-400" />
@@ -4543,15 +4543,15 @@ export default function AddOrder() {
                         {t('orders:showItemCost', 'Show Item Cost')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => setShowMarginColumn(!showMarginColumn)}
-                        data-testid="menu-toggle-margin-column"
+                        onClick={() => setShowProfitInfo(!showProfitInfo)}
+                        data-testid="menu-toggle-profit-info"
                       >
-                        {showMarginColumn ? (
+                        {showProfitInfo ? (
                           <Eye className="h-4 w-4 mr-2 text-green-600" />
                         ) : (
                           <EyeOff className="h-4 w-4 mr-2 text-slate-400" />
                         )}
-                        {t('orders:showMargin', 'Show Margin')}
+                        {t('orders:showProfit', 'Show Profit')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -4608,12 +4608,6 @@ export default function AddOrder() {
                           )}
                           {showVatColumn && (
                             <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:vat')}</TableHead>
-                          )}
-                          {showCostColumn && canViewImportCost && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:cost', 'Cost')}</TableHead>
-                          )}
-                          {showMarginColumn && canViewMargin && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:margin', 'Margin')}</TableHead>
                           )}
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20"></TableHead>
                         </TableRow>
@@ -4736,44 +4730,64 @@ export default function AddOrder() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right align-middle">
-                              <div className="flex justify-end">
+                              <div className="flex flex-col items-end gap-0.5">
                                 {item.isFreeItem ? (
-                                  <div className="flex flex-col items-end gap-0.5">
+                                  <>
                                     <span className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
                                     {item.originalPrice && item.originalPrice > 0 && (
                                       <span className="text-xs text-slate-400 line-through">{formatCurrency(item.originalPrice, form.watch('currency'))}</span>
                                     )}
-                                  </div>
+                                  </>
                                 ) : (
-                                  <MathInput
-                                    min={0}
-                                    step={0.01}
-                                    value={item.price}
-                                    onChange={(val) => updateOrderItem(item.id, 'price', val)}
-                                    className="w-20 h-9 text-right"
-                                    data-testid={`input-price-${item.id}`}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === 'Tab') {
-                                        e.preventDefault();
-                                        const nextInput = showDiscountColumn
-                                          ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
-                                          : showVatColumn
-                                          ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                          : null;
-                                        
-                                        if (nextInput) {
-                                          (nextInput as HTMLInputElement).focus();
-                                        } else {
-                                          const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                          if (currentIndex < orderItems.length - 1) {
-                                            const nextItem = orderItems[currentIndex + 1];
-                                            const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                            nextRowInput?.focus();
+                                  <>
+                                    <MathInput
+                                      min={0}
+                                      step={0.01}
+                                      value={item.price}
+                                      onChange={(val) => updateOrderItem(item.id, 'price', val)}
+                                      className="w-20 h-9 text-right"
+                                      data-testid={`input-price-${item.id}`}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === 'Tab') {
+                                          e.preventDefault();
+                                          const nextInput = showDiscountColumn
+                                            ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
+                                            : showVatColumn
+                                            ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                            : null;
+                                          
+                                          if (nextInput) {
+                                            (nextInput as HTMLInputElement).focus();
+                                          } else {
+                                            const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                            if (currentIndex < orderItems.length - 1) {
+                                              const nextItem = orderItems[currentIndex + 1];
+                                              const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                              nextRowInput?.focus();
+                                            }
                                           }
                                         }
-                                      }
-                                    }}
-                                  />
+                                      }}
+                                    />
+                                  </>
+                                )}
+                                {/* Inline Cost & Profit display for admin */}
+                                {(showCostInfo || showProfitInfo) && canViewImportCost && !item.isFreeItem && (
+                                  <div className="flex items-center gap-1.5 text-xs mt-0.5">
+                                    {showCostInfo && item.landingCost && (
+                                      <span className="text-slate-500 dark:text-slate-400">
+                                        {t('orders:cost')}: {formatCurrency(item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                    {showCostInfo && showProfitInfo && item.landingCost && (
+                                      <span className="text-slate-300 dark:text-slate-600">|</span>
+                                    )}
+                                    {showProfitInfo && item.landingCost && item.price > 0 && (
+                                      <span className={`font-medium ${(item.price - item.landingCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {t('orders:profit')}: {formatCurrency(item.price - item.landingCost, form.watch('currency'))}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </TableCell>
@@ -4839,25 +4853,6 @@ export default function AddOrder() {
                                 </div>
                               </TableCell>
                             )}
-                            {showCostColumn && canViewImportCost && (
-                              <TableCell className="text-right align-middle">
-                                <span className="text-sm text-slate-600 dark:text-slate-400">
-                                  {item.landingCost ? formatCurrency(item.landingCost * item.quantity, form.watch('currency')) : '-'}
-                                </span>
-                              </TableCell>
-                            )}
-                            {showMarginColumn && canViewMargin && (
-                              <TableCell className="text-right align-middle">
-                                {item.landingCost && item.price > 0 ? (
-                                  <MarginPill 
-                                    margin={((item.price - item.landingCost) / item.price) * 100}
-                                    size="sm"
-                                  />
-                                ) : (
-                                  <span className="text-sm text-slate-400">-</span>
-                                )}
-                              </TableCell>
-                            )}
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <DropdownMenu>
@@ -4901,7 +4896,7 @@ export default function AddOrder() {
                           {/* Shipping Notes Row */}
                           {item.notes && (
                             <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
-                              <TableCell colSpan={4 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0) + (showCostColumn && canViewImportCost ? 1 : 0) + (showMarginColumn && canViewMargin ? 1 : 0)} className="py-2 px-3">
+                              <TableCell colSpan={4 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0)} className="py-2 px-3">
                                 <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
                                   <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
@@ -4949,16 +4944,6 @@ export default function AddOrder() {
                               </TableCell>
                             )}
                             {showVatColumn && (
-                              <TableCell className="text-right align-middle">
-                                <span className="text-green-500 dark:text-green-500">-</span>
-                              </TableCell>
-                            )}
-                            {showCostColumn && canViewImportCost && (
-                              <TableCell className="text-right align-middle">
-                                <span className="text-green-500 dark:text-green-500">-</span>
-                              </TableCell>
-                            )}
-                            {showMarginColumn && canViewMargin && (
                               <TableCell className="text-right align-middle">
                                 <span className="text-green-500 dark:text-green-500">-</span>
                               </TableCell>
