@@ -11,6 +11,20 @@ interface PackingItem {
   sku: string;
   quantity: number;
   price: number;
+  // Weight and dimensions
+  weightKg?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  // Discount information
+  discount?: number;
+  discountPercentage?: number;
+  appliedDiscountId?: number | null;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  freeItemsCount?: number;
+  buyXGetYBuyQty?: number;
+  buyXGetYGetQty?: number;
 }
 
 interface PackingPlan {
