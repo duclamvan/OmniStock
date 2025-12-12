@@ -20,6 +20,7 @@ export default {
   // Pick & Pack Flow
   pickPackFlow: 'Pick & Pack Flow',
   pickPackFlowDesc: 'Track orders through pick and pack stages',
+  todaysOrders: "Today's orders by status",
   orderPipeline: 'Order Pipeline',
   orderPipelineDesc: 'Track orders through each fulfillment stage',
   pending: 'Pending',

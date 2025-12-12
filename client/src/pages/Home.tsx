@@ -161,6 +161,23 @@ export default function Home() {
     cancelled: recentOrders.filter((o: RecentOrder) => o.orderStatus === 'cancelled').length,
   };
 
+  const isToday = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+  };
+
+  const todayOrders = recentOrders.filter((o: RecentOrder) => isToday(o.createdAt));
+  
+  const todayStatusCounts = {
+    to_fulfill: todayOrders.filter((o: RecentOrder) => o.orderStatus === 'to_fulfill').length,
+    picking: todayOrders.filter((o: RecentOrder) => o.orderStatus === 'picking').length,
+    packed: todayOrders.filter((o: RecentOrder) => o.orderStatus === 'packed').length,
+    shipped: todayOrders.filter((o: RecentOrder) => o.orderStatus === 'shipped').length,
+  };
+
   const paidOrders = recentOrders.filter((o: RecentOrder) => o.paymentStatus === 'paid');
   const paymentRate = recentOrders.length > 0 ? (paidOrders.length / recentOrders.length) * 100 : 0;
 
@@ -396,7 +413,7 @@ export default function Home() {
                     <span className="truncate">{t('dashboard:pickPackFlow')}</span>
                   </CardTitle>
                   <CardDescription className="text-[10px] sm:text-xs md:text-sm mt-0.5 sm:mt-1 line-clamp-1">
-                    {t('dashboard:pickPackFlowDesc')}
+                    {t('dashboard:todaysOrders')}
                   </CardDescription>
                 </div>
                 <Link href="/orders/pick-pack" className="shrink-0">
@@ -408,41 +425,29 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2 md:gap-3">
-                <Link href="/orders?status=pending" className="block">
-                  <div className="text-center p-2 sm:p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer" data-testid="pipeline-pending">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400">{orderStatusCounts.pending}</p>
-                    <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:pending')}</p>
-                  </div>
-                </Link>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
                 <Link href="/orders?status=to_fulfill" className="block">
                   <div className="text-center p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" data-testid="pipeline-to-fulfill">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{orderStatusCounts.to_fulfill}</p>
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{todayStatusCounts.to_fulfill}</p>
                     <p className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:toFulfillStatus')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=picking" className="block">
                   <div className="text-center p-2 sm:p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer" data-testid="pipeline-picking">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400">{orderStatusCounts.picking}</p>
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400">{todayStatusCounts.picking}</p>
                     <p className="text-[10px] sm:text-xs text-indigo-700 dark:text-indigo-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:picking')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=packed" className="block">
                   <div className="text-center p-2 sm:p-3 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors cursor-pointer" data-testid="pipeline-packed">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{orderStatusCounts.packed}</p>
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{todayStatusCounts.packed}</p>
                     <p className="text-[10px] sm:text-xs text-cyan-700 dark:text-cyan-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:packed')}</p>
                   </div>
                 </Link>
                 <Link href="/orders?status=shipped" className="block">
                   <div className="text-center p-2 sm:p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="pipeline-shipped">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{orderStatusCounts.shipped}</p>
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{todayStatusCounts.shipped}</p>
                     <p className="text-[10px] sm:text-xs text-purple-700 dark:text-purple-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:shipped')}</p>
-                  </div>
-                </Link>
-                <Link href="/orders?status=delivered" className="block">
-                  <div className="text-center p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" data-testid="pipeline-delivered">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{orderStatusCounts.delivered}</p>
-                    <p className="text-[10px] sm:text-xs text-green-700 dark:text-green-300 mt-0.5 sm:mt-1 truncate">{t('dashboard:delivered')}</p>
                   </div>
                 </Link>
               </div>

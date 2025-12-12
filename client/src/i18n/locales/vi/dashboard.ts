@@ -20,6 +20,7 @@ export default {
   // Pick & Pack Flow
   pickPackFlow: 'Quy trình Lấy & Đóng gói',
   pickPackFlowDesc: 'Theo dõi đơn hàng qua các giai đoạn lấy và đóng gói',
+  todaysOrders: 'Đơn hàng hôm nay theo trạng thái',
   orderPipeline: 'Quy trình đơn hàng',
   orderPipelineDesc: 'Theo dõi đơn hàng qua từng giai đoạn xử lý',
   pending: 'Chờ xử lý',
