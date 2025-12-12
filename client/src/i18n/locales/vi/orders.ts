@@ -676,6 +676,9 @@ const orders = {
   addOptionalNote: 'Thêm ghi chú (tùy chọn)',
   vat: 'VAT',
   disc: 'Giảm',
+  cost: 'Giá vốn',
+  showItemCost: 'Hiện giá vốn',
+  showMargin: 'Hiện biên lợi nhuận',
   
   // AddOrder Page - Shipping and Discount
   addSpecialInstructions: 'Thêm hướng dẫn đặc biệt cho đóng gói hoặc vận chuyển...',

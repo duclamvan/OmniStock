@@ -682,6 +682,9 @@ const orders = {
   addOptionalNote: 'Add note (optional)',
   vat: 'VAT',
   disc: 'Disc',
+  cost: 'Cost',
+  showItemCost: 'Show Item Cost',
+  showMargin: 'Show Margin',
   
   // AddOrder Page - Shipping and Discount
   addSpecialInstructions: 'Add special instructions for packing or shipping...',

@@ -78,7 +78,9 @@ import {
   Store,
   ShoppingBag,
   Building2,
-  Gift
+  Gift,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -447,6 +449,8 @@ export default function AddOrder() {
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
+  const [showCostColumn, setShowCostColumn] = useState(false);
+  const [showMarginColumn, setShowMarginColumn] = useState(false);
 
   // Auto-enable discount column only for manual discounts (not Buy X Get Y offers)
   useEffect(() => {
@@ -4502,14 +4506,56 @@ export default function AddOrder() {
         <Card className="shadow-sm">
           <CardHeader className="p-3 border-b">
             <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                  <ShoppingCart className="h-4 w-4 text-blue-600" />
-                  {t('orders:orderItems')}
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">
-                  {orderItems.length > 0 ? t('orders:itemsAdded', { count: orderItems.length }) : t('orders:noItemsYet')}
-                </CardDescription>
+              <div className="flex items-center gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    {t('orders:orderItems')}
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm mt-1">
+                    {orderItems.length > 0 ? t('orders:itemsAdded', { count: orderItems.length }) : t('orders:noItemsYet')}
+                  </CardDescription>
+                </div>
+                {/* Admin-only three-dot menu for Cost/Margin columns */}
+                {canViewImportCost && orderItems.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        data-testid="button-order-items-admin-menu"
+                      >
+                        <MoreVertical className="h-4 w-4 text-slate-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem
+                        onClick={() => setShowCostColumn(!showCostColumn)}
+                        data-testid="menu-toggle-cost-column"
+                      >
+                        {showCostColumn ? (
+                          <Eye className="h-4 w-4 mr-2 text-green-600" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 mr-2 text-slate-400" />
+                        )}
+                        {t('orders:showItemCost', 'Show Item Cost')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setShowMarginColumn(!showMarginColumn)}
+                        data-testid="menu-toggle-margin-column"
+                      >
+                        {showMarginColumn ? (
+                          <Eye className="h-4 w-4 mr-2 text-green-600" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 mr-2 text-slate-400" />
+                        )}
+                        {t('orders:showMargin', 'Show Margin')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               {/* Column Toggles */}
               {orderItems.length > 0 && (
@@ -4562,6 +4608,12 @@ export default function AddOrder() {
                           )}
                           {showVatColumn && (
                             <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:vat')}</TableHead>
+                          )}
+                          {showCostColumn && canViewImportCost && (
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:cost', 'Cost')}</TableHead>
+                          )}
+                          {showMarginColumn && canViewMargin && (
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('orders:margin', 'Margin')}</TableHead>
                           )}
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20"></TableHead>
                         </TableRow>
@@ -4787,6 +4839,25 @@ export default function AddOrder() {
                                 </div>
                               </TableCell>
                             )}
+                            {showCostColumn && canViewImportCost && (
+                              <TableCell className="text-right align-middle">
+                                <span className="text-sm text-slate-600 dark:text-slate-400">
+                                  {item.landingCost ? formatCurrency(item.landingCost * item.quantity, form.watch('currency')) : '-'}
+                                </span>
+                              </TableCell>
+                            )}
+                            {showMarginColumn && canViewMargin && (
+                              <TableCell className="text-right align-middle">
+                                {item.landingCost && item.price > 0 ? (
+                                  <MarginPill 
+                                    margin={((item.price - item.landingCost) / item.price) * 100}
+                                    size="sm"
+                                  />
+                                ) : (
+                                  <span className="text-sm text-slate-400">-</span>
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <DropdownMenu>
@@ -4830,7 +4901,7 @@ export default function AddOrder() {
                           {/* Shipping Notes Row */}
                           {item.notes && (
                             <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
-                              <TableCell colSpan={showVatColumn && showDiscountColumn ? 6 : showVatColumn || showDiscountColumn ? 5 : 4} className="py-2 px-3">
+                              <TableCell colSpan={4 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0) + (showCostColumn && canViewImportCost ? 1 : 0) + (showMarginColumn && canViewMargin ? 1 : 0)} className="py-2 px-3">
                                 <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
                                   <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
@@ -4878,6 +4949,16 @@ export default function AddOrder() {
                               </TableCell>
                             )}
                             {showVatColumn && (
+                              <TableCell className="text-right align-middle">
+                                <span className="text-green-500 dark:text-green-500">-</span>
+                              </TableCell>
+                            )}
+                            {showCostColumn && canViewImportCost && (
+                              <TableCell className="text-right align-middle">
+                                <span className="text-green-500 dark:text-green-500">-</span>
+                              </TableCell>
+                            )}
+                            {showMarginColumn && canViewMargin && (
                               <TableCell className="text-right align-middle">
                                 <span className="text-green-500 dark:text-green-500">-</span>
                               </TableCell>
