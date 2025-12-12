@@ -587,15 +587,15 @@ export default function AddReturn() {
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-medium">#{order.id.toUpperCase()}</span>
+                                  <span className="font-medium">#{order.orderId || order.id.slice(0, 8).toUpperCase()}</span>
                                   <Badge variant="outline" className="capitalize text-xs shrink-0">
-                                    {order.status || 'pending'}
+                                    {order.orderStatus || 'pending'}
                                   </Badge>
                                 </div>
                                 <div className="flex items-center justify-between text-sm text-muted-foreground mt-1">
                                   <span>{format(new Date(order.createdAt), 'dd/MM/yyyy')}</span>
                                   <span className="font-medium text-foreground">
-                                    {getCurrencySymbol((order.currency || 'EUR') as Currency)}{order.totalPrice?.toFixed(2) || '0.00'}
+                                    {getCurrencySymbol((order.currency || 'EUR') as Currency)}{parseFloat(order.grandTotal || '0').toFixed(2)}
                                   </span>
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-0.5">
