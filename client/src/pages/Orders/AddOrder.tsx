@@ -398,6 +398,9 @@ export default function AddOrder() {
   // Order ID state
   const [orderId, setOrderId] = useState<string | null>(null);
   
+  // Track if changes were made after order creation
+  const [hasChangesAfterSave, setHasChangesAfterSave] = useState(false);
+  
   // Ref to track customer creation in progress to prevent duplicates
   const customerCreationInProgress = useRef<Promise<string | null> | null>(null);
   const createdCustomerIdRef = useRef<string | null>(null);
