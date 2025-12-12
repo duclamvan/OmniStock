@@ -1595,6 +1595,23 @@ const settings = {
   sendTrackingEmailLabel: 'Gửi email theo dõi cho khách hàng',
   sendTrackingEmailDescription: 'Gửi mã theo dõi qua email cho khách hàng khi tạo lô hàng',
   includeEstimatedDeliveryLabel: 'Bao gồm ngày giao hàng dự kiến',
+
+  // Service Settings
+  serviceTypesTitle: 'Loại Dịch Vụ',
+  serviceTypesDescription: 'Quản lý các loại dịch vụ và chi phí theo đơn vị tiền tệ',
+  defaultServiceCostEur: 'Chi phí dịch vụ mặc định (EUR)',
+  defaultServiceCostCzk: 'Chi phí dịch vụ mặc định (CZK)',
+  addNewServiceType: 'Thêm Loại Dịch Vụ Mới',
+  serviceTypeName: 'Tên Loại Dịch Vụ',
+  enterServiceTypeName: 'Nhập tên loại dịch vụ',
+  costEur: 'Chi phí (EUR)',
+  costCzk: 'Chi phí (CZK)',
+  noServiceTypes: 'Chưa có loại dịch vụ nào',
+  addServiceTypeToStart: 'Thêm loại dịch vụ để bắt đầu',
+  serviceSettingsSaved: 'Đã lưu cài đặt dịch vụ thành công',
+  serviceTypeNameRequired: 'Tên loại dịch vụ là bắt buộc',
+  serviceTypeAlreadyExists: 'Loại dịch vụ đã tồn tại',
+  failedToSaveSettings: 'Không thể lưu cài đặt',
 } as const;
 
 export default settings;

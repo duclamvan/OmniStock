@@ -281,6 +281,20 @@ export interface SystemSettings {
   sessionTimeout?: number;
 }
 
+export interface ServiceTypeConfig {
+  id: string;
+  name: string;
+  costEur: number;
+  costCzk: number;
+  enabled: boolean;
+}
+
+export interface ServiceSettings {
+  serviceTypes: ServiceTypeConfig[];
+  defaultServiceCostEur?: number;
+  defaultServiceCostCzk?: number;
+}
+
 interface Setting {
   id: number;
   key: string;
@@ -298,6 +312,7 @@ interface SettingsContextType {
   shippingSettings: ShippingSettings;
   financialSettings: FinancialSettings;
   systemSettings: SystemSettings;
+  serviceSettings: ServiceSettings;
   getSetting: <T = any>(category: string, key: string, fallback?: T) => T;
   financialHelpers: {
     getDefaultTaxRate: (currency: string) => number;
@@ -555,6 +570,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings]
   );
 
+  const serviceSettings = useMemo(() => {
+    const parsed = parseSettingsByCategory<ServiceSettings>(settings, 'services');
+    return {
+      ...parsed,
+      serviceTypes: parsed.serviceTypes || [],
+    };
+  }, [settings]);
+
   // Generic getter with fallback
   const getSetting = useMemo(
     () => <T = any,>(category: string, key: string, fallback?: T): T => {
@@ -597,6 +620,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     shippingSettings,
     financialSettings,
     systemSettings,
+    serviceSettings,
     getSetting,
     financialHelpers,
     isLoading,
@@ -648,4 +672,9 @@ export function useFinancialSettings() {
 export function useSystemSettings() {
   const { systemSettings, isLoading } = useSettings();
   return { settings: systemSettings, isLoading };
+}
+
+export function useServiceSettings() {
+  const { serviceSettings, isLoading } = useSettings();
+  return { settings: serviceSettings, isLoading };
 }

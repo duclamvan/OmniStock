@@ -1573,6 +1573,23 @@ const settings = {
   maintenanceModeEnable: 'Enable Maintenance Mode',
   maintenanceModeDisabled: 'System is LIVE',
   maintenanceModeEnabled: 'System is in MAINTENANCE MODE',
+
+  // Service Settings
+  serviceTypesTitle: 'Service Types',
+  serviceTypesDescription: 'Manage service types and their costs in different currencies',
+  defaultServiceCostEur: 'Default Service Cost (EUR)',
+  defaultServiceCostCzk: 'Default Service Cost (CZK)',
+  addNewServiceType: 'Add New Service Type',
+  serviceTypeName: 'Service Type Name',
+  enterServiceTypeName: 'Enter service type name',
+  costEur: 'Cost (EUR)',
+  costCzk: 'Cost (CZK)',
+  noServiceTypes: 'No service types defined',
+  addServiceTypeToStart: 'Add a service type to get started',
+  serviceSettingsSaved: 'Service settings saved successfully',
+  serviceTypeNameRequired: 'Service type name is required',
+  serviceTypeAlreadyExists: 'Service type already exists',
+  failedToSaveSettings: 'Failed to save settings',
 } as const;
 
 export default settings;
