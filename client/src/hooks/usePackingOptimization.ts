@@ -68,6 +68,12 @@ interface PackingPlan {
       isEstimated: boolean;
       aiEstimated?: boolean;
       isBulkWrappable?: boolean;
+      // Discount information
+      discount?: number;
+      discountPercentage?: number;
+      appliedDiscountLabel?: string | null;
+      appliedDiscountType?: string | null;
+      freeItemsCount?: number;
     }>;
     fillingWeight?: number;
     fillingWeightKg?: number;

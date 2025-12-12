@@ -193,15 +193,43 @@ export function AICartonPackingPanel({
                     {carton.items && carton.items.length > 0 && (
                       <div className="mt-2 pl-8 space-y-1">
                         {carton.items.map((item: any, itemIdx: number) => (
-                          <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
-                            <span>{item.productName || item.name}</span>
-                            <span>
-                              {t('itemQuantityWeight', { 
-                                quantity: item.quantity, 
-                                weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
-                              })}
-                              {(item.isEstimated || item.aiEstimated) && <span className="ml-1 text-yellow-600">*</span>}
-                            </span>
+                          <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400">
+                            <div className="flex justify-between items-start">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
+                                {/* Show dimensions if available */}
+                                {(item.lengthCm && item.widthCm && item.heightCm) && (
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-500">
+                                    {item.lengthCm}×{item.widthCm}×{item.heightCm} cm
+                                  </span>
+                                )}
+                                {/* Show discount if applied */}
+                                {item.appliedDiscountLabel && (
+                                  <span className="text-[10px] text-green-600 dark:text-green-400 flex items-center gap-1">
+                                    🏷️ {item.appliedDiscountLabel}
+                                    {item.discountPercentage && item.discountPercentage > 0 && (
+                                      <span className="text-green-700 dark:text-green-300">
+                                        (-{item.discountPercentage < 1 
+                                          ? parseFloat(item.discountPercentage.toFixed(1)) 
+                                          : Math.round(item.discountPercentage)}%)
+                                      </span>
+                                    )}
+                                    {item.freeItemsCount && item.freeItemsCount > 0 && (
+                                      <span className="text-green-700 dark:text-green-300">
+                                        +{item.freeItemsCount} {t('free') || 'free'}
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-right whitespace-nowrap">
+                                {t('itemQuantityWeight', { 
+                                  quantity: item.quantity, 
+                                  weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
+                                })}
+                                {(item.isEstimated || item.aiEstimated) && <span className="ml-1 text-yellow-600">*</span>}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>

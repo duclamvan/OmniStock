@@ -13437,7 +13437,16 @@ Important:
             sku: item.sku,
             quantity: item.quantity,
             price: item.price,
-            product
+            product,
+            // Discount information for AI optimization
+            discount: item.discount,
+            discountPercentage: item.discountPercentage,
+            appliedDiscountId: item.appliedDiscountId,
+            appliedDiscountLabel: item.appliedDiscountLabel,
+            appliedDiscountType: item.appliedDiscountType,
+            freeItemsCount: item.freeItemsCount,
+            buyXGetYBuyQty: item.buyXGetYBuyQty,
+            buyXGetYGetQty: item.buyXGetYGetQty
           };
         })
       );
@@ -13457,9 +13466,13 @@ Important:
       });
 
       // Return the optimization plan without saving to database
+      // Include 'cartons' field (with full item data including discount info) for UI compatibility
       res.json({
+        cartons: packingPlan.cartons,
         suggestions: packingPlan.cartons,
         cartonCount: packingPlan.totalCartons,
+        totalCartons: packingPlan.totalCartons,
+        totalWeight: packingPlan.totalWeightKg,
         nylonWrapItems: packingPlan.nylonWrapItems,
         reasoning: packingPlan.reasoning,
         totalWeightKg: packingPlan.totalWeightKg,
