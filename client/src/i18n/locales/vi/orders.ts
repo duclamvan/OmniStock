@@ -439,7 +439,6 @@ const orders = {
   
   // Buttons
   saveOrder: 'Lưu đơn hàng',
-  updateOrder: 'Cập nhật đơn hàng',
   calculateShipping: 'Tính phí vận chuyển',
   applyDiscount: 'Áp dụng giảm giá',
   removeDiscount: 'Xóa giảm giá',
@@ -492,9 +491,6 @@ const orders = {
   carrierValid: 'Đạt yêu cầu vận chuyển',
   carrierInvalid: 'Vượt giới hạn',
   estimatedShipping: 'Phí vận chuyển ước tính',
-  cartonsCount: '{{count}} thùng',
-  cartonsCount_plural: '{{count}} thùng',
-  totalWeight: 'Tổng khối lượng: {{weight}} kg',
   
   // AllOrders Page
   allOrders: 'Tất cả đơn hàng',

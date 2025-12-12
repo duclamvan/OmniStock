@@ -445,7 +445,6 @@ const orders = {
   
   // Buttons
   saveOrder: 'Save Order',
-  updateOrder: 'Update Order',
   calculateShipping: 'Calculate Shipping',
   applyDiscount: 'Apply Discount',
   removeDiscount: 'Remove Discount',
