@@ -2025,101 +2025,129 @@ export default function AddOrder() {
     setVariantQuantities({});
   };
 
-  const updateOrderItem = (id: string, field: keyof OrderItem, value: any) => {
-    // Special handling for quantity changes on free items (Buy X Get Y)
-    if (field === 'quantity') {
-      const currentItem = orderItems.find(item => item.id === id);
-      if (currentItem?.isFreeItem && currentItem.categoryId && currentItem.appliedDiscountId) {
-        const newQuantity = typeof value === 'number' ? value : parseInt(value || '1');
-        const oldQuantity = currentItem.quantity;
-        
-        // If increasing quantity, check available free slots
-        if (newQuantity > oldQuantity) {
-          // Find the allocation for this category/discount
-          const allocation = buyXGetYAllocations.find(
-            alloc => alloc.categoryId === currentItem.categoryId?.toString() && 
-                     alloc.discountId === currentItem.appliedDiscountId
-          );
-          
-          if (allocation) {
-            // Calculate max free quantity allowed: current free item qty + remaining slots
-            const maxFreeQuantity = oldQuantity + allocation.remainingFreeSlots;
-            
-            if (newQuantity > maxFreeQuantity) {
-              // Need to split: keep max free in this item, create paid item for remainder
-              const freeQuantity = maxFreeQuantity;
-              const paidQuantity = newQuantity - maxFreeQuantity;
-              
-              if (freeQuantity > 0) {
-                // Update free item with max allowed free quantity
-                setOrderItems(items => {
-                  const updatedItems = items.map(item => {
-                    if (item.id === id) {
-                      return { ...item, quantity: freeQuantity, total: 0 };
-                    }
-                    return item;
-                  });
-                  
-                  // Add new paid item for the remainder
-                  // Use originalPrice if available, fallback to current price (for older data)
-                  const paidPrice = currentItem.originalPrice || currentItem.price || 0;
-                  const newPaidItem: OrderItem = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    productId: currentItem.productId,
-                    productName: currentItem.productName,
-                    sku: currentItem.sku,
-                    variantId: currentItem.variantId,
-                    variantName: currentItem.variantName,
-                    quantity: paidQuantity,
-                    price: paidPrice,
-                    discount: 0,
-                    discountPercentage: 0,
-                    tax: 0,
-                    total: paidQuantity * paidPrice,
-                    landingCost: currentItem.landingCost,
-                    image: currentItem.image,
-                    categoryId: currentItem.categoryId,
-                    isFreeItem: false,
-                  };
-                  
-                  return [...updatedItems, newPaidItem];
-                });
-                
-                toast({
-                  title: t('orders:freeItemLimitReached'),
-                  description: t('orders:freeItemSplitMessage', { free: freeQuantity, paid: paidQuantity }),
-                });
-                return;
-              } else {
-                // No free slots left - convert entire item to paid
-                // Use originalPrice if available, fallback to current price (for older data)
-                const paidPrice = currentItem.originalPrice || currentItem.price || 0;
-                setOrderItems(items =>
-                  items.map(item => {
-                    if (item.id === id) {
-                      return {
-                        ...item,
-                        quantity: newQuantity,
-                        price: paidPrice,
-                        isFreeItem: false,
-                        total: newQuantity * paidPrice,
-                        originalPrice: undefined,
-                        appliedDiscountId: undefined,
-                        appliedDiscountLabel: undefined,
-                        appliedDiscountType: undefined,
-                        appliedDiscountScope: undefined,
-                      };
-                    }
-                    return item;
-                  })
-                );
-                return;
-              }
-            }
+  // Commit free item quantity - handles split logic on blur/enter/tab
+  // This merges overflow into existing paid rows instead of creating duplicates
+  const commitFreeItemQuantity = (id: string, newQuantity: number) => {
+    const currentItem = orderItems.find(item => item.id === id);
+    if (!currentItem?.isFreeItem || !currentItem.categoryId || !currentItem.appliedDiscountId) {
+      return; // Not a free item, nothing to do
+    }
+    
+    // Find the allocation for this category/discount
+    const allocation = buyXGetYAllocations.find(
+      alloc => alloc.categoryId === currentItem.categoryId?.toString() && 
+               alloc.discountId === currentItem.appliedDiscountId
+    );
+    
+    if (!allocation) return;
+    
+    // Calculate how many free slots this item currently uses (its own quantity)
+    // and how many additional slots are available
+    const currentFreeQty = currentItem.quantity;
+    const maxFreeQuantity = currentFreeQty + allocation.remainingFreeSlots;
+    
+    if (newQuantity <= maxFreeQuantity) {
+      // All fits in free slots - just update quantity
+      setOrderItems(items =>
+        items.map(item => {
+          if (item.id === id) {
+            return { ...item, quantity: newQuantity, total: 0 };
+          }
+          return item;
+        })
+      );
+      return;
+    }
+    
+    // Need to split: keep max free in this item, handle remainder as paid
+    const freeQuantity = maxFreeQuantity;
+    const paidQuantity = newQuantity - maxFreeQuantity;
+    const paidPrice = currentItem.originalPrice || currentItem.price || 0;
+    
+    setOrderItems(items => {
+      // First, update the free item quantity
+      let updatedItems = items.map(item => {
+        if (item.id === id) {
+          if (freeQuantity > 0) {
+            return { ...item, quantity: freeQuantity, total: 0 };
+          } else {
+            // No free slots - convert to paid
+            return {
+              ...item,
+              quantity: newQuantity,
+              price: paidPrice,
+              isFreeItem: false,
+              total: newQuantity * paidPrice,
+              originalPrice: undefined,
+              appliedDiscountId: undefined,
+              appliedDiscountLabel: undefined,
+              appliedDiscountType: undefined,
+              appliedDiscountScope: undefined,
+            };
           }
         }
+        return item;
+      });
+      
+      // If we have paid quantity to add, check for existing paid item to merge into
+      if (paidQuantity > 0 && freeQuantity > 0) {
+        // Find existing non-free item with same product/variant
+        const existingPaidIndex = updatedItems.findIndex(item => 
+          !item.isFreeItem &&
+          item.productId === currentItem.productId &&
+          item.variantId === currentItem.variantId &&
+          item.bundleId === currentItem.bundleId &&
+          item.serviceId === currentItem.serviceId &&
+          item.id !== id
+        );
+        
+        if (existingPaidIndex !== -1) {
+          // Merge into existing paid item
+          const existingPaid = updatedItems[existingPaidIndex];
+          const newPaidQty = existingPaid.quantity + paidQuantity;
+          updatedItems = updatedItems.map((item, idx) => {
+            if (idx === existingPaidIndex) {
+              const newTotal = (newPaidQty * item.price) - (item.discount || 0);
+              return { ...item, quantity: newPaidQty, total: newTotal };
+            }
+            return item;
+          });
+        } else {
+          // Create new paid item
+          const newPaidItem: OrderItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            productId: currentItem.productId,
+            productName: currentItem.productName,
+            sku: currentItem.sku,
+            variantId: currentItem.variantId,
+            variantName: currentItem.variantName,
+            quantity: paidQuantity,
+            price: paidPrice,
+            discount: 0,
+            discountPercentage: 0,
+            tax: 0,
+            total: paidQuantity * paidPrice,
+            landingCost: currentItem.landingCost,
+            image: currentItem.image,
+            categoryId: currentItem.categoryId,
+            isFreeItem: false,
+          };
+          updatedItems = [...updatedItems, newPaidItem];
+        }
+        
+        toast({
+          title: t('orders:freeItemLimitReached'),
+          description: t('orders:freeItemSplitMessage', { free: freeQuantity, paid: paidQuantity }),
+        });
       }
-    }
+      
+      return updatedItems;
+    });
+  };
+
+  const updateOrderItem = (id: string, field: keyof OrderItem, value: any) => {
+    // For free items, just update quantity without split logic
+    // Split logic is handled by commitFreeItemQuantity on blur/enter/tab
     
     setOrderItems(items =>
       items.map(item => {
@@ -4619,12 +4647,26 @@ export default function AddOrder() {
                                   isInteger={true}
                                   className="w-16 h-9 text-center"
                                   data-testid={`input-quantity-${item.id}`}
+                                  onBlur={() => {
+                                    // For free items, commit the split logic on blur
+                                    if (item.isFreeItem) {
+                                      commitFreeItemQuantity(item.id, item.quantity);
+                                    }
+                                  }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
+                                      // For free items, commit the split logic on enter
+                                      if (item.isFreeItem) {
+                                        commitFreeItemQuantity(item.id, item.quantity);
+                                      }
                                       productSearchRef.current?.focus();
                                     } else if (e.key === 'Tab') {
                                       e.preventDefault();
+                                      // For free items, commit the split logic on tab
+                                      if (item.isFreeItem) {
+                                        commitFreeItemQuantity(item.id, item.quantity);
+                                      }
                                       const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
                                       shippingCostInput?.focus();
                                     }
@@ -4936,6 +4978,11 @@ export default function AddOrder() {
                               isInteger={true}
                               className="h-11 text-base"
                               data-testid={`mobile-input-quantity-${item.id}`}
+                              onBlur={() => {
+                                if (item.isFreeItem) {
+                                  commitFreeItemQuantity(item.id, item.quantity);
+                                }
+                              }}
                             />
                           </div>
                           <div>
