@@ -31,6 +31,8 @@ interface PeriodMetrics {
   revenue: number;
   profit: number;
   costs: number;
+  productCosts: number;
+  expensesCosts: number;
   margin: number;
   orders: number;
   revenueGrowth: number;
@@ -120,6 +122,8 @@ export default function FinancialReports() {
       revenue: currentRevenue,
       profit: currentProfit,
       costs: currentTotalCosts,
+      productCosts: currentProductCosts,
+      expensesCosts: currentExpenseCosts,
       margin: currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0,
       orders: currentOrders.length,
       revenueGrowth: prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0,
@@ -337,7 +341,15 @@ export default function FinancialReports() {
             <p className="text-lg font-bold text-green-600">{formatCompactNumber(metrics.profit)} Kč</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{t('costs')}</p>
+            <p className="text-xs text-muted-foreground">{t('productCosts')}</p>
+            <p className="text-base font-semibold text-orange-600">{formatCompactNumber(metrics.productCosts)} Kč</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t('expenses')}</p>
+            <p className="text-base font-semibold text-red-600">{formatCompactNumber(metrics.expensesCosts)} Kč</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t('totalCosts')}</p>
             <p className="text-base font-semibold text-red-600">{formatCompactNumber(metrics.costs)} Kč</p>
           </div>
           <div>
@@ -446,7 +458,7 @@ export default function FinancialReports() {
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <MetricCard
               title={t('yearlyRevenue')}
               value={formatCurrency(yearMetrics.revenue, 'CZK')}
@@ -464,14 +476,6 @@ export default function FinancialReports() {
               testId="metric-yearly-profit"
             />
             <MetricCard
-              title={t('yearlyCosts')}
-              value={formatCurrency(yearMetrics.costs, 'CZK')}
-              icon={PiggyBank}
-              iconColor="text-red-600"
-              iconBgColor="bg-red-100"
-              testId="metric-yearly-costs"
-            />
-            <MetricCard
               title={t('yearlyMargin')}
               value={`${yearMetrics.margin.toFixed(1)}%`}
               icon={Percent}
@@ -480,6 +484,29 @@ export default function FinancialReports() {
               testId="metric-yearly-margin"
             />
           </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('costBreakdown')}</CardTitle>
+              <CardDescription>{t('costBreakdownDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm text-muted-foreground">{t('productCosts')}</p>
+                  <p className="text-2xl font-bold text-orange-600">{formatCurrency(yearMetrics.productCosts, 'CZK')}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-muted-foreground">{t('expenses')}</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(yearMetrics.expensesCosts, 'CZK')}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-muted-foreground">{t('totalCosts')}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(yearMetrics.costs, 'CZK')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

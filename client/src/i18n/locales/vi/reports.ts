@@ -338,6 +338,8 @@ const reports = {
   financialReportsTitle: 'Báo cáo tài chính',
   financialReportsDesc: 'Phân tích doanh thu, lợi nhuận và chi phí',
   totalCosts: 'Tổng chi phí',
+  costBreakdown: 'Phân tích chi phí',
+  costBreakdownDesc: 'Phân tích chi phí sản phẩm và chi phí vận hành',
   revenueTrends: 'Xu hướng doanh thu (12 tháng gần đây)',
   profitMarginTrends: 'Xu hướng lợi nhuận & biên lợi nhuận',
   monthlyFinancialComparison: 'So sánh tài chính hàng tháng',

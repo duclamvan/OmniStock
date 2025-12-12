@@ -338,6 +338,8 @@ const reports = {
   financialReportsTitle: 'Financial Reports',
   financialReportsDesc: 'Revenue, profit, and cost analysis',
   totalCosts: 'Total Costs',
+  costBreakdown: 'Cost Breakdown',
+  costBreakdownDesc: 'Breakdown of product costs vs. operating expenses',
   revenueTrends: 'Revenue Trends (Last 12 Months)',
   profitMarginTrends: 'Profit & Margin Trends',
   monthlyFinancialComparison: 'Monthly Financial Comparison',
