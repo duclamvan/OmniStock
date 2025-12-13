@@ -11974,7 +11974,7 @@ export default function PickPack() {
                         {activePickingOrder.priority.toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-sm text-blue-100 dark:text-blue-50 mt-1">{activePickingOrder.customerName}</p>
+                    <p className="text-xl font-bold text-white mt-1">{activePickingOrder.customerName}</p>
                   </div>
                 </div>
                 
@@ -11989,15 +11989,15 @@ export default function PickPack() {
                   
                   <Button
                     size="sm"
-                    className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className={`h-10 ${audioEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'} text-white border-0 shadow-md`}
                     onClick={() => setAudioEnabled(!audioEnabled)}
                   >
-                    <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
+                    <Volume2 className="h-4 w-4 text-white" />
                   </Button>
                   
                   <Button
                     size="sm"
-                    className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className={`h-10 ${isTimerRunning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white border-0 shadow-md`}
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                   >
                     {isTimerRunning ? (
@@ -12009,7 +12009,7 @@ export default function PickPack() {
                   
                   <Button
                     size="sm"
-                    className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className="h-10 bg-indigo-500 hover:bg-indigo-600 text-white border-0 shadow-md"
                     onClick={() => setPickingViewMode(pickingViewMode === 'card' ? 'list' : 'card')}
                     title={pickingViewMode === 'card' ? t('switchToListView') : t('switchToCardView')}
                     data-testid="button-toggle-view-mode-desktop"
