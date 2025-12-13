@@ -5657,62 +5657,75 @@ export default function EditOrder() {
             </p>
           </div>
           
-          <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                  <TableHead className="font-semibold">{t('variantName')}</TableHead>
-                  <TableHead className="font-semibold">{t('barcode')}</TableHead>
-                  <TableHead className="text-right font-semibold">{t('stock')}</TableHead>
-                  <TableHead className="text-right font-semibold w-[140px]">{t('quantity')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {productVariants.map((variant, index) => (
-                  <TableRow key={variant.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
-                    <TableCell className="font-medium">{variant.name}</TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">{variant.barcode || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="font-semibold">
-                        {variant.quantity}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={variantQuantities[variant.id] || 0}
-                        onChange={(e) => setVariantQuantities(prev => ({
-                          ...prev,
-                          [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
-                        }))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const isLastVariant = index === productVariants.length - 1;
-                            
-                            if (isLastVariant) {
-                              // On last variant, trigger add variants
-                              addVariantsToOrder();
-                            } else {
-                              // Move to next variant input
-                              const nextVariant = productVariants[index + 1];
-                              const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
-                              nextInput?.focus();
-                              nextInput?.select();
-                            }
-                          }
-                        }}
-                        className="text-right h-10"
-                        data-testid={`input-variant-quantity-${variant.id}`}
-                        onFocus={(e) => e.target.select()}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          {/* Header row */}
+          <div className="grid grid-cols-[1fr_100px_70px_100px] gap-2 px-3 py-2 bg-muted/50 rounded-t-md text-sm font-medium border-b">
+            <div>{t('variantName')}</div>
+            <div>{t('barcode')}</div>
+            <div className="text-right">{t('stock')}</div>
+            <div className="text-right">{t('quantity')}</div>
           </div>
+          
+          {/* Virtualized variant list for performance with 300+ items */}
+          <List
+            height={Math.min(400, productVariants.length * 44)}
+            itemCount={productVariants.length}
+            itemSize={44}
+            width="100%"
+            className="border rounded-b-md"
+          >
+            {({ index, style }) => {
+              const variant = productVariants[index];
+              return (
+                <div 
+                  style={style} 
+                  className="grid grid-cols-[1fr_100px_70px_100px] gap-2 px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
+                >
+                  <div className="font-medium truncate" title={variant.name}>{variant.name}</div>
+                  <div className="text-muted-foreground font-mono text-xs truncate">{variant.barcode || '-'}</div>
+                  <div className="text-right">
+                    <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-xs">
+                      {variant.quantity}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={variantQuantities[variant.id] || 0}
+                      onChange={(e) => setVariantQuantities(prev => ({
+                        ...prev,
+                        [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
+                      }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const isLastVariant = index === productVariants.length - 1;
+                          if (isLastVariant) {
+                            addVariantsToOrder();
+                          } else {
+                            const nextVariant = productVariants[index + 1];
+                            const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
+                            nextInput?.focus();
+                            nextInput?.select();
+                          }
+                        }
+                      }}
+                      className="text-right h-8 text-sm"
+                      data-testid={`input-variant-quantity-${variant.id}`}
+                      onFocus={(e) => e.target.select()}
+                    />
+                  </div>
+                </div>
+              );
+            }}
+          </List>
+          
+          {/* Show count for large lists */}
+          {productVariants.length > 20 && (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              {t('showingVariants', { count: productVariants.length })}
+            </p>
+          )}
           <DialogFooter className="flex gap-2 sm:gap-3">
             <Button
               type="button"

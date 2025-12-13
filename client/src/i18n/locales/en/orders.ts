@@ -484,6 +484,7 @@ const orders = {
   quickVariantPlaceholder: '23, 43-5, 67-2...',
   quickVariantHint: 'Format: number (1pc), number-qty (e.g., 23-5 = 5pcs of variant 23)',
   apply: 'Apply',
+  showingVariants: '{{count}} variants available',
   
   // AI Carton Packing
   aiCartonPacking: 'AI Carton Packing',

@@ -478,6 +478,7 @@ const orders = {
   quickVariantPlaceholder: '23, 43-5, 67-2...',
   quickVariantHint: 'Định dạng: số (1c), số-sl (VD: 23-5 = 5c biến thể 23)',
   apply: 'Áp dụng',
+  showingVariants: '{{count}} biến thể có sẵn',
   
   // AI Carton Packing
   aiCartonPacking: 'Đóng gói AI',
