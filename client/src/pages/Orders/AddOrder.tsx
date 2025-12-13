@@ -2849,8 +2849,6 @@ export default function AddOrder() {
     // Calculate total carton price: pieces × per-piece bulk price
     const cartonTotalPrice = bulkQty * perPiecePrice;
     
-    console.log('[Bulk Add] Product:', product.name, 'perPiecePrice:', perPiecePrice, 'bulkQty:', bulkQty, 'cartonTotalPrice:', cartonTotalPrice);
-    
     const newItem: OrderItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: actualProductId,

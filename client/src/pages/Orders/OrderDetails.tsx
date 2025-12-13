@@ -73,7 +73,8 @@ import {
   FileImage,
   Book,
   File,
-  Upload
+  Upload,
+  Box
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
@@ -1142,7 +1143,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   const isPromotionalFreeItem = unitPrice === 0 && item.quantity > 0;
                   
                   return (
-                  <div key={item.id || index} className="px-3 sm:px-6 py-3 sm:py-4">
+                  <div key={item.id || index} className={cn(
+                    "px-3 sm:px-6 py-3 sm:py-4",
+                    item.isBulkCarton && "bg-amber-50 dark:bg-amber-950/30"
+                  )}>
                     
                     <div className="flex items-start gap-3">
                       {showPickingMode && (
@@ -1195,11 +1199,25 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className="w-12 h-12 object-contain rounded border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-gray-700"
+                            className={cn(
+                              "w-12 h-12 object-contain rounded border bg-slate-50 dark:bg-slate-900",
+                              item.isBulkCarton 
+                                ? "border-amber-300 dark:border-amber-700" 
+                                : "border-slate-200 dark:border-gray-700"
+                            )}
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
-                            <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                          <div className={cn(
+                            "w-12 h-12 rounded border flex items-center justify-center",
+                            item.isBulkCarton 
+                              ? "bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700" 
+                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700"
+                          )}>
+                            {item.isBulkCarton ? (
+                              <Box className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                            ) : (
+                              <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                            )}
                           </div>
                         )}
                       </div>
@@ -1245,6 +1263,13 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             )}
                             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                               <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders:skuColon')} {item.sku}</p>
+                              {/* Bulk Carton Badge - inline with SKU */}
+                              {item.isBulkCarton && (
+                                <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                                  <Box className="h-2.5 w-2.5 mr-0.5" />
+                                  {item.bulkUnitName || 'carton'} ({item.bulkUnitQty || 1} pcs)
+                                </Badge>
+                              )}
                               {/* Promotional Free Item Badge - inline with SKU */}
                               {isPromotionalFreeItem && item.appliedDiscountLabel && (
                                 <>
