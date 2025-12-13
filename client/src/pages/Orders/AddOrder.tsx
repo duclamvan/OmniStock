@@ -1748,7 +1748,7 @@ export default function AddOrder() {
     }
   }, [packingPlan, form, aiCartonPackingEnabled]);
 
-  const addProductToOrder = async (product: any) => {
+  const addProductToOrder = async (product: any, skipStockCheck: boolean = false) => {
     // Check if this is a service
     if (product.isService) {
       // Always add as a new line (even if service already exists)
@@ -1772,6 +1772,21 @@ export default function AddOrder() {
         quantityInput?.focus();
       }, 100);
     } else {
+      // Check stock availability before adding (unless always allowed or explicitly skipped)
+      if (!skipStockCheck && !alwaysAllowOutOfStock) {
+        const baseStock = product.quantity ?? 0;
+        const inOrderQty = getQuantityInOrder(product.id);
+        const availableStock = baseStock - inOrderQty;
+        
+        if (availableStock <= 0) {
+          setPendingOutOfStockProduct(product);
+          setOutOfStockDialogOpen(true);
+          setProductSearch("");
+          setShowProductDropdown(false);
+          return;
+        }
+      }
+      
       // Check if product has variants
       try {
         const variantsResponse = await fetch(`/api/products/${product.id}/variants`);
@@ -1965,6 +1980,23 @@ export default function AddOrder() {
     setProductSearch("");
     setShowProductDropdown(false);
   };
+
+  const handleOutOfStockConfirm = useCallback((always: boolean) => {
+    if (always) {
+      setAlwaysAllowOutOfStock(true);
+      localStorage.setItem('alwaysAllowOutOfStock', 'true');
+    }
+    if (pendingOutOfStockProduct) {
+      addProductToOrder(pendingOutOfStockProduct, true);
+    }
+    setOutOfStockDialogOpen(false);
+    setPendingOutOfStockProduct(null);
+  }, [pendingOutOfStockProduct]);
+
+  const handleOutOfStockCancel = useCallback(() => {
+    setOutOfStockDialogOpen(false);
+    setPendingOutOfStockProduct(null);
+  }, []);
 
   const addVariantsToOrder = async () => {
     if (!selectedProductForVariant) return;
@@ -7079,6 +7111,29 @@ export default function AddOrder() {
               >
                 <Save className="h-4 w-4 mr-2" />
                 {t('orders:saveNote')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Out of Stock Warning Dialog */}
+        <Dialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('orders:outOfStockWarning')}</DialogTitle>
+              <DialogDescription>
+                {t('orders:outOfStockWarningDesc', { productName: pendingOutOfStockProduct?.name || '' })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={handleOutOfStockCancel} data-testid="button-out-of-stock-cancel">
+                {t('orders:dontAdd')}
+              </Button>
+              <Button variant="secondary" onClick={() => handleOutOfStockConfirm(false)} data-testid="button-out-of-stock-add-once">
+                {t('orders:yesAdd')}
+              </Button>
+              <Button onClick={() => handleOutOfStockConfirm(true)} data-testid="button-out-of-stock-always-add">
+                {t('orders:yesAlwaysAdd')}
               </Button>
             </DialogFooter>
           </DialogContent>

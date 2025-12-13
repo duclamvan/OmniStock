@@ -1733,6 +1733,13 @@ const orders = {
   dragToBookmarksBarDesc: 'Kéo nút này vào thanh bookmark để lưu!',
   orRightClickAddBookmark: 'Hoặc nhấp chuột phải và "Thêm vào Bookmark"',
   
+  // Out of Stock Warning
+  outOfStockWarning: 'Cảnh báo hết hàng',
+  outOfStockWarningDesc: '"{{productName}}" đã hết hàng. Bạn có muốn thêm sản phẩm này không?',
+  dontAdd: 'Không thêm',
+  yesAdd: 'Có, thêm',
+  yesAlwaysAdd: 'Có, luôn thêm',
+  
 } as const;
 
 export default orders;

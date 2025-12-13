@@ -1756,6 +1756,13 @@ const orders = {
   dragToBookmarksBarDesc: 'Drag this button to your bookmarks bar to save it!',
   orRightClickAddBookmark: 'Or right-click and "Add to Bookmarks"',
   
+  // Out of Stock Warning
+  outOfStockWarning: 'Out of Stock Warning',
+  outOfStockWarningDesc: '"{{productName}}" is out of stock. Do you want to add it anyway?',
+  dontAdd: "Don't add",
+  yesAdd: 'Yes, add',
+  yesAlwaysAdd: 'Yes, always add',
+  
 } as const;
 
 export default orders;
