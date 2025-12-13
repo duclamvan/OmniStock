@@ -2749,27 +2749,12 @@ export default function AddOrder() {
     const searchTerm = debouncedProductSearch;
     const hasSearchTerm = searchTerm && searchTerm.length >= 2;
 
-    // Create bulk versions of products that allow bulk sales
-    const bulkVersions = Array.isArray(allProducts) 
-      ? allProducts
-          .filter((p: any) => p.allowBulkSales && p.bulkUnitName && p.bulkUnitQty && p.bulkUnitQty > 1)
-          .map((p: any) => ({ 
-            ...p, 
-            id: `bulk-${p.id}`,
-            originalProductId: p.id,
-            isService: false, 
-            isBundle: false, 
-            isBulk: true 
-          }))
-      : [];
-
     if (!hasSearchTerm) {
       // No search term - include all items sorted by frequency
       const allItems = [
-        ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false, isBulk: false })) : []),
-        ...bulkVersions,
-        ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false, isBulk: false })) : []),
-        ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true, isBulk: false })) : []),
+        ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
+        ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
+        ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
       ];
       // Sort by frequency
       return allItems.sort((a, b) => {
@@ -2781,10 +2766,9 @@ export default function AddOrder() {
 
     // Combine all items for search
     const allItems = [
-      ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false, isBulk: false })) : []),
-      ...bulkVersions,
-      ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false, isBulk: false })) : []),
-      ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true, isBulk: false })) : []),
+      ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
+      ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
+      ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
     ];
 
     // Use fuzzySearch with custom scoring that includes frequency
@@ -2809,79 +2793,6 @@ export default function AddOrder() {
     scoredResults.sort((a, b) => b.score - a.score);
     return scoredResults.slice(0, 10).map(r => r.item);
   }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
-
-  // Get products with bulk units enabled (for quick bulk add buttons)
-  const bulkProducts = useMemo(() => {
-    if (!Array.isArray(allProducts)) return [];
-    return allProducts.filter((p: any) => 
-      p.allowBulkSales && p.bulkUnitName && p.bulkUnitQty && p.bulkUnitQty > 1
-    ).slice(0, 6); // Limit to 6 for UI
-  }, [allProducts]);
-
-  // Handler to add product with bulk unit (1 carton/box = X pcs, price = qty × per-piece bulk price)
-  const addBulkProductToOrder = useCallback(async (product: any) => {
-    const selectedCurrency = form.watch('currency') || 'EUR';
-    
-    // Get the per-piece bulk/wholesale price - this is stored in bulkPriceCzk/bulkPriceEur
-    let perPiecePrice = 0;
-    
-    // Use bulk prices (per-piece wholesale price)
-    if (selectedCurrency === 'CZK') {
-      perPiecePrice = parseFloat(product.bulkPriceCzk) || parseFloat(product.priceCzk) || 0;
-    } else if (selectedCurrency === 'EUR') {
-      perPiecePrice = parseFloat(product.bulkPriceEur) || parseFloat(product.priceEur) || 0;
-    }
-    
-    // Fallback: try any available bulk or retail price
-    if (!perPiecePrice || isNaN(perPiecePrice)) {
-      perPiecePrice = parseFloat(product.bulkPriceCzk) || 
-                      parseFloat(product.bulkPriceEur) || 
-                      parseFloat(product.priceCzk) || 
-                      parseFloat(product.priceEur) || 
-                      0;
-    }
-    
-    // Use originalProductId if this is from the search (has bulk- prefix)
-    const actualProductId = product.originalProductId || product.id;
-    const bulkQty = parseInt(product.bulkUnitQty) || 1;
-    const bulkUnitName = product.bulkUnitName || 'carton';
-    
-    // Calculate total carton price: pieces × per-piece bulk price
-    const cartonTotalPrice = bulkQty * perPiecePrice;
-    
-    const newItem: OrderItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      productId: actualProductId,
-      productName: product.name,
-      sku: product.sku,
-      quantity: 1, // 1 carton/unit
-      price: cartonTotalPrice, // Total price for the carton
-      discount: 0,
-      discountPercentage: 0,
-      tax: 0,
-      total: cartonTotalPrice,
-      landingCost: product.landingCost || product.latestLandingCost || null,
-      image: product.image || null,
-      notes: null,
-      isBulkCarton: true,
-      bulkUnitName: bulkUnitName,
-      bulkUnitQty: bulkQty,
-    };
-    
-    setOrderItems(items => [...items, newItem]);
-    markChangesAfterSave();
-    
-    toast({
-      title: t('orders:bulkAdded', 'Bulk added'),
-      description: `1 ${bulkUnitName} of ${product.name} (${bulkQty} pcs × ${perPiecePrice} = ${cartonTotalPrice})`,
-    });
-    
-    // Auto-focus quantity input for the newly added item
-    setTimeout(() => {
-      const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-      quantityInput?.focus();
-    }, 100);
-  }, [form, markChangesAfterSave, toast, t]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
@@ -4703,11 +4614,7 @@ export default function AddOrder() {
                       if (totalProducts > 0) {
                         const selectedProduct = filteredProducts[selectedProductIndex];
                         if (selectedProduct) {
-                          if (selectedProduct.isBulk) {
-                            addBulkProductToOrder(selectedProduct);
-                          } else {
-                            addProductToOrder(selectedProduct);
-                          }
+                          addProductToOrder(selectedProduct);
                           if (!barcodeScanMode) {
                             setProductSearch('');
                             setShowProductDropdown(false);
@@ -4750,9 +4657,9 @@ export default function AddOrder() {
                     const frequency = productFrequency[product.originalProductId || product.id] || 0;
                     const isService = product.isService;
                     const isBundle = product.isBundle;
-                    const isBulk = product.isBulk;
                     const isBestMatch = index === 0 && debouncedProductSearch.length >= 2;
                     const isKeyboardSelected = index === selectedProductIndex;
+                    const hasBulkUnits = product.allowBulkSales && product.bulkUnitQty > 1;
                     
                     return (
                       <button
@@ -4762,20 +4669,14 @@ export default function AddOrder() {
                           isKeyboardSelected ? 'bg-blue-50 dark:bg-blue-950 ring-2 ring-inset ring-blue-500' : 'hover:bg-blue-50 dark:hover:bg-slate-700'
                         } ${
                           isBestMatch ? 'bg-blue-100 dark:bg-blue-950 border-l-2 border-l-blue-500' : ''
-                        } ${
-                          isBulk ? 'bg-amber-50 dark:bg-amber-950/30' : ''
                         }`}
                         onClick={() => {
-                          if (isBulk) {
-                            addBulkProductToOrder(product);
-                          } else {
-                            addProductToOrder(product);
-                          }
+                          addProductToOrder(product);
                           setSelectedProductIndex(0);
                           setProductSearch('');
                           setShowProductDropdown(false);
                         }}
-                        data-testid={`${isService ? 'service' : isBundle ? 'bundle' : isBulk ? 'bulk' : 'product'}-item-${product.id}`}
+                        data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -4786,11 +4687,11 @@ export default function AddOrder() {
                                   <img 
                                     src={product.image} 
                                     alt={product.name}
-                                    className={`w-10 h-10 object-contain rounded border ${isBulk ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-gray-700'} bg-slate-50 dark:bg-slate-900`}
+                                    className="w-10 h-10 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                                   />
                                 ) : (
-                                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${isBulk ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700'}`}>
-                                    {isBulk ? <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" /> : <Package className="h-5 w-5 text-slate-300 dark:text-slate-600" />}
+                                  <div className="w-10 h-10 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
+                                    <Package className="h-5 w-5 text-slate-300 dark:text-slate-600" />
                                   </div>
                                 )}
                               </div>
