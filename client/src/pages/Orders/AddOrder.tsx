@@ -2818,27 +2818,26 @@ export default function AddOrder() {
     ).slice(0, 6); // Limit to 6 for UI
   }, [allProducts]);
 
-  // Handler to add product with bulk unit (1 carton/box = X pcs, price = qty × per-piece price)
+  // Handler to add product with bulk unit (1 carton/box = X pcs, price = qty × per-piece bulk price)
   const addBulkProductToOrder = useCallback(async (product: any) => {
     const selectedCurrency = form.watch('currency') || 'EUR';
     
-    // Get the per-piece price (regular retail price) - try multiple field names
+    // Get the per-piece bulk/wholesale price - this is stored in bulkPriceCzk/bulkPriceEur
     let perPiecePrice = 0;
     
-    // Try currency-specific prices first
+    // Use bulk prices (per-piece wholesale price)
     if (selectedCurrency === 'CZK') {
-      perPiecePrice = parseFloat(product.priceCzk) || parseFloat(product.price_czk) || 0;
+      perPiecePrice = parseFloat(product.bulkPriceCzk) || parseFloat(product.priceCzk) || 0;
     } else if (selectedCurrency === 'EUR') {
-      perPiecePrice = parseFloat(product.priceEur) || parseFloat(product.price_eur) || 0;
+      perPiecePrice = parseFloat(product.bulkPriceEur) || parseFloat(product.priceEur) || 0;
     }
     
-    // Fallback: try any available price field
+    // Fallback: try any available bulk or retail price
     if (!perPiecePrice || isNaN(perPiecePrice)) {
-      perPiecePrice = parseFloat(product.priceCzk) || 
+      perPiecePrice = parseFloat(product.bulkPriceCzk) || 
+                      parseFloat(product.bulkPriceEur) || 
+                      parseFloat(product.priceCzk) || 
                       parseFloat(product.priceEur) || 
-                      parseFloat(product.price_czk) || 
-                      parseFloat(product.price_eur) || 
-                      parseFloat(product.price) || 
                       0;
     }
     
@@ -2847,7 +2846,7 @@ export default function AddOrder() {
     const bulkQty = parseInt(product.bulkUnitQty) || 1;
     const bulkUnitName = product.bulkUnitName || 'carton';
     
-    // Calculate total carton price: pieces × per-piece price
+    // Calculate total carton price: pieces × per-piece bulk price
     const cartonTotalPrice = bulkQty * perPiecePrice;
     
     console.log('[Bulk Add] Product:', product.name, 'perPiecePrice:', perPiecePrice, 'bulkQty:', bulkQty, 'cartonTotalPrice:', cartonTotalPrice);
