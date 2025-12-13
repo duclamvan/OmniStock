@@ -3667,6 +3667,13 @@ export default function ProductForm() {
                                 placeholder="0.00"
                                 className="pl-10"
                                 data-testid="input-bulk-price-czk"
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  form.setValue('bulkPriceCzk', value);
+                                  if (!isNaN(value) && value > 0) {
+                                    form.setValue('bulkPriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                                  }
+                                }}
                               />
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">{t('products:units.bulkPriceHelp', 'Optional special price per bulk unit')}</p>
@@ -3683,6 +3690,13 @@ export default function ProductForm() {
                                 placeholder="0.00"
                                 className="pl-8"
                                 data-testid="input-bulk-price-eur"
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  form.setValue('bulkPriceEur', value);
+                                  if (!isNaN(value) && value > 0) {
+                                    form.setValue('bulkPriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                                  }
+                                }}
                               />
                             </div>
                           </div>
