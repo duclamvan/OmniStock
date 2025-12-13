@@ -2822,23 +2822,35 @@ export default function AddOrder() {
   const addBulkProductToOrder = useCallback(async (product: any) => {
     const selectedCurrency = form.watch('currency') || 'EUR';
     
-    // Get the per-piece price (regular retail price)
+    // Get the per-piece price (regular retail price) - try multiple field names
     let perPiecePrice = 0;
-    if (selectedCurrency === 'CZK' && product.priceCzk) {
-      perPiecePrice = parseFloat(product.priceCzk);
-    } else if (selectedCurrency === 'EUR' && product.priceEur) {
-      perPiecePrice = parseFloat(product.priceEur);
-    } else {
-      perPiecePrice = parseFloat(product.priceEur || product.priceCzk || '0');
+    
+    // Try currency-specific prices first
+    if (selectedCurrency === 'CZK') {
+      perPiecePrice = parseFloat(product.priceCzk) || parseFloat(product.price_czk) || 0;
+    } else if (selectedCurrency === 'EUR') {
+      perPiecePrice = parseFloat(product.priceEur) || parseFloat(product.price_eur) || 0;
+    }
+    
+    // Fallback: try any available price field
+    if (!perPiecePrice || isNaN(perPiecePrice)) {
+      perPiecePrice = parseFloat(product.priceCzk) || 
+                      parseFloat(product.priceEur) || 
+                      parseFloat(product.price_czk) || 
+                      parseFloat(product.price_eur) || 
+                      parseFloat(product.price) || 
+                      0;
     }
     
     // Use originalProductId if this is from the search (has bulk- prefix)
     const actualProductId = product.originalProductId || product.id;
-    const bulkQty = product.bulkUnitQty || 1;
+    const bulkQty = parseInt(product.bulkUnitQty) || 1;
     const bulkUnitName = product.bulkUnitName || 'carton';
     
     // Calculate total carton price: pieces × per-piece price
     const cartonTotalPrice = bulkQty * perPiecePrice;
+    
+    console.log('[Bulk Add] Product:', product.name, 'perPiecePrice:', perPiecePrice, 'bulkQty:', bulkQty, 'cartonTotalPrice:', cartonTotalPrice);
     
     const newItem: OrderItem = {
       id: Math.random().toString(36).substr(2, 9),
