@@ -14283,14 +14283,8 @@ export default function PickPack() {
                                             {item.productName}
                                           </p>
                                           <div className="flex items-center gap-2 mt-0.5">
-                                            {item.sku && (
-                                              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
-                                            )}
-                                            {item.warehouseLocation && (
-                                              <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                                <MapPin className="h-3 w-3" />
-                                                {item.warehouseLocation}
-                                              </span>
+                                            {item.categoryName && (
+                                              <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
                                             )}
                                           </div>
                                         </div>
@@ -14468,14 +14462,8 @@ export default function PickPack() {
                                             {item.productName}
                                           </p>
                                           <div className="flex items-center gap-2 mt-0.5">
-                                            {item.sku && (
-                                              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
-                                            )}
-                                            {item.warehouseLocation && (
-                                              <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                                <MapPin className="h-3 w-3" />
-                                                {item.warehouseLocation}
-                                              </span>
+                                            {item.categoryName && (
+                                              <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
                                             )}
                                           </div>
                                         </div>
