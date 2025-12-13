@@ -3610,12 +3610,16 @@ Important:
 
   app.post('/api/suppliers', isAuthenticated, async (req: any, res) => {
     try {
-      // Define supplier schema inline since we're not using a separate suppliers table
+      // Define supplier schema with all fields from the database table
       const supplierSchema = z.object({
         name: z.string(),
-        location: z.string().optional(),
-        contactEmail: z.string().email().optional(),
-        contactPhone: z.string().optional(),
+        contactPerson: z.string().optional(),
+        email: z.string().email().optional().or(z.literal('')),
+        phone: z.string().optional(),
+        address: z.string().optional(),
+        country: z.string().optional(),
+        website: z.string().optional(),
+        supplierLink: z.string().optional(),
         notes: z.string().optional()
       });
 
