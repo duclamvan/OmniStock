@@ -8084,6 +8084,8 @@ Important:
             total: String(item.total || price),
             image: item.image || null,
             landingCost: landingCostSnapshot ? String(landingCostSnapshot) : null, // Cost snapshot at sale time
+            bulkUnitQty: item.bulkUnitQty || null, // Bulk unit quantity for carton display
+            bulkUnitName: item.bulkUnitName || null, // Bulk unit name (e.g., "carton")
           };
           console.log('Creating order item:', JSON.stringify(orderItem));
           try {
@@ -8206,6 +8208,8 @@ Important:
             landingCost: item.landingCost ? String(item.landingCost) : null,
             notes: item.notes || null,
             image: item.image || null,
+            bulkUnitQty: item.bulkUnitQty || null,
+            bulkUnitName: item.bulkUnitName || null,
           });
         }
       }

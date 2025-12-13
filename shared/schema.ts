@@ -974,6 +974,8 @@ export const orderItems = pgTable("order_items", {
   appliedDiscountType: varchar("applied_discount_type"), // percentage, fixed, buy_x_get_y
   appliedDiscountScope: varchar("applied_discount_scope"), // product, order, customer
   freeItemsCount: integer("free_items_count"), // For buy_x_get_y: number of free items earned
+  bulkUnitQty: integer("bulk_unit_qty"), // Quantity per bulk unit for carton badge display
+  bulkUnitName: varchar("bulk_unit_name"), // Name of bulk unit (carton, pallet, case)
 });
 
 // Product warehouse locations table
