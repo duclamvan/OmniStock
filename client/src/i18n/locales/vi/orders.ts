@@ -1379,6 +1379,7 @@ const orders = {
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Tiến trình lấy hàng',
   itemsToPick: 'Sản phẩm cần lấy',
+  sameAisle: 'Cùng lối đi',
   allItemsPickedReady: 'Đã lấy tất cả sản phẩm! Sẵn sàng gửi hàng.',
   markAllPicked: 'Đánh dấu tất cả đã lấy',
   clearAll: 'Xóa tất cả',

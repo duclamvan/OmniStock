@@ -1443,6 +1443,19 @@ function OrderFilesDisplay({
   );
 }
 
+// Helper function to extract aisle from location code
+// Examples: "WH1-A2" → "WH1-A2", "WH1-A2-B3" → "WH1-A2", "A2-B3" → "A2"
+const extractAisle = (location: string | undefined): string | null => {
+  if (!location) return null;
+  const parts = location.split('-');
+  // If only one part, return as-is
+  if (parts.length === 1) return location;
+  // If two parts like "WH1-A2", return the whole thing as aisle
+  if (parts.length === 2) return location;
+  // If three or more parts like "WH1-A2-B3", return first two parts as aisle
+  return parts.slice(0, 2).join('-');
+};
+
 // PickingListView Component - Professional list/table view for picking items
 interface PickingListViewProps {
   order: PickPackOrder;
@@ -1503,6 +1516,12 @@ function PickingListView({
           const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
           const isCurrent = currentItem?.id === item.id;
           const isRecentlyScanned = recentlyScannedItemId === item.id;
+          
+          // Check if next item is in the same aisle (for route optimization indicator)
+          const currentAisle = extractAisle(item.warehouseLocation);
+          const nextItem = order.items[index + 1];
+          const nextAisle = nextItem ? extractAisle(nextItem.warehouseLocation) : null;
+          const isSameAisleAsNext = currentAisle && nextAisle && currentAisle === nextAisle;
           
           // Determine background color
           let bgClass = 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700';
@@ -1599,15 +1618,24 @@ function PickingListView({
                     </span>
                   )}
                   {/* Warehouse Location - Under Product Title */}
-                  <div className="mt-1.5">
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold ${
                       isCurrent 
                         ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+                        : isSameAisleAsNext
+                          ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-2 border-gray-700 dark:border-gray-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
                     }`}>
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                       <span>{item.warehouseLocation || t('noLocation') || 'No location'}</span>
                     </div>
+                    {/* Same aisle indicator - shows when next item is in same aisle */}
+                    {isSameAisleAsNext && !isPicked && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                        <ChevronDown className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">{t('sameAisle') || 'Same aisle'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
