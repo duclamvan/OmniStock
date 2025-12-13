@@ -226,32 +226,66 @@ const getCountryFlag = (country: string | null | undefined): string => {
   const normalizedCountry = country.toLowerCase();
   
   const countryFlagMap: Record<string, string> = {
+    // ISO codes
+    'cz': '🇨🇿',
+    'de': '🇩🇪',
+    'at': '🇦🇹',
+    'vn': '🇻🇳',
+    'pl': '🇵🇱',
+    'sk': '🇸🇰',
+    'hu': '🇭🇺',
+    'gb': '🇬🇧',
+    'fr': '🇫🇷',
+    'it': '🇮🇹',
+    'es': '🇪🇸',
+    'nl': '🇳🇱',
+    'be': '🇧🇪',
+    'ch': '🇨🇭',
+    'cn': '🇨🇳',
+    'ru': '🇷🇺',
+    'dk': '🇩🇰',
+    'se': '🇸🇪',
+    'no': '🇳🇴',
+    'fi': '🇫🇮',
+    'pt': '🇵🇹',
+    'gr': '🇬🇷',
+    'hr': '🇭🇷',
+    'ro': '🇷🇴',
+    'bg': '🇧🇬',
+    // Czech Republic
     'czechia': '🇨🇿',
     'czech republic': '🇨🇿',
     'česko': '🇨🇿',
     'česká republika': '🇨🇿',
     'cesko': '🇨🇿',
     'ceska republika': '🇨🇿',
+    // Germany
     'germany': '🇩🇪',
     'deutschland': '🇩🇪',
     'německo': '🇩🇪',
     'nemecko': '🇩🇪',
+    // Austria
     'austria': '🇦🇹',
     'österreich': '🇦🇹',
     'osterreich': '🇦🇹',
     'rakousko': '🇦🇹',
+    // Vietnam
     'vietnam': '🇻🇳',
     'viet nam': '🇻🇳',
+    // Poland
     'poland': '🇵🇱',
     'polska': '🇵🇱',
     'polsko': '🇵🇱',
+    // Slovakia
     'slovakia': '🇸🇰',
     'slovensko': '🇸🇰',
+    // Hungary
     'hungary': '🇭🇺',
     'magyarország': '🇭🇺',
     'magyarorszag': '🇭🇺',
     'maďarsko': '🇭🇺',
     'madarsko': '🇭🇺',
+    // USA/UK
     'united states': '🇺🇸',
     'usa': '🇺🇸',
     'us': '🇺🇸',
@@ -259,64 +293,81 @@ const getCountryFlag = (country: string | null | undefined): string => {
     'uk': '🇬🇧',
     'britain': '🇬🇧',
     'great britain': '🇬🇧',
+    // France
     'france': '🇫🇷',
     'francie': '🇫🇷',
     'frankreich': '🇫🇷',
+    // Italy
     'italy': '🇮🇹',
     'italia': '🇮🇹',
     'itálie': '🇮🇹',
     'italie': '🇮🇹',
+    // Spain
     'spain': '🇪🇸',
     'españa': '🇪🇸',
     'espana': '🇪🇸',
     'španělsko': '🇪🇸',
     'spanelsko': '🇪🇸',
+    // Netherlands
     'netherlands': '🇳🇱',
     'holland': '🇳🇱',
     'niederlande': '🇳🇱',
     'nizozemsko': '🇳🇱',
+    // Belgium
     'belgium': '🇧🇪',
     'belgië': '🇧🇪',
     'belgie': '🇧🇪',
     'belgien': '🇧🇪',
+    // Switzerland
     'switzerland': '🇨🇭',
     'schweiz': '🇨🇭',
     'suisse': '🇨🇭',
     'svizzera': '🇨🇭',
     'švýcarsko': '🇨🇭',
     'svycarsko': '🇨🇭',
+    // China
     'china': '🇨🇳',
     'čína': '🇨🇳',
     'cina': '🇨🇳',
+    // Russia
     'russia': '🇷🇺',
     'rusko': '🇷🇺',
     'russland': '🇷🇺',
+    // Denmark
     'denmark': '🇩🇰',
     'dánsko': '🇩🇰',
     'dansko': '🇩🇰',
     'dänemark': '🇩🇰',
+    // Sweden
     'sweden': '🇸🇪',
     'švédsko': '🇸🇪',
     'svedsko': '🇸🇪',
     'schweden': '🇸🇪',
+    // Norway
     'norway': '🇳🇴',
     'norsko': '🇳🇴',
     'norwegen': '🇳🇴',
+    // Finland
     'finland': '🇫🇮',
     'finsko': '🇫🇮',
     'finnland': '🇫🇮',
+    // Portugal
     'portugal': '🇵🇹',
     'portugalsko': '🇵🇹',
+    // Greece
     'greece': '🇬🇷',
     'řecko': '🇬🇷',
     'recko': '🇬🇷',
     'griechenland': '🇬🇷',
+    // Croatia
     'croatia': '🇭🇷',
     'chorvatsko': '🇭🇷',
     'kroatien': '🇭🇷',
+    // Romania
     'romania': '🇷🇴',
     'rumunsko': '🇷🇴',
     'rumänien': '🇷🇴',
+    // Bulgaria
     'bulgaria': '🇧🇬',
     'bulharsko': '🇧🇬',
     'bulgarien': '🇧🇬',
