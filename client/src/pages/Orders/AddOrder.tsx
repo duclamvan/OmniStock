@@ -2746,26 +2746,42 @@ export default function AddOrder() {
     const searchTerm = debouncedProductSearch;
     const hasSearchTerm = searchTerm && searchTerm.length >= 2;
 
+    // Create bulk versions of products that allow bulk sales
+    const bulkVersions = Array.isArray(allProducts) 
+      ? allProducts
+          .filter((p: any) => p.allowBulkSales && p.bulkUnitName && p.bulkUnitQty && p.bulkUnitQty > 1)
+          .map((p: any) => ({ 
+            ...p, 
+            id: `bulk-${p.id}`,
+            originalProductId: p.id,
+            isService: false, 
+            isBundle: false, 
+            isBulk: true 
+          }))
+      : [];
+
     if (!hasSearchTerm) {
       // No search term - include all items sorted by frequency
       const allItems = [
-        ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
-        ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
-        ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
+        ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false, isBulk: false })) : []),
+        ...bulkVersions,
+        ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false, isBulk: false })) : []),
+        ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true, isBulk: false })) : []),
       ];
       // Sort by frequency
       return allItems.sort((a, b) => {
-        const freqA = productFrequency[a.id] || 0;
-        const freqB = productFrequency[b.id] || 0;
+        const freqA = productFrequency[a.originalProductId || a.id] || 0;
+        const freqB = productFrequency[b.originalProductId || b.id] || 0;
         return freqB - freqA;
       });
     }
 
     // Combine all items for search
     const allItems = [
-      ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
-      ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
-      ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
+      ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false, isBulk: false })) : []),
+      ...bulkVersions,
+      ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false, isBulk: false })) : []),
+      ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true, isBulk: false })) : []),
     ];
 
     // Use fuzzySearch with custom scoring that includes frequency
@@ -2778,7 +2794,7 @@ export default function AddOrder() {
 
     // Apply frequency bonus to scores
     const scoredResults = results.map(result => {
-      const frequency = productFrequency[result.item.id] || 0;
+      const frequency = productFrequency[result.item.originalProductId || result.item.id] || 0;
       const frequencyBonus = Math.min(frequency * 0.5, 10); // Up to 10 points bonus
       return {
         ...result,
@@ -2786,9 +2802,9 @@ export default function AddOrder() {
       };
     });
 
-    // Sort by adjusted score and return top 8
+    // Sort by adjusted score and return top 10 (increased to accommodate bulk versions)
     scoredResults.sort((a, b) => b.score - a.score);
-    return scoredResults.slice(0, 8).map(r => r.item);
+    return scoredResults.slice(0, 10).map(r => r.item);
   }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
 
   // Get products with bulk units enabled (for quick bulk add buttons)
@@ -2799,47 +2815,50 @@ export default function AddOrder() {
     ).slice(0, 6); // Limit to 6 for UI
   }, [allProducts]);
 
-  // Handler to add product with bulk quantity
+  // Handler to add product with bulk unit (1 carton/box = X pcs at bulk price)
   const addBulkProductToOrder = useCallback(async (product: any) => {
     const selectedCurrency = form.watch('currency') || 'EUR';
-    const currentSaleType = form.watch('saleType') || 'retail';
     
     // Get the bulk price or fall back to regular price
-    let productPrice = 0;
+    let bulkPrice = 0;
     if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
-      productPrice = parseFloat(product.bulkPriceCzk);
+      bulkPrice = parseFloat(product.bulkPriceCzk);
     } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
-      productPrice = parseFloat(product.bulkPriceEur);
+      bulkPrice = parseFloat(product.bulkPriceEur);
     } else if (product.bulkPriceEur || product.bulkPriceCzk) {
-      productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+      bulkPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
     }
     
     // Fallback to regular price if no bulk price
-    if (productPrice === 0) {
+    if (bulkPrice === 0) {
       if (selectedCurrency === 'CZK' && product.priceCzk) {
-        productPrice = parseFloat(product.priceCzk);
+        bulkPrice = parseFloat(product.priceCzk);
       } else if (selectedCurrency === 'EUR' && product.priceEur) {
-        productPrice = parseFloat(product.priceEur);
+        bulkPrice = parseFloat(product.priceEur);
       } else {
-        productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        bulkPrice = parseFloat(product.priceEur || product.priceCzk || '0');
       }
     }
     
+    // Use originalProductId if this is from the search (has bulk- prefix)
+    const actualProductId = product.originalProductId || product.id;
     const bulkQty = product.bulkUnitQty || 1;
+    const bulkUnitName = product.bulkUnitName || 'carton';
     
     const newItem: OrderItem = {
       id: Math.random().toString(36).substr(2, 9),
-      productId: product.id,
-      productName: `${product.name} (${product.bulkUnitName})`,
+      productId: actualProductId,
+      productName: product.name,
       sku: product.sku,
-      quantity: bulkQty,
-      price: productPrice,
+      quantity: 1, // 1 carton/unit
+      price: bulkPrice,
       discount: 0,
       discountPercentage: 0,
       tax: 0,
-      total: bulkQty * productPrice,
+      total: bulkPrice,
       landingCost: product.landingCost || product.latestLandingCost || null,
       image: product.image || null,
+      notes: `${bulkQty} pcs per ${bulkUnitName}`, // Show bulk info as note
     };
     
     setOrderItems(items => [...items, newItem]);
@@ -2847,7 +2866,7 @@ export default function AddOrder() {
     
     toast({
       title: t('orders:bulkAdded', 'Bulk added'),
-      description: `${bulkQty}x ${product.name} (${product.bulkUnitName})`,
+      description: `1 ${bulkUnitName} of ${product.name} (${bulkQty} pcs)`,
     });
     
     // Auto-focus quantity input for the newly added item
@@ -4677,7 +4696,11 @@ export default function AddOrder() {
                       if (totalProducts > 0) {
                         const selectedProduct = filteredProducts[selectedProductIndex];
                         if (selectedProduct) {
-                          addProductToOrder(selectedProduct);
+                          if (selectedProduct.isBulk) {
+                            addBulkProductToOrder(selectedProduct);
+                          } else {
+                            addProductToOrder(selectedProduct);
+                          }
                           if (!barcodeScanMode) {
                             setProductSearch('');
                             setShowProductDropdown(false);
@@ -4717,9 +4740,10 @@ export default function AddOrder() {
                     {t('orders:productsFoundCount', { count: filteredProducts.length })}
                   </div>
                   {filteredProducts.map((product: any, index: number) => {
-                    const frequency = productFrequency[product.id] || 0;
+                    const frequency = productFrequency[product.originalProductId || product.id] || 0;
                     const isService = product.isService;
                     const isBundle = product.isBundle;
+                    const isBulk = product.isBulk;
                     const isBestMatch = index === 0 && debouncedProductSearch.length >= 2;
                     const isKeyboardSelected = index === selectedProductIndex;
                     
@@ -4731,27 +4755,35 @@ export default function AddOrder() {
                           isKeyboardSelected ? 'bg-blue-50 dark:bg-blue-950 ring-2 ring-inset ring-blue-500' : 'hover:bg-blue-50 dark:hover:bg-slate-700'
                         } ${
                           isBestMatch ? 'bg-blue-100 dark:bg-blue-950 border-l-2 border-l-blue-500' : ''
+                        } ${
+                          isBulk ? 'bg-amber-50 dark:bg-amber-950/30' : ''
                         }`}
                         onClick={() => {
-                          addProductToOrder(product);
+                          if (isBulk) {
+                            addBulkProductToOrder(product);
+                          } else {
+                            addProductToOrder(product);
+                          }
                           setSelectedProductIndex(0);
+                          setProductSearch('');
+                          setShowProductDropdown(false);
                         }}
-                        data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
+                        data-testid={`${isService ? 'service' : isBundle ? 'bundle' : isBulk ? 'bulk' : 'product'}-item-${product.id}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             {/* Product Image */}
                             {!isService && !isBundle && (
-                              <div className="flex-shrink-0">
+                              <div className="flex-shrink-0 relative">
                                 {product.image ? (
                                   <img 
                                     src={product.image} 
                                     alt={product.name}
-                                    className="w-10 h-10 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
+                                    className={`w-10 h-10 object-contain rounded border ${isBulk ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-gray-700'} bg-slate-50 dark:bg-slate-900`}
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
-                                    <Package className="h-5 w-5 text-slate-300 dark:text-slate-600" />
+                                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${isBulk ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700'}`}>
+                                    {isBulk ? <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" /> : <Package className="h-5 w-5 text-slate-300 dark:text-slate-600" />}
                                   </div>
                                 )}
                               </div>
@@ -4771,6 +4803,11 @@ export default function AddOrder() {
                                   {t('orders:best')}
                                 </Badge>
                               )}
+                              {isBulk && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-900/50 flex-shrink-0">
+                                  {product.bulkUnitName}
+                                </Badge>
+                              )}
                               {isService && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 border-orange-500 text-orange-600 flex-shrink-0">
                                   {t('orders:service')}
@@ -4783,16 +4820,30 @@ export default function AddOrder() {
                               )}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {!isService && !isBundle && `SKU: ${product.sku}`}
+                              {isBulk && `${product.bulkUnitQty} pcs per ${product.bulkUnitName}`}
+                              {!isService && !isBundle && !isBulk && `SKU: ${product.sku}`}
                               {isService && product.description && product.description}
                               {isBundle && product.description && product.description}
                             </div>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
-                            <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                            <div className={`font-semibold text-sm ${isBulk ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100'}`}>
                               {isService ? (
                                 formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
+                              ) : isBulk ? (
+                                (() => {
+                                  const selectedCurrency = form.watch('currency') || 'EUR';
+                                  let price = 0;
+                                  if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+                                    price = parseFloat(product.bulkPriceCzk);
+                                  } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+                                    price = parseFloat(product.bulkPriceEur);
+                                  } else {
+                                    price = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || product.priceEur || product.priceCzk || '0');
+                                  }
+                                  return formatCurrency(price, selectedCurrency);
+                                })()
                               ) : (
                                 (() => {
                                   const selectedCurrency = form.watch('currency') || 'EUR';
@@ -4809,7 +4860,7 @@ export default function AddOrder() {
                                 })()
                               )}
                             </div>
-                            {!isService && (
+                            {!isService && !isBulk && (
                               (() => {
                                 const baseStock = isBundle ? (product.availableStock ?? 0) : (product.quantity || 0);
                                 const inOrder = isBundle 
@@ -4842,61 +4893,6 @@ export default function AddOrder() {
               )}
             </div>
 
-            {/* Bulk Units Quick Add Section */}
-            {bulkProducts && bulkProducts.length > 0 && (
-              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid="bulk-units-section">
-                <div className="flex items-center gap-2 mb-2">
-                  <Box className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
-                    {t('orders:bulkUnits', 'Bulk Units')}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {bulkProducts.map((product: any) => {
-                    const selectedCurrency = form.watch('currency') || 'EUR';
-                    let bulkPrice = 0;
-                    if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
-                      bulkPrice = parseFloat(product.bulkPriceCzk);
-                    } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
-                      bulkPrice = parseFloat(product.bulkPriceEur);
-                    } else if (product.bulkPriceEur || product.bulkPriceCzk) {
-                      bulkPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
-                    }
-                    // Fallback to regular price
-                    if (bulkPrice === 0) {
-                      if (selectedCurrency === 'CZK' && product.priceCzk) {
-                        bulkPrice = parseFloat(product.priceCzk);
-                      } else if (selectedCurrency === 'EUR' && product.priceEur) {
-                        bulkPrice = parseFloat(product.priceEur);
-                      } else {
-                        bulkPrice = parseFloat(product.priceEur || product.priceCzk || '0');
-                      }
-                    }
-                    
-                    return (
-                      <Button
-                        key={product.id}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-auto py-1.5 px-2 bg-white dark:bg-slate-800 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-left"
-                        onClick={() => addBulkProductToOrder(product)}
-                        data-testid={`bulk-product-${product.id}`}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate max-w-[120px]">
-                            {product.name}
-                          </span>
-                          <span className="text-[10px] text-amber-700 dark:text-amber-300">
-                            {product.bulkUnitName}: {product.bulkUnitQty} pcs @ {formatCurrency(bulkPrice, selectedCurrency)}
-                          </span>
-                        </div>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
