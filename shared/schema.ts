@@ -1922,6 +1922,17 @@ export const insertProductSchema = createInsertSchema(products)
       .optional()
       .nullable()
       .transform((val) => (val ? String(val) : null)),
+    // Allow string or number for bulk price fields
+    bulkPriceCzk: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    bulkPriceEur: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
     // Allow string or number for dimension/weight decimal fields
     length: z
       .union([z.string(), z.number()])
