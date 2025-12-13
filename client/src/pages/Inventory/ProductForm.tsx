@@ -316,6 +316,7 @@ export default function ProductForm() {
   const searchParams = new URLSearchParams(window.location.search);
   const categoryIdFromUrl = searchParams.get('categoryId');
   const nameFromUrl = searchParams.get('name');
+  const returnUrl = searchParams.get('returnUrl');
 
   // Fetch product data if in edit mode
   const { data: product, isLoading: productLoading, isSuccess: productLoaded } = useQuery<any>({
@@ -984,9 +985,10 @@ export default function ProductForm() {
         data.imageUrl = uploadResult.imageUrl;
       }
       
-      await apiRequest('POST', '/api/products', data);
+      const response = await apiRequest('POST', '/api/products', data);
+      return response.json();
     },
-    onSuccess: async () => {
+    onSuccess: async (createdProduct: any) => {
       // Wait for queries to invalidate and refetch before navigating
       await queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       
@@ -997,7 +999,13 @@ export default function ProductForm() {
       
       // Small delay to ensure refetch completes
       setTimeout(() => {
-        setLocation('/inventory');
+        if (returnUrl && createdProduct?.id) {
+          // Redirect back to the return URL with the new product ID
+          const separator = returnUrl.includes('?') ? '&' : '?';
+          setLocation(`${returnUrl}${separator}newProductId=${createdProduct.id}`);
+        } else {
+          setLocation('/inventory');
+        }
       }, 100);
     },
     onError: (error) => {

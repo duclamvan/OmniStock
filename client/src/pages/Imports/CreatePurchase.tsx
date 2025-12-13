@@ -416,6 +416,40 @@ export default function CreatePurchase() {
     setPurchaseDate(localDateTime);
   }, []);
   
+  // Handle returning from product creation with newProductId
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newProductId = urlParams.get('newProductId');
+    
+    if (newProductId && products.length > 0) {
+      const newProduct = products.find((p: Product) => p.id === newProductId);
+      if (newProduct) {
+        // Auto-select the newly created product
+        setSelectedProduct(newProduct);
+        setCurrentItem({
+          ...currentItem,
+          name: newProduct.name,
+          sku: newProduct.sku || "",
+          barcode: newProduct.barcode || "",
+          weight: newProduct.weight || 0,
+          dimensions: newProduct.dimensions || "",
+          categoryId: newProduct.categoryId,
+          category: newProduct.category || "",
+          binLocation: newProduct.warehouseLocation || "TBA",
+          sellingUnitName: newProduct.sellingUnitName,
+          bulkUnitName: newProduct.bulkUnitName,
+          bulkUnitQty: newProduct.bulkUnitQty
+        });
+        
+        // Clean up URL to remove the newProductId param
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        
+        toast({ title: t('success'), description: t('productSelectedAutomatically') });
+      }
+    }
+  }, [products]);
+  
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -2043,7 +2077,9 @@ export default function CreatePurchase() {
                                 variant="outline"
                                 onClick={() => {
                                   const productName = encodeURIComponent(currentItem.name || '');
-                                  window.open(`/inventory/add?name=${productName}`, '_blank');
+                                  const currentPath = window.location.pathname + window.location.search;
+                                  const returnUrl = encodeURIComponent(currentPath);
+                                  navigate(`/inventory/add?name=${productName}&returnUrl=${returnUrl}`);
                                 }}
                                 className="w-full"
                                 data-testid="button-add-new-product"
