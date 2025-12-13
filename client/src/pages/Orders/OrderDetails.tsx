@@ -1232,7 +1232,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
                                   pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-blue-600 hover:text-blue-800"
                                 )}>
-                                  {item.productName}
+                                  {item.productName}{item.isBulkCarton && ` (${item.bulkUnitName || 'carton'})`}
                                 </p>
                               </Link>
                             ) : item.serviceId ? (
@@ -1258,7 +1258,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 "font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5",
                                 pickedItems.has(item.id) && "line-through text-slate-400 dark:text-slate-500"
                               )}>
-                                {item.productName}
+                                {item.productName}{item.isBulkCarton && ` (${item.bulkUnitName || 'carton'})`}
                               </p>
                             )}
                             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
