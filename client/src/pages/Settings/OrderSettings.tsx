@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign, MapPin, Check } from "lucide-react";
+import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign, MapPin, Check, Wrench } from "lucide-react";
+import ServiceSettings from "./ServiceSettings";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
@@ -229,7 +230,7 @@ export default function OrderSettings() {
       <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="defaults" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-3 lg:grid-cols-6 gap-1 p-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
               <TabsTrigger value="defaults" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('settings:orderDefaults')}</span>
@@ -253,6 +254,10 @@ export default function OrderSettings() {
               <TabsTrigger value="cod" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('settings:cod')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="services" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Wrench className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{t('common:services')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1371,6 +1376,11 @@ export default function OrderSettings() {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tab 7: Services */}
+          <TabsContent value="services" className="space-y-4">
+            <ServiceSettings />
           </TabsContent>
         </Tabs>
 

@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield, Wrench } from "lucide-react";
+import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield } from "lucide-react";
 import GeneralSettings from "./GeneralSettings";
 import ShippingSettings from "./ShippingSettings";
 import OrderSettings from "./OrderSettings";
@@ -9,7 +9,6 @@ import FinancialSettings from "./FinancialSettings";
 import InventorySettings from "./InventorySettings";
 import SystemSettings from "./SystemSettings";
 import RolesSettings from "./RolesSettings";
-import ServiceSettings from "./ServiceSettings";
 
 export default function Settings() {
   const [location, navigate] = useLocation();
@@ -27,7 +26,7 @@ export default function Settings() {
 
       <Tabs value={tab} onValueChange={(value) => navigate(`/settings/${value}`)} className="space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-8 gap-1 sm:gap-1.5 h-auto p-1 sm:p-1.5">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 sm:gap-1.5 h-auto p-1 sm:p-1.5">
           <TabsTrigger value="general" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-general">
             <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             <span className="hidden sm:inline">{t('common:general')}</span>
@@ -55,10 +54,6 @@ export default function Settings() {
           <TabsTrigger value="roles" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-roles">
             <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             <span className="hidden sm:inline">{t('system:roles')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="services" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-services">
-            <Wrench className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:services')}</span>
           </TabsTrigger>
           </TabsList>
         </div>
@@ -89,10 +84,6 @@ export default function Settings() {
 
         <TabsContent value="roles">
           <RolesSettings />
-        </TabsContent>
-
-        <TabsContent value="services">
-          <ServiceSettings />
         </TabsContent>
       </Tabs>
     </div>
