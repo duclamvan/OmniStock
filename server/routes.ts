@@ -8046,6 +8046,8 @@ Important:
           // CRITICAL: Capture landing cost snapshot at time of sale for accurate profit calculation
           // This ensures historical orders maintain their correct profit even when product costs change
           let landingCostSnapshot = null;
+          let productBulkUnitQty = item.bulkUnitQty || null;
+          let productBulkUnitName = item.bulkUnitName || null;
           if (item.productId) {
             try {
               const product = await storage.getProductById(item.productId);
@@ -8059,6 +8061,13 @@ Important:
                   landingCostSnapshot = parseFloat(product.importCostEur);
                 } else if (product.importCostUsd) {
                   landingCostSnapshot = parseFloat(product.importCostUsd);
+                }
+                // Copy bulk unit fields from product if not provided
+                if (!productBulkUnitQty && product.bulkUnitQty) {
+                  productBulkUnitQty = product.bulkUnitQty;
+                }
+                if (!productBulkUnitName && product.bulkUnitName) {
+                  productBulkUnitName = product.bulkUnitName;
                 }
               }
             } catch (err) {
@@ -8084,8 +8093,8 @@ Important:
             total: String(item.total || price),
             image: item.image || null,
             landingCost: landingCostSnapshot ? String(landingCostSnapshot) : null, // Cost snapshot at sale time
-            bulkUnitQty: item.bulkUnitQty || null, // Bulk unit quantity for carton display
-            bulkUnitName: item.bulkUnitName || null, // Bulk unit name (e.g., "carton")
+            bulkUnitQty: productBulkUnitQty, // Bulk unit quantity for carton display
+            bulkUnitName: productBulkUnitName, // Bulk unit name (e.g., "carton")
           };
           console.log('Creating order item:', JSON.stringify(orderItem));
           try {
@@ -8188,6 +8197,26 @@ Important:
         // Add new items
         for (const item of items) {
           const orderDetail = await storage.getOrderById(req.params.id);
+          
+          // Get bulk unit fields from product if not provided
+          let itemBulkUnitQty = item.bulkUnitQty || null;
+          let itemBulkUnitName = item.bulkUnitName || null;
+          if (item.productId && (!itemBulkUnitQty || !itemBulkUnitName)) {
+            try {
+              const product = await storage.getProductById(item.productId);
+              if (product) {
+                if (!itemBulkUnitQty && product.bulkUnitQty) {
+                  itemBulkUnitQty = product.bulkUnitQty;
+                }
+                if (!itemBulkUnitName && product.bulkUnitName) {
+                  itemBulkUnitName = product.bulkUnitName;
+                }
+              }
+            } catch (err) {
+              console.error('Failed to fetch product for bulk unit fields:', err);
+            }
+          }
+          
           await storage.createOrderItem({
             orderId: req.params.id,
             productId: item.productId,
@@ -8208,8 +8237,8 @@ Important:
             landingCost: item.landingCost ? String(item.landingCost) : null,
             notes: item.notes || null,
             image: item.image || null,
-            bulkUnitQty: item.bulkUnitQty || null,
-            bulkUnitName: item.bulkUnitName || null,
+            bulkUnitQty: itemBulkUnitQty,
+            bulkUnitName: itemBulkUnitName,
           });
         }
       }
