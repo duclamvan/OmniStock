@@ -272,27 +272,31 @@ export default function ServiceSettings() {
                   {serviceTypes.map((serviceType) => (
                     <TableRow key={serviceType.id} data-testid={`service-type-row-${serviceType.id}`}>
                       <TableCell className="font-medium">{serviceType.name}</TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={serviceType.costEur}
-                          onChange={(e) => handleUpdateServiceTypeCost(serviceType.id, 'eur', parseFloat(e.target.value) || 0)}
-                          className="w-24 text-right"
-                          data-testid={`input-service-type-cost-eur-${serviceType.id}`}
-                        />
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={serviceType.costEur}
+                            onChange={(e) => handleUpdateServiceTypeCost(serviceType.id, 'eur', parseFloat(e.target.value) || 0)}
+                            className="w-24 text-right"
+                            data-testid={`input-service-type-cost-eur-${serviceType.id}`}
+                          />
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={serviceType.costCzk}
-                          onChange={(e) => handleUpdateServiceTypeCost(serviceType.id, 'czk', parseFloat(e.target.value) || 0)}
-                          className="w-24 text-right"
-                          data-testid={`input-service-type-cost-czk-${serviceType.id}`}
-                        />
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={serviceType.costCzk}
+                            onChange={(e) => handleUpdateServiceTypeCost(serviceType.id, 'czk', parseFloat(e.target.value) || 0)}
+                            className="w-24 text-right"
+                            data-testid={`input-service-type-cost-czk-${serviceType.id}`}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Switch
