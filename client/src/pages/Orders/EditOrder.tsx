@@ -2032,6 +2032,11 @@ export default function EditOrder() {
             if (item.bundleId) {
               const bundle = Array.isArray(allBundles) ? allBundles.find((b: any) => b.id === item.bundleId) : null;
               baseStock = bundle?.availableStock ?? 0;
+            } else if (item.variantId && item.productId) {
+              // For variants, look up variant stock from productsWithVariants or use a fallback
+              const variants = productsWithVariants[item.productId];
+              const variant = variants?.find((v: any) => v.id === item.variantId);
+              baseStock = variant?.stockQuantity ?? variant?.quantity ?? 0;
             } else if (item.productId) {
               const product = Array.isArray(allProducts) ? allProducts.find((p: any) => p.id === item.productId) : null;
               baseStock = product?.quantity ?? 0;
