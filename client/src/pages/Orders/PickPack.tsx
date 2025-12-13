@@ -1487,6 +1487,15 @@ function PickingListView({
         </p>
       </div>
 
+      {/* Separator between progress and items */}
+      <div className="flex items-center gap-3 py-2">
+        <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          {t('itemsToPick') || 'Items to Pick'}
+        </span>
+        <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+      </div>
+
       {/* Mobile-First Checklist */}
       <div className="space-y-2">
         {order.items.map((item, index) => {

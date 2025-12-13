@@ -1401,6 +1401,7 @@ const orders = {
   
   // OrderDetails.tsx - Picking Mode
   pickingProgress: 'Picking Progress',
+  itemsToPick: 'Items to Pick',
   allItemsPickedReady: 'All items picked! Ready to ship.',
   markAllPicked: 'Mark All Picked',
   clearAll: 'Clear All',
