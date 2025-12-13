@@ -1,0 +1,66 @@
+This is a great question that directly relates to the packaging and units configuration you have in your schema. Implementing bulk selling needs careful updates on both the frontend (Add Order/Order Detail) and the backend (inventory deduction logic).
+
+Based on your current schema and product details page, here is how you should implement bulk unit selling:
+
+## 🛒 Inventory Setup (Already done in `schema.ts`)
+
+Your `products` table already has the fields needed to track bulk units:
+* `sellingUnitName`: e.g., "piece" (Base unit).
+* `bulkUnitName`: e.g., "carton."
+* `bulkUnitQty`: How many selling units are in one bulk unit (e.g., 20 pieces per carton).
+* `allowBulkSales`: A boolean flag to enable this feature on orders.
+
+Your product setup page already shows an example: **1 carton = 20 piece** at a special price.
+
+---
+
+## 💻 Frontend Implementation (Add Order / Order Details)
+
+You need to allow the user to toggle between ordering in "Pieces" and "Cartons" when adding or editing an order item.
+
+### 1. **Add Bulk/Unit Toggle in Add Order Page**
+
+In the "Search Products" area of the Add Order page, when a product is selected, the input field needs a toggle control.
+
+
+* **Display Logic:** If `product.allowBulkSales` is true, show the toggle.
+* **Action:** When the user clicks the "Carton" button, the quantity they input is multiplied by `product.bulkUnitQty` before being saved to the `orderItems` table.
+
+**Example Calculation (in `client/src/pages/Orders/AddOrder.tsx`):**
+If the user inputs `2` and the mode is **Carton (CTN)**:
+* Quantity to save to database: `2 (Cartons) * 20 (Pieces/Carton) = 40`
+* Price to use: `product.bulkPriceCzk` (per carton).
+
+### 2. **Update Order Details Page**
+
+The Order Details page must show the order quantity in the unit the customer purchased.
+
+* You need to add a field to your `orderItems` table to store the **unit of sale**.
+
+#### **Schema Update Recommendation (if not done yet):**
+Add a column to the `orderItems` table to record the unit used in the sale.
+
+| Table | Column Name | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `orderItems` | `unitOfSale` | `varchar` | 'piece' or 'carton' or 'bulk' |
+
+When displaying the order item (e.g., in the Invoice panel), you would read `orderItem.unitOfSale`.
+
+* If `unitOfSale` is 'piece', display: `Qty: 40 pieces`.
+* If `unitOfSale` is 'carton', display: `Qty: 2 cartons (40 pieces total)`.
+
+---
+
+## 🛠️ Backend Implementation (Inventory Deduction)
+
+The core inventory deduction logic happens when the order is marked as `shipped` or completed.
+
+The key benefit of storing the quantity in the **smallest selling unit** (`40` pieces in the database) is that your current inventory deduction function **does not need to change**.
+
+**Location:** `server/routes/orders.ts` (or your fulfillment service)
+
+1.  **Deduction:** When an order is shipped, you iterate through `orderItems`.
+2.  **Logic Check:** For each item, you deduct `orderItem.quantity` (e.g., 40) from `product.quantity` in the `products` table.
+3.  **Cost:** When calculating profit, you use the `orderItem.unitPrice` (which would be the calculated price per piece at the time of sale) multiplied by the total quantity (40) to determine revenue.
+
+**Conclusion:** By normalizing the quantity to the smallest unit (piece) on the backend when the order is created, the inventory deduction and warehouse picking logic remains simple and correct. The complexity is handled entirely on the frontend UI when the user selects the unit.

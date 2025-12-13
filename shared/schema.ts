@@ -974,6 +974,10 @@ export const orderItems = pgTable("order_items", {
   appliedDiscountType: varchar("applied_discount_type"), // percentage, fixed, buy_x_get_y
   appliedDiscountScope: varchar("applied_discount_scope"), // product, order, customer
   freeItemsCount: integer("free_items_count"), // For buy_x_get_y: number of free items earned
+  // Bulk unit fields - track if item was sold as bulk (carton, case, pallet)
+  isBulkCarton: boolean("is_bulk_carton").default(false), // True if sold as bulk unit
+  bulkUnitName: varchar("bulk_unit_name"), // Name of bulk unit: carton, case, box
+  bulkUnitQty: integer("bulk_unit_qty"), // How many pieces per bulk unit (e.g., 20 pcs/carton)
 });
 
 // Product warehouse locations table
