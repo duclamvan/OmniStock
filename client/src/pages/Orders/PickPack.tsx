@@ -207,6 +207,19 @@ interface OrderItem {
   } | null;
   packingInstructionsText?: string | null;
   packingInstructionsImage?: string | null;
+  colorNumber?: string | null;
+  bulkUnitQty?: number | null;
+  bulkUnitName?: string | null;
+  price?: number | string | null;
+  discount?: number | string | null;
+  discountPercentage?: number | null;
+  appliedDiscountId?: string | null;
+  appliedDiscountLabel?: string | null;
+  appliedDiscountType?: string | null;
+  freeItemsCount?: number | null;
+  buyXGetYBuyQty?: number | null;
+  buyXGetYGetQty?: number | null;
+  priceTier?: string | null;
 }
 
 interface IncludedDocuments {
@@ -366,11 +379,13 @@ const formatShippingAddress = (address: any, t: (key: string) => string): string
 const ProductImage = memo(({ 
   item, 
   isExpanded,
-  onToggleExpand 
+  onToggleExpand,
+  t 
 }: { 
   item: OrderItem, 
   isExpanded: boolean,
-  onToggleExpand: () => void 
+  onToggleExpand: () => void,
+  t: (key: string) => string 
 }) => {
   if (isExpanded) {
     // Full-width expanded view
