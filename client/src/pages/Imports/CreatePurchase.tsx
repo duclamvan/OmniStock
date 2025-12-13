@@ -374,6 +374,13 @@ export default function CreatePurchase() {
   
   // Mobile card expand state
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
+  
+  // Quick add supplier state
+  const [showQuickAddSupplier, setShowQuickAddSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [newSupplierCountry, setNewSupplierCountry] = useState("");
+  const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
+  const [savingSupplier, setSavingSupplier] = useState(false);
 
   // Set default purchase date to now
   useEffect(() => {
@@ -1530,19 +1537,110 @@ export default function CreatePurchase() {
                                 </button>
                               ))
                             ) : (
-                              <div className="p-4">
-                                <p className="text-sm text-muted-foreground mb-3">{t('noSupplierFound')}</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    navigate('/suppliers');
-                                  }}
-                                  className="w-full"
-                                >
-                                  <UserPlus className="mr-2 h-4 w-4" />
-                                  {t('goToSuppliersPage')} "{supplier}"
-                                </Button>
+                              <div className="p-4 space-y-3">
+                                <p className="text-sm text-muted-foreground">{t('noSupplierFound')}</p>
+                                
+                                {!showQuickAddSupplier ? (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => {
+                                      setShowQuickAddSupplier(true);
+                                      setNewSupplierName(supplier);
+                                    }}
+                                    className="w-full"
+                                    data-testid="button-quick-add-supplier"
+                                  >
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    {t('quickAddSupplier')} "{supplier}"
+                                  </Button>
+                                ) : (
+                                  <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">{t('supplierName')} *</Label>
+                                      <Input
+                                        value={newSupplierName}
+                                        onChange={(e) => setNewSupplierName(e.target.value)}
+                                        placeholder={t('supplierNamePlaceholder')}
+                                        className="h-8"
+                                        data-testid="input-new-supplier-name"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">{t('country')}</Label>
+                                      <Input
+                                        value={newSupplierCountry}
+                                        onChange={(e) => setNewSupplierCountry(e.target.value)}
+                                        placeholder={t('countryPlaceholder')}
+                                        className="h-8"
+                                        data-testid="input-new-supplier-country"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">{t('website')}</Label>
+                                      <Input
+                                        value={newSupplierWebsite}
+                                        onChange={(e) => setNewSupplierWebsite(e.target.value)}
+                                        placeholder={t('websitePlaceholder')}
+                                        className="h-8"
+                                        data-testid="input-new-supplier-website"
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setShowQuickAddSupplier(false);
+                                          setNewSupplierName("");
+                                          setNewSupplierCountry("");
+                                          setNewSupplierWebsite("");
+                                        }}
+                                        className="flex-1"
+                                        disabled={savingSupplier}
+                                      >
+                                        {t('cancel')}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={async () => {
+                                          if (!newSupplierName.trim()) {
+                                            toast({ title: t('error'), description: t('supplierNameRequired'), variant: "destructive" });
+                                            return;
+                                          }
+                                          setSavingSupplier(true);
+                                          try {
+                                            const response = await apiRequest('POST', '/api/suppliers', {
+                                              name: newSupplierName.trim(),
+                                              country: newSupplierCountry.trim() || undefined,
+                                              website: newSupplierWebsite.trim() || undefined
+                                            });
+                                            const newSupplier = await response.json();
+                                            queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+                                            setSupplier(newSupplier.name);
+                                            setSupplierId(newSupplier.id.toString());
+                                            setSupplierDropdownOpen(false);
+                                            setShowQuickAddSupplier(false);
+                                            setNewSupplierName("");
+                                            setNewSupplierCountry("");
+                                            setNewSupplierWebsite("");
+                                            toast({ title: t('success'), description: t('supplierAddedSuccess') });
+                                          } catch (error) {
+                                            toast({ title: t('error'), description: t('supplierAddFailed'), variant: "destructive" });
+                                          } finally {
+                                            setSavingSupplier(false);
+                                          }
+                                        }}
+                                        className="flex-1"
+                                        disabled={savingSupplier || !newSupplierName.trim()}
+                                        data-testid="button-save-new-supplier"
+                                      >
+                                        {savingSupplier ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                                        {t('save')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </>

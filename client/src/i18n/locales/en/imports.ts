@@ -1973,9 +1973,17 @@ const imports = {
   aiSuggest: 'AI Suggest',
   addVariants: 'Add Variants',
   
-  // Supplier Search
+  // Supplier Search & Quick Add
   noSupplierFound: 'No supplier found',
   goToSuppliersPage: 'Go to Suppliers to add',
+  quickAddSupplier: 'Quick add supplier',
+  supplierNamePlaceholder: 'Supplier name',
+  country: 'Country',
+  countryPlaceholder: 'e.g. China, Vietnam',
+  website: 'Website',
+  websitePlaceholder: 'e.g. alibaba.com',
+  supplierAddedSuccess: 'Supplier added successfully',
+  supplierAddFailed: 'Failed to add supplier',
   
   // Variant Operations
   addAsMultipleVariants: 'Add as multiple variants',

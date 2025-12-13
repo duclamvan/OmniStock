@@ -1915,9 +1915,17 @@ const imports = {
   aiSuggest: 'AI Gợi ý',
   addVariants: 'Thêm biến thể',
   
-  // Supplier Search
+  // Supplier Search & Quick Add
   noSupplierFound: 'Không tìm thấy nhà cung cấp',
   goToSuppliersPage: 'Đi đến trang Nhà cung cấp để thêm',
+  quickAddSupplier: 'Thêm nhanh nhà cung cấp',
+  supplierNamePlaceholder: 'Tên nhà cung cấp',
+  country: 'Quốc gia',
+  countryPlaceholder: 'VD: Trung Quốc, Việt Nam',
+  website: 'Website',
+  websitePlaceholder: 'VD: alibaba.com',
+  supplierAddedSuccess: 'Đã thêm nhà cung cấp thành công',
+  supplierAddFailed: 'Không thể thêm nhà cung cấp',
   
   // Variant Operations
   addAsMultipleVariants: 'Thêm như nhiều biến thể',
