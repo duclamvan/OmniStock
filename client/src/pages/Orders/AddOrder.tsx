@@ -1096,6 +1096,25 @@ export default function AddOrder() {
     }, 0);
   };
 
+  // Calculate quantity of a product/variant/bundle already in the current order
+  const getQuantityInOrder = useCallback((productId?: string, variantId?: string, bundleId?: string): number => {
+    return orderItems.reduce((total, item) => {
+      if (bundleId && item.bundleId === bundleId) {
+        return total + item.quantity;
+      }
+      if (productId && item.productId === productId) {
+        if (variantId) {
+          if (item.variantId === variantId) {
+            return total + item.quantity;
+          }
+        } else if (!item.variantId) {
+          return total + item.quantity;
+        }
+      }
+      return total;
+    }, 0);
+  }, [orderItems]);
+
   useEffect(() => {
     if (!watchedShippingMethod || !selectedCustomer?.country) return;
 
@@ -4578,9 +4597,19 @@ export default function AddOrder() {
                               )}
                             </div>
                             {!isService && (
-                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                Stock: {isBundle ? (product.availableStock ?? 0) : (product.quantity || 0)}
-                              </div>
+                              (() => {
+                                const baseStock = isBundle ? (product.availableStock ?? 0) : (product.quantity || 0);
+                                const inOrder = isBundle 
+                                  ? getQuantityInOrder(undefined, undefined, product.id)
+                                  : getQuantityInOrder(product.id);
+                                const availableStock = Math.max(0, baseStock - inOrder);
+                                const isLow = availableStock <= 0;
+                                return (
+                                  <div className={`text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    Stock: {availableStock}{inOrder > 0 && ` (${inOrder} in order)`}
+                                  </div>
+                                );
+                              })()
                             )}
                           </div>
                         </div>
