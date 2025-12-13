@@ -630,6 +630,29 @@ const products = {
     productPartFallback: 'SP',
   },
   
+  // Toast Messages
+  toasts: {
+    productUpdated: 'Cập nhật sản phẩm thành công',
+    productUpdatedError: 'Cập nhật sản phẩm thất bại',
+    productCreated: 'Tạo sản phẩm thành công',
+    productCreatedError: 'Tạo sản phẩm thất bại',
+    productDeleted: 'Xóa sản phẩm thành công',
+    productDeletedError: 'Xóa sản phẩm thất bại',
+    tieredPricingAdded: 'Thêm giá theo bậc thành công',
+    tieredPricingAddedError: 'Thêm giá theo bậc thất bại',
+    tieredPricingUpdated: 'Cập nhật giá theo bậc thành công',
+    tieredPricingUpdatedError: 'Cập nhật giá theo bậc thất bại',
+    tieredPricingDeleted: 'Xóa giá theo bậc thành công',
+    tieredPricingDeletedError: 'Xóa giá theo bậc thất bại',
+    newImagesCompressed: '{{count}} hình ảnh đã nén',
+    variantCreated: 'Tạo biến thể thành công',
+    variantCreatedError: 'Tạo biến thể thất bại',
+    variantUpdated: 'Cập nhật biến thể thành công',
+    variantUpdatedError: 'Cập nhật biến thể thất bại',
+    variantDeleted: 'Xóa biến thể thành công',
+    variantDeletedError: 'Xóa biến thể thất bại',
+  },
+  
   // Supplier Details Labels (for ProductForm)
   supplierDetails: {
     email: 'Email',

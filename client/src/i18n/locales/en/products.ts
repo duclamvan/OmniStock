@@ -523,6 +523,29 @@ const products = {
     productPartFallback: 'PROD',
   },
   
+  // Toast Messages
+  toasts: {
+    productUpdated: 'Product updated successfully',
+    productUpdatedError: 'Failed to update product',
+    productCreated: 'Product created successfully',
+    productCreatedError: 'Failed to create product',
+    productDeleted: 'Product deleted successfully',
+    productDeletedError: 'Failed to delete product',
+    tieredPricingAdded: 'Tiered pricing added successfully',
+    tieredPricingAddedError: 'Failed to add tiered pricing',
+    tieredPricingUpdated: 'Tiered pricing updated successfully',
+    tieredPricingUpdatedError: 'Failed to update tiered pricing',
+    tieredPricingDeleted: 'Tiered pricing deleted successfully',
+    tieredPricingDeletedError: 'Failed to delete tiered pricing',
+    newImagesCompressed: '{{count}} image(s) compressed',
+    variantCreated: 'Variant created successfully',
+    variantCreatedError: 'Failed to create variant',
+    variantUpdated: 'Variant updated successfully',
+    variantUpdatedError: 'Failed to update variant',
+    variantDeleted: 'Variant deleted successfully',
+    variantDeletedError: 'Failed to delete variant',
+  },
+  
   // Supplier Details Labels (for ProductForm)
   supplierDetails: {
     email: 'Email',
