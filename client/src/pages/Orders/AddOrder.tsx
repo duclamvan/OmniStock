@@ -1901,10 +1901,11 @@ export default function AddOrder() {
         }
       }
 
+      // Get current sale type for pricing decisions
+      const currentSaleType = form.watch('saleType') || 'retail';
+      
       // If no customer price found, use default product price (considering sale type)
       if (productPrice === 0) {
-        const currentSaleType = form.watch('saleType') || 'retail';
-        
         if (currentSaleType === 'wholesale') {
           // Use bulk/wholesale prices if available
           if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
