@@ -1248,10 +1248,10 @@ export default function CreatePurchase() {
     const exchangeRate = exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency];
     
     // Convert purchase total to payment currency if different
-    const purchaseTotal = grandTotal;
+    const purchaseTotal = grandTotalInPurchaseCurrency;
     const autoConvertedTotal = purchaseCurrency !== paymentCurrency 
-      ? grandTotal * exchangeRate 
-      : grandTotal;
+      ? grandTotalInPurchaseCurrency * exchangeRate 
+      : grandTotalInPurchaseCurrency;
 
     const purchaseData = {
       // Currency fields for database
@@ -1273,14 +1273,14 @@ export default function CreatePurchase() {
       shippingCurrency,
       consolidation,
       status,
-      totalCost: grandTotal, // Keep for backward compatibility
+      totalCost: grandTotalInPurchaseCurrency, // Keep for backward compatibility
       // Store converted prices
       prices: {
         original: {
           currency: purchaseCurrency,
           subtotal,
-          shippingCost,
-          total: grandTotal
+          shippingCost: shippingInPurchaseCurrency,
+          total: grandTotalInPurchaseCurrency
         },
         usd: {
           subtotal: subtotalUSD,
@@ -1493,9 +1493,9 @@ export default function CreatePurchase() {
                         {getCurrencySymbol(paymentCurrency)}
                       </span>
                     </div>
-                    {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
+                    {purchaseCurrency !== paymentCurrency && grandTotalInPurchaseCurrency > 0 && (
                       <div className="text-xs text-muted-foreground">
-                        {t('grandTotalIn')} {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
+                        {t('grandTotalIn')} {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{grandTotalInPaymentCurrency.toFixed(2)}
                       </div>
                     )}
                   </div>
@@ -2864,7 +2864,7 @@ export default function CreatePurchase() {
                         <Separator className="my-2" />
                         <div className="flex justify-between">
                           <span className="font-semibold">{t('totalWithShipping')}:</span>
-                          <span className="font-semibold text-green-600">{grandTotal.toFixed(2)} {purchaseCurrency}</span>
+                          <span className="font-semibold text-green-600">{grandTotalInPurchaseCurrency.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                       </div>
                     </div>
@@ -3161,7 +3161,7 @@ export default function CreatePurchase() {
                           {subtotal.toFixed(2)} {purchaseCurrency}
                         </TableCell>
                         <TableCell className="text-right font-bold text-green-600">
-                          {grandTotal.toFixed(2)} {purchaseCurrency}
+                          {grandTotalInPurchaseCurrency.toFixed(2)} {purchaseCurrency}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
@@ -3312,7 +3312,7 @@ export default function CreatePurchase() {
                 {displayCurrency !== purchaseCurrency && (
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-muted-foreground">{t('original')} ({purchaseCurrency})</span>
-                    <span className="text-xs text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground">{currencySymbol}{grandTotalInPurchaseCurrency.toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -3370,7 +3370,7 @@ export default function CreatePurchase() {
               </div>
               
               {/* Landed Cost Breakdown */}
-              {totalQuantity > 0 && grandTotal > 0 && (
+              {totalQuantity > 0 && grandTotalInPurchaseCurrency > 0 && (
                 <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
                   <div className="flex items-center gap-2 mb-3">
                     <Scale className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -3395,21 +3395,21 @@ export default function CreatePurchase() {
                       <div className="flex h-3 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900">
                         <div 
                           className="bg-purple-500 dark:bg-purple-400 transition-all"
-                          style={{ width: `${grandTotal > 0 ? (subtotal / grandTotal) * 100 : 100}%` }}
+                          style={{ width: `${grandTotalInPurchaseCurrency > 0 ? (subtotal / grandTotalInPurchaseCurrency) * 100 : 100}%` }}
                         />
                         <div 
                           className="bg-pink-400 dark:bg-pink-500 transition-all"
-                          style={{ width: `${grandTotal > 0 ? (shippingCost / grandTotal) * 100 : 0}%` }}
+                          style={{ width: `${grandTotalInPurchaseCurrency > 0 ? (shippingInPurchaseCurrency / grandTotalInPurchaseCurrency) * 100 : 0}%` }}
                         />
                       </div>
                       <div className="flex justify-between items-center mt-2 text-xs">
                         <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300">
                           <span className="h-2 w-2 rounded-full bg-purple-500" />
-                          {t('productCostPercent', { percent: grandTotal > 0 ? Math.round((subtotal / grandTotal) * 100) : 100 })}
+                          {t('productCostPercent', { percent: grandTotalInPurchaseCurrency > 0 ? Math.round((subtotal / grandTotalInPurchaseCurrency) * 100) : 100 })}
                         </span>
                         <span className="flex items-center gap-1 text-pink-600 dark:text-pink-400">
                           <span className="h-2 w-2 rounded-full bg-pink-400" />
-                          {t('shippingCostPercent', { percent: grandTotal > 0 ? Math.round((shippingCost / grandTotal) * 100) : 0 })}
+                          {t('shippingCostPercent', { percent: grandTotalInPurchaseCurrency > 0 ? Math.round((shippingInPurchaseCurrency / grandTotalInPurchaseCurrency) * 100) : 0 })}
                         </span>
                       </div>
                     </div>
@@ -3464,10 +3464,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇺🇸</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">USD</div>
                   <div className="text-sm font-bold text-foreground">
-                    {formatCurrency(grandTotal / (exchangeRates['USD'] || 1) * (exchangeRates[purchaseCurrency] || 1), 'USD')}
+                    {formatCurrency(grandTotalUSD, 'USD')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: {formatCurrency(shippingCost / (exchangeRates['USD'] || 1) * (exchangeRates[shippingCurrency] || 1), 'USD')}
+                    Ship: {formatCurrency(shippingCostUSD, 'USD')}
                   </div>
                   {(purchaseCurrency === "USD" || paymentCurrency === "USD") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
@@ -3486,10 +3486,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇪🇺</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">EUR</div>
                   <div className="text-sm font-bold text-foreground">
-                    {formatCurrency(grandTotal / (exchangeRates['EUR'] || 0.92) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1), 'EUR')}
+                    {formatCurrency(convertFromUSD(grandTotalUSD, 'EUR'), 'EUR')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: {formatCurrency(shippingCost / (exchangeRates['EUR'] || 0.92) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1), 'EUR')}
+                    Ship: {formatCurrency(convertFromUSD(shippingCostUSD, 'EUR'), 'EUR')}
                   </div>
                   {(purchaseCurrency === "EUR" || paymentCurrency === "EUR") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
@@ -3508,10 +3508,10 @@ export default function CreatePurchase() {
                   <div className="text-lg mb-1">🇨🇿</div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">CZK</div>
                   <div className="text-sm font-bold text-foreground">
-                    {formatCurrency(grandTotal / (exchangeRates['CZK'] || 23) * (exchangeRates[purchaseCurrency] || 1) / (exchangeRates['USD'] || 1), 'CZK')}
+                    {formatCurrency(convertFromUSD(grandTotalUSD, 'CZK'), 'CZK')}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Ship: {formatCurrency(shippingCost / (exchangeRates['CZK'] || 23) * (exchangeRates[shippingCurrency] || 1) / (exchangeRates['USD'] || 1), 'CZK')}
+                    Ship: {formatCurrency(convertFromUSD(shippingCostUSD, 'CZK'), 'CZK')}
                   </div>
                   {(purchaseCurrency === "CZK" || paymentCurrency === "CZK") && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
