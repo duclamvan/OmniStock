@@ -601,33 +601,21 @@ export default function EditOrder() {
     },
   });
 
-  // Fetch existing order data - force fresh fetch on every mount
+  // Fetch existing order data - fetch fresh on mount but allow caching for navigation
   const { data: existingOrder, isLoading: isLoadingOrder, dataUpdatedAt } = useQuery({
-    queryKey: ['/api/orders', id, { includeBadges: true }], // Structured key for proper cache matching
+    queryKey: ['/api/orders', id, { includeBadges: true }],
     queryFn: async () => {
-      console.log('🔵 EditOrder: Loading fresh data from database');
-      const response = await fetch(`/api/orders/${id}?includeBadges=true`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+      const response = await fetch(`/api/orders/${id}?includeBadges=true`);
       if (!response.ok) {
         throw new Error('Failed to fetch order');
       }
-      const data = await response.json();
-      console.log('✅ EditOrder: Loaded data, currency =', data.currency, 'shippingCost =', data.shippingCost);
-      return data;
+      return response.json();
     },
     enabled: !!id,
-    staleTime: 0, // Always consider stale
-    gcTime: 0, // Don't cache at all - always fetch fresh
-    refetchOnMount: 'always', // Always refetch when component mounts
-    refetchOnWindowFocus: false, // Don't refetch on window focus  
-    refetchOnReconnect: false, // Don't refetch on reconnect
-    refetchInterval: false, // Don't poll
+    staleTime: 30 * 1000, // Consider fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: true, // Refetch on mount if stale
+    refetchOnWindowFocus: false,
   });
 
   // Fetch all products for real-time filtering
@@ -655,36 +643,26 @@ export default function EditOrder() {
     refetchOnMount: 'always',
   });
 
-  // Fetch variants for all products (map productId -> variants)
-  const { data: productsWithVariants } = useQuery({
-    queryKey: ['/api/products-with-variants'],
-    queryFn: async () => {
-      if (!Array.isArray(allProducts)) return {};
-      
-      const variantsMap: Record<string, any[]> = {};
-      
-      // Fetch variants for each product in parallel
-      await Promise.all(
-        allProducts.slice(0, 50).map(async (product: any) => { // Limit to first 50 products for performance
-          try {
-            const response = await fetch(`/api/products/${product.id}/variants`);
-            if (response.ok) {
-              const variants = await response.json();
-              if (variants && variants.length > 0) {
-                variantsMap[product.id] = variants;
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching variants for product ${product.id}:`, error);
-          }
-        })
-      );
-      
-      return variantsMap;
-    },
-    enabled: !!allProducts && Array.isArray(allProducts),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Lazy fetch variants - only when variant dialog is opened
+  const [productsWithVariants, setProductsWithVariants] = useState<Record<string, any[]>>({});
+  
+  // Fetch variants for a single product on demand
+  const fetchVariantsForProduct = useCallback(async (productId: string) => {
+    if (productsWithVariants[productId]) return productsWithVariants[productId];
+    try {
+      const response = await fetch(`/api/products/${productId}/variants`);
+      if (response.ok) {
+        const variants = await response.json();
+        if (variants && variants.length > 0) {
+          setProductsWithVariants(prev => ({ ...prev, [productId]: variants }));
+          return variants;
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching variants for product ${productId}:`, error);
+    }
+    return [];
+  }, [productsWithVariants]);
 
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
@@ -692,11 +670,9 @@ export default function EditOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
   });
 
-  // Fetch all orders to calculate product frequency
-  const { data: allOrders } = useQuery({
-    queryKey: ['/api/orders'],
-    staleTime: 2 * 60 * 1000, // 2 minutes - orders change more frequently
-  });
+  // PERFORMANCE: Disabled bulk orders fetch - not needed for order editing
+  // Product frequency can be calculated server-side if needed
+  const allOrders: any[] = [];
 
   // Fetch shipping addresses for selected customer
   const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
@@ -966,31 +942,38 @@ export default function EditOrder() {
     return Array.from(new Set(orderItems.map(item => item.productId).filter((id): id is string => id !== undefined)));
   }, [orderItems]);
 
-  // Fetch product files for all products in the cart
-  const { data: productFilesData } = useQuery({
-    queryKey: ['/api/products', 'files', uniqueProductIds],
-    queryFn: async () => {
-      if (uniqueProductIds.length === 0) return {};
-      
-      const filesMap: Record<string, any[]> = {};
-      await Promise.all(
-        uniqueProductIds.map(async (productId) => {
-          try {
-            const response = await fetch(`/api/products/${productId}/files`);
-            if (response.ok) {
-              const files = await response.json();
-              filesMap[productId] = files || [];
-            }
-          } catch (error) {
-            console.error(`Error fetching files for product ${productId}:`, error);
-            filesMap[productId] = [];
+  // PERFORMANCE: Lazy load product files - only when document selector is accessed
+  const [productFilesData, setProductFilesData] = useState<Record<string, any[]>>({});
+  const [isLoadingProductFiles, setIsLoadingProductFiles] = useState(false);
+  
+  const fetchProductFilesOnDemand = useCallback(async () => {
+    if (uniqueProductIds.length === 0 || isLoadingProductFiles) return;
+    
+    // Only fetch files we don't already have
+    const missingIds = uniqueProductIds.filter(id => !productFilesData[id]);
+    if (missingIds.length === 0) return;
+    
+    setIsLoadingProductFiles(true);
+    const filesMap: Record<string, any[]> = { ...productFilesData };
+    
+    await Promise.all(
+      missingIds.map(async (productId) => {
+        try {
+          const response = await fetch(`/api/products/${productId}/files`);
+          if (response.ok) {
+            const files = await response.json();
+            filesMap[productId] = files || [];
           }
-        })
-      );
-      return filesMap;
-    },
-    enabled: uniqueProductIds.length > 0,
-  });
+        } catch (error) {
+          console.error(`Error fetching files for product ${productId}:`, error);
+          filesMap[productId] = [];
+        }
+      })
+    );
+    
+    setProductFilesData(filesMap);
+    setIsLoadingProductFiles(false);
+  }, [uniqueProductIds, productFilesData, isLoadingProductFiles]);
 
   // Mutation to create new shipping address
   const createShippingAddressMutation = useMutation({
@@ -1276,7 +1259,7 @@ export default function EditOrder() {
     }
 
     const orderWeight = calculateOrderWeight();
-    const pplRates = shippingSettings?.pplShippingRates;
+    const pplRates = shippingSettings?.pplShippingRates as any;
 
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
