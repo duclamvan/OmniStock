@@ -12569,7 +12569,29 @@ export default function PickPack() {
                           )}
                         </div>
                       ) : (
-                        /* Streamlined Quantity Picker - Quick Action Buttons */
+                        <div className="space-y-4">
+                        {/* Carton Details Summary - Above Quantity Picker */}
+                        {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
+                          <div className="bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 rounded-xl p-4 border-2 border-amber-300 dark:border-amber-700 shadow-md">
+                            <div className="flex items-center justify-center gap-3">
+                              <Box className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                              <div className="text-center">
+                                <p className="text-xs text-amber-700 dark:text-amber-200 font-semibold uppercase tracking-wide mb-1">Carton Details</p>
+                                <p className="text-2xl sm:text-3xl font-black text-amber-700 dark:text-amber-300">
+                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
+                                </p>
+                                {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
+                                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mt-1">
+                                    +{currentItem.quantity % currentItem.bulkUnitQty} pieces
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Streamlined Quantity Picker - Quick Action Buttons */}
                         <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-700">
                           {/* Large Visual Counter */}
                           <div className="text-center mb-6">
@@ -12661,6 +12683,7 @@ export default function PickPack() {
                               </AlertDescription>
                             </Alert>
                           )}
+                        </div>
                         </div>
                       )}
                       
