@@ -218,6 +218,7 @@ const common = {
   menu: 'Menu',
   notifications: 'Thông báo',
   settings: 'Cài đặt',
+  adminSettings: 'Cài đặt quản trị',
   profile: 'Hồ sơ',
   logout: 'Đăng xuất',
   darkMode: 'Chế độ tối',

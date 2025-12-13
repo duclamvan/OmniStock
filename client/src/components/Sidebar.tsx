@@ -183,6 +183,13 @@ const navigation: NavItem[] = [
     icon: Settings,
     namespace: "common"
   },
+  {
+    labelKey: "adminSettings",
+    href: "/settings",
+    icon: Settings,
+    namespace: "common",
+    adminOnly: true
+  },
 ];
 
 export function Sidebar() {

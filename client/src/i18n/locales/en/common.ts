@@ -241,6 +241,7 @@ const common = {
   menu: 'Menu',
   notifications: 'Notifications',
   settings: 'Settings',
+  adminSettings: 'Admin Settings',
   profile: 'Profile',
   logout: 'Logout',
   darkMode: 'Dark Mode',
