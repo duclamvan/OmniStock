@@ -334,6 +334,50 @@ export default function EditOrder() {
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
   const [productVariants, setProductVariants] = useState<any[]>([]);
   const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
+  const [quickVariantInput, setQuickVariantInput] = useState("");
+  
+  // Parse quick variant input like "23, 43-5, 67-2" or "23, 43 - 5 pcs, 67 - 2"
+  const parseQuickVariantInput = useCallback((input: string) => {
+    if (!input.trim() || productVariants.length === 0) return;
+    
+    const newQuantities: {[key: string]: number} = {};
+    
+    // Split by comma and process each segment
+    const segments = input.split(',').map(s => s.trim()).filter(Boolean);
+    
+    for (const segment of segments) {
+      // Match patterns like: "23", "23-5", "23 - 5", "23 - 5pcs", "23 - 5 lo", "23-5pcs"
+      const match = segment.match(/^(\d+)\s*(?:[-–]\s*(\d+)\s*(?:pcs|lo|ks|pc)?)?$/i);
+      
+      if (match) {
+        const variantNumber = match[1];
+        const quantity = match[2] ? parseInt(match[2]) : 1;
+        
+        // Find variant by matching number in name (e.g., "Color 23" matches "23")
+        // Or by exact name match, or by barcode
+        const variant = productVariants.find(v => {
+          const name = v.name?.toString() || '';
+          const barcode = v.barcode?.toString() || '';
+          // Extract numbers from variant name
+          const nameNumbers = name.match(/\d+/g);
+          return (
+            name === variantNumber ||
+            barcode === variantNumber ||
+            (nameNumbers && nameNumbers.includes(variantNumber))
+          );
+        });
+        
+        if (variant) {
+          newQuantities[variant.id] = (newQuantities[variant.id] || 0) + quantity;
+        }
+      }
+    }
+    
+    if (Object.keys(newQuantities).length > 0) {
+      setVariantQuantities(prev => ({ ...prev, ...newQuantities }));
+      setQuickVariantInput("");
+    }
+  }, [productVariants]);
   
   const [newCustomer, setNewCustomer] = useState({
     name: "",
@@ -5577,6 +5621,42 @@ export default function EditOrder() {
               {t('chooseVariantsFor')}: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedProductForVariant?.name}</span>
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Quick variant input */}
+          <div className="space-y-2">
+            <Label htmlFor="quick-variant-input" className="text-sm font-medium">
+              {t('quickVariantEntry')}
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="quick-variant-input"
+                value={quickVariantInput}
+                onChange={(e) => setQuickVariantInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    parseQuickVariantInput(quickVariantInput);
+                  }
+                }}
+                placeholder={t('quickVariantPlaceholder')}
+                className="flex-1 font-mono text-sm"
+                data-testid="input-quick-variant"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => parseQuickVariantInput(quickVariantInput)}
+                data-testid="button-apply-quick-variant"
+              >
+                {t('apply')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('quickVariantHint')}
+            </p>
+          </div>
+          
           <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
             <Table>
               <TableHeader>
@@ -5642,6 +5722,7 @@ export default function EditOrder() {
                 setSelectedProductForVariant(null);
                 setProductVariants([]);
                 setVariantQuantities({});
+                setQuickVariantInput("");
               }}
               className="flex-1 sm:flex-none"
             >

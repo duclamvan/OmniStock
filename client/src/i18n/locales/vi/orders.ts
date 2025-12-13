@@ -474,6 +474,10 @@ const orders = {
   variantQuantity: 'Số lượng',
   addSelectedVariants: 'Thêm biến thể đã chọn',
   addSelectedBundles: 'Thêm combo đã chọn',
+  quickVariantEntry: 'Nhập nhanh',
+  quickVariantPlaceholder: '23, 43-5, 67-2...',
+  quickVariantHint: 'Định dạng: số (1c), số-sl (VD: 23-5 = 5c biến thể 23)',
+  apply: 'Áp dụng',
   
   // AI Carton Packing
   aiCartonPacking: 'Đóng gói AI',

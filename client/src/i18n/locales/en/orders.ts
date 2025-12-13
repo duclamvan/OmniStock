@@ -480,6 +480,10 @@ const orders = {
   variantQuantity: 'Quantity',
   addSelectedVariants: 'Add Selected Variants',
   addSelectedBundles: 'Add Selected Bundles',
+  quickVariantEntry: 'Quick Entry',
+  quickVariantPlaceholder: '23, 43-5, 67-2...',
+  quickVariantHint: 'Format: number (1pc), number-qty (e.g., 23-5 = 5pcs of variant 23)',
+  apply: 'Apply',
   
   // AI Carton Packing
   aiCartonPacking: 'AI Carton Packing',
