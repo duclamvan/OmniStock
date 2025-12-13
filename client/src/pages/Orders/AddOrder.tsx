@@ -202,6 +202,9 @@ interface OrderItem {
   isFreeItem?: boolean;
   originalPrice?: number;
   isServicePart?: boolean;
+  isBulkCarton?: boolean;
+  bulkUnitName?: string;
+  bulkUnitQty?: number;
 }
 
 interface BuyXGetYAllocation {
@@ -2858,7 +2861,10 @@ export default function AddOrder() {
       total: bulkPrice,
       landingCost: product.landingCost || product.latestLandingCost || null,
       image: product.image || null,
-      notes: `${bulkQty} pcs per ${bulkUnitName}`, // Show bulk info as note
+      notes: null,
+      isBulkCarton: true,
+      bulkUnitName: bulkUnitName,
+      bulkUnitQty: bulkQty,
     };
     
     setOrderItems(items => [...items, newItem]);
@@ -5012,17 +5018,23 @@ export default function AddOrder() {
                           <TableRow 
                             className={item.isFreeItem 
                               ? 'bg-green-50 dark:bg-green-950/30' 
+                              : item.isBulkCarton
+                              ? 'bg-amber-50 dark:bg-amber-950/30'
                               : (index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30')
                             }
                             data-testid={`order-item-${item.id}`}
                           >
                             <TableCell className="py-3">
                               <div className="flex items-start gap-3">
-                                {/* Product Image or Gift Icon for free items */}
+                                {/* Product Image or Gift Icon for free items or Box for bulk */}
                                 <div className="flex-shrink-0">
                                   {item.isFreeItem ? (
                                     <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
                                       <Gift className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                    </div>
+                                  ) : item.isBulkCarton ? (
+                                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/50 rounded border border-amber-300 dark:border-amber-700 flex items-center justify-center">
+                                      <Box className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                                     </div>
                                   ) : item.image ? (
                                     <img 
@@ -5040,15 +5052,26 @@ export default function AddOrder() {
                                 <div className="flex flex-col gap-1 min-w-0">
                                   <div className="flex items-start gap-1">
                                     {item.serviceId && <Wrench className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />}
-                                    <span className={`font-medium ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
-                                      {item.productName}
-                                    </span>
+                                    {item.isBulkCarton ? (
+                                      <span className="font-medium text-amber-700 dark:text-amber-300">
+                                        {item.bulkUnitName} - {item.productName}
+                                      </span>
+                                    ) : (
+                                      <span className={`font-medium ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
+                                        {item.productName}
+                                      </span>
+                                    )}
                                   </div>
                                   {/* Badges row - separate from product name for better alignment */}
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {item.isFreeItem && (
                                       <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
                                         {t('orders:freeItem')}
+                                      </Badge>
+                                    )}
+                                    {item.isBulkCarton && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
+                                        {item.bulkUnitQty} pcs
                                       </Badge>
                                     )}
                                     {item.variantName && (
@@ -5078,7 +5101,7 @@ export default function AddOrder() {
                                     )}
                                   </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
+                                  {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : item.isBulkCarton ? `SKU: ${item.sku}` : `SKU: ${item.sku}`}
                                 </span>
                                 {item.serviceId && (
                                   <Input
@@ -5357,16 +5380,22 @@ export default function AddOrder() {
                 {orderItems.map((item, index) => (
                   <Card key={item.id} className={`overflow-hidden shadow-sm ${item.isFreeItem 
                     ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30' 
+                    : item.isBulkCarton
+                    ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                     : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-slate-800'}`} 
                     data-testid={`mobile-order-item-${item.id}`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3 mb-4">
-                        {/* Product Image - Gift icon for free items */}
+                        {/* Product Image - Gift icon for free items, Box for bulk */}
                         <div className="flex-shrink-0">
                           {item.isFreeItem ? (
                             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
                               <Gift className="h-10 w-10 text-green-600 dark:text-green-400" />
+                            </div>
+                          ) : item.isBulkCarton ? (
+                            <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/50 rounded border border-amber-300 dark:border-amber-700 flex items-center justify-center">
+                              <Box className="h-10 w-10 text-amber-600 dark:text-amber-400" />
                             </div>
                           ) : item.image ? (
                             <img 
@@ -5384,14 +5413,25 @@ export default function AddOrder() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2 mb-1">
                             {item.serviceId && <Wrench className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />}
-                            <h4 className={`font-semibold text-base ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
-                              {item.productName}
-                            </h4>
+                            {item.isBulkCarton ? (
+                              <h4 className="font-semibold text-base text-amber-700 dark:text-amber-300">
+                                {item.bulkUnitName} - {item.productName}
+                              </h4>
+                            ) : (
+                              <h4 className={`font-semibold text-base ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
+                                {item.productName}
+                              </h4>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-1">
                             {item.isFreeItem && (
                               <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
                                 {t('orders:freeItem')}
+                              </Badge>
+                            )}
+                            {item.isBulkCarton && (
+                              <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
+                                {item.bulkUnitQty} pcs
                               </Badge>
                             )}
                             {item.variantName && (
