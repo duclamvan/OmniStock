@@ -671,79 +671,76 @@ export default function ImportKanbanDashboard() {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('importKanban')}</h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+    <div className="space-y-2 sm:space-y-3 overflow-x-hidden p-2 sm:p-3 md:p-4 h-[calc(100vh-60px)] flex flex-col">
+      {/* Header - Compact */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('importKanban')}</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 hidden md:block">
             {t('dragAndDropManage')}
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Link href="/purchase-orders" className="flex-1 sm:flex-initial">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('newPurchase')}</span>
-              <span className="sm:hidden">New</span>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto h-8">
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline text-xs">{t('newPurchase')}</span>
+              <span className="sm:hidden text-xs">New</span>
             </Button>
           </Link>
           <Link href="/consolidation" className="flex-1 sm:flex-initial">
-            <Button size="sm" className="w-full sm:w-auto">
-              <BoxSelect className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('consolidate')}</span>
-              <span className="sm:hidden">Consolidate</span>
+            <Button size="sm" className="w-full sm:w-auto h-8">
+              <BoxSelect className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline text-xs">{t('consolidate')}</span>
+              <span className="sm:hidden text-xs">Consolidate</span>
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <Card className="w-full border-slate-200 dark:border-slate-800">
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={t('searchSupplierTracking')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-kanban"
-              />
-            </div>
-            <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder={t('allWarehouses')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('allWarehouses')}</SelectItem>
-                <SelectItem value="china">{t('china')}</SelectItem>
-                <SelectItem value="vietnam">{t('vietnam')}</SelectItem>
-                <SelectItem value="usa">{t('usa')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => {
-                queryClient.invalidateQueries();
-                toast({ title: t('refreshed'), description: t('dataUpdated') });
-              }}
-              data-testid="button-refresh"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search and Filters - Inline compact */}
+      <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder={t('searchSupplierTracking')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-9"
+            data-testid="input-search-kanban"
+          />
+        </div>
+        <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
+            <SelectValue placeholder={t('allWarehouses')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('allWarehouses')}</SelectItem>
+            <SelectItem value="china">{t('china')}</SelectItem>
+            <SelectItem value="vietnam">{t('vietnam')}</SelectItem>
+            <SelectItem value="usa">{t('usa')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button 
+          variant="outline" 
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => {
+            queryClient.invalidateQueries();
+            toast({ title: t('refreshed'), description: t('dataUpdated') });
+          }}
+          data-testid="button-refresh"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Kanban Board - Horizontal scroll on mobile, grid on larger screens */}
-      <div className="flex overflow-x-auto pb-4 gap-3 sm:gap-4 -mx-2 px-2 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible">
+      <div className="flex-1 flex overflow-x-auto pb-2 gap-2 sm:gap-3 -mx-2 px-2 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible min-h-0">
         {columns.map((column) => (
           <div
             key={column.id}
-            className={`flex-shrink-0 w-[280px] sm:w-full rounded-lg border-2 transition-all duration-300 ${
+            className={`flex-shrink-0 w-[280px] sm:w-full rounded-lg border-2 transition-all duration-300 flex flex-col ${
               dragOverColumn === column.id 
                 ? 'ring-2 ring-cyan-500 ring-offset-2 border-cyan-400 dark:border-cyan-600' 
                 : 'border-slate-200 dark:border-slate-700'
@@ -753,27 +750,27 @@ export default function ImportKanbanDashboard() {
             onDrop={(e) => handleDrop(e, column.id)}
             data-testid={`column-${column.id}`}
           >
-            {/* Column Header */}
+            {/* Column Header - Compact */}
             <Link href={column.link}>
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="p-2 sm:p-3 border-b border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
+                    <div className={`p-1.5 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
                       {column.icon}
                     </div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                    <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100">
                       {column.title}
                     </h3>
                   </div>
-                  <Badge variant="secondary" className="font-semibold">
+                  <Badge variant="secondary" className="font-semibold text-xs">
                     {column.count}
                   </Badge>
                 </div>
               </div>
             </Link>
 
-            {/* Column Content */}
-            <div className="h-[400px] sm:h-[500px] lg:h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden">
+            {/* Column Content - Fill remaining space */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               <div className="space-y-2 sm:space-y-3 p-2 sm:p-3">
                 {column.id === 'processing' && filteredPurchases.map(purchase => (
                   <PurchaseCard 
