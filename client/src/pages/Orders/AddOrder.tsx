@@ -2748,6 +2748,72 @@ export default function AddOrder() {
     return scoredResults.slice(0, 8).map(r => r.item);
   }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
 
+  // Get products with bulk units enabled (for quick bulk add buttons)
+  const bulkProducts = useMemo(() => {
+    if (!Array.isArray(allProducts)) return [];
+    return allProducts.filter((p: any) => 
+      p.allowBulkSales && p.bulkUnitName && p.bulkUnitQty && p.bulkUnitQty > 1
+    ).slice(0, 6); // Limit to 6 for UI
+  }, [allProducts]);
+
+  // Handler to add product with bulk quantity
+  const addBulkProductToOrder = useCallback(async (product: any) => {
+    const selectedCurrency = form.watch('currency') || 'EUR';
+    const currentSaleType = form.watch('saleType') || 'retail';
+    
+    // Get the bulk price or fall back to regular price
+    let productPrice = 0;
+    if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+      productPrice = parseFloat(product.bulkPriceCzk);
+    } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+      productPrice = parseFloat(product.bulkPriceEur);
+    } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+      productPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+    }
+    
+    // Fallback to regular price if no bulk price
+    if (productPrice === 0) {
+      if (selectedCurrency === 'CZK' && product.priceCzk) {
+        productPrice = parseFloat(product.priceCzk);
+      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+        productPrice = parseFloat(product.priceEur);
+      } else {
+        productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+      }
+    }
+    
+    const bulkQty = product.bulkUnitQty || 1;
+    
+    const newItem: OrderItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      productId: product.id,
+      productName: `${product.name} (${product.bulkUnitName})`,
+      sku: product.sku,
+      quantity: bulkQty,
+      price: productPrice,
+      discount: 0,
+      discountPercentage: 0,
+      tax: 0,
+      total: bulkQty * productPrice,
+      landingCost: product.landingCost || product.latestLandingCost || null,
+      image: product.image || null,
+    };
+    
+    setOrderItems(items => [...items, newItem]);
+    markChangesAfterSave();
+    
+    toast({
+      title: t('orders:bulkAdded', 'Bulk added'),
+      description: `${bulkQty}x ${product.name} (${product.bulkUnitName})`,
+    });
+    
+    // Auto-focus quantity input for the newly added item
+    setTimeout(() => {
+      const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+      quantityInput?.focus();
+    }, 100);
+  }, [form, markChangesAfterSave, toast, t]);
+
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
@@ -4732,6 +4798,62 @@ export default function AddOrder() {
                 </div>
               )}
             </div>
+
+            {/* Bulk Units Quick Add Section */}
+            {bulkProducts && bulkProducts.length > 0 && (
+              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid="bulk-units-section">
+                <div className="flex items-center gap-2 mb-2">
+                  <Box className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                    {t('orders:bulkUnits', 'Bulk Units')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {bulkProducts.map((product: any) => {
+                    const selectedCurrency = form.watch('currency') || 'EUR';
+                    let bulkPrice = 0;
+                    if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
+                      bulkPrice = parseFloat(product.bulkPriceCzk);
+                    } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
+                      bulkPrice = parseFloat(product.bulkPriceEur);
+                    } else if (product.bulkPriceEur || product.bulkPriceCzk) {
+                      bulkPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+                    }
+                    // Fallback to regular price
+                    if (bulkPrice === 0) {
+                      if (selectedCurrency === 'CZK' && product.priceCzk) {
+                        bulkPrice = parseFloat(product.priceCzk);
+                      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                        bulkPrice = parseFloat(product.priceEur);
+                      } else {
+                        bulkPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+                      }
+                    }
+                    
+                    return (
+                      <Button
+                        key={product.id}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-1.5 px-2 bg-white dark:bg-slate-800 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-left"
+                        onClick={() => addBulkProductToOrder(product)}
+                        data-testid={`bulk-product-${product.id}`}
+                      >
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate max-w-[120px]">
+                            {product.name}
+                          </span>
+                          <span className="text-[10px] text-amber-700 dark:text-amber-300">
+                            {product.bulkUnitName}: {product.bulkUnitQty} pcs @ {formatCurrency(bulkPrice, selectedCurrency)}
+                          </span>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
