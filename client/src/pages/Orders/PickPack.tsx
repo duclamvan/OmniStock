@@ -12575,6 +12575,22 @@ export default function PickPack() {
                                 style={{ width: `${(currentItem.pickedQuantity / currentItem.quantity) * 100}%` }}
                               />
                             </div>
+                            
+                            {/* Carton Details - Shows how many cartons this quantity represents */}
+                            {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
+                              <div className="mt-3 flex items-center justify-center gap-2">
+                                <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                <span className="text-base font-bold text-amber-700 dark:text-amber-300">
+                                  {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
+                                </span>
+                                {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                                    (+{currentItem.quantity % currentItem.bulkUnitQty} pcs)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Quick Action Buttons Grid - Simplified */}
