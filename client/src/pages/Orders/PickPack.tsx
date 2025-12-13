@@ -11966,9 +11966,9 @@ export default function PickPack() {
                       <h1 className="text-xl font-bold">Order {activePickingOrder.orderId}</h1>
                       <Badge 
                         className={`
-                          ${activePickingOrder.priority === 'high' ? 'bg-red-50 dark:bg-red-900/300 text-white' : ''}
-                          ${activePickingOrder.priority === 'medium' ? 'bg-amber-50 dark:bg-amber-900/300 text-white' : ''}
-                          ${activePickingOrder.priority === 'low' ? 'bg-green-50 dark:bg-green-900/300 text-white' : ''}
+                          ${activePickingOrder.priority === 'high' ? 'bg-red-600 dark:bg-red-700 text-white' : ''}
+                          ${activePickingOrder.priority === 'medium' ? 'bg-amber-600 dark:bg-amber-700 text-white' : ''}
+                          ${activePickingOrder.priority === 'low' ? 'bg-green-600 dark:bg-green-700 text-white' : ''}
                         `}
                       >
                         {activePickingOrder.priority.toUpperCase()}
@@ -12645,8 +12645,7 @@ export default function PickPack() {
                           {/* Reset Button if needed */}
                           {currentItem.pickedQuantity > 0 && (
                             <Button
-                              variant="outline"
-                              className="w-full mt-3 h-12 text-base font-semibold border-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 dark:bg-red-900/30"
+                              className="w-full mt-3 h-12 text-base font-semibold bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md"
                               onClick={() => updatePickedItem(currentItem.id, 0)}
                             >
                               <RotateCcw className="h-5 w-5 mr-2" />
