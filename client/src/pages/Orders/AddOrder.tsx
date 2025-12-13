@@ -6801,7 +6801,7 @@ export default function AddOrder() {
                     className="grid grid-cols-[1fr_80px_70px_100px] gap-2 px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
                   >
                     <div className="font-medium truncate" title={variant.name}>{variant.name}</div>
-                    <div className="text-right text-sm">{variant.price ? `${variant.price} Kč` : '-'}</div>
+                    <div className="text-right text-sm">{selectedProductForVariant?.priceCzk ? `${selectedProductForVariant.priceCzk} Kč` : (selectedProductForVariant?.priceEur ? `${selectedProductForVariant.priceEur} €` : '-')}</div>
                     <div className="text-right">
                       <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-xs">
                         {variant.quantity}
