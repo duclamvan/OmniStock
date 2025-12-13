@@ -498,6 +498,17 @@ export default function AddOrder() {
   const [showCostInfo, setShowCostInfo] = useState(false);
   const [showProfitInfo, setShowProfitInfo] = useState(false);
 
+  // Out-of-stock warning dialog state
+  const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
+  const [pendingOutOfStockProduct, setPendingOutOfStockProduct] = useState<any>(null);
+  const [alwaysAllowOutOfStock, setAlwaysAllowOutOfStock] = useState(() => {
+    // Load preference from localStorage
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('alwaysAllowOutOfStock') === 'true';
+    }
+    return false;
+  });
+
   // Auto-enable discount column only for manual discounts (not Buy X Get Y offers)
   useEffect(() => {
     const hasManualDiscounts = orderItems.some(item => 
