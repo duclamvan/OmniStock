@@ -416,40 +416,6 @@ export default function CreatePurchase() {
     setPurchaseDate(localDateTime);
   }, []);
   
-  // Handle returning from product creation with newProductId
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const newProductId = urlParams.get('newProductId');
-    
-    if (newProductId && products.length > 0) {
-      const newProduct = products.find((p: Product) => p.id === newProductId);
-      if (newProduct) {
-        // Auto-select the newly created product
-        setSelectedProduct(newProduct);
-        setCurrentItem({
-          ...currentItem,
-          name: newProduct.name,
-          sku: newProduct.sku || "",
-          barcode: newProduct.barcode || "",
-          weight: newProduct.weight || 0,
-          dimensions: newProduct.dimensions || "",
-          categoryId: newProduct.categoryId,
-          category: newProduct.category || "",
-          binLocation: newProduct.warehouseLocation || "TBA",
-          sellingUnitName: newProduct.sellingUnitName,
-          bulkUnitName: newProduct.bulkUnitName,
-          bulkUnitQty: newProduct.bulkUnitQty
-        });
-        
-        // Clean up URL to remove the newProductId param
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, '', cleanUrl);
-        
-        toast({ title: t('success'), description: t('productSelectedAutomatically') });
-      }
-    }
-  }, [products]);
-  
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -553,6 +519,40 @@ export default function CreatePurchase() {
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
+
+  // Handle returning from product creation with newProductId
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newProductId = urlParams.get('newProductId');
+    
+    if (newProductId && products.length > 0) {
+      const newProduct = products.find((p: Product) => p.id === newProductId);
+      if (newProduct) {
+        // Auto-select the newly created product
+        setSelectedProduct(newProduct);
+        setCurrentItem(prev => ({
+          ...prev,
+          name: newProduct.name,
+          sku: newProduct.sku || "",
+          barcode: newProduct.barcode || "",
+          weight: newProduct.weight || 0,
+          dimensions: newProduct.dimensions || "",
+          categoryId: newProduct.categoryId,
+          category: newProduct.category || "",
+          binLocation: newProduct.warehouseLocation || "TBA",
+          sellingUnitName: newProduct.sellingUnitName,
+          bulkUnitName: newProduct.bulkUnitName,
+          bulkUnitQty: newProduct.bulkUnitQty
+        }));
+        
+        // Clean up URL to remove the newProductId param
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        
+        toast({ title: t('success'), description: t('productSelectedAutomatically') });
+      }
+    }
+  }, [products, t, toast]);
 
   // Filter suppliers based on search
   const filteredSuppliers = suppliers.filter(s => {
