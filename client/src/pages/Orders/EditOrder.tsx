@@ -163,6 +163,9 @@ interface OrderItem {
   id: string;
   productId?: string;
   serviceId?: string;
+  variantId?: string;
+  variantName?: string;
+  bundleId?: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -172,15 +175,19 @@ interface OrderItem {
   tax: number;
   total: number;
   landingCost?: number | null;
-  variantId?: string | null;
-  variantName?: string | null;
-  bundleId?: string | null;
   image?: string | null;
   notes?: string | null;
-  appliedDiscountId?: string | null;
+  appliedDiscountId?: number | null;
   appliedDiscountLabel?: string | null;
   appliedDiscountType?: string | null;
   appliedDiscountScope?: string | null;
+  freeItemsCount?: number;
+  buyXGetYBuyQty?: number;
+  buyXGetYGetQty?: number;
+  categoryId?: string | null;
+  isFreeItem?: boolean;
+  originalPrice?: number;
+  isServicePart?: boolean;
 }
 
 // Helper function to get country flag emoji
