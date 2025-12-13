@@ -2818,29 +2818,18 @@ export default function AddOrder() {
     ).slice(0, 6); // Limit to 6 for UI
   }, [allProducts]);
 
-  // Handler to add product with bulk unit (1 carton/box = X pcs at bulk price)
+  // Handler to add product with bulk unit (1 carton/box = X pcs, price = qty × per-piece price)
   const addBulkProductToOrder = useCallback(async (product: any) => {
     const selectedCurrency = form.watch('currency') || 'EUR';
     
-    // Get the bulk price or fall back to regular price
-    let bulkPrice = 0;
-    if (selectedCurrency === 'CZK' && product.bulkPriceCzk) {
-      bulkPrice = parseFloat(product.bulkPriceCzk);
-    } else if (selectedCurrency === 'EUR' && product.bulkPriceEur) {
-      bulkPrice = parseFloat(product.bulkPriceEur);
-    } else if (product.bulkPriceEur || product.bulkPriceCzk) {
-      bulkPrice = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
-    }
-    
-    // Fallback to regular price if no bulk price
-    if (bulkPrice === 0) {
-      if (selectedCurrency === 'CZK' && product.priceCzk) {
-        bulkPrice = parseFloat(product.priceCzk);
-      } else if (selectedCurrency === 'EUR' && product.priceEur) {
-        bulkPrice = parseFloat(product.priceEur);
-      } else {
-        bulkPrice = parseFloat(product.priceEur || product.priceCzk || '0');
-      }
+    // Get the per-piece price (regular retail price)
+    let perPiecePrice = 0;
+    if (selectedCurrency === 'CZK' && product.priceCzk) {
+      perPiecePrice = parseFloat(product.priceCzk);
+    } else if (selectedCurrency === 'EUR' && product.priceEur) {
+      perPiecePrice = parseFloat(product.priceEur);
+    } else {
+      perPiecePrice = parseFloat(product.priceEur || product.priceCzk || '0');
     }
     
     // Use originalProductId if this is from the search (has bulk- prefix)
@@ -2848,17 +2837,20 @@ export default function AddOrder() {
     const bulkQty = product.bulkUnitQty || 1;
     const bulkUnitName = product.bulkUnitName || 'carton';
     
+    // Calculate total carton price: pieces × per-piece price
+    const cartonTotalPrice = bulkQty * perPiecePrice;
+    
     const newItem: OrderItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: actualProductId,
       productName: product.name,
       sku: product.sku,
       quantity: 1, // 1 carton/unit
-      price: bulkPrice,
+      price: cartonTotalPrice, // Total price for the carton
       discount: 0,
       discountPercentage: 0,
       tax: 0,
-      total: bulkPrice,
+      total: cartonTotalPrice,
       landingCost: product.landingCost || product.latestLandingCost || null,
       image: product.image || null,
       notes: null,
@@ -2872,7 +2864,7 @@ export default function AddOrder() {
     
     toast({
       title: t('orders:bulkAdded', 'Bulk added'),
-      description: `1 ${bulkUnitName} of ${product.name} (${bulkQty} pcs)`,
+      description: `1 ${bulkUnitName} of ${product.name} (${bulkQty} pcs × ${perPiecePrice} = ${cartonTotalPrice})`,
     });
     
     // Auto-focus quantity input for the newly added item
