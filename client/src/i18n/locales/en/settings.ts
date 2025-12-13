@@ -1590,6 +1590,8 @@ const settings = {
   serviceTypeNameRequired: 'Service type name is required',
   serviceTypeAlreadyExists: 'Service type already exists',
   failedToSaveSettings: 'Failed to save settings',
+  defaultServiceTypesLoaded: 'Default service types loaded',
+  loadDefaultServices: 'Load Default Services',
 } as const;
 
 export default settings;

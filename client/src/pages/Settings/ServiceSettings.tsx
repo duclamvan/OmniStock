@@ -19,6 +19,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Default service types with prices
+const DEFAULT_SERVICE_TYPES: ServiceTypeConfig[] = [
+  { id: 'repair', name: 'Repair', costEur: 15, costCzk: 375, enabled: true },
+  { id: 'assembly', name: 'Assembly', costEur: 20, costCzk: 500, enabled: true },
+  { id: 'installation', name: 'Installation', costEur: 25, costCzk: 625, enabled: true },
+  { id: 'maintenance', name: 'Maintenance', costEur: 18, costCzk: 450, enabled: true },
+  { id: 'consultation', name: 'Consultation', costEur: 30, costCzk: 750, enabled: true },
+  { id: 'inspection', name: 'Inspection', costEur: 12, costCzk: 300, enabled: true },
+  { id: 'customization', name: 'Customization', costEur: 35, costCzk: 875, enabled: true },
+  { id: 'packaging', name: 'Special Packaging', costEur: 5, costCzk: 125, enabled: true },
+  { id: 'express', name: 'Express Handling', costEur: 10, costCzk: 250, enabled: true },
+  { id: 'quality_check', name: 'Quality Check', costEur: 8, costCzk: 200, enabled: true },
+];
+
 export default function ServiceSettings() {
   const { t } = useTranslation(['settings', 'common', 'financial']);
   const { toast } = useToast();
@@ -34,11 +48,21 @@ export default function ServiceSettings() {
 
   useEffect(() => {
     if (serviceSettings) {
-      setServiceTypes(serviceSettings.serviceTypes || []);
+      // Use saved service types, or load defaults if none exist
+      const savedTypes = serviceSettings.serviceTypes || [];
+      setServiceTypes(savedTypes.length > 0 ? savedTypes : DEFAULT_SERVICE_TYPES);
       setDefaultServiceCostEur(serviceSettings.defaultServiceCostEur || 0);
       setDefaultServiceCostCzk(serviceSettings.defaultServiceCostCzk || 0);
     }
   }, [serviceSettings]);
+
+  const handleLoadDefaults = () => {
+    setServiceTypes(DEFAULT_SERVICE_TYPES);
+    toast({
+      title: t('common:success'),
+      description: t('settings:defaultServiceTypesLoaded'),
+    });
+  };
 
   const handleAddServiceType = () => {
     if (!newTypeName.trim()) {
@@ -300,11 +324,28 @@ export default function ServiceSettings() {
             <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
               <Wrench className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">{t('settings:noServiceTypes')}</p>
-              <p className="text-sm">{t('settings:addServiceTypeToStart')}</p>
+              <p className="text-sm mb-4">{t('settings:addServiceTypeToStart')}</p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleLoadDefaults}
+                data-testid="button-load-default-services"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('settings:loadDefaultServices')}
+              </Button>
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t">
+          <div className="flex justify-between pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLoadDefaults}
+              data-testid="button-reset-to-defaults"
+            >
+              {t('settings:resetToDefaults')}
+            </Button>
             <Button
               onClick={handleSaveSettings}
               disabled={isSaving}

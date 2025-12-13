@@ -1612,6 +1612,8 @@ const settings = {
   serviceTypeNameRequired: 'Tên loại dịch vụ là bắt buộc',
   serviceTypeAlreadyExists: 'Loại dịch vụ đã tồn tại',
   failedToSaveSettings: 'Không thể lưu cài đặt',
+  defaultServiceTypesLoaded: 'Đã tải danh sách dịch vụ mặc định',
+  loadDefaultServices: 'Tải Dịch Vụ Mặc Định',
 } as const;
 
 export default settings;
