@@ -1915,6 +1915,20 @@ const imports = {
   aiSuggest: 'AI Gợi ý',
   addVariants: 'Thêm biến thể',
   
+  // Supplier Search
+  noSupplierFound: 'Không tìm thấy nhà cung cấp',
+  goToSuppliersPage: 'Đi đến trang Nhà cung cấp để thêm',
+  
+  // Variant Operations
+  addAsMultipleVariants: 'Thêm như nhiều biến thể',
+  productVariants: 'Biến thể sản phẩm',
+  addVariantsOf: 'Thêm biến thể của',
+  addVariant: 'Thêm biến thể',
+  addSeries: 'Thêm chuỗi',
+  addVariantsAsItems: 'Thêm {{count}} biến thể làm sản phẩm',
+  variants: 'biến thể',
+  variantName: 'Tên biến thể',
+  
   // Consolidation Actions
   addToConsolidation: 'Thêm vào lô hàng',
   selectItemsThenChooseConsolidation: 'Chọn sản phẩm, sau đó chọn lô hàng để thêm vào',

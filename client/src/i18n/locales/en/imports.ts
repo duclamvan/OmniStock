@@ -1973,6 +1973,20 @@ const imports = {
   aiSuggest: 'AI Suggest',
   addVariants: 'Add Variants',
   
+  // Supplier Search
+  noSupplierFound: 'No supplier found',
+  goToSuppliersPage: 'Go to Suppliers to add',
+  
+  // Variant Operations
+  addAsMultipleVariants: 'Add as multiple variants',
+  productVariants: 'Product Variants',
+  addVariantsOf: 'Add variants of',
+  addVariant: 'Add Variant',
+  addSeries: 'Add Series',
+  addVariantsAsItems: 'Add {{count}} variants as items',
+  variants: 'variants',
+  variantName: 'Variant Name',
+  
   // Consolidation Actions
   addToConsolidation: 'Add to Consolidation',
   selectItemsThenChooseConsolidation: 'Select items, then choose a consolidation to add them',

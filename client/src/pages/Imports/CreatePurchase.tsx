@@ -1977,7 +1977,7 @@ export default function CreatePurchase() {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <Label htmlFor="unitPrice" className="text-xs">{t('unitPrice')} ({purchaseCurrency}) *</Label>
+                    <Label htmlFor="unitPrice" className="text-xs">{t('unitPrice')} *</Label>
                     <Input
                       id="unitPrice"
                       type="number"
