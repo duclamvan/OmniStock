@@ -19,18 +19,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Default service types with prices
+// Default service types with prices (matching AddService.tsx service types)
 const DEFAULT_SERVICE_TYPES: ServiceTypeConfig[] = [
-  { id: 'repair', name: 'Repair', costEur: 15, costCzk: 375, enabled: true },
-  { id: 'assembly', name: 'Assembly', costEur: 20, costCzk: 500, enabled: true },
-  { id: 'installation', name: 'Installation', costEur: 25, costCzk: 625, enabled: true },
-  { id: 'maintenance', name: 'Maintenance', costEur: 18, costCzk: 450, enabled: true },
-  { id: 'consultation', name: 'Consultation', costEur: 30, costCzk: 750, enabled: true },
-  { id: 'inspection', name: 'Inspection', costEur: 12, costCzk: 300, enabled: true },
-  { id: 'customization', name: 'Customization', costEur: 35, costCzk: 875, enabled: true },
-  { id: 'packaging', name: 'Special Packaging', costEur: 5, costCzk: 125, enabled: true },
-  { id: 'express', name: 'Express Handling', costEur: 10, costCzk: 250, enabled: true },
-  { id: 'quality_check', name: 'Quality Check', costEur: 8, costCzk: 200, enabled: true },
+  { id: 'hand_drill_repair', name: 'Hand Drill Repair', costEur: 15, costCzk: 375, enabled: true },
+  { id: 'led_light_bulb_repair', name: 'LED Light Bulb Repair', costEur: 12, costCzk: 300, enabled: true },
+  { id: 'nail_lamp_repair', name: 'Nail Lamp Repair', costEur: 18, costCzk: 450, enabled: true },
+  { id: 'nail_drill_repair', name: 'Nail Drill Repair', costEur: 20, costCzk: 500, enabled: true },
+  { id: 'uv_lamp_repair', name: 'UV Lamp Repair', costEur: 15, costCzk: 375, enabled: true },
+  { id: 'electric_file_repair', name: 'Electric File Repair', costEur: 18, costCzk: 450, enabled: true },
+  { id: 'sterilizer_repair', name: 'Sterilizer Repair', costEur: 22, costCzk: 550, enabled: true },
+  { id: 'wax_warmer_repair', name: 'Wax Warmer Repair', costEur: 16, costCzk: 400, enabled: true },
+  { id: 'pedicure_chair_repair', name: 'Pedicure Chair Repair', costEur: 45, costCzk: 1125, enabled: true },
+  { id: 'massage_chair_repair', name: 'Massage Chair Repair', costEur: 50, costCzk: 1250, enabled: true },
+  { id: 'vacuum_cleaner_repair', name: 'Vacuum Cleaner Repair', costEur: 20, costCzk: 500, enabled: true },
+  { id: 'air_purifier_repair', name: 'Air Purifier Repair', costEur: 25, costCzk: 625, enabled: true },
+  { id: 'general_equipment_repair', name: 'General Equipment Repair', costEur: 20, costCzk: 500, enabled: true },
+  { id: 'installation_service', name: 'Installation Service', costEur: 30, costCzk: 750, enabled: true },
+  { id: 'maintenance_service', name: 'Maintenance Service', costEur: 25, costCzk: 625, enabled: true },
+  { id: 'consultation', name: 'Consultation', costEur: 35, costCzk: 875, enabled: true },
+  { id: 'custom_service', name: 'Custom Service', costEur: 20, costCzk: 500, enabled: true },
 ];
 
 export default function ServiceSettings() {
