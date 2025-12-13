@@ -1338,6 +1338,14 @@ const orders = {
   retailPricesApplied: 'Đã áp dụng giá lẻ',
   pricesUpdatedForSaleType: 'Giá sản phẩm đã được cập nhật theo loại bán hàng',
   
+  // Automatic Price Tier Switching
+  bulkPriceApplied: 'Đã áp dụng giá sỉ',
+  bulkPriceAppliedDesc: 'Số lượng đạt {{qty}}+. Giá: {{price}}',
+  retailPriceApplied: 'Đã áp dụng giá lẻ',
+  retailPriceAppliedDesc: 'Dưới ngưỡng giá sỉ. Giá: {{price}}',
+  bulkPriceBadge: 'Giá sỉ',
+  retailPriceBadge: 'Giá lẻ',
+  
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Bắt đầu lấy hàng',
   pickedItem: 'Đã lấy: {{product}}',

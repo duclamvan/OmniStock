@@ -1361,6 +1361,14 @@ const orders = {
   retailPricesApplied: 'Retail Prices Applied',
   pricesUpdatedForSaleType: 'Item prices have been updated based on the selected sale type',
   
+  // Automatic Price Tier Switching
+  bulkPriceApplied: 'Bulk Price Applied',
+  bulkPriceAppliedDesc: 'Quantity meets {{qty}}+ threshold. Price: {{price}}',
+  retailPriceApplied: 'Retail Price Applied',
+  retailPriceAppliedDesc: 'Below bulk threshold. Price: {{price}}',
+  bulkPriceBadge: 'Bulk Price',
+  retailPriceBadge: 'Retail Price',
+  
   // OrderDetails.tsx - Pick/Pack Activity
   pickingStarted: 'Picking Started',
   pickedItem: 'Picked: {{product}}',

@@ -204,6 +204,10 @@ interface OrderItem {
   isServicePart?: boolean;
   bulkUnitName?: string;
   bulkUnitQty?: number;
+  priceTier?: 'retail' | 'bulk';
+  retailPrice?: number;
+  bulkPrice?: number;
+  allowBulkSales?: boolean;
 }
 
 interface BuyXGetYAllocation {
@@ -1993,6 +1997,24 @@ export default function AddOrder() {
           }
         }
 
+        // Calculate retail and bulk prices for automatic price tier switching
+        let retailPriceValue = 0;
+        let bulkPriceValue = 0;
+        
+        if (selectedCurrency === 'CZK') {
+          retailPriceValue = parseFloat(product.priceCzk || '0');
+          bulkPriceValue = parseFloat(product.bulkPriceCzk || '0');
+        } else if (selectedCurrency === 'EUR') {
+          retailPriceValue = parseFloat(product.priceEur || '0');
+          bulkPriceValue = parseFloat(product.bulkPriceEur || '0');
+        } else {
+          retailPriceValue = parseFloat(product.priceEur || product.priceCzk || '0');
+          bulkPriceValue = parseFloat(product.bulkPriceEur || product.bulkPriceCzk || '0');
+        }
+        
+        // Determine initial price tier based on current sale type
+        const initialPriceTier = currentSaleType === 'wholesale' && bulkPriceValue > 0 ? 'bulk' : 'retail';
+
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
           productId: product.id,
@@ -2014,6 +2036,10 @@ export default function AddOrder() {
           isFreeItem: false,
           bulkUnitQty: product.bulkUnitQty || null,
           bulkUnitName: product.bulkUnitName || null,
+          priceTier: initialPriceTier,
+          retailPrice: retailPriceValue,
+          bulkPrice: bulkPriceValue,
+          allowBulkSales: product.allowBulkSales || false,
         };
         
         // Show toast if discount was applied
@@ -2228,6 +2254,23 @@ export default function AddOrder() {
           }
         }
 
+        // Calculate retail and bulk prices for automatic price tier switching
+        let retailPriceForVariant = 0;
+        let bulkPriceForVariant = 0;
+        
+        if (selectedCurrency === 'CZK') {
+          retailPriceForVariant = parseFloat(selectedProductForVariant.priceCzk || '0');
+          bulkPriceForVariant = parseFloat(selectedProductForVariant.bulkPriceCzk || '0');
+        } else if (selectedCurrency === 'EUR') {
+          retailPriceForVariant = parseFloat(selectedProductForVariant.priceEur || '0');
+          bulkPriceForVariant = parseFloat(selectedProductForVariant.bulkPriceEur || '0');
+        } else {
+          retailPriceForVariant = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+          bulkPriceForVariant = parseFloat(selectedProductForVariant.bulkPriceEur || selectedProductForVariant.bulkPriceCzk || '0');
+        }
+        
+        const variantPriceTier = currentSaleType === 'wholesale' && bulkPriceForVariant > 0 ? 'bulk' : 'retail';
+
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
           productId: selectedProductForVariant.id,
@@ -2249,6 +2292,12 @@ export default function AddOrder() {
           appliedDiscountScope: discountScope,
           categoryId: productCategoryId,
           isFreeItem: false,
+          bulkUnitQty: selectedProductForVariant.bulkUnitQty || null,
+          bulkUnitName: selectedProductForVariant.bulkUnitName || null,
+          priceTier: variantPriceTier,
+          retailPrice: retailPriceForVariant,
+          bulkPrice: bulkPriceForVariant,
+          allowBulkSales: selectedProductForVariant.allowBulkSales || false,
         };
         
         setOrderItems(items => [...items, newItem]);
@@ -2463,6 +2512,48 @@ export default function AddOrder() {
           }
           
           const updatedItem = { ...item, [field]: finalValue };
+          
+          // Automatic price tier switching based on quantity threshold
+          if (field === 'quantity' && updatedItem.allowBulkSales && updatedItem.bulkUnitQty && updatedItem.bulkUnitQty > 0) {
+            const newQuantity = typeof finalValue === 'number' ? finalValue : parseInt(finalValue || '1');
+            const bulkThreshold = updatedItem.bulkUnitQty;
+            const hasBulkPrice = updatedItem.bulkPrice && updatedItem.bulkPrice > 0;
+            const hasRetailPrice = updatedItem.retailPrice && updatedItem.retailPrice > 0;
+            
+            // Switch to bulk price when quantity meets threshold
+            if (newQuantity >= bulkThreshold && hasBulkPrice) {
+              if (updatedItem.priceTier !== 'bulk') {
+                updatedItem.price = updatedItem.bulkPrice!;
+                updatedItem.priceTier = 'bulk';
+                // Show notification about price tier change (async, non-blocking)
+                setTimeout(() => {
+                  toast({
+                    title: t('orders:bulkPriceApplied'),
+                    description: t('orders:bulkPriceAppliedDesc', { 
+                      qty: bulkThreshold, 
+                      price: formatCurrency(updatedItem.bulkPrice!, form.watch('currency'))
+                    }),
+                  });
+                }, 0);
+              }
+            }
+            // Switch back to retail price when quantity drops below threshold
+            else if (newQuantity < bulkThreshold && hasRetailPrice) {
+              if (updatedItem.priceTier !== 'retail') {
+                updatedItem.price = updatedItem.retailPrice!;
+                updatedItem.priceTier = 'retail';
+                // Show notification about price tier change (async, non-blocking)
+                setTimeout(() => {
+                  toast({
+                    title: t('orders:retailPriceApplied'),
+                    description: t('orders:retailPriceAppliedDesc', { 
+                      price: formatCurrency(updatedItem.retailPrice!, form.watch('currency'))
+                    }),
+                  });
+                }, 0);
+              }
+            }
+          }
           
           // Recalculate discount amount from percentage when quantity or price changes
           if ((field === 'quantity' || field === 'price') && updatedItem.discountPercentage > 0) {
@@ -4998,6 +5089,12 @@ export default function AddOrder() {
                                         {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'carton'}
                                       </Badge>
                                     )}
+                                    {item.priceTier === 'bulk' && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-600">
+                                        <TrendingUp className="h-3 w-3 mr-0.5" />
+                                        {t('orders:bulkPriceBadge')}
+                                      </Badge>
+                                    )}
                                     {item.variantName && (
                                       <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700">
                                         {item.variantName}
@@ -5345,6 +5442,12 @@ export default function AddOrder() {
                               <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
                                 <Box className="h-3 w-3 mr-0.5" />
                                 {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'carton'}
+                              </Badge>
+                            )}
+                            {item.priceTier === 'bulk' && (
+                              <Badge className="text-xs px-1.5 py-0 bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-600">
+                                <TrendingUp className="h-3 w-3 mr-0.5" />
+                                {t('orders:bulkPriceBadge')}
                               </Badge>
                             )}
                             {item.variantName && (
