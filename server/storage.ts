@@ -1998,7 +1998,31 @@ export class DatabaseStorage implements IStorage {
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
     try {
       const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-      return items;
+      
+      // Enrich items with bulkUnitQty/bulkUnitName from products if missing
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        if (item.productId && (!item.bulkUnitQty || !item.bulkUnitName)) {
+          try {
+            const [product] = await db.select({
+              bulkUnitQty: products.bulkUnitQty,
+              bulkUnitName: products.bulkUnitName
+            }).from(products).where(eq(products.id, item.productId)).limit(1);
+            
+            if (product) {
+              return {
+                ...item,
+                bulkUnitQty: item.bulkUnitQty || product.bulkUnitQty,
+                bulkUnitName: item.bulkUnitName || product.bulkUnitName
+              };
+            }
+          } catch (e) {
+            // Silently continue if product lookup fails
+          }
+        }
+        return item;
+      }));
+      
+      return enrichedItems;
     } catch (error: any) {
       console.error(`[getOrderItems] Error fetching items for order ${orderId}:`, error?.message || error);
       throw error;
