@@ -1333,18 +1333,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   {item.appliedDiscountType === 'buy_x_get_y' && (item.freeItemsCount ?? 0) > 0
                                     ? item.quantity - (item.freeItemsCount ?? 0)
                                     : item.quantity}
-                                  {/* For bulk items, show unit name and total pieces */}
-                                  {item.isBulkCarton && (
-                                    <span className="font-normal text-xs text-amber-600 dark:text-amber-400 ml-1">
-                                      {item.bulkUnitName || 'carton'}{item.quantity !== 1 ? 's' : ''} ({item.quantity * (item.bulkUnitQty || 1)} pcs)
-                                    </span>
-                                  )}
                                 </span>
                               </div>
                               
                               {/* Unit Price */}
                               <div className="text-xs text-slate-600 dark:text-slate-400">
-                                <span className="text-slate-500 dark:text-slate-400">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}{item.isBulkCarton && <span className="text-amber-600 dark:text-amber-400">/{item.bulkUnitName || 'carton'}</span>}
+                                <span className="text-slate-500 dark:text-slate-400">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
                               </div>
                             </div>
                           </div>
