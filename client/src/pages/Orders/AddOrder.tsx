@@ -6778,9 +6778,9 @@ export default function AddOrder() {
             </div>
             
             {/* Header row */}
-            <div className="grid grid-cols-[1fr_100px_70px_100px] gap-2 px-3 py-2 bg-muted/50 rounded-t-md text-sm font-medium border-b">
+            <div className="grid grid-cols-[1fr_80px_70px_100px] gap-2 px-3 py-2 bg-muted/50 rounded-t-md text-sm font-medium border-b">
               <div>{t('orders:variantName')}</div>
-              <div>{t('orders:barcode')}</div>
+              <div className="text-right">{t('orders:price')}</div>
               <div className="text-right">{t('orders:stock')}</div>
               <div className="text-right">{t('orders:quantity')}</div>
             </div>
@@ -6798,10 +6798,10 @@ export default function AddOrder() {
                 return (
                   <div 
                     style={style} 
-                    className="grid grid-cols-[1fr_100px_70px_100px] gap-2 px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
+                    className="grid grid-cols-[1fr_80px_70px_100px] gap-2 px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
                   >
                     <div className="font-medium truncate" title={variant.name}>{variant.name}</div>
-                    <div className="text-muted-foreground font-mono text-xs truncate">{variant.barcode || '-'}</div>
+                    <div className="text-right text-sm">{variant.price ? `${variant.price} Kč` : '-'}</div>
                     <div className="text-right">
                       <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-xs">
                         {variant.quantity}
