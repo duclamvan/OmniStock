@@ -1984,6 +1984,7 @@ const imports = {
   websitePlaceholder: 'e.g. alibaba.com',
   supplierAddedSuccess: 'Supplier added successfully',
   supplierAddFailed: 'Failed to add supplier',
+  noCountryFound: 'No country found',
   
   // Variant Operations
   addAsMultipleVariants: 'Add as multiple variants',

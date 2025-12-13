@@ -1926,6 +1926,7 @@ const imports = {
   websitePlaceholder: 'VD: alibaba.com',
   supplierAddedSuccess: 'Đã thêm nhà cung cấp thành công',
   supplierAddFailed: 'Không thể thêm nhà cung cấp',
+  noCountryFound: 'Không tìm thấy quốc gia',
   
   // Variant Operations
   addAsMultipleVariants: 'Thêm như nhiều biến thể',

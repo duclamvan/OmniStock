@@ -381,6 +381,31 @@ export default function CreatePurchase() {
   const [newSupplierCountry, setNewSupplierCountry] = useState("");
   const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
   const [savingSupplier, setSavingSupplier] = useState(false);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Common countries for quick selection (ordered by usage frequency)
+  const COMMON_COUNTRIES = [
+    { name: "China", flag: "🇨🇳" },
+    { name: "Vietnam", flag: "🇻🇳" },
+    { name: "USA", flag: "🇺🇸" },
+    { name: "Germany", flag: "🇩🇪" },
+    { name: "Czech Republic", flag: "🇨🇿" },
+    { name: "Hong Kong", flag: "🇭🇰" },
+    { name: "Taiwan", flag: "🇹🇼" },
+    { name: "Thailand", flag: "🇹🇭" },
+    { name: "India", flag: "🇮🇳" },
+    { name: "United Kingdom", flag: "🇬🇧" },
+    { name: "France", flag: "🇫🇷" },
+    { name: "Italy", flag: "🇮🇹" },
+    { name: "Poland", flag: "🇵🇱" },
+    { name: "Netherlands", flag: "🇳🇱" },
+    { name: "Japan", flag: "🇯🇵" },
+    { name: "South Korea", flag: "🇰🇷" },
+    { name: "Singapore", flag: "🇸🇬" },
+    { name: "Malaysia", flag: "🇲🇾" },
+    { name: "Indonesia", flag: "🇮🇩" },
+  ];
 
   // Set default purchase date to now
   useEffect(() => {
@@ -455,6 +480,9 @@ export default function CreatePurchase() {
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
         setCategoryDropdownOpen(false);
       }
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -462,6 +490,25 @@ export default function CreatePurchase() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  
+  // Filter countries based on search with fuzzy matching
+  const filteredCountries = useMemo(() => {
+    if (!newSupplierCountry.trim()) {
+      return COMMON_COUNTRIES;
+    }
+    const searchTerm = newSupplierCountry.toLowerCase().trim();
+    return COMMON_COUNTRIES.filter(c => 
+      c.name.toLowerCase().includes(searchTerm) ||
+      c.name.toLowerCase().startsWith(searchTerm)
+    ).sort((a, b) => {
+      // Prioritize exact prefix matches
+      const aStartsWith = a.name.toLowerCase().startsWith(searchTerm);
+      const bStartsWith = b.name.toLowerCase().startsWith(searchTerm);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      return 0;
+    });
+  }, [newSupplierCountry]);
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({
@@ -1539,108 +1586,20 @@ export default function CreatePurchase() {
                             ) : (
                               <div className="p-4 space-y-3">
                                 <p className="text-sm text-muted-foreground">{t('noSupplierFound')}</p>
-                                
-                                {!showQuickAddSupplier ? (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => {
-                                      setShowQuickAddSupplier(true);
-                                      setNewSupplierName(supplier);
-                                    }}
-                                    className="w-full"
-                                    data-testid="button-quick-add-supplier"
-                                  >
-                                    <UserPlus className="mr-2 h-4 w-4" />
-                                    {t('quickAddSupplier')} "{supplier}"
-                                  </Button>
-                                ) : (
-                                  <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">{t('supplierName')} *</Label>
-                                      <Input
-                                        value={newSupplierName}
-                                        onChange={(e) => setNewSupplierName(e.target.value)}
-                                        placeholder={t('supplierNamePlaceholder')}
-                                        className="h-8"
-                                        data-testid="input-new-supplier-name"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">{t('country')}</Label>
-                                      <Input
-                                        value={newSupplierCountry}
-                                        onChange={(e) => setNewSupplierCountry(e.target.value)}
-                                        placeholder={t('countryPlaceholder')}
-                                        className="h-8"
-                                        data-testid="input-new-supplier-country"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">{t('website')}</Label>
-                                      <Input
-                                        value={newSupplierWebsite}
-                                        onChange={(e) => setNewSupplierWebsite(e.target.value)}
-                                        placeholder={t('websitePlaceholder')}
-                                        className="h-8"
-                                        data-testid="input-new-supplier-website"
-                                      />
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          setShowQuickAddSupplier(false);
-                                          setNewSupplierName("");
-                                          setNewSupplierCountry("");
-                                          setNewSupplierWebsite("");
-                                        }}
-                                        className="flex-1"
-                                        disabled={savingSupplier}
-                                      >
-                                        {t('cancel')}
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        onClick={async () => {
-                                          if (!newSupplierName.trim()) {
-                                            toast({ title: t('error'), description: t('supplierNameRequired'), variant: "destructive" });
-                                            return;
-                                          }
-                                          setSavingSupplier(true);
-                                          try {
-                                            const response = await apiRequest('POST', '/api/suppliers', {
-                                              name: newSupplierName.trim(),
-                                              country: newSupplierCountry.trim() || undefined,
-                                              website: newSupplierWebsite.trim() || undefined
-                                            });
-                                            const newSupplier = await response.json();
-                                            queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
-                                            setSupplier(newSupplier.name);
-                                            setSupplierId(newSupplier.id.toString());
-                                            setSupplierDropdownOpen(false);
-                                            setShowQuickAddSupplier(false);
-                                            setNewSupplierName("");
-                                            setNewSupplierCountry("");
-                                            setNewSupplierWebsite("");
-                                            toast({ title: t('success'), description: t('supplierAddedSuccess') });
-                                          } catch (error) {
-                                            toast({ title: t('error'), description: t('supplierAddFailed'), variant: "destructive" });
-                                          } finally {
-                                            setSavingSupplier(false);
-                                          }
-                                        }}
-                                        className="flex-1"
-                                        disabled={savingSupplier || !newSupplierName.trim()}
-                                        data-testid="button-save-new-supplier"
-                                      >
-                                        {savingSupplier ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
-                                        {t('save')}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => {
+                                    setShowQuickAddSupplier(true);
+                                    setNewSupplierName(supplier);
+                                    setSupplierDropdownOpen(false);
+                                  }}
+                                  className="w-full"
+                                  data-testid="button-quick-add-supplier"
+                                >
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  {t('quickAddSupplier')} "{supplier}"
+                                </Button>
                               </div>
                             )}
                           </>
@@ -1649,6 +1608,145 @@ export default function CreatePurchase() {
                     )}
                   </div>
                 </div>
+                
+                {/* Quick Add Supplier Form - Outside Dropdown */}
+                {showQuickAddSupplier && (
+                  <div className="mt-3 space-y-3 border rounded-lg p-4 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium flex items-center gap-2">
+                        <UserPlus className="h-4 w-4 text-primary" />
+                        {t('quickAddSupplier')}
+                      </h4>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowQuickAddSupplier(false);
+                          setNewSupplierName("");
+                          setNewSupplierCountry("");
+                          setNewSupplierWebsite("");
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs">{t('supplierName')} *</Label>
+                        <Input
+                          value={newSupplierName}
+                          onChange={(e) => setNewSupplierName(e.target.value)}
+                          placeholder={t('supplierNamePlaceholder')}
+                          className="h-9"
+                          data-testid="input-new-supplier-name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">{t('country')}</Label>
+                        <div className="relative" ref={countryDropdownRef}>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg">
+                              {getCountryFlag(newSupplierCountry)}
+                            </span>
+                            <Input
+                              value={newSupplierCountry}
+                              onChange={(e) => setNewSupplierCountry(e.target.value)}
+                              onFocus={() => setCountryDropdownOpen(true)}
+                              placeholder={t('countryPlaceholder')}
+                              className="h-9 pl-10"
+                              data-testid="input-new-supplier-country"
+                            />
+                          </div>
+                          {countryDropdownOpen && (
+                            <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                              {filteredCountries.length > 0 ? (
+                                filteredCountries.map((country) => (
+                                  <button
+                                    key={country.name}
+                                    type="button"
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors flex items-center gap-2 text-sm"
+                                    onClick={() => {
+                                      setNewSupplierCountry(country.name);
+                                      setCountryDropdownOpen(false);
+                                    }}
+                                  >
+                                    <span className="text-lg">{country.flag}</span>
+                                    <span>{country.name}</span>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">
+                                  {t('noCountryFound')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">{t('website')}</Label>
+                        <Input
+                          value={newSupplierWebsite}
+                          onChange={(e) => setNewSupplierWebsite(e.target.value)}
+                          placeholder={t('websitePlaceholder')}
+                          className="h-9"
+                          data-testid="input-new-supplier-website"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowQuickAddSupplier(false);
+                          setNewSupplierName("");
+                          setNewSupplierCountry("");
+                          setNewSupplierWebsite("");
+                        }}
+                        disabled={savingSupplier}
+                      >
+                        {t('cancel')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          if (!newSupplierName.trim()) {
+                            toast({ title: t('error'), description: t('supplierNameRequired'), variant: "destructive" });
+                            return;
+                          }
+                          setSavingSupplier(true);
+                          try {
+                            const response = await apiRequest('POST', '/api/suppliers', {
+                              name: newSupplierName.trim(),
+                              country: newSupplierCountry.trim() || undefined,
+                              website: newSupplierWebsite.trim() || undefined
+                            });
+                            const newSupplier = await response.json();
+                            queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+                            setSupplier(newSupplier.name);
+                            setSupplierId(newSupplier.id.toString());
+                            setShowQuickAddSupplier(false);
+                            setNewSupplierName("");
+                            setNewSupplierCountry("");
+                            setNewSupplierWebsite("");
+                            toast({ title: t('success'), description: t('supplierAddedSuccess') });
+                          } catch (error) {
+                            toast({ title: t('error'), description: t('supplierAddFailed'), variant: "destructive" });
+                          } finally {
+                            setSavingSupplier(false);
+                          }
+                        }}
+                        disabled={savingSupplier || !newSupplierName.trim()}
+                        data-testid="button-save-new-supplier"
+                      >
+                        {savingSupplier ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                        {t('save')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />
