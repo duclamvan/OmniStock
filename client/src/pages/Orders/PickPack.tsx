@@ -12570,6 +12570,8 @@ export default function PickPack() {
                         </div>
                       ) : (
                         <div className="space-y-4">
+                        {/* DEBUG: Log currentItem for carton details troubleshooting */}
+                        {console.log('🔍 DEBUG currentItem:', currentItem.productName, 'bulkUnitQty:', currentItem.bulkUnitQty, 'bulkUnitName:', currentItem.bulkUnitName, 'full item:', currentItem)}
                         {/* Carton Details Summary - Above Quantity Picker */}
                         {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
                           <div className="bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 rounded-xl p-4 border-2 border-amber-300 dark:border-amber-700 shadow-md">
