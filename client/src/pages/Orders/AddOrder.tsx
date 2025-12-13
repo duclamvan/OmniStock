@@ -2260,7 +2260,62 @@ export default function AddOrder() {
     setOrderItems(items =>
       items.map(item => {
         if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
+          let finalValue = value;
+          
+          // Stock validation when quantity changes
+          if (field === 'quantity' && !item.serviceId) {
+            const requestedQty = typeof value === 'number' ? value : parseInt(value || '1');
+            
+            // Get available stock for this product/variant/bundle
+            let baseStock = 0;
+            if (item.bundleId) {
+              const bundle = Array.isArray(allBundles) ? allBundles.find((b: any) => b.id === item.bundleId) : null;
+              baseStock = bundle?.availableStock ?? 0;
+            } else if (item.productId) {
+              const product = Array.isArray(allProducts) ? allProducts.find((p: any) => p.id === item.productId) : null;
+              baseStock = product?.quantity ?? 0;
+            }
+            
+            // Calculate how much is already in order by OTHER items (not this one)
+            const otherItemsQty = items.reduce((total, otherItem) => {
+              if (otherItem.id === id) return total; // Skip the current item being edited
+              if (item.bundleId && otherItem.bundleId === item.bundleId) {
+                return total + otherItem.quantity;
+              }
+              if (item.productId && otherItem.productId === item.productId) {
+                if (item.variantId) {
+                  if (otherItem.variantId === item.variantId) {
+                    return total + otherItem.quantity;
+                  }
+                } else if (!otherItem.variantId) {
+                  return total + otherItem.quantity;
+                }
+              }
+              return total;
+            }, 0);
+            
+            const availableStock = Math.max(0, baseStock - otherItemsQty);
+            
+            // Cap quantity to available stock
+            if (requestedQty > availableStock && availableStock > 0) {
+              finalValue = availableStock;
+              toast({
+                title: t('orders:quantityReduced'),
+                description: t('orders:onlyXInStock', { count: availableStock }),
+                variant: "destructive",
+              });
+            } else if (availableStock <= 0 && requestedQty > item.quantity) {
+              // Don't allow increasing if no stock available
+              finalValue = item.quantity;
+              toast({
+                title: t('orders:outOfStock'),
+                description: t('orders:noMoreStockAvailable'),
+                variant: "destructive",
+              });
+            }
+          }
+          
+          const updatedItem = { ...item, [field]: finalValue };
           
           // Recalculate discount amount from percentage when quantity or price changes
           if ((field === 'quantity' || field === 'price') && updatedItem.discountPercentage > 0) {
