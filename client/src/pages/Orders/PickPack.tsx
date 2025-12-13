@@ -1604,9 +1604,16 @@ function PickingListView({
                 </div>
               </div>
               
-              {/* Row 3: SKU (small text) */}
-              <div className="mt-1.5 ml-13 sm:ml-15 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              {/* Row 3: SKU and Carton Badge (small text) */}
+              <div className="mt-1.5 ml-13 sm:ml-15 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                 <span className="font-mono">{item.sku}</span>
+                {/* Carton/Bulk Unit Badge */}
+                {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
+                  <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                    <Box className="h-2.5 w-2.5 mr-0.5" />
+                    {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'carton'}
+                  </Badge>
+                )}
                 {isPartial && (
                   <span className="text-yellow-600 dark:text-yellow-400 font-medium">
                     ({item.pickedQuantity}/{item.quantity} {t('picked') || 'picked'})
