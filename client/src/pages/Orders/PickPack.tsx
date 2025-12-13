@@ -1537,11 +1537,11 @@ function PickingListView({
               }}
               data-testid={`picking-item-${index}`}
             >
-              {/* Row 1: Checkbox + Product Name + Quantity Badge */}
-              <div className="flex items-center gap-3">
-                {/* Product Photo with Status Overlay */}
+              {/* Row 1: Image + Product Name + Location + Quantity Badge */}
+              <div className="flex items-start gap-3">
+                {/* Product Photo with Status Overlay - Larger size */}
                 <div className="flex-shrink-0 relative">
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shadow-md border-2 ${
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shadow-md border-2 ${
                     isPicked 
                       ? 'border-green-500 dark:border-green-400' 
                       : isPartial 
@@ -1558,24 +1558,24 @@ function PickingListView({
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <Package className="h-6 w-6 sm:h-7 sm:w-7 text-gray-400 dark:text-gray-500" />
+                        <Package className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 dark:text-gray-500" />
                       </div>
                     )}
                   </div>
                   {/* Status Badge Overlay */}
                   {isPicked && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500 dark:bg-green-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
-                      <Check className="h-3 w-3 sm:h-4 sm:w-4 text-white" strokeWidth={3} />
+                    <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-500 dark:bg-green-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
+                      <Check className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={3} />
                     </div>
                   )}
                   {isPartial && !isPicked && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-yellow-500 dark:bg-yellow-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
-                      <span className="text-[10px] sm:text-xs font-bold text-white">{item.pickedQuantity}</span>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-yellow-500 dark:bg-yellow-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
+                      <span className="text-xs sm:text-sm font-bold text-white">{item.pickedQuantity}</span>
                     </div>
                   )}
                 </div>
                 
-                {/* Product Name (full, max 2 lines) */}
+                {/* Product Name + Location (stacked under title) */}
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold text-base sm:text-lg leading-snug line-clamp-2 ${
                     isPicked 
@@ -1589,6 +1589,17 @@ function PickingListView({
                       #{item.colorNumber}
                     </span>
                   )}
+                  {/* Warehouse Location - Under Product Title */}
+                  <div className="mt-1.5">
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold ${
+                      isCurrent 
+                        ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+                    }`}>
+                      <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span>{item.warehouseLocation || t('noLocation') || 'No location'}</span>
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Quantity Badge */}
@@ -1607,20 +1618,8 @@ function PickingListView({
                 </div>
               </div>
               
-              {/* Row 2: Location Badge (Most Important Info) */}
-              <div className="mt-2 ml-13 sm:ml-15">
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm sm:text-base font-mono font-bold ${
-                  isCurrent 
-                    ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
-                }`}>
-                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>{item.warehouseLocation || t('noLocation') || 'No location'}</span>
-                </div>
-              </div>
-              
-              {/* Row 3: SKU and Carton Badge (small text) */}
-              <div className="mt-1.5 ml-13 sm:ml-15 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+              {/* Row 2: SKU and Carton Badge (small text) */}
+              <div className="mt-1.5 ml-[76px] sm:ml-[92px] flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                 <span className="font-mono">{item.sku}</span>
                 {/* Carton/Bulk Unit Badge */}
                 {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
