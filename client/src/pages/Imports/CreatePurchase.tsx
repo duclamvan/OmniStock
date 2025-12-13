@@ -552,13 +552,11 @@ export default function CreatePurchase() {
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const totalWeight = items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const shippingPerItem = totalQuantity > 0 ? shippingCost / totalQuantity : 0;
-  const grandTotal = subtotal + shippingCost;
   
   // Currency symbol
   const currencySymbol = getCurrencySymbol(purchaseCurrency);
   
-  // Convert to USD
+  // Convert to USD (base currency for all conversions)
   const convertToUSD = (amount: number, fromCurrency: string) => {
     if (fromCurrency === "USD") return amount;
     const fromRate = exchangeRates[fromCurrency] || 1;
@@ -571,16 +569,34 @@ export default function CreatePurchase() {
     return amountInUSD * toRate;
   };
   
-  // USD equivalents
-  const subtotalUSD = convertToUSD(subtotal, purchaseCurrency);
-  const shippingCostUSD = convertToUSD(shippingCost, purchaseCurrency);
-  const grandTotalUSD = convertToUSD(grandTotal, purchaseCurrency);
+  // Convert between any two currencies via USD
+  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string) => {
+    if (fromCurrency === toCurrency) return amount;
+    const amountInUSD = convertToUSD(amount, fromCurrency);
+    return convertFromUSD(amountInUSD, toCurrency);
+  };
   
-  // Display currency conversions
-  const displaySubtotal = displayCurrency === purchaseCurrency ? subtotal : convertFromUSD(subtotalUSD, displayCurrency);
-  const displayShippingCost = displayCurrency === purchaseCurrency ? shippingCost : convertFromUSD(shippingCostUSD, displayCurrency);
-  const displayGrandTotal = displayCurrency === purchaseCurrency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
+  // USD equivalents (all values normalized to USD for comparison)
+  const subtotalUSD = convertToUSD(subtotal, purchaseCurrency);
+  const shippingCostUSD = convertToUSD(shippingCost, shippingCurrency); // Fixed: use shippingCurrency
+  const grandTotalUSD = subtotalUSD + shippingCostUSD;
+  
+  // Convert shipping to purchase currency for combined display
+  const shippingInPurchaseCurrency = convertCurrency(shippingCost, shippingCurrency, purchaseCurrency);
+  const grandTotalInPurchaseCurrency = subtotal + shippingInPurchaseCurrency;
+  
+  // Shipping per item in purchase currency
+  const shippingPerItem = totalQuantity > 0 ? shippingInPurchaseCurrency / totalQuantity : 0;
+  
+  // Display currency conversions - convert everything to display currency
+  const displaySubtotal = convertFromUSD(subtotalUSD, displayCurrency);
+  const displayShippingCost = convertFromUSD(shippingCostUSD, displayCurrency);
+  const displayGrandTotal = convertFromUSD(grandTotalUSD, displayCurrency);
   const displayCurrencySymbol = getCurrencySymbol(displayCurrency);
+  
+  // Payment currency conversions - for remaining balance calculation
+  const grandTotalInPaymentCurrency = convertFromUSD(grandTotalUSD, paymentCurrency);
+  const remainingBalance = Math.max(0, grandTotalInPaymentCurrency - totalPaid);
 
 
   // Create purchase mutation
@@ -3320,32 +3336,32 @@ export default function CreatePurchase() {
                 )}
                 
                 {/* Payment Progress Indicator */}
-                {grandTotal > 0 && (
+                {grandTotalInPaymentCurrency > 0 && (
                   <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-medium text-blue-800 dark:text-blue-200">{t('paymentProgress')}</span>
                       <span className={cn(
                         "text-xs font-semibold",
-                        totalPaid >= grandTotal ? "text-green-600 dark:text-green-400" : 
+                        totalPaid >= grandTotalInPaymentCurrency ? "text-green-600 dark:text-green-400" : 
                         totalPaid > 0 ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"
                       )}>
-                        {t('percentPaid', { percent: Math.min(100, Math.round((totalPaid / grandTotal) * 100)) })}
+                        {t('percentPaid', { percent: Math.min(100, Math.round((totalPaid / grandTotalInPaymentCurrency) * 100)) })}
                       </span>
                     </div>
                     <Progress 
-                      value={Math.min(100, (totalPaid / grandTotal) * 100)} 
+                      value={Math.min(100, (totalPaid / grandTotalInPaymentCurrency) * 100)} 
                       className={cn(
                         "h-2",
-                        totalPaid >= grandTotal ? "[&>div]:bg-green-500" : 
+                        totalPaid >= grandTotalInPaymentCurrency ? "[&>div]:bg-green-500" : 
                         totalPaid > 0 ? "[&>div]:bg-blue-500" : "[&>div]:bg-amber-500"
                       )}
                       data-testid="progress-payment"
                     />
-                    {grandTotal > totalPaid && (
+                    {remainingBalance > 0 && (
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-xs text-blue-700 dark:text-blue-300">{t('remainingBalance')}</span>
                         <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
-                          {getCurrencySymbol(paymentCurrency)}{(grandTotal - totalPaid).toFixed(2)}
+                          {getCurrencySymbol(paymentCurrency)}{remainingBalance.toFixed(2)}
                         </span>
                       </div>
                     )}
