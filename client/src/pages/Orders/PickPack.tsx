@@ -11954,7 +11954,7 @@ export default function PickPack() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-10 bg-red-50 dark:bg-red-900/300/80 hover:bg-red-600/90 text-white border-red-400 dark:border-red-700/50"
+                    className="h-10 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md"
                     onClick={() => setShowResetOrderDialog(true)}
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
