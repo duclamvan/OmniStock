@@ -818,10 +818,12 @@ export default function AddReturn() {
                                       variant="outline"
                                       role="combobox"
                                       aria-expanded={productSearchOpen === index}
-                                      className="w-full justify-between h-10"
+                                      className="w-full justify-between h-10 overflow-hidden"
                                       data-testid={`button-product-${index}`}
                                     >
-                                      {form.watch(`items.${index}.productName`) || t('inventory:selectProduct')}
+                                      <span className="truncate flex-1 text-left">
+                                        {form.watch(`items.${index}.productName`) || t('inventory:selectProduct')}
+                                      </span>
                                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
