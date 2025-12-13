@@ -773,7 +773,7 @@ export default function ImportKanbanDashboard() {
             </Link>
 
             {/* Column Content */}
-            <div className="h-[400px] sm:h-[500px] lg:h-[600px] overflow-y-auto overflow-x-hidden">
+            <div className="h-[400px] sm:h-[500px] lg:h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden">
               <div className="space-y-2 sm:space-y-3 p-2 sm:p-3">
                 {column.id === 'processing' && filteredPurchases.map(purchase => (
                   <PurchaseCard 
