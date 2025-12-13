@@ -7348,8 +7348,8 @@ export default function PickPack() {
                                 </div>
                                 <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
                                   isVerified || (isBundle && allBundleComponentsVerified)
-                                    ? 'bg-green-50 dark:bg-green-900/300 text-white' 
-                                    : 'bg-blue-50 dark:bg-blue-900/300 text-white'
+                                    ? 'bg-green-600 dark:bg-green-700 text-white' 
+                                    : 'bg-blue-600 dark:bg-blue-700 text-white'
                                 }`}>
                                   {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : `${item.quantity}×`}
                                 </div>
@@ -7410,7 +7410,7 @@ export default function PickPack() {
                                     size="sm"
                                     className={`h-8 px-3 text-sm font-bold ${
                                       isVerified || (isBundle && allBundleComponentsVerified)
-                                        ? 'bg-green-50 dark:bg-green-900/300 hover:bg-green-600 text-white' 
+                                        ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
                                         : 'border-sky-300 text-sky-600 hover:bg-sky-50'
                                     }`}
                                     onClick={() => {
@@ -7483,7 +7483,7 @@ export default function PickPack() {
                                       }`}
                                     >
                                       <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                        isComponentVerified ? 'bg-green-50 dark:bg-green-900/300 text-white' : 'bg-amber-200 text-amber-700 dark:text-amber-200'
+                                        isComponentVerified ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-amber-500 dark:bg-amber-600 text-white'
                                       }`}>
                                         {isComponentVerified ? '✓' : idx + 1}
                                       </div>
@@ -7508,7 +7508,7 @@ export default function PickPack() {
                                         size="sm"
                                         className={`h-7 px-2 text-xs shrink-0 ${
                                           isComponentVerified 
-                                            ? 'bg-green-50 dark:bg-green-900/300 hover:bg-green-600 text-white' 
+                                            ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                         }`}
                                         onClick={() => {
