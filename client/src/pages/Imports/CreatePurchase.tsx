@@ -858,22 +858,34 @@ export default function CreatePurchase() {
         setProcessingUnit("days");
       }
       
-      // Load items with proper currency display
+      // Load items with proper currency display and all fields
       if (purchase?.items && purchase.items.length > 0) {
         const loadedItems = purchase.items.map((item: any) => ({
           id: String(item.id),
-          name: String(item.name),
+          name: String(item.productName || item.name || ""),
           sku: String(item.sku || ""),
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
-          weight: Number(item.weight) || 0,
-          dimensions: String(item.dimensions || ""),
+          category: String(item.category || ""),
+          categoryId: item.categoryId,
+          barcode: String(item.barcode || ""),
+          quantity: Number(item.quantity) || 1,
+          unitPrice: parseFloat(item.unitCost || item.unitPrice) || 0,
+          weight: parseFloat(item.weight) || 0,
+          dimensions: typeof item.dimensions === 'string' ? item.dimensions : (item.dimensions ? JSON.stringify(item.dimensions) : ""),
           notes: String(item.notes || ""),
-          totalPrice: Number(item.quantity) * Number(item.unitPrice),
-          costWithShipping: 0,
+          totalPrice: parseFloat(item.totalCost || item.totalPrice) || (Number(item.quantity) * parseFloat(item.unitPrice || 0)),
+          costWithShipping: parseFloat(item.costWithShipping) || 0,
+          isVariant: item.isVariant || false,
+          variantName: item.variantName || "",
+          productId: item.productId,
+          imageUrl: item.imageUrl,
+          binLocation: String(item.warehouseLocation || item.binLocation || "TBA"),
           processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined,
           unitType: item.unitType || 'selling',
-          quantityInSellingUnits: item.quantityInSellingUnits || Number(item.quantity)
+          quantityInSellingUnits: item.quantityInSellingUnits || Number(item.quantity),
+          cartons: item.cartons,
+          sellingUnitName: item.sellingUnitName || 'piece',
+          bulkUnitName: item.bulkUnitName || null,
+          bulkUnitQty: item.bulkUnitQty || null
         }));
         setItems(loadedItems);
         
