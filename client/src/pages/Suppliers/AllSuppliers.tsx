@@ -61,6 +61,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format } from "date-fns";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 
 const getCountryFlag = (country: string): string => {
   const countryFlags: Record<string, string> = {
@@ -534,6 +535,11 @@ export default function AllSuppliers() {
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <ImportExportMenu
+            entity="suppliers"
+            entityLabel="Suppliers"
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] })}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="default" className="w-full sm:w-auto" data-testid="button-export">

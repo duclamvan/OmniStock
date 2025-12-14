@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical, Activity, TrendingUp, Grid3x3, Filter, Eye, Phone } from "lucide-react";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 import {
   Tooltip,
   TooltipContent,
@@ -403,6 +404,11 @@ export default function AllWarehouses() {
             {t('warehouse:addWarehouse')}
           </Button>
         </Link>
+        <ImportExportMenu 
+          entity="warehouses" 
+          entityLabel="Warehouses" 
+          onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] })} 
+        />
       </div>
 
       {/* Stats Overview */}

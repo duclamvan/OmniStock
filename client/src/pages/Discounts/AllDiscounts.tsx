@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 
 export default function AllDiscounts() {
   const { t } = useTranslation(['discounts', 'common']);
@@ -497,6 +498,11 @@ export default function AllDiscounts() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <ImportExportMenu
+            entity="discounts"
+            entityLabel="Discounts"
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/discounts'] })}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">

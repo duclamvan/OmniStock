@@ -17,6 +17,7 @@ import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText } from "lucide-react";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 import {
   Tooltip,
   TooltipContent,
@@ -1048,6 +1049,11 @@ export default function AllInventory() {
                   <span className="hidden sm:inline ml-0.5">{t('inventory:product')}</span>
                 </Button>
               </Link>
+              <ImportExportMenu 
+                entity="products" 
+                entityLabel="Products" 
+                onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/products'] })} 
+              />
             </>
           )}
         </div>

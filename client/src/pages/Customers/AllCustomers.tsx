@@ -13,6 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp } from "lucide-react";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 import * as XLSX from 'xlsx';
 import {
   Dialog,
@@ -712,6 +713,11 @@ export default function AllCustomers() {
               {t('customers:addCustomer')}
             </Button>
           </Link>
+          <ImportExportMenu 
+            entity="customers" 
+            entityLabel="Customers" 
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/customers'] })} 
+          />
         </div>
       </div>
 

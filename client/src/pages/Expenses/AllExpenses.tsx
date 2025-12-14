@@ -63,6 +63,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 
 export default function AllExpenses() {
   const { t } = useTranslation(['financial', 'common']);
@@ -515,6 +516,11 @@ export default function AllExpenses() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <ImportExportMenu
+            entity="expenses"
+            entityLabel="Expenses"
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/expenses'] })}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto border-slate-200 dark:border-slate-700" data-testid="button-export">
