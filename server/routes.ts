@@ -14775,7 +14775,8 @@ Important rules:
     listReports, 
     getReportByFileName, 
     getLowStockAlerts,
-    getReportSchedulerStatus 
+    getReportSchedulerStatus,
+    generateHTMLReport 
   } = await import('./services/reportService');
 
   // Get report settings and scheduler status
@@ -14847,6 +14848,23 @@ Important rules:
     } catch (error) {
       console.error('Error fetching low stock alerts:', error);
       res.status(500).json({ message: 'Failed to fetch low stock alerts' });
+    }
+  });
+
+  // Preview report - generates HTML report for preview
+  app.post('/api/reports/preview', isAuthenticated, async (req, res) => {
+    try {
+      const { timeframe } = req.body;
+      
+      if (!['daily', 'weekly', 'monthly', 'yearly'].includes(timeframe)) {
+        return res.status(400).json({ message: 'Invalid timeframe. Use daily, weekly, monthly, or yearly.' });
+      }
+      
+      const html = await generateHTMLReport(timeframe);
+      res.json({ html });
+    } catch (error) {
+      console.error('Error generating report preview:', error);
+      res.status(500).json({ message: 'Failed to generate report preview' });
     }
   });
 

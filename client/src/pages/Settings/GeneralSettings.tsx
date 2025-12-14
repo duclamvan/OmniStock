@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle, Check } from "lucide-react";
+import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle, Check, Eye, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
@@ -109,6 +110,8 @@ export default function GeneralSettings() {
   const { generalSettings, isLoading } = useSettings();
   const { applySettings } = useLocalization();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
+  const [reportPreviewHtml, setReportPreviewHtml] = useState<string>('');
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   
   // Fetch warehouses for the default order warehouse dropdown
   const { data: warehouses = [] } = useQuery<any[]>({ queryKey: ['/api/warehouses'] });
@@ -172,6 +175,36 @@ export default function GeneralSettings() {
     originalValues: originalSettings,
     getCurrentValue: (fieldName) => form.getValues(fieldName as keyof FormValues),
   });
+
+  const previewReportMutation = useMutation({
+    mutationFn: async (timeframe: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+      const response = await apiRequest('POST', '/api/reports/preview', { timeframe });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setReportPreviewHtml(data.html);
+      setPreviewDialogOpen(true);
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('settings:reportPreviewError', 'Failed to generate report preview'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleDownloadReport = () => {
+    const blob = new Blob([reportPreviewHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `report-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Reset form when settings load (with proper fallbacks matching defaultValues)
   useEffect(() => {
@@ -304,6 +337,7 @@ export default function GeneralSettings() {
   }
 
   return (
+    <>
     <Form {...form}>
       <form className="space-y-6">
         <Tabs defaultValue="profile" className="w-full">
@@ -1155,12 +1189,22 @@ export default function GeneralSettings() {
                             data-testid="checkbox-daily_summary_report_email"
                           />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
+                        <div className="flex-1 space-y-1 leading-none">
                           <FormLabel>{t('settings:dailyReportLabel')}</FormLabel>
                           <FormDescription>
                             {t('settings:dailyReportDescription')}
                           </FormDescription>
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => previewReportMutation.mutate('daily')}
+                          disabled={previewReportMutation.isPending}
+                          data-testid="button-preview-daily-report"
+                        >
+                          {previewReportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                       </FormItem>
                     )}
                   />
@@ -1180,12 +1224,22 @@ export default function GeneralSettings() {
                             data-testid="checkbox-weekly_report_email"
                           />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
+                        <div className="flex-1 space-y-1 leading-none">
                           <FormLabel>{t('settings:weeklyReportLabel')}</FormLabel>
                           <FormDescription>
                             {t('settings:weeklyReportDescription')}
                           </FormDescription>
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => previewReportMutation.mutate('weekly')}
+                          disabled={previewReportMutation.isPending}
+                          data-testid="button-preview-weekly-report"
+                        >
+                          {previewReportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                       </FormItem>
                     )}
                   />
@@ -1205,12 +1259,22 @@ export default function GeneralSettings() {
                             data-testid="checkbox-monthly_report_email"
                           />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
+                        <div className="flex-1 space-y-1 leading-none">
                           <FormLabel>{t('settings:monthlyReportLabel')}</FormLabel>
                           <FormDescription>
                             {t('settings:monthlyReportDescription')}
                           </FormDescription>
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => previewReportMutation.mutate('monthly')}
+                          disabled={previewReportMutation.isPending}
+                          data-testid="button-preview-monthly-report"
+                        >
+                          {previewReportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                       </FormItem>
                     )}
                   />
@@ -1230,12 +1294,22 @@ export default function GeneralSettings() {
                             data-testid="checkbox-yearly_report_email"
                           />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
+                        <div className="flex-1 space-y-1 leading-none">
                           <FormLabel>{t('settings:yearlyReportLabel')}</FormLabel>
                           <FormDescription>
                             {t('settings:yearlyReportDescription')}
                           </FormDescription>
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => previewReportMutation.mutate('yearly')}
+                          disabled={previewReportMutation.isPending}
+                          data-testid="button-preview-yearly-report"
+                        >
+                          {previewReportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                       </FormItem>
                     )}
                   />
@@ -1571,5 +1645,37 @@ export default function GeneralSettings() {
         </div>
       </form>
     </Form>
+
+    <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{t('settings:reportPreviewTitle', 'Report Preview')}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadReport}
+              data-testid="button-download-report"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t('settings:downloadReport', 'Download')}
+            </Button>
+          </DialogTitle>
+          <DialogDescription>
+            {t('settings:reportPreviewDescription', 'Preview of your warehouse operations report')}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto min-h-[400px]">
+          <iframe
+            srcDoc={reportPreviewHtml}
+            className="w-full h-full min-h-[500px] border rounded"
+            title="Report Preview"
+            data-testid="iframe-report-preview"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
