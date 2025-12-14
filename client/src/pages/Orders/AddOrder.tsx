@@ -1395,8 +1395,10 @@ export default function AddOrder() {
     const countryCode = getCountryCode(customerCountry);
     if (!countryCode) return;
     
-    // Look up the carrier for this country
-    const mappedCarrier = countryCarrierMapping[countryCode];
+    // Look up the carrier for this country (case-insensitive)
+    const mappedCarrier = countryCarrierMapping[countryCode] || 
+      countryCarrierMapping[countryCode.toLowerCase()] ||
+      Object.entries(countryCarrierMapping).find(([key]) => key.toUpperCase() === countryCode.toUpperCase())?.[1];
     if (mappedCarrier) {
       form.setValue('shippingMethod', mappedCarrier as any);
       if (import.meta.env.DEV) {
