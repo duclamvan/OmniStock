@@ -211,6 +211,9 @@ export interface ShippingSettings {
   requireSignature?: boolean;
   insuranceByDefault?: boolean;
   defaultInsuranceValue?: number;
+  pplDefaultShippingPrice?: number;
+  glsDefaultShippingPrice?: number;
+  dhlDefaultShippingPrice?: number;
 }
 
 export interface FinancialSettings {

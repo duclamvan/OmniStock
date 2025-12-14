@@ -87,6 +87,9 @@ const formSchema = z.object({
   tracking_update_frequency_hours: z.coerce.number().min(1).max(24).default(6),
   send_tracking_email_to_customer: z.boolean().default(true),
   include_estimated_delivery: z.boolean().default(true),
+  ppl_default_shipping_price: z.coerce.number().min(0).default(0),
+  gls_default_shipping_price: z.coerce.number().min(0).default(0),
+  dhl_default_shipping_price: z.coerce.number().min(0).default(0),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -143,6 +146,9 @@ export default function ShippingSettings() {
       tracking_update_frequency_hours: 6,
       send_tracking_email_to_customer: true,
       include_estimated_delivery: true,
+      ppl_default_shipping_price: 0,
+      gls_default_shipping_price: 0,
+      dhl_default_shipping_price: 0,
     },
   });
 
@@ -215,6 +221,9 @@ export default function ShippingSettings() {
         tracking_update_frequency_hours: shippingSettings.trackingUpdateFrequencyHours,
         send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer,
         include_estimated_delivery: shippingSettings.includeEstimatedDelivery,
+        ppl_default_shipping_price: shippingSettings.pplDefaultShippingPrice ?? 0,
+        gls_default_shipping_price: shippingSettings.glsDefaultShippingPrice ?? 0,
+        dhl_default_shipping_price: shippingSettings.dhlDefaultShippingPrice ?? 0,
       };
       setOriginalSettings(snapshot);
       form.reset(snapshot);
@@ -639,6 +648,45 @@ export default function ShippingSettings() {
                 />
               </CardContent>
             </Card>
+
+            {/* PPL Default Shipping Price */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:pplDefaultShippingPrice')}
+                </CardTitle>
+                <CardDescription className="text-sm">{t('settings:pplDefaultShippingPriceDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="ppl_default_shipping_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('settings:defaultShippingPriceCzk')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('ppl_default_shipping_price');
+                          }}
+                          onBlur={handleTextBlur('ppl_default_shipping_price')}
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          data-testid="input-ppl_default_shipping_price"
+                        />
+                      </FormControl>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* GLS DE Tab */}
@@ -898,6 +946,45 @@ export default function ShippingSettings() {
                 />
               </CardContent>
             </Card>
+
+            {/* GLS Default Shipping Price */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:glsDefaultShippingPrice')}
+                </CardTitle>
+                <CardDescription className="text-sm">{t('settings:glsDefaultShippingPriceDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="gls_default_shipping_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('settings:defaultShippingPriceEur')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('gls_default_shipping_price');
+                          }}
+                          onBlur={handleTextBlur('gls_default_shipping_price')}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0"
+                          data-testid="input-gls_default_shipping_price"
+                        />
+                      </FormControl>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* DHL DE Tab */}
@@ -1108,6 +1195,45 @@ export default function ShippingSettings() {
                       <FormDescription>
                         {t('settings:senderAddressJsonDescriptionDhl')}
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* DHL Default Shipping Price */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:dhlDefaultShippingPrice')}
+                </CardTitle>
+                <CardDescription className="text-sm">{t('settings:dhlDefaultShippingPriceDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="dhl_default_shipping_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('settings:defaultShippingPriceEur')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('dhl_default_shipping_price');
+                          }}
+                          onBlur={handleTextBlur('dhl_default_shipping_price')}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0"
+                          data-testid="input-dhl_default_shipping_price"
+                        />
+                      </FormControl>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

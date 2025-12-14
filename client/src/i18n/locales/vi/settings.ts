@@ -1614,6 +1614,17 @@ const settings = {
   failedToSaveSettings: 'Không thể lưu cài đặt',
   defaultServiceTypesLoaded: 'Đã tải danh sách dịch vụ mặc định',
   loadDefaultServices: 'Tải Dịch Vụ Mặc Định',
+
+  // Default Shipping Prices per Carrier
+  pplDefaultShippingPrice: 'Giá vận chuyển mặc định',
+  pplDefaultShippingPriceDescription: 'Đặt giá vận chuyển mặc định tự động áp dụng khi chọn PPL CZ làm đơn vị vận chuyển',
+  glsDefaultShippingPrice: 'Giá vận chuyển mặc định',
+  glsDefaultShippingPriceDescription: 'Đặt giá vận chuyển mặc định tự động áp dụng khi chọn GLS DE làm đơn vị vận chuyển',
+  dhlDefaultShippingPrice: 'Giá vận chuyển mặc định',
+  dhlDefaultShippingPriceDescription: 'Đặt giá vận chuyển mặc định tự động áp dụng khi chọn DHL DE làm đơn vị vận chuyển',
+  defaultShippingPriceCzk: 'Giá vận chuyển mặc định (CZK)',
+  defaultShippingPriceEur: 'Giá vận chuyển mặc định (EUR)',
+  defaultShippingPriceAutoApplyDescription: 'Giá này sẽ được tự động áp dụng khi chọn đơn vị vận chuyển này trong Thêm Đơn Hàng',
 } as const;
 
 export default settings;

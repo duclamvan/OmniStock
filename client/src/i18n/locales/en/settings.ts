@@ -1592,6 +1592,17 @@ const settings = {
   failedToSaveSettings: 'Failed to save settings',
   defaultServiceTypesLoaded: 'Default service types loaded',
   loadDefaultServices: 'Load Default Services',
+
+  // Default Shipping Prices per Carrier
+  pplDefaultShippingPrice: 'Default Shipping Price',
+  pplDefaultShippingPriceDescription: 'Set a default shipping price that auto-applies when PPL CZ is selected as the carrier',
+  glsDefaultShippingPrice: 'Default Shipping Price',
+  glsDefaultShippingPriceDescription: 'Set a default shipping price that auto-applies when GLS DE is selected as the carrier',
+  dhlDefaultShippingPrice: 'Default Shipping Price',
+  dhlDefaultShippingPriceDescription: 'Set a default shipping price that auto-applies when DHL DE is selected as the carrier',
+  defaultShippingPriceCzk: 'Default Shipping Price (CZK)',
+  defaultShippingPriceEur: 'Default Shipping Price (EUR)',
+  defaultShippingPriceAutoApplyDescription: 'This price will be automatically applied when this carrier is selected in Add Order',
 } as const;
 
 export default settings;

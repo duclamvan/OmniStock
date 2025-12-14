@@ -403,6 +403,9 @@ export default function AddOrder() {
   const productSearchRef = useRef<HTMLInputElement>(null);
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Track previous carrier for smart carrier switching
+  const previousCarrierRef = useRef<string | null>(null);
   const [barcodeScanMode, setBarcodeScanMode] = useState(false);
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
@@ -1228,7 +1231,67 @@ export default function AddOrder() {
   }, [orderItems]);
 
   useEffect(() => {
-    if (!watchedShippingMethod || !selectedCustomer?.country) return;
+    if (!watchedShippingMethod) return;
+
+    // Helper function to get default price for a carrier
+    const getDefaultPriceForCarrier = (carrier: string): number => {
+      if ((carrier === 'PPL' || carrier === 'PPL CZ') && shippingSettings?.pplDefaultShippingPrice && shippingSettings.pplDefaultShippingPrice > 0) {
+        return shippingSettings.pplDefaultShippingPrice;
+      } else if ((carrier === 'GLS' || carrier === 'GLS DE') && shippingSettings?.glsDefaultShippingPrice && shippingSettings.glsDefaultShippingPrice > 0) {
+        return shippingSettings.glsDefaultShippingPrice;
+      } else if ((carrier === 'DHL' || carrier === 'DHL DE') && shippingSettings?.dhlDefaultShippingPrice && shippingSettings.dhlDefaultShippingPrice > 0) {
+        return shippingSettings.dhlDefaultShippingPrice;
+      }
+      return 0;
+    };
+
+    const currentShippingCost = form.getValues('shippingCost') || 0;
+    const newCarrierDefaultPrice = getDefaultPriceForCarrier(watchedShippingMethod);
+    const previousCarrier = previousCarrierRef.current;
+
+    // Build a map of all carrier defaults to check if current price was auto-applied for any carrier
+    const allCarrierDefaults: Record<string, number> = {
+      'PPL': shippingSettings?.pplDefaultShippingPrice || 0,
+      'PPL CZ': shippingSettings?.pplDefaultShippingPrice || 0,
+      'GLS': shippingSettings?.glsDefaultShippingPrice || 0,
+      'GLS DE': shippingSettings?.glsDefaultShippingPrice || 0,
+      'DHL': shippingSettings?.dhlDefaultShippingPrice || 0,
+      'DHL DE': shippingSettings?.dhlDefaultShippingPrice || 0,
+    };
+
+    // Helper function to check if a price is auto-applied (0 or matches any carrier's default)
+    // If it matches any default or is 0, it was auto-applied and should be replaced on carrier change
+    // If it doesn't match any default, it was manually entered and should be preserved
+    const isAutoAppliedPrice = (cost: number): boolean => {
+      if (cost === 0) return true;
+      const allDefaults = Object.values(allCarrierDefaults).filter(d => d > 0);
+      return allDefaults.some(defaultPrice => cost === defaultPrice);
+    };
+
+    // Determine if we should apply the new carrier's default price:
+    // 1. We have a valid default to apply (> 0)
+    // 2. Current price is auto-applied (0 or matches any carrier's default) - not manually set by user
+    const shouldApplyDefault = 
+      newCarrierDefaultPrice > 0 && 
+      isAutoAppliedPrice(currentShippingCost);
+
+    if (shouldApplyDefault) {
+      form.setValue('shippingCost', newCarrierDefaultPrice);
+      form.setValue('actualShippingCost', newCarrierDefaultPrice);
+      previousCarrierRef.current = watchedShippingMethod;
+      
+      if (import.meta.env.DEV) {
+        console.log(`[AddOrder] Auto-applied shipping default for ${watchedShippingMethod}: ${newCarrierDefaultPrice}`);
+      }
+      return;
+    }
+
+    // Update previous carrier ref even if we didn't apply a default
+    if (previousCarrier !== watchedShippingMethod) {
+      previousCarrierRef.current = watchedShippingMethod;
+    }
+
+    if (!selectedCustomer?.country) return;
 
     const orderWeight = calculateOrderWeight();
     const pplRates = shippingSettings?.pplShippingRates;
@@ -1242,8 +1305,8 @@ export default function AddOrder() {
     );
 
     form.setValue('actualShippingCost', calculatedCost);
-    form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, form.watch('paymentMethod')]);
+    form.setValue('shippingCost', calculatedCost);
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice, form.watch('paymentMethod')]);
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
