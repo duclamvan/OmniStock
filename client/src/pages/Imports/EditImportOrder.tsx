@@ -391,6 +391,31 @@ export default function EditImportOrder() {
 
               <FormField
                 control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">{t('currency')} *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
+                        <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
+                        <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
+                        <SelectItem value="VND">{t('currencyVND')}</SelectItem>
+                        <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
@@ -408,31 +433,6 @@ export default function EditImportOrder() {
                         <SelectItem value="delivered">{t('status.delivered')}</SelectItem>
                         <SelectItem value="received">{t('status.received')}</SelectItem>
                         <SelectItem value="cancelled">{t('status.cancelled')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">{t('currency')} *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="h-10">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="CZK">{t('currencyCZK')}</SelectItem>
-                        <SelectItem value="EUR">{t('currencyEUR')}</SelectItem>
-                        <SelectItem value="USD">{t('currencyUSD')}</SelectItem>
-                        <SelectItem value="VND">{t('currencyVND')}</SelectItem>
-                        <SelectItem value="CNY">{t('currencyCNY')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs" />
@@ -550,18 +550,20 @@ export default function EditImportOrder() {
                   });
                   setShowItemForm(true);
                 }}
-                className="h-8 md:h-9"
+                className="h-8 md:h-9 w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">{t('addItem')}</span>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('addItem')}</span>
+                <span className="sm:hidden">{t('addItem')}</span>
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6">
             {items.length === 0 ? (
-              <div className="text-center py-8 md:py-12">
+              <div className="text-center py-6 sm:py-8 md:py-12">
                 <Package className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm md:text-base text-muted-foreground">{t('noItemsInOrder')}</p>
+                <p className="text-sm md:text-base text-muted-foreground">{t('noItemsYet')}</p>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">{t('addFirstItem')}</p>
               </div>
             ) : (
               <>
@@ -626,7 +628,7 @@ export default function EditImportOrder() {
                 </div>
 
                 {/* Desktop View - Table */}
-                <div className="hidden md:block">
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

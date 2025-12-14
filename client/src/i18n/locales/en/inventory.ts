@@ -689,6 +689,7 @@ const inventory = {
   deleteCategoryConfirmation: 'Are you sure you want to delete this category? This action cannot be undone.',
   deleteCategoryWithName: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
   updateCategoryInformation: 'Update category information',
+  updateCategoryInformationAI: 'Update category with AI-powered translation',
   errorLoadingCategories: 'Error loading categories',
   unableToLoadCategories: 'Unable to load categories. Please try refreshing the page.',
   

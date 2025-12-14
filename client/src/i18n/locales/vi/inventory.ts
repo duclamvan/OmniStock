@@ -784,6 +784,7 @@ const inventory = {
   deleteCategoryConfirmation: 'Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác.',
   deleteCategoryWithName: 'Bạn có chắc chắn muốn xóa "{name}"? Hành động này không thể hoàn tác.',
   updateCategoryInformation: 'Cập nhật thông tin danh mục',
+  updateCategoryInformationAI: 'Cập nhật danh mục với bản dịch được hỗ trợ bởi AI',
   errorLoadingCategories: 'Lỗi tải danh mục',
   unableToLoadCategories: 'Không thể tải danh mục. Vui lòng làm mới trang.',
   
