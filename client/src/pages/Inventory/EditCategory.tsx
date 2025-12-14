@@ -74,7 +74,7 @@ export default function EditCategory() {
 
     try {
       setIsTranslating(true);
-      const response = await apiRequest('/api/categories/translate', 'POST', { categoryName });
+      const response = await apiRequest('POST', '/api/categories/translate', { categoryName });
       const translations = await response.json();
 
       if (translations.nameCz) {
