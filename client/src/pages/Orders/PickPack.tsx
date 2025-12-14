@@ -12769,17 +12769,6 @@ export default function PickPack() {
                           </Button>
                         </div>
                         
-                        {/* View All Items Button */}
-                        <Button
-                          variant="outline"
-                          className="w-full h-11 text-sm font-semibold border-2 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:bg-blue-900/30 rounded-lg"
-                          onClick={() => setShowItemOverviewModal(true)}
-                          data-testid="button-view-all-items"
-                        >
-                          <ClipboardList className="h-4 w-4 mr-2" />
-                          View All Items ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
-                        </Button>
-                        
                         {/* Finish Picking Button - Always available for items not in stock */}
                         <Button
                           className="w-full h-12 text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
