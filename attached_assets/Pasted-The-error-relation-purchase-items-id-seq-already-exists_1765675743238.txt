@@ -1,0 +1,83 @@
+The error `relation "purchase_items_id_seq" already exists` is happening because your `schema.ts` file still defines `purchaseItems` (and likely other tables) with **Integer IDs** that try to auto-generate numbers.
+
+You need to switch these tables to **Varchar (Text/UUID)** to match your `users` and `orders` tables and stop the database from fighting over number sequences.
+
+### 🔧 The Fix: Update `schema.ts`
+
+Open `schema.ts` and apply these changes. You likely need to do this for **all** the tables listed below, not just `purchaseItems`, or the error will just jump to the next table.
+
+#### 1\. Fix `purchaseItems` (Line \~115)
+
+```typescript
+// ❌ Change this:
+export const purchaseItems = pgTable("purchase_items", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  purchaseId: integer("purchase_id").notNull().references(...), // <--- This must change too!
+
+// ✅ To this:
+export const purchaseItems = pgTable("purchase_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  purchaseId: varchar("purchase_id").notNull().references(() => importPurchases.id, { onDelete: "cascade" }),
+```
+
+#### 2\. Fix `importPurchases` (Line \~87)
+
+*Since `purchaseItems` links to this, it MUST also be varchar.*
+
+```typescript
+// ❌ Change this:
+export const importPurchases = pgTable("import_purchases", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+// ✅ To this:
+export const importPurchases = pgTable("import_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+#### 3\. Fix `consolidations` & `shipments` (Lines \~158 & \~173)
+
+```typescript
+// ❌ Change this (for both tables):
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+// ✅ To this:
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+*Note: Also check `shipments.consolidationId`. It must be `varchar("consolidation_id")`.*
+
+#### 4\. Fix `receipts` & `landedCosts` (Lines \~245 & \~290)
+
+```typescript
+// ❌ Change this:
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+// ✅ To this:
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+*Note: Update `receipts.shipmentId` and `landedCosts.receiptId` to be `varchar`.*
+
+-----
+
+### ⚠️ Critical Pattern to Follow
+
+Based on your file, **EVERY** table using `integer("id").primaryKey().generatedAlwaysAsIdentity()` is incorrect for your current setup.
+
+**Do a "Find & Replace" for the whole file:**
+
+  * **Find:** `id: integer("id").primaryKey().generatedAlwaysAsIdentity(),`
+  * **Replace with:** `id: varchar("id").primaryKey().default(sql`gen\_random\_uuid()`),`
+
+**Then fix the Foreign Keys:**
+Any column ending in `Id` (like `purchaseId`, `shipmentId`) that references those tables must be changed from `integer(...)` to `varchar(...)`.
+
+### 🚀 Final Step
+
+Once you have replaced them all, run:
+
+```bash
+npm run db:push
+```
+
+Select **"Yes"** to truncate. This will clear the sequence errors once and for all.
