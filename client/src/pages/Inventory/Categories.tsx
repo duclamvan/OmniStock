@@ -180,7 +180,7 @@ export default function Categories() {
       key: "actions",
       header: t('actions'),
       cell: (item) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <Link href={`/inventory/categories/${item.id}/edit`}>
             <Button 
               size="sm" 
@@ -193,7 +193,10 @@ export default function Categories() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleDelete(item.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(item.id);
+            }}
             disabled={(item.productCount ?? 0) > 0}
             data-testid={`delete-category-${item.id}`}
           >
