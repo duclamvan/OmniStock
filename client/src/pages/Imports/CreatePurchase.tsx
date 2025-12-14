@@ -2225,7 +2225,7 @@ export default function CreatePurchase() {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <Label htmlFor="unitPrice" className="text-xs">{t('unitPrice')} *</Label>
+                    <Label htmlFor="unitPrice" className="text-xs">{t('cost')} ({purchaseCurrency}) *</Label>
                     <Input
                       id="unitPrice"
                       type="number"

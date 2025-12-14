@@ -1999,6 +1999,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
       
+      // DEBUG: Log what's coming from database
+      console.log(`[getOrderItems] Raw items from DB for order ${orderId}:`, items.map(i => ({ 
+        id: i.id?.slice(-6), 
+        productName: i.productName, 
+        bulkUnitQty: i.bulkUnitQty, 
+        bulkUnitName: i.bulkUnitName 
+      })));
+      
       // Enrich items with bulkUnitQty/bulkUnitName from products - ALWAYS check product table
       const enrichedItems = await Promise.all(items.map(async (item) => {
         if (item.productId) {

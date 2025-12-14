@@ -1,0 +1,193 @@
+~/workspace$ npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/runner/workspace/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
+· You're about to add tickets_ticket_id_unique unique constraint to the table, which contains 7 items. If this statement fails, you will receive an error from the database. Do you want to truncate tickets table?
+
+· You're about to add users_username_unique unique constraint to the table, which contains 1 items. If this statement fails, you will receive an error from the database. Do you want to truncate users table?
+
+· You're about to add users_phone_number_unique unique constraint to the table, which contains 1 items. If this statement fails, you will receive an error from the database. Do you want to truncate users table?
+
+· You're about to add product_bundles_bundle_id_unique unique constraint to the table, which contains 3 items. If this statement fails, you will receive an error from the database. Do you want to truncate product_bundles table?
+
+· You're about to add ai_location_suggestions_product_id_unique unique constraint to the table, which contains 1 items. If this statement fails, you will receive an error from the database. Do you want to truncate ai_location_suggestions table?
+
+· You're about to add ai_location_suggestions_custom_item_id_unique unique constraint to the table, which contains 1 items. If this statement fails, you will receive an error from the database. Do you want to truncate ai_location_suggestions table?
+
+· You're about to add discounts_discount_id_unique unique constraint to the table, which contains 3 items. If this statement fails, you will receive an error from the database. Do you want to truncate discounts table?
+
+· You're about to add employees_employee_id_unique unique constraint to the table, which contains 6 items. If this statement fails, you will receive an error from the database. Do you want to truncate employees table?
+
+· You're about to add permissions_section_page_unique unique constraint to the table, which contains 65 items. If this statement fails, you will receive an error from the database. Do you want to truncate permissions table?
+
+· You're about to add packing_materials_code_unique unique constraint to the table, which contains 29 items. If this statement fails, you will receive an error from the database. Do you want to truncate packing_materials table?
+
+· You're about to add role_permissions_role_id_permission_id_unique unique constraint to the table, which contains 95 items. If this statement fails, you will receive an error from the database. Do you want to truncate role_permissions table?
+
+· You're about to add roles_name_unique unique constraint to the table, which contains 3 items. If this statement fails, you will receive an error from the database. Do you want to truncate roles table?
+
+· You're about to add shipment_tracking_tracking_number_unique unique constraint to the table, which contains 2 items. If this statement fails, you will receive an error from the database. Do you want to truncate shipment_tracking table?
+
+ Warning  Found data-loss statements:
+· You're about to change name column type from varchar(255) to varchar with 16 items
+· You're about to change contact_person column type from varchar(255) to varchar with 16 items
+· You're about to change email column type from varchar(255) to varchar with 16 items
+· You're about to change phone column type from varchar(20) to varchar with 16 items
+· You're about to change country column type from varchar(100) to varchar with 16 items
+· You're about to change website column type from varchar(255) to varchar with 16 items
+· You're about to change total_purchased column type from numeric(12, 2) to numeric with 16 items
+· You're about to change id column type from serial to varchar with 48 items
+· You're about to change purchase_id column type from integer to varchar with 48 items
+· You're about to change dimensions column type from text to jsonb with 48 items
+· You're about to change bundle_id column type from varchar(100) to varchar with 3 items
+· You're about to change name column type from varchar(255) to varchar with 3 items
+· You're about to change sku column type from varchar(100) to varchar with 3 items
+· You're about to change price_czk column type from varchar(20) to numeric(10, 2) with 3 items
+· You're about to change price_eur column type from varchar(20) to numeric(10, 2) with 3 items
+· You're about to change discount_percentage column type from varchar(10) to numeric(5, 2) with 3 items
+· You're about to change image_url column type from varchar(500) to varchar with 3 items
+· You're about to change id column type from varchar to text with 6 items
+· You're about to change name column type from varchar(255) to text with 6 items
+· You're about to change location column type from varchar(255) to text with 6 items
+· You're about to change city column type from varchar(100) to text with 6 items
+· You're about to change country column type from varchar(100) to text with 6 items
+· You're about to change zip_code column type from varchar(20) to text with 6 items
+· You're about to change phone column type from varchar(20) to text with 6 items
+· You're about to change email column type from varchar(255) to text with 6 items
+· You're about to change manager column type from varchar(255) to text with 6 items
+· You're about to change type column type from varchar(50) to text with 6 items
+· You're about to change status column type from warehouse_status to text with 6 items
+· You're about to change rented_from_date column type from timestamp to date with 6 items
+· You're about to change expense_id column type from varchar(255) to varchar with 6 items
+· You're about to change contact column type from varchar(255) to text with 6 items
+· You're about to change code column type from varchar(20) to text with 6 items
+· You're about to change product_name column type from varchar(255) to varchar with 8 items
+· You're about to change variant_name column type from varchar(255) to varchar with 8 items
+· You're about to change id column type from serial to varchar with 6 items
+· You're about to change purchase_order_id column type from integer to varchar with 31 items
+· You're about to change order_type column type from varchar(10) to varchar with 17 items
+· You're about to change id column type from serial to varchar with 6 items
+· You're about to change id column type from serial to varchar with 14 items
+· You're about to change name column type from varchar(255) to varchar with 12 items
+· You're about to change facebook_name column type from varchar(255) to varchar with 12 items
+· You're about to change facebook_id column type from varchar(255) to varchar with 12 items
+· You're about to change email column type from varchar(255) to varchar with 12 items
+· You're about to change phone column type from varchar(20) to varchar with 12 items
+· You're about to change city column type from varchar(100) to varchar with 12 items
+· You're about to change zip_code column type from varchar(20) to varchar with 12 items
+· You're about to change country column type from varchar(100) to varchar with 12 items
+· You're about to change type column type from varchar(50) to varchar with 12 items
+· You're about to change vat_id column type from varchar(50) to varchar with 12 items
+· You're about to change tax_id column type from varchar(50) to varchar with 12 items
+· You're about to change total_spent column type from numeric(12, 2) to numeric with 12 items
+· You're about to change average_order_value column type from numeric(12, 2) to numeric with 12 items
+· You're about to change customer_rank column type from varchar(20) to varchar with 12 items
+· You're about to change preferred_language column type from varchar(10) to varchar with 12 items
+· You're about to change expense_id column type from varchar(100) to varchar with 46 items
+· You're about to change name column type from varchar(255) to varchar with 46 items
+· You're about to change category column type from varchar(100) to varchar with 46 items
+· You're about to change amount column type from numeric(12, 2) to numeric with 46 items
+· You're about to change currency column type from currency to varchar with 46 items
+· You're about to change payment_method column type from varchar(100) to varchar with 46 items
+· You're about to change status column type from expense_status to varchar with 46 items
+· You're about to change product_name column type from varchar(255) to varchar with 134 items
+· You're about to change sku column type from varchar(100) to varchar with 134 items
+· You're about to change price column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change discount column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change tax column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change total column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change unit_price column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change applied_price column type from numeric(12, 2) to numeric(10, 2) with 134 items
+· You're about to change warehouse_location column type from varchar(100) to varchar with 134 items
+· You're about to change barcode column type from varchar(50) to varchar with 134 items
+· You're about to change image column type from varchar(500) to varchar with 134 items
+· You're about to change variant_name column type from varchar(255) to varchar with 134 items
+· You're about to change order_id column type from varchar(50) to varchar with 45 items
+· You're about to change currency column type from currency to varchar with 45 items
+· You're about to change order_status column type from order_status to varchar with 45 items
+· You're about to change payment_status column type from payment_status to varchar with 45 items
+· You're about to change priority column type from order_priority to varchar with 45 items
+· You're about to change subtotal column type from numeric(12, 2) to numeric with 45 items
+· You're about to change discount_type column type from discount_type to varchar with 45 items
+· You're about to change discount_value column type from numeric(12, 2) to numeric with 45 items
+· You're about to change tax_rate column type from numeric(5, 2) to numeric with 45 items
+· You're about to change tax_amount column type from numeric(12, 2) to numeric with 45 items
+· You're about to change shipping_method column type from text to varchar with 45 items
+· You're about to change payment_method column type from payment_method to varchar with 45 items
+· You're about to change shipping_cost column type from numeric(12, 2) to numeric with 45 items
+· You're about to change actual_shipping_cost column type from numeric(12, 2) to numeric with 45 items
+· You're about to change grand_total column type from numeric(12, 2) to numeric with 45 items
+· You're about to change attachment_url column type from varchar(500) to varchar with 45 items
+· You're about to change pick_status column type from varchar(50) to varchar with 45 items
+· You're about to change pack_status column type from varchar(50) to varchar with 45 items
+· You're about to change picked_by column type from varchar(255) to varchar with 45 items
+· You're about to change packed_by column type from varchar(255) to varchar with 45 items
+· You're about to change final_weight column type from numeric(8, 2) to numeric with 45 items
+· You're about to change carton_used column type from varchar(100) to varchar with 45 items
+· You're about to change previous_pack_status column type from varchar(50) to varchar with 45 items
+· You're about to change order_type column type from varchar(10) to varchar with 45 items
+· You're about to change type column type from varchar to text with 323 items
+· You're about to change id column type from serial to varchar with 5 items
+· You're about to change shipment_id column type from integer to varchar with 5 items
+· You're about to change name column type from varchar(255) to varchar with 11 items
+· You're about to change barcode column type from varchar(50) to varchar with 11 items
+· You're about to change import_cost_usd column type from numeric(12, 2) to numeric(10, 2) with 11 items
+· You're about to change import_cost_czk column type from numeric(12, 2) to numeric(10, 2) with 11 items
+· You're about to change import_cost_eur column type from numeric(12, 2) to numeric(10, 2) with 11 items
+· You're about to change id column type from serial to varchar with 22 items
+· You're about to change receipt_id column type from integer to varchar with 22 items
+· You're about to change name column type from varchar(255) to varchar with 48 items
+· You're about to change vietnamese_name column type from varchar(255) to varchar with 48 items
+· You're about to change sku column type from varchar(100) to varchar with 48 items
+· You're about to change price_czk column type from numeric(12, 2) to numeric with 48 items
+· You're about to change price_eur column type from numeric(12, 2) to numeric with 48 items
+· You're about to change import_cost_usd column type from numeric(12, 2) to numeric with 48 items
+· You're about to change import_cost_czk column type from numeric(12, 2) to numeric with 48 items
+· You're about to change import_cost_eur column type from numeric(12, 2) to numeric with 48 items
+· You're about to change image_url column type from varchar(500) to varchar with 48 items
+· You're about to change barcode column type from varchar(50) to varchar with 48 items
+· You're about to change length column type from numeric(10, 2) to numeric with 48 items
+· You're about to change width column type from numeric(10, 2) to numeric with 48 items
+· You're about to change height column type from numeric(10, 2) to numeric with 48 items
+· You're about to change weight column type from numeric(10, 3) to numeric with 48 items
+· You're about to change warehouse_location column type from varchar(100) to varchar with 48 items
+· You're about to change reorder_rate column type from integer to numeric(5, 2) with 48 items
+· You're about to change id column type from serial to varchar with 6 items
+· You're about to delete replit_sub column in users table with 1 items
+· You're about to delete invoice_number column in expenses table with 46 items
+· You're about to delete is_bulk_carton column in order_items table with 134 items
+· You're about to delete ppl_cancelled_shipments column in orders table with 45 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+error: type "serial" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:66575:26)
+    at async pgPush (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:70117:13)
+    at async Object.handler (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:79124:9)
+    at async run (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:78381:7) {
+  length: 89,
+  severity: 'ERROR',
+  code: '42704',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_type.c',
+  line: '270',
+  routine: 'typenameType'
+}
