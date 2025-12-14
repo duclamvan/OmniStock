@@ -2128,15 +2128,12 @@ export class DatabaseStorage implements IStorage {
           // Fetch category if categoryId exists
           let category = null;
           if (row.product.categoryId) {
-            const categoryId = parseInt(row.product.categoryId);
-            if (!isNaN(categoryId)) {
-              const [cat] = await db
-                .select()
-                .from(categories)
-                .where(eq(categories.id, categoryId))
-                .limit(1);
-              category = cat;
-            }
+            const [cat] = await db
+              .select()
+              .from(categories)
+              .where(eq(categories.id, row.product.categoryId))
+              .limit(1);
+            category = cat;
           }
 
           return {
@@ -3663,7 +3660,7 @@ export class DatabaseStorage implements IStorage {
 
   async getDiscount(id: string): Promise<Discount | undefined> {
     try {
-      const [result] = await db.select().from(discounts).where(eq(discounts.id, parseInt(id)));
+      const [result] = await db.select().from(discounts).where(eq(discounts.id, id));
       return result as Discount | undefined;
     } catch (error) {
       console.error('Error fetching discount:', error);
@@ -3686,7 +3683,7 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .update(discounts)
         .set({ ...discount, updatedAt: new Date() })
-        .where(eq(discounts.id, parseInt(id)))
+        .where(eq(discounts.id, id))
         .returning();
       return result as Discount | undefined;
     } catch (error) {
@@ -3697,7 +3694,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDiscount(id: string): Promise<boolean> {
     try {
-      const result = await db.delete(discounts).where(eq(discounts.id, parseInt(id)));
+      const result = await db.delete(discounts).where(eq(discounts.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting discount:', error);
