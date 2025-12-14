@@ -1310,7 +1310,7 @@ export default function ShippingSettings() {
                       <FormItem>
                         <div className="space-y-3">
                           {Object.entries(parsedMapping).map(([countryCode, carrier]) => {
-                            const country = countries.find(c => c.code === countryCode);
+                            const country = countries.find(c => c.code.toUpperCase() === countryCode.toUpperCase());
                             return (
                               <div key={countryCode} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                                 <span className="text-xl">{country?.flag || '🌍'}</span>
