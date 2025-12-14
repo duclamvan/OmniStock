@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -382,6 +382,9 @@ const getCountryFlag = (country: string | null | undefined): string => {
 
 export default function AddOrder() {
   const [, setLocation] = useLocation();
+  const params = useParams();
+  const editOrderId = params.id;
+  const isEditMode = !!editOrderId;
   const { t } = useTranslation(['orders', 'common']);
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
@@ -796,6 +799,154 @@ export default function AddOrder() {
     }
   }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form]);
 
+  // Pre-fill form data when editing existing order
+  useEffect(() => {
+    if (!existingOrder || !isEditMode) return;
+    const order = existingOrder as any;
+
+    console.log('✅ Loading existing order data into form');
+
+    form.reset({
+      customerId: order.customerId,
+      orderType: order.orderType || 'ord',
+      saleType: order.saleType || 'retail',
+      currency: order.currency,
+      priority: order.priority,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      shippingMethod: order.shippingMethod ? normalizeCarrier(order.shippingMethod) : order.shippingMethod,
+      paymentMethod: order.paymentMethod,
+      discountType: order.discountType || 'flat',
+      discountValue: order.discountValue || 0,
+      taxInvoiceEnabled: order.taxInvoiceEnabled || false,
+      ico: order.ico,
+      dic: order.dic,
+      nameAndAddress: order.nameAndAddress,
+      taxRate: order.taxRate || 0,
+      vatId: order.vatId,
+      country: order.country,
+      shippingCost: order.shippingCost || 0,
+      actualShippingCost: order.actualShippingCost || 0,
+      adjustment: order.adjustment || 0,
+      codAmount: order.codAmount,
+      codCurrency: order.codCurrency,
+      notes: order.notes,
+    });
+
+    if (order.taxInvoiceEnabled || order.taxRate > 0) {
+      setShowTaxInvoice(true);
+    }
+    if (order.discountValue > 0) {
+      setShowDiscount(true);
+    }
+
+    // Set orderId for the component
+    setOrderId(order.id);
+  }, [dataUpdatedAt, existingOrder, isEditMode, form]);
+
+  // Pre-fill order items when editing existing order
+  useEffect(() => {
+    if (!existingOrder || !isEditMode) return;
+    const order = existingOrder as any;
+    if (!order.items) return;
+
+    console.log('✅ Loading order items:', order.items.length);
+
+    const items: OrderItem[] = order.items.map((item: any) => {
+      const discountAmount = parseFloat(item.discount || 0);
+      const itemPrice = parseFloat(item.price || 0);
+      const itemQty = item.quantity || 1;
+
+      // Calculate discountPercentage from stored discount amount if not stored
+      let discountPct = parseFloat(item.discountPercentage || 0);
+      if (discountPct === 0 && discountAmount > 0 && itemPrice > 0 && itemQty > 0) {
+        discountPct = Math.round((discountAmount / (itemPrice * itemQty)) * 100);
+      }
+
+      // Generate a simple label if discount exists but no label was stored
+      let discountLabel = item.appliedDiscountLabel || null;
+      if (!discountLabel && discountAmount > 0 && itemPrice > 0) {
+        const pct = Math.round((discountAmount / (itemPrice * itemQty)) * 100);
+        if (pct > 0 && pct <= 100) {
+          discountLabel = `${pct}%`;
+        }
+      }
+
+      return {
+        id: item.id || `item-${Date.now()}-${Math.random()}`,
+        productId: item.productId,
+        serviceId: item.serviceId,
+        bundleId: item.bundleId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: itemQty,
+        price: itemPrice,
+        discount: discountAmount,
+        discountPercentage: discountPct,
+        tax: parseFloat(item.tax || 0),
+        total: parseFloat(item.total || 0),
+        landingCost: item.landingCost,
+        variantId: item.variantId,
+        variantName: item.variantName,
+        image: item.image,
+        notes: item.notes,
+        appliedDiscountId: item.appliedDiscountId || null,
+        appliedDiscountLabel: discountLabel,
+        appliedDiscountType: item.appliedDiscountType || null,
+        appliedDiscountScope: item.appliedDiscountScope || null,
+        categoryId: item.categoryId || null,
+      };
+    });
+
+    setOrderItems(items);
+  }, [existingOrder?.id, existingOrder?.items?.length, isEditMode]);
+
+  // Pre-fill customer when editing existing order
+  useEffect(() => {
+    if (!existingOrder || !allCustomers || !isEditMode) return;
+    const order = existingOrder as any;
+
+    if (order.customerId) {
+      const customer = Array.isArray(allCustomers)
+        ? allCustomers.find((c: any) => c.id === order.customerId)
+        : null;
+
+      if (customer) {
+        setSelectedCustomer(customer);
+        setCustomerSearch(customer.name);
+      }
+    }
+  }, [existingOrder?.id, existingOrder?.customerId, allCustomers, isEditMode]);
+
+  // Pre-fill shipping address when editing existing order
+  useEffect(() => {
+    if (!existingOrder || !shippingAddresses || !isEditMode) return;
+    const order = existingOrder as any;
+
+    if (!Array.isArray(shippingAddresses)) return;
+
+    if (order.shippingAddressId) {
+      const address = shippingAddresses.find((addr: any) => addr.id === order.shippingAddressId);
+      if (address) {
+        setSelectedShippingAddress(address);
+      }
+    } else if (shippingAddresses.length === 1) {
+      setSelectedShippingAddress(shippingAddresses[0]);
+    }
+  }, [existingOrder?.shippingAddressId, shippingAddresses, isEditMode]);
+
+  // Pre-fill selected documents when editing
+  const documentsInitialized = useRef(false);
+  useEffect(() => {
+    if (!existingOrder || !isEditMode) return;
+    if (documentsInitialized.current) return;
+
+    const order = existingOrder as any;
+    if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
+      setSelectedDocumentIds(order.selectedDocumentIds);
+      documentsInitialized.current = true;
+    }
+  }, [existingOrder?.id, isEditMode]);
 
   // Debounce search inputs for better performance
   useEffect(() => {
@@ -982,6 +1133,18 @@ export default function AddOrder() {
   const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
     queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'],
     enabled: !!selectedCustomer?.id,
+  });
+
+  // Fetch existing order for edit mode
+  const { data: existingOrder, isLoading: isLoadingOrder, dataUpdatedAt } = useQuery({
+    queryKey: ['/api/orders', editOrderId, { includeBadges: true }],
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${editOrderId}?includeBadges=true`);
+      if (!response.ok) throw new Error('Failed to fetch order');
+      return response.json();
+    },
+    enabled: isEditMode,
+    staleTime: 30 * 1000,
   });
 
   // Fetch pending services for selected customer
@@ -3270,13 +3433,15 @@ export default function AddOrder() {
               </Button>
               <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{t('orders:createNewOrder')}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {isEditMode ? t('orders:editOrder') : t('orders:createNewOrder')}
+                </h1>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{t('orders:addProductsConfigureDetails')}</p>
               </div>
             </div>
-            <Badge variant="outline" className="text-green-600 border-green-600 w-fit">
-              <Plus className="h-3 w-3 mr-1" />
-              {t('orders:newOrder')}
+            <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600 w-fit" : "text-green-600 border-green-600 w-fit"}>
+              {isEditMode ? <Pencil className="h-3 w-3 mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+              {isEditMode ? t('orders:editOrder') : t('orders:newOrder')}
             </Badge>
           </div>
         </div>

@@ -159,7 +159,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><PreOrderDetails /></ProtectedRoute>}
         </Route>
         <Route path="/orders/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditOrder /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddOrder /></ProtectedRoute>}
         </Route>
         <Route path="/orders/:id">
           {() => <ProtectedRoute requireAdmin><OrderDetails /></ProtectedRoute>}
