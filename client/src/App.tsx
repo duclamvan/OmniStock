@@ -38,7 +38,6 @@ import AddDiscount from "@/pages/Discounts/AddDiscount";
 import EditDiscount from "@/pages/Discounts/EditDiscount";
 import AllCustomers from "@/pages/Customers/AllCustomers";
 import AddCustomer from "@/pages/Customers/AddCustomer";
-import EditCustomer from "@/pages/Customers/EditCustomer";
 import CustomerDetails from "@/pages/Customers/CustomerDetails";
 import AllSuppliers from "@/pages/Suppliers/AllSuppliers";
 import AddSupplier from "@/pages/Suppliers/AddSupplier";
