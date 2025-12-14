@@ -217,13 +217,17 @@ export function ImportExportMenu({ entity, entityLabel, onImportComplete }: Impo
 
   const commitMutation = useMutation({
     mutationFn: async () => {
-      const mergedRows = previewData?.rows.map(row => ({
+      // Filter only valid rows and prepare proper data shape for backend
+      const validRows = previewData?.rows.filter(row => row.isValid) || [];
+      const rowsToSend = validRows.map(row => ({
         ...row,
-        data: { ...row.data, ...editedRows[row.rowIndex] },
+        // Merge any edits into processedData, fallback to originalData
+        processedData: { ...row.data, ...editedRows[row.rowIndex] } || row.data,
+        originalData: row.data,
       }));
       
       const response = await apiRequest('POST', `/api/imports/${entity}/commit`, {
-        rows: mergedRows,
+        rows: rowsToSend,
       });
       
       return response.json() as Promise<ImportResult>;

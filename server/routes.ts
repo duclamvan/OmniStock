@@ -14907,6 +14907,12 @@ Important rules:
         return res.status(400).json({ message: 'No file uploaded' });
       }
       const rows = await parseExcelFile(req.file.buffer, entity);
+      
+      // Check for empty file
+      if (rows.length === 0) {
+        return res.status(400).json({ message: 'No data found in file. Make sure the first row contains headers.' });
+      }
+      
       const validatedRows = rows.map((row, index) => ({
         rowNumber: index + 1,
         ...validateRow(row, entity),
@@ -14923,11 +14929,15 @@ Important rules:
     try {
       const entity = req.params.entity as EntityType;
       const { rows } = req.body;
-      if (!rows || !Array.isArray(rows)) {
-        return res.status(400).json({ message: 'Invalid rows data' });
+      if (!rows || !Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ message: 'No rows to import' });
       }
+      
+      // Extract the actual row data - prioritize processedData, fallback to originalData
+      const rowData = rows.map((row: any) => row.processedData || row.originalData || row);
+      
       const userId = req.user?.id || null;
-      const batchId = await createImportBatch(entity, rows, userId);
+      const batchId = await createImportBatch(entity, rowData, userId);
       const result = await processImportBatch(batchId);
       const batch = await getImportBatch(batchId);
       res.json({ batchId, ...result, batch });
