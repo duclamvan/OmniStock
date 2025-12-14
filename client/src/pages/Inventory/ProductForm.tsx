@@ -311,6 +311,11 @@ export default function ProductForm() {
   const salesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const variantConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const importCostUpdatingRef = useRef<string | null>(null);
+  
+  // Manual edit tracking refs - prevent auto-conversion when user manually edits both fields
+  const salesPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
+  const wholesalePriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
+  const tierPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
 
   // Get query parameters from URL (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
@@ -405,6 +410,9 @@ export default function ProductForm() {
         });
       }
       form.reset(buildDefaultValues());
+      // Reset manual edit tracking for new products
+      salesPriceManualRef.current = {czk: false, eur: false};
+      wholesalePriceManualRef.current = {czk: false, eur: false};
       hasResetRef.current = true;
     }
   }, [lowStockThreshold, defaultWarehouse, buildDefaultValues, form, isEditMode]);
@@ -803,6 +811,17 @@ export default function ProductForm() {
         allowBulkSales: Boolean(product.allowBulkSales),
         unitContentsInfo: product.unitContentsInfo || '',
       });
+      
+      // Reset manual edit tracking refs - mark existing prices as "already set"
+      // This prevents auto-conversion from overwriting existing values
+      salesPriceManualRef.current = {
+        czk: !!product.priceCzk,
+        eur: !!product.priceEur
+      };
+      wholesalePriceManualRef.current = {
+        czk: !!product.wholesalePriceCzk,
+        eur: !!product.wholesalePriceEur
+      };
       
       // Set packing instructions state
       setPackingInstructionsTexts(Array.isArray(product.packingInstructionsTexts) ? product.packingInstructionsTexts : []);
@@ -1670,6 +1689,7 @@ export default function ProductForm() {
     tierForm.reset({
       priceType: 'tiered',
     });
+    tierPriceManualRef.current = {czk: false, eur: false};
     setTieredPricingDialogOpen(true);
   };
 
@@ -1682,6 +1702,11 @@ export default function ProductForm() {
       priceEur: tier.priceEur ? parseFloat(tier.priceEur) : undefined,
       priceType: tier.priceType || 'tiered',
     });
+    // If editing an existing tier with both prices, mark both as manually set
+    tierPriceManualRef.current = {
+      czk: !!tier.priceCzk,
+      eur: !!tier.priceEur
+    };
     setTieredPricingDialogOpen(true);
   };
 
@@ -2279,9 +2304,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-czk"
                           className="mt-1"
+                          onChange={(e) => {
+                            salesPriceManualRef.current.czk = true;
+                            form.register('priceCzk').onChange(e);
+                          }}
                           onBlur={(e) => {
                             const value = parseFloat(e.target.value);
-                            if (value && value > 0) {
+                            if (value && value > 0 && !salesPriceManualRef.current.eur) {
                               form.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                             }
                           }}
@@ -2298,9 +2327,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-eur"
                           className="mt-1"
+                          onChange={(e) => {
+                            salesPriceManualRef.current.eur = true;
+                            form.register('priceEur').onChange(e);
+                          }}
                           onBlur={(e) => {
                             const value = parseFloat(e.target.value);
-                            if (value && value > 0) {
+                            if (value && value > 0 && !salesPriceManualRef.current.czk) {
                               form.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                             }
                           }}
@@ -2326,9 +2359,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-wholesale-price-czk"
                           className="mt-1"
+                          onChange={(e) => {
+                            wholesalePriceManualRef.current.czk = true;
+                            form.register('wholesalePriceCzk').onChange(e);
+                          }}
                           onBlur={(e) => {
                             const value = parseFloat(e.target.value);
-                            if (value && value > 0) {
+                            if (value && value > 0 && !wholesalePriceManualRef.current.eur) {
                               form.setValue('wholesalePriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                             }
                           }}
@@ -2345,9 +2382,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-wholesale-price-eur"
                           className="mt-1"
+                          onChange={(e) => {
+                            wholesalePriceManualRef.current.eur = true;
+                            form.register('wholesalePriceEur').onChange(e);
+                          }}
                           onBlur={(e) => {
                             const value = parseFloat(e.target.value);
-                            if (value && value > 0) {
+                            if (value && value > 0 && !wholesalePriceManualRef.current.czk) {
                               form.setValue('wholesalePriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                             }
                           }}
@@ -2517,9 +2558,13 @@ export default function ProductForm() {
                                     {...tierForm.register('priceCzk')} 
                                     placeholder="0.00" 
                                     data-testid="input-tier-czk"
+                                    onChange={(e) => {
+                                      tierPriceManualRef.current.czk = true;
+                                      tierForm.register('priceCzk').onChange(e);
+                                    }}
                                     onBlur={(e) => {
                                       const value = parseFloat(e.target.value);
-                                      if (value && value > 0) {
+                                      if (value && value > 0 && !tierPriceManualRef.current.eur) {
                                         tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                                       }
                                     }}
@@ -2533,9 +2578,13 @@ export default function ProductForm() {
                                     {...tierForm.register('priceEur')} 
                                     placeholder="0.00" 
                                     data-testid="input-tier-eur"
+                                    onChange={(e) => {
+                                      tierPriceManualRef.current.eur = true;
+                                      tierForm.register('priceEur').onChange(e);
+                                    }}
                                     onBlur={(e) => {
                                       const value = parseFloat(e.target.value);
-                                      if (value && value > 0) {
+                                      if (value && value > 0 && !tierPriceManualRef.current.czk) {
                                         tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                                       }
                                     }}
