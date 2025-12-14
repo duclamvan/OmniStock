@@ -1,0 +1,148 @@
+You are getting the error `relation "warehouse_tasks_id_seq" already exists` because your code is trying to create an **Integer/Identity** column for `warehouseTasks`, but the database already has a **Serial** sequence for it.
+
+To fix this and prevent future errors with the remaining tables, you should switch the tables at the bottom of your file to use **`varchar` (UUID)**. This matches your `users` and `orders` tables and avoids conflicts with existing number sequences.
+
+Here are the specific changes to make in your `schema.ts`:
+
+### 1\. Fix `notifications` (Line \~985)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 2\. Fix `warehouseTasks` (Line \~1025)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 3\. Fix `pushSubscriptions` (Line \~1060)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 4\. Fix `databaseBackups` (Line \~1080)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 5\. Fix `employeeIncidents` (Line \~1110)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+-----
+
+### ⚠️ Important: Fix Roles & Permissions (Linked Tables)
+
+These tables link to each other, so you must change the IDs **and** the references (Foreign Keys) to `varchar` at the same time.
+
+### 6\. Fix `roles` (Line \~1145)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 7\. Fix `permissions` (Line \~1165)
+
+**Change:**
+
+```typescript
+id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+```
+
+**To:**
+
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+### 8\. Fix `rolePermissions` (Line \~1185)
+
+You must change the ID **and** the columns linking to the tables above (`roleId` and `permissionId`).
+
+**Change this entire block:**
+
+```typescript
+export const rolePermissions = pgTable("role_permissions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  roleId: integer("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
+  permissionId: integer("permission_id").notNull().references(() => permissions.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, ...
+```
+
+**To this:**
+
+```typescript
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Notice these are now varchar to match the tables they point to
+  roleId: varchar("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
+  permissionId: varchar("permission_id").notNull().references(() => permissions.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, ...
+```
+
+-----
+
+### Next Step
+
+After saving `schema.ts`, run the push command again:
+
+```bash
+npm run db:push
+```
+
+Select **"Yes"** to truncate if asked. This should clear the sequence error.

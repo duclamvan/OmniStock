@@ -2686,7 +2686,7 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 
 // Notifications table
 export const notifications = pgTable("notifications", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id")
     .notNull()
     .references(() => users.id),
@@ -2730,7 +2730,7 @@ export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 
 // Warehouse Tasks - Admin-assigned tasks for warehouse employees
 export const warehouseTasks = pgTable("warehouse_tasks", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
   type: varchar("type", { length: 50 }).notNull().default("general"), // general, urgent, inventory, maintenance, other
@@ -2774,7 +2774,7 @@ export type InsertWarehouseTask = z.infer<typeof insertWarehouseTaskSchema>;
 
 // Push Subscriptions - for browser push notifications
 export const pushSubscriptions = pgTable("push_subscriptions", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -2817,7 +2817,7 @@ export type InsertPushSubscription = z.infer<
 
 // Database Backups - for automatic and manual backup tracking
 export const databaseBackups = pgTable("database_backups", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   backupType: varchar("backup_type", { length: 20 })
     .notNull()
     .default("manual"), // manual, auto_daily, auto_weekly, auto_monthly
@@ -2857,7 +2857,7 @@ export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
 
 // Employee Incidents - tracks mistakes, incidents, and performance issues
 export const employeeIncidents = pgTable("employee_incidents", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: integer("employee_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -2907,7 +2907,7 @@ export type InsertEmployeeIncident = z.infer<
 
 // Roles table - for dynamic role management
 export const roles = pgTable("roles", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 100 }).notNull().unique(),
   displayName: varchar("display_name", { length: 100 }).notNull(), // Human-readable name
   displayNameVi: varchar("display_name_vi", { length: 100 }), // Vietnamese name
@@ -2944,7 +2944,7 @@ export type InsertRole = z.infer<typeof insertRoleSchema>;
 export const permissions = pgTable(
   "permissions",
   {
-    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
     parentSection: varchar("parent_section", { length: 50 })
       .notNull()
       .default("warehouse_operations"), // 'warehouse_operations' or 'administration'
@@ -2987,11 +2987,11 @@ export type InsertPermission = z.infer<typeof insertPermissionSchema>;
 export const rolePermissions = pgTable(
   "role_permissions",
   {
-    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-    roleId: integer("role_id")
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    roleId: varchar("role_id")
       .notNull()
       .references(() => roles.id, { onDelete: "cascade" }),
-    permissionId: integer("permission_id")
+    permissionId: varchar("permission_id")
       .notNull()
       .references(() => permissions.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -3002,8 +3002,8 @@ export const rolePermissions = pgTable(
 );
 
 export const insertRolePermissionSchema = createInsertSchema(rolePermissions, {
-  roleId: z.number(),
-  permissionId: z.number(),
+  roleId: z.string(),
+  permissionId: z.string(),
 }).omit({
   id: true,
   createdAt: true,
