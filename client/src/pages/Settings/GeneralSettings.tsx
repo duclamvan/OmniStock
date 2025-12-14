@@ -182,8 +182,16 @@ export default function GeneralSettings() {
       return response.json();
     },
     onSuccess: (data) => {
-      setReportPreviewHtml(data.html);
-      setPreviewDialogOpen(true);
+      if (data?.html) {
+        setReportPreviewHtml(data.html);
+        setPreviewDialogOpen(true);
+      } else {
+        toast({
+          title: t('common:error'),
+          description: t('settings:reportPreviewError', 'Failed to generate report preview'),
+          variant: 'destructive',
+        });
+      }
     },
     onError: () => {
       toast({
