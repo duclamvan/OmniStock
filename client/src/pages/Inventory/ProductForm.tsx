@@ -755,60 +755,84 @@ export default function ProductForm() {
   // Prefill form when product data is loaded (edit mode)
   useEffect(() => {
     if (isEditMode && product) {
+      // Log product data for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('[ProductForm] Loading product data for edit:', product);
+      }
+      
       form.reset({
+        // Basic info - ensure strings for text fields
         name: product.name || '',
         vietnameseName: product.vietnameseName || '',
         sku: product.sku || '',
-        categoryId: product.categoryId || '',
-        warehouseId: product.warehouseId || '',
-        supplierId: product.supplierId || '',
         description: product.description || '',
-        quantity: product.quantity || 0,
-        lowStockAlert: product.lowStockAlert || 45,
-        lowStockAlertType: product.lowStockAlertType || 'percentage',
-        maxStockLevel: product.maxStockLevel || 100,
-        priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
-        priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
-        importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
-        importCostCzk: product.importCostCzk ? parseFloat(product.importCostCzk) : undefined,
-        importCostEur: product.importCostEur ? parseFloat(product.importCostEur) : undefined,
         barcode: product.barcode || '',
-        length: product.length ? parseFloat(product.length) : undefined,
-        width: product.width ? parseFloat(product.width) : undefined,
-        height: product.height ? parseFloat(product.height) : undefined,
-        weight: product.weight ? parseFloat(product.weight) : undefined,
         warehouseLocation: product.warehouseLocation || '',
-        packingMaterialId: product.packingMaterialId || '',
+        
+        // ID fields - explicitly convert to strings for Select components
+        categoryId: product.categoryId ? String(product.categoryId) : '',
+        warehouseId: product.warehouseId ? String(product.warehouseId) : '',
+        supplierId: product.supplierId ? String(product.supplierId) : '',
+        packingMaterialId: product.packingMaterialId ? String(product.packingMaterialId) : '',
+        
+        // Inventory fields
+        quantity: typeof product.quantity === 'number' ? product.quantity : parseInt(product.quantity) || 0,
+        lowStockAlert: typeof product.lowStockAlert === 'number' ? product.lowStockAlert : parseInt(product.lowStockAlert) || 45,
+        lowStockAlertType: product.lowStockAlertType || 'percentage',
+        maxStockLevel: product.maxStockLevel ? (typeof product.maxStockLevel === 'number' ? product.maxStockLevel : parseInt(product.maxStockLevel)) : 100,
+        
+        // Pricing fields - parse decimals properly
+        priceCzk: product.priceCzk ? parseFloat(String(product.priceCzk)) : undefined,
+        priceEur: product.priceEur ? parseFloat(String(product.priceEur)) : undefined,
+        importCostUsd: product.importCostUsd ? parseFloat(String(product.importCostUsd)) : undefined,
+        importCostCzk: product.importCostCzk ? parseFloat(String(product.importCostCzk)) : undefined,
+        importCostEur: product.importCostEur ? parseFloat(String(product.importCostEur)) : undefined,
+        
+        // Physical dimensions - parse decimals properly
+        length: product.length ? parseFloat(String(product.length)) : undefined,
+        width: product.width ? parseFloat(String(product.width)) : undefined,
+        height: product.height ? parseFloat(String(product.height)) : undefined,
+        weight: product.weight ? parseFloat(String(product.weight)) : undefined,
+        
         // Multi-unit fields
         sellingUnitName: product.sellingUnitName || 'piece',
         bulkUnitName: product.bulkUnitName || '',
-        bulkUnitQty: product.bulkUnitQty ? parseInt(product.bulkUnitQty) : undefined,
-        bulkPriceCzk: product.bulkPriceCzk ? parseFloat(product.bulkPriceCzk) : undefined,
-        bulkPriceEur: product.bulkPriceEur ? parseFloat(product.bulkPriceEur) : undefined,
-        allowBulkSales: product.allowBulkSales || false,
+        bulkUnitQty: product.bulkUnitQty ? (typeof product.bulkUnitQty === 'number' ? product.bulkUnitQty : parseInt(String(product.bulkUnitQty))) : undefined,
+        bulkPriceCzk: product.bulkPriceCzk ? parseFloat(String(product.bulkPriceCzk)) : undefined,
+        bulkPriceEur: product.bulkPriceEur ? parseFloat(String(product.bulkPriceEur)) : undefined,
+        allowBulkSales: Boolean(product.allowBulkSales),
         unitContentsInfo: product.unitContentsInfo || '',
       });
       
-      setPackingInstructionsTexts(product.packingInstructionsTexts || []);
-      setPackingInstructionsImages(product.packingInstructionsImages || []);
-      setPackingMaterials(product.packingMaterials || []);
+      // Set packing instructions state
+      setPackingInstructionsTexts(Array.isArray(product.packingInstructionsTexts) ? product.packingInstructionsTexts : []);
+      setPackingInstructionsImages(Array.isArray(product.packingInstructionsImages) ? product.packingInstructionsImages : []);
+      setPackingMaterials(Array.isArray(product.packingMaterials) ? product.packingMaterials : []);
       
-      // Map existing product images
-      if (product.images && Array.isArray(product.images)) {
+      // Clear existing images before setting new ones to avoid stale data
+      setProductImages([]);
+      
+      // Map existing product images with proper type checking
+      if (product.images && Array.isArray(product.images) && product.images.length > 0) {
         const mappedImages: ProductImage[] = product.images.map((img: any) => ({
-          preview: img.url,
-          url: img.url,
-          purpose: img.purpose || 'main',
-          isPrimary: img.isPrimary || false,
+          preview: img.url || '',
+          url: img.url || '',
+          purpose: (img.purpose as ImagePurpose) || 'main',
+          isPrimary: Boolean(img.isPrimary),
         }));
         setProductImages(mappedImages);
       } else if (product.imageUrl) {
+        // Fallback to single imageUrl if images array is empty
         setProductImages([{
           preview: product.imageUrl,
           url: product.imageUrl,
           purpose: 'main',
           isPrimary: true,
         }]);
+      }
+      
+      if (import.meta.env.DEV) {
+        console.log('[ProductForm] Form reset complete with values:', form.getValues());
       }
     }
   }, [product, form, isEditMode]);
