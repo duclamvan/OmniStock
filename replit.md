@@ -36,6 +36,26 @@ A dedicated `POST /api/auth/register-initial-admin` endpoint allows the creation
 ## Database Design
 The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow with entities for users, products, orders, customers, warehouses, suppliers, returns, inventory, multi-currency financial tracking, and an audit trail.
 
+### Database Schema Guidelines (STRICT)
+**ALWAYS use VARCHAR with UUID for ALL new tables:**
+```typescript
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+```
+
+**NEVER use these patterns (they cause migration errors):**
+- `serial("id")` - causes `type "serial" does not exist` errors
+- `integer("id").generatedAlwaysAsIdentity()` - causes `relation "xxx_id_seq" already exists` errors
+
+**For foreign key references:**
+```typescript
+parentId: varchar("parent_id").notNull().references(() => parentTable.id),
+```
+
+**For insert schemas with varchar FKs:**
+```typescript
+roleId: z.string(),  // NOT z.number()
+```
+
 ## Core Features
 - **Product & Order Management**: Comprehensive CRUD, pricing, location tracking, barcode scanning, grouped packing, tiered pricing, multi-purpose images, variant support, custom order IDs, auto shipping cost, enhanced product search with fuzzy matching and Vietnamese diacritics, and automated packing list PDF generation.
 - **Inventory & Warehouse Management**: Full inventory tracking, variant operations, category management, location codes, barcode scanning, quantity tracking, interactive 2D warehouse map with real inventory data, multi-zone support, and inventory allocation warnings.
