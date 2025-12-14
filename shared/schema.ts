@@ -3034,3 +3034,89 @@ export const rolePermissionsRelations = relations(
     }),
   }),
 );
+
+// Import Batches table - tracks bulk import operations
+export const importBatches = pgTable("import_batches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entity: varchar("entity").notNull(), // products, customers, warehouses, suppliers, discounts, returns, expenses
+  status: varchar("status").notNull().default("pending"), // pending, processing, completed, failed, reverted
+  totalRows: integer("total_rows").notNull(),
+  successCount: integer("success_count").notNull().default(0),
+  errorCount: integer("error_count").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
+});
+
+export const insertImportBatchSchema = createInsertSchema(importBatches, {
+  entity: z.enum([
+    "products",
+    "customers",
+    "warehouses",
+    "suppliers",
+    "discounts",
+    "returns",
+    "expenses",
+  ]),
+  status: z
+    .enum(["pending", "processing", "completed", "failed", "reverted"])
+    .default("pending"),
+  totalRows: z.number().int().min(0),
+  successCount: z.number().int().min(0).default(0),
+  errorCount: z.number().int().min(0).default(0),
+  notes: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type InsertImportBatch = z.infer<typeof insertImportBatchSchema>;
+
+// Import Batch Items table - tracks individual rows within an import batch
+export const importBatchItems = pgTable("import_batch_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  batchId: varchar("batch_id")
+    .notNull()
+    .references(() => importBatches.id, { onDelete: "cascade" }),
+  rowNumber: integer("row_number").notNull(),
+  originalData: jsonb("original_data").notNull(),
+  processedData: jsonb("processed_data"),
+  status: varchar("status").notNull().default("pending"), // pending, success, error, skipped
+  errorMessage: text("error_message"),
+  entityId: varchar("entity_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertImportBatchItemSchema = createInsertSchema(importBatchItems, {
+  rowNumber: z.number().int().min(1),
+  originalData: z.record(z.any()),
+  processedData: z.record(z.any()).optional(),
+  status: z.enum(["pending", "success", "error", "skipped"]).default("pending"),
+  errorMessage: z.string().optional(),
+  entityId: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ImportBatchItem = typeof importBatchItems.$inferSelect;
+export type InsertImportBatchItem = z.infer<typeof insertImportBatchItemSchema>;
+
+// Relations for import batches
+export const importBatchesRelations = relations(importBatches, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [importBatches.createdBy],
+    references: [users.id],
+  }),
+  items: many(importBatchItems),
+}));
+
+export const importBatchItemsRelations = relations(importBatchItems, ({ one }) => ({
+  batch: one(importBatches, {
+    fields: [importBatchItems.batchId],
+    references: [importBatches.id],
+  }),
+}));

@@ -102,6 +102,20 @@ import { TrackingService, isWithinWorkingHours } from "./services/tracking";
 import OpenAI from "openai";
 import passport from "passport";
 import { localization } from "./localization";
+import { 
+  generateTemplate, 
+  generateTemplateWorkbook,
+  parseExcelFile,
+  validateRow,
+  createImportBatch,
+  processImportBatch,
+  revertImportBatch,
+  exportToExcel,
+  getImportBatch,
+  getImportBatches,
+  getImportBatchItems,
+  EntityType
+} from './services/importExportService';
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -14865,6 +14879,108 @@ Important rules:
     } catch (error) {
       console.error('Error generating report preview:', error);
       res.status(500).json({ message: 'Failed to generate report preview' });
+    }
+  });
+
+  // ============================================================================
+  // IMPORT/EXPORT DATA ROUTES
+  // ============================================================================
+
+  // Get template as Excel file
+  app.get('/api/imports/:entity/template', isAuthenticated, async (req, res) => {
+    try {
+      const entity = req.params.entity as EntityType;
+      const buffer = await generateTemplateWorkbook(entity);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${entity}_template.xlsx`);
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Preview import (parse file, validate, return rows)
+  app.post('/api/imports/:entity/preview', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      const entity = req.params.entity as EntityType;
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      const rows = await parseExcelFile(req.file.buffer, entity);
+      const validatedRows = rows.map((row, index) => ({
+        rowNumber: index + 1,
+        ...validateRow(row, entity),
+        originalData: row,
+      }));
+      res.json({ rows: validatedRows, totalRows: rows.length });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Commit import (create batch and process)
+  app.post('/api/imports/:entity/commit', isAuthenticated, async (req: any, res) => {
+    try {
+      const entity = req.params.entity as EntityType;
+      const { rows } = req.body;
+      if (!rows || !Array.isArray(rows)) {
+        return res.status(400).json({ message: 'Invalid rows data' });
+      }
+      const userId = req.user?.id || null;
+      const batchId = await createImportBatch(entity, rows, userId);
+      const result = await processImportBatch(batchId);
+      const batch = await getImportBatch(batchId);
+      res.json({ batchId, ...result, batch });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get import batch status
+  app.get('/api/imports/batches/:batchId', isAuthenticated, async (req, res) => {
+    try {
+      const batch = await getImportBatch(req.params.batchId);
+      if (!batch) {
+        return res.status(404).json({ message: 'Batch not found' });
+      }
+      const items = await getImportBatchItems(req.params.batchId);
+      res.json({ batch, items });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // List import batches
+  app.get('/api/imports/batches', isAuthenticated, async (req, res) => {
+    try {
+      const entity = req.query.entity as EntityType | undefined;
+      const batches = await getImportBatches(entity);
+      res.json(batches);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Revert import batch
+  app.post('/api/imports/batches/:batchId/revert', isAuthenticated, async (req, res) => {
+    try {
+      await revertImportBatch(req.params.batchId);
+      res.json({ message: 'Batch reverted successfully' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Export entity data as Excel
+  app.get('/api/exports/:entity', isAuthenticated, async (req, res) => {
+    try {
+      const entity = req.params.entity as EntityType;
+      const buffer = await exportToExcel(entity);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${entity}_export.xlsx`);
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 
