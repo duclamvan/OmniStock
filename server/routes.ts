@@ -2828,13 +2828,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/categories/:id', isAuthenticated, async (req, res) => {
     try {
-      // Validate ID is a number
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = req.params.id;
+      if (!id) {
         return res.status(400).json({ message: "Invalid category ID" });
       }
 
-      const category = await storage.getCategoryById(id.toString());
+      const category = await storage.getCategoryById(id);
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
