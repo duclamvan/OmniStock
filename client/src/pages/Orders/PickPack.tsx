@@ -12423,7 +12423,7 @@ export default function PickPack() {
                           <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
                             {currentItem.productName}
                           </h2>
-                          <div className="flex gap-4 text-sm text-gray-600">
+                          <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
                             <div className="flex items-center gap-1">
                               <Hash className="h-4 w-4 text-gray-400" />
                               <span className="font-mono">{currentItem.sku}</span>
@@ -12433,6 +12433,13 @@ export default function PickPack() {
                                 <ScanLine className="h-4 w-4 text-gray-400" />
                                 <span className="font-mono">{currentItem.barcode}</span>
                               </div>
+                            )}
+                            {/* Carton Badge - shown when quantity >= bulkUnitQty */}
+                            {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
+                              <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                                <Box className="h-2.5 w-2.5 mr-0.5" />
+                                {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                              </Badge>
                             )}
                           </div>
                         </div>

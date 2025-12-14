@@ -1999,24 +1999,26 @@ export class DatabaseStorage implements IStorage {
     try {
       const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
       
-      // Enrich items with bulkUnitQty/bulkUnitName from products if missing
+      // Enrich items with bulkUnitQty/bulkUnitName from products - ALWAYS check product table
       const enrichedItems = await Promise.all(items.map(async (item) => {
-        if (item.productId && (!item.bulkUnitQty || !item.bulkUnitName)) {
+        if (item.productId) {
           try {
             const [product] = await db.select({
               bulkUnitQty: products.bulkUnitQty,
-              bulkUnitName: products.bulkUnitName
+              bulkUnitName: products.bulkUnitName,
+              imageUrl: products.imageUrl
             }).from(products).where(eq(products.id, item.productId)).limit(1);
             
             if (product) {
               return {
                 ...item,
-                bulkUnitQty: item.bulkUnitQty || product.bulkUnitQty,
-                bulkUnitName: item.bulkUnitName || product.bulkUnitName
+                bulkUnitQty: product.bulkUnitQty || item.bulkUnitQty,
+                bulkUnitName: product.bulkUnitName || item.bulkUnitName,
+                image: item.image || product.imageUrl
               };
             }
           } catch (e) {
-            // Silently continue if product lookup fails
+            console.error(`[getOrderItems] Error enriching item ${item.id}:`, e);
           }
         }
         return item;
