@@ -46,7 +46,7 @@ export default function AddCategory() {
         ...data,
         name: data.nameEn
       };
-      const response = await apiRequest('/api/categories', 'POST', submitData);
+      const response = await apiRequest('POST', '/api/categories', submitData);
       return response.json();
     },
     onSuccess: () => {
@@ -72,7 +72,7 @@ export default function AddCategory() {
 
     try {
       setIsTranslating(true);
-      const response = await apiRequest('/api/categories/translate', 'POST', { categoryName });
+      const response = await apiRequest('POST', '/api/categories/translate', { categoryName });
       const translations = await response.json();
 
       if (translations.nameCz) {
