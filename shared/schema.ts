@@ -41,9 +41,7 @@ export const users = pgTable("users", {
 
 // Employees table
 export const employees = pgTable("employees", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   employeeId: varchar("employee_id").notNull().unique(), // Custom employee ID (e.g., EMP001)
   userId: varchar("user_id").references(() => users.id), // Link to user account for system access
   firstName: varchar("first_name").notNull(),
@@ -101,9 +99,7 @@ export const categories = pgTable("categories", {
 
 // Import Purchases (formerly orders from suppliers)
 export const importPurchases = pgTable("import_purchases", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   supplier: text("supplier").notNull(),
   location: text("location").notNull().default("China"), // Europe, USA, China, Vietnam
   trackingNumber: text("tracking_number"),
@@ -132,10 +128,8 @@ export const importPurchases = pgTable("import_purchases", {
 
 // Purchase Items (items within a purchase)
 export const purchaseItems = pgTable("purchase_items", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  purchaseId: varchar("purchase_id")
+  id: serial("id").primaryKey(),
+  purchaseId: integer("purchase_id")
     .notNull()
     .references(() => importPurchases.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -176,9 +170,7 @@ export const purchaseItems = pgTable("purchase_items", {
 
 // Consolidations (grouping items at warehouse)
 export const consolidations = pgTable("consolidations", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   location: text("location").notNull(), // Country destination
   shippingMethod: text("shipping_method").notNull(), // general_air_ddp, sensitive_air_ddp, express_general, express_sensitive, railway_general, railway_sensitive, sea_general, sea_sensitive
@@ -193,9 +185,7 @@ export const consolidations = pgTable("consolidations", {
 
 // Shipments (international transit)
 export const shipments = pgTable("shipments", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   consolidationId: integer("consolidation_id"),
   carrier: text("carrier").notNull(),
   trackingNumber: text("tracking_number").notNull(),
