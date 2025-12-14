@@ -799,6 +799,30 @@ export default function AddOrder() {
     }
   }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form]);
 
+  // Fetch all customers for real-time filtering
+  const { data: allCustomers } = useQuery({
+    queryKey: ['/api/customers', { includeBadges: true }],
+    staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
+  });
+
+  // Fetch shipping addresses for selected customer
+  const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
+    queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'],
+    enabled: !!selectedCustomer?.id,
+  });
+
+  // Fetch existing order for edit mode
+  const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
+    queryKey: ['/api/orders', editOrderId, { includeBadges: true }],
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${editOrderId}?includeBadges=true`);
+      if (!response.ok) throw new Error('Failed to fetch order');
+      return response.json();
+    },
+    enabled: isEditMode,
+    staleTime: 30 * 1000,
+  });
+
   // Pre-fill form data when editing existing order
   useEffect(() => {
     if (!existingOrder || !isEditMode) return;
@@ -842,7 +866,7 @@ export default function AddOrder() {
 
     // Set orderId for the component
     setOrderId(order.id);
-  }, [dataUpdatedAt, existingOrder, isEditMode, form]);
+  }, [existingOrder, isEditMode, form]);
 
   // Pre-fill order items when editing existing order
   useEffect(() => {
@@ -1117,34 +1141,10 @@ export default function AddOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - bundles don't change frequently
   });
 
-  // Fetch all customers for real-time filtering
-  const { data: allCustomers } = useQuery({
-    queryKey: ['/api/customers', { includeBadges: true }],
-    staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
-  });
-
   // Fetch all orders to calculate product frequency
   const { data: allOrders } = useQuery({
     queryKey: ['/api/orders'],
     staleTime: 2 * 60 * 1000, // 2 minutes - orders change more frequently
-  });
-
-  // Fetch shipping addresses for selected customer
-  const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
-    queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'],
-    enabled: !!selectedCustomer?.id,
-  });
-
-  // Fetch existing order for edit mode
-  const { data: existingOrder, isLoading: isLoadingOrder, dataUpdatedAt } = useQuery({
-    queryKey: ['/api/orders', editOrderId, { includeBadges: true }],
-    queryFn: async () => {
-      const response = await fetch(`/api/orders/${editOrderId}?includeBadges=true`);
-      if (!response.ok) throw new Error('Failed to fetch order');
-      return response.json();
-    },
-    enabled: isEditMode,
-    staleTime: 30 * 1000,
   });
 
   // Fetch pending services for selected customer
