@@ -12464,6 +12464,21 @@ export default function PickPack() {
                         </p>
                       </div>
 
+                      {/* Carton/Bulk Unit Details - Shows how many cartons to pick */}
+                      {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
+                          <Box className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                          <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
+                            {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || t('carton') || 'carton'}{Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
+                            {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
+                              <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                                + {currentItem.quantity % currentItem.bulkUnitQty} {t('pieces') || 'pcs'}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Shipping Notes - Important Picking Instructions */}
                       {currentItem.notes && (
                         <div className="bg-amber-50 dark:bg-amber-900/30 border-3 border-amber-500 rounded-lg p-4 shadow-lg">
