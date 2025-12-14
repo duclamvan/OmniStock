@@ -100,6 +100,7 @@ const imports = {
   conversionHelper: '{{qty}} {{bulkUnit}}(s) = {{totalQty}} {{sellingUnit}}(s) for inventory',
 
   // Costs & Financial
+  cost: 'Cost',
   productValue: 'Product Value',
   productCost: 'Product Cost',
   shippingCost: 'Shipping Cost',

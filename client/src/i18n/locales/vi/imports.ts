@@ -111,6 +111,7 @@ const imports = {
   conversionHelper: '{{qty}} {{bulkUnit}} = {{totalQty}} {{sellingUnit}} trong kho',
 
   // Costs & Financial
+  cost: 'Chi phí',
   productValue: 'Giá trị hàng',
   productCost: 'Giá hàng',
   shippingCost: 'Phí vận chuyển',
