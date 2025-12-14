@@ -5228,10 +5228,10 @@ export class DatabaseStorage implements IStorage {
   async getCategories(): Promise<AppCategory[]> {
     try {
       // Using raw SQL for now to avoid schema mismatch issues
-      // Include product count - cast category.id to text to match products.category_id (varchar)
+      // Include product count - categories.id is varchar (UUID), products.category_id is varchar
       const result = await db.execute(sql`
         SELECT 
-          c.id::integer as id, 
+          c.id, 
           c.name, 
           c.name_en, 
           c.name_cz, 
@@ -5241,7 +5241,7 @@ export class DatabaseStorage implements IStorage {
           c.updated_at,
           COALESCE(COUNT(p.id), 0)::integer as "productCount"
         FROM categories c
-        LEFT JOIN products p ON p.category_id = c.id::text
+        LEFT JOIN products p ON p.category_id = c.id
         GROUP BY c.id, c.name, c.name_en, c.name_cz, c.name_vn, c.description, c.created_at, c.updated_at
         ORDER BY c.name
       `);
