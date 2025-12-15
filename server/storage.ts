@@ -2101,15 +2101,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Products
-  async getProducts(): Promise<Product[]> {
+  async getProducts(includeInactive: boolean = false): Promise<Product[]> {
     try {
-      const productsData = await db.select({
+      let query = db.select({
         product: products,
         supplier: suppliers,
       })
       .from(products)
-      .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-      .orderBy(desc(products.createdAt));
+      .leftJoin(suppliers, eq(products.supplierId, suppliers.id));
+      
+      // Filter by active status if needed
+      const productsData = includeInactive 
+        ? await query.orderBy(desc(products.createdAt))
+        : await query.where(eq(products.isActive, true)).orderBy(desc(products.createdAt));
 
       // Include primary location, supplier, and category for each product
       const productsWithDetails = await Promise.all(
@@ -4295,19 +4299,70 @@ export class DatabaseStorage implements IStorage {
         sql`${normalizeSQLColumn(products.barcode)} LIKE ${`%${normalizedQuery}%`}`
       ];
 
+      // Join with suppliers table and apply filters
+      let productsData;
       if (!includeInactive) {
-        return await db
-          .select()
+        productsData = await db
+          .select({
+            product: products,
+            supplier: suppliers,
+          })
           .from(products)
+          .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
           .where(and(eq(products.isActive, true), or(...conditions)))
           .orderBy(products.name);
       } else {
-        return await db
-          .select()
+        productsData = await db
+          .select({
+            product: products,
+            supplier: suppliers,
+          })
           .from(products)
+          .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
           .where(or(...conditions))
           .orderBy(products.name);
       }
+
+      // Include primary location, supplier, and category for each product (matching getProducts)
+      const productsWithDetails = await Promise.all(
+        productsData.map(async (row) => {
+          const [primaryLocation] = await db
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, row.product.id),
+                eq(productLocations.isPrimary, true)
+              )
+            )
+            .limit(1);
+
+          // Fetch category if categoryId exists
+          let category = null;
+          if (row.product.categoryId) {
+            const [cat] = await db
+              .select()
+              .from(categories)
+              .where(eq(categories.id, row.product.categoryId))
+              .limit(1);
+            category = cat;
+          }
+
+          return {
+            ...row.product,
+            image: row.product.imageUrl,
+            categoryName: category?.name || category?.nameEn || 'Uncategorized',
+            primaryLocation: primaryLocation || null,
+            supplier: row.supplier ? {
+              id: row.supplier.id,
+              name: row.supplier.name,
+              country: row.supplier.country
+            } : null
+          };
+        })
+      );
+
+      return productsWithDetails;
     } catch (error) {
       console.error('Error searching products:', error);
       return [];
