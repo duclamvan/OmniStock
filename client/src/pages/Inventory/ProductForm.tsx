@@ -2198,8 +2198,8 @@ export default function ProductForm() {
                       <div>
                         <Label htmlFor="lowStockAlert" className="text-xs text-amber-700 dark:text-amber-300">
                           {form.watch('lowStockAlertType') === 'percentage' 
-                            ? t('products:formLabels.alertThresholdPercent') 
-                            : t('products:formLabels.alertThresholdUnits')}
+                            ? t('products:formLabels.alertThresholdPercent', 'Threshold (%)') 
+                            : t('products:formLabels.alertThresholdUnits', 'Threshold (Units)')}
                         </Label>
                         <div className="relative mt-1">
                           <Input
@@ -2209,16 +2209,18 @@ export default function ProductForm() {
                             {...form.register('lowStockAlert')}
                             data-testid="input-low-stock"
                           />
-                          {form.watch('lowStockAlertType') === 'percentage' && (
+                          {form.watch('lowStockAlertType') === 'percentage' ? (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                          ) : (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{t('products:formLabels.units', 'units')}</span>
                           )}
                         </div>
                       </div>
                     </div>
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
                       {form.watch('lowStockAlertType') === 'percentage' 
-                        ? t('products:formLabels.percentageAlertHint')
-                        : t('products:formLabels.amountAlertHint')}
+                        ? t('products:formLabels.percentageAlertHint', 'Alert when stock falls below this percentage of max stock')
+                        : t('products:formLabels.amountAlertHint', 'Alert when stock falls below this number of units')}
                     </p>
                   </div>
 
