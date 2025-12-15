@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { insertServiceSchema } from "@shared/schema";
 import { formatCzechDate } from "@/lib/dateUtils";
+import { useSettings } from "@/contexts/SettingsContext";
 
 // Note: Validation messages will be translated in the form
 const serviceFormSchema = insertServiceSchema.extend({
@@ -115,6 +116,7 @@ export default function AddService() {
   const params = useParams();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { serviceSettings } = useSettings();
   const isEditing = !!params.id;
 
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
@@ -125,26 +127,18 @@ export default function AddService() {
   const [productSearchTerms, setProductSearchTerms] = useState<{ [key: number]: string }>({});
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
 
-  // Predefined service types for the dropdown
-  const serviceTypes = [
-    { id: 'hand_drill_repair', name: 'Hand Drill Repair' },
-    { id: 'led_light_bulb_repair', name: 'LED Light Bulb Repair' },
-    { id: 'nail_lamp_repair', name: 'Nail Lamp Repair' },
-    { id: 'nail_drill_repair', name: 'Nail Drill Repair' },
-    { id: 'uv_lamp_repair', name: 'UV Lamp Repair' },
-    { id: 'electric_file_repair', name: 'Electric File Repair' },
-    { id: 'sterilizer_repair', name: 'Sterilizer Repair' },
-    { id: 'wax_warmer_repair', name: 'Wax Warmer Repair' },
-    { id: 'pedicure_chair_repair', name: 'Pedicure Chair Repair' },
-    { id: 'massage_chair_repair', name: 'Massage Chair Repair' },
-    { id: 'vacuum_cleaner_repair', name: 'Vacuum Cleaner Repair' },
-    { id: 'air_purifier_repair', name: 'Air Purifier Repair' },
-    { id: 'general_equipment_repair', name: 'General Equipment Repair' },
-    { id: 'installation_service', name: 'Installation Service' },
-    { id: 'maintenance_service', name: 'Maintenance Service' },
-    { id: 'consultation', name: 'Consultation' },
-    { id: 'custom_service', name: 'Custom Service' },
-  ];
+  // Get service types from settings, with fallback to defaults
+  const serviceTypes = useMemo(() => {
+    const settingsTypes = serviceSettings?.serviceTypes?.filter(st => st.enabled) || [];
+    if (settingsTypes.length > 0) {
+      return settingsTypes.map(st => ({ id: st.id, name: st.name, costEur: st.costEur, costCzk: st.costCzk }));
+    }
+    // Fallback to defaults if no settings configured
+    return [
+      { id: 'general_equipment_repair', name: 'General Equipment Repair', costEur: 0, costCzk: 0 },
+      { id: 'custom_service', name: 'Custom Service', costEur: 0, costCzk: 0 },
+    ];
+  }, [serviceSettings?.serviceTypes]);
 
   // Filter service types based on search
   const filteredServiceTypes = useMemo(() => {
@@ -152,7 +146,7 @@ export default function AddService() {
     return serviceTypes.filter(s => 
       s.name.toLowerCase().includes(serviceTypeSearch.toLowerCase())
     );
-  }, [serviceTypeSearch]);
+  }, [serviceTypeSearch, serviceTypes]);
 
   const { data: existingService, isLoading: loadingService } = useQuery({
     queryKey: ['/api/services', params.id],
@@ -238,6 +232,22 @@ export default function AddService() {
       }
     }
   }, [form.watch('orderId'), orders, form]);
+
+  // Auto-fill service cost when service type changes
+  const watchedServiceType = form.watch('name');
+  const watchedCurrency = form.watch('currency');
+  
+  useEffect(() => {
+    if (!watchedServiceType || isEditing) return;
+    
+    const selectedType = serviceTypes.find(st => st.name === watchedServiceType);
+    if (selectedType) {
+      const cost = watchedCurrency === 'CZK' ? selectedType.costCzk : selectedType.costEur;
+      if (cost && cost > 0) {
+        form.setValue('serviceCost', cost.toString());
+      }
+    }
+  }, [watchedServiceType, watchedCurrency, serviceTypes, isEditing, form]);
 
   const partsCost = useMemo(() => {
     return serviceItems.reduce((sum, item) => {
