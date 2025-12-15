@@ -97,6 +97,14 @@ const formSchema = z.object({
     (val) => val === '' || val === null || val === undefined ? undefined : val,
     z.coerce.number().min(0).max(100).optional()
   ),
+  default_low_stock_percentage: z.preprocess(
+    (val) => val === '' || val === null || val === undefined ? undefined : val,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  default_low_stock_amount: z.preprocess(
+    (val) => val === '' || val === null || val === undefined ? undefined : val,
+    z.coerce.number().min(0).optional()
+  ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -151,6 +159,8 @@ export default function InventorySettings() {
       max_images_per_product: inventorySettings.maxImagesPerProduct,
       auto_compress_images: inventorySettings.autoCompressImages,
       image_quality: inventorySettings.imageQuality,
+      default_low_stock_percentage: inventorySettings.defaultLowStockPercentage,
+      default_low_stock_amount: inventorySettings.defaultLowStockAmount,
     },
   });
 
@@ -422,6 +432,8 @@ export default function InventorySettings() {
         max_images_per_product: inventorySettings.maxImagesPerProduct,
         auto_compress_images: inventorySettings.autoCompressImages,
         image_quality: inventorySettings.imageQuality,
+        default_low_stock_percentage: inventorySettings.defaultLowStockPercentage,
+        default_low_stock_amount: inventorySettings.defaultLowStockAmount,
       };
       setOriginalSettings(snapshot);
       form.reset(snapshot);
@@ -487,33 +499,6 @@ export default function InventorySettings() {
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="low_stock_threshold"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('settings:lowStockThreshold')}</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            value={field.value ?? ''}
-                            type="number" 
-                            min="0"
-                            placeholder={t('settings:lowStockThresholdPlaceholder')} 
-                            data-testid="input-low_stock_threshold"
-                            onChange={(e) => {
-                              field.onChange(e);
-                              markPendingChange('low_stock_threshold');
-                            }}
-                            onBlur={handleTextBlur('low_stock_threshold')}
-                          />
-                        </FormControl>
-                        <FormDescription>{t('settings:lowStockThresholdDescription')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <FormField
                     control={form.control}
                     name="default_product_type"
@@ -692,6 +677,88 @@ export default function InventorySettings() {
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="low_stock_threshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:lowStockThreshold')}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value ?? ''}
+                            type="number" 
+                            min="0"
+                            placeholder={t('settings:lowStockThresholdPlaceholder')} 
+                            data-testid="input-low_stock_threshold"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('low_stock_threshold');
+                            }}
+                            onBlur={handleTextBlur('low_stock_threshold')}
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:lowStockThresholdDescription')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="default_low_stock_percentage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:defaultLowStockPercentage', 'Default Low Stock Percentage')}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value ?? ''}
+                            type="number" 
+                            min="0"
+                            max="100"
+                            placeholder={t('settings:defaultLowStockPercentagePlaceholder', 'e.g. 45')} 
+                            data-testid="input-default_low_stock_percentage"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_low_stock_percentage');
+                            }}
+                            onBlur={handleTextBlur('default_low_stock_percentage')}
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:defaultLowStockPercentageDescription', 'Alert when stock falls below this percentage of usual levels')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="default_low_stock_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:defaultLowStockAmount', 'Default Low Stock Amount')}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value ?? ''}
+                            type="number" 
+                            min="0"
+                            placeholder={t('settings:defaultLowStockAmountPlaceholder', 'e.g. 50')} 
+                            data-testid="input-default_low_stock_amount"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('default_low_stock_amount');
+                            }}
+                            onBlur={handleTextBlur('default_low_stock_amount')}
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:defaultLowStockAmountDescription', 'Fixed amount threshold for low stock alerts')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="auto_reorder_point"

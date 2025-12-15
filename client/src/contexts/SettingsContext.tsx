@@ -101,6 +101,8 @@ export interface GeneralSettings {
 
 export interface InventorySettings {
   lowStockThreshold?: number;
+  defaultLowStockPercentage?: number;
+  defaultLowStockAmount?: number;
   defaultProductType?: 'regular' | 'bundle' | 'service';
   enableBarcodeScanning?: boolean;
   defaultPackagingRequirement?: 'carton' | 'outer_carton' | 'nylon_wrap';
