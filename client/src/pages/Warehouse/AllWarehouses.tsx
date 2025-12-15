@@ -398,17 +398,19 @@ export default function AllWarehouses() {
             {t('warehouse:monitorManageFacilities')}
           </p>
         </div>
-        <Link href="/warehouses/add" className="w-full sm:w-auto">
-          <Button data-testid="button-add-warehouse" className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            {t('warehouse:addWarehouse')}
-          </Button>
-        </Link>
-        <ImportExportMenu 
-          entity="warehouses" 
-          entityLabel="Warehouses" 
-          onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] })} 
-        />
+        <div className="flex items-center gap-3">
+          <ImportExportMenu 
+            entity="warehouses" 
+            entityLabel="Warehouses" 
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] })} 
+          />
+          <Link href="/warehouses/add" className="w-full sm:w-auto">
+            <Button data-testid="button-add-warehouse" className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              {t('warehouse:addWarehouse')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}
