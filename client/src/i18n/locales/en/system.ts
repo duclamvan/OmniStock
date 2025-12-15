@@ -582,6 +582,7 @@ const system = {
   severity: 'Severity',
   userAccount: 'User Account',
   notAssigned: 'Not Assigned',
+  noUserAssigned: 'No User Assigned',
   investigating: 'Investigating',
   dismissed: 'Dismissed',
   pending: 'Pending',

@@ -1022,6 +1022,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/employees', requireRole(['administrator']), async (req, res) => {
     try {
       const employee = await storage.createEmployee(req.body);
+      
+      // Create recurring expense for salary
+      if (employee && employee.salary) {
+        // Map payment frequency to recurring type
+        // biweekly = every 2 weeks, so we use 'weekly' with interval 2
+        const recurringType = employee.paymentFrequency === 'weekly' || employee.paymentFrequency === 'biweekly' ? 'weekly' : 'monthly';
+        const recurringInterval = employee.paymentFrequency === 'biweekly' ? 2 : 1;
+        
+        // Generate expense ID
+        const allExpenses = await storage.getExpenses();
+        const nextExpenseNum = allExpenses.length + 1;
+        const expenseId = `EXP${String(nextExpenseNum).padStart(5, '0')}`;
+        
+        await storage.createExpense({
+          expenseId,
+          name: `Salary - ${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
+          category: 'Salary',
+          amount: employee.salary.toString(),
+          currency: employee.currency || 'CZK',
+          paymentMethod: 'bank_transfer',
+          status: 'pending',
+          date: new Date(),
+          description: `Recurring salary payment for employee ${employee.employeeId}`,
+          isRecurring: true,
+          recurringType,
+          recurringInterval,
+          recurringStartDate: new Date(employee.hireDate),
+        });
+      }
+      
       res.json(employee);
     } catch (error) {
       console.error('Error creating employee:', error);

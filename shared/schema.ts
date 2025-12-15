@@ -50,8 +50,8 @@ export const employees = pgTable("employees", {
   phone: varchar("phone"),
   address: text("address"),
   // Employment details
-  position: varchar("position").notNull(), // Job title
-  department: varchar("department").notNull(), // e.g., Warehouse, Administration, Sales
+  position: varchar("position"), // Job title (optional)
+  department: varchar("department"), // e.g., Warehouse, Administration, Sales (optional)
   hireDate: date("hire_date").notNull(),
   terminationDate: date("termination_date"), // null if currently employed
   status: varchar("status").notNull().default("active"), // active, on_leave, terminated

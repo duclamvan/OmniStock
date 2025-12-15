@@ -86,8 +86,8 @@ const createEmployeeFormSchema = (t: (key: string) => string) => z.object({
   email: z.string().email(t('system:invalidEmail')).optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
-  position: z.string().min(1, t('system:positionRequired')),
-  department: z.string().min(1, t('system:departmentRequired')),
+  position: z.string().optional().or(z.literal("")),
+  department: z.string().optional().or(z.literal("")),
   hireDate: z.string().min(1, t('system:hireDateRequired')),
   terminationDate: z.string().optional().or(z.literal("")),
   status: z.enum(["active", "on_leave", "terminated"]),
@@ -201,7 +201,7 @@ export default function Employees() {
 
   // Delete employee mutation
   const deleteEmployeeMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const response = await apiRequest('DELETE', `/api/employees/${id}`);
       return response.json();
     },
@@ -223,11 +223,60 @@ export default function Employees() {
     },
   });
 
+  // Generate next employee ID (EMP001, EMP002, etc.)
+  const generateNextEmployeeId = (employeeList: Employee[]) => {
+    if (employeeList.length === 0) return 'EMP001';
+    
+    const existingIds = employeeList
+      .map(e => e.employeeId)
+      .filter(id => id.startsWith('EMP'))
+      .map(id => parseInt(id.replace('EMP', ''), 10))
+      .filter(num => !isNaN(num));
+    
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return `EMP${String(maxId + 1).padStart(3, '0')}`;
+  };
+
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
-    form.reset();
+    form.reset({
+      employeeId: generateNextEmployeeId(employees),
+      userId: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      address: "",
+      position: "",
+      department: "",
+      hireDate: new Date().toISOString().split('T')[0],
+      terminationDate: "",
+      status: "active",
+      salary: "",
+      paymentFrequency: "monthly",
+      currency: "CZK",
+      bankAccount: "",
+      bankName: "",
+      taxId: "",
+      insuranceId: "",
+      emergencyContact: "",
+      emergencyPhone: "",
+      notes: "",
+    });
     setDialogOpen(true);
   };
+
+  // Update employee ID when employees data loads (for add mode)
+  useEffect(() => {
+    if (dialogOpen && !selectedEmployee && !isLoading && employees.length >= 0) {
+      const currentId = form.getValues('employeeId');
+      const newId = generateNextEmployeeId(employees);
+      // Only update if the ID was placeholder or needs update
+      if (!currentId || currentId === 'EMP001' || currentId !== newId) {
+        form.setValue('employeeId', newId);
+      }
+    }
+  }, [employees, dialogOpen, selectedEmployee, isLoading, form]);
 
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -239,8 +288,8 @@ export default function Employees() {
       email: employee.email || "",
       phone: employee.phone || "",
       address: employee.address || "",
-      position: employee.position,
-      department: employee.department,
+      position: employee.position || "",
+      department: employee.department || "",
       hireDate: employee.hireDate,
       terminationDate: employee.terminationDate || "",
       status: employee.status as "active" | "on_leave" | "terminated",
@@ -881,7 +930,7 @@ export default function Employees() {
                     name="position"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('system:position')} *</FormLabel>
+                        <FormLabel>{t('system:position')}</FormLabel>
                         <FormControl>
                           <Input placeholder={t('system:positionPlaceholder')} {...field} data-testid="input-position" />
                         </FormControl>
@@ -895,7 +944,7 @@ export default function Employees() {
                     name="department"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('system:department')} *</FormLabel>
+                        <FormLabel>{t('system:department')}</FormLabel>
                         <FormControl>
                           <Input placeholder={t('system:departmentPlaceholder')} {...field} data-testid="input-department" />
                         </FormControl>

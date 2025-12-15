@@ -582,6 +582,7 @@ const system = {
   severity: 'Mức độ',
   userAccount: 'Tài khoản Người dùng',
   notAssigned: 'Chưa Gán',
+  noUserAssigned: 'Chưa Có Người Dùng',
   investigating: 'Đang Điều tra',
   dismissed: 'Bác bỏ',
   pending: 'Chờ xử lý',
