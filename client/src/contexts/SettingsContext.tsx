@@ -336,6 +336,9 @@ interface SettingsContextType {
   systemSettings: SystemSettings;
   serviceSettings: ServiceSettings;
   getSetting: <T = any>(category: string, key: string, fallback?: T) => T;
+  formatCurrency: (amount: number, currencyOverride?: string) => string;
+  formatDate: (date: string | Date) => string;
+  formatNumber: (num: number, decimals?: number) => string;
   financialHelpers: {
     getDefaultTaxRate: (currency: string) => number;
     applyTax: (amount: number, taxRate: number) => {
@@ -614,6 +617,94 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings]
   );
 
+  // Browser-native formatting functions (zero server cost - uses Intl API)
+  const formatCurrency = useMemo(
+    () => (amount: number, currencyOverride?: string) => {
+      const currency = currencyOverride || generalSettings.defaultCurrency || 'CZK';
+      const language = generalSettings.defaultLanguage || 'en';
+      const numberFormat = generalSettings.numberFormat || '1,000.00';
+      
+      // Map language to locale
+      const localeMap: Record<string, string> = {
+        'en': 'en-US',
+        'vi': 'vi-VN',
+        'cs': 'cs-CZ',
+      };
+      const locale = localeMap[language] || 'en-US';
+      
+      // Use European format for 1.000,00 style
+      const useEuropeanFormat = numberFormat === '1.000,00';
+      const formatLocale = useEuropeanFormat ? 'de-DE' : locale;
+      
+      try {
+        return new Intl.NumberFormat(formatLocale, {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(amount);
+      } catch {
+        return `${amount.toFixed(2)} ${currency}`;
+      }
+    },
+    [generalSettings.defaultCurrency, generalSettings.defaultLanguage, generalSettings.numberFormat]
+  );
+
+  const formatDate = useMemo(
+    () => (date: string | Date) => {
+      const language = generalSettings.defaultLanguage || 'en';
+      const dateFormat = generalSettings.defaultDateFormat || 'DD/MM/YYYY';
+      
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return String(date);
+      
+      // Map language to locale
+      const localeMap: Record<string, string> = {
+        'en': 'en-US',
+        'vi': 'vi-VN',
+        'cs': 'cs-CZ',
+      };
+      const locale = localeMap[language] || 'en-US';
+      
+      // Format based on user preference
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+      
+      switch (dateFormat) {
+        case 'DD/MM/YYYY':
+          return `${day}/${month}/${year}`;
+        case 'MM/DD/YYYY':
+          return `${month}/${day}/${year}`;
+        case 'YYYY-MM-DD':
+          return `${year}-${month}-${day}`;
+        case 'DD.MM.YYYY':
+          return `${day}.${month}.${year}`;
+        case 'D.M.YYYY':
+          return `${dateObj.getDate()}.${dateObj.getMonth() + 1}.${year}`;
+        case 'DD-MM-YYYY':
+          return `${day}-${month}-${year}`;
+        default:
+          return dateObj.toLocaleDateString(locale);
+      }
+    },
+    [generalSettings.defaultLanguage, generalSettings.defaultDateFormat]
+  );
+
+  const formatNumber = useMemo(
+    () => (num: number, decimals: number = 2) => {
+      const numberFormat = generalSettings.numberFormat || '1,000.00';
+      const useEuropeanFormat = numberFormat === '1.000,00';
+      const locale = useEuropeanFormat ? 'de-DE' : 'en-US';
+      
+      return new Intl.NumberFormat(locale, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(num);
+    },
+    [generalSettings.numberFormat]
+  );
+
   // Financial helpers for tax calculations
   const financialHelpers = useMemo(
     () => ({
@@ -647,6 +738,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     systemSettings,
     serviceSettings,
     getSetting,
+    formatCurrency,
+    formatDate,
+    formatNumber,
     financialHelpers,
     isLoading,
     error: error as Error | null,
