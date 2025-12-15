@@ -33,7 +33,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { Link } from "wouter";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { useTranslation } from 'react-i18next';
 
 interface DashboardMetrics {
@@ -101,6 +101,7 @@ interface ActivityLog {
 
 export default function Home() {
   const { t } = useTranslation(['common', 'dashboard']);
+  const { formatCurrency, formatDate } = useLocalization();
   
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],

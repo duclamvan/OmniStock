@@ -34,7 +34,7 @@ import {
   Ticket
 } from "lucide-react";
 import { Link } from "wouter";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
@@ -239,6 +239,7 @@ ChartSkeleton.displayName = 'ChartSkeleton';
 
 export function Dashboard() {
   const { t } = useTranslation('common');
+  const { formatCurrency } = useLocalization();
   
   // Query all dashboard endpoints
   // Operations pulse - faster polling (15s) for critical fulfillment metrics

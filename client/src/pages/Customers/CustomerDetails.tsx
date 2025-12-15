@@ -53,7 +53,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { Facebook } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { CustomerPrices } from "./CustomerPrices";
 import { calculateSearchScore } from "@/lib/fuzzySearch";
 import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
@@ -62,6 +62,7 @@ const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
 export default function CustomerDetails() {
   const { t } = useTranslation(['customers', 'common']);
+  const { formatCurrency, formatDate } = useLocalization();
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();

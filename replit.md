@@ -84,3 +84,38 @@ roleId: z.string(),  // NOT z.number()
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 - **Frankfurter API**: For real-time and historical currency exchange rates.
 - **Twilio Verify API**: For SMS notifications.
+
+## Formatting Helpers (Localization)
+The application provides centralized formatting helpers that respect user's localization settings (language, date format, number format, currency display, timezone).
+
+### Recommended Pattern
+Use the `useLocalization()` hook from `@/contexts/LocalizationContext` for formatting currency, dates, and numbers:
+
+```typescript
+import { useLocalization } from "@/contexts/LocalizationContext";
+
+function MyComponent() {
+  const { formatCurrency, formatDate, formatNumber } = useLocalization();
+  
+  return (
+    <div>
+      <span>{formatCurrency(100, 'EUR')}</span>
+      <span>{formatDate(new Date())}</span>
+      <span>{formatNumber(1234.56)}</span>
+    </div>
+  );
+}
+```
+
+### Available Formatting Functions
+- `formatCurrency(amount, currency?)` - Formats currency with user's preferred display style
+- `formatDate(date, includeTime?)` - Formats dates using user's preferred format and timezone
+- `formatTime(date)` - Formats time using user's preferred 12/24-hour format
+- `formatNumber(value, decimals?)` - Formats numbers with user's preferred separators
+- `parseNumber(value)` - Parses formatted number strings back to numbers
+
+### Legacy Pattern (Avoid for New Code)
+The standalone functions in `@/lib/currencyUtils.ts` (like `formatCurrency`, `formatDate`) do NOT respect user's localization settings. For new code, prefer `useLocalization()` to ensure consistent formatting across the application.
+
+### Settings Context
+The `useSettings()` hook from `@/contexts/SettingsContext` also provides basic formatting helpers (`formatCurrency`, `formatDate`, `formatNumber`) but `useLocalization()` is more comprehensive with timezone support and time formatting.

@@ -80,7 +80,7 @@ import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
 import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -109,6 +109,7 @@ export default function OrderDetails() {
   const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation();
+  const { formatCurrency, formatDate } = useLocalization();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());

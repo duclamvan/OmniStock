@@ -17,7 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
+import { formatCompactNumber } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
@@ -139,6 +140,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation(['orders', 'common']);
+  const { formatCurrency, formatDate } = useLocalization();
   const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
