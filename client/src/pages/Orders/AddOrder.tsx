@@ -3283,6 +3283,56 @@ export default function AddOrder() {
 
     setBuyXGetYAllocations(allocations);
   }, [orderItems, discounts]);
+  
+  // Update paid items with buy_x_get_y discount info when allocations change
+  useEffect(() => {
+    if (buyXGetYAllocations.length === 0) return;
+    
+    setOrderItems(items => {
+      let hasChanges = false;
+      const updatedItems = items.map(item => {
+        // Skip free items (they already have discount info)
+        if (item.isFreeItem) return item;
+        if (!item.categoryId) return item;
+        
+        // Find if this item's category has an active buy_x_get_y allocation
+        const allocation = buyXGetYAllocations.find(
+          alloc => alloc.categoryId === item.categoryId?.toString() && alloc.freeItemsEarned > 0
+        );
+        
+        if (allocation) {
+          // Check if we need to update this item
+          if (item.appliedDiscountId !== allocation.discountId || 
+              item.appliedDiscountType !== 'buy_x_get_y' ||
+              item.appliedDiscountLabel !== allocation.discountName) {
+            hasChanges = true;
+            return {
+              ...item,
+              appliedDiscountId: allocation.discountId,
+              appliedDiscountType: 'buy_x_get_y',
+              appliedDiscountLabel: allocation.discountName,
+              appliedDiscountScope: 'specific_category',
+            };
+          }
+        } else {
+          // Remove buy_x_get_y discount info if no longer qualifying
+          if (item.appliedDiscountType === 'buy_x_get_y') {
+            hasChanges = true;
+            return {
+              ...item,
+              appliedDiscountId: null,
+              appliedDiscountType: null,
+              appliedDiscountLabel: null,
+              appliedDiscountScope: null,
+            };
+          }
+        }
+        return item;
+      });
+      
+      return hasChanges ? updatedItems : items;
+    });
+  }, [buyXGetYAllocations]);
 
   // Helper to find available free slots for a category
   const findAvailableFreeSlots = (categoryId: string | null): BuyXGetYAllocation | null => {
@@ -5346,7 +5396,7 @@ export default function AddOrder() {
                                         {t('orders:serviceParts')}
                                       </Badge>
                                     )}
-                                    {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
+                                    {item.appliedDiscountLabel && !item.isFreeItem && (
                                       <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
                                         {t('orders:offer')}: {item.appliedDiscountLabel}
                                       </Badge>
@@ -5701,7 +5751,7 @@ export default function AddOrder() {
                                 {t('orders:serviceParts')}
                               </Badge>
                             )}
-                            {item.appliedDiscountLabel && !item.isFreeItem && item.appliedDiscountType !== 'buy_x_get_y' && (
+                            {item.appliedDiscountLabel && !item.isFreeItem && (
                               <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
                                 {t('orders:offer')}: {item.appliedDiscountLabel}
                               </Badge>

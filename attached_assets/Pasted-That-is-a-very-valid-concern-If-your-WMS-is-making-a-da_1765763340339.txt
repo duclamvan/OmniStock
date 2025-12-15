@@ -1,0 +1,144 @@
+That is a very valid concern. If your WMS is making a database call every time it needs to format a price (e.g., on a list of 50 products), you are hammering your database and wasting compute resources ("credits").
+
+The best way to handle settings like **Number Format**, **Date Format**, and **Currency** without costing server resources is to **move the logic entirely to the Client (Browser)**. The browser has powerful built-in tools for this that cost you nothing.
+
+Here is the **"Load Once, Use Everywhere"** architecture to fix this.
+
+### 1\. The Strategy: Client-Side Context
+
+Instead of asking the server "How should I format 1000?" every time, you:
+
+1.  **Fetch settings ONCE** when the app loads (login).
+2.  **Store them in React Context** (memory).
+3.  **Use the Browser's CPU** to do the formatting using the `Intl` API.
+
+-----
+
+### 2\. The Implementation
+
+#### Step A: The Frontend "Settings Provider"
+
+Create a context that loads your settings from the DB *one time* and then provides helper functions to the rest of your app.
+
+**File:** `client/src/contexts/SettingsContext.tsx`
+
+```tsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query'; // Assuming you use React Query
+
+// 1. Define what your settings look like
+interface AppSettings {
+  numberFormat: '1,000.00' | '1.000,00';
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY';
+  currency: 'CZK' | 'USD' | 'EUR';
+  language: 'en' | 'cs' | 'vi';
+}
+
+interface SettingsContextType {
+  settings: AppSettings;
+  formatCurrency: (amount: number) => string;
+  formatDate: (date: string | Date) => string;
+}
+
+const SettingsContext = createContext<SettingsContextType | null>(null);
+
+export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  // 2. Default settings (fallback if DB fails)
+  const [settings, setSettings] = useState<AppSettings>({
+    numberFormat: '1.000,00', 
+    dateFormat: 'DD/MM/YYYY',
+    currency: 'CZK',
+    language: 'en'
+  });
+
+  // 3. Fetch settings ONCE from your API
+  // This is the ONLY time you hit the server!
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data) setSettings(data); 
+      } catch (err) {
+        console.error("Failed to load settings", err);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  // 4. "Free" Browser-Native Formatting Logic
+  const formatCurrency = (amount: number) => {
+    // Use the browser's built-in Intl API (Zero server cost)
+    const locale = settings.language === 'cs' ? 'cs-CZ' : 'en-US';
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: settings.currency,
+    }).format(amount);
+  };
+
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString(
+      settings.language === 'cs' ? 'cs-CZ' : 'en-US'
+    );
+  };
+
+  return (
+    <SettingsContext.Provider value={{ settings, formatCurrency, formatDate }}>
+      {children}
+    </SettingsContext.Provider>
+  );
+};
+
+// 5. Custom Hook for easy access
+export const useSettings = () => {
+  const context = useContext(SettingsContext);
+  if (!context) throw new Error('useSettings must be used within SettingsProvider');
+  return context;
+};
+```
+
+#### Step B: Wrap Your App
+
+In your `main.tsx` or `App.tsx`, wrap the entire application so settings are available everywhere.
+
+```tsx
+<SettingsProvider>
+  <App />
+</SettingsProvider>
+```
+
+#### Step C: Usage in Components (Zero Cost)
+
+Now, whenever you display a price, you just use the hook. It doesn't touch the database.
+
+**File:** `client/src/pages/Orders/OrderDetail.tsx`
+
+```tsx
+import { useSettings } from '../../contexts/SettingsContext';
+
+export default function OrderDetail({ order }) {
+  const { formatCurrency, formatDate } = useSettings();
+
+  return (
+    <div>
+      <h1>Order #{order.orderId}</h1>
+      <p>Date: {formatDate(order.createdAt)}</p> {/* Uses Browser CPU */}
+      
+      <div className="total-price">
+        Total: {formatCurrency(order.grandTotal)} {/* Uses Browser CPU */}
+      </div>
+    </div>
+  );
+}
+```
+
+-----
+
+### Why this is better for Replit & Railway
+
+1.  **Database load drops to near zero:** You fetch settings *once* per session, not once per number.
+2.  **No Server Compute:** Formatting `1000` to `1 000,00 Kč` happens on the user's laptop, not your Replit container.
+3.  **Instant UI:** Since the logic is in-memory, lists with 100 items render instantly without waiting for network requests.
+
+**Next Step:**
+Implement the `SettingsProvider` as shown above. This effectively "caches" your configuration on the client side, solving your credit/performance issue permanently.
