@@ -238,7 +238,7 @@ export default function ShippingSettings() {
       toast({
         variant: "destructive",
         title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
+        description: error.message || t('settings:settingsSaveError', 'Failed to save settings'),
       });
     },
   });
@@ -276,13 +276,13 @@ export default function ShippingSettings() {
               </TabsTrigger>
               <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:general')}</span>
-                <span className="sm:hidden">{t('settings:general').substring(0, 3)}</span>
+                <span className="hidden sm:inline">{t('settings:general', 'General')}</span>
+                <span className="sm:hidden">{t('settings:general', 'General').substring(0, 3)}</span>
               </TabsTrigger>
               <TabsTrigger value="rules" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:rules')}</span>
-                <span className="sm:hidden">{t('settings:rules')}</span>
+                <span className="hidden sm:inline">{t('settings:rules', 'Rules')}</span>
+                <span className="sm:hidden">{t('settings:rules', 'Rules')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -294,9 +294,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:pplCzCarrierConfiguration')}
+                  {t('settings:pplCzCarrierConfiguration', 'PPL CZ Carrier Configuration')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:pplCzCarrierConfigurationDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pplCzCarrierConfigurationDescription', 'Configure PPL CZ carrier settings and automation')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -315,9 +315,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel')}</FormLabel>
+                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel', 'Enable Auto Label Generation')}</FormLabel>
                         <FormDescription>
-                          {t('settings:enableAutoLabelGenerationDescriptionPpl')}
+                          {t('settings:enableAutoLabelGenerationDescriptionPpl', 'Automatically generate shipping labels when orders are ready for shipment via PPL')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -330,9 +330,9 @@ export default function ShippingSettings() {
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  {t('settings:pplCzSenderAddressTitle')}
+                  {t('settings:pplCzSenderAddressTitle', 'PPL CZ Sender Address')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:pplCzSenderAddressDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pplCzSenderAddressDescription', 'Default sender address for PPL CZ shipments')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -340,7 +340,7 @@ export default function ShippingSettings() {
                   name="ppl_default_sender_address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:senderAddressJsonLabel')}</FormLabel>
+                      <FormLabel>{t('settings:senderAddressJsonLabel', 'Sender Address (JSON)')}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -363,7 +363,7 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('settings:senderAddressJsonDescriptionPpl')}
+                        {t('settings:senderAddressJsonDescriptionPpl', 'Enter sender address in JSON format for PPL shipments')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -377,9 +377,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:pplCzPackageLimitsTitle')}
+                  {t('settings:pplCzPackageLimitsTitle', 'PPL CZ Package Limits')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:pplCzPackageLimitsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pplCzPackageLimitsDescription', 'Maximum package weight and dimensions for PPL CZ')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -388,7 +388,7 @@ export default function ShippingSettings() {
                     name="ppl_max_package_weight_kg"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:maximumWeightKg')}</FormLabel>
+                        <FormLabel>{t('settings:maximumWeightKg', 'Maximum Weight (kg)')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -405,7 +405,7 @@ export default function ShippingSettings() {
                             data-testid="input-ppl_max_package_weight_kg"
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:pplMaxWeightDescription')}</FormDescription>
+                        <FormDescription>{t('settings:pplMaxWeightDescription', 'Maximum weight limit for PPL packages (up to 50kg)')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -416,7 +416,7 @@ export default function ShippingSettings() {
                     name="ppl_max_package_dimensions_cm"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:maximumDimensionsCm')}</FormLabel>
+                        <FormLabel>{t('settings:maximumDimensionsCm', 'Maximum Dimensions (cm)')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -429,7 +429,7 @@ export default function ShippingSettings() {
                             data-testid="input-ppl_max_package_dimensions_cm"
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:pplMaxDimensionsDescription')}</FormDescription>
+                        <FormDescription>{t('settings:pplMaxDimensionsDescription', 'Maximum dimensions in LxWxH format for PPL packages')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -443,10 +443,10 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:pplShippingRatesTitle')}
+                  {t('settings:pplShippingRatesTitle', 'PPL Shipping Rates')}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {t('settings:pplShippingRatesDescription')}
+                  {t('settings:pplShippingRatesDescription', 'Configure shipping rates for PPL by country and COD fees')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-4">
@@ -502,7 +502,7 @@ export default function ShippingSettings() {
                       CZ: '🇨🇿', SK: '🇸🇰', PL: '🇵🇱', AT: '🇦🇹', DE: '🇩🇪', HU: '🇭🇺'
                     };
                     const countryNames: Record<string, string> = {
-                      CZ: t('settings:countryCzechRepublic'), SK: t('settings:countrySlovakia'), PL: t('settings:countryPoland'), AT: t('settings:countryAustria'), DE: t('settings:countryGermany'), HU: t('settings:countryHungary')
+                      CZ: t('settings:countryCzechRepublic', 'Czech Republic'), SK: t('settings:countrySlovakia', 'Slovakia'), PL: t('settings:countryPoland', 'Poland'), AT: t('settings:countryAustria', 'Austria'), DE: t('settings:countryGermany', 'Germany'), HU: t('settings:countryHungary', 'Hungary')
                     };
                     const availableCountries = ['CZ', 'SK', 'PL', 'AT', 'DE', 'HU'];
                     const configuredCountries = Object.keys(parsedRates.countries || {});
@@ -514,11 +514,11 @@ export default function ShippingSettings() {
                           {/* Country Rates */}
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-medium">{t('settings:countryShippingRatesCzk')}</h4>
+                              <h4 className="font-medium">{t('settings:countryShippingRatesCzk', 'Country Shipping Rates (CZK)')}</h4>
                               {unconfiguredCountries.length > 0 && (
                                 <Select onValueChange={(v) => addCountry(v)}>
                                   <SelectTrigger className="w-40" data-testid="select-add-country">
-                                    <SelectValue placeholder={t('settings:addCountry')} />
+                                    <SelectValue placeholder={t('settings:addCountry', 'Add Country')} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {unconfiguredCountries.map(code => (
@@ -538,7 +538,7 @@ export default function ShippingSettings() {
                                     <span className="text-lg w-8">{countryFlags[code] || '🌍'}</span>
                                     <span className="text-sm font-medium flex-1">{countryNames[code] || code}</span>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-muted-foreground">{t('settings:perKgLabel')}</span>
+                                      <span className="text-xs text-muted-foreground">{t('settings:perKgLabel', 'Per kg')}</span>
                                       <Input
                                         type="number"
                                         value={rate?.ratePerKg || 0}
@@ -549,7 +549,7 @@ export default function ShippingSettings() {
                                         step="1"
                                         data-testid={`input-${code}-rateperkg`}
                                       />
-                                      <span className="text-xs text-muted-foreground">{t('settings:czkPerKg')}</span>
+                                      <span className="text-xs text-muted-foreground">{t('settings:czkPerKg', 'CZK/kg')}</span>
                                     </div>
                                     <Button
                                       type="button"
@@ -565,19 +565,19 @@ export default function ShippingSettings() {
                                 );
                               })}
                               {configuredCountries.length === 0 && (
-                                <p className="text-sm text-muted-foreground italic p-3">{t('settings:noCountriesConfigured')}</p>
+                                <p className="text-sm text-muted-foreground italic p-3">{t('settings:noCountriesConfigured', 'No countries configured')}</p>
                               )}
                             </div>
                           </div>
                           
                           {/* COD Fees */}
                           <div className="space-y-3">
-                            <h4 className="font-medium">{t('settings:dobirkaCodFees')}</h4>
+                            <h4 className="font-medium">{t('settings:dobirkaCodFees', 'Dobírka (COD) Fees')}</h4>
                             <div className="space-y-3">
                               <div className="p-3 rounded-lg border bg-muted/30">
                                 <div className="flex items-center gap-3">
                                   <span className="text-lg">💵</span>
-                                  <span className="text-sm font-medium flex-1">{t('settings:cashPayment')}</span>
+                                  <span className="text-sm font-medium flex-1">{t('settings:cashPayment', 'Cash Payment')}</span>
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.cash?.fee || 0}
@@ -594,7 +594,7 @@ export default function ShippingSettings() {
                               <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
                                 <div className="flex items-center gap-3">
                                   <span className="text-lg">💳</span>
-                                  <span className="text-sm font-medium flex-1">{t('settings:cardPayment')}</span>
+                                  <span className="text-sm font-medium flex-1">{t('settings:cardPayment', 'Card Payment')}</span>
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.fee || 0}
@@ -621,7 +621,7 @@ export default function ShippingSettings() {
                                     data-testid="input-cod-card-percent"
                                   />
                                   <span className="text-muted-foreground">%</span>
-                                  <span className="text-muted-foreground">{t('settings:afterAmount') || 'after'}</span>
+                                  <span className="text-muted-foreground">{t('settings:afterAmount', 'after')}</span>
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.thresholdCzk || 0}
@@ -637,7 +637,7 @@ export default function ShippingSettings() {
                               </div>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {t('settings:codFeesDescription')}
+                              {t('settings:codFeesDescription', 'Configure cash on delivery fees for different payment methods')}
                             </p>
                           </div>
                         </div>
@@ -654,9 +654,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:pplDefaultShippingPrice')}
+                  {t('settings:pplDefaultShippingPrice', 'PPL Default Shipping Price')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:pplDefaultShippingPriceDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:pplDefaultShippingPriceDescription', 'Default shipping price for PPL CZ orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -664,7 +664,7 @@ export default function ShippingSettings() {
                   name="ppl_default_shipping_price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:defaultShippingPriceCzk')}</FormLabel>
+                      <FormLabel>{t('settings:defaultShippingPriceCzk', 'Default Shipping Price (CZK)')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -680,7 +680,7 @@ export default function ShippingSettings() {
                           data-testid="input-ppl_default_shipping_price"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription', 'This price will be automatically applied to new orders')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -696,21 +696,21 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:glsDePackageLimitsRatesTitle')}
+                  {t('settings:glsDePackageLimitsRatesTitle', 'GLS DE Package Limits & Rates')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:glsDePackageLimitsRatesDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:glsDePackageLimitsRatesDescription', 'Configure GLS Germany package limits and shipping rates')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-6">
                 {/* Package Limits */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:packageLimits')}</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:packageLimits', 'Package Limits')}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="gls_max_package_weight_kg"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:maximumWeightKg')}</FormLabel>
+                          <FormLabel>{t('settings:maximumWeightKg', 'Maximum Weight (kg)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -727,7 +727,7 @@ export default function ShippingSettings() {
                               data-testid="input-gls_max_package_weight_kg"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:glsMaxWeightDescription')}</FormDescription>
+                          <FormDescription>{t('settings:glsMaxWeightDescription', 'Maximum weight limit for GLS packages (up to 40kg)')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -738,7 +738,7 @@ export default function ShippingSettings() {
                       name="gls_max_girth_cm"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:maximumGirthLongestSide')}</FormLabel>
+                          <FormLabel>{t('settings:maximumGirthLongestSide', 'Maximum Girth + Longest Side (cm)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -755,7 +755,7 @@ export default function ShippingSettings() {
                               data-testid="input-gls_max_girth_cm"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:glsMaxGirthDescription')}</FormDescription>
+                          <FormDescription>{t('settings:glsMaxGirthDescription', 'Maximum girth plus longest side for GLS packages')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -765,7 +765,7 @@ export default function ShippingSettings() {
 
                 {/* Shipping Rates */}
                 <div className="space-y-3 pt-4 border-t">
-                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:shippingRatesEur')}</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:shippingRatesEur', 'Shipping Rates (EUR)')}</h4>
                   <FormField
                     control={form.control}
                     name="gls_shipping_rates"
@@ -788,7 +788,7 @@ export default function ShippingSettings() {
                         <FormItem>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">{t('settings:paketXS')}</Label>
+                              <Label className="text-sm font-medium">{t('settings:paketXS', 'Paket XS')}</Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   type="number"
@@ -804,7 +804,7 @@ export default function ShippingSettings() {
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">{t('settings:paketS')}</Label>
+                              <Label className="text-sm font-medium">{t('settings:paketS', 'Paket S')}</Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   type="number"
@@ -820,7 +820,7 @@ export default function ShippingSettings() {
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">{t('settings:paketM')}</Label>
+                              <Label className="text-sm font-medium">{t('settings:paketM', 'Paket M')}</Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   type="number"
@@ -836,7 +836,7 @@ export default function ShippingSettings() {
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">{t('settings:paketL')}</Label>
+                              <Label className="text-sm font-medium">{t('settings:paketL', 'Paket L')}</Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   type="number"
@@ -853,7 +853,7 @@ export default function ShippingSettings() {
                             </div>
                           </div>
                           <FormDescription className="mt-2">
-                            {t('settings:glsPackageSizeRatesDescription')}
+                            {t('settings:glsPackageSizeRatesDescription', 'Set shipping rates for each GLS package size category')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -869,9 +869,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:glsDeCarrierConfiguration')}
+                  {t('settings:glsDeCarrierConfiguration', 'GLS DE Carrier Configuration')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:glsDeCarrierConfigurationDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:glsDeCarrierConfigurationDescription', 'Configure GLS Germany carrier settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -890,9 +890,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableManualLabelEntryLabel')}</FormLabel>
+                        <FormLabel>{t('settings:enableManualLabelEntryLabel', 'Enable Manual Label Entry')}</FormLabel>
                         <FormDescription>
-                          {t('settings:enableManualLabelEntryDescription')}
+                          {t('settings:enableManualLabelEntryDescription', 'Allow manual entry of tracking numbers and labels for GLS shipments')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -905,9 +905,9 @@ export default function ShippingSettings() {
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  {t('settings:glsDeSenderAddressTitle')}
+                  {t('settings:glsDeSenderAddressTitle', 'GLS DE Sender Address')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:glsDeSenderAddressDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:glsDeSenderAddressDescription', 'Default sender address for GLS Germany shipments')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -915,7 +915,7 @@ export default function ShippingSettings() {
                   name="gls_default_sender_address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:senderAddressJsonLabel')}</FormLabel>
+                      <FormLabel>{t('settings:senderAddressJsonLabel', 'Sender Address (JSON)')}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -938,7 +938,7 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('settings:senderAddressJsonDescriptionGls')}
+                        {t('settings:senderAddressJsonDescriptionGls', 'Enter sender address in JSON format for GLS shipments')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -952,9 +952,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:glsDefaultShippingPrice')}
+                  {t('settings:glsDefaultShippingPrice', 'GLS Default Shipping Price')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:glsDefaultShippingPriceDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:glsDefaultShippingPriceDescription', 'Default shipping price for GLS Germany orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -962,7 +962,7 @@ export default function ShippingSettings() {
                   name="gls_default_shipping_price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:defaultShippingPriceEur')}</FormLabel>
+                      <FormLabel>{t('settings:defaultShippingPriceEur', 'Default Shipping Price (EUR)')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -978,7 +978,7 @@ export default function ShippingSettings() {
                           data-testid="input-gls_default_shipping_price"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription', 'This price will be automatically applied to new orders')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -994,9 +994,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:dhlDePackageRatesLimitsTitle')}
+                  {t('settings:dhlDePackageRatesLimitsTitle', 'DHL DE Package Rates & Limits')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:dhlDePackageRatesLimitsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dhlDePackageRatesLimitsDescription', 'Configure DHL Germany package rates and size limits')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-6">
                 {/* Package Rates */}
@@ -1090,7 +1090,7 @@ export default function ShippingSettings() {
 
                           {/* Nachnahme (COD) Fee */}
                           <div className="pt-4 border-t">
-                            <h4 className="text-sm font-medium text-muted-foreground mb-3">{t('settings:nachnahmeCodFee')}</h4>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-3">{t('settings:nachnahmeCodFee', 'Nachnahme (COD) Fee')}</h4>
                             <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 w-fit">
                               <span className="text-sm font-medium">Nachnahme</span>
                               <span className="text-muted-foreground">+</span>
@@ -1124,9 +1124,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:dhlDeCarrierConfiguration')}
+                  {t('settings:dhlDeCarrierConfiguration', 'DHL DE Carrier Configuration')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:dhlDeCarrierConfigurationDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dhlDeCarrierConfigurationDescription', 'Configure DHL Germany carrier settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -1145,9 +1145,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel')}</FormLabel>
+                        <FormLabel>{t('settings:enableAutoLabelGenerationLabel', 'Enable Auto Label Generation')}</FormLabel>
                         <FormDescription>
-                          {t('settings:enableAutoLabelGenerationDescriptionDhl')}
+                          {t('settings:enableAutoLabelGenerationDescriptionDhl', 'Automatically generate shipping labels for DHL shipments')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1160,9 +1160,9 @@ export default function ShippingSettings() {
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  {t('settings:dhlDeSenderAddressTitle')}
+                  {t('settings:dhlDeSenderAddressTitle', 'DHL DE Sender Address')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:dhlDeSenderAddressDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dhlDeSenderAddressDescription', 'Default sender address for DHL Germany shipments')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -1170,7 +1170,7 @@ export default function ShippingSettings() {
                   name="dhl_default_sender_address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:senderAddressJsonLabel')}</FormLabel>
+                      <FormLabel>{t('settings:senderAddressJsonLabel', 'Sender Address (JSON)')}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -1193,7 +1193,7 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('settings:senderAddressJsonDescriptionDhl')}
+                        {t('settings:senderAddressJsonDescriptionDhl', 'Enter sender address in JSON format for DHL shipments')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -1207,9 +1207,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:dhlDefaultShippingPrice')}
+                  {t('settings:dhlDefaultShippingPrice', 'DHL Default Shipping Price')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:dhlDefaultShippingPriceDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:dhlDefaultShippingPriceDescription', 'Default shipping price for DHL Germany orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <FormField
@@ -1217,7 +1217,7 @@ export default function ShippingSettings() {
                   name="dhl_default_shipping_price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:defaultShippingPriceEur')}</FormLabel>
+                      <FormLabel>{t('settings:defaultShippingPriceEur', 'Default Shipping Price (EUR)')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1233,7 +1233,7 @@ export default function ShippingSettings() {
                           data-testid="input-dhl_default_shipping_price"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription')}</FormDescription>
+                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription', 'This price will be automatically applied to new orders')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1249,10 +1249,10 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:defaultCarrierForCountry')}
+                  {t('settings:defaultCarrierForCountry', 'Default Carrier for Country')}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {t('settings:defaultCarrierForCountryDescription')}
+                  {t('settings:defaultCarrierForCountryDescription', 'Set which carrier to use for each country')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
@@ -1282,24 +1282,24 @@ export default function ShippingSettings() {
                     };
                     
                     const countries = [
-                      { code: 'CZ', name: t('settings:countryCzechRepublic'), flag: '🇨🇿' },
-                      { code: 'DE', name: t('settings:countryGermany'), flag: '🇩🇪' },
-                      { code: 'AT', name: t('settings:countryAustria'), flag: '🇦🇹' },
-                      { code: 'SK', name: t('settings:countrySlovakia'), flag: '🇸🇰' },
-                      { code: 'PL', name: t('settings:countryPoland'), flag: '🇵🇱' },
-                      { code: 'HU', name: t('settings:countryHungary'), flag: '🇭🇺' },
-                      { code: 'NL', name: t('settings:countryNetherlands'), flag: '🇳🇱' },
-                      { code: 'BE', name: t('settings:countryBelgium'), flag: '🇧🇪' },
-                      { code: 'FR', name: t('settings:countryFrance'), flag: '🇫🇷' },
-                      { code: 'IT', name: t('settings:countryItaly'), flag: '🇮🇹' },
-                      { code: 'ES', name: t('settings:countrySpain'), flag: '🇪🇸' },
-                      { code: 'PT', name: t('settings:countryPortugal'), flag: '🇵🇹' },
-                      { code: 'GB', name: t('settings:countryUnitedKingdom'), flag: '🇬🇧' },
-                      { code: 'CH', name: t('settings:countrySwitzerland'), flag: '🇨🇭' },
-                      { code: 'SI', name: t('settings:countrySlovenia'), flag: '🇸🇮' },
-                      { code: 'HR', name: t('settings:countryCroatia'), flag: '🇭🇷' },
-                      { code: 'RO', name: t('settings:countryRomania'), flag: '🇷🇴' },
-                      { code: 'BG', name: t('settings:countryBulgaria'), flag: '🇧🇬' },
+                      { code: 'CZ', name: t('settings:countryCzechRepublic', 'Czech Republic'), flag: '🇨🇿' },
+                      { code: 'DE', name: t('settings:countryGermany', 'Germany'), flag: '🇩🇪' },
+                      { code: 'AT', name: t('settings:countryAustria', 'Austria'), flag: '🇦🇹' },
+                      { code: 'SK', name: t('settings:countrySlovakia', 'Slovakia'), flag: '🇸🇰' },
+                      { code: 'PL', name: t('settings:countryPoland', 'Poland'), flag: '🇵🇱' },
+                      { code: 'HU', name: t('settings:countryHungary', 'Hungary'), flag: '🇭🇺' },
+                      { code: 'NL', name: t('settings:countryNetherlands', 'Netherlands'), flag: '🇳🇱' },
+                      { code: 'BE', name: t('settings:countryBelgium', 'Belgium'), flag: '🇧🇪' },
+                      { code: 'FR', name: t('settings:countryFrance', 'France'), flag: '🇫🇷' },
+                      { code: 'IT', name: t('settings:countryItaly', 'Italy'), flag: '🇮🇹' },
+                      { code: 'ES', name: t('settings:countrySpain', 'Spain'), flag: '🇪🇸' },
+                      { code: 'PT', name: t('settings:countryPortugal', 'Portugal'), flag: '🇵🇹' },
+                      { code: 'GB', name: t('settings:countryUnitedKingdom', 'United Kingdom'), flag: '🇬🇧' },
+                      { code: 'CH', name: t('settings:countrySwitzerland', 'Switzerland'), flag: '🇨🇭' },
+                      { code: 'SI', name: t('settings:countrySlovenia', 'Slovenia'), flag: '🇸🇮' },
+                      { code: 'HR', name: t('settings:countryCroatia', 'Croatia'), flag: '🇭🇷' },
+                      { code: 'RO', name: t('settings:countryRomania', 'Romania'), flag: '🇷🇴' },
+                      { code: 'BG', name: t('settings:countryBulgaria', 'Bulgaria'), flag: '🇧🇬' },
                     ];
                     
                     const carriers = ['PPL CZ', 'GLS DE', 'DHL DE'];
@@ -1355,7 +1355,7 @@ export default function ShippingSettings() {
                                 }}
                               >
                                 <SelectTrigger className="w-full" data-testid="select-add-country">
-                                  <SelectValue placeholder={t('settings:addCountryPlaceholder')} />
+                                  <SelectValue placeholder={t('settings:addCountryPlaceholder', 'Add a country...')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {availableCountries.map(c => (
@@ -1369,7 +1369,7 @@ export default function ShippingSettings() {
                           )}
                         </div>
                         <FormDescription className="mt-3">
-                          {t('settings:countryCarrierMappingDescription')}
+                          {t('settings:countryCarrierMappingDescription', 'Configure default carrier for each destination country')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1383,9 +1383,9 @@ export default function ShippingSettings() {
             <Card>
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  {t('settings:quickSelectButtonsTitle')}
+                  {t('settings:quickSelectButtonsTitle', 'Quick Select Buttons')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:quickSelectButtonsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:quickSelectButtonsDescription', 'Configure quick shipping price buttons')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -1393,7 +1393,7 @@ export default function ShippingSettings() {
                   name="quick_select_czk"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:quickSelectCzkLabel')}</FormLabel>
+                      <FormLabel>{t('settings:quickSelectCzkLabel', 'Quick Select CZK')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1406,7 +1406,7 @@ export default function ShippingSettings() {
                           data-testid="input-quick_select_czk"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:quickSelectCzkDescription')}</FormDescription>
+                      <FormDescription>{t('settings:quickSelectCzkDescription', 'Comma-separated values for CZK quick select buttons')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1417,7 +1417,7 @@ export default function ShippingSettings() {
                   name="quick_select_eur"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:quickSelectEurLabel')}</FormLabel>
+                      <FormLabel>{t('settings:quickSelectEurLabel', 'Quick Select EUR')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1430,7 +1430,7 @@ export default function ShippingSettings() {
                           data-testid="input-quick_select_eur"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:quickSelectEurDescription')}</FormDescription>
+                      <FormDescription>{t('settings:quickSelectEurDescription', 'Comma-separated values for EUR quick select buttons')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1441,7 +1441,7 @@ export default function ShippingSettings() {
                   name="available_carriers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:availableCarriersLabel')}</FormLabel>
+                      <FormLabel>{t('settings:availableCarriersLabel', 'Available Carriers')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1450,11 +1450,11 @@ export default function ShippingSettings() {
                             markPendingChange('available_carriers');
                           }}
                           onBlur={handleTextBlur('available_carriers')}
-                          placeholder={t('settings:availableCarriersPlaceholder')}
+                          placeholder={t('settings:availableCarriersPlaceholder', 'GLS DE,PPL CZ,DHL DE')}
                           data-testid="input-available_carriers"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:availableCarriersListDescription')}</FormDescription>
+                      <FormDescription>{t('settings:availableCarriersListDescription', 'Comma-separated list of available carriers')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1467,9 +1467,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:shippingCostsTitle')}
+                  {t('settings:shippingCostsTitle', 'Shipping Costs')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:shippingCostsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:shippingCostsDescription', 'Configure default shipping costs and thresholds')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 {/* EUR Row */}
@@ -1483,7 +1483,7 @@ export default function ShippingSettings() {
                       name="default_shipping_cost_eur"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:defaultShippingCostEur')}</FormLabel>
+                          <FormLabel>{t('settings:defaultShippingCostEur', 'Default Shipping Cost (EUR)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -1499,7 +1499,7 @@ export default function ShippingSettings() {
                               data-testid="input-default_shipping_cost_eur"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:defaultCostEurDescription')}</FormDescription>
+                          <FormDescription>{t('settings:defaultCostEurDescription', 'Default shipping cost in EUR')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1510,7 +1510,7 @@ export default function ShippingSettings() {
                       name="free_shipping_threshold_eur"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:freeShippingThresholdEur')}</FormLabel>
+                          <FormLabel>{t('settings:freeShippingThresholdEur', 'Free Shipping Threshold (EUR)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -1526,7 +1526,7 @@ export default function ShippingSettings() {
                               data-testid="input-free_shipping_threshold_eur"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:freeShippingEurDescription')}</FormDescription>
+                          <FormDescription>{t('settings:freeShippingEurDescription', 'Order value for free shipping in EUR')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1545,7 +1545,7 @@ export default function ShippingSettings() {
                       name="default_shipping_cost_czk"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:defaultShippingCostCzk')}</FormLabel>
+                          <FormLabel>{t('settings:defaultShippingCostCzk', 'Default Shipping Cost (CZK)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -1561,7 +1561,7 @@ export default function ShippingSettings() {
                               data-testid="input-default_shipping_cost_czk"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:defaultCostCzkDescription')}</FormDescription>
+                          <FormDescription>{t('settings:defaultCostCzkDescription', 'Default shipping cost in CZK')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1572,7 +1572,7 @@ export default function ShippingSettings() {
                       name="free_shipping_threshold_czk"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:freeShippingThresholdCzk')}</FormLabel>
+                          <FormLabel>{t('settings:freeShippingThresholdCzk', 'Free Shipping Threshold (CZK)')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -1588,7 +1588,7 @@ export default function ShippingSettings() {
                               data-testid="input-free_shipping_threshold_czk"
                             />
                           </FormControl>
-                          <FormDescription>{t('settings:freeShippingCzkDescription')}</FormDescription>
+                          <FormDescription>{t('settings:freeShippingCzkDescription', 'Order value for free shipping in CZK')}</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1601,7 +1601,7 @@ export default function ShippingSettings() {
                   name="volumetric_weight_divisor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:volumetricWeightDivisorLabel')}</FormLabel>
+                      <FormLabel>{t('settings:volumetricWeightDivisorLabel', 'Volumetric Weight Divisor')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1617,7 +1617,7 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('settings:volumetricWeightDivisorDescription')}
+                        {t('settings:volumetricWeightDivisorDescription', 'Divisor for calculating volumetric weight (L×W×H/divisor)')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -1634,9 +1634,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:labelGenerationTitle')}
+                  {t('settings:labelGenerationTitle', 'Label Generation')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:labelGenerationDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:labelGenerationDescription', 'Configure shipping label generation settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1645,7 +1645,7 @@ export default function ShippingSettings() {
                     name="default_label_size"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultLabelSizeLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultLabelSizeLabel', 'Default Label Size')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1675,7 +1675,7 @@ export default function ShippingSettings() {
                     name="label_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:labelFormatLabel')}</FormLabel>
+                        <FormLabel>{t('settings:labelFormatLabel', 'Label Format')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1716,9 +1716,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:autoPrintLabelsLabel')}</FormLabel>
+                        <FormLabel>{t('settings:autoPrintLabelsLabel', 'Auto Print Labels')}</FormLabel>
                         <FormDescription>
-                          {t('settings:autoPrintLabelsDescription')}
+                          {t('settings:autoPrintLabelsDescription', 'Automatically print labels when generated')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1741,9 +1741,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:includePackingSlipLabel')}</FormLabel>
+                        <FormLabel>{t('settings:includePackingSlipLabel', 'Include Packing Slip')}</FormLabel>
                         <FormDescription>
-                          {t('settings:includePackingSlipDescription')}
+                          {t('settings:includePackingSlipDescription', 'Include packing slip with shipment')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1766,9 +1766,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:includeInvoiceLabel')}</FormLabel>
+                        <FormLabel>{t('settings:includeInvoiceLabel', 'Include Invoice')}</FormLabel>
                         <FormDescription>
-                          {t('settings:includeInvoiceDescription')}
+                          {t('settings:includeInvoiceDescription', 'Include invoice with shipment')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1782,9 +1782,9 @@ export default function ShippingSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:trackingSettingsTitle')}
+                  {t('settings:trackingSettingsTitle', 'Tracking Settings')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:trackingSettingsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:trackingSettingsDescription', 'Configure shipment tracking and notifications')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -1803,9 +1803,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableTrackingLabel')}</FormLabel>
+                        <FormLabel>{t('settings:enableTrackingLabel', 'Enable Tracking')}</FormLabel>
                         <FormDescription>
-                          {t('settings:enableTrackingDescription')}
+                          {t('settings:enableTrackingDescription', 'Enable shipment tracking for orders')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1828,9 +1828,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:autoUpdateTrackingStatusLabel')}</FormLabel>
+                        <FormLabel>{t('settings:autoUpdateTrackingStatusLabel', 'Auto Update Tracking Status')}</FormLabel>
                         <FormDescription>
-                          {t('settings:autoUpdateTrackingStatusDescriptionAlt')}
+                          {t('settings:autoUpdateTrackingStatusDescriptionAlt', 'Automatically update tracking status')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1842,7 +1842,7 @@ export default function ShippingSettings() {
                   name="tracking_update_frequency_hours"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:trackingUpdateFrequencyLabel')}</FormLabel>
+                      <FormLabel>{t('settings:trackingUpdateFrequencyLabel', 'Tracking Update Frequency (hours)')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -1858,7 +1858,7 @@ export default function ShippingSettings() {
                           data-testid="input-tracking_update_frequency_hours"
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:trackingUpdateFrequencyDescription')}</FormDescription>
+                      <FormDescription>{t('settings:trackingUpdateFrequencyDescription', 'How often to check for tracking updates')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1880,9 +1880,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:sendTrackingEmailLabel')}</FormLabel>
+                        <FormLabel>{t('settings:sendTrackingEmailLabel', 'Send Tracking Email')}</FormLabel>
                         <FormDescription>
-                          {t('settings:sendTrackingEmailDescription')}
+                          {t('settings:sendTrackingEmailDescription', 'Send tracking email to customer')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1905,9 +1905,9 @@ export default function ShippingSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:includeEstimatedDeliveryLabel')}</FormLabel>
+                        <FormLabel>{t('settings:includeEstimatedDeliveryLabel', 'Include Estimated Delivery')}</FormLabel>
                         <FormDescription>
-                          {t('settings:includeEstimatedDeliveryDescription')}
+                          {t('settings:includeEstimatedDeliveryDescription', 'Include estimated delivery date in tracking')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1925,25 +1925,25 @@ export default function ShippingSettings() {
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                  <span className="text-muted-foreground">{t('settings:saving', 'Saving...')}</span>
                 </>
               )}
               {saveStatus === 'saved' && (
                 <>
                   <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-green-600">{t('settings:saved')}</span>
+                  <span className="text-green-600">{t('settings:saved', 'Saved')}</span>
                 </>
               )}
               {saveStatus === 'error' && (
-                <span className="text-destructive">{t('settings:saveFailed')}</span>
+                <span className="text-destructive">{t('settings:saveFailed', 'Save failed')}</span>
               )}
               {saveStatus === 'idle' && lastSavedAt && (
                 <span className="text-muted-foreground text-xs">
-                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                  {t('settings:lastSaved', 'Last saved')}: {lastSavedAt.toLocaleTimeString()}
                 </span>
               )}
               {saveStatus === 'idle' && hasPendingChanges && (
-                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+                <span className="text-amber-600">{t('settings:unsavedChanges', 'Unsaved changes')}</span>
               )}
             </div>
             
@@ -1958,17 +1958,17 @@ export default function ShippingSettings() {
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('settings:savingSettings')}
+                  {t('settings:savingSettings', 'Saving Settings...')}
                 </>
               ) : hasPendingChanges ? (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  {t('settings:saveChanges')}
+                  {t('settings:saveChanges', 'Save Changes')}
                 </>
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  {t('settings:allSaved')}
+                  {t('settings:allSaved', 'All Saved')}
                 </>
               )}
             </Button>

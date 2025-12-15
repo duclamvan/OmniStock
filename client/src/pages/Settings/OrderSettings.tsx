@@ -202,15 +202,15 @@ export default function OrderSettings() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'order'] });
       toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:orderSettingsSavedSuccess'),
+        title: t('settings:settingsSaved', 'Settings Saved'),
+        description: t('settings:orderSettingsSavedSuccess', 'Order settings have been saved successfully'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:settingsSaveError', 'Failed to save settings'),
       });
     },
   });
@@ -233,31 +233,31 @@ export default function OrderSettings() {
             <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
               <TabsTrigger value="defaults" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:orderDefaults')}</span>
+                <span className="hidden sm:inline">{t('settings:orderDefaults', 'Order Defaults')}</span>
               </TabsTrigger>
               <TabsTrigger value="locations" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:locations')}</span>
+                <span className="hidden sm:inline">{t('settings:locations', 'Locations')}</span>
               </TabsTrigger>
               <TabsTrigger value="fulfillment" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:fulfillment')}</span>
+                <span className="hidden sm:inline">{t('settings:fulfillment', 'Fulfillment')}</span>
               </TabsTrigger>
               <TabsTrigger value="validation" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:validation')}</span>
+                <span className="hidden sm:inline">{t('settings:validation', 'Validation')}</span>
               </TabsTrigger>
               <TabsTrigger value="automation" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:automation')}</span>
+                <span className="hidden sm:inline">{t('settings:automation', 'Automation')}</span>
               </TabsTrigger>
               <TabsTrigger value="cod" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:cod')}</span>
+                <span className="hidden sm:inline">{t('settings:cod', 'COD')}</span>
               </TabsTrigger>
               <TabsTrigger value="services" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Wrench className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('common:services')}</span>
+                <span className="hidden sm:inline">{t('common:services', 'Services')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -268,9 +268,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:orderDefaultsTitle')}
+                  {t('settings:orderDefaultsTitle', 'Order Defaults')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:orderDefaultsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:orderDefaultsDescription', 'Configure default values for new orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -279,7 +279,7 @@ export default function OrderSettings() {
                     name="default_payment_method"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultPaymentMethod')}</FormLabel>
+                        <FormLabel>{t('settings:defaultPaymentMethod', 'Default Payment Method')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -290,18 +290,18 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_method">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
-                            <SelectItem value="Cash">{t('settings:paymentMethodCash')}</SelectItem>
-                            <SelectItem value="Card">{t('settings:paymentMethodCard')}</SelectItem>
-                            <SelectItem value="Transfer">{t('settings:paymentMethodTransfer')}</SelectItem>
-                            <SelectItem value="COD">{t('settings:paymentMethodCOD')}</SelectItem>
-                            <SelectItem value="Pay Later">{t('settings:paymentMethodPayLater')}</SelectItem>
-                            <SelectItem value="Bank Transfer">{t('settings:paymentMethodBankTransfer')}</SelectItem>
-                            <SelectItem value="PayPal">{t('settings:paymentMethodPayPal')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
+                            <SelectItem value="Cash">{t('settings:paymentMethodCash', 'Cash')}</SelectItem>
+                            <SelectItem value="Card">{t('settings:paymentMethodCard', 'Card')}</SelectItem>
+                            <SelectItem value="Transfer">{t('settings:paymentMethodTransfer', 'Transfer')}</SelectItem>
+                            <SelectItem value="COD">{t('settings:paymentMethodCOD', 'Cash on Delivery')}</SelectItem>
+                            <SelectItem value="Pay Later">{t('settings:paymentMethodPayLater', 'Pay Later')}</SelectItem>
+                            <SelectItem value="Bank Transfer">{t('settings:paymentMethodBankTransfer', 'Bank Transfer')}</SelectItem>
+                            <SelectItem value="PayPal">{t('settings:paymentMethodPayPal', 'PayPal')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -314,7 +314,7 @@ export default function OrderSettings() {
                     name="default_order_status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultOrderStatus')}</FormLabel>
+                        <FormLabel>{t('settings:defaultOrderStatus', 'Default Order Status')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -325,16 +325,16 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_order_status">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
-                            <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
-                            <SelectItem value="processing">{t('settings:statusProcessing')}</SelectItem>
-                            <SelectItem value="shipped">{t('settings:statusShipped')}</SelectItem>
-                            <SelectItem value="delivered">{t('settings:statusDelivered')}</SelectItem>
-                            <SelectItem value="cancelled">{t('settings:statusCancelled')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
+                            <SelectItem value="pending">{t('settings:statusPending', 'Pending')}</SelectItem>
+                            <SelectItem value="processing">{t('settings:statusProcessing', 'Processing')}</SelectItem>
+                            <SelectItem value="shipped">{t('settings:statusShipped', 'Shipped')}</SelectItem>
+                            <SelectItem value="delivered">{t('settings:statusDelivered', 'Delivered')}</SelectItem>
+                            <SelectItem value="cancelled">{t('settings:statusCancelled', 'Cancelled')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -347,7 +347,7 @@ export default function OrderSettings() {
                     name="default_payment_status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultPaymentStatus')}</FormLabel>
+                        <FormLabel>{t('settings:defaultPaymentStatus', 'Default Payment Status')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -358,15 +358,15 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_payment_status">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
-                            <SelectItem value="pending">{t('settings:statusPending')}</SelectItem>
-                            <SelectItem value="paid">{t('settings:statusPaid')}</SelectItem>
-                            <SelectItem value="pay_later">{t('settings:statusPayLater')}</SelectItem>
-                            <SelectItem value="refunded">{t('settings:statusRefunded')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
+                            <SelectItem value="pending">{t('settings:statusPending', 'Pending')}</SelectItem>
+                            <SelectItem value="paid">{t('settings:statusPaid', 'Paid')}</SelectItem>
+                            <SelectItem value="pay_later">{t('settings:statusPayLater', 'Pay Later')}</SelectItem>
+                            <SelectItem value="refunded">{t('settings:statusRefunded', 'Refunded')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -379,7 +379,7 @@ export default function OrderSettings() {
                     name="default_carrier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultCarrier')}</FormLabel>
+                        <FormLabel>{t('settings:defaultCarrier', 'Default Carrier')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -390,11 +390,11 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_carrier">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
                             <SelectItem value="GLS">GLS</SelectItem>
                             <SelectItem value="GLS DE">GLS DE</SelectItem>
                             <SelectItem value="PPL">PPL</SelectItem>
@@ -404,7 +404,7 @@ export default function OrderSettings() {
                             <SelectItem value="DPD">DPD</SelectItem>
                             <SelectItem value="UPS">UPS</SelectItem>
                             <SelectItem value="FedEx">FedEx</SelectItem>
-                            <SelectItem value="Other">{t('settings:carrierOther')}</SelectItem>
+                            <SelectItem value="Other">{t('settings:carrierOther', 'Other')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -417,7 +417,7 @@ export default function OrderSettings() {
                     name="default_communication_channel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultCommunicationChannel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultCommunicationChannel', 'Default Communication Channel')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -428,16 +428,16 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_communication_channel">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
                             <SelectItem value="Viber">Viber</SelectItem>
                             <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                             <SelectItem value="Zalo">Zalo</SelectItem>
-                            <SelectItem value="E-mail">{t('settings:email')}</SelectItem>
-                            <SelectItem value="Phone">{t('settings:phone')}</SelectItem>
+                            <SelectItem value="E-mail">{t('settings:email', 'Email')}</SelectItem>
+                            <SelectItem value="Phone">{t('settings:phone', 'Phone')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -450,7 +450,7 @@ export default function OrderSettings() {
                     name="default_discount_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultDiscountType')}</FormLabel>
+                        <FormLabel>{t('settings:defaultDiscountType', 'Default Discount Type')}</FormLabel>
                         <Select 
                           onValueChange={(val) => {
                             const newValue = val === '__not_set__' ? '' : val;
@@ -461,13 +461,13 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_discount_type">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__not_set__">{t('settings:notSet')}</SelectItem>
-                            <SelectItem value="flat">{t('settings:discountTypeFlatAmount')}</SelectItem>
-                            <SelectItem value="rate">{t('settings:discountTypePercentage')}</SelectItem>
+                            <SelectItem value="__not_set__">{t('settings:notSet', 'Not Set')}</SelectItem>
+                            <SelectItem value="flat">{t('settings:discountTypeFlatAmount', 'Flat Amount')}</SelectItem>
+                            <SelectItem value="rate">{t('settings:discountTypePercentage', 'Percentage')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -485,9 +485,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:warehouseLocationDefaults')}
+                  {t('settings:warehouseLocationDefaults', 'Warehouse Location Defaults')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:warehouseLocationDefaultsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:warehouseLocationDefaultsDescription', 'Configure default warehouse and location settings for orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -495,10 +495,10 @@ export default function OrderSettings() {
                   name="default_order_location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('settings:defaultOrderLocation')}</FormLabel>
+                      <FormLabel>{t('settings:defaultOrderLocation', 'Default Order Location')}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder={t('settings:defaultOrderLocationPlaceholder')}
+                          placeholder={t('settings:defaultOrderLocationPlaceholder', 'Enter default location')}
                           {...field}
                           value={field.value ?? ''}
                           data-testid="input-default_order_location"
@@ -509,7 +509,7 @@ export default function OrderSettings() {
                           onBlur={handleTextBlur('default_order_location')}
                         />
                       </FormControl>
-                      <FormDescription>{t('settings:defaultOrderLocationDescription')}</FormDescription>
+                      <FormDescription>{t('settings:defaultOrderLocationDescription', 'The default warehouse location for new orders')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -532,9 +532,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoAssignWarehouseByRegion')}</FormLabel>
+                          <FormLabel>{t('settings:autoAssignWarehouseByRegion', 'Auto-Assign Warehouse by Region')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoAssignWarehouseByRegionDescription')}
+                            {t('settings:autoAssignWarehouseByRegionDescription', 'Automatically assign orders to warehouse based on customer region')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -557,9 +557,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:preferNearestWarehouse')}</FormLabel>
+                          <FormLabel>{t('settings:preferNearestWarehouse', 'Prefer Nearest Warehouse')}</FormLabel>
                           <FormDescription>
-                            {t('settings:preferNearestWarehouseDescription')}
+                            {t('settings:preferNearestWarehouseDescription', 'Route orders to the nearest warehouse with available stock')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -582,9 +582,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableLocationBasedRouting')}</FormLabel>
+                          <FormLabel>{t('settings:enableLocationBasedRouting', 'Enable Location-Based Routing')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableLocationBasedRoutingDescription')}
+                            {t('settings:enableLocationBasedRoutingDescription', 'Enable intelligent routing based on customer and warehouse locations')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -598,9 +598,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:regionalCarrierSelection')}
+                  {t('settings:regionalCarrierSelection', 'Regional Carrier Selection')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:regionalCarrierSelectionDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:regionalCarrierSelectionDescription', 'Configure preferred carriers for different regions')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -609,7 +609,7 @@ export default function OrderSettings() {
                     name="czech_republic_carrier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:czechRepublicCarrier')}</FormLabel>
+                        <FormLabel>{t('settings:czechRepublicCarrier', 'Czech Republic Carrier')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -619,20 +619,20 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-czech_republic_carrier">
-                              <SelectValue placeholder={t('settings:selectCarrier')} />
+                              <SelectValue placeholder={t('settings:selectCarrier', 'Select carrier')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="PPL">{t('settings:carrierPPL')}</SelectItem>
-                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ')}</SelectItem>
-                            <SelectItem value="GLS">{t('settings:carrierGLS')}</SelectItem>
-                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE')}</SelectItem>
-                            <SelectItem value="DHL">{t('settings:carrierDHL')}</SelectItem>
-                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE')}</SelectItem>
-                            <SelectItem value="Other">{t('settings:carrierOther')}</SelectItem>
+                            <SelectItem value="PPL">{t('settings:carrierPPL', 'PPL')}</SelectItem>
+                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ', 'PPL CZ')}</SelectItem>
+                            <SelectItem value="GLS">{t('settings:carrierGLS', 'GLS')}</SelectItem>
+                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE', 'GLS DE')}</SelectItem>
+                            <SelectItem value="DHL">{t('settings:carrierDHL', 'DHL')}</SelectItem>
+                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE', 'DHL DE')}</SelectItem>
+                            <SelectItem value="Other">{t('settings:carrierOther', 'Other')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:czechCarrierDescription')}</FormDescription>
+                        <FormDescription>{t('settings:czechCarrierDescription', 'Default carrier for orders within Czech Republic')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -643,7 +643,7 @@ export default function OrderSettings() {
                     name="european_union_carrier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:europeanUnionCarrier')}</FormLabel>
+                        <FormLabel>{t('settings:europeanUnionCarrier', 'European Union Carrier')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -653,20 +653,20 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-european_union_carrier">
-                              <SelectValue placeholder={t('settings:selectCarrier')} />
+                              <SelectValue placeholder={t('settings:selectCarrier', 'Select carrier')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="PPL">{t('settings:carrierPPL')}</SelectItem>
-                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ')}</SelectItem>
-                            <SelectItem value="GLS">{t('settings:carrierGLS')}</SelectItem>
-                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE')}</SelectItem>
-                            <SelectItem value="DHL">{t('settings:carrierDHL')}</SelectItem>
-                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE')}</SelectItem>
-                            <SelectItem value="Other">{t('settings:carrierOther')}</SelectItem>
+                            <SelectItem value="PPL">{t('settings:carrierPPL', 'PPL')}</SelectItem>
+                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ', 'PPL CZ')}</SelectItem>
+                            <SelectItem value="GLS">{t('settings:carrierGLS', 'GLS')}</SelectItem>
+                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE', 'GLS DE')}</SelectItem>
+                            <SelectItem value="DHL">{t('settings:carrierDHL', 'DHL')}</SelectItem>
+                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE', 'DHL DE')}</SelectItem>
+                            <SelectItem value="Other">{t('settings:carrierOther', 'Other')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:euCarrierDescription')}</FormDescription>
+                        <FormDescription>{t('settings:euCarrierDescription', 'Default carrier for orders within European Union')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -677,7 +677,7 @@ export default function OrderSettings() {
                     name="rest_of_world_carrier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:restOfWorldCarrier')}</FormLabel>
+                        <FormLabel>{t('settings:restOfWorldCarrier', 'Rest of World Carrier')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -687,23 +687,23 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-rest_of_world_carrier">
-                              <SelectValue placeholder={t('settings:selectCarrier')} />
+                              <SelectValue placeholder={t('settings:selectCarrier', 'Select carrier')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="PPL">{t('settings:carrierPPL')}</SelectItem>
-                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ')}</SelectItem>
-                            <SelectItem value="GLS">{t('settings:carrierGLS')}</SelectItem>
-                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE')}</SelectItem>
-                            <SelectItem value="DHL">{t('settings:carrierDHL')}</SelectItem>
-                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE')}</SelectItem>
-                            <SelectItem value="DPD">{t('settings:carrierDPD')}</SelectItem>
-                            <SelectItem value="UPS">{t('settings:carrierUPS')}</SelectItem>
-                            <SelectItem value="FedEx">{t('settings:carrierFedEx')}</SelectItem>
-                            <SelectItem value="Other">{t('settings:carrierOther')}</SelectItem>
+                            <SelectItem value="PPL">{t('settings:carrierPPL', 'PPL')}</SelectItem>
+                            <SelectItem value="PPL CZ">{t('settings:carrierPPLCZ', 'PPL CZ')}</SelectItem>
+                            <SelectItem value="GLS">{t('settings:carrierGLS', 'GLS')}</SelectItem>
+                            <SelectItem value="GLS DE">{t('settings:carrierGLSDE', 'GLS DE')}</SelectItem>
+                            <SelectItem value="DHL">{t('settings:carrierDHL', 'DHL')}</SelectItem>
+                            <SelectItem value="DHL DE">{t('settings:carrierDHLDE', 'DHL DE')}</SelectItem>
+                            <SelectItem value="DPD">{t('settings:carrierDPD', 'DPD')}</SelectItem>
+                            <SelectItem value="UPS">{t('settings:carrierUPS', 'UPS')}</SelectItem>
+                            <SelectItem value="FedEx">{t('settings:carrierFedEx', 'FedEx')}</SelectItem>
+                            <SelectItem value="Other">{t('settings:carrierOther', 'Other')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:internationalCarrierDescription')}</FormDescription>
+                        <FormDescription>{t('settings:internationalCarrierDescription', 'Default carrier for international orders')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -719,9 +719,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:fulfillmentSettings')}
+                  {t('settings:fulfillmentSettings', 'Fulfillment Settings')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:fulfillmentSettingsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:fulfillmentSettingsDescription', 'Configure order fulfillment process and automation')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -730,7 +730,7 @@ export default function OrderSettings() {
                     name="default_fulfillment_stage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:initialFulfillmentStage')}</FormLabel>
+                        <FormLabel>{t('settings:initialFulfillmentStage', 'Initial Fulfillment Stage')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -740,18 +740,18 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_fulfillment_stage">
-                              <SelectValue placeholder={t('settings:selectFulfillmentStage')} />
+                              <SelectValue placeholder={t('settings:selectFulfillmentStage', 'Select fulfillment stage')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="pending">{t('settings:fulfillmentStagePending')}</SelectItem>
-                            <SelectItem value="picking">{t('settings:fulfillmentStagePicking')}</SelectItem>
-                            <SelectItem value="packing">{t('settings:fulfillmentStagePacking')}</SelectItem>
-                            <SelectItem value="ready_to_ship">{t('settings:fulfillmentStageReadyToShip')}</SelectItem>
-                            <SelectItem value="shipped">{t('settings:fulfillmentStageShipped')}</SelectItem>
+                            <SelectItem value="pending">{t('settings:fulfillmentStagePending', 'Pending')}</SelectItem>
+                            <SelectItem value="picking">{t('settings:fulfillmentStagePicking', 'Picking')}</SelectItem>
+                            <SelectItem value="packing">{t('settings:fulfillmentStagePacking', 'Packing')}</SelectItem>
+                            <SelectItem value="ready_to_ship">{t('settings:fulfillmentStageReadyToShip', 'Ready to Ship')}</SelectItem>
+                            <SelectItem value="shipped">{t('settings:fulfillmentStageShipped', 'Shipped')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:initialFulfillmentStageDescription')}</FormDescription>
+                        <FormDescription>{t('settings:initialFulfillmentStageDescription', 'The initial stage for new orders in fulfillment workflow')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -762,7 +762,7 @@ export default function OrderSettings() {
                     name="pick_pack_time_sla_hours"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:pickAndPackSla')}</FormLabel>
+                        <FormLabel>{t('settings:pickAndPackSla', 'Pick and Pack SLA (Hours)')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -778,7 +778,7 @@ export default function OrderSettings() {
                             onBlur={handleTextBlur('pick_pack_time_sla_hours')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:pickAndPackSlaDescription')}</FormDescription>
+                        <FormDescription>{t('settings:pickAndPackSlaDescription', 'Target time to complete pick and pack process')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -802,9 +802,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoAssignOrdersToWarehouse')}</FormLabel>
+                          <FormLabel>{t('settings:autoAssignOrdersToWarehouse', 'Auto-Assign Orders to Warehouse')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoAssignOrdersToWarehouseDescription')}
+                            {t('settings:autoAssignOrdersToWarehouseDescription', 'Automatically assign new orders to the appropriate warehouse')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -827,9 +827,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoCreatePackingLists')}</FormLabel>
+                          <FormLabel>{t('settings:autoCreatePackingLists', 'Auto-Create Packing Lists')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoCreatePackingListsDescription')}
+                            {t('settings:autoCreatePackingListsDescription', 'Automatically generate packing lists for orders')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -852,9 +852,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoCalculateShippingCost')}</FormLabel>
+                          <FormLabel>{t('settings:autoCalculateShippingCost', 'Auto-Calculate Shipping Cost')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoCalculateShippingDescription')}
+                            {t('settings:autoCalculateShippingDescription', 'Automatically calculate shipping costs based on carrier rates')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -877,9 +877,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:requireBarcodeScanForPicking')}</FormLabel>
+                          <FormLabel>{t('settings:requireBarcodeScanForPicking', 'Require Barcode Scan for Picking')}</FormLabel>
                           <FormDescription>
-                            {t('settings:requireBarcodeScanForPickingDescription')}
+                            {t('settings:requireBarcodeScanForPickingDescription', 'Require barcode scanning to verify picked items')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -902,9 +902,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableAiCartonPackingLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableAiCartonPackingLabel', 'Enable AI Carton Packing')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableAiCartonPackingLabelDescription')}
+                            {t('settings:enableAiCartonPackingLabelDescription', 'Use AI to suggest optimal carton sizes for packing')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -921,9 +921,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:orderValidationRules')}
+                  {t('settings:orderValidationRules', 'Order Validation Rules')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:orderValidationRulesDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:orderValidationRulesDescription', 'Configure validation rules for order processing')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -932,7 +932,7 @@ export default function OrderSettings() {
                     name="minimum_order_value"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:minimumOrderValue')}</FormLabel>
+                        <FormLabel>{t('settings:minimumOrderValue', 'Minimum Order Value')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -948,7 +948,7 @@ export default function OrderSettings() {
                             onBlur={handleTextBlur('minimum_order_value')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:minimumOrderValueDescription')}</FormDescription>
+                        <FormDescription>{t('settings:minimumOrderValueDescription', 'Minimum order amount required for checkout')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -959,7 +959,7 @@ export default function OrderSettings() {
                     name="block_duplicate_orders_hours"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:duplicateOrderPreventionHours')}</FormLabel>
+                        <FormLabel>{t('settings:duplicateOrderPreventionHours', 'Duplicate Order Prevention (Hours)')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -975,7 +975,7 @@ export default function OrderSettings() {
                             onBlur={handleTextBlur('block_duplicate_orders_hours')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:duplicateOrderPreventionHoursDescription')}</FormDescription>
+                        <FormDescription>{t('settings:duplicateOrderPreventionHoursDescription', 'Block duplicate orders within this time window')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -999,9 +999,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:requireCustomerEmail')}</FormLabel>
+                          <FormLabel>{t('settings:requireCustomerEmail', 'Require Customer Email')}</FormLabel>
                           <FormDescription>
-                            {t('settings:requireCustomerEmailDescription')}
+                            {t('settings:requireCustomerEmailDescription', 'Customer email is required to place an order')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1024,9 +1024,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:requireShippingAddress')}</FormLabel>
+                          <FormLabel>{t('settings:requireShippingAddress', 'Require Shipping Address')}</FormLabel>
                           <FormDescription>
-                            {t('settings:requireShippingAddressDescription')}
+                            {t('settings:requireShippingAddressDescription', 'Shipping address is required for all orders')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1049,9 +1049,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:requirePhoneNumber')}</FormLabel>
+                          <FormLabel>{t('settings:requirePhoneNumber', 'Require Phone Number')}</FormLabel>
                           <FormDescription>
-                            {t('settings:requirePhoneNumberDescription')}
+                            {t('settings:requirePhoneNumberDescription', 'Customer phone number is required to place an order')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1074,9 +1074,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:allowNegativeStock')}</FormLabel>
+                          <FormLabel>{t('settings:allowNegativeStock', 'Allow Negative Stock')}</FormLabel>
                           <FormDescription>
-                            {t('settings:allowNegativeStockDescription')}
+                            {t('settings:allowNegativeStockDescription', 'Allow orders even when stock is insufficient')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1093,9 +1093,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Zap className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:orderAutomation')}
+                  {t('settings:orderAutomation', 'Order Automation')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:orderAutomationDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:orderAutomationDescription', 'Configure automated notifications and actions for orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1115,9 +1115,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoSendOrderConfirmation')}</FormLabel>
+                          <FormLabel>{t('settings:autoSendOrderConfirmation', 'Auto-Send Order Confirmation')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoSendOrderConfirmationDescription')}
+                            {t('settings:autoSendOrderConfirmationDescription', 'Automatically send order confirmation email to customer')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1140,9 +1140,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoSendShippingNotification')}</FormLabel>
+                          <FormLabel>{t('settings:autoSendShippingNotification', 'Auto-Send Shipping Notification')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoSendShippingNotificationDescription')}
+                            {t('settings:autoSendShippingNotificationDescription', 'Automatically notify customer when order is shipped')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1165,9 +1165,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoSendDeliveryNotification')}</FormLabel>
+                          <FormLabel>{t('settings:autoSendDeliveryNotification', 'Auto-Send Delivery Notification')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoSendDeliveryNotificationDescription')}
+                            {t('settings:autoSendDeliveryNotificationDescription', 'Automatically notify customer when order is delivered')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1190,9 +1190,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoUpdateStockOnOrder')}</FormLabel>
+                          <FormLabel>{t('settings:autoUpdateStockOnOrder', 'Auto-Update Stock on Order')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoUpdateStockOnOrderDescription')}
+                            {t('settings:autoUpdateStockOnOrderDescription', 'Automatically update stock levels when orders are placed')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1215,9 +1215,9 @@ export default function OrderSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoCreateReturnRequest')}</FormLabel>
+                          <FormLabel>{t('settings:autoCreateReturnRequest', 'Auto-Create Return Request')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoCreateReturnRequestDescription')}
+                            {t('settings:autoCreateReturnRequestDescription', 'Automatically create return request when conditions are met')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1234,9 +1234,9 @@ export default function OrderSettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:codSettings')}
+                  {t('settings:codSettings', 'COD Settings')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:codSettingsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:codSettingsDescription', 'Configure Cash on Delivery payment options')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <FormField
@@ -1255,9 +1255,9 @@ export default function OrderSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:enableCashOnDelivery')}</FormLabel>
+                        <FormLabel>{t('settings:enableCashOnDelivery', 'Enable Cash on Delivery')}</FormLabel>
                         <FormDescription>
-                          {t('settings:enableCashOnDeliveryDescription')}
+                          {t('settings:enableCashOnDeliveryDescription', 'Allow customers to pay on delivery')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1270,7 +1270,7 @@ export default function OrderSettings() {
                     name="default_cod_currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultCodCurrency')}</FormLabel>
+                        <FormLabel>{t('settings:defaultCodCurrency', 'Default COD Currency')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1280,13 +1280,13 @@ export default function OrderSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_cod_currency">
-                              <SelectValue placeholder={t('settings:selectCurrency')} />
+                              <SelectValue placeholder={t('settings:selectCurrency', 'Select currency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="CZK">{t('common:currencyCZK')}</SelectItem>
-                            <SelectItem value="EUR">{t('common:currencyEUR')}</SelectItem>
-                            <SelectItem value="USD">{t('common:currencyUSD')}</SelectItem>
+                            <SelectItem value="CZK">{t('common:currencyCZK', 'CZK')}</SelectItem>
+                            <SelectItem value="EUR">{t('common:currencyEUR', 'EUR')}</SelectItem>
+                            <SelectItem value="USD">{t('common:currencyUSD', 'USD')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -1299,7 +1299,7 @@ export default function OrderSettings() {
                     name="cod_fee_percentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:codPercentageFee')}</FormLabel>
+                        <FormLabel>{t('settings:codPercentageFee', 'COD Percentage Fee')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -1316,7 +1316,7 @@ export default function OrderSettings() {
                             onBlur={handleTextBlur('cod_fee_percentage')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:codPercentageFeeDescription')}</FormDescription>
+                        <FormDescription>{t('settings:codPercentageFeeDescription', 'Percentage fee added to COD orders')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1327,7 +1327,7 @@ export default function OrderSettings() {
                     name="cod_fee_fixed_amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:codFixedFee')}</FormLabel>
+                        <FormLabel>{t('settings:codFixedFee', 'COD Fixed Fee')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -1343,7 +1343,7 @@ export default function OrderSettings() {
                             onBlur={handleTextBlur('cod_fee_fixed_amount')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:codFixedFeeDescription')}</FormDescription>
+                        <FormDescription>{t('settings:codFixedFeeDescription', 'Fixed fee added to COD orders')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1366,9 +1366,9 @@ export default function OrderSettings() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{t('settings:requireSignatureForCod')}</FormLabel>
+                        <FormLabel>{t('settings:requireSignatureForCod', 'Require Signature for COD')}</FormLabel>
                         <FormDescription>
-                          {t('settings:requireSignatureForCodDescription')}
+                          {t('settings:requireSignatureForCodDescription', 'Require customer signature for COD deliveries')}
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -1392,25 +1392,25 @@ export default function OrderSettings() {
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                  <span className="text-muted-foreground">{t('settings:saving', 'Saving...')}</span>
                 </>
               )}
               {saveStatus === 'saved' && (
                 <>
                   <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-green-600">{t('settings:saved')}</span>
+                  <span className="text-green-600">{t('settings:saved', 'Saved')}</span>
                 </>
               )}
               {saveStatus === 'error' && (
-                <span className="text-destructive">{t('settings:saveFailed')}</span>
+                <span className="text-destructive">{t('settings:saveFailed', 'Save failed')}</span>
               )}
               {saveStatus === 'idle' && lastSavedAt && (
                 <span className="text-muted-foreground text-xs">
-                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                  {t('settings:lastSaved', 'Last saved')}: {lastSavedAt.toLocaleTimeString()}
                 </span>
               )}
               {saveStatus === 'idle' && hasPendingChanges && (
-                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+                <span className="text-amber-600">{t('settings:unsavedChanges', 'Unsaved changes')}</span>
               )}
             </div>
             
@@ -1426,17 +1426,17 @@ export default function OrderSettings() {
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('settings:savingSettings')}
+                  {t('settings:savingSettings', 'Saving settings...')}
                 </>
               ) : hasPendingChanges ? (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  {t('settings:saveChanges')}
+                  {t('settings:saveChanges', 'Save Changes')}
                 </>
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  {t('settings:allSaved')}
+                  {t('settings:allSaved', 'All Saved')}
                 </>
               )}
             </Button>

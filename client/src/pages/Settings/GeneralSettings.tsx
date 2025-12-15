@@ -187,7 +187,7 @@ export default function GeneralSettings() {
         setPreviewDialogOpen(true);
       } else {
         toast({
-          title: t('common:error'),
+          title: t('common:error', 'Error'),
           description: t('settings:reportPreviewError', 'Failed to generate report preview'),
           variant: 'destructive',
         });
@@ -195,7 +195,7 @@ export default function GeneralSettings() {
     },
     onError: () => {
       toast({
-        title: t('common:error'),
+        title: t('common:error', 'Error'),
         description: t('settings:reportPreviewError', 'Failed to generate report preview'),
         variant: 'destructive',
       });
@@ -321,15 +321,15 @@ export default function GeneralSettings() {
       
       // The useEffect will automatically update originalSettings when new data loads
       toast({
-        title: t('settings:settingsSaved'),
-        description: t('settings:localizationApplied'),
+        title: t('settings:settingsSaved', 'Settings Saved'),
+        description: t('settings:localizationApplied', 'Localization settings applied'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: error.message || t('settings:settingsSaveError'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:settingsSaveError', 'Failed to save settings'),
       });
     },
   });
@@ -353,23 +353,23 @@ export default function GeneralSettings() {
             <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-3 lg:grid-cols-5 h-auto gap-1 sm:gap-2 p-1">
               <TabsTrigger value="profile" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-profile">
                 <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:tabCompany')}</span>
+                <span className="hidden sm:inline">{t('settings:tabCompany', 'Company')}</span>
               </TabsTrigger>
               <TabsTrigger value="localization" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-localization">
                 <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:tabLocalization')}</span>
+                <span className="hidden sm:inline">{t('settings:tabLocalization', 'Localization')}</span>
               </TabsTrigger>
               <TabsTrigger value="operations" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-operations">
                 <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:tabOperations')}</span>
+                <span className="hidden sm:inline">{t('settings:tabOperations', 'Operations')}</span>
               </TabsTrigger>
               <TabsTrigger value="customer" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-customer">
                 <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:tabCustomer')}</span>
+                <span className="hidden sm:inline">{t('settings:tabCustomer', 'Customer')}</span>
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-security">
                 <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:tabSecurity')}</span>
+                <span className="hidden sm:inline">{t('settings:tabSecurity', 'Security')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -380,9 +380,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  {t('settings:companyInformation')}
+                  {t('settings:companyInformation', 'Company Information')}
                 </CardTitle>
-                <CardDescription>{t('settings:companyInfoDescription')}</CardDescription>
+                <CardDescription>{t('settings:companyInfoDescription', 'Basic information about your company')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -391,11 +391,11 @@ export default function GeneralSettings() {
                     name="company_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyName')}</FormLabel>
+                        <FormLabel>{t('settings:companyName', 'Company Name')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyNamePlaceholder')} 
+                            placeholder={t('settings:companyNamePlaceholder', 'Enter company name')} 
                             data-testid="input-company_name"
                             onChange={(e) => {
                               field.onChange(e);
@@ -404,7 +404,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_name')}
                           />
                         </FormControl>
-                        <FormDescription>{t('common:yourBusinessLegalName')}</FormDescription>
+                        <FormDescription>{t('common:yourBusinessLegalName', 'Your business legal name')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -415,12 +415,12 @@ export default function GeneralSettings() {
                     name="company_email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyEmail')}</FormLabel>
+                        <FormLabel>{t('settings:companyEmail', 'Company Email')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             type="email" 
-                            placeholder={t('settings:companyEmailPlaceholder')} 
+                            placeholder={t('settings:companyEmailPlaceholder', 'Enter company email')} 
                             data-testid="input-company_email"
                             onChange={(e) => {
                               field.onChange(e);
@@ -429,7 +429,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_email')}
                           />
                         </FormControl>
-                        <FormDescription>{t('common:primaryBusinessEmail')}</FormDescription>
+                        <FormDescription>{t('common:primaryBusinessEmail', 'Primary business email')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -440,11 +440,11 @@ export default function GeneralSettings() {
                     name="company_phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyPhone')}</FormLabel>
+                        <FormLabel>{t('settings:companyPhone', 'Company Phone')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyPhonePlaceholder')} 
+                            placeholder={t('settings:companyPhonePlaceholder', 'Enter phone number')} 
                             data-testid="input-company_phone"
                             onChange={(e) => {
                               field.onChange(e);
@@ -463,11 +463,11 @@ export default function GeneralSettings() {
                     name="company_website"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyWebsite')}</FormLabel>
+                        <FormLabel>{t('settings:companyWebsite', 'Company Website')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            placeholder={t('settings:companyWebsitePlaceholder', 'https://example.com')} 
                             data-testid="input-company_website"
                             onChange={(e) => {
                               field.onChange(e);
@@ -486,11 +486,11 @@ export default function GeneralSettings() {
                     name="company_address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyAddress')}</FormLabel>
+                        <FormLabel>{t('settings:companyAddress', 'Company Address')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyAddressPlaceholder')} 
+                            placeholder={t('settings:companyAddressPlaceholder', 'Enter company address')} 
                             data-testid="input-company_address"
                             onChange={(e) => {
                               field.onChange(e);
@@ -509,11 +509,11 @@ export default function GeneralSettings() {
                     name="company_city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyCity')}</FormLabel>
+                        <FormLabel>{t('settings:companyCity', 'City')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyCityPlaceholder')} 
+                            placeholder={t('settings:companyCityPlaceholder', 'Enter city')} 
                             data-testid="input-company_city"
                             onChange={(e) => {
                               field.onChange(e);
@@ -532,11 +532,11 @@ export default function GeneralSettings() {
                     name="company_zip"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyZip')}</FormLabel>
+                        <FormLabel>{t('settings:companyZip', 'Zip Code')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyZipPlaceholder')} 
+                            placeholder={t('settings:companyZipPlaceholder', 'Enter zip code')} 
                             data-testid="input-company_zip"
                             onChange={(e) => {
                               field.onChange(e);
@@ -555,11 +555,11 @@ export default function GeneralSettings() {
                     name="company_country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyCountry')}</FormLabel>
+                        <FormLabel>{t('settings:companyCountry', 'Country')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:selectCountry')} 
+                            placeholder={t('settings:selectCountry', 'Select country')} 
                             data-testid="input-company_country"
                             onChange={(e) => {
                               field.onChange(e);
@@ -578,11 +578,11 @@ export default function GeneralSettings() {
                     name="company_vat_id"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>{t('settings:companyVatId')}</FormLabel>
+                        <FormLabel>{t('settings:companyVatId', 'VAT ID')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyVatIdPlaceholder')} 
+                            placeholder={t('settings:companyVatIdPlaceholder', 'Enter VAT ID')} 
                             data-testid="input-company_vat_id"
                             onChange={(e) => {
                               field.onChange(e);
@@ -591,7 +591,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_vat_id')}
                           />
                         </FormControl>
-                        <FormDescription>{t('common:yourCompanyTaxId')}</FormDescription>
+                        <FormDescription>{t('common:yourCompanyTaxId', 'Your company tax ID')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -604,9 +604,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  {t('settings:brandIdentity')}
+                  {t('settings:brandIdentity', 'Brand Identity')}
                 </CardTitle>
-                <CardDescription>{t('settings:brandIdentityDescription')}</CardDescription>
+                <CardDescription>{t('settings:brandIdentityDescription', 'Logo, stamp, and social media links')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -615,11 +615,11 @@ export default function GeneralSettings() {
                     name="company_logo_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:companyLogoUrl')}</FormLabel>
+                        <FormLabel>{t('settings:companyLogoUrl', 'Company Logo URL')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            placeholder={t('settings:companyWebsitePlaceholder', 'https://example.com')} 
                             data-testid="input-company_logo_url"
                             onChange={(e) => {
                               field.onChange(e);
@@ -628,7 +628,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_logo_url')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:companyLogoUrlDescription')}</FormDescription>
+                        <FormDescription>{t('settings:companyLogoUrlDescription', 'URL to your company logo')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -639,11 +639,11 @@ export default function GeneralSettings() {
                     name="company_invoice_stamp"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:invoiceStamp')}</FormLabel>
+                        <FormLabel>{t('settings:invoiceStamp', 'Invoice Stamp')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:companyWebsitePlaceholder')} 
+                            placeholder={t('settings:companyWebsitePlaceholder', 'https://example.com')} 
                             data-testid="input-company_invoice_stamp"
                             onChange={(e) => {
                               field.onChange(e);
@@ -652,7 +652,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_invoice_stamp')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:invoiceStampDescription')}</FormDescription>
+                        <FormDescription>{t('settings:invoiceStampDescription', 'URL to your invoice stamp image')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -665,12 +665,12 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <Facebook className="h-4 w-4" />
-                          {t('settings:facebookUrl')}
+                          {t('settings:facebookUrl', 'Facebook URL')}
                         </FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:facebookUrlPlaceholder')} 
+                            placeholder={t('settings:facebookUrlPlaceholder', 'https://facebook.com/yourpage')} 
                             data-testid="input-company_facebook_url"
                             onChange={(e) => {
                               field.onChange(e);
@@ -679,7 +679,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_facebook_url')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:facebookUrlDescription')}</FormDescription>
+                        <FormDescription>{t('settings:facebookUrlDescription', 'Your Facebook page URL')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -692,12 +692,12 @@ export default function GeneralSettings() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <MessageCircle className="h-4 w-4" />
-                          {t('settings:whatsappNumber')}
+                          {t('settings:whatsappNumber', 'WhatsApp Number')}
                         </FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:whatsappNumberPlaceholder')} 
+                            placeholder={t('settings:whatsappNumberPlaceholder', '+1234567890')} 
                             data-testid="input-company_whatsapp_number"
                             onChange={(e) => {
                               field.onChange(e);
@@ -706,7 +706,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_whatsapp_number')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:whatsappNumberDescription')}</FormDescription>
+                        <FormDescription>{t('settings:whatsappNumberDescription', 'Your WhatsApp business number')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -717,11 +717,11 @@ export default function GeneralSettings() {
                     name="company_zalo_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:zaloNumber')}</FormLabel>
+                        <FormLabel>{t('settings:zaloNumber', 'Zalo Number')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:zaloNumberPlaceholder')} 
+                            placeholder={t('settings:zaloNumberPlaceholder', 'Enter Zalo number')} 
                             data-testid="input-company_zalo_number"
                             onChange={(e) => {
                               field.onChange(e);
@@ -730,7 +730,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_zalo_number')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:zaloNumberDescription')}</FormDescription>
+                        <FormDescription>{t('settings:zaloNumberDescription', 'Your Zalo number for customer contact')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -741,11 +741,11 @@ export default function GeneralSettings() {
                     name="company_linkedin_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:linkedinUrl')}</FormLabel>
+                        <FormLabel>{t('settings:linkedinUrl', 'LinkedIn URL')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:linkedinUrlPlaceholder')} 
+                            placeholder={t('settings:linkedinUrlPlaceholder', 'https://linkedin.com/company/yourcompany')} 
                             data-testid="input-company_linkedin_url"
                             onChange={(e) => {
                               field.onChange(e);
@@ -754,7 +754,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_linkedin_url')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:linkedinUrlDescription')}</FormDescription>
+                        <FormDescription>{t('settings:linkedinUrlDescription', 'Your LinkedIn company page')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -765,11 +765,11 @@ export default function GeneralSettings() {
                     name="company_instagram_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:instagramUrl')}</FormLabel>
+                        <FormLabel>{t('settings:instagramUrl', 'Instagram URL')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder={t('settings:instagramUrlPlaceholder')} 
+                            placeholder={t('settings:instagramUrlPlaceholder', 'https://instagram.com/yourprofile')} 
                             data-testid="input-company_instagram_url"
                             onChange={(e) => {
                               field.onChange(e);
@@ -778,7 +778,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_instagram_url')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:instagramUrlDescription')}</FormDescription>
+                        <FormDescription>{t('settings:instagramUrlDescription', 'Your Instagram profile URL')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -794,9 +794,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Globe className="h-5 w-5" />
-                  {t('settings:localization')}
+                  {t('settings:localization', 'Localization')}
                 </CardTitle>
-                <CardDescription>{t('settings:localizationDescription')}</CardDescription>
+                <CardDescription>{t('settings:localizationDescription', 'Language, date, and time settings')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -805,7 +805,7 @@ export default function GeneralSettings() {
                     name="default_language"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultLanguage')}</FormLabel>
+                        <FormLabel>{t('settings:defaultLanguage', 'Default Language')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -815,15 +815,15 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_language">
-                              <SelectValue placeholder={t('settings:selectLanguage')} />
+                              <SelectValue placeholder={t('settings:selectLanguage', 'Select language')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="en">{t('settings:english')}</SelectItem>
-                            <SelectItem value="vi">{t('settings:vietnamese')}</SelectItem>
+                            <SelectItem value="en">{t('settings:english', 'English')}</SelectItem>
+                            <SelectItem value="vi">{t('settings:vietnamese', 'Vietnamese')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:languageDescription')}</FormDescription>
+                        <FormDescription>{t('settings:languageDescription', 'System default language')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -834,7 +834,7 @@ export default function GeneralSettings() {
                     name="default_date_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultDateFormat')}</FormLabel>
+                        <FormLabel>{t('settings:defaultDateFormat', 'Date Format')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -844,19 +844,19 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_date_format">
-                              <SelectValue placeholder={t('settings:selectDateFormat')} />
+                              <SelectValue placeholder={t('settings:selectDateFormat', 'Select date format')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY ({t('settings:dateFormatUK')})</SelectItem>
-                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY ({t('settings:dateFormatUS')})</SelectItem>
-                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD ({t('settings:dateFormatISO')})</SelectItem>
-                            <SelectItem value="DD.MM.YYYY">DD.MM.YYYY ({t('settings:dateFormatEU')})</SelectItem>
-                            <SelectItem value="D.M.YYYY">D.M.YYYY ({t('settings:dateFormatEUShort')})</SelectItem>
-                            <SelectItem value="DD-MM-YYYY">DD-MM-YYYY ({t('settings:dateFormatNL')})</SelectItem>
+                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY ({t('settings:dateFormatUK', 'UK')})</SelectItem>
+                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY ({t('settings:dateFormatUS', 'US')})</SelectItem>
+                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD ({t('settings:dateFormatISO', 'ISO')})</SelectItem>
+                            <SelectItem value="DD.MM.YYYY">DD.MM.YYYY ({t('settings:dateFormatEU', 'EU')})</SelectItem>
+                            <SelectItem value="D.M.YYYY">D.M.YYYY ({t('settings:dateFormatEUShort', 'EU Short')})</SelectItem>
+                            <SelectItem value="DD-MM-YYYY">DD-MM-YYYY ({t('settings:dateFormatNL', 'NL')})</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:dateFormatDescription')}</FormDescription>
+                        <FormDescription>{t('settings:dateFormatDescription', 'How dates are displayed')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -867,7 +867,7 @@ export default function GeneralSettings() {
                     name="default_time_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultTimeFormat')}</FormLabel>
+                        <FormLabel>{t('settings:defaultTimeFormat', 'Time Format')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -877,15 +877,15 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_time_format">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="12-hour">{t('settings:timeFormat12Hour')}</SelectItem>
-                            <SelectItem value="24-hour">{t('settings:timeFormat24Hour')}</SelectItem>
+                            <SelectItem value="12-hour">{t('settings:timeFormat12Hour', '12-Hour')}</SelectItem>
+                            <SelectItem value="24-hour">{t('settings:timeFormat24Hour', '24-Hour')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:timeFormatDescription')}</FormDescription>
+                        <FormDescription>{t('settings:timeFormatDescription', 'How times are displayed')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -896,7 +896,7 @@ export default function GeneralSettings() {
                     name="default_timezone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultTimezone')}</FormLabel>
+                        <FormLabel>{t('settings:defaultTimezone', 'Timezone')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -906,7 +906,7 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_timezone">
-                              <SelectValue placeholder={t('settings:selectTimezone')} />
+                              <SelectValue placeholder={t('settings:selectTimezone', 'Select timezone')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -917,7 +917,7 @@ export default function GeneralSettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:timezoneDescription')}</FormDescription>
+                        <FormDescription>{t('settings:timezoneDescription', 'Your business timezone')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -928,7 +928,7 @@ export default function GeneralSettings() {
                     name="number_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:numberFormat')}</FormLabel>
+                        <FormLabel>{t('settings:numberFormat', 'Number Format')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -938,7 +938,7 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-number_format">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -958,9 +958,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {t('settings:currency')}
+                  {t('settings:currency', 'Currency')}
                 </CardTitle>
-                <CardDescription>{t('settings:currencyManagementDescription')}</CardDescription>
+                <CardDescription>{t('settings:currencyManagementDescription', 'Configure your default currency settings')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -969,7 +969,7 @@ export default function GeneralSettings() {
                     name="default_currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultCurrency')}</FormLabel>
+                        <FormLabel>{t('settings:defaultCurrency', 'Default Currency')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -979,7 +979,7 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_currency">
-                              <SelectValue placeholder={t('settings:selectCurrency')} />
+                              <SelectValue placeholder={t('settings:selectCurrency', 'Select currency')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1000,7 +1000,7 @@ export default function GeneralSettings() {
                     name="currency_display"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:currencyDisplay')}</FormLabel>
+                        <FormLabel>{t('settings:currencyDisplay', 'Currency Display')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1010,13 +1010,13 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-currency_display">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="symbol">{t('settings:currencyDisplaySymbol')}</SelectItem>
-                            <SelectItem value="code">{t('settings:currencyDisplayCode')}</SelectItem>
-                            <SelectItem value="both">{t('settings:currencyDisplayBoth')}</SelectItem>
+                            <SelectItem value="symbol">{t('settings:currencyDisplaySymbol', 'Symbol Only ($)')}</SelectItem>
+                            <SelectItem value="code">{t('settings:currencyDisplayCode', 'Code Only (USD)')}</SelectItem>
+                            <SelectItem value="both">{t('settings:currencyDisplayBoth', 'Both ($ USD)')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -1034,9 +1034,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  {t('settings:orderDefaults')}
+                  {t('settings:orderDefaults', 'Order Defaults')}
                 </CardTitle>
-                <CardDescription>{t('settings:orderDefaultsDescription')}</CardDescription>
+                <CardDescription>{t('settings:orderDefaultsDescription', 'Default settings for new orders')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1045,7 +1045,7 @@ export default function GeneralSettings() {
                     name="default_order_warehouse_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultWarehouse')}</FormLabel>
+                        <FormLabel>{t('settings:defaultWarehouse', 'Default Warehouse')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             const parsedValue = value ? parseInt(value) : undefined;
@@ -1056,7 +1056,7 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_order_warehouse_id">
-                              <SelectValue placeholder={t('settings:selectWarehouse')} />
+                              <SelectValue placeholder={t('settings:selectWarehouse', 'Select warehouse')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1067,7 +1067,7 @@ export default function GeneralSettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultWarehouseDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultWarehouseDescription', 'Default warehouse for new orders')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1078,7 +1078,7 @@ export default function GeneralSettings() {
                     name="default_priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultPriority')}</FormLabel>
+                        <FormLabel>{t('settings:defaultPriority', 'Default Priority')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1088,16 +1088,16 @@ export default function GeneralSettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_priority">
-                              <SelectValue placeholder={t('settings:selectOption')} />
+                              <SelectValue placeholder={t('settings:selectOption', 'Select option')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="low">{t('settings:priorityLow')}</SelectItem>
-                            <SelectItem value="medium">{t('settings:priorityMedium')}</SelectItem>
-                            <SelectItem value="high">{t('settings:priorityHigh')}</SelectItem>
+                            <SelectItem value="low">{t('settings:priorityLow', 'Low')}</SelectItem>
+                            <SelectItem value="medium">{t('settings:priorityMedium', 'Medium')}</SelectItem>
+                            <SelectItem value="high">{t('settings:priorityHigh', 'High')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultPriorityDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultPriorityDescription', 'Default priority for new orders')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1113,9 +1113,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {t('settings:adminNotifications')}
+                  {t('settings:adminNotifications', 'Admin Notifications')}
                 </CardTitle>
-                <CardDescription>{t('settings:adminNotificationsDescription')}</CardDescription>
+                <CardDescription>{t('settings:adminNotificationsDescription', 'Configure notification settings')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1135,9 +1135,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:lowStockAlertsLabel')}</FormLabel>
+                          <FormLabel>{t('settings:lowStockAlertsLabel', 'Low Stock Alerts')}</FormLabel>
                           <FormDescription>
-                            {t('settings:lowStockAlertsDescription')}
+                            {t('settings:lowStockAlertsDescription', 'Receive email alerts when stock is low')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1160,9 +1160,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:orderStatusChangesLabel')}</FormLabel>
+                          <FormLabel>{t('settings:orderStatusChangesLabel', 'Order Status Changes')}</FormLabel>
                           <FormDescription>
-                            {t('settings:orderStatusChangesDescription')}
+                            {t('settings:orderStatusChangesDescription', 'Get notified when order status changes')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1176,9 +1176,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {t('settings:reportsTitle')}
+                  {t('settings:reportsTitle', 'Reports')}
                 </CardTitle>
-                <CardDescription>{t('settings:reportsDescription')}</CardDescription>
+                <CardDescription>{t('settings:reportsDescription', 'Configure scheduled report emails')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1198,9 +1198,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="flex-1 space-y-1 leading-none">
-                          <FormLabel>{t('settings:dailyReportLabel')}</FormLabel>
+                          <FormLabel>{t('settings:dailyReportLabel', 'Daily Report')}</FormLabel>
                           <FormDescription>
-                            {t('settings:dailyReportDescription')}
+                            {t('settings:dailyReportDescription', 'Receive daily summary report')}
                           </FormDescription>
                         </div>
                         <Button
@@ -1233,9 +1233,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="flex-1 space-y-1 leading-none">
-                          <FormLabel>{t('settings:weeklyReportLabel')}</FormLabel>
+                          <FormLabel>{t('settings:weeklyReportLabel', 'Weekly Report')}</FormLabel>
                           <FormDescription>
-                            {t('settings:weeklyReportDescription')}
+                            {t('settings:weeklyReportDescription', 'Receive weekly summary report')}
                           </FormDescription>
                         </div>
                         <Button
@@ -1268,9 +1268,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="flex-1 space-y-1 leading-none">
-                          <FormLabel>{t('settings:monthlyReportLabel')}</FormLabel>
+                          <FormLabel>{t('settings:monthlyReportLabel', 'Monthly Report')}</FormLabel>
                           <FormDescription>
-                            {t('settings:monthlyReportDescription')}
+                            {t('settings:monthlyReportDescription', 'Receive monthly summary report')}
                           </FormDescription>
                         </div>
                         <Button
@@ -1303,9 +1303,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="flex-1 space-y-1 leading-none">
-                          <FormLabel>{t('settings:yearlyReportLabel')}</FormLabel>
+                          <FormLabel>{t('settings:yearlyReportLabel', 'Yearly Report')}</FormLabel>
                           <FormDescription>
-                            {t('settings:yearlyReportDescription')}
+                            {t('settings:yearlyReportDescription', 'Receive yearly summary report')}
                           </FormDescription>
                         </div>
                         <Button
@@ -1332,9 +1332,9 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  {t('settings:aiFeaturesTitle')}
+                  {t('settings:aiFeaturesTitle', 'AI Features')}
                 </CardTitle>
-                <CardDescription>{t('settings:aiFeaturesDescription')}</CardDescription>
+                <CardDescription>{t('settings:aiFeaturesDescription', 'Configure AI-powered automation')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1354,9 +1354,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:aiAddressParsingLabel')}</FormLabel>
+                          <FormLabel>{t('settings:aiAddressParsingLabel', 'AI Address Parsing')}</FormLabel>
                           <FormDescription>
-                            {t('settings:aiAddressParsingDescription')}
+                            {t('settings:aiAddressParsingDescription', 'Use AI to parse customer addresses')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1379,9 +1379,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:aiCartonPackingLabel')}</FormLabel>
+                          <FormLabel>{t('settings:aiCartonPackingLabel', 'AI Carton Packing')}</FormLabel>
                           <FormDescription>
-                            {t('settings:aiCartonPackingDescription')}
+                            {t('settings:aiCartonPackingDescription', 'Use AI for optimal carton packing suggestions')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1395,21 +1395,21 @@ export default function GeneralSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  {t('settings:complianceSecurityTitle')}
+                  {t('settings:complianceSecurityTitle', 'Compliance & Security')}
                 </CardTitle>
-                <CardDescription>{t('settings:complianceSecurityDescription')}</CardDescription>
+                <CardDescription>{t('settings:complianceSecurityDescription', 'Security and compliance settings')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Session & Access Control */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:sessionAccessControl')}</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:sessionAccessControl', 'Session & Access Control')}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="session_timeout_minutes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:sessionTimeoutLabel')}</FormLabel>
+                          <FormLabel>{t('settings:sessionTimeoutLabel', 'Session Timeout (minutes)')}</FormLabel>
                           <FormControl>
                             <Input 
                               {...field} 
@@ -1425,7 +1425,7 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('settings:sessionTimeoutDescription')}
+                            {t('settings:sessionTimeoutDescription', 'Time before inactive sessions expire')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1437,7 +1437,7 @@ export default function GeneralSettings() {
                       name="max_login_attempts"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:maxLoginAttemptsLabel')}</FormLabel>
+                          <FormLabel>{t('settings:maxLoginAttemptsLabel', 'Max Login Attempts')}</FormLabel>
                           <FormControl>
                             <Input 
                               {...field} 
@@ -1453,7 +1453,7 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('settings:maxLoginAttemptsDescription')}
+                            {t('settings:maxLoginAttemptsDescription', 'Maximum failed login attempts before lockout')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1478,9 +1478,9 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>{t('settings:autoLogoutOnIdleLabel')}</FormLabel>
+                            <FormLabel>{t('settings:autoLogoutOnIdleLabel', 'Auto Logout on Idle')}</FormLabel>
                             <FormDescription>
-                              {t('settings:autoLogoutOnIdleDescription')}
+                              {t('settings:autoLogoutOnIdleDescription', 'Automatically log out users when idle')}
                             </FormDescription>
                           </div>
                         </FormItem>
@@ -1503,9 +1503,9 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>{t('settings:require2faForAdminsLabel')}</FormLabel>
+                            <FormLabel>{t('settings:require2faForAdminsLabel', 'Require 2FA for Admins')}</FormLabel>
                             <FormDescription>
-                              {t('settings:require2faForAdminsDescription')}
+                              {t('settings:require2faForAdminsDescription', 'Require two-factor authentication for admins')}
                             </FormDescription>
                           </div>
                         </FormItem>
@@ -1516,14 +1516,14 @@ export default function GeneralSettings() {
 
                 {/* Data & Audit */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:dataAuditSection')}</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">{t('settings:dataAuditSection', 'Data & Audit')}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="audit_log_retention_days"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('settings:auditLogRetentionLabel')}</FormLabel>
+                          <FormLabel>{t('settings:auditLogRetentionLabel', 'Audit Log Retention (days)')}</FormLabel>
                           <FormControl>
                             <Input 
                               {...field} 
@@ -1539,7 +1539,7 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('settings:auditLogRetentionDescription')}
+                            {t('settings:auditLogRetentionDescription', 'How long to keep audit logs')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1562,9 +1562,9 @@ export default function GeneralSettings() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>{t('settings:enableDataExportLabel')}</FormLabel>
+                            <FormLabel>{t('settings:enableDataExportLabel', 'Enable Data Export')}</FormLabel>
                             <FormDescription>
-                              {t('settings:enableDataExportDescription')}
+                              {t('settings:enableDataExportDescription', 'Allow users to export their data')}
                             </FormDescription>
                           </div>
                         </FormItem>
@@ -1582,7 +1582,7 @@ export default function GeneralSettings() {
           <Card className="border-red-500 bg-red-50 dark:bg-red-950/20">
             <CardHeader>
               <CardTitle className="text-red-700 dark:text-red-400 text-sm">
-                ⚠️ {t('settings:formValidationErrors')} ({Object.keys(form.formState.errors).length})
+                ⚠️ {t('settings:formValidationErrors', 'Form Validation Errors')} ({Object.keys(form.formState.errors).length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1601,25 +1601,25 @@ export default function GeneralSettings() {
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('settings:saving')}</span>
+                  <span className="text-muted-foreground">{t('settings:saving', 'Saving...')}</span>
                 </>
               )}
               {saveStatus === 'saved' && (
                 <>
                   <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-green-600">{t('settings:saved')}</span>
+                  <span className="text-green-600">{t('settings:saved', 'Saved')}</span>
                 </>
               )}
               {saveStatus === 'error' && (
-                <span className="text-destructive">{t('settings:saveFailed')}</span>
+                <span className="text-destructive">{t('settings:saveFailed', 'Save Failed')}</span>
               )}
               {saveStatus === 'idle' && lastSavedAt && (
                 <span className="text-muted-foreground text-xs">
-                  {t('settings:lastSaved')}: {lastSavedAt.toLocaleTimeString()}
+                  {t('settings:lastSaved', 'Last Saved')}: {lastSavedAt.toLocaleTimeString()}
                 </span>
               )}
               {saveStatus === 'idle' && hasPendingChanges && (
-                <span className="text-amber-600">{t('settings:unsavedChanges')}</span>
+                <span className="text-amber-600">{t('settings:unsavedChanges', 'Unsaved Changes')}</span>
               )}
             </div>
             
@@ -1635,17 +1635,17 @@ export default function GeneralSettings() {
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('settings:savingSettings')}
+                  {t('settings:savingSettings', 'Saving Settings...')}
                 </>
               ) : hasPendingChanges ? (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  {t('settings:saveChanges')}
+                  {t('settings:saveChanges', 'Save Changes')}
                 </>
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  {t('settings:allSaved')}
+                  {t('settings:allSaved', 'All Saved')}
                 </>
               )}
             </Button>
