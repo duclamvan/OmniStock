@@ -197,10 +197,8 @@ const SECTION_ICONS: Record<string, typeof Shield> = {
 };
 
 function getSectionIcon(section: string) {
-  // First check role icons
   const roleIcon = ROLE_ICONS.find(i => i.value === section.toLowerCase());
   if (roleIcon) return roleIcon.icon;
-  // Then check section icons
   return SECTION_ICONS[section.toLowerCase()] || Shield;
 }
 
@@ -258,14 +256,14 @@ export default function RolesSettings() {
       setIsRoleDialogOpen(false);
       resetForm();
       toast({
-        title: t('common:success'),
-        description: t('settings:roleCreatedSuccessfully'),
+        title: t('common:success', 'Success'),
+        description: t('settings:roleCreatedSuccessfully', 'Role created successfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: t('common:error'),
-        description: error.message || t('settings:failedToCreateRole'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:failedToCreateRole', 'Failed to create role'),
         variant: "destructive",
       });
     },
@@ -284,14 +282,14 @@ export default function RolesSettings() {
       setSelectedRole(null);
       resetForm();
       toast({
-        title: t('common:success'),
-        description: t('settings:roleUpdatedSuccessfully'),
+        title: t('common:success', 'Success'),
+        description: t('settings:roleUpdatedSuccessfully', 'Role updated successfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: t('common:error'),
-        description: error.message || t('settings:failedToUpdateRole'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:failedToUpdateRole', 'Failed to update role'),
         variant: "destructive",
       });
     },
@@ -309,14 +307,14 @@ export default function RolesSettings() {
       setIsDeleteDialogOpen(false);
       setSelectedRole(null);
       toast({
-        title: t('common:success'),
-        description: t('settings:roleDeletedSuccessfully'),
+        title: t('common:success', 'Success'),
+        description: t('settings:roleDeletedSuccessfully', 'Role deleted successfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: t('common:error'),
-        description: error.message || t('settings:failedToDeleteRole'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:failedToDeleteRole', 'Failed to delete role'),
         variant: "destructive",
       });
     },
@@ -331,14 +329,14 @@ export default function RolesSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       toast({
-        title: t('common:success'),
-        description: t('settings:userRoleUpdatedSuccessfully'),
+        title: t('common:success', 'Success'),
+        description: t('settings:userRoleUpdatedSuccessfully', 'User role updated successfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: t('common:error'),
-        description: error.message || t('settings:failedToUpdateUserRole'),
+        title: t('common:error', 'Error'),
+        description: error.message || t('settings:failedToUpdateUserRole', 'Failed to update user role'),
         variant: "destructive",
       });
     },
@@ -361,7 +359,6 @@ export default function RolesSettings() {
   const openCreateDialog = () => {
     resetForm();
     setSelectedRole(null);
-    // Always expand both parent sections when opening dialog
     setExpandedParents(new Set<ParentSection>(['warehouse_operations', 'administration']));
     setIsRoleDialogOpen(true);
   };
@@ -378,7 +375,6 @@ export default function RolesSettings() {
       icon: role.icon || 'shield',
       permissionIds: role.permissions.map(p => p.id),
     });
-    // Always expand both parent sections when opening dialog
     setExpandedParents(new Set<ParentSection>(['warehouse_operations', 'administration']));
     setIsRoleDialogOpen(true);
   };
@@ -562,13 +558,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
-              {t('settings:totalUsers')}
+              {t('settings:totalUsers', 'Total Users')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{users.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('settings:activeInSystem')}
+              {t('settings:activeInSystem', 'Active in system')}
             </p>
           </CardContent>
         </Card>
@@ -577,13 +573,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Shield className="h-4 w-4 text-green-600" />
-              {t('settings:administrators')}
+              {t('settings:administrators', 'Administrators')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{adminCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('settings:fullSystemAccess')}
+              {t('settings:fullSystemAccess', 'Full system access')}
             </p>
           </CardContent>
         </Card>
@@ -592,13 +588,13 @@ export default function RolesSettings() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
-              {t('settings:warehouseOperators')}
+              {t('settings:warehouseOperators', 'Warehouse Operators')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{operatorCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('settings:standardAccess')}
+              {t('settings:standardAccess', 'Standard access')}
             </p>
           </CardContent>
         </Card>
@@ -613,7 +609,7 @@ export default function RolesSettings() {
               data-testid="tab-manage-roles"
             >
               <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              {t('settings:manageRoles')}
+              {t('settings:manageRoles', 'Manage Roles')}
             </TabsTrigger>
             <TabsTrigger
               value="assign-users"
@@ -621,7 +617,7 @@ export default function RolesSettings() {
               data-testid="tab-assign-users"
             >
               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              {t('settings:assignUsers')}
+              {t('settings:assignUsers', 'Assign Users')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -632,10 +628,10 @@ export default function RolesSettings() {
               <div>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Lock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                  {t('settings:rolesList')}
+                  {t('settings:rolesList', 'Roles List')}
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  {t('settings:rolesListDescription')}
+                  {t('settings:rolesListDescription', 'Manage roles and their permissions')}
                 </CardDescription>
               </div>
               <Button
@@ -644,7 +640,7 @@ export default function RolesSettings() {
                 data-testid="button-add-role"
               >
                 <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-                {t('settings:addRole')}
+                {t('settings:addRole', 'Add Role')}
               </Button>
             </CardHeader>
             <CardContent>
@@ -656,16 +652,14 @@ export default function RolesSettings() {
                 </div>
               ) : roles.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {t('settings:noRolesFound')}
+                  {t('settings:noRolesFound', 'No roles found')}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {[...roles]
                     .sort((a, b) => {
-                      // System roles first, then custom roles
                       if (a.isSystem && !b.isSystem) return -1;
                       if (!a.isSystem && b.isSystem) return 1;
-                      // Within each group, sort by id (newer roles at bottom)
                       return a.id - b.id;
                     })
                     .map((role) => {
@@ -709,21 +703,21 @@ export default function RolesSettings() {
                                     {getRoleDisplayName(role)}
                                   </span>
                                   <Badge variant={role.isSystem ? "secondary" : "outline"} className="text-xs">
-                                    {role.isSystem ? t('settings:systemRole') : t('settings:customRole')}
+                                    {role.isSystem ? t('settings:systemRole', 'System Role') : t('settings:customRole', 'Custom Role')}
                                   </Badge>
                                   {role.name === 'administrator' && (
                                     <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs">
-                                      {t('settings:fullAccess')}
+                                      {t('settings:fullAccess', 'Full Access')}
                                     </Badge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                                   {role.name === 'administrator' ? (
-                                    <span className="text-amber-600 dark:text-amber-400 font-medium">{t('settings:allPermissions')}</span>
+                                    <span className="text-amber-600 dark:text-amber-400 font-medium">{t('settings:allPermissions', 'All Permissions')}</span>
                                   ) : (
-                                    <span>{role.permissions.length} {t('settings:permissionCount')}</span>
+                                    <span>{role.permissions.length} {t('settings:permissionCount', 'permissions')}</span>
                                   )}
-                                  <span>{userCount} {t('settings:userCount')}</span>
+                                  <span>{userCount} {t('settings:userCount', 'users')}</span>
                                 </div>
                               </div>
                             </div>
@@ -737,8 +731,8 @@ export default function RolesSettings() {
                                 data-testid={`button-edit-role-${role.id}`}
                               >
                                 <Pencil className="h-4 w-4" />
-                                <span className="sm:hidden ml-2">{t('settings:editRole')}</span>
-                                <span className="hidden sm:inline ml-2">{t('settings:editRole')}</span>
+                                <span className="sm:hidden ml-2">{t('settings:editRole', 'Edit Role')}</span>
+                                <span className="hidden sm:inline ml-2">{t('settings:editRole', 'Edit Role')}</span>
                               </Button>
                               {!role.isSystem && (
                                 <Button
@@ -749,8 +743,8 @@ export default function RolesSettings() {
                                   data-testid={`button-delete-role-${role.id}`}
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                  <span className="sm:hidden ml-2">{t('settings:deleteRole')}</span>
-                                  <span className="hidden sm:inline ml-2">{t('settings:deleteRole')}</span>
+                                  <span className="sm:hidden ml-2">{t('settings:deleteRole', 'Delete Role')}</span>
+                                  <span className="hidden sm:inline ml-2">{t('settings:deleteRole', 'Delete Role')}</span>
                                 </Button>
                               )}
                             </div>
@@ -765,16 +759,16 @@ export default function RolesSettings() {
                                   </div>
                                   <div>
                                     <h4 className="font-semibold text-base sm:text-lg text-amber-800 dark:text-amber-300">
-                                      {t('settings:fullAccessTitle')}
+                                      {t('settings:fullAccessTitle', 'Full System Access')}
                                     </h4>
                                     <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">
-                                      {t('settings:fullAccessDescription')}
+                                      {t('settings:fullAccessDescription', 'This role has unrestricted access to all features and data in the system')}
                                     </p>
                                   </div>
                                 </div>
                               ) : (
                                 <>
-                                  <p className="text-sm font-medium mb-3">{t('settings:permissionsSection')}:</p>
+                                  <p className="text-sm font-medium mb-3">{t('settings:permissionsSection', 'Permissions')}:</p>
                                   {Object.entries(
                                     role.permissions.reduce((acc, perm) => {
                                       if (!acc[perm.section]) acc[perm.section] = [];
@@ -788,7 +782,7 @@ export default function RolesSettings() {
                                         <div className="flex items-center gap-2 mb-1">
                                           <Icon className="h-4 w-4 text-muted-foreground" />
                                           <span className="font-medium text-sm capitalize">
-                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
+                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any, section) || section}
                                           </span>
                                         </div>
                                         <div className="flex flex-wrap gap-1 ml-6">
@@ -803,7 +797,7 @@ export default function RolesSettings() {
                                   })}
                                   {role.permissions.length === 0 && (
                                     <p className="text-sm text-muted-foreground italic">
-                                      {t('settings:noPermissionsSelected')}
+                                      {t('settings:noPermissionsSelected', 'No permissions selected')}
                                     </p>
                                   )}
                                 </>
@@ -825,10 +819,10 @@ export default function RolesSettings() {
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <Lock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                {t('settings:userRolesManagement')}
+                {t('settings:userRolesManagement', 'User Roles Management')}
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                {t('settings:assignRolesToControlAccess')}
+                {t('settings:assignRolesToControlAccess', 'Assign roles to control user access')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -840,18 +834,18 @@ export default function RolesSettings() {
                 </div>
               ) : users.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {t('settings:noUsersFound')}
+                  {t('settings:noUsersFound', 'No users found')}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('common:name')}</TableHead>
-                        <TableHead className="hidden md:table-cell">{t('common:email')}</TableHead>
-                        <TableHead>{t('settings:currentRole')}</TableHead>
-                        <TableHead>{t('settings:assignRole')}</TableHead>
-                        <TableHead className="hidden lg:table-cell">{t('settings:memberSince')}</TableHead>
+                        <TableHead>{t('common:name', 'Name')}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('common:email', 'Email')}</TableHead>
+                        <TableHead>{t('settings:currentRole', 'Current Role')}</TableHead>
+                        <TableHead>{t('settings:assignRole', 'Assign Role')}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('settings:memberSince', 'Member Since')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -880,7 +874,7 @@ export default function RolesSettings() {
                                   className="w-full sm:w-[180px] min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
                                   data-testid={`select-role-${user.id}`}
                                 >
-                                  <SelectValue placeholder={t('settings:selectRole')} />
+                                  <SelectValue placeholder={t('settings:selectRole', 'Select Role')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {roles.map((role) => {
@@ -916,19 +910,19 @@ export default function RolesSettings() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedRole ? t('settings:editRole') : t('settings:createRole')}
+              {selectedRole ? t('settings:editRole', 'Edit Role') : t('settings:createRole', 'Create Role')}
             </DialogTitle>
             <DialogDescription>
-              {t('settings:roleFormDescription')}
+              {t('settings:roleFormDescription', 'Configure the role details and permissions')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-6 py-4">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">{t('settings:basicInformation')}</h3>
+              <h3 className="text-lg font-medium">{t('settings:basicInformation', 'Basic Information')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="role-name">{t('settings:roleSlug')}</Label>
+                  <Label htmlFor="role-name">{t('settings:roleSlug', 'Role Slug')}</Label>
                   <Input
                     id="role-name"
                     value={roleForm.name}
@@ -938,11 +932,11 @@ export default function RolesSettings() {
                     className="min-h-[44px]"
                     data-testid="input-role-name"
                   />
-                  <p className="text-xs text-muted-foreground">{t('settings:roleSlugDescription')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings:roleSlugDescription', 'Unique identifier for the role (lowercase, underscores)')}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="display-name">{t('settings:displayName')}</Label>
+                  <Label htmlFor="display-name">{t('settings:displayName', 'Display Name')}</Label>
                   <Input
                     id="display-name"
                     value={roleForm.displayName}
@@ -955,7 +949,7 @@ export default function RolesSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="display-name-vi">{t('settings:displayNameVi')}</Label>
+                  <Label htmlFor="display-name-vi">{t('settings:displayNameVi', 'Display Name (Vietnamese)')}</Label>
                   <Input
                     id="display-name-vi"
                     value={roleForm.displayNameVi}
@@ -968,7 +962,7 @@ export default function RolesSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role-color">{t('settings:roleColor')}</Label>
+                  <Label htmlFor="role-color">{t('settings:roleColor', 'Role Color')}</Label>
                   <Select
                     value={roleForm.color}
                     onValueChange={(value) => setRoleForm(prev => ({ ...prev, color: value }))}
@@ -981,7 +975,7 @@ export default function RolesSettings() {
                         <SelectItem key={color.value} value={color.value}>
                           <div className="flex items-center gap-2">
                             <div className={`w-4 h-4 rounded-full ${color.class}`} />
-                            {t(`settings:${color.label}` as any)}
+                            {t(`settings:${color.label}` as any, color.value.charAt(0).toUpperCase() + color.value.slice(1))}
                           </div>
                         </SelectItem>
                       ))}
@@ -991,7 +985,7 @@ export default function RolesSettings() {
 
                 {!selectedRole?.isSystem && (
                   <div className="space-y-2">
-                    <Label htmlFor="role-icon">{t('settings:roleIcon')}</Label>
+                    <Label htmlFor="role-icon">{t('settings:roleIcon', 'Role Icon')}</Label>
                     <Select
                       value={roleForm.icon}
                       onValueChange={(value) => setRoleForm(prev => ({ ...prev, icon: value }))}
@@ -1006,7 +1000,7 @@ export default function RolesSettings() {
                             <SelectItem key={iconOption.value} value={iconOption.value}>
                               <div className="flex items-center gap-2">
                                 <IconComponent className="h-4 w-4" />
-                                {t(`settings:${iconOption.label}` as any)}
+                                {t(`settings:${iconOption.label}` as any, iconOption.value.charAt(0).toUpperCase() + iconOption.value.slice(1))}
                               </div>
                             </SelectItem>
                           );
@@ -1017,7 +1011,7 @@ export default function RolesSettings() {
                 )}
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">{t('settings:roleDescription')}</Label>
+                  <Label htmlFor="description">{t('settings:roleDescription', 'Role Description')}</Label>
                   <Input
                     id="description"
                     value={roleForm.description}
@@ -1029,7 +1023,7 @@ export default function RolesSettings() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description-vi">{t('settings:roleDescriptionVi')}</Label>
+                  <Label htmlFor="description-vi">{t('settings:roleDescriptionVi', 'Role Description (Vietnamese)')}</Label>
                   <Input
                     id="description-vi"
                     value={roleForm.descriptionVi}
@@ -1048,20 +1042,20 @@ export default function RolesSettings() {
                   <Crown className="h-16 w-16 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-amber-800 dark:text-amber-300 mb-2">
-                  {t('settings:fullAccessTitle')}
+                  {t('settings:fullAccessTitle', 'Full System Access')}
                 </h3>
                 <p className="text-center text-amber-700 dark:text-amber-400 max-w-md mb-6">
-                  {t('settings:fullAccessDescription')}
+                  {t('settings:fullAccessDescription', 'This role has unrestricted access to all features and data in the system')}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
-                    {t('settings:allPages')}
+                    {t('settings:allPages', 'All Pages')}
                   </Badge>
                   <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
-                    {t('settings:allFeatures')}
+                    {t('settings:allFeatures', 'All Features')}
                   </Badge>
                   <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
-                    {t('settings:sensitiveDataAccess')}
+                    {t('settings:sensitiveDataAccess', 'Sensitive Data Access')}
                   </Badge>
                 </div>
               </div>
@@ -1075,10 +1069,10 @@ export default function RolesSettings() {
                       </div>
                       <div>
                         <Label htmlFor="sensitive-data-toggle" className="text-base font-semibold cursor-pointer">
-                          {t('settings:sensitiveDataAccess')}
+                          {t('settings:sensitiveDataAccess', 'Sensitive Data Access')}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          {t('settings:sensitiveDataDescription')}
+                          {t('settings:sensitiveDataDescription', 'Allow access to sensitive financial and personal data')}
                         </p>
                       </div>
                     </div>
@@ -1092,16 +1086,16 @@ export default function RolesSettings() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                      {t('settings:sensitiveDataIncludes')}
+                      {t('settings:sensitiveDataIncludes', 'Includes access to cost prices, profit margins, and financial reports')}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">{t('settings:selectPermissions')}</h3>
+                    <h3 className="text-lg font-medium">{t('settings:selectPermissions', 'Select Permissions')}</h3>
                     <div className="text-sm text-muted-foreground">
-                      {roleForm.permissionIds.length} {t('settings:permissionCount')}
+                      {roleForm.permissionIds.length} {t('settings:permissionCount', 'permissions')}
                     </div>
                   </div>
 
@@ -1157,10 +1151,10 @@ export default function RolesSettings() {
                                     <ParentIcon className={`h-6 w-6 ${color}`} />
                                     <div className="flex-1">
                                       <span className="font-semibold text-base">
-                                        {t(`settings:parent${parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}` as any)}
+                                        {t(`settings:parent${parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}` as any, parentKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))}
                                       </span>
                                       <p className="text-xs text-muted-foreground">
-                                        {sectionKeys.length} {t('settings:sections')}
+                                        {sectionKeys.length} {t('settings:sections', 'sections')}
                                       </p>
                                     </div>
                                     <Badge variant="secondary" className="text-sm font-medium">
@@ -1215,7 +1209,7 @@ export default function RolesSettings() {
                                           </div>
                                           <Icon className="h-5 w-5 text-muted-foreground" />
                                           <span className="font-medium capitalize flex-1">
-                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any) || section}
+                                            {t(`settings:section${section.charAt(0).toUpperCase() + section.slice(1)}` as any, section.charAt(0).toUpperCase() + section.slice(1)) || section}
                                           </span>
                                           <Badge variant="outline" className="text-xs">
                                             {permissionsData?.grouped[section]?.filter(p => roleForm.permissionIds.includes(p.id)).length || 0}
@@ -1234,7 +1228,7 @@ export default function RolesSettings() {
 
                       <div className="space-y-2 border-l pl-4">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium">{t('settings:permissionPages')}</p>
+                          <p className="text-sm font-medium">{t('settings:permissionPages', 'Permission Pages')}</p>
                           {selectedSection && (
                             <div className="flex gap-2">
                               <Button
@@ -1244,7 +1238,7 @@ export default function RolesSettings() {
                                 className="min-h-[36px] text-xs"
                                 data-testid="button-select-all"
                               >
-                                {t('settings:selectAllSection')}
+                                {t('settings:selectAllSection', 'Select All')}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1253,7 +1247,7 @@ export default function RolesSettings() {
                                 className="min-h-[36px] text-xs"
                                 data-testid="button-deselect-all"
                               >
-                                {t('settings:deselectAllSection')}
+                                {t('settings:deselectAllSection', 'Deselect All')}
                               </Button>
                             </div>
                           )}
@@ -1284,7 +1278,7 @@ export default function RolesSettings() {
                                     {permission.isSensitive && (
                                       <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
                                         <ShieldAlert className="h-3 w-3 mr-1" />
-                                        {t('settings:sensitiveData')}
+                                        {t('settings:sensitiveData', 'Sensitive')}
                                       </Badge>
                                     )}
                                   </div>
@@ -1299,8 +1293,8 @@ export default function RolesSettings() {
                           ) : (
                             <div className="text-center py-12 text-muted-foreground">
                               <Settings className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                              <p className="text-sm font-medium">{t('settings:selectSectionToViewPermissions')}</p>
-                              <p className="text-xs mt-1">{t('settings:clickOnSectionFromLeft')}</p>
+                              <p className="text-sm font-medium">{t('settings:selectSectionToViewPermissions', 'Select a section to view permissions')}</p>
+                              <p className="text-xs mt-1">{t('settings:clickOnSectionFromLeft', 'Click on a section from the left panel')}</p>
                             </div>
                           )}
                         </div>
@@ -1319,7 +1313,7 @@ export default function RolesSettings() {
               className="min-h-[44px]"
               data-testid="button-cancel"
             >
-              {t('common:cancel')}
+              {t('common:cancel', 'Cancel')}
             </Button>
             <Button
               onClick={handleSaveRole}
@@ -1333,8 +1327,8 @@ export default function RolesSettings() {
               data-testid="button-save-role"
             >
               {createRoleMutation.isPending || updateRoleMutation.isPending
-                ? t('common:saving')
-                : t('settings:saveRole')}
+                ? t('common:saving', 'Saving...')
+                : t('settings:saveRole', 'Save Role')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1343,18 +1337,18 @@ export default function RolesSettings() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('settings:deleteRole')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('settings:deleteRole', 'Delete Role')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('settings:deleteRoleConfirmation')}
+              {t('settings:deleteRoleConfirmation', 'Are you sure you want to delete this role?')}
               <br />
               <span className="text-destructive font-medium">
-                {t('settings:deleteRoleWarning')}
+                {t('settings:deleteRoleWarning', 'This action cannot be undone. Users with this role will lose their permissions.')}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="min-h-[44px]">
-              {t('common:cancel')}
+              {t('common:cancel', 'Cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => selectedRole && deleteRoleMutation.mutate(selectedRole.id)}
@@ -1362,7 +1356,7 @@ export default function RolesSettings() {
               disabled={deleteRoleMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteRoleMutation.isPending ? t('common:deleting') : t('settings:deleteRole')}
+              {deleteRoleMutation.isPending ? t('common:deleting', 'Deleting...') : t('settings:deleteRole', 'Delete Role')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

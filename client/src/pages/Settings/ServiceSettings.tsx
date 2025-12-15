@@ -66,8 +66,8 @@ export default function ServiceSettings() {
   const handleLoadDefaults = () => {
     setServiceTypes(DEFAULT_SERVICE_TYPES);
     toast({
-      title: t('common:success'),
-      description: t('settings:defaultServiceTypesLoaded'),
+      title: t('common:success', 'Success'),
+      description: t('settings:defaultServiceTypesLoaded', 'Default service types loaded'),
     });
   };
 
@@ -75,8 +75,8 @@ export default function ServiceSettings() {
     if (!newTypeName.trim()) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:serviceTypeNameRequired'),
+        title: t('common:error', 'Error'),
+        description: t('settings:serviceTypeNameRequired', 'Service type name is required'),
       });
       return;
     }
@@ -84,8 +84,8 @@ export default function ServiceSettings() {
     if (serviceTypes.some(st => st.name.toLowerCase() === newTypeName.trim().toLowerCase())) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:serviceTypeAlreadyExists'),
+        title: t('common:error', 'Error'),
+        description: t('settings:serviceTypeAlreadyExists', 'Service type already exists'),
       });
       return;
     }
@@ -139,15 +139,15 @@ export default function ServiceSettings() {
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
 
       toast({
-        title: t('common:success'),
-        description: t('settings:serviceSettingsSaved'),
+        title: t('common:success', 'Success'),
+        description: t('settings:serviceSettingsSaved', 'Service settings saved'),
       });
     } catch (error) {
       console.error('Error saving service settings:', error);
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:failedToSaveSettings'),
+        title: t('common:error', 'Error'),
+        description: t('settings:failedToSaveSettings', 'Failed to save settings'),
       });
     } finally {
       setIsSaving(false);
@@ -168,10 +168,10 @@ export default function ServiceSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-orange-500" />
-            {t('settings:serviceTypesTitle')}
+            {t('settings:serviceTypesTitle', 'Service Types')}
           </CardTitle>
           <CardDescription>
-            {t('settings:serviceTypesDescription')}
+            {t('settings:serviceTypesDescription', 'Configure available service types and their default pricing')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -179,7 +179,7 @@ export default function ServiceSettings() {
             <div className="space-y-2">
               <Label htmlFor="default-cost-eur" className="flex items-center gap-1">
                 <Euro className="h-4 w-4" />
-                {t('settings:defaultServiceCostEur')}
+                {t('settings:defaultServiceCostEur', 'Default Service Cost (EUR)')}
               </Label>
               <Input
                 id="default-cost-eur"
@@ -195,7 +195,7 @@ export default function ServiceSettings() {
             <div className="space-y-2">
               <Label htmlFor="default-cost-czk" className="flex items-center gap-1">
                 <span className="text-sm font-medium">Kč</span>
-                {t('settings:defaultServiceCostCzk')}
+                {t('settings:defaultServiceCostCzk', 'Default Service Cost (CZK)')}
               </Label>
               <Input
                 id="default-cost-czk"
@@ -211,20 +211,20 @@ export default function ServiceSettings() {
           </div>
 
           <div className="border-t pt-6">
-            <h4 className="text-sm font-semibold mb-4">{t('settings:addNewServiceType')}</h4>
+            <h4 className="text-sm font-semibold mb-4">{t('settings:addNewServiceType', 'Add New Service Type')}</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-1">
-                <Label htmlFor="new-type-name">{t('settings:serviceTypeName')}</Label>
+                <Label htmlFor="new-type-name">{t('settings:serviceTypeName', 'Service Type Name')}</Label>
                 <Input
                   id="new-type-name"
                   value={newTypeName}
                   onChange={(e) => setNewTypeName(e.target.value)}
-                  placeholder={t('settings:enterServiceTypeName')}
+                  placeholder={t('settings:enterServiceTypeName', 'Enter service type name')}
                   data-testid="input-new-service-type-name"
                 />
               </div>
               <div>
-                <Label htmlFor="new-type-cost-eur">{t('settings:costEur')}</Label>
+                <Label htmlFor="new-type-cost-eur">{t('settings:costEur', 'Cost (EUR)')}</Label>
                 <Input
                   id="new-type-cost-eur"
                   type="number"
@@ -237,7 +237,7 @@ export default function ServiceSettings() {
                 />
               </div>
               <div>
-                <Label htmlFor="new-type-cost-czk">{t('settings:costCzk')}</Label>
+                <Label htmlFor="new-type-cost-czk">{t('settings:costCzk', 'Cost (CZK)')}</Label>
                 <Input
                   id="new-type-cost-czk"
                   type="number"
@@ -257,7 +257,7 @@ export default function ServiceSettings() {
                   data-testid="button-add-service-type"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('common:add')}
+                  {t('common:add', 'Add')}
                 </Button>
               </div>
             </div>
@@ -268,11 +268,11 @@ export default function ServiceSettings() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('settings:serviceTypeName')}</TableHead>
-                    <TableHead className="text-right">{t('settings:costEur')}</TableHead>
-                    <TableHead className="text-right">{t('settings:costCzk')}</TableHead>
-                    <TableHead className="text-center">{t('common:enabled')}</TableHead>
-                    <TableHead className="text-center w-[80px]">{t('common:actions')}</TableHead>
+                    <TableHead>{t('settings:serviceTypeName', 'Service Type Name')}</TableHead>
+                    <TableHead className="text-right">{t('settings:costEur', 'Cost (EUR)')}</TableHead>
+                    <TableHead className="text-right">{t('settings:costCzk', 'Cost (CZK)')}</TableHead>
+                    <TableHead className="text-center">{t('common:enabled', 'Enabled')}</TableHead>
+                    <TableHead className="text-center w-[80px]">{t('common:actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -334,8 +334,8 @@ export default function ServiceSettings() {
           {serviceTypes.length === 0 && (
             <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
               <Wrench className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">{t('settings:noServiceTypes')}</p>
-              <p className="text-sm mb-4">{t('settings:addServiceTypeToStart')}</p>
+              <p className="font-medium">{t('settings:noServiceTypes', 'No Service Types')}</p>
+              <p className="text-sm mb-4">{t('settings:addServiceTypeToStart', 'Add a service type to get started')}</p>
               <Button
                 type="button"
                 variant="outline"
@@ -343,7 +343,7 @@ export default function ServiceSettings() {
                 data-testid="button-load-default-services"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {t('settings:loadDefaultServices')}
+                {t('settings:loadDefaultServices', 'Load Default Services')}
               </Button>
             </div>
           )}
@@ -355,7 +355,7 @@ export default function ServiceSettings() {
               onClick={handleLoadDefaults}
               data-testid="button-reset-to-defaults"
             >
-              {t('settings:resetToDefaults')}
+              {t('settings:resetToDefaults', 'Reset to Defaults')}
             </Button>
             <Button
               onClick={handleSaveSettings}
@@ -367,7 +367,7 @@ export default function ServiceSettings() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {t('common:saveChanges')}
+              {t('common:saveChanges', 'Save Changes')}
             </Button>
           </div>
         </CardContent>

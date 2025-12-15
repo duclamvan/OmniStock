@@ -230,8 +230,8 @@ export default function InventorySettings() {
     if (!newReturnType.trim()) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:returnTypeValueRequired'),
+        title: t('common:error', 'Error'),
+        description: t('settings:returnTypeValueRequired', 'Please enter a return type name'),
       });
       return;
     }
@@ -241,8 +241,8 @@ export default function InventorySettings() {
     if (returnTypes.find(rt => rt.value === valueSnakeCase)) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:returnTypeAlreadyExists'),
+        title: t('common:error', 'Error'),
+        description: t('settings:returnTypeAlreadyExists', 'This return type already exists'),
       });
       return;
     }
@@ -286,15 +286,15 @@ export default function InventorySettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
       toast({
-        title: t('common:success'),
-        description: t('settings:returnTypesSaved'),
+        title: t('common:success', 'Success'),
+        description: t('settings:returnTypesSaved', 'Return types saved successfully'),
       });
     } catch (error) {
       console.error('Error saving return types:', error);
       toast({
         variant: "destructive",
-        title: t('common:error'),
-        description: t('settings:returnTypesSaveError'),
+        title: t('common:error', 'Error'),
+        description: t('settings:returnTypesSaveError', 'Failed to save return types'),
       });
     } finally {
       setReturnTypesSaving(false);
@@ -316,7 +316,7 @@ export default function InventorySettings() {
     if (!newBulkUnit.trim()) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
+        title: t('common:error', 'Error'),
         description: t('settings:bulkUnitValueRequired', 'Please enter a bulk unit name'),
       });
       return;
@@ -327,7 +327,7 @@ export default function InventorySettings() {
     if (bulkUnits.find(bu => bu.value === valueSnakeCase)) {
       toast({
         variant: "destructive",
-        title: t('common:error'),
+        title: t('common:error', 'Error'),
         description: t('settings:bulkUnitAlreadyExists', 'This bulk unit already exists'),
       });
       return;
@@ -372,14 +372,14 @@ export default function InventorySettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
       toast({
-        title: t('common:success'),
+        title: t('common:success', 'Success'),
         description: t('settings:bulkUnitsSaved', 'Bulk units saved successfully'),
       });
     } catch (error) {
       console.error('Error saving bulk units:', error);
       toast({
         variant: "destructive",
-        title: t('common:error'),
+        title: t('common:error', 'Error'),
         description: t('settings:bulkUnitsSaveError', 'Failed to save bulk units'),
       });
     } finally {
@@ -458,31 +458,31 @@ export default function InventorySettings() {
             <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
               <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:products')}</span>
+                <span className="hidden sm:inline">{t('settings:products', 'Products')}</span>
               </TabsTrigger>
               <TabsTrigger value="stock" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:stock')}</span>
+                <span className="hidden sm:inline">{t('settings:stock', 'Stock')}</span>
               </TabsTrigger>
               <TabsTrigger value="warehouse" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:warehouse')}</span>
+                <span className="hidden sm:inline">{t('settings:warehouse', 'Warehouse')}</span>
               </TabsTrigger>
               <TabsTrigger value="quality" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:quality')}</span>
+                <span className="hidden sm:inline">{t('settings:quality', 'Quality')}</span>
               </TabsTrigger>
               <TabsTrigger value="units" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Ruler className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:units')}</span>
+                <span className="hidden sm:inline">{t('settings:units', 'Units')}</span>
               </TabsTrigger>
               <TabsTrigger value="catalog" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Image className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:catalog')}</span>
+                <span className="hidden sm:inline">{t('settings:catalog', 'Catalog')}</span>
               </TabsTrigger>
               <TabsTrigger value="returns" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
                 <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:returns')}</span>
+                <span className="hidden sm:inline">{t('settings:returns', 'Returns')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -493,9 +493,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:productDefaults')}
+                  {t('settings:productDefaults', 'Product Defaults')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:productDefaultsDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:productDefaultsDescription', 'Configure default settings for new products')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -504,7 +504,7 @@ export default function InventorySettings() {
                     name="default_product_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultProductType')}</FormLabel>
+                        <FormLabel>{t('settings:defaultProductType', 'Default Product Type')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -514,16 +514,16 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_product_type">
-                              <SelectValue placeholder={t('settings:selectProductType')} />
+                              <SelectValue placeholder={t('settings:selectProductType', 'Select product type')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="regular">{t('settings:productTypeRegular')}</SelectItem>
-                            <SelectItem value="bundle">{t('settings:productTypeBundle')}</SelectItem>
-                            <SelectItem value="service">{t('settings:productTypeService')}</SelectItem>
+                            <SelectItem value="regular">{t('settings:productTypeRegular', 'Regular')}</SelectItem>
+                            <SelectItem value="bundle">{t('settings:productTypeBundle', 'Bundle')}</SelectItem>
+                            <SelectItem value="service">{t('settings:productTypeService', 'Service')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultProductTypeDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultProductTypeDescription', 'The default type assigned to new products')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -534,7 +534,7 @@ export default function InventorySettings() {
                     name="default_packaging_requirement"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultPackagingType')}</FormLabel>
+                        <FormLabel>{t('settings:defaultPackagingType', 'Default Packaging Type')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -544,16 +544,16 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_packaging_requirement">
-                              <SelectValue placeholder={t('settings:selectPackagingType')} />
+                              <SelectValue placeholder={t('settings:selectPackagingType', 'Select packaging type')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="carton">{t('settings:packagingTypeCarton')}</SelectItem>
-                            <SelectItem value="outer_carton">{t('settings:packagingTypeOuterCarton')}</SelectItem>
-                            <SelectItem value="nylon_wrap">{t('settings:packagingTypeNylonWrap')}</SelectItem>
+                            <SelectItem value="carton">{t('settings:packagingTypeCarton', 'Carton')}</SelectItem>
+                            <SelectItem value="outer_carton">{t('settings:packagingTypeOuterCarton', 'Outer Carton')}</SelectItem>
+                            <SelectItem value="nylon_wrap">{t('settings:packagingTypeNylonWrap', 'Nylon Wrap')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultPackagingTypeDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultPackagingTypeDescription', 'Default packaging type for new products')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -564,12 +564,12 @@ export default function InventorySettings() {
                     name="sku_prefix"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:skuPrefix')}</FormLabel>
+                        <FormLabel>{t('settings:skuPrefix', 'SKU Prefix')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
-                            placeholder={t('settings:skuPrefixPlaceholder')} 
+                            placeholder={t('settings:skuPrefixPlaceholder', 'e.g., SKU')} 
                             data-testid="input-sku_prefix"
                             onChange={(e) => {
                               field.onChange(e);
@@ -578,7 +578,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('sku_prefix')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:skuPrefixDescription')}</FormDescription>
+                        <FormDescription>{t('settings:skuPrefixDescription', 'Prefix added to automatically generated SKUs')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -602,9 +602,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableBarcodeScanningLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableBarcodeScanningLabel', 'Enable Barcode Scanning')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableBarcodeScanningDescription')}
+                            {t('settings:enableBarcodeScanningDescription', 'Allow barcode scanning for product identification')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -627,9 +627,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoGenerateSkuLabel')}</FormLabel>
+                          <FormLabel>{t('settings:autoGenerateSkuLabel', 'Auto Generate SKU')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoGenerateSkuDescription')}
+                            {t('settings:autoGenerateSkuDescription', 'Automatically generate SKU codes for new products')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -652,9 +652,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:trackSerialNumbersLabel')}</FormLabel>
+                          <FormLabel>{t('settings:trackSerialNumbersLabel', 'Track Serial Numbers')}</FormLabel>
                           <FormDescription>
-                            {t('settings:trackSerialNumbersDescription')}
+                            {t('settings:trackSerialNumbersDescription', 'Enable serial number tracking for products')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -671,9 +671,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:stockManagement')}
+                  {t('settings:stockManagement', 'Stock Management')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:stockManagementDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:stockManagementDescription', 'Configure stock management settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -682,14 +682,14 @@ export default function InventorySettings() {
                     name="low_stock_threshold"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:lowStockThreshold')}</FormLabel>
+                        <FormLabel>{t('settings:lowStockThreshold', 'Low Stock Threshold')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder={t('settings:lowStockThresholdPlaceholder')} 
+                            placeholder={t('settings:lowStockThresholdPlaceholder', 'e.g., 10')} 
                             data-testid="input-low_stock_threshold"
                             onChange={(e) => {
                               field.onChange(e);
@@ -698,7 +698,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('low_stock_threshold')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:lowStockThresholdDescription')}</FormDescription>
+                        <FormDescription>{t('settings:lowStockThresholdDescription', 'Alert when stock falls below this quantity')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -764,14 +764,14 @@ export default function InventorySettings() {
                     name="auto_reorder_point"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:autoReorderPoint')}</FormLabel>
+                        <FormLabel>{t('settings:autoReorderPoint', 'Auto Reorder Point')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder={t('settings:autoReorderPointPlaceholder')} 
+                            placeholder={t('settings:autoReorderPointPlaceholder', 'e.g., 20')} 
                             data-testid="input-auto_reorder_point"
                             onChange={(e) => {
                               field.onChange(e);
@@ -780,7 +780,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('auto_reorder_point')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:autoReorderPointDescription')}</FormDescription>
+                        <FormDescription>{t('settings:autoReorderPointDescription', 'Automatically trigger reorder when stock reaches this level')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -791,14 +791,14 @@ export default function InventorySettings() {
                     name="safety_stock_level"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:safetyStockLevel')}</FormLabel>
+                        <FormLabel>{t('settings:safetyStockLevel', 'Safety Stock Level')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="0"
-                            placeholder={t('settings:safetyStockLevelPlaceholder')} 
+                            placeholder={t('settings:safetyStockLevelPlaceholder', 'e.g., 5')} 
                             data-testid="input-safety_stock_level"
                             onChange={(e) => {
                               field.onChange(e);
@@ -807,7 +807,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('safety_stock_level')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:safetyStockLevelDescription')}</FormDescription>
+                        <FormDescription>{t('settings:safetyStockLevelDescription', 'Minimum stock level to maintain as safety buffer')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -818,14 +818,14 @@ export default function InventorySettings() {
                     name="stock_count_frequency_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:stockCountFrequency')}</FormLabel>
+                        <FormLabel>{t('settings:stockCountFrequency', 'Stock Count Frequency')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
                             value={field.value ?? ''}
                             type="number" 
                             min="1"
-                            placeholder={t('settings:stockCountFrequencyPlaceholder')} 
+                            placeholder={t('settings:stockCountFrequencyPlaceholder', 'e.g., 30')} 
                             data-testid="input-stock_count_frequency_days"
                             onChange={(e) => {
                               field.onChange(e);
@@ -834,7 +834,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('stock_count_frequency_days')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:stockCountFrequencyDescription')}</FormDescription>
+                        <FormDescription>{t('settings:stockCountFrequencyDescription', 'Number of days between stock counts')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -858,9 +858,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:stockAdjustmentApprovalRequiredLabel')}</FormLabel>
+                          <FormLabel>{t('settings:stockAdjustmentApprovalRequiredLabel', 'Stock Adjustment Approval Required')}</FormLabel>
                           <FormDescription>
-                            {t('settings:stockAdjustmentApprovalRequiredDescriptionAlt')}
+                            {t('settings:stockAdjustmentApprovalRequiredDescriptionAlt', 'Require approval for stock adjustments')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -883,9 +883,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:allowNegativeStockLabel')}</FormLabel>
+                          <FormLabel>{t('settings:allowNegativeStockLabel', 'Allow Negative Stock')}</FormLabel>
                           <FormDescription>
-                            {t('settings:allowNegativeStockDescriptionAlt')}
+                            {t('settings:allowNegativeStockDescriptionAlt', 'Allow inventory to go below zero')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -908,9 +908,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableBatchLotTrackingLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableBatchLotTrackingLabel', 'Enable Batch/Lot Tracking')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableBatchLotTrackingDescriptionAlt')}
+                            {t('settings:enableBatchLotTrackingDescriptionAlt', 'Track products by batch or lot numbers')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -933,9 +933,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableExpirationDateTrackingLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableExpirationDateTrackingLabel', 'Enable Expiration Date Tracking')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableExpirationDateTrackingDescriptionAlt')}
+                            {t('settings:enableExpirationDateTrackingDescriptionAlt', 'Track expiration dates for perishable products')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -952,9 +952,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Warehouse className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:warehouseOperationsCard')}
+                  {t('settings:warehouseOperationsCard', 'Warehouse Operations')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:warehouseOperationsCardDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:warehouseOperationsCardDescription', 'Configure warehouse operation settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -963,7 +963,7 @@ export default function InventorySettings() {
                     name="default_warehouse"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultWarehouseLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultWarehouseLabel', 'Default Warehouse')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -973,11 +973,11 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_warehouse">
-                              <SelectValue placeholder={t('common:selectDefaultWarehouse')} />
+                              <SelectValue placeholder={t('common:selectDefaultWarehouse', 'Select default warehouse')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">{t('common:none')}</SelectItem>
+                            <SelectItem value="none">{t('common:none', 'None')}</SelectItem>
                             {warehouses.map((warehouse: any) => (
                               <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                                 {warehouse.name}
@@ -985,7 +985,7 @@ export default function InventorySettings() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultWarehouseDescriptionAlt')}</FormDescription>
+                        <FormDescription>{t('settings:defaultWarehouseDescriptionAlt', 'Default warehouse for new inventory')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -996,7 +996,7 @@ export default function InventorySettings() {
                     name="location_format"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:locationFormatLabel')}</FormLabel>
+                        <FormLabel>{t('settings:locationFormatLabel', 'Location Format')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1006,17 +1006,17 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-location_format">
-                              <SelectValue placeholder={t('common:selectLocationFormat')} />
+                              <SelectValue placeholder={t('common:selectLocationFormat', 'Select location format')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="A-01-01">A-01-01</SelectItem>
                             <SelectItem value="A01-R01-S01">A01-R01-S01</SelectItem>
                             <SelectItem value="Zone-Rack-Bin">Zone-Rack-Bin</SelectItem>
-                            <SelectItem value="Custom">{t('settings:locationFormatCustom')}</SelectItem>
+                            <SelectItem value="Custom">{t('settings:locationFormatCustom', 'Custom')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:locationFormatDescriptionAlt')}</FormDescription>
+                        <FormDescription>{t('settings:locationFormatDescriptionAlt', 'Format for warehouse location codes')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1040,9 +1040,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableMultiWarehouseLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableMultiWarehouseLabel', 'Enable Multi-Warehouse')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableMultiWarehouseDescription')}
+                            {t('settings:enableMultiWarehouseDescription', 'Support multiple warehouse locations')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1065,9 +1065,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoAssignWarehouseLocationLabel')}</FormLabel>
+                          <FormLabel>{t('settings:autoAssignWarehouseLocationLabel', 'Auto Assign Warehouse Location')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoAssignWarehouseLocationDescriptionAlt')}
+                            {t('settings:autoAssignWarehouseLocationDescriptionAlt', 'Automatically assign locations to new products')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1090,9 +1090,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableBinManagementLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableBinManagementLabel', 'Enable Bin Management')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableBinManagementDescriptionAlt')}
+                            {t('settings:enableBinManagementDescriptionAlt', 'Enable bin-level inventory tracking')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1115,9 +1115,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableZoneManagementLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableZoneManagementLabel', 'Enable Zone Management')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableZoneManagementDescriptionAlt')}
+                            {t('settings:enableZoneManagementDescriptionAlt', 'Enable zone-based warehouse organization')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1140,9 +1140,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:temperatureControlZonesLabel')}</FormLabel>
+                          <FormLabel>{t('settings:temperatureControlZonesLabel', 'Temperature Control Zones')}</FormLabel>
                           <FormDescription>
-                            {t('settings:temperatureControlZonesDescriptionAlt')}
+                            {t('settings:temperatureControlZonesDescriptionAlt', 'Enable temperature-controlled storage zones')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1159,9 +1159,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:productQualityCard')}
+                  {t('settings:productQualityCard', 'Product Quality')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:productQualityCardDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:productQualityCardDescription', 'Configure quality control settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1170,7 +1170,7 @@ export default function InventorySettings() {
                     name="qc_sampling_rate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:qcSamplingRateLabel')}</FormLabel>
+                        <FormLabel>{t('settings:qcSamplingRateLabel', 'QC Sampling Rate')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1187,7 +1187,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('qc_sampling_rate')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:qcSamplingRateDescriptionAlt')}</FormDescription>
+                        <FormDescription>{t('settings:qcSamplingRateDescriptionAlt', 'Percentage of items to sample for quality control')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1198,7 +1198,7 @@ export default function InventorySettings() {
                     name="condition_tracking"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultConditionTrackingLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultConditionTrackingLabel', 'Default Condition Tracking')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1208,17 +1208,17 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-condition_tracking">
-                              <SelectValue placeholder={t('common:selectCondition')} />
+                              <SelectValue placeholder={t('common:selectCondition', 'Select condition')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="good">{t('settings:conditionGood')}</SelectItem>
-                            <SelectItem value="damaged">{t('settings:conditionDamaged')}</SelectItem>
-                            <SelectItem value="refurbished">{t('settings:conditionRefurbished')}</SelectItem>
-                            <SelectItem value="returned">{t('settings:conditionReturned')}</SelectItem>
+                            <SelectItem value="good">{t('settings:conditionGood', 'Good')}</SelectItem>
+                            <SelectItem value="damaged">{t('settings:conditionDamaged', 'Damaged')}</SelectItem>
+                            <SelectItem value="refurbished">{t('settings:conditionRefurbished', 'Refurbished')}</SelectItem>
+                            <SelectItem value="returned">{t('settings:conditionReturned', 'Returned')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultConditionTrackingDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultConditionTrackingDescription', 'Default condition for new inventory')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1242,9 +1242,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableQualityControlLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableQualityControlLabel', 'Enable Quality Control')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableQualityControlDescription')}
+                            {t('settings:enableQualityControlDescription', 'Enable quality control processes')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1267,9 +1267,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:damageReportRequiredLabel')}</FormLabel>
+                          <FormLabel>{t('settings:damageReportRequiredLabel', 'Damage Report Required')}</FormLabel>
                           <FormDescription>
-                            {t('settings:damageReportRequiredDescriptionAlt')}
+                            {t('settings:damageReportRequiredDescriptionAlt', 'Require damage reports for defective items')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1292,9 +1292,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:photoEvidenceRequiredLabel')}</FormLabel>
+                          <FormLabel>{t('settings:photoEvidenceRequiredLabel', 'Photo Evidence Required')}</FormLabel>
                           <FormDescription>
-                            {t('settings:photoEvidenceRequiredDescriptionAlt')}
+                            {t('settings:photoEvidenceRequiredDescriptionAlt', 'Require photo evidence for quality issues')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1311,9 +1311,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Ruler className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:measurementUnitsCard')}
+                  {t('settings:measurementUnitsCard', 'Measurement Units')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:measurementUnitsCardDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:measurementUnitsCardDescription', 'Configure default measurement units')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1322,7 +1322,7 @@ export default function InventorySettings() {
                     name="default_length_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultLengthUnitLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultLengthUnitLabel', 'Default Length Unit')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1332,7 +1332,7 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_length_unit">
-                              <SelectValue placeholder={t('common:selectLengthUnit')} />
+                              <SelectValue placeholder={t('common:selectLengthUnit', 'Select length unit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1342,7 +1342,7 @@ export default function InventorySettings() {
                             <SelectItem value="in">Inches (in)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultLengthUnitDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultLengthUnitDescription', 'Default unit for length measurements')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1353,7 +1353,7 @@ export default function InventorySettings() {
                     name="default_weight_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultWeightUnitLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultWeightUnitLabel', 'Default Weight Unit')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1363,7 +1363,7 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_weight_unit">
-                              <SelectValue placeholder={t('common:selectWeightUnit')} />
+                              <SelectValue placeholder={t('common:selectWeightUnit', 'Select weight unit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1373,7 +1373,7 @@ export default function InventorySettings() {
                             <SelectItem value="oz">Ounces (oz)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultWeightUnitDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultWeightUnitDescription', 'Default unit for weight measurements')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1384,7 +1384,7 @@ export default function InventorySettings() {
                     name="default_volume_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:defaultVolumeUnitLabel')}</FormLabel>
+                        <FormLabel>{t('settings:defaultVolumeUnitLabel', 'Default Volume Unit')}</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -1394,7 +1394,7 @@ export default function InventorySettings() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-default_volume_unit">
-                              <SelectValue placeholder={t('common:selectVolumeUnit')} />
+                              <SelectValue placeholder={t('common:selectVolumeUnit', 'Select volume unit')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1404,7 +1404,7 @@ export default function InventorySettings() {
                             <SelectItem value="oz">Fluid Ounces (oz)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>{t('settings:defaultVolumeUnitDescription')}</FormDescription>
+                        <FormDescription>{t('settings:defaultVolumeUnitDescription', 'Default unit for volume measurements')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1415,7 +1415,7 @@ export default function InventorySettings() {
                     name="decimal_places_weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:decimalPlacesWeightLabel')}</FormLabel>
+                        <FormLabel>{t('settings:decimalPlacesWeightLabel', 'Decimal Places (Weight)')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1432,7 +1432,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('decimal_places_weight')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:decimalPlacesWeightDescription')}</FormDescription>
+                        <FormDescription>{t('settings:decimalPlacesWeightDescription', 'Number of decimal places for weight values')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1443,7 +1443,7 @@ export default function InventorySettings() {
                     name="decimal_places_dimensions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:decimalPlacesDimensionsLabel')}</FormLabel>
+                        <FormLabel>{t('settings:decimalPlacesDimensionsLabel', 'Decimal Places (Dimensions)')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1460,7 +1460,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('decimal_places_dimensions')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:decimalPlacesDimensionsDescription')}</FormDescription>
+                        <FormDescription>{t('settings:decimalPlacesDimensionsDescription', 'Number of decimal places for dimension values')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1531,7 +1531,7 @@ export default function InventorySettings() {
                       data-testid="btn-add-bulk-unit"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      {t('common:add')}
+                      {t('common:add', 'Add')}
                     </Button>
                   </div>
                 </div>
@@ -1558,7 +1558,7 @@ export default function InventorySettings() {
                     ) : (
                       <Save className="h-4 w-4 mr-1" />
                     )}
-                    {t('common:save')}
+                    {t('common:save', 'Save')}
                   </Button>
                 </div>
               </CardContent>
@@ -1571,9 +1571,9 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Image className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:catalogSettingsCard')}
+                  {t('settings:catalogSettingsCard', 'Catalog Settings')}
                 </CardTitle>
-                <CardDescription className="text-sm">{t('settings:catalogSettingsCardDescription')}</CardDescription>
+                <CardDescription className="text-sm">{t('settings:catalogSettingsCardDescription', 'Configure product catalog settings')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1582,7 +1582,7 @@ export default function InventorySettings() {
                     name="max_images_per_product"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:maxImagesPerProductLabel')}</FormLabel>
+                        <FormLabel>{t('settings:maxImagesPerProductLabel', 'Max Images per Product')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -1599,7 +1599,7 @@ export default function InventorySettings() {
                             onBlur={handleTextBlur('max_images_per_product')}
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:maxImagesPerProductDescriptionAlt')}</FormDescription>
+                        <FormDescription>{t('settings:maxImagesPerProductDescriptionAlt', 'Maximum number of images allowed per product')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1610,7 +1610,7 @@ export default function InventorySettings() {
                     name="image_quality"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('settings:imageQualityLabel')} - {field.value ?? 0}%</FormLabel>
+                        <FormLabel>{t('settings:imageQualityLabel', 'Image Quality')} - {field.value ?? 0}%</FormLabel>
                         <FormControl>
                           <Slider
                             min={0}
@@ -1625,7 +1625,7 @@ export default function InventorySettings() {
                             data-testid="slider-image_quality"
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:imageQualityDescriptionAlt')}</FormDescription>
+                        <FormDescription>{t('settings:imageQualityDescriptionAlt', 'Quality level for uploaded images')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1649,9 +1649,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableProductVariantsLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableProductVariantsLabel', 'Enable Product Variants')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableProductVariantsDescriptionAlt')}
+                            {t('settings:enableProductVariantsDescriptionAlt', 'Allow products to have variants (size, color, etc.)')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1674,9 +1674,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableBundlesLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableBundlesLabel', 'Enable Bundles')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableBundlesDescriptionAlt')}
+                            {t('settings:enableBundlesDescriptionAlt', 'Allow product bundling')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1699,9 +1699,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:enableServicesLabel')}</FormLabel>
+                          <FormLabel>{t('settings:enableServicesLabel', 'Enable Services')}</FormLabel>
                           <FormDescription>
-                            {t('settings:enableServicesDescriptionAlt')}
+                            {t('settings:enableServicesDescriptionAlt', 'Allow service-type products')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1724,9 +1724,9 @@ export default function InventorySettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:autoCompressImagesLabel')}</FormLabel>
+                          <FormLabel>{t('settings:autoCompressImagesLabel', 'Auto Compress Images')}</FormLabel>
                           <FormDescription>
-                            {t('settings:autoCompressImagesDescriptionAlt')}
+                            {t('settings:autoCompressImagesDescriptionAlt', 'Automatically compress uploaded images')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1743,17 +1743,17 @@ export default function InventorySettings() {
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:returnTypesTitle')}
+                  {t('settings:returnTypesTitle', 'Return Types')}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {t('settings:returnTypesDescription')}
+                  {t('settings:returnTypesDescription', 'Configure available return types')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-4">
                 {/* Add new return type */}
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Input
-                    placeholder={t('settings:newReturnTypePlaceholder')}
+                    placeholder={t('settings:newReturnTypePlaceholder', 'e.g., exchange, refund')}
                     value={newReturnType}
                     onChange={(e) => setNewReturnType(e.target.value)}
                     className="flex-1"
@@ -1773,7 +1773,7 @@ export default function InventorySettings() {
                     data-testid="button-add-return-type"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    {t('common:add')}
+                    {t('common:add', 'Add')}
                   </Button>
                 </div>
 
@@ -1802,7 +1802,7 @@ export default function InventorySettings() {
                         {returnType.disposesInventory && (
                           <Badge variant="destructive" className="text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
-                            {t('settings:disposesInventory')}
+                            {t('settings:disposesInventory', 'Disposes Inventory')}
                           </Badge>
                         )}
                       </div>
@@ -1813,7 +1813,7 @@ export default function InventorySettings() {
                             onCheckedChange={(checked) => handleToggleDisposesInventory(returnType.value, checked as boolean)}
                             data-testid={`checkbox-disposes-${returnType.value}`}
                           />
-                          <span className="text-muted-foreground">{t('settings:markAsDisposed')}</span>
+                          <span className="text-muted-foreground">{t('settings:markAsDisposed', 'Mark as Disposed')}</span>
                         </div>
                         <Button
                           type="button"
@@ -1840,7 +1840,7 @@ export default function InventorySettings() {
                     data-testid="button-reset-return-types"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
-                    {t('settings:resetToDefaults')}
+                    {t('settings:resetToDefaults', 'Reset to Defaults')}
                   </Button>
                   <Button
                     type="button"
@@ -1852,12 +1852,12 @@ export default function InventorySettings() {
                     {returnTypesSaving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t('settings:savingSettings')}
+                        {t('settings:savingSettings', 'Saving...')}
                       </>
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        {t('settings:saveReturnTypes')}
+                        {t('settings:saveReturnTypes', 'Save Return Types')}
                       </>
                     )}
                   </Button>
@@ -1874,20 +1874,20 @@ export default function InventorySettings() {
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>{t('settings:savingSettings')}</span>
+                  <span>{t('settings:savingSettings', 'Saving...')}</span>
                 </>
               )}
               {saveStatus === 'saved' && (
                 <>
                   <Check className="h-4 w-4 text-green-500" />
-                  <span className="text-green-500">{t('settings:settingsSaved')}</span>
+                  <span className="text-green-500">{t('settings:settingsSaved', 'Settings saved')}</span>
                 </>
               )}
               {saveStatus === 'error' && (
-                <span className="text-destructive">{t('settings:settingsSaveError')}</span>
+                <span className="text-destructive">{t('settings:settingsSaveError', 'Failed to save settings')}</span>
               )}
               {saveStatus === 'idle' && hasPendingChanges && (
-                <span>{t('common:unsavedChanges')}</span>
+                <span>{t('common:unsavedChanges', 'Unsaved changes')}</span>
               )}
             </div>
             {hasPendingChanges && (
@@ -1901,12 +1901,12 @@ export default function InventorySettings() {
                 {saveStatus === 'saving' ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('settings:savingSettings')}
+                    {t('settings:savingSettings', 'Saving...')}
                   </>
                 ) : (
                   <>
                     <Check className="mr-2 h-4 w-4" />
-                    {t('common:saveChanges')}
+                    {t('common:saveChanges', 'Save Changes')}
                   </>
                 )}
               </Button>
