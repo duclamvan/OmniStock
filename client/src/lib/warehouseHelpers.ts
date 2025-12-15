@@ -33,8 +33,8 @@ export interface PalletLocationParts {
 export function parseShelfLocationCode(code: string): LocationParts | null {
   if (!code) return null;
   
-  // Try new format first (without area)
-  const newPattern = /^(WH\d+)-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
+  // Try new format first (without area) - supports alphanumeric warehouse codes
+  const newPattern = /^([A-Za-z0-9]+)-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
   const newMatch = code.match(newPattern);
   
   if (newMatch) {
@@ -48,7 +48,7 @@ export function parseShelfLocationCode(code: string): LocationParts | null {
   }
   
   // Try old format with area for backward compatibility
-  const oldPattern = /^(WH\d+)-[A-Z]-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
+  const oldPattern = /^([A-Za-z0-9]+)-[A-Z]-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
   const oldMatch = code.match(oldPattern);
   
   if (oldMatch) {
@@ -71,8 +71,8 @@ export function parseShelfLocationCode(code: string): LocationParts | null {
 export function parsePalletLocationCode(code: string): PalletLocationParts | null {
   if (!code) return null;
   
-  // Try new 5-field format first: WH1-B01-R01-L01-PAL1
-  const newPattern = /^(WH\d+)-([B]\d{2})-R(\d{2})-L(\d{2})-PAL(\d{1,2})$/;
+  // Try new 5-field format first: WH1-B01-R01-L01-PAL1 - supports alphanumeric warehouse codes
+  const newPattern = /^([A-Za-z0-9]+)-([B]\d{2})-R(\d{2})-L(\d{2})-PAL(\d{1,2})$/;
   const newMatch = code.match(newPattern);
   
   if (newMatch) {
@@ -86,7 +86,7 @@ export function parsePalletLocationCode(code: string): PalletLocationParts | nul
   }
   
   // Try old 3-field format for backward compatibility: WH1-B03-P05
-  const oldPattern = /^(WH\d+)-([B]\d{2})-P(\d{2})$/;
+  const oldPattern = /^([A-Za-z0-9]+)-([B]\d{2})-P(\d{2})$/;
   const oldMatch = code.match(oldPattern);
   
   if (oldMatch) {
@@ -119,8 +119,8 @@ export function parseLocationCode(code: string): LocationParts | PalletLocationP
   const palletMatch = parsePalletLocationCode(code);
   if (palletMatch) return palletMatch;
   
-  // Try old format for backward compatibility
-  const oldPattern = /^(WH\d+)-([A-Z]\d{2})-([R]\d{2})-([L]\d{2})$/;
+  // Try old format for backward compatibility - supports alphanumeric warehouse codes
+  const oldPattern = /^([A-Za-z0-9]+)-([A-Z]\d{2})-([R]\d{2})-([L]\d{2})$/;
   const oldMatch = code.match(oldPattern);
   
   if (!oldMatch) return null;
@@ -136,20 +136,22 @@ export function parseLocationCode(code: string): LocationParts | PalletLocationP
 /**
  * Validate a shelf location code format
  * Format: WH1-A06-R04-L04-B2 (new) or WH1-A-A06-R04-L04-B2 (old with area)
+ * Supports alphanumeric warehouse codes like WH1, WH2, etc.
  */
 export function validateShelfLocationCode(code: string): boolean {
-  const newPattern = /^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
-  const oldPattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
+  const newPattern = /^[A-Za-z0-9]+-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
+  const oldPattern = /^[A-Za-z0-9]+-[A-Z]-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
   return newPattern.test(code) || oldPattern.test(code);
 }
 
 /**
  * Validate a pallet location code format
  * Format: WH1-B01-R01-L01-PAL1 (new 5-field) or WH1-B03-P05 (old 3-field for backward compatibility)
+ * Supports alphanumeric warehouse codes like WH1, WH2, etc.
  */
 export function validatePalletLocationCode(code: string): boolean {
-  const newPattern = /^WH\d+-[B]\d{2}-R\d{2}-L\d{2}-PAL\d{1,2}$/;
-  const oldPattern = /^WH\d+-[B]\d{2}-P\d{2}$/;
+  const newPattern = /^[A-Za-z0-9]+-[B]\d{2}-R\d{2}-L\d{2}-PAL\d{1,2}$/;
+  const oldPattern = /^[A-Za-z0-9]+-[B]\d{2}-P\d{2}$/;
   return newPattern.test(code) || oldPattern.test(code);
 }
 
@@ -159,7 +161,7 @@ export function validatePalletLocationCode(code: string): boolean {
 export function validateLocationCode(code: string): boolean {
   return validateShelfLocationCode(code) || 
          validatePalletLocationCode(code) ||
-         /^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}$/.test(code); // Old format
+         /^[A-Za-z0-9]+-[A-Z]\d{2}-R\d{2}-L\d{2}$/.test(code); // Old format
 }
 
 /**

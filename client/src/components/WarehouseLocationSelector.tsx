@@ -115,7 +115,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       // Try new pallet format (5-field: WH1-B01-R01-L01-PAL1)
       const palletParts = parsePalletLocationCode(value);
       if (palletParts) {
-        setAreaType("pallets");
+        setAreaType("pallet");
         setWarehouse(palletParts.warehouse, false); // false = not manual, don't mark as override
         setPalletAisle(palletParts.aisle);
         setPalletRack(palletParts.rack);
@@ -159,7 +159,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       let code = "";
       if (areaType === "shelves") {
         code = generateShelfLocationCode(warehouse, aisle, rack, level, bin);
-      } else if (areaType === "pallets") {
+      } else if (areaType === "pallet") {
         code = generatePalletLocationCode(warehouse, palletAisle, palletRack, palletLevel, pallet);
       }
       onChange(code);
@@ -192,7 +192,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       // Try new pallet format (5-field)
       const palletParts = parsePalletLocationCode(newCode);
       if (palletParts) {
-        setAreaType("pallets");
+        setAreaType("pallet");
         setWarehouse(palletParts.warehouse, true); // true = mark as manual
         setPalletAisle(palletParts.aisle);
         setPalletRack(palletParts.rack);
@@ -271,6 +271,12 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
     setPallet(value);
   }, []);
 
+  // Helper to extract short code from warehouse ID (pattern: WH-{code}-{random})
+  const extractWarehouseCode = useCallback((warehouseId: string): string => {
+    const match = warehouseId.match(/^WH-([A-Za-z0-9]+)-/);
+    return match ? match[1] : warehouseId;
+  }, []);
+
   // Generate warehouse options from fetched data
   const warehouseOptions = useMemo(() => {
     if (!warehousesData || warehousesData.length === 0) {
@@ -284,12 +290,15 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       return dateA - dateB;
     });
     
-    // Number them sequentially
-    return sortedWarehouses.map((warehouse, index) => ({
-      value: warehouse.id,  // Use actual database ID (e.g., "WH-xx-yy")
-      label: t('warehouse:warehouseNumber', { number: index + 1 })  // Display as "Warehouse 1", "Warehouse 2", etc.
-    }));
-  }, [warehousesData, t]);
+    // Extract short code from warehouse ID (e.g., "WH-WH1-ABC123" -> "WH1")
+    return sortedWarehouses.map((warehouse, index) => {
+      const shortCode = extractWarehouseCode(warehouse.id);
+      return {
+        value: shortCode,
+        label: `${warehouse.name || t('warehouse:warehouseNumber', { number: index + 1 })} (${shortCode})`
+      };
+    });
+  }, [warehousesData, t, extractWarehouseCode]);
 
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);
@@ -350,7 +359,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                 <span>{t('warehouse:shelves')}</span>
               </div>
             </SelectItem>
-            <SelectItem value="pallets" data-testid="option-pallets">
+            <SelectItem value="pallet" data-testid="option-pallet">
               <div className="flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5" />
                 <span>{t('warehouse:pallets')}</span>
@@ -389,7 +398,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                 type="text"
                 value={manualCode}
                 onChange={(e) => handleManualCodeChange(e.target.value.toUpperCase())}
-                placeholder={areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
+                placeholder={areaType === "pallet" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
                 disabled={disabled}
                 data-testid="input-manual-code"
                 className={`h-8 ${!isValid && manualCode ? "border-red-500" : ""}`}
@@ -405,7 +414,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <>
                       <AlertCircle className="h-4 w-4 text-red-600" />
                       <span className="text-red-600">
-                        {t('warehouse:invalidFormat')} {areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
+                        {t('warehouse:invalidFormat')} {areaType === "pallet" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
                       </span>
                     </>
                   )
@@ -720,7 +729,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-base font-mono font-semibold" data-testid="text-location-code">
-                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets"
+                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallet"
                       ? generatePalletLocationCode(warehouse, palletAisle, palletRack, palletLevel, pallet)
                       : generateShelfLocationCode(warehouse, aisle, rack, level, bin))}
                   </code>
