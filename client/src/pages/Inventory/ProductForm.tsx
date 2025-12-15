@@ -307,6 +307,18 @@ export default function ProductForm() {
   // Supplier autocomplete state
   const [supplierPopoverOpen, setSupplierPopoverOpen] = useState(false);
   
+  // Inline supplier creation dialog state
+  const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
+  const [newSupplierData, setNewSupplierData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    country: "",
+    contactPerson: "",
+    address: "",
+    website: "",
+  });
+  
   // Auto-conversion refs
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1217,6 +1229,39 @@ export default function ProductForm() {
       toast({
         title: t('common:error'),
         description: t('products:toasts.tieredPricingDeletedError'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Inline supplier creation mutation
+  const createSupplierMutation = useMutation({
+    mutationFn: async (data: typeof newSupplierData) => {
+      const response = await apiRequest('POST', '/api/suppliers', data);
+      return response.json();
+    },
+    onSuccess: async (newSupplier) => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      form.setValue('supplierId', newSupplier.id);
+      setAddSupplierDialogOpen(false);
+      setNewSupplierData({
+        name: "",
+        email: "",
+        phone: "",
+        country: "",
+        contactPerson: "",
+        address: "",
+        website: "",
+      });
+      toast({
+        title: t('common:success'),
+        description: t('suppliers:createdSuccessfully', 'Supplier created successfully'),
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: t('suppliers:createError', 'Failed to create supplier'),
         variant: "destructive",
       });
     },
@@ -2738,7 +2783,7 @@ export default function ProductForm() {
                                 size="sm"
                                 onClick={() => {
                                   setSupplierPopoverOpen(false);
-                                  window.open('/suppliers/new', '_blank');
+                                  setAddSupplierDialogOpen(true);
                                 }}
                                 data-testid="button-add-supplier"
                               >
@@ -2923,12 +2968,16 @@ export default function ProductForm() {
                         </Button>
                       </Link>
                     )}
-                    <Link href="/suppliers/new">
-                      <Button type="button" variant="outline" size="sm" data-testid="button-add-supplier">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('products:addNewSupplier')}
-                      </Button>
-                    </Link>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setAddSupplierDialogOpen(true)}
+                      data-testid="button-add-new-supplier"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('products:addNewSupplier')}
+                    </Button>
                   </div>
                 </div>
               </AccordionContent>
@@ -4043,6 +4092,132 @@ export default function ProductForm() {
                   data-testid="button-assign-barcodes"
                 >
                   {t('products:bulkScan.assignBarcodes')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Inline Supplier Creation Dialog */}
+          <Dialog open={addSupplierDialogOpen} onOpenChange={setAddSupplierDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>{t('suppliers:addNewSupplier', 'Add New Supplier')}</DialogTitle>
+                <DialogDescription>
+                  {t('suppliers:createSupplierDescription', 'Create a new supplier and automatically select it.')}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="supplier-name">{t('suppliers:name', 'Supplier Name')} *</Label>
+                  <Input
+                    id="supplier-name"
+                    value={newSupplierData.name}
+                    onChange={(e) => setNewSupplierData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder={t('suppliers:namePlaceholder', 'Enter supplier name')}
+                    data-testid="input-new-supplier-name"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier-email">{t('suppliers:email', 'Email')}</Label>
+                    <Input
+                      id="supplier-email"
+                      type="email"
+                      value={newSupplierData.email}
+                      onChange={(e) => setNewSupplierData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder={t('suppliers:emailPlaceholder', 'email@example.com')}
+                      data-testid="input-new-supplier-email"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier-phone">{t('suppliers:phone', 'Phone')}</Label>
+                    <Input
+                      id="supplier-phone"
+                      value={newSupplierData.phone}
+                      onChange={(e) => setNewSupplierData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder={t('suppliers:phonePlaceholder', '+1 234 567 8900')}
+                      data-testid="input-new-supplier-phone"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier-contact">{t('suppliers:contactPerson', 'Contact Person')}</Label>
+                    <Input
+                      id="supplier-contact"
+                      value={newSupplierData.contactPerson}
+                      onChange={(e) => setNewSupplierData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                      placeholder={t('suppliers:contactPersonPlaceholder', 'John Doe')}
+                      data-testid="input-new-supplier-contact"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier-country">{t('suppliers:country', 'Country')}</Label>
+                    <Input
+                      id="supplier-country"
+                      value={newSupplierData.country}
+                      onChange={(e) => setNewSupplierData(prev => ({ ...prev, country: e.target.value }))}
+                      placeholder={t('suppliers:countryPlaceholder', 'Czech Republic')}
+                      data-testid="input-new-supplier-country"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="supplier-address">{t('suppliers:address', 'Address')}</Label>
+                  <Input
+                    id="supplier-address"
+                    value={newSupplierData.address}
+                    onChange={(e) => setNewSupplierData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder={t('suppliers:addressPlaceholder', 'Street, City, ZIP')}
+                    data-testid="input-new-supplier-address"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="supplier-website">{t('suppliers:website', 'Website')}</Label>
+                  <Input
+                    id="supplier-website"
+                    value={newSupplierData.website}
+                    onChange={(e) => setNewSupplierData(prev => ({ ...prev, website: e.target.value }))}
+                    placeholder={t('suppliers:websitePlaceholder', 'https://example.com')}
+                    data-testid="input-new-supplier-website"
+                  />
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAddSupplierDialogOpen(false);
+                    setNewSupplierData({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      country: "",
+                      contactPerson: "",
+                      address: "",
+                      website: "",
+                    });
+                  }}
+                  data-testid="button-cancel-supplier"
+                >
+                  {t('common:cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => createSupplierMutation.mutate(newSupplierData)}
+                  disabled={!newSupplierData.name.trim() || createSupplierMutation.isPending}
+                  data-testid="button-create-supplier"
+                >
+                  {createSupplierMutation.isPending ? t('common:creating', 'Creating...') : t('common:create', 'Create')}
                 </Button>
               </DialogFooter>
             </DialogContent>
