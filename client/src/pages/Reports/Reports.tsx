@@ -164,18 +164,31 @@ export default function Reports() {
       totalRevenue += convertCurrency(revenue, orderCurrency as Currency, displayCurrency);
     });
 
-    // Calculate product costs, converting to display currency
+    // Calculate product costs - use single authoritative cost source (prefer USD > EUR > CZK)
     filteredOrderItems.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product) {
         const quantity = item.quantity || 0;
-        const costUSD = parseFloat(product.importCostUsd || '0') * quantity;
-        const costCZK = parseFloat(product.importCostCzk || '0') * quantity;
-        const costEUR = parseFloat(product.importCostEur || '0') * quantity;
+        const costUSD = parseFloat(product.importCostUsd || '0');
+        const costEUR = parseFloat(product.importCostEur || '0');
+        const costCZK = parseFloat(product.importCostCzk || '0');
         
-        totalCost += convertCurrency(costUSD, 'USD', displayCurrency);
-        totalCost += convertCurrency(costCZK, 'CZK', displayCurrency);
-        totalCost += convertCurrency(costEUR, 'EUR', displayCurrency);
+        // Use priority: USD > EUR > CZK (choose first non-zero value)
+        let itemCost = 0;
+        let sourceCurrency: 'USD' | 'EUR' | 'CZK' = 'CZK';
+        
+        if (costUSD > 0) {
+          itemCost = costUSD * quantity;
+          sourceCurrency = 'USD';
+        } else if (costEUR > 0) {
+          itemCost = costEUR * quantity;
+          sourceCurrency = 'EUR';
+        } else if (costCZK > 0) {
+          itemCost = costCZK * quantity;
+          sourceCurrency = 'CZK';
+        }
+        
+        totalCost += convertCurrency(itemCost, sourceCurrency, displayCurrency);
       }
     });
 
