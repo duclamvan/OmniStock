@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { formatCurrency, formatCompactNumber, convertCurrency, getCurrencySymbol, type Currency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -53,6 +53,7 @@ export default function Reports() {
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState<'CZK' | 'EUR' | 'USD'>('CZK');
 
   // Fetch all necessary data
   const { data: products = [] } = useQuery({ queryKey: ['/api/products'] });
@@ -145,98 +146,82 @@ export default function Reports() {
     });
   }, [expenses, startDate, endDate]);
 
-  // Calculate financial metrics
-  const financialMetrics = useMemo(() => {
-    let totalRevenueCZK = 0;
-    let totalRevenueEUR = 0;
-    let totalCostCZK = 0;
-    let totalCostEUR = 0;
-    let totalCostUSD = 0;
+  // Helper function to convert amounts to display currency
+  const toDisplayCurrency = (amount: number, fromCurrency: string): number => {
+    if (fromCurrency === displayCurrency) return amount;
+    return convertCurrency(amount, fromCurrency as Currency, displayCurrency);
+  };
 
+  // Calculate financial metrics - all values converted to display currency
+  const financialMetrics = useMemo(() => {
+    let totalRevenue = 0;
+    let totalCost = 0;
+
+    // Calculate revenue from orders, converting to display currency
     filteredOrders.forEach((order: any) => {
       const revenue = parseFloat(order.grandTotal || '0');
-      if (order.currency === 'CZK') {
-        totalRevenueCZK += revenue;
-      } else if (order.currency === 'EUR') {
-        totalRevenueEUR += revenue;
-      }
+      const orderCurrency = order.currency || 'CZK';
+      totalRevenue += convertCurrency(revenue, orderCurrency as Currency, displayCurrency);
     });
 
-    // Calculate product costs
+    // Calculate product costs, converting to display currency
     filteredOrderItems.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product) {
         const quantity = item.quantity || 0;
-        totalCostUSD += parseFloat(product.importCostUsd || '0') * quantity;
-        totalCostCZK += parseFloat(product.importCostCzk || '0') * quantity;
-        totalCostEUR += parseFloat(product.importCostEur || '0') * quantity;
+        const costUSD = parseFloat(product.importCostUsd || '0') * quantity;
+        const costCZK = parseFloat(product.importCostCzk || '0') * quantity;
+        const costEUR = parseFloat(product.importCostEur || '0') * quantity;
+        
+        totalCost += convertCurrency(costUSD, 'USD', displayCurrency);
+        totalCost += convertCurrency(costCZK, 'CZK', displayCurrency);
+        totalCost += convertCurrency(costEUR, 'EUR', displayCurrency);
       }
     });
 
-    // Add expenses
+    // Add expenses, converting to display currency
     filteredExpenses.forEach((expense: any) => {
       const amount = parseFloat(expense.amount || '0');
-      if (expense.currency === 'CZK') {
-        totalCostCZK += amount;
-      } else if (expense.currency === 'EUR') {
-        totalCostEUR += amount;
-      } else if (expense.currency === 'USD') {
-        totalCostUSD += amount;
-      }
+      const expenseCurrency = expense.currency || 'CZK';
+      totalCost += convertCurrency(amount, expenseCurrency as Currency, displayCurrency);
     });
 
-    // Use live exchange rates from Frankfurter API (EUR-based)
-    // Frankfurter provides EUR -> other currency rates, so CZK rate is how many CZK per 1 EUR
-    const eurToCzk = exchangeRates?.rates?.CZK || 25;
-    const eurToUsd = exchangeRates?.rates?.USD || 1.1;
-    const usdToCzk = eurToCzk / eurToUsd; // Derived: 1 USD = X CZK
-    
-    const totalRevenueCZKEquiv = totalRevenueCZK + (totalRevenueEUR * eurToCzk);
-    const totalCostCZKEquiv = totalCostCZK + (totalCostEUR * eurToCzk) + (totalCostUSD * usdToCzk);
-    const profitCZK = totalRevenueCZKEquiv - totalCostCZKEquiv;
-    const profitMargin = totalRevenueCZKEquiv > 0 ? (profitCZK / totalRevenueCZKEquiv) * 100 : 0;
+    const profit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
-    // Also calculate total in EUR for consistency with Dashboard
-    const czkToEur = 1 / eurToCzk;
-    const usdToEur = 1 / eurToUsd;
-    const totalRevenueEUREquiv = totalRevenueEUR + (totalRevenueCZK * czkToEur);
-    const totalCostEUREquiv = totalCostEUR + (totalCostCZK * czkToEur) + (totalCostUSD * usdToEur);
-    const profitEUR = totalRevenueEUREquiv - totalCostEUREquiv;
+    // Calculate average order value in display currency
+    const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
 
     return {
-      totalRevenueCZK,
-      totalRevenueEUR,
-      totalRevenueEUREquiv,
-      totalCostCZK,
-      totalCostEUR,
-      totalCostUSD,
-      profitCZK,
-      profitEUR,
+      totalRevenue,
+      totalCost,
+      profit,
       profitMargin,
+      avgOrderValue,
       totalOrders: filteredOrders.length,
       totalOrdersInRange: allOrdersInRange.length,
-      avgOrderValueCZK: filteredOrders.filter((o: any) => o.currency === 'CZK').length > 0 
-        ? totalRevenueCZK / filteredOrders.filter((o: any) => o.currency === 'CZK').length 
-        : 0,
-      avgOrderValueEUR: filteredOrders.filter((o: any) => o.currency === 'EUR').length > 0 
-        ? totalRevenueEUR / filteredOrders.filter((o: any) => o.currency === 'EUR').length 
-        : 0,
-      exchangeRates: { eurToCzk, eurToUsd },
     };
-  }, [filteredOrders, filteredOrderItems, filteredExpenses, products, exchangeRates, allOrdersInRange]);
+  }, [filteredOrders, filteredOrderItems, filteredExpenses, products, allOrdersInRange, displayCurrency]);
 
-  // Calculate product performance
+  // Calculate product performance - convert revenue to display currency
   const productPerformance = useMemo(() => {
-    const productSales: { [key: string]: { product: any; quantity: number; revenue: number } } = {};
+    const productSales: { [key: string]: { product: any; quantity: number; revenue: number; originalCurrency: string } } = {};
 
     filteredOrderItems.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product) {
         if (!productSales[product.id]) {
-          productSales[product.id] = { product, quantity: 0, revenue: 0 };
+          productSales[product.id] = { product, quantity: 0, revenue: 0, originalCurrency: 'CZK' };
         }
         productSales[product.id].quantity += item.quantity || 0;
-        productSales[product.id].revenue += parseFloat(item.total || '0');
+        
+        // Get the order to find the currency
+        const order = filteredOrders.find((o: any) => o.id === item.orderId);
+        const itemCurrency = order?.currency || 'CZK';
+        const itemRevenue = parseFloat(item.total || '0');
+        
+        // Convert to display currency
+        productSales[product.id].revenue += convertCurrency(itemRevenue, itemCurrency as Currency, displayCurrency);
       }
     });
 
@@ -254,12 +239,11 @@ export default function Reports() {
       totalRevenue,
       totalProductsSold: sortedProducts.length,
     };
-  }, [filteredOrderItems, products]);
+  }, [filteredOrderItems, products, filteredOrders, displayCurrency]);
 
-  // Customer analytics
+  // Customer analytics - convert to display currency
   const customerAnalytics = useMemo(() => {
     const customerOrders: { [key: string]: { customer: any; orderCount: number; totalSpent: number } } = {};
-    const eurToCzk = 25;
 
     filteredOrders.forEach((order: any) => {
       if (order.customerId) {
@@ -271,8 +255,9 @@ export default function Reports() {
           customerOrders[customer.id].orderCount += 1;
           
           const orderAmount = parseFloat(order.grandTotal || '0');
-          const amountInCZK = order.currency === 'EUR' ? orderAmount * eurToCzk : orderAmount;
-          customerOrders[customer.id].totalSpent += amountInCZK;
+          const orderCurrency = order.currency || 'CZK';
+          // Convert to display currency
+          customerOrders[customer.id].totalSpent += convertCurrency(orderAmount, orderCurrency as Currency, displayCurrency);
         }
       }
     });
@@ -286,14 +271,23 @@ export default function Reports() {
       activeCustomers: sortedCustomers.length,
       avgOrdersPerCustomer: sortedCustomers.length > 0 ? filteredOrders.length / sortedCustomers.length : 0,
     };
-  }, [filteredOrders, customers]);
+  }, [filteredOrders, customers, displayCurrency]);
 
-  // Inventory insights
+  // Inventory insights - convert to display currency
   const inventoryInsights = useMemo(() => {
     const totalStock = (products as any[]).reduce((sum, p) => sum + (p.quantity || 0), 0);
     const totalValue = (products as any[]).reduce((sum, p) => {
       const qty = p.quantity || 0;
-      const price = parseFloat(p.priceCzk || '0');
+      // Use price based on display currency
+      let price = 0;
+      if (displayCurrency === 'CZK') {
+        price = parseFloat(p.priceCzk || '0');
+      } else if (displayCurrency === 'EUR') {
+        price = parseFloat(p.priceEur || '0');
+      } else if (displayCurrency === 'USD') {
+        // Convert from CZK to USD if no USD price
+        price = convertCurrency(parseFloat(p.priceCzk || '0'), 'CZK', 'USD');
+      }
       return sum + (qty * price);
     }, 0);
 
@@ -311,27 +305,23 @@ export default function Reports() {
       lowStockProducts: lowStockProducts.slice(0, 10),
       outOfStockProducts: outOfStock.slice(0, 10),
     };
-  }, [products]);
+  }, [products, displayCurrency]);
 
-  // Export handlers
+  // Export handlers - use display currency
   const handleExportXLSX = () => {
     try {
       const exportData = [
         {
-          [t('metric')]: t('totalRevenueCZK'),
-          [t('value')]: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK'),
+          [t('metric')]: `${t('totalRevenue')} (${displayCurrency})`,
+          [t('value')]: formatCurrency(financialMetrics.totalRevenue, displayCurrency),
         },
         {
-          [t('metric')]: t('totalRevenueEUR'),
-          [t('value')]: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR'),
+          [t('metric')]: `${t('totalCost')} (${displayCurrency})`,
+          [t('value')]: formatCurrency(financialMetrics.totalCost, displayCurrency),
         },
         {
-          [t('metric')]: `${t('totalCost')} (CZK)`,
-          [t('value')]: formatCurrency(financialMetrics.totalCostCZK, 'CZK'),
-        },
-        {
-          [t('metric')]: `${t('profit')} (CZK)`,
-          [t('value')]: formatCurrency(financialMetrics.profitCZK, 'CZK'),
+          [t('metric')]: `${t('profit')} (${displayCurrency})`,
+          [t('value')]: formatCurrency(financialMetrics.profit, displayCurrency),
         },
         {
           [t('metric')]: t('profitMargin'),
@@ -351,7 +341,7 @@ export default function Reports() {
         },
       ];
 
-      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}`, t('businessReports'));
+      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}_${displayCurrency}`, t('businessReports'));
       
       toast({
         title: t('exportSuccessful'),
@@ -370,10 +360,9 @@ export default function Reports() {
   const handleExportPDF = () => {
     try {
       const exportData = [
-        { metric: t('totalRevenueCZK'), value: formatCurrency(financialMetrics.totalRevenueCZK, 'CZK') },
-        { metric: t('totalRevenueEUR'), value: formatCurrency(financialMetrics.totalRevenueEUR, 'EUR') },
-        { metric: `${t('totalCost')} (CZK)`, value: formatCurrency(financialMetrics.totalCostCZK, 'CZK') },
-        { metric: `${t('profit')} (CZK)`, value: formatCurrency(financialMetrics.profitCZK, 'CZK') },
+        { metric: `${t('totalRevenue')} (${displayCurrency})`, value: formatCurrency(financialMetrics.totalRevenue, displayCurrency) },
+        { metric: `${t('totalCost')} (${displayCurrency})`, value: formatCurrency(financialMetrics.totalCost, displayCurrency) },
+        { metric: `${t('profit')} (${displayCurrency})`, value: formatCurrency(financialMetrics.profit, displayCurrency) },
         { metric: t('profitMargin'), value: `${financialMetrics.profitMargin.toFixed(2)}%` },
         { metric: t('totalOrders'), value: financialMetrics.totalOrders.toString() },
         { metric: t('unitsSold'), value: productPerformance.totalUnitsSold.toString() },
@@ -385,7 +374,7 @@ export default function Reports() {
         { key: 'value', header: t('value') },
       ];
 
-      exportToPDF(t('businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}_${displayCurrency}`);
       
       toast({
         title: t('exportSuccessful'),
@@ -433,6 +422,17 @@ export default function Reports() {
               <SelectItem value="year">{t('thisYear')}</SelectItem>
               <SelectItem value="lastYear">{t('lastYear')}</SelectItem>
               <SelectItem value="custom">{t('customPeriod')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={displayCurrency} onValueChange={(value) => setDisplayCurrency(value as 'CZK' | 'EUR' | 'USD')}>
+            <SelectTrigger className="w-full sm:w-[100px]" data-testid="select-currency">
+              <Coins className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CZK">CZK</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+              <SelectItem value="USD">USD</SelectItem>
             </SelectContent>
           </Select>
           {dateRange === 'custom' && (
@@ -510,23 +510,23 @@ export default function Reports() {
           {t('financialOverview')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Total Revenue CZK */}
+          {/* Total Revenue */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('revenue')} (CZK)
+                    {t('revenue')} ({displayCurrency})
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-czk">
-                          {formatCompactNumber(financialMetrics.totalRevenueCZK)} Kč
+                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue">
+                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.totalRevenue)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.totalRevenueCZK, 'CZK')}</p>
+                        <p className="font-mono">{formatCurrency(financialMetrics.totalRevenue, displayCurrency)}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -538,23 +538,23 @@ export default function Reports() {
             </CardContent>
           </Card>
 
-          {/* Total Revenue EUR */}
+          {/* Total Cost */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('revenue')} (EUR)
+                    {t('totalCost')} ({displayCurrency})
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-eur">
-                          €{formatCompactNumber(financialMetrics.totalRevenueEUR)}
+                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-cost">
+                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.totalCost)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.totalRevenueEUR, 'EUR')}</p>
+                        <p className="font-mono">{formatCurrency(financialMetrics.totalCost, displayCurrency)}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -572,23 +572,23 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('profitEst')}
+                    {t('profitEst')} ({displayCurrency})
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financialMetrics.profitCZK >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
-                          {formatCompactNumber(financialMetrics.profitCZK)} Kč
+                        <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financialMetrics.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
+                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.profit)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.profitCZK, 'CZK')}</p>
+                        <p className="font-mono">{formatCurrency(financialMetrics.profit, displayCurrency)}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className={`flex-shrink-0 p-3 rounded-xl ${financialMetrics.profitCZK >= 0 ? 'bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'}`}>
-                  {financialMetrics.profitCZK >= 0 ? (
+                <div className={`flex-shrink-0 p-3 rounded-xl ${financialMetrics.profit >= 0 ? 'bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'}`}>
+                  {financialMetrics.profit >= 0 ? (
                     <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <TrendingDown className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -664,16 +664,16 @@ export default function Reports() {
             </CardContent>
           </Card>
 
-          {/* Avg Order Value CZK */}
+          {/* Avg Order Value */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('avgOrderCzk')}
+                    {t('avgOrder')} ({displayCurrency})
                   </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order-czk">
-                    {formatCompactNumber(financialMetrics.avgOrderValueCZK)} Kč
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order">
+                    {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.avgOrderValue)}
                   </p>
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
@@ -744,7 +744,7 @@ export default function Reports() {
                         {item.quantity} {t('units')}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {formatCurrency(item.revenue, 'CZK')}
+                        {formatCurrency(item.revenue, displayCurrency)}
                       </p>
                     </div>
                   </div>
@@ -843,7 +843,7 @@ export default function Reports() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-bold text-violet-600 dark:text-violet-400">
-                      {formatCurrency(item.totalSpent, 'CZK')}
+                      {formatCurrency(item.totalSpent, displayCurrency)}
                     </p>
                   </div>
                 </div>
@@ -881,10 +881,10 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('stockValue')}
+                  {t('stockValue')} ({displayCurrency})
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactNumber(inventoryInsights.totalValue)} Kč
+                  {getCurrencySymbol(displayCurrency)}{formatCompactNumber(inventoryInsights.totalValue)}
                 </p>
               </div>
             </div>
