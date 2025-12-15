@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image, Check, RotateCcw, Plus, Trash2, Edit2, Save, X, AlertTriangle } from "lucide-react";
-import { useSettings, DEFAULT_RETURN_TYPES, ReturnTypeConfig } from "@/contexts/SettingsContext";
+import { useSettings, DEFAULT_RETURN_TYPES, ReturnTypeConfig, DEFAULT_BULK_UNITS, BulkUnitConfig } from "@/contexts/SettingsContext";
 import { useQuery } from "@tanstack/react-query";
 import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
 import { apiRequest } from "@/lib/queryClient";
@@ -181,12 +181,27 @@ export default function InventorySettings() {
   const [editReturnTypeLabelKey, setEditReturnTypeLabelKey] = useState('');
   const [returnTypesSaving, setReturnTypesSaving] = useState(false);
 
+  // Bulk units management state
+  const [bulkUnits, setBulkUnits] = useState<BulkUnitConfig[]>(
+    inventorySettings.bulkUnits || DEFAULT_BULK_UNITS
+  );
+  const [newBulkUnit, setNewBulkUnit] = useState('');
+  const [newBulkUnitLabelKey, setNewBulkUnitLabelKey] = useState('');
+  const [bulkUnitsSaving, setBulkUnitsSaving] = useState(false);
+
   // Sync local returnTypes with context when inventorySettings changes
   useEffect(() => {
     if (inventorySettings.returnTypes) {
       setReturnTypes(inventorySettings.returnTypes);
     }
   }, [inventorySettings.returnTypes]);
+
+  // Sync local bulkUnits with context when inventorySettings changes
+  useEffect(() => {
+    if (inventorySettings.bulkUnits) {
+      setBulkUnits(inventorySettings.bulkUnits);
+    }
+  }, [inventorySettings.bulkUnits]);
 
   // Return type handlers
   const handleToggleReturnType = (value: string, enabled: boolean) => {
@@ -278,6 +293,92 @@ export default function InventorySettings() {
 
   const handleResetReturnTypes = () => {
     setReturnTypes(DEFAULT_RETURN_TYPES);
+  };
+
+  // Bulk unit handlers
+  const handleToggleBulkUnit = (value: string, enabled: boolean) => {
+    setBulkUnits(
+      bulkUnits.map(bu => bu.value === value ? { ...bu, enabled } : bu)
+    );
+  };
+
+  const handleAddBulkUnit = () => {
+    if (!newBulkUnit.trim()) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:bulkUnitValueRequired', 'Please enter a bulk unit name'),
+      });
+      return;
+    }
+    
+    const valueSnakeCase = newBulkUnit.trim().toLowerCase().replace(/\s+/g, '_');
+    
+    if (bulkUnits.find(bu => bu.value === valueSnakeCase)) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:bulkUnitAlreadyExists', 'This bulk unit already exists'),
+      });
+      return;
+    }
+    
+    const labelKey = newBulkUnitLabelKey.trim() || 'unit' + newBulkUnit.trim().replace(/\s+/g, '').charAt(0).toUpperCase() + newBulkUnit.trim().replace(/\s+/g, '').slice(1);
+    
+    setBulkUnits([...bulkUnits, { 
+      value: valueSnakeCase, 
+      labelKey,
+      enabled: true 
+    }]);
+    setNewBulkUnit('');
+    setNewBulkUnitLabelKey('');
+  };
+
+  const handleDeleteBulkUnit = (value: string) => {
+    setBulkUnits(bulkUnits.filter(bu => bu.value !== value));
+  };
+
+  const handleSaveBulkUnits = async () => {
+    setBulkUnitsSaving(true);
+    try {
+      try {
+        await apiRequest('PATCH', '/api/settings/bulk_units', {
+          value: bulkUnits,
+          category: 'inventory'
+        });
+      } catch (patchError: any) {
+        if (patchError.status === 404 || patchError.message?.includes('not found')) {
+          await apiRequest('POST', '/api/settings', {
+            key: 'bulk_units',
+            value: bulkUnits,
+            category: 'inventory',
+            description: 'Bulk unit types configuration for product packaging'
+          });
+        } else {
+          throw patchError;
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
+      toast({
+        title: t('common:success'),
+        description: t('settings:bulkUnitsSaved', 'Bulk units saved successfully'),
+      });
+    } catch (error) {
+      console.error('Error saving bulk units:', error);
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('settings:bulkUnitsSaveError', 'Failed to save bulk units'),
+      });
+    } finally {
+      setBulkUnitsSaving(false);
+    }
+  };
+
+  const handleResetBulkUnits = () => {
+    setBulkUnits(DEFAULT_BULK_UNITS);
   };
 
   // Capture snapshot when settings load
@@ -1297,6 +1398,101 @@ export default function InventorySettings() {
                       </FormItem>
                     )}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bulk Units Configuration Card */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:bulkUnitsCard', 'Bulk Units')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('settings:bulkUnitsCardDescription', 'Configure available bulk unit options for product packaging (carton, case, pallet, etc.)')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* Existing Bulk Units List */}
+                <div className="space-y-2">
+                  {bulkUnits.map((bu) => (
+                    <div 
+                      key={bu.value} 
+                      className="flex items-center justify-between p-3 border rounded-lg bg-slate-50 dark:bg-slate-800"
+                      data-testid={`bulk-unit-item-${bu.value}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={bu.enabled}
+                          onCheckedChange={(checked) => handleToggleBulkUnit(bu.value, checked)}
+                          data-testid={`switch-bulk-unit-${bu.value}`}
+                        />
+                        <div>
+                          <p className="font-medium text-sm">{t(`products:units.${bu.labelKey}`, bu.value.replace(/_/g, ' '))}</p>
+                          <p className="text-xs text-slate-500">{bu.value}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteBulkUnit(bu.value)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        data-testid={`delete-bulk-unit-${bu.value}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Bulk Unit */}
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium mb-2">{t('settings:addNewBulkUnit', 'Add New Bulk Unit')}</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t('settings:bulkUnitNamePlaceholder', 'e.g., box, pack, set')}
+                      value={newBulkUnit}
+                      onChange={(e) => setNewBulkUnit(e.target.value)}
+                      className="flex-1"
+                      data-testid="input-new-bulk-unit"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddBulkUnit}
+                      data-testid="btn-add-bulk-unit"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {t('common:add')}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResetBulkUnits}
+                    data-testid="btn-reset-bulk-units"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    {t('common:resetToDefaults', 'Reset to Defaults')}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveBulkUnits}
+                    disabled={bulkUnitsSaving}
+                    data-testid="btn-save-bulk-units"
+                  >
+                    {bulkUnitsSaving ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-1" />
+                    )}
+                    {t('common:save')}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -22,6 +22,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
 import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
+import { useSettings, DEFAULT_BULK_UNITS } from "@/contexts/SettingsContext";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -228,6 +229,7 @@ export default function ProductForm() {
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
   const { lowStockThreshold } = useInventoryDefaults();
+  const { inventorySettings } = useSettings();
   
   // Use orchestrator hook for default warehouse selection
   const { value: defaultWarehouse } = useDefaultWarehouseSelection({
@@ -3688,12 +3690,14 @@ export default function ProductForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">{t('products:units.noBulkUnit', 'No bulk unit')}</SelectItem>
-                            <SelectItem value="carton">{t('products:units.unitCarton', 'Carton')}</SelectItem>
-                            <SelectItem value="case">{t('products:units.unitCase', 'Case')}</SelectItem>
-                            <SelectItem value="pallet">{t('products:units.unitPallet', 'Pallet')}</SelectItem>
-                            <SelectItem value="master_carton">{t('products:units.unitMasterCarton', 'Master Carton')}</SelectItem>
-                            <SelectItem value="bundle">{t('products:units.unitBundle', 'Bundle')}</SelectItem>
-                            <SelectItem value="crate">{t('products:units.unitCrate', 'Crate')}</SelectItem>
+                            {(inventorySettings?.bulkUnits || DEFAULT_BULK_UNITS)
+                              .filter(bu => bu.enabled)
+                              .map(bu => (
+                                <SelectItem key={bu.value} value={bu.value}>
+                                  {t(`products:units.${bu.labelKey}`, bu.value.replace(/_/g, ' '))}
+                                </SelectItem>
+                              ))
+                            }
                           </SelectContent>
                         </Select>
                       </div>
