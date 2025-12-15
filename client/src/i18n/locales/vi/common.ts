@@ -70,6 +70,8 @@ const common = {
   select: 'Chọn',
   selectAll: 'Chọn tất cả',
   deselectAll: 'Bỏ chọn tất cả',
+  searchable: 'Có thể tìm kiếm',
+  clearSelection: 'Xóa lựa chọn',
   items: 'mục',
   item: 'mục',
   inStock: 'trong kho',

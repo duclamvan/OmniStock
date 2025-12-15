@@ -65,6 +65,8 @@ const common = {
   select: 'Select',
   selectAll: 'Select All',
   deselectAll: 'Deselect All',
+  searchable: 'Searchable',
+  clearSelection: 'Clear Selection',
   items: 'items',
   item: 'item',
   inStock: 'in stock',
