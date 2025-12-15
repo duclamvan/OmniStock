@@ -1750,6 +1750,10 @@ const orders = {
   yesAdd: 'Có, thêm',
   yesAlwaysAdd: 'Có, luôn thêm',
   
+  // Quantity/Stock Warnings
+  quantityReduced: 'Đã giảm số lượng',
+  onlyXInStock: 'Chỉ còn {{count}} trong kho',
+  
 } as const;
 
 export default orders;

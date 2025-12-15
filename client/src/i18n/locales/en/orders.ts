@@ -1773,6 +1773,10 @@ const orders = {
   yesAdd: 'Yes, add',
   yesAlwaysAdd: 'Yes, always add',
   
+  // Quantity/Stock Warnings
+  quantityReduced: 'Quantity Reduced',
+  onlyXInStock: 'Only {{count}} available in stock',
+  
 } as const;
 
 export default orders;
