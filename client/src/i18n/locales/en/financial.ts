@@ -484,6 +484,9 @@ const financial = {
   category: 'Category',
   date: 'Date',
   recurring: 'Recurring',
+  filterByRecurring: 'Filter by Type',
+  recurringOnly: 'Recurring Only',
+  oneTimeOnly: 'One-time Only',
   edit: 'Edit',
   expenseId: 'Expense ID',
   

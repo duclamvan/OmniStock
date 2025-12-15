@@ -30,6 +30,7 @@ import {
   FileText,
   Edit,
   Trash2,
+  Repeat,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -74,6 +75,7 @@ export default function AllExpenses() {
   const [selectedExpenses, setSelectedExpenses] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [recurringFilter, setRecurringFilter] = useState<string>("all");
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -92,6 +94,7 @@ export default function AllExpenses() {
       amount: true,
       paymentMethod: true,
       status: true,
+      recurring: true,
       date: true,
     };
   });
@@ -171,6 +174,13 @@ export default function AllExpenses() {
   // Apply category filter
   if (categoryFilter !== "all") {
     filteredExpenses = filteredExpenses.filter(e => e.category === categoryFilter);
+  }
+
+  // Apply recurring filter
+  if (recurringFilter !== "all") {
+    filteredExpenses = filteredExpenses.filter(e => 
+      recurringFilter === "recurring" ? e.isRecurring === true : e.isRecurring !== true
+    );
   }
 
   // Calculate stats
@@ -446,6 +456,22 @@ export default function AllExpenses() {
       },
     },
     {
+      key: "recurring",
+      header: t('recurring'),
+      sortable: true,
+      className: "text-center",
+      cell: (row: any) => (
+        row.isRecurring ? (
+          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-400 dark:border-indigo-800 font-medium px-2.5 py-1" variant="outline">
+            <Repeat className="h-3 w-3 mr-1.5" />
+            {t('recurring')}
+          </Badge>
+        ) : (
+          <span className="text-sm text-slate-400">-</span>
+        )
+      ),
+    },
+    {
       key: "date",
       header: t('date'),
       sortable: true,
@@ -676,7 +702,7 @@ export default function AllExpenses() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -707,6 +733,17 @@ export default function AllExpenses() {
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={recurringFilter} onValueChange={setRecurringFilter}>
+              <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500" data-testid="select-recurring">
+                <Repeat className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder={t('filterByRecurring')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('allExpenses')}</SelectItem>
+                <SelectItem value="recurring">{t('recurringOnly')}</SelectItem>
+                <SelectItem value="one-time">{t('oneTimeOnly')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

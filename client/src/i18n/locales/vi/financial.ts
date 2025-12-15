@@ -484,6 +484,9 @@ const financial = {
   category: 'Danh mục',
   date: 'Ngày',
   recurring: 'Định kỳ',
+  filterByRecurring: 'Lọc theo loại',
+  recurringOnly: 'Chỉ định kỳ',
+  oneTimeOnly: 'Chỉ một lần',
   edit: 'Sửa',
   expenseId: 'Mã chi phí',
   
