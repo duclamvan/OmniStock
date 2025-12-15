@@ -4359,7 +4359,7 @@ export default function AddOrder() {
                                     {address.company && (
                                       <div className="font-medium text-slate-800">{address.company}</div>
                                     )}
-                                    <div className="mt-1">{address.street}</div>
+                                    <div className="mt-1">{address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}</div>
                                     <div>{address.city}, {address.zipCode}</div>
                                     <div>{address.country}</div>
                                     {address.tel && (
@@ -4385,7 +4385,7 @@ export default function AddOrder() {
                                   className="h-8 w-8 p-0 hover:bg-teal-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const fullAddress = `${address.firstName} ${address.lastName}${address.company ? `\n${address.company}` : ''}\n${address.street}\n${address.city}, ${address.zipCode}\n${address.country}${address.tel ? `\nTel: ${address.tel}` : ''}${address.email ? `\nEmail: ${address.email}` : ''}`;
+                                    const fullAddress = `${address.firstName} ${address.lastName}${address.company ? `\n${address.company}` : ''}\n${address.street}${address.streetNumber ? ` ${address.streetNumber}` : ''}\n${address.city}, ${address.zipCode}\n${address.country}${address.tel ? `\nTel: ${address.tel}` : ''}${address.email ? `\nEmail: ${address.email}` : ''}`;
                                     navigator.clipboard.writeText(fullAddress);
                                     toast({
                                       title: t('orders:copied'),
