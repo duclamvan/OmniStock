@@ -40,6 +40,22 @@ export interface ReturnTypeConfig {
   disposesInventory?: boolean;
 }
 
+// Default bulk units for product packaging (fallback if not set in app_settings)
+export const DEFAULT_BULK_UNITS = [
+  { value: 'carton', labelKey: 'unitCarton', enabled: true },
+  { value: 'case', labelKey: 'unitCase', enabled: true },
+  { value: 'pallet', labelKey: 'unitPallet', enabled: true },
+  { value: 'master_carton', labelKey: 'unitMasterCarton', enabled: true },
+  { value: 'bundle', labelKey: 'unitBundle', enabled: true },
+  { value: 'crate', labelKey: 'unitCrate', enabled: true },
+];
+
+export interface BulkUnitConfig {
+  value: string;
+  labelKey: string;
+  enabled: boolean;
+}
+
 // Types for settings by category
 export interface GeneralSettings {
   companyName?: string;
@@ -122,6 +138,7 @@ export interface InventorySettings {
   autoCompressImages?: boolean;
   imageQuality?: number;
   returnTypes?: ReturnTypeConfig[];
+  bulkUnits?: BulkUnitConfig[];
 }
 
 export interface OrderSettings {
@@ -537,12 +554,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const inventorySettings = useMemo(() => {
     const parsed = parseSettingsByCategory<InventorySettings>(settings, 'inventory');
-    // Ensure returnTypes always has a value (fallback to defaults)
+    // Ensure returnTypes and bulkUnits always have values (fallback to defaults)
     return {
       ...parsed,
       returnTypes: (parsed.returnTypes && parsed.returnTypes.length > 0) 
         ? parsed.returnTypes 
-        : DEFAULT_RETURN_TYPES
+        : DEFAULT_RETURN_TYPES,
+      bulkUnits: (parsed.bulkUnits && parsed.bulkUnits.length > 0) 
+        ? parsed.bulkUnits 
+        : DEFAULT_BULK_UNITS
     };
   }, [settings]);
 
