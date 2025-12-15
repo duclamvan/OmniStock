@@ -63,10 +63,10 @@ const serviceFormSchema = insertServiceSchema.extend({
   customerId: z.string().optional().nullable(),
   orderId: z.string().optional().nullable(),
   name: z.string().min(1),
+  description: z.string().optional().nullable(),
   serviceDate: z.date().optional().nullable(),
   serviceCost: z.string().optional().default("0"),
-  currency: z.string().default('EUR'),
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
 });
 
 type ServiceFormData = z.infer<typeof serviceFormSchema>;
