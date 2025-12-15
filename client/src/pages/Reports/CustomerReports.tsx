@@ -220,6 +220,7 @@ export default function CustomerReports() {
         description={t('customerAnalyticsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
+        showDateFilter
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

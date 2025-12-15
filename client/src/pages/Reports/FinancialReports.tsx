@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { TrendLineChart } from "@/components/reports/TrendLineChart";
@@ -44,6 +45,8 @@ export default function FinancialReports() {
   const { t: tCommon } = useTranslation('common');
   const { t: tFinancial } = useTranslation('financial');
   const { toast } = useToast();
+  const { getDateRangeValues } = useReports();
+  const { start: startDate, end: endDate } = getDateRangeValues();
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ['/api/orders'] });
@@ -381,6 +384,7 @@ export default function FinancialReports() {
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
         showCurrencyFilter
+        showDateFilter
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

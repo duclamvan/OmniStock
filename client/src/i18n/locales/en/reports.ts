@@ -44,6 +44,9 @@ const reports = {
   thisMonth: 'This Month',
   thisQuarter: 'This Quarter',
   thisYear: 'This Year',
+  selectDates: 'Select Dates',
+  filteredData: 'Filtered Data',
+  allTime: 'All Time',
   
   // Report Metrics
   totalOrders: 'Total Orders',

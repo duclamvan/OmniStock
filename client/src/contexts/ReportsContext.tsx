@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, subMonths, subYears, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
 
-export type DateRangeType = 'today' | 'week' | 'month' | 'thisMonth' | 'year' | 'all' | 'custom';
+export type DateRangeType = 'today' | 'week' | 'month' | 'thisMonth' | 'year' | 'lastYear' | 'all' | 'custom';
 export type CurrencyFilter = 'all' | 'CZK' | 'EUR' | 'USD';
 export type ComparisonPeriod = 'previous' | 'lastYear' | 'none';
 
@@ -38,15 +38,18 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     const now = new Date();
     switch (dateRange) {
       case 'today':
-        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date() };
+        return { start: startOfDay(now), end: endOfDay(now) };
       case 'week':
-        return { start: subDays(now, 7), end: new Date() };
+        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
       case 'month':
         return { start: subMonths(now, 1), end: new Date() };
       case 'thisMonth':
         return { start: startOfMonth(now), end: endOfMonth(now) };
       case 'year':
         return { start: startOfYear(now), end: endOfYear(now) };
+      case 'lastYear':
+        const lastYearDate = subYears(now, 1);
+        return { start: startOfYear(lastYearDate), end: endOfYear(lastYearDate) };
       default:
         return { start: new Date(0), end: new Date() };
     }

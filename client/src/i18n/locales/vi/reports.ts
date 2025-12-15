@@ -44,6 +44,9 @@ const reports = {
   thisMonth: 'Tháng này',
   thisQuarter: 'Quý này',
   thisYear: 'Năm nay',
+  selectDates: 'Chọn ngày',
+  filteredData: 'Dữ liệu đã lọc',
+  allTime: 'Toàn bộ thời gian',
   
   // Report Metrics
   totalOrders: 'Tổng đơn hàng',
@@ -269,7 +272,6 @@ const reports = {
   overview: 'Tổng quan',
   
   // Additional UI elements
-  allTime: 'Toàn bộ thời gian',
   last7Days: '7 ngày qua',
   last30Days: '30 ngày qua',
   exportOptions: 'Tùy chọn xuất',

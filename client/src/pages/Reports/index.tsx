@@ -17,7 +17,6 @@ import {
   ShoppingBag,
   Package,
   Users,
-  ShoppingCart,
   Receipt,
   LayoutDashboard
 } from "lucide-react";
@@ -26,7 +25,6 @@ import FinancialReports from "./FinancialReports";
 import SalesReports from "./SalesReports";
 import InventoryReports from "./InventoryReports";
 import CustomerReports from "./CustomerReports";
-import OrderReports from "./OrderReports";
 import ExpenseReports from "./ExpenseReports";
 
 export default function ReportsIndex() {
@@ -39,7 +37,6 @@ export default function ReportsIndex() {
     { value: '/reports/sales', label: t('salesReport'), shortLabel: t('sales'), icon: ShoppingBag },
     { value: '/reports/inventory', label: t('inventoryReport'), shortLabel: t('inventory'), icon: Package },
     { value: '/reports/customers', label: t('customerReport'), shortLabel: t('customers'), icon: Users },
-    { value: '/reports/orders', label: t('orderReport'), shortLabel: t('orders'), icon: ShoppingCart },
     { value: '/reports/expenses', label: t('expenseReport'), shortLabel: t('expenses'), icon: Receipt },
   ];
 
@@ -61,8 +58,6 @@ export default function ReportsIndex() {
         return <InventoryReports />;
       case '/reports/customers':
         return <CustomerReports />;
-      case '/reports/orders':
-        return <OrderReports />;
       case '/reports/expenses':
         return <ExpenseReports />;
       default:
@@ -139,7 +134,7 @@ export default function ReportsIndex() {
         <div className="hidden lg:block">
           <Card className="p-1">
             <Tabs value={activeTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-7 gap-1">
+              <TabsList className="grid w-full grid-cols-6 gap-1">
                 {reportTabs.map((tab) => {
                   const Icon = tab.icon;
                   return (

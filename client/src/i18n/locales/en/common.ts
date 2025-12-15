@@ -624,6 +624,7 @@ const common = {
   topCustomersThisMonth: 'Top 5 Customers (This Month)',
   codCollectionStatus: 'COD Collection Status',
   paid: 'Paid',
+  unpaid: 'Unpaid',
   failed: 'Failed',
   ninetyDayCohort: '90-day cohort',
   systemAlertsAndActivity: 'System Alerts & Activity',

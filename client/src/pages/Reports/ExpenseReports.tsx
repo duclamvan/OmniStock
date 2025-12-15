@@ -279,6 +279,7 @@ export default function ExpenseReports() {
         description={t('expenseAnalysisDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
+        showDateFilter
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

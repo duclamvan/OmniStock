@@ -12,11 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { 
   ShoppingCart, TrendingUp, TrendingDown, Package, Coins, 
   Calendar, CalendarDays, CalendarRange, BarChart3,
   ArrowUpRight, ArrowDownRight, Target, Zap, Clock, Star,
-  DollarSign, PiggyBank, Activity, Users
+  DollarSign, PiggyBank, Activity, Users, Truck, XCircle, CheckCircle
 } from "lucide-react";
 import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData, convertToBaseCurrency } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
@@ -59,6 +64,10 @@ export default function SalesReports() {
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const [activeTab, setActiveTab] = useState("overview");
+  const [dateRange, setDateRange] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ['/api/orders'] });
   const { data: products = [], isLoading: productsLoading } = useQuery({ queryKey: ['/api/products'] });
@@ -75,6 +84,44 @@ export default function SalesReports() {
   const isLoading = ordersLoading || productsLoading || itemsLoading;
 
   const now = useMemo(() => new Date(), []);
+
+  const getDateRange = () => {
+    const today = new Date();
+    switch (dateRange) {
+      case 'today':
+        return { start: startOfDay(today), end: endOfDay(today) };
+      case 'week':
+        return { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
+      case 'month':
+        return { start: startOfMonth(today), end: endOfMonth(today) };
+      case 'year':
+        return { start: startOfYear(today), end: endOfYear(today) };
+      case 'lastYear':
+        const lastYearDate = subYears(today, 1);
+        return { start: startOfYear(lastYearDate), end: endOfYear(lastYearDate) };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return { start: customStartDate, end: customEndDate };
+        }
+        return { start: new Date(0), end: today };
+      default:
+        return { start: new Date(0), end: today };
+    }
+  };
+
+  const { start: filterStartDate, end: filterEndDate } = getDateRange();
+
+  const filteredOrdersForAnalysis = useMemo(() => {
+    return (orders as any[]).filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate >= filterStartDate && orderDate <= filterEndDate;
+    });
+  }, [orders, filterStartDate, filterEndDate]);
+
+  const filteredOrderItemsForAnalysis = useMemo(() => {
+    const orderIds = new Set(filteredOrdersForAnalysis.map((o: any) => o.id));
+    return (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
+  }, [orderItems, filteredOrdersForAnalysis]);
 
   const calculatePeriodMetrics = (
     ordersData: any[], 
@@ -277,7 +324,7 @@ export default function SalesReports() {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const daySales = dayNames.map((day, index) => ({ day, dayIndex: index, revenue: 0, orders: 0 }));
     
-    (orders as any[]).forEach((order: any) => {
+    filteredOrdersForAnalysis.forEach((order: any) => {
       const orderDate = new Date(order.createdAt);
       const dayIndex = getDay(orderDate);
       daySales[dayIndex].orders += 1;
@@ -285,34 +332,31 @@ export default function SalesReports() {
     });
 
     return daySales;
-  }, [orders]);
+  }, [filteredOrdersForAnalysis]);
 
   const hourOfDayAnalysis = useMemo((): HourOfDaySales[] => {
     const hourSales = Array.from({ length: 24 }, (_, hour) => ({ hour, revenue: 0, orders: 0 }));
     
-    (orders as any[]).forEach((order: any) => {
+    filteredOrdersForAnalysis.forEach((order: any) => {
       const orderDate = new Date(order.createdAt);
       const hour = getHours(orderDate);
       hourSales[hour].orders += 1;
     });
 
     return hourSales;
-  }, [orders]);
+  }, [filteredOrdersForAnalysis]);
 
   const productSales = useMemo(() => {
-    const allOrderIds = new Set((orders as any[]).map((o: any) => o.id));
-    const allItems = (orderItems as any[]).filter((item: any) => allOrderIds.has(item.orderId));
-    return aggregateProductSales(allItems, products as any[], orders as any[]);
-  }, [orderItems, products, orders]);
+    return aggregateProductSales(filteredOrderItemsForAnalysis, products as any[], filteredOrdersForAnalysis);
+  }, [filteredOrderItemsForAnalysis, products, filteredOrdersForAnalysis]);
 
   const topSellingProducts = useMemo(() => productSales.slice(0, 10), [productSales]);
 
   const salesByCategory = useMemo(() => {
     const categorySales: { [key: string]: number } = {};
-    const orderMap = new Map((orders as any[]).map((o: any) => [o.id, o]));
-    const allItems = (orderItems as any[]).filter((item: any) => orderMap.has(item.orderId));
+    const orderMap = new Map(filteredOrdersForAnalysis.map((o: any) => [o.id, o]));
 
-    allItems.forEach((item: any) => {
+    filteredOrderItemsForAnalysis.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       const order = orderMap.get(item.orderId);
       if (product && product.categoryId && order) {
@@ -325,7 +369,7 @@ export default function SalesReports() {
 
     const data = Object.entries(categorySales).map(([name, value]) => ({ name, value }));
     return preparePieChartData(data);
-  }, [orderItems, products, categories, orders, tCommon]);
+  }, [filteredOrderItemsForAnalysis, products, categories, filteredOrdersForAnalysis, tCommon]);
 
   const insights = useMemo(() => {
     const bestDay = [...dayOfWeekAnalysis].sort((a, b) => b.revenue - a.revenue)[0];
@@ -347,6 +391,69 @@ export default function SalesReports() {
       yearlyGrowth: yearMetrics.revenueGrowth,
     };
   }, [dayOfWeekAnalysis, hourOfDayAnalysis, monthlySalesData, yearMetrics]);
+
+  const orderMetrics = useMemo(() => {
+    const totalOrders = filteredOrdersForAnalysis.length;
+    const toFulfill = filteredOrdersForAnalysis.filter((o: any) => o.orderStatus === 'to_fulfill' || o.status === 'to_fulfill').length;
+    const shipped = filteredOrdersForAnalysis.filter((o: any) => o.orderStatus === 'shipped' || o.status === 'shipped').length;
+    const cancelled = filteredOrdersForAnalysis.filter((o: any) => o.orderStatus === 'cancelled' || o.status === 'cancelled').length;
+    const pending = filteredOrdersForAnalysis.filter((o: any) => (o.orderStatus || o.status) === 'pending').length;
+    
+    const totalRevenue = filteredOrdersForAnalysis.reduce((sum, o: any) => sum + convertToBaseCurrency(parseFloat(o.grandTotal || '0'), o.currency || 'CZK'), 0);
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const fulfillmentRate = totalOrders > 0 ? (shipped / totalOrders) * 100 : 0;
+
+    return { totalOrders, toFulfill, shipped, cancelled, pending, totalRevenue, avgOrderValue, fulfillmentRate };
+  }, [filteredOrdersForAnalysis]);
+
+  const ordersByStatus = useMemo(() => {
+    const statusCounts: { [key: string]: number } = {};
+    filteredOrdersForAnalysis.forEach((order: any) => {
+      const status = order.orderStatus || order.status || 'unknown';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    const data = Object.entries(statusCounts).map(([name, value]) => ({
+      name: name.replace('_', ' ').toUpperCase(),
+      value,
+    }));
+    return preparePieChartData(data);
+  }, [filteredOrdersForAnalysis]);
+
+  const ordersByPaymentStatus = useMemo(() => {
+    const paid = filteredOrdersForAnalysis.filter((o: any) => o.paymentStatus === 'paid').length;
+    const unpaid = filteredOrdersForAnalysis.filter((o: any) => o.paymentStatus === 'unpaid' || !o.paymentStatus).length;
+    const payLater = filteredOrdersForAnalysis.filter((o: any) => o.paymentStatus === 'pay_later').length;
+    return preparePieChartData([
+      { name: tCommon('paid'), value: paid },
+      { name: tCommon('unpaid'), value: unpaid },
+      { name: tCommon('payLater'), value: payLater },
+    ]);
+  }, [filteredOrdersForAnalysis, tCommon]);
+
+  const orderValueDistribution = useMemo(() => {
+    const high = filteredOrdersForAnalysis.filter((o: any) => parseFloat(o.grandTotal || '0') > 5000).length;
+    const medium = filteredOrdersForAnalysis.filter((o: any) => {
+      const price = parseFloat(o.grandTotal || '0');
+      return price >= 1000 && price <= 5000;
+    }).length;
+    const low = filteredOrdersForAnalysis.filter((o: any) => parseFloat(o.grandTotal || '0') < 1000).length;
+    return preparePieChartData([
+      { name: `${t('highValue')} (>5000 Kč)`, value: high },
+      { name: `${t('mediumValue')} (1-5K Kč)`, value: medium },
+      { name: `${t('lowValue')} (<1000 Kč)`, value: low },
+    ]);
+  }, [filteredOrdersForAnalysis, t]);
+
+  const ordersByCurrency = useMemo(() => {
+    const czk = filteredOrdersForAnalysis.filter((o: any) => o.currency === 'CZK').length;
+    const eur = filteredOrdersForAnalysis.filter((o: any) => o.currency === 'EUR').length;
+    const usd = filteredOrdersForAnalysis.filter((o: any) => o.currency === 'USD').length;
+    return preparePieChartData([
+      { name: 'CZK', value: czk },
+      { name: 'EUR', value: eur },
+      { name: 'USD', value: usd },
+    ].filter(d => d.value > 0));
+  }, [filteredOrdersForAnalysis]);
 
   const handleExportExcel = () => {
     try {
@@ -471,11 +578,89 @@ export default function SalesReports() {
         onExportPDF={handleExportPDF}
       />
 
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">{t('period')}:</Label>
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[180px]" data-testid="select-date-range">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('allTime')}</SelectItem>
+              <SelectItem value="today">{t('today')}</SelectItem>
+              <SelectItem value="week">{t('thisWeek')}</SelectItem>
+              <SelectItem value="month">{t('thisMonth')}</SelectItem>
+              <SelectItem value="year">{t('thisYear')}</SelectItem>
+              <SelectItem value="lastYear">{t('lastYear')}</SelectItem>
+              <SelectItem value="custom">{t('customPeriod')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {dateRange === 'custom' && (
+          <Popover open={isCustomPickerOpen} onOpenChange={setIsCustomPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2" data-testid="button-custom-date-picker">
+                <Calendar className="h-4 w-4" />
+                {customStartDate && customEndDate ? (
+                  <span>{format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}</span>
+                ) : (
+                  <span>{t('selectDates')}</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('startDate')}</Label>
+                  <CalendarPicker
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={setCustomStartDate}
+                    disabled={(date) => customEndDate ? date > customEndDate : false}
+                    initialFocus
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('endDate')}</Label>
+                  <CalendarPicker
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={setCustomEndDate}
+                    disabled={(date) => customStartDate ? date < customStartDate : false}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <Button 
+                  size="sm" 
+                  onClick={() => setIsCustomPickerOpen(false)}
+                  disabled={!customStartDate || !customEndDate}
+                  data-testid="button-apply-dates"
+                >
+                  {tCommon('apply')}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {dateRange !== 'all' && (
+          <Badge variant="secondary" className="text-xs">
+            {t('filteredData')}: {format(filterStartDate, 'dd/MM/yyyy')} - {format(filterEndDate, 'dd/MM/yyyy')}
+          </Badge>
+        )}
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">{t('overview')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('orders')}</span>
           </TabsTrigger>
           <TabsTrigger value="daily" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -619,6 +804,90 @@ export default function SalesReports() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="orders" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title={t('totalOrders')}
+              value={orderMetrics.totalOrders}
+              icon={ShoppingCart}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+              testId="metric-total-orders"
+            />
+            <MetricCard
+              title={t('avgOrderValue')}
+              value={formatCurrency(orderMetrics.avgOrderValue, 'CZK')}
+              icon={Target}
+              iconColor="text-purple-600"
+              iconBgColor="bg-purple-100"
+              testId="metric-avg-order-value"
+            />
+            <MetricCard
+              title={t('fulfillmentRate')}
+              value={`${orderMetrics.fulfillmentRate.toFixed(1)}%`}
+              icon={CheckCircle}
+              iconColor="text-green-600"
+              iconBgColor="bg-green-100"
+              testId="metric-fulfillment-rate"
+            />
+            <MetricCard
+              title={t('totalRevenue')}
+              value={formatCurrency(orderMetrics.totalRevenue, 'CZK')}
+              icon={DollarSign}
+              iconColor="text-green-600"
+              iconBgColor="bg-green-100"
+              testId="metric-orders-revenue"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title={t('toFulfill')}
+              value={orderMetrics.toFulfill}
+              subtitle={t('pending')}
+              icon={Truck}
+              iconColor="text-orange-600"
+              iconBgColor="bg-orange-100"
+              testId="metric-to-fulfill"
+            />
+            <MetricCard
+              title={t('shipped')}
+              value={orderMetrics.shipped}
+              subtitle={t('completed')}
+              icon={CheckCircle}
+              iconColor="text-green-600"
+              iconBgColor="bg-green-100"
+              testId="metric-shipped"
+            />
+            <MetricCard
+              title={t('cancelled')}
+              value={orderMetrics.cancelled}
+              icon={XCircle}
+              iconColor="text-red-600"
+              iconBgColor="bg-red-100"
+              testId="metric-cancelled"
+            />
+            <MetricCard
+              title={t('pending')}
+              value={orderMetrics.pending}
+              icon={Clock}
+              iconColor="text-amber-600"
+              iconBgColor="bg-amber-100"
+              testId="metric-pending"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PieChartCard title={t('ordersByStatus')} data={ordersByStatus} testId="chart-orders-by-status" />
+            <PieChartCard title={t('ordersByPaymentStatus')} data={ordersByPaymentStatus} colors={['#10b981', '#ef4444', '#f59e0b']} testId="chart-payment-status" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PieChartCard title={t('orderValueDistribution')} data={orderValueDistribution} testId="chart-order-value-distribution" />
+            <PieChartCard title={t('ordersByCurrency')} data={ordersByCurrency} testId="chart-orders-by-currency" />
           </div>
         </TabsContent>
 

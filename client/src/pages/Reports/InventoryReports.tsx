@@ -373,6 +373,7 @@ export default function InventoryReports() {
         description={t('inventoryReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
+        showDateFilter
       />
 
       {/* Key Metrics */}

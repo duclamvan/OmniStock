@@ -578,6 +578,7 @@ const common = {
   topCustomersThisMonth: 'Top 5 khách hàng (Tháng này)',
   codCollectionStatus: 'Trạng thái thu COD',
   paid: 'Đã thanh toán',
+  unpaid: 'Chưa thanh toán',
   failed: 'Thất bại',
   ninetyDayCohort: 'Nhóm 90 ngày',
   systemAlertsAndActivity: 'Cảnh báo & Hoạt động hệ thống',
