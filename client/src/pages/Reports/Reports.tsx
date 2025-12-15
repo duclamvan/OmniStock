@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
 import {
   TrendingUp,
   TrendingDown,
@@ -40,13 +43,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { format, subDays, subMonths, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 export default function Reports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const [dateRange, setDateRange] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
 
   // Fetch all necessary data
   const { data: products = [] } = useQuery({ queryKey: ['/api/products'] });
@@ -91,6 +97,14 @@ export default function Reports() {
         return { start: startOfMonth(now), end: endOfMonth(now) };
       case 'year':
         return { start: startOfYear(now), end: endOfYear(now) };
+      case 'lastYear':
+        const lastYearDate = subYears(now, 1);
+        return { start: startOfYear(lastYearDate), end: endOfYear(lastYearDate) };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return { start: customStartDate, end: customEndDate };
+        }
+        return { start: new Date(0), end: new Date() };
       default:
         return { start: new Date(0), end: new Date() };
     }
@@ -400,7 +414,12 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Select value={dateRange} onValueChange={setDateRange}>
+          <Select value={dateRange} onValueChange={(value) => {
+            setDateRange(value);
+            if (value === 'custom') {
+              setIsCustomPickerOpen(true);
+            }
+          }}>
             <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-date-range">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue />
@@ -412,8 +431,55 @@ export default function Reports() {
               <SelectItem value="month">{t('last30Days')}</SelectItem>
               <SelectItem value="thisMonth">{t('thisMonth')}</SelectItem>
               <SelectItem value="year">{t('thisYear')}</SelectItem>
+              <SelectItem value="lastYear">{t('lastYear')}</SelectItem>
+              <SelectItem value="custom">{t('customPeriod')}</SelectItem>
             </SelectContent>
           </Select>
+          {dateRange === 'custom' && (
+            <Popover open={isCustomPickerOpen} onOpenChange={setIsCustomPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2" data-testid="button-custom-date">
+                  <Calendar className="h-4 w-4" />
+                  {customStartDate && customEndDate 
+                    ? `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}`
+                    : t('selectDate')
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-4" align="end">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t('startDate')}</Label>
+                      <CalendarPicker
+                        mode="single"
+                        selected={customStartDate}
+                        onSelect={setCustomStartDate}
+                        disabled={(date) => customEndDate ? date > customEndDate : false}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('endDate')}</Label>
+                      <CalendarPicker
+                        mode="single"
+                        selected={customEndDate}
+                        onSelect={setCustomEndDate}
+                        disabled={(date) => customStartDate ? date < customStartDate : false}
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => setIsCustomPickerOpen(false)}
+                    disabled={!customStartDate || !customEndDate}
+                    data-testid="button-apply-custom-date"
+                  >
+                    {t('apply')}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
