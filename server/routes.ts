@@ -13829,6 +13829,62 @@ Important:
     }
   });
 
+  // Helper function to look up postal code from Nominatim when missing
+  // Includes timeout protection and rate limiting awareness
+  async function lookupPostalCode(city: string, street?: string, country?: string): Promise<string | null> {
+    try {
+      // Build search query - prioritize city, add street and country if available
+      let queryParts: string[] = [];
+      if (street) queryParts.push(street);
+      if (city) queryParts.push(city);
+      if (country) queryParts.push(country);
+      
+      const query = queryParts.join(', ');
+      if (!query) return null;
+
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1`;
+      
+      // Create abort controller for timeout (3 seconds max to prevent hanging)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(nominatimUrl, {
+        headers: {
+          'User-Agent': 'DavieSupply/1.0 (Warehouse Management System)'
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // Handle rate limiting gracefully
+        if (response.status === 429) {
+          console.warn('Nominatim rate limit reached, skipping postal code lookup');
+          return null;
+        }
+        console.error('Nominatim API error:', response.statusText);
+        return null;
+      }
+
+      const data = await response.json();
+      if (data && data.length > 0 && data[0].address?.postcode) {
+        console.log(`Postal code lookup: found "${data[0].address.postcode}" for "${query}"`);
+        return data[0].address.postcode;
+      }
+
+      return null;
+    } catch (error: any) {
+      // Handle timeout gracefully
+      if (error.name === 'AbortError') {
+        console.warn('Postal code lookup timed out, continuing without it');
+        return null;
+      }
+      console.error('Error looking up postal code:', error);
+      return null;
+    }
+  }
+
   // AI-powered Address Parsing Endpoint
   app.post('/api/addresses/parse', isAuthenticated, async (req: any, res) => {
     try {
@@ -13847,6 +13903,21 @@ Important:
         // Fallback to basic regex parsing when AI is not configured
         console.log('DEEPSEEK_API_KEY not configured, using basic parsing');
         const basicParsed = parseAddressBasic(rawAddress);
+        
+        // Auto-fill postal code if missing but city is present
+        if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
+          console.log(`Smart Paste (basic): zipCode missing, looking up for city "${basicParsed.fields.city}"`);
+          const lookedUpZipCode = await lookupPostalCode(
+            basicParsed.fields.city, 
+            basicParsed.fields.street, 
+            basicParsed.fields.country
+          );
+          if (lookedUpZipCode) {
+            basicParsed.fields.zipCode = lookedUpZipCode;
+            console.log(`Smart Paste (basic): Auto-filled postal code "${lookedUpZipCode}"`);
+          }
+        }
+        
         return res.json(basicParsed);
       }
 
@@ -13910,6 +13981,21 @@ Important rules:
         console.error('Failed to parse AI response:', content);
         // Fallback to basic parsing
         const basicParsed = parseAddressBasic(rawAddress);
+        
+        // Auto-fill postal code if missing but city is present
+        if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
+          console.log(`Smart Paste (fallback): zipCode missing, looking up for city "${basicParsed.fields.city}"`);
+          const lookedUpZipCode = await lookupPostalCode(
+            basicParsed.fields.city, 
+            basicParsed.fields.street, 
+            basicParsed.fields.country
+          );
+          if (lookedUpZipCode) {
+            basicParsed.fields.zipCode = lookedUpZipCode;
+            console.log(`Smart Paste (fallback): Auto-filled postal code "${lookedUpZipCode}"`);
+          }
+        }
+        
         return res.json(basicParsed);
       }
 
@@ -13919,6 +14005,22 @@ Important rules:
       if (fieldCount >= 6) confidence = 'high';
       else if (fieldCount >= 3) confidence = 'medium';
 
+      // Extract initial values
+      let zipCode = parsed.zipCode || parsed.postalCode || '';
+      const city = parsed.city || '';
+      const street = parsed.street || '';
+      const country = normalizeCountryName(parsed.country || '');
+
+      // Auto-fill postal code if missing but city is present
+      if (!zipCode && city) {
+        console.log(`Smart Paste: zipCode missing, looking up for city "${city}"`);
+        const lookedUpZipCode = await lookupPostalCode(city, street, country);
+        if (lookedUpZipCode) {
+          zipCode = lookedUpZipCode;
+          console.log(`Smart Paste: Auto-filled postal code "${zipCode}" for "${city}"`);
+        }
+      }
+
       res.json({
         fields: {
           firstName: parsed.firstName || '',
@@ -13926,11 +14028,11 @@ Important rules:
           company: parsed.company || '',
           email: parsed.email || '',
           tel: parsed.phone || parsed.tel || '',
-          street: parsed.street || '',
+          street: street,
           streetNumber: parsed.streetNumber || '',
-          city: parsed.city || '',
-          zipCode: parsed.zipCode || parsed.postalCode || '',
-          country: normalizeCountryName(parsed.country || '')
+          city: city,
+          zipCode: zipCode,
+          country: country
         },
         confidence
       });

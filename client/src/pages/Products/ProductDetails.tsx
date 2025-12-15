@@ -907,6 +907,60 @@ export default function ProductDetails() {
                 </div>
               )}
 
+              {/* Customs & Import Information */}
+              {(product.hsCode || product.dutyRatePercent) && canAccessFinancialData && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    {t('products:customsInfo', 'Customs & Import')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {product.hsCode && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:hsCode', 'HS Code')}</p>
+                        <p className="font-semibold font-mono">{product.hsCode}</p>
+                      </div>
+                    )}
+                    {product.dutyRatePercent && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:dutyRate', 'Duty Rate')}</p>
+                        <p className="font-semibold">{product.dutyRatePercent}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Unit Configuration */}
+              {(product.unitType || product.unitName || product.unitsPerItem) && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    {t('products:unitConfiguration', 'Unit Configuration')}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {product.unitType && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:unitType', 'Unit Type')}</p>
+                        <p className="font-semibold capitalize">{product.unitType}</p>
+                      </div>
+                    )}
+                    {product.unitName && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:unitName', 'Unit Name')}</p>
+                        <p className="font-semibold">{product.unitName}</p>
+                      </div>
+                    )}
+                    {product.unitsPerItem && (
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('products:unitsPerItem', 'Units per Item')}</p>
+                        <p className="font-semibold">{product.unitsPerItem}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Physical Dimensions */}
               {(product.length || product.width || product.height || product.weight) && (
                 <div className="mt-4 pt-4 border-t">
