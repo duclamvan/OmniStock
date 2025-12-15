@@ -2734,7 +2734,7 @@ export default function ProductForm() {
                                 size="sm"
                                 onClick={() => {
                                   setSupplierPopoverOpen(false);
-                                  window.open('/suppliers/add', '_blank');
+                                  window.open('/suppliers/new', '_blank');
                                 }}
                                 data-testid="button-add-supplier"
                               >
