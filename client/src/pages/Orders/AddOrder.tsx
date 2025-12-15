@@ -6194,7 +6194,7 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
+                    <Label htmlFor="codCurrency">{t('orders:codCurrency')}</Label>
                     <Select 
                       value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
