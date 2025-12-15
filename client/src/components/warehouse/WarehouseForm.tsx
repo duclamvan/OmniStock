@@ -53,7 +53,6 @@ interface UploadedFile {
 export type WarehouseFormData = {
   name: string;
   code?: string;
-  location?: string;
   status: "active" | "inactive" | "maintenance" | "rented";
   rentedFromDate?: string;
   expenseId?: string;
@@ -118,7 +117,6 @@ export function WarehouseForm({
     code: mode === 'add' 
       ? z.string().min(1, t('warehouse:warehouseCodeRequired'))
       : z.string().optional(),
-    location: z.string().optional(),
     status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
     rentedFromDate: z.string().optional(),
     expenseId: z.string().optional(),
@@ -147,7 +145,6 @@ export function WarehouseForm({
     defaultValues: {
       name: "",
       code: "",
-      location: "",
       status: "active",
       rentedFromDate: "",
       expenseId: "",
@@ -175,7 +172,6 @@ export function WarehouseForm({
       form.reset({
         name: warehouseData.name || "",
         code: warehouseData.code || "",
-        location: warehouseData.location || "",
         status: (warehouseData.status as any) || "active",
         rentedFromDate: rentedFromDate 
           ? new Date(rentedFromDate).toISOString().split('T')[0] 
@@ -664,16 +660,6 @@ export function WarehouseForm({
                       className="mt-1"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="location">{t('warehouse:locationCode')}</Label>
-                  <Input
-                    id="location"
-                    {...form.register("location")}
-                    placeholder={t('warehouse:locationCodePlaceholder')}
-                    className="mt-1"
-                  />
                 </div>
 
                 <div>
