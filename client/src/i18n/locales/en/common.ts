@@ -149,6 +149,7 @@ const common = {
   amount: 'Amount',
   discount: 'Discount',
   tax: 'Tax',
+  sales: 'Sales',
   
   // Pagination
   page: 'Page',

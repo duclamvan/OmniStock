@@ -149,6 +149,7 @@ const common = {
   amount: 'Thành tiền',
   discount: 'Giảm giá',
   tax: 'Thuế',
+  sales: 'Bán hàng',
   
   // Pagination
   page: 'Trang',
