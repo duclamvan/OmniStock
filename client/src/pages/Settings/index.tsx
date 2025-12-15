@@ -18,9 +18,9 @@ export default function Settings() {
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('settings:settings')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('settings:settings', 'Settings')}</h1>
         <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-          {t('settings:settingsDescription')}
+          {t('settings:settingsDescription', 'Configure your application preferences and system settings')}
         </p>
       </div>
 
