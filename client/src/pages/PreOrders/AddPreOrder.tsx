@@ -182,9 +182,9 @@ export default function AddPreOrder() {
         billingEmail: data.email || '',
         billingTel: data.tel || '',
         country: data.country || '',
-      });
+      }) as any;
     },
-    onSuccess: (newCustomer) => {
+    onSuccess: (newCustomer: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       setSelectedCustomer(newCustomer);
       form.setValue('customerId', newCustomer.id);
@@ -311,29 +311,32 @@ export default function AddPreOrder() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
-    const preOrderData = {
-      customerId: data.customerId,
-      status: data.status,
-      notes: data.notes,
-      expectedDate: data.expectedDate ? format(data.expectedDate, 'yyyy-MM-dd') : undefined,
-      items: items.map(item => ({
-        productId: item.productId || null,
-        itemName: item.itemName,
-        itemDescription: item.itemDescription || null,
-        quantity: item.quantity,
-      })),
-      reminderEnabled: data.reminderEnabled,
-      reminderChannel: data.reminderChannel,
-      reminderDaysBefore: data.reminderDaysBefore,
-      reminderTimeUtc: data.reminderTimeUtc,
-      reminderTimezone: data.reminderTimezone,
-      reminderPhone: data.reminderPhone || null,
-      reminderEmail: data.reminderEmail || null,
-      priority: data.priority,
-    };
+    try {
+      const preOrderData = {
+        customerId: data.customerId,
+        status: data.status,
+        notes: data.notes,
+        expectedDate: data.expectedDate ? format(data.expectedDate, 'yyyy-MM-dd') : undefined,
+        items: items.map(item => ({
+          productId: item.productId || null,
+          itemName: item.itemName,
+          itemDescription: item.itemDescription || null,
+          quantity: item.quantity,
+        })),
+        reminderEnabled: data.reminderEnabled,
+        reminderChannel: data.reminderChannel,
+        reminderDaysBefore: data.reminderDaysBefore,
+        reminderTimeUtc: data.reminderTimeUtc,
+        reminderTimezone: data.reminderTimezone,
+        reminderPhone: data.reminderPhone || null,
+        reminderEmail: data.reminderEmail || null,
+        priority: data.priority,
+      };
 
-    await createPreOrderMutation.mutateAsync(preOrderData);
-    setIsSubmitting(false);
+      await createPreOrderMutation.mutateAsync(preOrderData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
