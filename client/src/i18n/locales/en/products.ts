@@ -51,6 +51,7 @@ const products = {
   
   // Stock
   stockQty: 'Stock Quantity',
+  currentStock: 'Current Stock',
   minStock: 'Minimum Stock',
   maxStock: 'Maximum Stock',
   reorderPoint: 'Reorder Point',

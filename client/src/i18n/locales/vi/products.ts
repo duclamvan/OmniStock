@@ -51,6 +51,7 @@ const products = {
   
   // Stock
   stockQty: 'Số lượng tồn kho',
+  currentStock: 'Tồn kho hiện tại',
   minStock: 'Tồn kho tối thiểu',
   maxStock: 'Tồn kho tối đa',
   reorderPoint: 'Điểm đặt hàng lại',
