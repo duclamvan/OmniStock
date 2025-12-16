@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   ChartLine, 
   ShoppingCart, 
@@ -23,6 +24,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -199,6 +201,16 @@ export function Sidebar() {
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   
+  // Fetch pre-orders to count fully arrived ones
+  const { data: preOrders } = useQuery<any[]>({
+    queryKey: ['/api/pre-orders'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const fullyArrivedCount = preOrders?.filter(po => po.status === 'fully_arrived').length || 0;
+  
   // Filter navigation items based on user role (memoized for performance)
   const filteredNavigation = useMemo(() => {
     return filterNavItems(navigation, isAdministrator);
@@ -344,12 +356,17 @@ export function Sidebar() {
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  "w-full justify-start text-slate-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                                  "w-full justify-between text-slate-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
                                   isChildActive && "bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-gray-100"
                                 )}
                                 data-testid={`nav-${child.labelKey}`}
                               >
-                                {getLabel(child)}
+                                <span>{getLabel(child)}</span>
+                                {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
+                                  <Badge variant="destructive" className="ml-2">
+                                    {fullyArrivedCount}
+                                  </Badge>
+                                )}
                               </Button>
                             </Link>
                           </div>
