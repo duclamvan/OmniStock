@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -94,6 +94,9 @@ const createDiscountSchema = (t: any) => z.object({
 export default function AddDiscount() {
   const { t } = useTranslation(['discounts', 'common']);
   const [, navigate] = useLocation();
+  const params = useParams();
+  const editId = params.id;
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const [discountId, setDiscountId] = useState("");
   const [productSearchOpen, setProductSearchOpen] = useState(false);
@@ -205,9 +208,9 @@ export default function AddDiscount() {
     return new Set(watchSelectedProductIds?.map(item => item.productId).filter(Boolean) || []);
   };
 
-  // Generate discount ID when name or start date changes
+  // Generate discount ID when name or start date changes (only in add mode)
   useEffect(() => {
-    if (watchName && watchStartDate) {
+    if (!isEditMode && watchName && watchStartDate) {
       const year = new Date(watchStartDate).getFullYear();
       const cleanName = watchName
         .toUpperCase()
@@ -217,7 +220,63 @@ export default function AddDiscount() {
         .join('');
       setDiscountId(`#${year}${cleanName}`);
     }
-  }, [watchName, watchStartDate]);
+  }, [watchName, watchStartDate, isEditMode]);
+
+  // Load existing discount for edit mode
+  const { data: existingDiscount, isLoading: isLoadingDiscount } = useQuery({
+    queryKey: ['/api/discounts', editId],
+    queryFn: async () => {
+      const response = await fetch(`/api/discounts/${editId}`);
+      if (!response.ok) throw new Error('Failed to load discount');
+      return response.json();
+    },
+    enabled: isEditMode,
+  });
+
+  // Populate form with existing discount data
+  useEffect(() => {
+    if (existingDiscount && isEditMode) {
+      const discount = existingDiscount;
+      
+      // Map backend type to form type
+      let discountType: 'percentage' | 'fixed_amount' | 'buy_x_get_y' = 'percentage';
+      if (discount.type === 'fixed') discountType = 'fixed_amount';
+      else if (discount.type === 'buy_x_get_y') discountType = 'buy_x_get_y';
+      else if (discount.type === 'percentage') discountType = 'percentage';
+      
+      // Format dates
+      const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toISOString().split('T')[0];
+      };
+      
+      form.reset({
+        name: discount.name || '',
+        description: discount.description || '',
+        discountType,
+        percentage: discount.percentage || 10,
+        fixedAmount: discount.value || undefined,
+        fixedAmountEur: undefined,
+        buyQuantity: discount.buyQuantity || 1,
+        getQuantity: discount.getQuantity || 1,
+        getProductType: discount.getProductType || 'same_product',
+        getProductId: discount.getProductId || undefined,
+        status: discount.status || 'active',
+        startDate: formatDate(discount.startDate),
+        endDate: formatDate(discount.endDate),
+        applicationScope: discount.applicationScope || 'all_products',
+        productId: discount.productId || undefined,
+        categoryId: discount.categoryId || undefined,
+        selectedProductIds: discount.selectedProductIds?.map((id: string) => ({ productId: id })) || [],
+      });
+      
+      // Set the discount ID from existing data
+      if (discount.discountId) {
+        setDiscountId(discount.discountId);
+      }
+    }
+  }, [existingDiscount, isEditMode, form]);
 
   const createDiscountMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/discounts', data),
@@ -233,6 +292,26 @@ export default function AddDiscount() {
       toast({
         title: t('common:error'),
         description: error.message || t('discounts:failedToCreate'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDiscountMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PATCH', `/api/discounts/${editId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts', editId] });
+      toast({
+        title: t('common:success'),
+        description: t('discounts:discountUpdated'),
+      });
+      navigate("/discounts");
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('discounts:failedToUpdate'),
         variant: "destructive",
       });
     },
@@ -277,7 +356,12 @@ export default function AddDiscount() {
       submitData.selectedProductIds = data.selectedProductIds?.map(item => item.productId);
     }
 
-    createDiscountMutation.mutate(submitData);
+    // Use appropriate mutation based on mode
+    if (isEditMode) {
+      updateDiscountMutation.mutate(submitData);
+    } else {
+      createDiscountMutation.mutate(submitData);
+    }
   };
 
   const onFormError = (errors: any) => {
@@ -315,8 +399,8 @@ export default function AddDiscount() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t('discounts:backToDiscounts')}
         </Button>
-        <h1 className="text-2xl sm:text-3xl font-bold">{t('discounts:addPageTitle')}</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">{t('discounts:addPageSubtitle')}</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">{isEditMode ? t('discounts:editPageTitle') : t('discounts:addPageTitle')}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">{isEditMode ? t('discounts:editPageSubtitle') : t('discounts:addPageSubtitle')}</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit, onFormError)} className="space-y-4 sm:space-y-6">
@@ -1202,7 +1286,7 @@ export default function AddDiscount() {
             type="button"
             variant="outline"
             onClick={() => navigate("/discounts")}
-            disabled={createDiscountMutation.isPending}
+            disabled={createDiscountMutation.isPending || updateDiscountMutation.isPending}
             className="w-full sm:w-auto"
             data-testid="button-cancel"
           >
@@ -1210,19 +1294,19 @@ export default function AddDiscount() {
           </Button>
           <Button 
             type="submit" 
-            disabled={createDiscountMutation.isPending}
+            disabled={createDiscountMutation.isPending || updateDiscountMutation.isPending}
             className="w-full sm:w-auto sm:min-w-[160px]"
             data-testid="button-submit"
           >
-            {createDiscountMutation.isPending ? (
+            {(createDiscountMutation.isPending || updateDiscountMutation.isPending) ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('common:creating')}...
+                {isEditMode ? t('common:saving') : t('common:creating')}...
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                {t('discounts:createDiscount')}
+                {isEditMode ? t('discounts:updateDiscount') : t('discounts:createDiscount')}
               </>
             )}
           </Button>

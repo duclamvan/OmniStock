@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation, useParams } from "wouter";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, FlaskConical, ChevronDown, ChevronUp, Link2, Check, AlertCircle, Plus, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, FlaskConical, ChevronDown, ChevronUp, Link2, Check, AlertCircle, Plus, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Separator } from "@/components/ui/separator";
 import { compressImage } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
+import type { PackingMaterial } from "@shared/schema";
 
 function formatSupplierName(url: string): string {
   if (!url) return "";
@@ -90,10 +91,17 @@ type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 export default function AddPackingMaterial() {
   const { t } = useTranslation('warehouse');
   const [, navigate] = useLocation();
+  const { id: editId } = useParams();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageUploading, setImageUploading] = useState(false);
+  
+  const { data: material, isLoading } = useQuery<PackingMaterial>({
+    queryKey: ['/api/packing-materials', editId],
+    enabled: isEditMode,
+  });
   
   const [openSections, setOpenSections] = useState({
     classification: true,
@@ -175,6 +183,66 @@ export default function AddPackingMaterial() {
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
+
+  useEffect(() => {
+    if (material && isEditMode) {
+      let parsedLength = "";
+      let parsedWidth = "";
+      let parsedHeight = "";
+      let parsedDimensionUnit = "cm";
+      
+      if (material.dimensions) {
+        const dimMatch = material.dimensions.match(/^([\d.]+)×([\d.]+)×([\d.]+)\s*(\w+)$/);
+        if (dimMatch) {
+          parsedLength = dimMatch[1];
+          parsedWidth = dimMatch[2];
+          parsedHeight = dimMatch[3];
+          parsedDimensionUnit = dimMatch[4];
+        }
+      }
+
+      let parsedWeightValue = "";
+      let parsedWeightUnit = "kg";
+      
+      if (material.weight) {
+        const weightMatch = material.weight.match(/^([\d.]+)\s*(\w+)$/);
+        if (weightMatch) {
+          parsedWeightValue = weightMatch[1];
+          parsedWeightUnit = weightMatch[2];
+        }
+      }
+
+      if (material.imageUrl) {
+        setImagePreview(material.imageUrl);
+      }
+
+      form.reset({
+        name: material.name || "",
+        nameVi: (material as any).nameVi || "",
+        code: material.code || "",
+        category: material.category || "",
+        size: material.size || "",
+        length: parsedLength,
+        width: parsedWidth,
+        height: parsedHeight,
+        dimensionUnit: parsedDimensionUnit,
+        weightValue: parsedWeightValue,
+        weightUnit: parsedWeightUnit,
+        dimensions: material.dimensions || "",
+        weight: material.weight || "",
+        stockQuantity: material.stockQuantity || 0,
+        minStockLevel: material.minStockLevel || 10,
+        cost: material.cost || "",
+        currency: material.currency || "EUR",
+        supplier: material.supplier || "",
+        imageUrl: material.imageUrl || "",
+        description: material.description || "",
+        isFragile: material.isFragile || false,
+        isReusable: material.isReusable || false,
+        isActive: material.isActive ?? true,
+      });
+    }
+  }, [material, isEditMode, form]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -282,8 +350,82 @@ export default function AddPackingMaterial() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      const processedData = { ...data };
+      if (data.length || data.width || data.height) {
+        const dims = [data.length, data.width, data.height].filter(Boolean);
+        processedData.dimensions = dims.length > 0 ? `${dims.join('×')} ${data.dimensionUnit}` : '';
+      }
+      if (data.weightValue) {
+        processedData.weight = `${data.weightValue} ${data.weightUnit}`;
+      }
+
+      if (imageFile) {
+        setImageUploading(true);
+        try {
+          const compressed = await compressImage(imageFile, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 0.8,
+            format: 'jpeg'
+          });
+
+          const base64Response = await fetch(compressed);
+          const blob = await base64Response.blob();
+          
+          const formData = new FormData();
+          formData.append('image', blob, imageFile.name);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error('Image upload failed');
+          }
+
+          const uploadResult = await uploadResponse.json();
+          processedData.imageUrl = uploadResult.imageUrl;
+        } catch (error) {
+          console.error('Image upload error:', error);
+          toast({
+            title: t('imageUploadFailed'),
+            description: t('materialUpdatedWithoutImage'),
+            variant: "destructive",
+          });
+        } finally {
+          setImageUploading(false);
+        }
+      }
+
+      return apiRequest("PATCH", `/api/packing-materials/${editId}`, processedData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/packing-materials"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/packing-materials', editId] });
+      toast({
+        title: t('success'),
+        description: t('packingMaterialUpdatedSuccess'),
+      });
+      navigate("/packing-materials");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('error'),
+        description: error.message || t('failedToUpdatePackingMaterial'),
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: FormData) => {
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   const handleAddAnother = () => {
@@ -363,6 +505,18 @@ export default function AddPackingMaterial() {
     </CollapsibleTrigger>
   );
 
+  const isPending = isEditMode ? updateMutation.isPending : createMutation.isPending;
+
+  if (isEditMode && isLoading) {
+    return (
+      <div className="container mx-auto py-6 max-w-5xl">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-3 md:py-6 px-2 md:px-4 max-w-5xl pb-24 md:pb-6 overflow-x-hidden">
       <div className="mb-4 md:mb-6">
@@ -375,9 +529,9 @@ export default function AddPackingMaterial() {
 
       <Card className="border-0 md:border shadow-none md:shadow-sm">
         <CardHeader className="px-3 md:px-6 py-3 md:py-6">
-          <CardTitle className="text-xl md:text-2xl">{t('addPackingMaterial')}</CardTitle>
+          <CardTitle className="text-xl md:text-2xl">{isEditMode ? t('editPackingMaterial') : t('addPackingMaterial')}</CardTitle>
           <CardDescription className="text-sm">
-            {t('manageMaterialsInventory')}
+            {isEditMode ? t('updateMaterialsInventory') : t('manageMaterialsInventory')}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-3 md:px-6">
@@ -401,7 +555,7 @@ export default function AddPackingMaterial() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm">{t('category')} *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-11" data-testid="select-category">
                               <SelectValue placeholder={t('selectCategory')} />
@@ -1011,7 +1165,7 @@ export default function AddPackingMaterial() {
                     {t('cancel')}
                   </Button>
                 </Link>
-                {isCartonCategory && (
+                {!isEditMode && isCartonCategory && (
                   <Button 
                     type="button" 
                     variant="secondary"
@@ -1022,9 +1176,9 @@ export default function AddPackingMaterial() {
                     {t('addAnotherCarton')}
                   </Button>
                 )}
-                <Button type="submit" disabled={createMutation.isPending || imageUploading} data-testid="button-submit">
+                <Button type="submit" disabled={isPending || imageUploading} data-testid="button-submit">
                   <Save className="mr-2 h-4 w-4" />
-                  {imageUploading ? t('imageUploadSuccess') + '...' : createMutation.isPending ? t('addMaterial') + '...' : t('addMaterial')}
+                  {imageUploading ? t('imageUploadSuccess') + '...' : isPending ? (isEditMode ? t('updateMaterial') : t('addMaterial')) + '...' : (isEditMode ? t('updateMaterial') : t('addMaterial'))}
                 </Button>
               </div>
             </form>
@@ -1035,7 +1189,7 @@ export default function AddPackingMaterial() {
       {/* Sticky Submit Button - Mobile Only */}
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t md:hidden z-50">
         <div className="flex gap-2 max-w-5xl mx-auto">
-          {isCartonCategory && (
+          {!isEditMode && isCartonCategory && (
             <Button 
               type="button" 
               variant="outline"
@@ -1049,13 +1203,13 @@ export default function AddPackingMaterial() {
           )}
           <Button 
             type="submit" 
-            className={`h-12 ${isCartonCategory ? 'flex-1' : 'w-full'}`}
-            disabled={createMutation.isPending || imageUploading} 
+            className={`h-12 ${!isEditMode && isCartonCategory ? 'flex-1' : 'w-full'}`}
+            disabled={isPending || imageUploading} 
             onClick={form.handleSubmit(onSubmit)}
             data-testid="button-submit-mobile"
           >
             <Save className="mr-2 h-4 w-4" />
-            {imageUploading ? t('imageUploadSuccess') + '...' : createMutation.isPending ? t('addMaterial') + '...' : t('addMaterial')}
+            {imageUploading ? t('imageUploadSuccess') + '...' : isPending ? (isEditMode ? t('updateMaterial') : t('addMaterial')) + '...' : (isEditMode ? t('updateMaterial') : t('addMaterial'))}
           </Button>
         </div>
       </div>

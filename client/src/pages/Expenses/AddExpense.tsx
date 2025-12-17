@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,11 +49,20 @@ import { useSettings } from "@/contexts/SettingsContext";
 export default function AddExpense() {
   const { t } = useTranslation(['financial', 'common']);
   const [, navigate] = useLocation();
+  const params = useParams();
+  const editId = params.id;
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const { financialSettings } = useSettings();
 
   // Get expense categories from settings (guaranteed to have defaults via SettingsContext)
   const categories = financialSettings.expenseCategories ?? [];
+
+  // Query to load existing expense data in edit mode
+  const { data: existingExpense, isLoading: isLoadingExpense } = useQuery<any>({
+    queryKey: ['/api/expenses', editId],
+    enabled: isEditMode,
+  });
 
   const expenseSchema = z.object({
     vendorName: z.string().min(1, t('vendorNameRequired')),
@@ -95,6 +104,9 @@ export default function AddExpense() {
 
   const [showRecurring, setShowRecurring] = useState(false);
 
+  // Get the display expense ID (existing or new)
+  const displayExpenseId = isEditMode && existingExpense ? existingExpense.expenseId : expenseId;
+
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -114,6 +126,30 @@ export default function AddExpense() {
       recurringDayOfMonth: 1,
     },
   });
+
+  // Populate form with existing expense data in edit mode
+  useEffect(() => {
+    if (isEditMode && existingExpense) {
+      const isRecurring = existingExpense.isRecurring || false;
+      form.reset({
+        vendorName: existingExpense.name || '',
+        category: existingExpense.category || categories[0],
+        amount: existingExpense.amount ? parseFloat(existingExpense.amount) : undefined,
+        currency: existingExpense.currency as any || 'CZK',
+        date: existingExpense.date ? new Date(existingExpense.date) : new Date(),
+        description: existingExpense.description || '',
+        invoiceNumber: existingExpense.invoiceNumber || '',
+        paymentMethod: existingExpense.paymentMethod || 'bank_transfer',
+        status: existingExpense.status || 'paid',
+        notes: existingExpense.notes || '',
+        isRecurring: isRecurring,
+        recurringType: existingExpense.recurringType || 'monthly',
+        recurringInterval: existingExpense.recurringInterval || 1,
+        recurringDayOfMonth: existingExpense.recurringDayOfMonth || 1,
+      });
+      setShowRecurring(isRecurring);
+    }
+  }, [isEditMode, existingExpense, form, categories]);
 
   const createExpenseMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -136,9 +172,31 @@ export default function AddExpense() {
     },
   });
 
+  const updateExpenseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('PATCH', `/api/expenses/${editId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses', editId] });
+      toast({
+        title: t('success'),
+        description: t('expenseUpdatedSuccessfully'),
+      });
+      navigate('/expenses');
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('error'),
+        description: error.message || t('failedToUpdateExpense'),
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = async (data: ExpenseFormData) => {
     const expenseData = {
-      expenseId,
+      expenseId: isEditMode ? existingExpense?.expenseId : expenseId,
       name: data.vendorName,
       category: data.category,
       amount: data.amount,
@@ -151,7 +209,11 @@ export default function AddExpense() {
       notes: data.notes,
     };
 
-    await createExpenseMutation.mutateAsync(expenseData);
+    if (isEditMode) {
+      await updateExpenseMutation.mutateAsync(expenseData);
+    } else {
+      await createExpenseMutation.mutateAsync(expenseData);
+    }
   };
 
   const formatCurrency = (amount: number | undefined, currency: string) => {
@@ -193,6 +255,30 @@ export default function AddExpense() {
     }
   };
 
+  // Loading state for edit mode
+  if (isEditMode && isLoadingExpense) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">{t('loadingExpenseDetails')}...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state for edit mode
+  if (isEditMode && !isLoadingExpense && !existingExpense) {
+    return (
+      <div className="text-center py-12 bg-white dark:bg-slate-900">
+        <p className="text-slate-600 dark:text-slate-400">{t('expenseNotFound')}</p>
+        <Button onClick={() => window.history.back()} className="mt-4">
+          {t('backToExpenses')}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12 overflow-x-hidden">
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -211,8 +297,8 @@ export default function AddExpense() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{t('addExpense')}</h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('businessExpenseRecord')}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{isEditMode ? t('editExpense') : t('addExpense')}</h1>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{isEditMode ? t('updateExpenseDetails') : t('businessExpenseRecord')}</p>
                 </div>
               </div>
             </div>
@@ -236,7 +322,7 @@ export default function AddExpense() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{t('billId')}</p>
-                      <p className="font-mono font-bold text-lg text-primary mt-1">{expenseId}</p>
+                      <p className="font-mono font-bold text-lg text-primary mt-1">{displayExpenseId}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                         {formatCzechDate(new Date())}
                       </p>
@@ -843,10 +929,10 @@ export default function AddExpense() {
                         type="submit"
                         className="w-full"
                         size="lg"
-                        disabled={createExpenseMutation.isPending}
+                        disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
                         data-testid="button-save"
                       >
-                        {createExpenseMutation.isPending ? (
+                        {(createExpenseMutation.isPending || updateExpenseMutation.isPending) ? (
                           <>
                             <span className="animate-spin mr-2">⏳</span>
                             {t('processing')}...
@@ -854,7 +940,7 @@ export default function AddExpense() {
                         ) : (
                           <>
                             <Save className="mr-2 h-5 w-5" />
-                            {t('recordExpense')}
+                            {isEditMode ? t('updateExpense') : t('recordExpense')}
                           </>
                         )}
                       </Button>

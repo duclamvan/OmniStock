@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useLocation, useParams } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { useEffect, useState, useRef } from 'react';
@@ -14,10 +14,22 @@ import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
+interface Category {
+  id: string;
+  name: string;
+  name_en?: string;
+  name_cz?: string;
+  name_vn?: string;
+  description?: string;
+  createdAt: string;
+}
+
 export default function AddCategory() {
   const { t } = useTranslation('inventory');
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const [isTranslating, setIsTranslating] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -39,6 +51,22 @@ export default function AddCategory() {
       description: '',
     },
   });
+
+  const { data: category, isLoading: isLoadingCategory } = useQuery<Category>({
+    queryKey: ['/api/categories', editId],
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (category && isEditMode) {
+      form.reset({
+        nameEn: category.name_en || category.name || '',
+        nameCz: category.name_cz || '',
+        nameVn: category.name_vn || '',
+        description: category.description || '',
+      });
+    }
+  }, [category, isEditMode, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
@@ -62,6 +90,34 @@ export default function AddCategory() {
       toast({
         title: t('error'),
         description: error.message || t('categoryCreateFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: CategoryFormData) => {
+      const submitData: any = {
+        ...data,
+        name: data.nameEn
+      };
+      const response = await apiRequest('PATCH', `/api/categories/${editId}`, submitData);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t('success'),
+        description: t('categoryUpdatedSuccess'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories', editId] });
+      navigate('/inventory/categories');
+    },
+    onError: (error: any) => {
+      console.error('Category update error:', error);
+      toast({
+        title: t('error'),
+        description: error.message || t('categoryUpdateFailed'),
         variant: 'destructive',
       });
     },
@@ -110,8 +166,22 @@ export default function AddCategory() {
   }, [form]);
 
   const onSubmit = (data: CategoryFormData) => {
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
+
+  const isPending = isEditMode ? updateMutation.isPending : createMutation.isPending;
+
+  if (isEditMode && isLoadingCategory) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-3 sm:px-4 md:px-6 py-4 md:py-6 max-w-7xl mx-auto overflow-x-hidden">
@@ -127,8 +197,12 @@ export default function AddCategory() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold">{t('addCategory')}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('createNewCategoryAI')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold">
+            {isEditMode ? t('editCategory') : t('addCategory')}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {isEditMode ? t('updateCategoryInformationAI') : t('createNewCategoryAI')}
+          </p>
         </div>
       </div>
 
@@ -255,19 +329,19 @@ export default function AddCategory() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={createMutation.isPending}
-                  data-testid="button-create-category"
+                  disabled={isPending}
+                  data-testid={isEditMode ? "button-update-category" : "button-create-category"}
                   className="w-full sm:w-auto"
                 >
-                  {createMutation.isPending ? (
+                  {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('creating')}
+                      {isEditMode ? t('updating') : t('creating')}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      {t('createCategory')}
+                      {isEditMode ? t('updateCategory') : t('createCategory')}
                     </>
                   )}
                 </Button>

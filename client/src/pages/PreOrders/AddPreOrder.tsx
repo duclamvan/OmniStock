@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,7 +33,8 @@ import {
   Package,
   Search,
   UserPlus,
-  Bell
+  Bell,
+  Loader2
 } from "lucide-react";
 import {
   Select,
@@ -56,7 +57,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 import { getCountryFlag } from "@/lib/countries";
@@ -121,6 +122,9 @@ export default function AddPreOrder() {
   const { t } = useTranslation('orders');
   const { t: tCommon } = useTranslation('common');
   const [, navigate] = useLocation();
+  const params = useParams<{ id?: string }>();
+  const editId = params.id;
+  const isEditMode = Boolean(editId);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([
@@ -157,6 +161,11 @@ export default function AddPreOrder() {
     },
   });
 
+  const { data: preOrder, isLoading: isLoadingPreOrder } = useQuery<any>({
+    queryKey: ['/api/pre-orders', editId],
+    enabled: isEditMode,
+  });
+
   const { data: customers, isLoading: isLoadingCustomers } = useQuery<any[]>({
     queryKey: ['/api/customers'],
   });
@@ -172,6 +181,42 @@ export default function AddPreOrder() {
   const { data: purchases } = useQuery<any[]>({
     queryKey: ['/api/imports/purchases'],
   });
+
+  useEffect(() => {
+    if (isEditMode && preOrder && customers) {
+      form.setValue('customerId', preOrder.customerId);
+      form.setValue('status', preOrder.status);
+      form.setValue('notes', preOrder.notes || '');
+      
+      if (preOrder.expectedDate) {
+        form.setValue('expectedDate', parseISO(preOrder.expectedDate));
+      }
+
+      const customer = customers.find((c: any) => c.id === preOrder.customerId);
+      if (customer) {
+        setSelectedCustomer(customer);
+      }
+
+      if (preOrder.items && preOrder.items.length > 0) {
+        setItems(preOrder.items.map((item: any) => ({
+          id: crypto.randomUUID(),
+          productId: item.productId || undefined,
+          itemName: item.itemName,
+          itemDescription: item.itemDescription || "",
+          quantity: item.quantity,
+        })));
+      }
+
+      form.setValue('reminderEnabled', preOrder.reminderEnabled ?? false);
+      form.setValue('reminderChannel', preOrder.reminderChannel || 'sms');
+      form.setValue('reminderDaysBefore', preOrder.reminderDaysBefore || [1, 3]);
+      form.setValue('reminderTimeUtc', preOrder.reminderTimeUtc || '09:00');
+      form.setValue('reminderTimezone', preOrder.reminderTimezone || 'Europe/Prague');
+      form.setValue('reminderPhone', preOrder.reminderPhone || '');
+      form.setValue('reminderEmail', preOrder.reminderEmail || '');
+      form.setValue('priority', preOrder.priority || 'normal');
+    }
+  }, [isEditMode, preOrder, customers, form]);
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -220,6 +265,61 @@ export default function AddPreOrder() {
       toast({
         title: tCommon('error'),
         description: error.message || t('preOrderCreationFailed'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePreOrderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest('PATCH', `/api/pre-orders/${editId}`, {
+        customerId: data.customerId,
+        status: data.status,
+        notes: data.notes,
+        expectedDate: data.expectedDate,
+        reminderEnabled: data.reminderEnabled,
+        reminderChannel: data.reminderChannel,
+        reminderDaysBefore: data.reminderDaysBefore,
+        reminderTimeUtc: data.reminderTimeUtc,
+        reminderTimezone: data.reminderTimezone,
+        reminderPhone: data.reminderPhone || null,
+        reminderEmail: data.reminderEmail || null,
+        priority: data.priority,
+      });
+
+      if (preOrder?.items) {
+        await Promise.all(
+          preOrder.items.map((item: any) =>
+            apiRequest('DELETE', `/api/pre-order-items/${item.id}`)
+          )
+        );
+      }
+
+      await Promise.all(
+        data.items.map((item: any) =>
+          apiRequest('POST', '/api/pre-order-items', {
+            preOrderId: editId,
+            productId: item.productId || null,
+            itemName: item.itemName,
+            itemDescription: item.itemDescription || null,
+            quantity: item.quantity,
+          })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pre-orders', editId] });
+      toast({
+        title: tCommon('success'),
+        description: t('preOrderUpdatedSuccess'),
+      });
+      navigate('/orders/pre-orders');
+    },
+    onError: (error: any) => {
+      toast({
+        title: tCommon('error'),
+        description: error.message || t('preOrderUpdateFailed'),
         variant: "destructive",
       });
     },
@@ -333,11 +433,39 @@ export default function AddPreOrder() {
         priority: data.priority,
       };
 
-      await createPreOrderMutation.mutateAsync(preOrderData);
+      if (isEditMode) {
+        await updatePreOrderMutation.mutateAsync(preOrderData);
+      } else {
+        await createPreOrderMutation.mutateAsync(preOrderData);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isEditMode && isLoadingPreOrder) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" data-testid="loading-state">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-600" />
+          <p className="text-slate-600">{t('loadingPreOrder')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isEditMode && !preOrder && !isLoadingPreOrder) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <p className="text-slate-600">{t('preOrderNotFound')}</p>
+          <Button onClick={() => window.history.back()} data-testid="button-back-not-found">
+            {t('goBack')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
@@ -353,11 +481,11 @@ export default function AddPreOrder() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate" data-testid="heading-add-pre-order">
-            {t('createPreOrder')}
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate" data-testid={isEditMode ? "heading-edit-pre-order" : "heading-add-pre-order"}>
+            {isEditMode ? t('editPreOrder') : t('createPreOrder')}
           </h1>
           <p className="text-slate-600 mt-1 text-xs sm:text-sm md:text-base">
-            {t('addNewCustomerPreOrder')}
+            {isEditMode ? t('updatePreOrderDetails') : t('addNewCustomerPreOrder')}
           </p>
         </div>
       </div>
@@ -956,7 +1084,9 @@ export default function AddPreOrder() {
             data-testid="button-submit"
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? t('creating') : t('createPreOrder')}
+            {isSubmitting 
+              ? (isEditMode ? t('updating') : t('creating')) 
+              : (isEditMode ? t('updatePreOrder') : t('createPreOrder'))}
           </Button>
         </div>
       </form>

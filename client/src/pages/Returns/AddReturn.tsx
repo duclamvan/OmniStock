@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +53,9 @@ import { Separator } from "@/components/ui/separator";
 
 export default function AddReturn() {
   const [, navigate] = useLocation();
+  const params = useParams();
+  const editId = params.id;
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
   const { inventorySettings } = useSettings();
@@ -127,6 +130,16 @@ export default function AddReturn() {
     name: "items",
   });
 
+  const { data: existingReturn, isLoading: isLoadingReturn } = useQuery({
+    queryKey: ['/api/returns', editId],
+    queryFn: async () => {
+      const response = await fetch(`/api/returns/${editId}`);
+      if (!response.ok) throw new Error('Failed to load return');
+      return response.json();
+    },
+    enabled: isEditMode,
+  });
+
   const watchCustomerId = form.watch("customerId");
   const watchOrderId = form.watch("orderId");
 
@@ -143,10 +156,43 @@ export default function AddReturn() {
     return `${prefix}${timestamp}${random}`;
   };
 
-  // Set initial return ID
+  // Set initial return ID or use existing
   useEffect(() => {
-    setReturnId(generateReturnId());
-  }, []);
+    if (!isEditMode) {
+      setReturnId(generateReturnId());
+    }
+  }, [isEditMode]);
+
+  // Populate form with existing return data in edit mode
+  useEffect(() => {
+    if (isEditMode && existingReturn && customers.length > 0) {
+      setReturnId(existingReturn.returnId || '');
+      form.reset({
+        customerId: existingReturn.customerId || "",
+        orderId: existingReturn.orderId || "",
+        returnDate: existingReturn.returnDate ? format(new Date(existingReturn.returnDate), 'yyyy-MM-dd') : "",
+        returnType: existingReturn.returnType || "refund",
+        status: existingReturn.status || "awaiting",
+        trackingNumber: existingReturn.trackingNumber || "",
+        shippingCarrier: existingReturn.shippingCarrier || "",
+        notes: existingReturn.notes || "",
+        items: existingReturn.items || [],
+      });
+      
+      const customer = customers.find((c: any) => c.id === existingReturn.customerId);
+      if (customer) {
+        setSelectedCustomer(customer);
+      }
+      
+      if (existingReturn.orderId) {
+        const order = orders.find((o: any) => o.id === existingReturn.orderId);
+        if (order) {
+          setSelectedOrder(order);
+          setCurrency((order.currency || 'EUR') as Currency);
+        }
+      }
+    }
+  }, [isEditMode, existingReturn, customers, orders, form]);
 
   // Auto-select order if customer has only one order
   useEffect(() => {
@@ -255,6 +301,18 @@ export default function AddReturn() {
     },
   });
 
+  const updateReturnMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PATCH', `/api/returns/${editId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
+      toast({ title: t('common:success'), description: t('inventory:returnUpdated') });
+      navigate("/returns");
+    },
+    onError: (error: any) => {
+      toast({ title: t('common:error'), description: error.message, variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: ReturnFormData) => {
     const submitData = {
       ...data,
@@ -262,7 +320,7 @@ export default function AddReturn() {
       returnDate: new Date(data.returnDate),
     };
 
-    createReturnMutation.mutate(submitData);
+    isEditMode ? updateReturnMutation.mutate(submitData) : createReturnMutation.mutate(submitData);
   };
 
   const handleAddItem = () => {
@@ -457,8 +515,8 @@ export default function AddReturn() {
         </Button>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:addReturn')}</h1>
-            <p className="text-sm sm:text-base text-muted-foreground dark:text-gray-400 mt-1">{t('inventory:processCustomerReturns')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{isEditMode ? t('inventory:editReturn') : t('inventory:addReturn')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground dark:text-gray-400 mt-1">{isEditMode ? t('inventory:updateReturnInformation') : t('inventory:processCustomerReturns')}</p>
           </div>
           <div className="text-left sm:text-right">
             <p className="text-sm text-muted-foreground">{t('inventory:returnIdLabel')}</p>
@@ -942,12 +1000,14 @@ export default function AddReturn() {
               </Button>
               <Button
                 type="submit"
-                disabled={createReturnMutation.isPending}
+                disabled={createReturnMutation.isPending || updateReturnMutation.isPending}
                 className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700"
                 data-testid="button-submit"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {createReturnMutation.isPending ? t('common:creating') : t('inventory:createReturn')}
+                {(createReturnMutation.isPending || updateReturnMutation.isPending) 
+                  ? (isEditMode ? t('common:saving') : t('common:creating'))
+                  : (isEditMode ? t('common:saveChanges') : t('inventory:createReturn'))}
               </Button>
             </div>
           </div>

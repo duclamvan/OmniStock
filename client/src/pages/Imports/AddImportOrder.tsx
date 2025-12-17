@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,7 +32,10 @@ import {
   Hash,
   Calculator,
   AlertCircle,
-  X
+  X,
+  Save,
+  Edit2,
+  Loader2
 } from "lucide-react";
 
 type ImportOrderForm = {
@@ -40,6 +45,8 @@ type ImportOrderForm = {
   region?: string;
   trackingNumber?: string;
   estimatedArrival?: string;
+  actualArrival?: string;
+  status?: "pending" | "ordered" | "shipped" | "delivered" | "received" | "cancelled";
   notes?: string;
 };
 
@@ -51,14 +58,20 @@ interface OrderItem {
   unitCost: string;
   weight?: string;
   totalCost: string;
+  receivedQuantity?: number;
+  status?: string;
 }
 
 export default function AddImportOrder() {
   const { t } = useTranslation('imports');
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { id: editId } = useParams<{ id?: string }>();
+  const isEditMode = Boolean(editId);
+  
   const [items, setItems] = useState<OrderItem[]>([]);
   const [showItemForm, setShowItemForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   
   // New item form state
   const [newItem, setNewItem] = useState<Partial<OrderItem>>({
@@ -67,6 +80,17 @@ export default function AddImportOrder() {
     quantity: 1,
     unitCost: '0',
     weight: '',
+  });
+
+  // Fetch existing order data when in edit mode
+  const { data: existingOrder, isLoading: orderLoading } = useQuery({
+    queryKey: ['/api/import-orders', editId],
+    queryFn: async () => {
+      const response = await fetch(`/api/import-orders/${editId}`);
+      if (!response.ok) throw new Error('Failed to fetch import order');
+      return response.json();
+    },
+    enabled: isEditMode,
   });
 
   // Fetch suppliers
@@ -87,6 +111,8 @@ export default function AddImportOrder() {
     region: z.string().optional(),
     trackingNumber: z.string().optional(),
     estimatedArrival: z.string().optional(),
+    actualArrival: z.string().optional(),
+    status: z.enum(["pending", "ordered", "shipped", "delivered", "received", "cancelled"]).optional(),
     notes: z.string().optional(),
   });
 
@@ -100,9 +126,29 @@ export default function AddImportOrder() {
       region: '',
       trackingNumber: '',
       estimatedArrival: '',
+      actualArrival: '',
+      status: 'pending',
       notes: '',
     },
   });
+
+  // Populate form with existing data in edit mode
+  useEffect(() => {
+    if (existingOrder && isEditMode) {
+      form.reset({
+        supplierId: existingOrder.supplierId || '',
+        warehouseId: existingOrder.warehouseId || '',
+        currency: existingOrder.currency || 'EUR',
+        region: existingOrder.region || '',
+        trackingNumber: existingOrder.trackingNumber || '',
+        estimatedArrival: existingOrder.estimatedArrival ? format(new Date(existingOrder.estimatedArrival), 'yyyy-MM-dd') : '',
+        actualArrival: existingOrder.actualArrival ? format(new Date(existingOrder.actualArrival), 'yyyy-MM-dd') : '',
+        status: existingOrder.status || 'pending',
+        notes: existingOrder.notes || '',
+      });
+      setItems(existingOrder.items || []);
+    }
+  }, [existingOrder, isEditMode, form]);
 
   // Create import order mutation
   const createMutation = useMutation({
@@ -137,8 +183,44 @@ export default function AddImportOrder() {
     },
   });
 
-  // Add item to order
-  const addItem = () => {
+  // Update import order mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: ImportOrderForm) => {
+      const orderData = {
+        ...data,
+        items: items.map(item => ({
+          id: item.id.startsWith('temp-') ? undefined : item.id,
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitCost: item.unitCost,
+          weight: item.weight || null,
+          totalCost: item.totalCost,
+          receivedQuantity: item.receivedQuantity,
+          status: item.status,
+        })),
+      };
+      return apiRequest('PATCH', `/api/import-orders/${editId}`, orderData);
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: t('importUpdated'),
+        description: t('importUpdatedDesc', { orderNumber: data.orderNumber }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/import-orders'] });
+      navigate(`/imports/orders/${editId}`);
+    },
+    onError: (error) => {
+      toast({
+        title: t('updateFailed'),
+        description: t('updateFailedDesc'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add or update item
+  const saveItem = () => {
     if (!newItem.productName || !newItem.sku || !newItem.quantity || !newItem.unitCost) {
       toast({
         title: t('missingInformation'),
@@ -150,17 +232,34 @@ export default function AddImportOrder() {
 
     const totalCost = (parseFloat(newItem.unitCost || '0') * (newItem.quantity || 0)).toFixed(2);
     
-    const item: OrderItem = {
-      id: `temp-${Date.now()}`,
-      productName: newItem.productName,
-      sku: newItem.sku,
-      quantity: newItem.quantity || 1,
-      unitCost: newItem.unitCost || '0',
-      weight: newItem.weight,
-      totalCost,
-    };
+    if (editingItem) {
+      setItems(items.map(item => 
+        item.id === editingItem.id 
+          ? {
+              ...item,
+              productName: newItem.productName!,
+              sku: newItem.sku!,
+              quantity: newItem.quantity || 1,
+              unitCost: newItem.unitCost || '0',
+              weight: newItem.weight,
+              totalCost,
+            }
+          : item
+      ));
+      setEditingItem(null);
+    } else {
+      const item: OrderItem = {
+        id: `temp-${Date.now()}`,
+        productName: newItem.productName,
+        sku: newItem.sku,
+        quantity: newItem.quantity || 1,
+        unitCost: newItem.unitCost || '0',
+        weight: newItem.weight,
+        totalCost,
+      };
+      setItems([...items, item]);
+    }
 
-    setItems([...items, item]);
     setNewItem({
       productName: '',
       sku: '',
@@ -169,6 +268,19 @@ export default function AddImportOrder() {
       weight: '',
     });
     setShowItemForm(false);
+  };
+
+  // Edit item
+  const startEditItem = (item: OrderItem) => {
+    setEditingItem(item);
+    setNewItem({
+      productName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+      weight: item.weight,
+    });
+    setShowItemForm(true);
   };
 
   // Remove item
@@ -190,8 +302,50 @@ export default function AddImportOrder() {
       });
       return;
     }
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
+
+  const isMutating = createMutation.isPending || updateMutation.isPending;
+
+  // Loading skeleton for edit mode
+  if (isEditMode && orderLoading) {
+    return (
+      <div className="space-y-6 px-4 md:px-0">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-10" />
+              <Skeleton className="h-10" />
+              <Skeleton className="h-10" />
+              <Skeleton className="h-10" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Not found state for edit mode
+  if (isEditMode && !orderLoading && !existingOrder) {
+    return (
+      <Alert variant="destructive" className="mx-4 md:mx-0">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{t('importOrderNotFound')}</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6 overflow-x-hidden p-2 sm:p-4 md:p-6">
@@ -199,20 +353,30 @@ export default function AddImportOrder() {
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 -mx-2 sm:-mx-4 md:-mx-6 px-2 sm:px-4 md:px-6">
         <div className="flex items-center justify-between py-3 md:py-0 gap-3">
           <div className="flex items-center gap-2 md:gap-4">
-            <Link href="/imports">
+            <Link href={isEditMode ? `/imports/orders/${editId}` : "/imports"}>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:flex">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('backToImports')}
+                {isEditMode ? t('backToOrder') : t('backToImports')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">{t('newImportOrder')}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground md:hidden">{t('fillInOrderDetails')}</p>
+              <h1 className="text-lg md:text-2xl font-semibold">
+                {isEditMode ? t('editImportOrder') : t('newImportOrder')}
+              </h1>
+              {isEditMode && existingOrder && (
+                <p className="text-xs md:text-sm text-muted-foreground">{t('orderNumber')}: #{existingOrder.orderNumber}</p>
+              )}
+              {!isEditMode && (
+                <p className="text-xs md:text-sm text-muted-foreground md:hidden">{t('fillInOrderDetails')}</p>
+              )}
             </div>
           </div>
+          {isEditMode && existingOrder && (
+            <Badge className="text-xs md:text-sm">{t(`status.${existingOrder.status}`)}</Badge>
+          )}
         </div>
       </div>
 
@@ -515,25 +679,33 @@ export default function AddImportOrder() {
 
         {/* Mobile Fixed Bottom Actions */}
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-2 md:hidden">
-          <Link href="/imports" className="flex-1">
+          <Link href={isEditMode ? `/imports/orders/${editId}` : "/imports"} className="flex-1">
             <Button type="button" variant="outline" className="w-full">
               {t('common:cancel', 'Cancel')}
             </Button>
           </Link>
-          <Button type="submit" className="flex-1" disabled={createMutation.isPending}>
-            {createMutation.isPending ? t('common:loading', 'Creating...') : t('createImportOrder')}
+          <Button type="submit" className="flex-1" disabled={isMutating}>
+            {isMutating 
+              ? t('common:loading', 'Saving...') 
+              : isEditMode 
+                ? t('saveChanges') 
+                : t('createImportOrder')}
           </Button>
         </div>
 
         {/* Desktop Actions */}
         <div className="hidden md:flex justify-end gap-3">
-          <Link href="/imports">
+          <Link href={isEditMode ? `/imports/orders/${editId}` : "/imports"}>
             <Button type="button" variant="outline">
               {t('common:cancel', 'Cancel')}
             </Button>
           </Link>
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? t('common:loading', 'Creating...') : t('createImportOrder')}
+          <Button type="submit" disabled={isMutating}>
+            {isMutating 
+              ? t('common:loading', 'Saving...') 
+              : isEditMode 
+                ? t('saveChanges') 
+                : t('createImportOrder')}
           </Button>
         </div>
       </form>
@@ -611,17 +783,27 @@ export default function AddImportOrder() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowItemForm(false)}
+                  onClick={() => {
+                    setShowItemForm(false);
+                    setEditingItem(null);
+                    setNewItem({
+                      productName: '',
+                      sku: '',
+                      quantity: 1,
+                      unitCost: '0',
+                      weight: '',
+                    });
+                  }}
                   className="flex-1"
                 >
                   {t('common:cancel', 'Cancel')}
                 </Button>
                 <Button
                   type="button"
-                  onClick={addItem}
+                  onClick={saveItem}
                   className="flex-1"
                 >
-                  {t('addItem')}
+                  {editingItem ? t('saveItem') : t('addItem')}
                 </Button>
               </div>
             </div>

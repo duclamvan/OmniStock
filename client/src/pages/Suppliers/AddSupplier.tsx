@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from 'react-i18next';
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,11 +106,20 @@ type InsertSupplier = {
   taxId?: string;
 };
 
+type Supplier = any;
+
 export default function AddSupplier() {
   const [, setLocation] = useLocation();
+  const { id: editId } = useParams();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: supplier, isLoading } = useQuery<Supplier>({
+    queryKey: ['/api/suppliers', editId],
+    enabled: isEditMode,
+  });
 
   const supplierSchema = useMemo(() => createSupplierSchema(t), [t]);
 
@@ -130,6 +139,24 @@ export default function AddSupplier() {
       taxId: "",
     },
   });
+
+  useEffect(() => {
+    if (supplier && isEditMode) {
+      form.reset({
+        name: supplier.name,
+        contactPerson: supplier.contactPerson || "",
+        email: supplier.email || "",
+        phone: supplier.phone || "",
+        address: supplier.address || "",
+        city: supplier.city || "",
+        zipCode: supplier.zipCode || "",
+        country: supplier.country || "",
+        website: supplier.website || "",
+        notes: supplier.notes || "",
+        taxId: supplier.taxId || "",
+      });
+    }
+  }, [supplier, isEditMode, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertSupplier) =>
@@ -152,10 +179,48 @@ export default function AddSupplier() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (data: InsertSupplier) =>
+      apiRequest("PATCH", `/api/suppliers/${editId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers', editId] });
+      toast({ 
+        title: t('common:success'),
+        description: t('inventory:supplierUpdated') 
+      });
+      setLocation("/suppliers");
+    },
+    onError: () => {
+      toast({ 
+        title: t('common:error'),
+        description: t('inventory:updateError'), 
+        variant: "destructive" 
+      });
+      setIsSubmitting(false);
+    },
+  });
+
   const onSubmit = async (data: InsertSupplier) => {
     setIsSubmitting(true);
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
+
+  if (isEditMode && isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+      </div>
+    );
+  }
+
+  if (isEditMode && !supplier && !isLoading) {
+    return <div>{t('inventory:supplierNotFound')}</div>;
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto pb-8 p-2 sm:p-4 md:p-6 -m-6 overflow-x-hidden">
@@ -171,7 +236,9 @@ export default function AddSupplier() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:addSupplier')}</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
+            {isEditMode ? t('inventory:editSupplier') : t('inventory:addSupplier')}
+          </h1>
           <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
       </div>
@@ -526,10 +593,10 @@ export default function AddSupplier() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('common:creating')}...
+                  {isEditMode ? t('common:saving') : t('common:creating')}...
                 </>
               ) : (
-                t('inventory:addSupplier')
+                isEditMode ? t('inventory:updateSupplier') : t('inventory:addSupplier')
               )}
             </Button>
           </div>

@@ -19,7 +19,6 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import AllOrders from "@/pages/Orders/AllOrders";
 import AddOrder from "@/pages/Orders/AddOrder";
-import EditOrder from "@/pages/Orders/EditOrder";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
 import ProductForm from "@/pages/Inventory/ProductForm";
@@ -35,21 +34,17 @@ import WarehouseDetails from "@/pages/Warehouse/WarehouseDetails";
 import WarehouseDashboard from "@/pages/Warehouse/WarehouseDashboard";
 import AllDiscounts from "@/pages/Discounts/AllDiscounts";
 import AddDiscount from "@/pages/Discounts/AddDiscount";
-import EditDiscount from "@/pages/Discounts/EditDiscount";
 import AllCustomers from "@/pages/Customers/AllCustomers";
 import AddCustomer from "@/pages/Customers/AddCustomer";
 import CustomerDetails from "@/pages/Customers/CustomerDetails";
 import AllSuppliers from "@/pages/Suppliers/AllSuppliers";
 import AddSupplier from "@/pages/Suppliers/AddSupplier";
-import EditSupplier from "@/pages/Suppliers/EditSupplier";
 import SupplierDetails from "@/pages/Suppliers/SupplierDetails";
 import AllReturns from "@/pages/Returns/AllReturns";
 import AddReturn from "@/pages/Returns/AddReturn";
-import EditReturn from "@/pages/Returns/EditReturn";
 import ReturnDetails from "@/pages/Returns/ReturnDetails";
 import AllExpenses from "@/pages/Expenses/AllExpenses";
 import AddExpense from "@/pages/Expenses/AddExpense";
-import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
 import Services from "@/pages/Services/Services";
 import AddService from "@/pages/Services/AddService";
@@ -62,11 +57,9 @@ import Notifications from "@/pages/Notifications";
 import POS from "@/pages/POS/POS";
 import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import AddPreOrder from "@/pages/PreOrders/AddPreOrder";
-import EditPreOrder from "@/pages/PreOrders/EditPreOrder";
 import PreOrderDetails from "@/pages/PreOrders/PreOrderDetails";
 import Categories from "@/pages/Inventory/Categories";
 import AddCategory from "@/pages/Inventory/AddCategory";
-import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
 import WarehouseMapNew from "@/pages/Warehouse/WarehouseMapNew";
@@ -75,7 +68,6 @@ import ShippingManagement from "@/pages/Shipping/ShippingManagement";
 import ShipmentLabels from "@/pages/Shipping/ShipmentLabels";
 import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
-import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
 import BulkAddCartons from "@/pages/PackingMaterials/BulkAddCartons";
 import Files from "@/pages/Files/Files";
 // Import pages
@@ -105,9 +97,9 @@ import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
-// Legacy imports - commented out
+// Legacy imports - some uncommmented for unified add/edit
 // import AllImports from "@/pages/Imports/AllImports";
-// import AddImportOrder from "@/pages/Imports/AddImportOrder";
+import AddImportOrder from "@/pages/Imports/AddImportOrder";
 // import EditImportOrder from "@/pages/Imports/EditImportOrder";
 // import ImportOrderDetails from "@/pages/Imports/ImportOrderDetails";
 // import ReceiveImport from "@/pages/Imports/ReceiveImport";
@@ -152,7 +144,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddPreOrder /></ProtectedRoute>}
         </Route>
         <Route path="/orders/pre-orders/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditPreOrder /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddPreOrder /></ProtectedRoute>}
         </Route>
         <Route path="/orders/pre-orders/:id">
           {() => <ProtectedRoute requireAdmin><PreOrderDetails /></ProtectedRoute>}
@@ -176,7 +168,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddCategory /></ProtectedRoute>}
         </Route>
         <Route path="/inventory/categories/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditCategory /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddCategory /></ProtectedRoute>}
         </Route>
         <Route path="/inventory/categories/:id">
           {() => <ProtectedRoute requireAdmin><CategoryDetails /></ProtectedRoute>}
@@ -215,7 +207,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddPackingMaterial /></ProtectedRoute>}
         </Route>
         <Route path="/packing-materials/edit/:id">
-          {() => <ProtectedRoute requireAdmin><EditPackingMaterial /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddPackingMaterial /></ProtectedRoute>}
         </Route>
         <Route path="/packing-materials/bulk-add">
           {() => <ProtectedRoute requireAdmin><BulkAddCartons /></ProtectedRoute>}
@@ -251,7 +243,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddDiscount /></ProtectedRoute>}
         </Route>
         <Route path="/discounts/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditDiscount /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddDiscount /></ProtectedRoute>}
         </Route>
         <Route path="/customers">
           {() => <ProtectedRoute requireAdmin><AllCustomers /></ProtectedRoute>}
@@ -272,7 +264,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddSupplier /></ProtectedRoute>}
         </Route>
         <Route path="/suppliers/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditSupplier /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddSupplier /></ProtectedRoute>}
         </Route>
         <Route path="/suppliers/:id">
           {() => <ProtectedRoute requireAdmin><SupplierDetails /></ProtectedRoute>}
@@ -284,7 +276,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddReturn /></ProtectedRoute>}
         </Route>
         <Route path="/returns/:id/edit">
-          {() => <ProtectedRoute requireAdmin><EditReturn /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddReturn /></ProtectedRoute>}
         </Route>
         <Route path="/returns/:id">
           {() => <ProtectedRoute requireAdmin><ReturnDetails /></ProtectedRoute>}
@@ -296,7 +288,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><AddExpense /></ProtectedRoute>}
         </Route>
         <Route path="/expenses/edit/:id">
-          {() => <ProtectedRoute requireAdmin><EditExpense /></ProtectedRoute>}
+          {() => <ProtectedRoute requireAdmin><AddExpense /></ProtectedRoute>}
         </Route>
         <Route path="/expenses/:id">
           {() => <ProtectedRoute requireAdmin><ExpenseDetails /></ProtectedRoute>}
@@ -363,6 +355,12 @@ function Router() {
         </Route>
         <Route path="/imports/landing-costs">
           {() => <ProtectedRoute requireAdmin><LandingCostList /></ProtectedRoute>}
+        </Route>
+        <Route path="/imports/orders/add">
+          {() => <ProtectedRoute requireAdmin><AddImportOrder /></ProtectedRoute>}
+        </Route>
+        <Route path="/imports/:id/edit">
+          {() => <ProtectedRoute requireAdmin><AddImportOrder /></ProtectedRoute>}
         </Route>
         <Route path="/imports">
           {() => <ProtectedRoute requireAdmin><ImportKanbanDashboard /></ProtectedRoute>}
