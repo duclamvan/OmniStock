@@ -12418,47 +12418,77 @@ export default function PickPack() {
                           </div>
                         </div>
                         
-                        {/* Essential Product Info - Clean and Minimal */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                          {currentItem.serviceId ? (
-                            <>
-                              <h2 className="text-lg sm:text-xl font-bold text-purple-700 dark:text-purple-400 leading-tight">
-                                Service Bill #{activePickingOrder.orderId}
+                        {/* Service Bill Details */}
+                        {currentItem.serviceId ? (
+                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 p-6 space-y-4">
+                            {/* Bill Header */}
+                            <div className="border-b-2 border-purple-300 dark:border-purple-700 pb-3">
+                              <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Service Bill</p>
+                              <h2 className="text-2xl sm:text-3xl font-black text-purple-700 dark:text-purple-400">
+                                #{activePickingOrder.orderId}
                               </h2>
-                              <div className="space-y-2">
-                                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Customer</p>
-                                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">
+                            </div>
+                            
+                            {/* Service Details */}
+                            <div className="space-y-3">
+                              {/* Customer */}
+                              <div>
+                                <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-1">Customer</p>
+                                <p className="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100">
                                   {activePickingOrder.customerName}
                                 </p>
                               </div>
-                            </>
-                          ) : (
-                            <>
-                              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
-                                {currentItem.productName}
-                              </h2>
-                              <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
-                                <div className="flex items-center gap-1">
-                                  <Hash className="h-4 w-4 text-gray-400" />
-                                  <span className="font-mono">{currentItem.sku}</span>
-                                </div>
-                                {currentItem.barcode && (
-                                  <div className="flex items-center gap-1">
-                                    <ScanLine className="h-4 w-4 text-gray-400" />
-                                    <span className="font-mono">{currentItem.barcode}</span>
-                                  </div>
-                                )}
-                                {/* Carton Badge - shown when quantity >= bulkUnitQty */}
-                                {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
-                                  <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
-                                    <Box className="h-2.5 w-2.5 mr-0.5" />
-                                    {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                                  </Badge>
-                                )}
+                              
+                              {/* Service Type */}
+                              <div>
+                                <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-1">Service Type</p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                                  {currentItem.productName}
+                                </p>
                               </div>
-                            </>
-                          )}
-                        </div>
+                              
+                              {/* Service Cost */}
+                              {currentItem.price && (
+                                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                                  <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-2">Service Cost</p>
+                                  <p className="text-3xl sm:text-4xl font-black text-purple-700 dark:text-purple-400">
+                                    {typeof currentItem.price === 'string' ? currentItem.price : `${parseFloat(String(currentItem.price || 0)).toFixed(2)}`}
+                                  </p>
+                                  {activePickingOrder.currency && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                      {activePickingOrder.currency}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
+                              {currentItem.productName}
+                            </h2>
+                            <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
+                              <div className="flex items-center gap-1">
+                                <Hash className="h-4 w-4 text-gray-400" />
+                                <span className="font-mono">{currentItem.sku}</span>
+                              </div>
+                              {currentItem.barcode && (
+                                <div className="flex items-center gap-1">
+                                  <ScanLine className="h-4 w-4 text-gray-400" />
+                                  <span className="font-mono">{currentItem.barcode}</span>
+                                </div>
+                              )}
+                              {/* Carton Badge - shown when quantity >= bulkUnitQty */}
+                              {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
+                                <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                                  <Box className="h-2.5 w-2.5 mr-0.5" />
+                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Warehouse Location - High Contrast Banner (Hidden for services) */}
