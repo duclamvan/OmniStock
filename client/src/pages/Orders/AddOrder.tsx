@@ -4788,7 +4788,7 @@ export default function AddOrder() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="ml-3 min-h-[44px] border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/40"
+                          className="ml-3 min-h-[44px]"
                           onClick={() => resolveTicketMutation.mutate(ticket.id)}
                           disabled={resolveTicketMutation.isPending}
                           data-testid={`button-resolve-ticket-${ticket.id}`}
