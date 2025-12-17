@@ -944,6 +944,7 @@ export default function GeneralSettings() {
                           <SelectContent>
                             <SelectItem value="1,000.00">1,000.00</SelectItem>
                             <SelectItem value="1.000,00">1.000,00</SelectItem>
+                            <SelectItem value="1.000">1.000 (CZK without decimals)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
