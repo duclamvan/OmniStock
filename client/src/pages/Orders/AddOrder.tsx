@@ -1844,6 +1844,104 @@ export default function AddOrder() {
     },
   });
 
+  // Update order mutation (for edit mode)
+  const updateOrderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      // Check if we have a customer that needs to be saved (Tel or Msg types)
+      if (selectedCustomer && selectedCustomer.needsSaving) {
+        console.log('Creating new customer from quick form:', selectedCustomer);
+        const customerData: any = {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone || undefined,
+          email: selectedCustomer.email || undefined,
+          type: selectedCustomer.type || 'regular',
+        };
+
+        if (selectedCustomer.socialMediaApp) {
+          customerData.socialMediaApp = selectedCustomer.socialMediaApp;
+        }
+
+        const response = await apiRequest('POST', '/api/customers', customerData);
+        const customerResponse = await response.json();
+        data.customerId = customerResponse?.id;
+
+        // Also create shipping address if one was added
+        if (selectedShippingAddress && selectedShippingAddress.isNew) {
+          const addressData = {
+            customerId: customerResponse?.id,
+            firstName: selectedShippingAddress.firstName,
+            lastName: selectedShippingAddress.lastName,
+            company: selectedShippingAddress.company || undefined,
+            street: selectedShippingAddress.street,
+            streetNumber: selectedShippingAddress.streetNumber || undefined,
+            city: selectedShippingAddress.city,
+            zipCode: selectedShippingAddress.zipCode,
+            country: selectedShippingAddress.country,
+            tel: selectedShippingAddress.tel || undefined,
+            email: selectedShippingAddress.email || undefined,
+            label: selectedShippingAddress.label || undefined,
+          };
+          await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+        }
+      } else if (selectedCustomer && !selectedCustomer.id) {
+        // Handle regular new customer creation
+        const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
+          .filter(Boolean)
+          .join(' ');
+        
+        const customerData = {
+          name: selectedCustomer.name,
+          facebookName: selectedCustomer.facebookName || undefined,
+          facebookUrl: selectedCustomer.facebookUrl || undefined,
+          email: selectedCustomer.email || undefined,
+          phone: selectedCustomer.phone || undefined,
+          address: fullAddress || undefined,
+          city: selectedCustomer.city || undefined,
+          state: selectedCustomer.state || undefined,
+          zipCode: selectedCustomer.zipCode || undefined,
+          country: selectedCustomer.country || undefined,
+          company: selectedCustomer.company || undefined,
+          type: selectedCustomer.type || 'regular',
+        };
+        const response = await apiRequest('POST', '/api/customers', customerData);
+        const customerResponse = await response.json();
+        data.customerId = customerResponse?.id;
+      } else if (selectedCustomer?.id && !selectedCustomer.id.startsWith('temp-')) {
+        data.customerId = selectedCustomer.id;
+      } else if (selectedCustomer && selectedCustomer.isTemporary) {
+        data.temporaryCustomerName = selectedCustomer.name;
+        data.customerId = null;
+      }
+
+      // Convert taxRate from percentage to decimal
+      const convertedData = {
+        ...data,
+        taxRate: data.taxRate ? parseFloat(data.taxRate) / 100 : undefined,
+      };
+
+      const response = await apiRequest('PATCH', `/api/orders/${editOrderId}`, convertedData);
+      const updatedOrder = await response.json();
+      return updatedOrder;
+    },
+    onSuccess: async () => {
+      toast({
+        title: t('common:success'),
+        description: t('orders:orderUpdatedSuccess'),
+      });
+
+      // Navigate to order details page
+      window.location.href = `/orders/${editOrderId}`;
+    },
+    onError: (error) => {
+      console.error("Order update error:", error);
+      toast({
+        title: t('common:error'),
+        description: t('orders:failedToUpdateOrder'),
+        variant: "destructive",
+      });
+    },
+  });
+
   // Packing optimization wrapper function with country mapping and auto-fill
   const runPackingOptimization = () => {
     if (!aiCartonPackingEnabled) {
@@ -3096,7 +3194,12 @@ export default function AddOrder() {
       },
     };
 
-    createOrderMutation.mutate(orderData);
+    // Use appropriate mutation based on mode
+    if (isEditMode) {
+      updateOrderMutation.mutate(orderData);
+    } else {
+      createOrderMutation.mutate(orderData);
+    }
   };
 
   // Calculate product frequency from order history
