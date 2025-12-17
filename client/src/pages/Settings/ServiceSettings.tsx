@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Wrench, Save, Loader2, Plus, Trash2, Euro, DollarSign } from "lucide-react";
+import { Wrench, Save, Loader2, Plus, Trash2, Euro, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import type { ServiceTypeConfig } from "@/contexts/SettingsContext";
 import {
@@ -18,6 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Default service types with prices (matching AddService.tsx service types)
 const DEFAULT_SERVICE_TYPES: ServiceTypeConfig[] = [
@@ -49,9 +56,11 @@ export default function ServiceSettings() {
   const [serviceTypes, setServiceTypes] = useState<ServiceTypeConfig[]>([]);
   const [defaultServiceCostEur, setDefaultServiceCostEur] = useState<number>(0);
   const [defaultServiceCostCzk, setDefaultServiceCostCzk] = useState<number>(0);
-  const [newTypeName, setNewTypeName] = useState('');
+  const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<string>('');
   const [newTypeCostEur, setNewTypeCostEur] = useState<number>(0);
   const [newTypeCostCzk, setNewTypeCostCzk] = useState<number>(0);
+  const [sortField, setSortField] = useState<'name' | 'costEur' | 'costCzk'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     if (serviceSettings) {
@@ -72,16 +81,26 @@ export default function ServiceSettings() {
   };
 
   const handleAddServiceType = () => {
-    if (!newTypeName.trim()) {
+    if (!selectedServiceTypeId) {
       toast({
         variant: "destructive",
         title: t('common:error', 'Error'),
-        description: t('settings:serviceTypeNameRequired', 'Service type name is required'),
+        description: t('settings:serviceTypeRequired', 'Service type is required'),
       });
       return;
     }
 
-    if (serviceTypes.some(st => st.name.toLowerCase() === newTypeName.trim().toLowerCase())) {
+    const selectedType = DEFAULT_SERVICE_TYPES.find(st => st.id === selectedServiceTypeId);
+    if (!selectedType) {
+      toast({
+        variant: "destructive",
+        title: t('common:error', 'Error'),
+        description: t('settings:invalidServiceType', 'Invalid service type'),
+      });
+      return;
+    }
+
+    if (serviceTypes.some(st => st.id === selectedServiceTypeId)) {
       toast({
         variant: "destructive",
         title: t('common:error', 'Error'),
@@ -91,15 +110,15 @@ export default function ServiceSettings() {
     }
 
     const newType: ServiceTypeConfig = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newTypeName.trim(),
-      costEur: newTypeCostEur,
-      costCzk: newTypeCostCzk,
+      id: selectedServiceTypeId,
+      name: selectedType.name,
+      costEur: newTypeCostEur || selectedType.costEur,
+      costCzk: newTypeCostCzk || selectedType.costCzk,
       enabled: true,
     };
 
     setServiceTypes([...serviceTypes, newType]);
-    setNewTypeName('');
+    setSelectedServiceTypeId('');
     setNewTypeCostEur(0);
     setNewTypeCostCzk(0);
   };
@@ -120,6 +139,38 @@ export default function ServiceSettings() {
         ? { ...st, [currency === 'eur' ? 'costEur' : 'costCzk']: value } 
         : st
     ));
+  };
+
+  const sortedServiceTypes = useMemo(() => {
+    const sorted = [...serviceTypes];
+    sorted.sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = (bVal as string).toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [serviceTypes, sortField, sortDirection]);
+
+  const handleSort = (field: 'name' | 'costEur' | 'costCzk') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: 'name' | 'costEur' | 'costCzk') => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 opacity-40" />;
+    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
   };
 
   const handleSaveSettings = async () => {
@@ -214,14 +265,19 @@ export default function ServiceSettings() {
             <h4 className="text-sm font-semibold mb-4">{t('settings:addNewServiceType', 'Add New Service Type')}</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-1">
-                <Label htmlFor="new-type-name">{t('settings:serviceTypeName', 'Service Type Name')}</Label>
-                <Input
-                  id="new-type-name"
-                  value={newTypeName}
-                  onChange={(e) => setNewTypeName(e.target.value)}
-                  placeholder={t('settings:enterServiceTypeName', 'Enter service type name')}
-                  data-testid="input-new-service-type-name"
-                />
+                <Label htmlFor="service-type-select">{t('settings:serviceTypeName', 'Service Type Name')}</Label>
+                <Select value={selectedServiceTypeId} onValueChange={setSelectedServiceTypeId}>
+                  <SelectTrigger id="service-type-select" data-testid="select-service-type">
+                    <SelectValue placeholder={t('settings:selectServiceType', 'Select service type')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEFAULT_SERVICE_TYPES.map((type) => (
+                      <SelectItem key={type.id} value={type.id} data-testid={`option-service-type-${type.id}`}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="new-type-cost-eur">{t('settings:costEur', 'Cost (EUR)')}</Label>
@@ -268,15 +324,30 @@ export default function ServiceSettings() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('settings:serviceTypeName', 'Service Type Name')}</TableHead>
-                    <TableHead className="text-right">{t('settings:costEur', 'Cost (EUR)')}</TableHead>
-                    <TableHead className="text-right">{t('settings:costCzk', 'Cost (CZK)')}</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('name')}>
+                      <div className="flex items-center gap-2">
+                        {t('settings:serviceTypeName', 'Service Type Name')}
+                        {getSortIcon('name')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('costEur')}>
+                      <div className="flex items-center justify-end gap-2">
+                        {t('settings:costEur', 'Cost (EUR)')}
+                        {getSortIcon('costEur')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('costCzk')}>
+                      <div className="flex items-center justify-end gap-2">
+                        {t('settings:costCzk', 'Cost (CZK)')}
+                        {getSortIcon('costCzk')}
+                      </div>
+                    </TableHead>
                     <TableHead className="text-center">{t('common:enabled', 'Enabled')}</TableHead>
                     <TableHead className="text-center w-[80px]">{t('common:actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {serviceTypes.map((serviceType) => (
+                  {sortedServiceTypes.map((serviceType) => (
                     <TableRow key={serviceType.id} data-testid={`service-type-row-${serviceType.id}`}>
                       <TableCell className="font-medium">{serviceType.name}</TableCell>
                       <TableCell>
