@@ -170,7 +170,7 @@ const addOrderSchema = z.object({
   // Dobírka (Cash on Delivery) fields
   codAmount: z.coerce.number().min(0).optional().nullable(),
   codCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
   saleType: z.enum(['retail', 'wholesale']).default('retail'),
 });
 
