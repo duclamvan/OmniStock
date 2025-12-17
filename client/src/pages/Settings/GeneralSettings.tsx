@@ -944,10 +944,34 @@ export default function GeneralSettings() {
                           <SelectContent>
                             <SelectItem value="1,000.00">1,000.00</SelectItem>
                             <SelectItem value="1.000,00">1.000,00</SelectItem>
-                            <SelectItem value="1.000">1.000 (CZK without decimals)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="number_format_no_decimals"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleCheckboxChange('number_format_no_decimals')(checked as boolean);
+                            }}
+                            data-testid="checkbox-number_format_no_decimals"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>{t('settings:noDecimalsCZK', 'CZK without decimals')}</FormLabel>
+                          <FormDescription>
+                            {t('settings:noDecimalsCZKDescription', 'Display CZK amounts without .00')}
+                          </FormDescription>
+                        </div>
                       </FormItem>
                     )}
                   />

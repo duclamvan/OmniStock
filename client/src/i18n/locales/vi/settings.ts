@@ -92,6 +92,8 @@ const settings = {
   defaultTimeFormat: 'Định dạng giờ',
   defaultTimezone: 'Múi giờ',
   numberFormat: 'Định dạng số',
+  noDecimalsCZK: 'CZK không dấu thập phân',
+  noDecimalsCZKDescription: 'Hiển thị số tiền CZK không có .00',
   defaultCurrency: 'Đơn vị tiền tệ mặc định',
   currencyDisplay: 'Hiển thị tiền tệ',
   currencyDisplaySymbol: 'Ký hiệu',

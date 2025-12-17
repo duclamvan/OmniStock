@@ -92,6 +92,8 @@ const settings = {
   defaultTimeFormat: 'Time Format',
   defaultTimezone: 'Timezone',
   numberFormat: 'Number Format',
+  noDecimalsCZK: 'CZK without decimals',
+  noDecimalsCZKDescription: 'Display CZK amounts without .00',
   defaultCurrency: 'Default Currency',
   currencyDisplay: 'Currency Display',
   currencyDisplaySymbol: 'Symbol',
