@@ -237,6 +237,7 @@ const imports = {
   enterRegion: 'VD: Châu Á, Châu Âu',
   enterTracking: 'Mã vận đơn',
   enterProductName: 'Nhập tên sản phẩm',
+  typeToSearchProducts: 'Nhập để tìm kiếm sản phẩm',
   enterSKU: 'Nhập SKU',
   enterNotes: 'Ghi chú thêm về đơn nhập hàng này...',
 

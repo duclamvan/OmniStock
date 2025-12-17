@@ -226,6 +226,7 @@ const imports = {
   enterRegion: 'e.g., Asia, Europe',
   enterTracking: 'Shipment tracking #',
   enterProductName: 'Enter product name',
+  typeToSearchProducts: 'Type to search products',
   enterSKU: 'Enter SKU',
   enterNotes: 'Additional notes about this import order...',
 
