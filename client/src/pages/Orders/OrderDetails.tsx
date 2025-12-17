@@ -74,7 +74,8 @@ import {
   Book,
   File,
   Upload,
-  Box
+  Box,
+  Wrench
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
@@ -1201,7 +1202,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           />
                         ) : (
                           <div className="w-12 h-12 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
-                            <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                            {item.serviceId ? (
+                              <Wrench className="h-6 w-6 text-orange-500 dark:text-orange-400" />
+                            ) : (
+                              <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                            )}
                           </div>
                         )}
                       </div>
