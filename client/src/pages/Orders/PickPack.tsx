@@ -12790,29 +12790,6 @@ export default function PickPack() {
                           </Button>
                         </div>
                         
-                        {/* Finish Picking Button - Always available for items not in stock */}
-                        <Button
-                          className="w-full h-12 text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
-                          onClick={async () => {
-                            // Complete picking with current progress
-                            await completePicking(true);
-                            
-                            // Clear picking state
-                            setActivePickingOrder(null);
-                            setPickingTimer(0);
-                            setManualItemIndex(0);
-                            
-                            // Return to originating tab or pending tab
-                            setSelectedTab(originatingTab || 'pending');
-                            
-                            // Scroll to top
-                            window.scrollTo(0, 0);
-                          }}
-                          data-testid="button-finish-picking"
-                        >
-                          <CheckCircle className="h-5 w-5 mr-2" />
-                          Finish Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items)
-                        </Button>
                       </div>
                     </div>
                   
@@ -13005,6 +12982,36 @@ export default function PickPack() {
                   </Card>
                 );
               })}
+            </div>
+            
+            {/* Finish Picking Button - Separated as card below items */}
+            <div className="mt-4 xl:mt-6 pt-4 xl:pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+              <Card className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-red-50 dark:to-red-900/20 border-2 border-orange-300 dark:border-orange-700 shadow-md">
+                <CardContent className="p-3 xl:p-4">
+                  <Button
+                    className="w-full h-11 xl:h-12 text-sm xl:text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
+                    onClick={async () => {
+                      // Complete picking with current progress
+                      await completePicking(true);
+                      
+                      // Clear picking state
+                      setActivePickingOrder(null);
+                      setPickingTimer(0);
+                      setManualItemIndex(0);
+                      
+                      // Return to originating tab or pending tab
+                      setSelectedTab(originatingTab || 'pending');
+                      
+                      // Scroll to top
+                      window.scrollTo(0, 0);
+                    }}
+                    data-testid="button-finish-picking"
+                  >
+                    <CheckCircle className="h-4 w-4 xl:h-5 xl:w-5 mr-2" />
+                    Finish Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
           )}
