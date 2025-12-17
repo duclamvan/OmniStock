@@ -48,6 +48,7 @@ interface PurchaseItem {
   quantity: number;
   unitPrice: number;
   weight: number;
+  weightUnit?: 'mg' | 'g' | 'kg' | 'oz' | 'lb';
   dimensions: string;
   notes: string;
   totalPrice: number;
@@ -319,6 +320,7 @@ export default function CreatePurchase() {
     quantity: 1,
     unitPrice: 0,
     weight: 0,
+    weightUnit: 'kg',
     dimensions: "",
     notes: "",
     binLocation: "TBA",
@@ -2287,22 +2289,39 @@ export default function CreatePurchase() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="weight" className="text-xs">{t('weight')} (kg)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      step="0.01"
-                      value={currentItem.weight}
-                      onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          document.getElementById('dimensions')?.focus();
-                        }
-                      }}
-                      className="h-9"
-                      data-testid="input-weight"
-                    />
+                    <Label htmlFor="weight" className="text-xs">{t('weight')}</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        id="weight"
+                        type="number"
+                        step="0.01"
+                        value={currentItem.weight}
+                        onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('dimensions')?.focus();
+                          }
+                        }}
+                        className="h-9 flex-1"
+                        data-testid="input-weight"
+                      />
+                      <Select
+                        value={currentItem.weightUnit || 'kg'}
+                        onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => setCurrentItem({...currentItem, weightUnit: value})}
+                      >
+                        <SelectTrigger className="h-9 w-[70px]" data-testid="select-weight-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mg">mg</SelectItem>
+                          <SelectItem value="g">g</SelectItem>
+                          <SelectItem value="kg">kg</SelectItem>
+                          <SelectItem value="oz">oz</SelectItem>
+                          <SelectItem value="lb">lb</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="dimensions" className="text-xs">{t('dimensions')}</Label>
