@@ -12420,59 +12420,77 @@ export default function PickPack() {
                         
                         {/* Essential Product Info - Clean and Minimal */}
                         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
-                            {currentItem.productName}
-                          </h2>
-                          <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
-                            <div className="flex items-center gap-1">
-                              <Hash className="h-4 w-4 text-gray-400" />
-                              <span className="font-mono">{currentItem.sku}</span>
-                            </div>
-                            {currentItem.barcode && (
-                              <div className="flex items-center gap-1">
-                                <ScanLine className="h-4 w-4 text-gray-400" />
-                                <span className="font-mono">{currentItem.barcode}</span>
+                          {currentItem.serviceId ? (
+                            <>
+                              <h2 className="text-lg sm:text-xl font-bold text-purple-700 dark:text-purple-400 leading-tight">
+                                Service Bill #{activePickingOrder.orderId}
+                              </h2>
+                              <div className="space-y-2">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Customer</p>
+                                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">
+                                  {activePickingOrder.customerName}
+                                </p>
                               </div>
-                            )}
-                            {/* Carton Badge - shown when quantity >= bulkUnitQty */}
-                            {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
-                              <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
-                                <Box className="h-2.5 w-2.5 mr-0.5" />
-                                {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                              </Badge>
-                            )}
-                          </div>
+                            </>
+                          ) : (
+                            <>
+                              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
+                                {currentItem.productName}
+                              </h2>
+                              <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
+                                <div className="flex items-center gap-1">
+                                  <Hash className="h-4 w-4 text-gray-400" />
+                                  <span className="font-mono">{currentItem.sku}</span>
+                                </div>
+                                {currentItem.barcode && (
+                                  <div className="flex items-center gap-1">
+                                    <ScanLine className="h-4 w-4 text-gray-400" />
+                                    <span className="font-mono">{currentItem.barcode}</span>
+                                  </div>
+                                )}
+                                {/* Carton Badge - shown when quantity >= bulkUnitQty */}
+                                {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                                    <Box className="h-2.5 w-2.5 mr-0.5" />
+                                    {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      {/* Warehouse Location - High Contrast Banner */}
-                      <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
-                        <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
-                        <p 
-                          className="font-black text-orange-600 dark:text-orange-400 font-mono"
-                          style={{
-                            fontSize: 'min(4.5vw, 2.5rem)',
-                            lineHeight: '1.3',
-                            width: '100%',
-                            display: 'block',
-                            whiteSpace: 'nowrap',
-                            overflowWrap: 'normal',
-                            wordBreak: 'keep-all',
-                            hyphens: 'manual'
-                          }}
-                        >
-                          {(currentItem.warehouseLocation || '').split('-').map((part, i, arr) => (
-                            <span key={i}>
-                              {part}
-                              {i < arr.length - 1 && <wbr />}
-                              {i < arr.length - 1 && '-'}
-                            </span>
-                          ))}
-                        </p>
-                      </div>
+                      {/* Warehouse Location - High Contrast Banner (Hidden for services) */}
+                      {!currentItem.serviceId && (
+                        <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
+                          <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
+                          <p 
+                            className="font-black text-orange-600 dark:text-orange-400 font-mono"
+                            style={{
+                              fontSize: 'min(4.5vw, 2.5rem)',
+                              lineHeight: '1.3',
+                              width: '100%',
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              overflowWrap: 'normal',
+                              wordBreak: 'keep-all',
+                              hyphens: 'manual'
+                            }}
+                          >
+                            {(currentItem.warehouseLocation || '').split('-').map((part, i, arr) => (
+                              <span key={i}>
+                                {part}
+                                {i < arr.length - 1 && <wbr />}
+                                {i < arr.length - 1 && '-'}
+                              </span>
+                            ))}
+                          </p>
+                        </div>
+                      )}
 
-                      {/* Carton/Bulk Unit Details - Shows how many cartons to pick */}
-                      {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
+                      {/* Carton/Bulk Unit Details - Shows how many cartons to pick (Hidden for services) */}
+                      {!currentItem.serviceId && currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
                         <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
                           <Box className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                           <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
