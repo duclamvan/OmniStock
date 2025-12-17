@@ -31,6 +31,7 @@ import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 import { LandingCostService } from "../services/landingCostService";
+import { parseInvoiceImage } from "../services/invoiceParsingService";
 
 // Configure multer for screenshot uploads
 const upload = multer({ 
@@ -2761,6 +2762,32 @@ router.post("/extract-from-screenshot", upload.single('screenshot'), async (req,
   } catch (error) {
     console.error("Error processing screenshot:", error);
     res.status(500).json({ message: "Failed to process screenshot" });
+  }
+});
+
+// Parse invoice image and extract data using DeepSeek Vision API
+router.post("/parse-invoice", upload.single('invoice'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No invoice file uploaded" });
+    }
+
+    const imageBase64 = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+
+    const parsedData = await parseInvoiceImage(imageBase64, mimeType);
+    
+    res.json({ 
+      success: true,
+      data: parsedData,
+      message: `Successfully parsed invoice with ${parsedData.items.length} items`
+    });
+  } catch (error: any) {
+    console.error("Error parsing invoice:", error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message || "Failed to parse invoice" 
+    });
   }
 });
 

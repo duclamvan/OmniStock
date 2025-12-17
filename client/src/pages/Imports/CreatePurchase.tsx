@@ -370,6 +370,10 @@ export default function CreatePurchase() {
   // AI storage location suggestion state
   const [suggestingLocation, setSuggestingLocation] = useState(false);
   
+  // Invoice parsing state
+  const [parsingInvoice, setParsingInvoice] = useState(false);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
+  
   // Bulk selection state
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -802,6 +806,127 @@ export default function CreatePurchase() {
       });
     } finally {
       setSuggestingLocation(false);
+    }
+  };
+  
+  // Handle invoice file upload and AI parsing
+  const handleInvoiceUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setParsingInvoice(true);
+    try {
+      const formData = new FormData();
+      formData.append('invoice', file);
+      
+      const response = await fetch('/api/imports/parse-invoice', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to parse invoice');
+      }
+      
+      const data = result.data;
+      
+      // Autofill supplier if found
+      if (data.supplierId) {
+        setSupplierId(data.supplierId);
+      }
+      if (data.supplierName) {
+        setSupplier(data.supplierName);
+      }
+      
+      // Autofill currency if detected
+      if (data.currency) {
+        const normalizedCurrency = data.currency.toUpperCase();
+        if (['USD', 'EUR', 'CZK', 'VND', 'CNY'].includes(normalizedCurrency)) {
+          setPurchaseCurrency(normalizedCurrency);
+        }
+      }
+      
+      // Autofill notes if provided
+      if (data.notes) {
+        setNotes(data.notes);
+      }
+      
+      // Autofill shipping cost
+      if (data.shippingCost) {
+        setShippingCost(data.shippingCost);
+      }
+      
+      // Add items from invoice
+      const parsedItems = data.items || [];
+      if (parsedItems.length > 0) {
+        const newItems: PurchaseItem[] = parsedItems.map((item: any) => ({
+          id: crypto.randomUUID(),
+          name: item.name || 'Unknown Item',
+          sku: item.sku || '',
+          category: '',
+          categoryId: undefined,
+          barcode: item.barcode || '',
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || 0,
+          weight: item.weight || 0,
+          weightUnit: item.weightUnit || 'kg',
+          dimensions: item.dimensions || '',
+          notes: item.notes || '',
+          totalPrice: (item.quantity || 1) * (item.unitPrice || 0),
+          costWithShipping: 0,
+          productId: item.productId,
+          binLocation: 'TBA'
+        }));
+        
+        // Use functional updater to get the latest state and update shipping costs
+        setItems(prevItems => {
+          const updatedItems = [...prevItems, ...newItems];
+          // Schedule shipping cost update after state update
+          setTimeout(() => {
+            updateItemsWithShipping(updatedItems);
+          }, 50);
+          return updatedItems;
+        });
+      }
+      
+      const itemCount = parsedItems.length;
+      const confidencePercent = Math.round((data.confidence || 0) * 100);
+      
+      // Check if parsing returned a fallback message (vision not supported)
+      if (itemCount === 0 && data.notes?.includes('not available')) {
+        toast({
+          title: t('invoiceParseUnavailable'),
+          description: t('invoiceParseUnavailableDesc'),
+          variant: 'destructive'
+        });
+      } else if (itemCount > 0) {
+        toast({
+          title: t('invoiceParsed'),
+          description: t('invoiceParsedDesc', { count: itemCount, confidence: confidencePercent }),
+        });
+      } else {
+        toast({
+          title: t('invoiceParseEmpty'),
+          description: t('invoiceParseEmptyDesc'),
+        });
+      }
+      
+    } catch (error: any) {
+      console.error("Error parsing invoice:", error);
+      toast({
+        title: t('invoiceParseFailed'),
+        description: error.message || t('invoiceParseFailedDesc'),
+        variant: "destructive"
+      });
+    } finally {
+      setParsingInvoice(false);
+      // Reset file input
+      if (invoiceInputRef.current) {
+        invoiceInputRef.current.value = '';
+      }
     }
   };
 
@@ -1451,8 +1576,38 @@ export default function CreatePurchase() {
           {/* Order Details */}
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle>{t('orderDetails')}</CardTitle>
-              <CardDescription>{t('basicDetailsSupplier')}</CardDescription>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{t('orderDetails')}</CardTitle>
+                  <CardDescription>{t('basicDetailsSupplier')}</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={invoiceInputRef}
+                    onChange={handleInvoiceUpload}
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    data-testid="input-invoice-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => invoiceInputRef.current?.click()}
+                    disabled={parsingInvoice}
+                    className="gap-2"
+                    data-testid="button-upload-invoice"
+                  >
+                    {parsingInvoice ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">{t('uploadInvoice')}</span>
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Currency & Payment Section */}

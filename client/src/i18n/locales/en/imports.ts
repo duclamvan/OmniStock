@@ -460,6 +460,18 @@ const imports = {
   locationSuggested: 'Location suggested',
   suggestionFailed: 'Suggestion failed',
   suggestionFailedDesc: 'Could not generate storage location suggestion',
+  
+  // Invoice Upload & AI Parsing
+  uploadInvoice: 'Upload Invoice',
+  invoiceParsed: 'Invoice Parsed',
+  invoiceParsedDesc: 'Extracted {{count}} items with {{confidence}}% confidence',
+  invoiceParseUnavailable: 'Vision Parsing Unavailable',
+  invoiceParseUnavailableDesc: 'AI vision parsing is not available. Please enter invoice data manually.',
+  invoiceParseEmpty: 'No Items Found',
+  invoiceParseEmptyDesc: 'Could not extract items from the invoice. Please enter data manually.',
+  invoiceParseFailed: 'Invoice Parse Failed',
+  invoiceParseFailedDesc: 'Could not extract data from invoice image',
+  
   categoryAddedSuccess: 'Category added successfully',
   categoryAddFailed: 'Failed to save category',
   variantAddedSuccess: 'Variant added successfully',

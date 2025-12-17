@@ -466,6 +466,18 @@ const imports = {
   locationSuggested: 'Đã gợi ý vị trí',
   suggestionFailed: 'Gợi ý thất bại',
   suggestionFailedDesc: 'Không thể tạo gợi ý vị trí lưu trữ',
+  
+  // Invoice Upload & AI Parsing
+  uploadInvoice: 'Tải hóa đơn',
+  invoiceParsed: 'Đã phân tích hóa đơn',
+  invoiceParsedDesc: 'Đã trích xuất {{count}} sản phẩm với độ tin cậy {{confidence}}%',
+  invoiceParseUnavailable: 'Không có tính năng phân tích hình ảnh',
+  invoiceParseUnavailableDesc: 'Tính năng phân tích hóa đơn bằng AI không khả dụng. Vui lòng nhập dữ liệu thủ công.',
+  invoiceParseEmpty: 'Không tìm thấy sản phẩm',
+  invoiceParseEmptyDesc: 'Không thể trích xuất sản phẩm từ hóa đơn. Vui lòng nhập dữ liệu thủ công.',
+  invoiceParseFailed: 'Phân tích hóa đơn thất bại',
+  invoiceParseFailedDesc: 'Không thể trích xuất dữ liệu từ ảnh hóa đơn',
+  
   categoryAddedSuccess: 'Đã thêm danh mục thành công',
   categoryAddFailed: 'Không thể lưu danh mục',
   variantAddedSuccess: 'Đã thêm biến thể thành công',
