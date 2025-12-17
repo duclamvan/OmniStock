@@ -405,7 +405,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            placeholder={t('describeIssueOrRequest')}
+                            placeholder={t('system:describeIssue')}
                             className="min-h-[150px] text-base"
                             {...field}
                             data-testid="textarea-description"
