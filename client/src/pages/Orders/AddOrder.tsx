@@ -141,7 +141,7 @@ const extractFacebookId = (input: string): string | null => {
 };
 
 const addOrderSchema = z.object({
-  customerId: z.string().optional(),
+  customerId: z.string().min(1, "Customer is required"),
   orderType: z.enum(['pos', 'ord', 'web', 'tel']).default('ord'),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
@@ -3143,15 +3143,6 @@ export default function AddOrder() {
   const calculateGrandTotal = () => totals.grandTotal;
 
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
-    if (orderItems.length === 0) {
-      toast({
-        title: t('common:error'),
-        description: t('orders:pleaseAddAtLeastOneItem'),
-        variant: "destructive",
-      });
-      return;
-    }
-
     const orderData = {
       ...data,
       // Don't override customerId - it's set in createOrderMutation if a new customer is created
