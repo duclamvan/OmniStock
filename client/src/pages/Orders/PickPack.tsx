@@ -12418,50 +12418,16 @@ export default function PickPack() {
                           </div>
                         </div>
                         
-                        {/* Service Bill Details */}
+                        {/* Service Bill Details - Simplified */}
                         {currentItem.serviceId ? (
-                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 p-6 space-y-4">
-                            {/* Bill Header */}
-                            <div className="border-b-2 border-purple-300 dark:border-purple-700 pb-3">
-                              <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Service Bill</p>
-                              <h2 className="text-2xl sm:text-3xl font-black text-purple-700 dark:text-purple-400">
-                                #{activePickingOrder.orderId}
-                              </h2>
-                            </div>
-                            
-                            {/* Service Details */}
-                            <div className="space-y-3">
-                              {/* Customer */}
-                              <div>
-                                <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-1">Customer</p>
-                                <p className="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100">
-                                  {activePickingOrder.customerName}
-                                </p>
-                              </div>
-                              
-                              {/* Service Type */}
-                              <div>
-                                <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-1">Service Type</p>
-                                <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
-                                  {currentItem.productName}
-                                </p>
-                              </div>
-                              
-                              {/* Service Cost */}
-                              {currentItem.price && (
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
-                                  <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase tracking-wider mb-2">Service Cost</p>
-                                  <p className="text-3xl sm:text-4xl font-black text-purple-700 dark:text-purple-400">
-                                    {typeof currentItem.price === 'string' ? currentItem.price : `${parseFloat(String(currentItem.price || 0)).toFixed(2)}`}
-                                  </p>
-                                  {activePickingOrder.currency && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                      {activePickingOrder.currency}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 p-6 text-center">
+                            <p className="text-sm font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-2">Service Bill</p>
+                            <h2 className="text-3xl sm:text-4xl font-black text-purple-700 dark:text-purple-400 mb-3">
+                              #{activePickingOrder.orderId}
+                            </h2>
+                            <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200">
+                              {activePickingOrder.customerName}
+                            </p>
                           </div>
                         ) : (
                           <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
@@ -12998,26 +12964,41 @@ export default function PickPack() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-xs xl:text-sm truncate ${
-                            isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                            isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-800'
-                          }`}>
-                            {item.productName}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                              isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              📍 {item.warehouseLocation}
-                            </span>
-                            <span className={`text-xs xl:text-sm font-bold ${
-                              isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
-                              isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
-                            }`}>
-                              {item.pickedQuantity}/{item.quantity}
-                            </span>
-                          </div>
+                          {item.serviceId ? (
+                            /* Service Bill - Simplified display */
+                            <div className="text-center py-1">
+                              <p className={`font-bold text-sm xl:text-base ${
+                                isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
+                                isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600'
+                              }`}>
+                                Service Bill
+                              </p>
+                            </div>
+                          ) : (
+                            /* Regular product display */
+                            <>
+                              <p className={`font-semibold text-xs xl:text-sm truncate ${
+                                isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
+                                isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-800'
+                              }`}>
+                                {item.productName}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
+                              <div className="flex items-center justify-between mt-2">
+                                <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
+                                  isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  📍 {item.warehouseLocation}
+                                </span>
+                                <span className={`text-xs xl:text-sm font-bold ${
+                                  isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
+                                  isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
+                                }`}>
+                                  {item.pickedQuantity}/{item.quantity}
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -13089,10 +13070,18 @@ export default function PickPack() {
                                 {index + 1}
                               </div>
                             )}
-                            <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                            {!item.serviceId && (
+                              <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                            )}
                           </div>
-                          <p className="text-xs font-medium truncate">{item.productName}</p>
-                          <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                          {item.serviceId ? (
+                            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 text-center">Service Bill</p>
+                          ) : (
+                            <>
+                              <p className="text-xs font-medium truncate">{item.productName}</p>
+                              <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                            </>
+                          )}
                         </div>
                       );
                     })}
