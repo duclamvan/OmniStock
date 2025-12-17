@@ -810,9 +810,13 @@ export default function ProductForm() {
         // Pricing fields - parse decimals properly
         priceCzk: product.priceCzk ? parseFloat(String(product.priceCzk)) : undefined,
         priceEur: product.priceEur ? parseFloat(String(product.priceEur)) : undefined,
+        wholesalePriceCzk: product.wholesalePriceCzk ? parseFloat(String(product.wholesalePriceCzk)) : undefined,
+        wholesalePriceEur: product.wholesalePriceEur ? parseFloat(String(product.wholesalePriceEur)) : undefined,
         importCostUsd: product.importCostUsd ? parseFloat(String(product.importCostUsd)) : undefined,
         importCostCzk: product.importCostCzk ? parseFloat(String(product.importCostCzk)) : undefined,
         importCostEur: product.importCostEur ? parseFloat(String(product.importCostEur)) : undefined,
+        importCostVnd: product.importCostVnd ? parseFloat(String(product.importCostVnd)) : undefined,
+        importCostCny: product.importCostCny ? parseFloat(String(product.importCostCny)) : undefined,
         
         // Physical dimensions - parse decimals properly
         length: product.length ? parseFloat(String(product.length)) : undefined,
