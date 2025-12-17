@@ -134,9 +134,13 @@ const productSchema = z.object({
   maxStockLevel: z.coerce.number().min(0).optional(),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
+  wholesalePriceCzk: z.coerce.number().min(0).optional(),
+  wholesalePriceEur: z.coerce.number().min(0).optional(),
   importCostUsd: z.coerce.number().min(0).optional(),
   importCostCzk: z.coerce.number().min(0).optional(),
   importCostEur: z.coerce.number().min(0).optional(),
+  importCostVnd: z.coerce.number().min(0).optional(),
+  importCostCny: z.coerce.number().min(0).optional(),
   barcode: z.string().optional(),
   length: z.coerce.number().min(0).optional(),
   width: z.coerce.number().min(0).optional(),
@@ -227,7 +231,7 @@ export default function ProductForm() {
   const isEditMode = !!id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { canAccessFinancialData } = useAuth();
+  const { canViewImportCost: canAccessFinancialData } = useAuth();
   const { lowStockThreshold } = useInventoryDefaults();
   const { inventorySettings } = useSettings();
   
@@ -2453,7 +2457,7 @@ export default function ProductForm() {
                   {canAccessFinancialData && (
                     <div>
                       <Label className="text-sm font-medium mb-2 block">{t('products:formLabels.importCosts')}</Label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-5 gap-2">
                         <div>
                           <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
                           <Input
@@ -2471,6 +2475,8 @@ export default function ProductForm() {
                                 importCostUpdatingRef.current = 'usd';
                                 form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
                                 form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'USD', 'VND').toFixed(0)));
+                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'USD', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2494,6 +2500,8 @@ export default function ProductForm() {
                                 importCostUpdatingRef.current = 'czk';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
                                 form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CZK', 'VND').toFixed(0)));
+                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'CZK', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2517,6 +2525,58 @@ export default function ProductForm() {
                                 importCostUpdatingRef.current = 'eur';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
                                 form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'EUR', 'VND').toFixed(0)));
+                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'EUR', 'CNY').toFixed(2)));
+                                setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="importCostVnd" className="text-xs text-slate-500">VND</Label>
+                          <Input
+                            type="number"
+                            step="1"
+                            min="0"
+                            {...form.register('importCostVnd')}
+                            placeholder="0"
+                            data-testid="input-cost-vnd"
+                            className="mt-1"
+                            onInput={(e) => {
+                              if (importCostUpdatingRef.current === 'vnd') return;
+                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              if (value && value > 0) {
+                                importCostUpdatingRef.current = 'vnd';
+                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
+                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'VND', 'CZK').toFixed(2)));
+                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'VND', 'EUR').toFixed(2)));
+                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'VND', 'CNY').toFixed(2)));
+                                setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="importCostCny" className="text-xs text-slate-500">CNY</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...form.register('importCostCny')}
+                            placeholder="0.00"
+                            data-testid="input-cost-cny"
+                            className="mt-1"
+                            onInput={(e) => {
+                              if (importCostUpdatingRef.current === 'cny') return;
+                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              if (value && value > 0) {
+                                importCostUpdatingRef.current = 'cny';
+                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
+                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'CNY', 'CZK').toFixed(2)));
+                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CNY', 'EUR').toFixed(2)));
+                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CNY', 'VND').toFixed(0)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
