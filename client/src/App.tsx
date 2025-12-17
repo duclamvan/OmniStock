@@ -21,6 +21,7 @@ import AllOrders from "@/pages/Orders/AllOrders";
 import AddOrder from "@/pages/Orders/AddOrder";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
+import InventoryDashboard from "@/pages/Inventory/InventoryDashboard";
 import ProductForm from "@/pages/Inventory/ProductForm";
 import ProductDetails from "@/pages/Products/ProductDetails";
 import Bundles from "@/pages/Inventory/SimpleBundles";
@@ -157,6 +158,9 @@ function Router() {
         </Route>
         <Route path="/inventory">
           {() => <ProtectedRoute requireAdmin><AllInventory /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/dashboard">
+          {() => <ProtectedRoute><InventoryDashboard /></ProtectedRoute>}
         </Route>
         <Route path="/inventory/products">
           {() => <ProtectedRoute requireAdmin><AllInventory /></ProtectedRoute>}

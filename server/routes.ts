@@ -2076,6 +2076,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Inventory Dashboard - Real-time visual dashboard for all users
+  app.get('/api/dashboard/inventory', isAuthenticated, cacheMiddleware(30000), async (req, res) => {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      // Get all active products
+      const allProducts = await storage.getProducts();
+      const activeProducts = allProducts.filter(p => p.isActive !== false);
+
+      // Helper function to get product value in EUR
+      // Uses EUR price if available, otherwise converts CZK to EUR
+      const CZK_TO_EUR_RATE = 0.04; // Approximate rate: 1 CZK = 0.04 EUR
+      const getProductValueEur = (product: any): number => {
+        const priceEur = parseFloat(product.priceEur || '0');
+        if (priceEur > 0) return priceEur;
+        
+        const priceCzk = parseFloat(product.priceCzk || '0');
+        if (priceCzk > 0) return priceCzk * CZK_TO_EUR_RATE;
+        
+        return 0;
+      };
+
+      // Calculate total inventory value (converted to EUR)
+      let totalInventoryValue = 0;
+      let totalUnits = 0;
+      activeProducts.forEach(p => {
+        const qty = p.quantity || 0;
+        const priceEur = getProductValueEur(p);
+        totalInventoryValue += qty * priceEur;
+        totalUnits += qty;
+      });
+
+      // Low stock products - supports both percentage and amount types
+      const lowStockProducts = activeProducts.filter(p => {
+        const quantity = p.quantity || 0;
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        
+        if (alertType === 'percentage') {
+          const maxStock = p.maxStockLevel || 100;
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          return quantity <= threshold && quantity > 0;
+        } else {
+          return quantity <= alertValue && quantity > 0;
+        }
+      });
+
+      // Out of stock products
+      const outOfStockProducts = activeProducts.filter(p => (p.quantity || 0) === 0);
+
+      // Overstocked products (quantity > maxStockLevel)
+      const overstockedProducts = activeProducts.filter(p => {
+        const maxStock = p.maxStockLevel || 0;
+        return maxStock > 0 && (p.quantity || 0) > maxStock;
+      });
+
+      // Healthy stock (not low, not out, not over)
+      const healthyStockProducts = activeProducts.filter(p => {
+        const quantity = p.quantity || 0;
+        if (quantity === 0) return false;
+        
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        const maxStock = p.maxStockLevel || 100;
+        
+        let isLow = false;
+        if (alertType === 'percentage') {
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          isLow = quantity <= threshold;
+        } else {
+          isLow = quantity <= alertValue;
+        }
+        
+        const isOver = maxStock > 0 && quantity > maxStock;
+        return !isLow && !isOver;
+      });
+
+      // Stock by category
+      const allCategories = await storage.getCategories();
+      const stockByCategory = allCategories.map(cat => {
+        const catProducts = activeProducts.filter(p => p.categoryId === cat.id);
+        const totalQty = catProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        const totalValue = catProducts.reduce((sum, p) => {
+          const priceEur = getProductValueEur(p);
+          return sum + (p.quantity || 0) * priceEur;
+        }, 0);
+        return {
+          id: cat.id,
+          name: cat.name,
+          productCount: catProducts.length,
+          totalQuantity: totalQty,
+          totalValue: Math.round(totalValue * 100) / 100
+        };
+      }).filter(c => c.productCount > 0).sort((a, b) => b.totalValue - a.totalValue);
+
+      // Stock by warehouse
+      const allWarehouses = await storage.getWarehouses();
+      const stockByWarehouse = allWarehouses.map(wh => {
+        const whProducts = activeProducts.filter(p => p.warehouseId === wh.id);
+        const totalQty = whProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        const totalValue = whProducts.reduce((sum, p) => {
+          const priceEur = getProductValueEur(p);
+          return sum + (p.quantity || 0) * priceEur;
+        }, 0);
+        return {
+          id: wh.id,
+          name: wh.name,
+          productCount: whProducts.length,
+          totalQuantity: totalQty,
+          totalValue: Math.round(totalValue * 100) / 100
+        };
+      }).filter(w => w.productCount > 0);
+
+      // Slow-moving inventory (no updates in 90 days with stock > 0)
+      const slowMovingProducts = activeProducts.filter(p => {
+        const lastUpdated = new Date(p.updatedAt || p.createdAt || now);
+        return lastUpdated < ninetyDaysAgo && (p.quantity || 0) > 0;
+      });
+
+      // Fast-moving products (based on unitsSold)
+      const fastMovingProducts = [...activeProducts]
+        .filter(p => (p.unitsSold || 0) > 0)
+        .sort((a, b) => (b.unitsSold || 0) - (a.unitsSold || 0))
+        .slice(0, 10)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          quantity: p.quantity || 0,
+          unitsSold: p.unitsSold || 0
+        }));
+
+      // Stock status distribution for pie chart
+      const stockDistribution = {
+        healthy: healthyStockProducts.length,
+        lowStock: lowStockProducts.length,
+        outOfStock: outOfStockProducts.length,
+        overstocked: overstockedProducts.length
+      };
+
+      // Top low stock products for action
+      const topLowStockProducts = lowStockProducts
+        .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
+        .slice(0, 10)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          quantity: p.quantity || 0,
+          minStockLevel: p.minStockLevel || 0,
+          lowStockAlert: p.lowStockAlert || 45,
+          categoryName: allCategories.find(c => c.id === p.categoryId)?.name
+        }));
+
+      // Pending incoming shipments count
+      const pendingPurchases = await db.select({ count: sql<number>`count(*)` })
+        .from(importPurchases)
+        .where(
+          or(
+            eq(importPurchases.status, 'pending'),
+            eq(importPurchases.status, 'shipped'),
+            eq(importPurchases.status, 'in_transit')
+          )
+        );
+      const incomingShipmentsCount = pendingPurchases[0]?.count || 0;
+
+      res.json({
+        summary: {
+          totalProducts: activeProducts.length,
+          totalUnits,
+          totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+          healthyStock: healthyStockProducts.length,
+          lowStock: lowStockProducts.length,
+          outOfStock: outOfStockProducts.length,
+          overstocked: overstockedProducts.length,
+          slowMoving: slowMovingProducts.length,
+          incomingShipments: incomingShipmentsCount
+        },
+        stockDistribution,
+        stockByCategory: stockByCategory.slice(0, 8),
+        stockByWarehouse,
+        topLowStockProducts,
+        fastMovingProducts,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching inventory dashboard:", error);
+      res.status(500).json({ message: "Failed to fetch inventory dashboard" });
+    }
+  });
+
   // Fulfillment Efficiency Metrics
   app.get('/api/dashboard/fulfillment-efficiency', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {

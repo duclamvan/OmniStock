@@ -1204,6 +1204,32 @@ const inventory = {
   supplierNameRequired: 'Supplier name is required',
   invalidEmailAddress: 'Invalid email address',
   
+  // Inventory Dashboard
+  inventoryDashboard: 'Inventory Dashboard',
+  realTimeOverview: 'Real-time overview of your inventory levels and stock health',
+  healthyStock: 'Healthy Stock',
+  overstocked: 'Overstocked',
+  slowMoving: 'Slow Moving',
+  incomingShipments: 'Incoming',
+  totalUnits: 'Total Units',
+  inventoryValue: 'Inventory Value',
+  stockDistribution: 'Stock Distribution',
+  stockDistributionDesc: 'Products by stock status',
+  stockByCategory: 'Stock by Category',
+  stockByCategoryDesc: 'Inventory value by product category',
+  stockByWarehouse: 'Stock by Warehouse',
+  lowStockAlertTitle: 'Low Stock Alert',
+  lowStockAlertDesc: 'Products that need restocking',
+  fastMovingProducts: 'Fast Moving Products',
+  fastMovingDesc: 'Top selling products by units sold',
+  noLowStockProducts: 'All products have healthy stock levels',
+  noSalesData: 'No sales data available yet',
+  noDataAvailable: 'No data available',
+  inStockLabel: 'in stock',
+  unitsSoldLabel: 'units sold',
+  unitsLabel: 'Units',
+  valueLabel: 'Value',
+  
 } as const;
 
 export default inventory;

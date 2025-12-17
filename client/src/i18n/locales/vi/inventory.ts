@@ -1280,6 +1280,32 @@ const inventory = {
   supplierNameRequired: 'Tên nhà cung cấp là bắt buộc',
   invalidEmailAddress: 'Địa chỉ email không hợp lệ',
   
+  // Inventory Dashboard
+  inventoryDashboard: 'Bảng điều khiển kho hàng',
+  realTimeOverview: 'Tổng quan thời gian thực về mức tồn kho và tình trạng hàng hóa',
+  healthyStock: 'Tồn kho ổn định',
+  overstocked: 'Tồn kho dư',
+  slowMoving: 'Hàng chậm tiêu thụ',
+  incomingShipments: 'Đang về',
+  totalUnits: 'Tổng đơn vị',
+  inventoryValue: 'Giá trị tồn kho',
+  stockDistribution: 'Phân bố tồn kho',
+  stockDistributionDesc: 'Sản phẩm theo trạng thái tồn kho',
+  stockByCategory: 'Tồn kho theo danh mục',
+  stockByCategoryDesc: 'Giá trị tồn kho theo danh mục sản phẩm',
+  stockByWarehouse: 'Tồn kho theo kho hàng',
+  lowStockAlertTitle: 'Cảnh báo tồn kho thấp',
+  lowStockAlertDesc: 'Sản phẩm cần nhập thêm hàng',
+  fastMovingProducts: 'Sản phẩm bán chạy',
+  fastMovingDesc: 'Sản phẩm bán chạy nhất theo số lượng',
+  noLowStockProducts: 'Tất cả sản phẩm có mức tồn kho ổn định',
+  noSalesData: 'Chưa có dữ liệu bán hàng',
+  noDataAvailable: 'Không có dữ liệu',
+  inStockLabel: 'trong kho',
+  unitsSoldLabel: 'đã bán',
+  unitsLabel: 'Đơn vị',
+  valueLabel: 'Giá trị',
+  
 } as const;
 
 export default inventory;
