@@ -12898,90 +12898,104 @@ export default function PickPack() {
             </div>
             
             <div className="space-y-2 xl:space-y-3">
-              {activePickingOrder.items.map((item, index) => {
-                const isPicked = item.pickedQuantity >= item.quantity;
-                const isCurrent = currentItem?.id === item.id;
+              {/* Consolidate service items: show only non-service items + one unified Service Bill if any service items exist */}
+              {(() => {
+                const productItems = activePickingOrder.items.filter(item => !item.serviceId);
+                const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
+                const hasServiceItems = serviceItems.length > 0;
+                const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
+                const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                return (
-                  <Card 
-                    key={item.id} 
-                    className={`cursor-pointer transition-all transform hover:scale-105 ${
-                      isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
-                      isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-4 ring-blue-300' : 
-                      'bg-white hover:shadow-lg border-2 border-gray-200'
-                    }`}
-                    onClick={() => {
-                      if (isPicked) {
-                        // Allow reviewing picked items - show toast with item details
-                        toast({
-                          title: t('itemReview') || 'Item Review',
-                          description: `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
-                        });
-                        playSound('scan');
-                      } else {
-                        barcodeInputRef.current?.focus();
-                      }
-                    }}
-                  >
-                    <CardContent className="p-3 xl:p-4">
-                      <div className="flex items-start gap-2 xl:gap-3">
-                        <div className="mt-1">
-                          {isPicked ? (
-                            <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
-                              <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
-                            </div>
-                          ) : isCurrent ? (
-                            <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 flex items-center justify-center text-white font-bold animate-pulse text-sm">
-                              {index + 1}
-                            </div>
-                          ) : (
-                            <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full border-2 xl:border-3 border-gray-300 flex items-center justify-center text-xs xl:text-sm font-bold text-gray-600">
-                              {index + 1}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {item.serviceId ? (
-                            /* Service Bill - Simplified display */
-                            <div className="text-center py-1">
-                              <p className={`font-bold text-sm xl:text-base ${
-                                isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600'
-                              }`}>
-                                Service Bill
-                              </p>
-                            </div>
-                          ) : (
-                            /* Regular product display */
-                            <>
-                              <p className={`font-semibold text-xs xl:text-sm truncate ${
-                                isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-800'
-                              }`}>
-                                {item.productName}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                                  isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  📍 {item.warehouseLocation}
-                                </span>
-                                <span className={`text-xs xl:text-sm font-bold ${
-                                  isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
-                                  isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
-                                }`}>
-                                  {item.pickedQuantity}/{item.quantity}
-                                </span>
+                // Create consolidated display items: products first, then one Service Bill entry
+                const displayItems = hasServiceItems 
+                  ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent }]
+                  : productItems;
+                
+                return displayItems.map((item: any, index) => {
+                  const isServiceBill = item._isConsolidatedService;
+                  const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
+                  const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
+                  
+                  return (
+                    <Card 
+                      key={isServiceBill ? 'service-bill-consolidated' : item.id} 
+                      className={`cursor-pointer transition-all transform hover:scale-105 ${
+                        isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
+                        isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-4 ring-blue-300' : 
+                        'bg-white hover:shadow-lg border-2 border-gray-200'
+                      }`}
+                      onClick={() => {
+                        if (isPicked) {
+                          toast({
+                            title: t('itemReview') || 'Item Review',
+                            description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                          });
+                          playSound('scan');
+                        } else {
+                          barcodeInputRef.current?.focus();
+                        }
+                      }}
+                    >
+                      <CardContent className="p-3 xl:p-4">
+                        <div className="flex items-start gap-2 xl:gap-3">
+                          <div className="mt-1">
+                            {isPicked ? (
+                              <div className="bg-green-500 dark:bg-green-600 rounded-full p-1">
+                                <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
                               </div>
-                            </>
-                          )}
+                            ) : isCurrent ? (
+                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 flex items-center justify-center text-white font-bold animate-pulse text-sm">
+                                {index + 1}
+                              </div>
+                            ) : (
+                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full border-2 xl:border-3 border-gray-300 flex items-center justify-center text-xs xl:text-sm font-bold text-gray-600">
+                                {index + 1}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {isServiceBill ? (
+                              /* Service Bill - Unified display */
+                              <div className="text-center py-1">
+                                <p className={`font-bold text-sm xl:text-base ${
+                                  isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
+                                  isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600'
+                                }`}>
+                                  Service Bill
+                                </p>
+                              </div>
+                            ) : (
+                              /* Regular product display */
+                              <>
+                                <p className={`font-semibold text-xs xl:text-sm truncate ${
+                                  isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
+                                  isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-800'
+                                }`}>
+                                  {item.productName}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
+                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    📍 {item.warehouseLocation}
+                                  </span>
+                                  <span className={`text-xs xl:text-sm font-bold ${
+                                    isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
+                                    isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
+                                  }`}>
+                                    {item.pickedQuantity}/{item.quantity}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
             </div>
             
             {/* Finish Picking Button - Separated as card below items */}
@@ -13040,58 +13054,70 @@ export default function PickPack() {
                     </div>
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
-                    {activePickingOrder.items.map((item, index) => {
-                      const isPicked = item.pickedQuantity >= item.quantity;
-                      const isCurrent = currentItem?.id === item.id;
+                    {/* Consolidate service items in mobile drawer too */}
+                    {(() => {
+                      const productItems = activePickingOrder.items.filter(item => !item.serviceId);
+                      const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
+                      const hasServiceItems = serviceItems.length > 0;
+                      const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
+                      const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                       
-                      return (
-                        <div
-                          key={item.id}
-                          className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 snap-start transition-all transform active:scale-95 touch-manipulation ${
-                            isPicked ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700' :
-                            isCurrent ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-lg' :
-                            'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
-                          }`}
-                          onClick={() => {
-                            if (isPicked) {
-                              // Allow reviewing picked items - show toast with item details
-                              toast({
-                                title: t('itemReview') || 'Item Review',
-                                description: `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
-                              });
-                              playSound('scan');
-                            } else {
-                              // Jump to item by focusing on barcode input
-                              barcodeInputRef.current?.focus();
-                              playSound('scan');
-                            }
-                          }}
-                        >
-                          <div className="flex items-center gap-1 mb-1">
-                            {isPicked ? (
-                              <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+                      const displayItems = hasServiceItems 
+                        ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent }]
+                        : productItems;
+                      
+                      return displayItems.map((item: any, index) => {
+                        const isServiceBill = item._isConsolidatedService;
+                        const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
+                        const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
+                        
+                        return (
+                          <div
+                            key={isServiceBill ? 'service-bill-mobile' : item.id}
+                            className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 snap-start transition-all transform active:scale-95 touch-manipulation ${
+                              isPicked ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700' :
+                              isCurrent ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-lg' :
+                              'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
+                            }`}
+                            onClick={() => {
+                              if (isPicked) {
+                                toast({
+                                  title: t('itemReview') || 'Item Review',
+                                  description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                                });
+                                playSound('scan');
+                              } else {
+                                barcodeInputRef.current?.focus();
+                                playSound('scan');
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-1 mb-1">
+                              {isPicked ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+                              ) : (
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  isCurrent ? 'bg-blue-50 dark:bg-blue-900/300 text-white' : 'border-2 border-gray-300 text-gray-600'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                              )}
+                              {!isServiceBill && (
+                                <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                              )}
+                            </div>
+                            {isServiceBill ? (
+                              <p className="text-xs font-bold text-purple-600 dark:text-purple-400 text-center">Service Bill</p>
                             ) : (
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                isCurrent ? 'bg-blue-50 dark:bg-blue-900/300 text-white' : 'border-2 border-gray-300 text-gray-600'
-                              }`}>
-                                {index + 1}
-                              </div>
-                            )}
-                            {!item.serviceId && (
-                              <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                              <>
+                                <p className="text-xs font-medium truncate">{item.productName}</p>
+                                <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                              </>
                             )}
                           </div>
-                          {item.serviceId ? (
-                            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 text-center">Service Bill</p>
-                          ) : (
-                            <>
-                              <p className="text-xs font-medium truncate">{item.productName}</p>
-                              <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
