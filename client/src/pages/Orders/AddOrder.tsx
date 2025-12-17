@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency, getCurrencyByCountry } from "@/lib/currencyUtils";
+import { formatCurrency, getCurrencyByCountry, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { useOrderDefaults, useFinancialDefaults } from "@/hooks/useAppSettings";
@@ -2826,10 +2826,12 @@ export default function AddOrder() {
     }
 
     const selectedCurrency = form.watch('currency') || 'EUR';
+    const serviceCurrency = (service.currency || 'EUR') as Currency;
     const newItems: OrderItem[] = [];
 
-    // Add service fee (labor cost) as an order item
-    const serviceFee = parseFloat(service.serviceCost || '0');
+    // Add service fee (labor cost) as an order item - convert to order currency if needed
+    const rawServiceFee = parseFloat(service.serviceCost || '0');
+    const serviceFee = convertCurrency(rawServiceFee, serviceCurrency, selectedCurrency as Currency);
     if (serviceFee > 0) {
       newItems.push({
         id: Math.random().toString(36).substr(2, 9),
