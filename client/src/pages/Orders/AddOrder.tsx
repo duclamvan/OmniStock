@@ -81,7 +81,8 @@ import {
   Gift,
   Eye,
   EyeOff,
-  Check
+  Check,
+  TicketCheck
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -1151,6 +1152,50 @@ export default function AddOrder() {
   const { data: pendingServices, isLoading: isLoadingPendingServices } = useQuery<any[]>({
     queryKey: ['/api/customers', selectedCustomer?.id, 'pending-services'],
     enabled: !!selectedCustomer?.id,
+  });
+
+  // Fetch unresolved tickets for selected customer
+  const { data: customerTickets } = useQuery<any[]>({
+    queryKey: ['/api/tickets', selectedCustomer?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/tickets?customerId=${selectedCustomer?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch tickets');
+      return response.json();
+    },
+    enabled: !!selectedCustomer?.id && !selectedCustomer.isTemporary && !selectedCustomer.needsSaving,
+  });
+
+  // Filter to get only unresolved tickets for the selected customer
+  const unresolvedTickets = useMemo(() => {
+    if (!customerTickets || !selectedCustomer?.id) return [];
+    return customerTickets.filter((ticket: any) => 
+      ticket.customerId === selectedCustomer.id &&
+      (ticket.status === 'open' || ticket.status === 'in_progress')
+    );
+  }, [customerTickets, selectedCustomer?.id]);
+
+  // Mutation to resolve tickets quickly
+  const resolveTicketMutation = useMutation({
+    mutationFn: async (ticketId: string) => {
+      return apiRequest('PATCH', `/api/tickets/${ticketId}`, {
+        status: 'resolved',
+        resolvedAt: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: t('orders:ticketResolved'),
+        description: t('orders:ticketResolvedDescription'),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('orders:ticketResolveError'),
+        variant: 'destructive'
+      });
+    }
   });
 
   // Track which pending services have been applied to the order
@@ -4672,6 +4717,93 @@ export default function AddOrder() {
                         </div>
                       );
                     })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Unresolved Tickets Section - Information only with quick resolve */}
+            {selectedCustomer && !selectedCustomer.isTemporary && !selectedCustomer.needsSaving && unresolvedTickets && unresolvedTickets.length > 0 && (
+              <Card className="mt-4 border-2 border-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-900/20" data-testid="card-unresolved-tickets">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TicketCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                      {t('common:openTickets')}
+                    </h4>
+                    <Badge variant="secondary" className="bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-200">
+                      {unresolvedTickets.length}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                    {t('orders:unresolvedTicketsDescription')}
+                  </p>
+                  <div className="space-y-2">
+                    {unresolvedTickets.map((ticket: any) => (
+                      <div 
+                        key={ticket.id}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                        data-testid={`ticket-${ticket.id}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                              {ticket.ticketId}
+                            </span>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                ticket.priority === 'urgent' ? 'border-red-500 text-red-600 dark:text-red-400' :
+                                ticket.priority === 'high' ? 'border-orange-500 text-orange-600 dark:text-orange-400' :
+                                ticket.priority === 'medium' ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400' :
+                                'border-slate-300 text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              {ticket.priority}
+                            </Badge>
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs ${
+                                ticket.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
+                                'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {ticket.status === 'in_progress' ? t('orders:inProgress') : t('orders:ticketOpen')}
+                            </Badge>
+                          </div>
+                          <p className="font-medium text-slate-900 dark:text-slate-100 mt-1 truncate">
+                            {ticket.title}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <span>{ticket.category}</span>
+                            {ticket.createdAt && (
+                              <>
+                                <span>•</span>
+                                <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="ml-3 min-h-[44px] border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/40"
+                          onClick={() => resolveTicketMutation.mutate(ticket.id)}
+                          disabled={resolveTicketMutation.isPending}
+                          data-testid={`button-resolve-ticket-${ticket.id}`}
+                        >
+                          {resolveTicketMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              {t('orders:markResolved')}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

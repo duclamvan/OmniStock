@@ -1102,6 +1102,14 @@ const orders = {
   serviceAlreadyApplied: 'Đã được thêm',
   serviceAlreadyAppliedDesc: 'Dịch vụ này đã được thêm vào đơn hàng',
   
+  // Unresolved Tickets
+  unresolvedTicketsDescription: 'Khách hàng này có phiếu hỗ trợ đang mở cần được chú ý.',
+  ticketResolved: 'Đã giải quyết phiếu',
+  ticketResolvedDescription: 'Phiếu đã được đánh dấu là đã giải quyết.',
+  ticketResolveError: 'Không thể giải quyết phiếu. Vui lòng thử lại.',
+  markResolved: 'Giải quyết',
+  ticketOpen: 'Mở',
+  
   // Packing Checklist
   itemsVerified: 'Đã xác minh sản phẩm',
   packingSlipIncluded: 'Đã bao gồm phiếu đóng gói',

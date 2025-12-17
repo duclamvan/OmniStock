@@ -1098,6 +1098,14 @@ const orders = {
   serviceAlreadyApplied: 'Already Applied',
   serviceAlreadyAppliedDesc: 'This service has already been added to the order',
   
+  // Unresolved Tickets
+  unresolvedTicketsDescription: 'This customer has open support tickets that may need attention.',
+  ticketResolved: 'Ticket Resolved',
+  ticketResolvedDescription: 'The ticket has been marked as resolved.',
+  ticketResolveError: 'Failed to resolve ticket. Please try again.',
+  markResolved: 'Resolve',
+  ticketOpen: 'Open',
+  
   // Packing Checklist
   itemsVerified: 'Items Verified',
   packingSlipIncluded: 'Packing Slip Included',
