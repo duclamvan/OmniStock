@@ -232,6 +232,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const handleExpandAllChange = (expand: boolean) => {
     setExpandAll(expand);
     localStorage.setItem('ordersExpandAll', String(expand));
+    
+    // Also update mobile expanded items
+    if (expand && filteredOrders) {
+      // Expand all - add all order IDs to the set
+      setExpandedItemsOrders(new Set(filteredOrders.map((order: any) => order.id)));
+    } else {
+      // Collapse all - clear the set
+      setExpandedItemsOrders(new Set());
+    }
   };
 
   // Toggle column visibility and save to localStorage
@@ -1466,8 +1475,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </Button>
                 </div>
 
-                {/* Expand/Collapse All Toggle - Desktop only */}
-                <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 border rounded-md">
+                {/* Expand/Collapse All Toggle */}
+                <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
                     variant={!expandAll ? 'default' : 'ghost'}
                     size="sm"
