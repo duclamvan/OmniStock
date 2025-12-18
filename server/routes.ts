@@ -17760,6 +17760,237 @@ Important rules:
     }
   });
 
+  // ========================================
+  // Thermal Receipt PDF Generation Endpoint
+  // ========================================
+  app.post("/api/pos/receipt-pdf", isAuthenticated, async (req, res) => {
+    try {
+      const { 
+        items, 
+        subtotal, 
+        total, 
+        paymentMethod, 
+        cashReceived, 
+        change,
+        orderId,
+        customerName,
+        currency = 'CZK'
+      } = req.body;
+
+      // 83mm = 235.28 points (1mm = 2.834645669 points)
+      const pageWidth = 235;
+      const contentWidth = 220; // 78mm content area
+      const margin = 7; // ~2.5mm margin on each side
+
+      // Create PDF with exact 83mm width
+      const doc = new PDFDocument({
+        size: [pageWidth, 600], // 83mm width, auto height (will be trimmed)
+        margin: 0,
+        bufferPages: true
+      });
+
+      // Collect PDF data
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      
+      // Format currency helper
+      const formatMoney = (amount: number) => {
+        return `${currency} ${amount.toFixed(2)}`;
+      };
+
+      // Create dashed line
+      const drawDashedLine = (y: number) => {
+        doc.strokeColor('#333333')
+           .lineWidth(0.5);
+        for (let x = margin; x < contentWidth + margin; x += 6) {
+          doc.moveTo(x, y).lineTo(x + 3, y).stroke();
+        }
+      };
+
+      let yPos = margin;
+
+      // Header - Company Name
+      doc.fontSize(14)
+         .font('Courier-Bold')
+         .fillColor('#000000')
+         .text('DAVIE SUPPLY', margin, yPos, { 
+           width: contentWidth, 
+           align: 'center' 
+         });
+      yPos += 18;
+
+      // Subtitle
+      doc.fontSize(9)
+         .font('Courier')
+         .text('Point of Sale Receipt', margin, yPos, { 
+           width: contentWidth, 
+           align: 'center' 
+         });
+      yPos += 15;
+
+      // Dashed line separator
+      drawDashedLine(yPos);
+      yPos += 8;
+
+      // Date and Time
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', { 
+        month: '2-digit', 
+        day: '2-digit', 
+        year: 'numeric' 
+      });
+      const timeStr = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+
+      doc.fontSize(9)
+         .font('Courier')
+         .text(`Date:`, margin, yPos)
+         .text(dateStr, margin + 70, yPos);
+      yPos += 12;
+
+      doc.text(`Time:`, margin, yPos)
+         .text(timeStr, margin + 70, yPos);
+      yPos += 12;
+
+      // Order ID if available
+      if (orderId) {
+        doc.text(`Order #:`, margin, yPos)
+           .text(orderId, margin + 70, yPos);
+        yPos += 12;
+      }
+
+      // Customer
+      doc.text(`Customer:`, margin, yPos)
+         .text(customerName || 'Walk-in Customer', margin + 70, yPos);
+      yPos += 12;
+
+      // Dashed line separator
+      drawDashedLine(yPos);
+      yPos += 10;
+
+      // Items header
+      doc.fontSize(10)
+         .font('Courier-Bold')
+         .text('Items:', margin, yPos);
+      yPos += 14;
+
+      // Items list
+      doc.fontSize(9)
+         .font('Courier');
+
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          const itemName = `${item.quantity}x ${item.name}`;
+          const itemPrice = formatMoney(item.price * item.quantity);
+          
+          // Item name (may wrap)
+          const nameHeight = doc.heightOfString(itemName, { width: contentWidth - 70 });
+          doc.text(itemName, margin, yPos, { width: contentWidth - 70 });
+          doc.text(itemPrice, margin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+          yPos += Math.max(nameHeight, 12) + 3;
+        }
+      }
+
+      yPos += 5;
+
+      // Dashed line separator
+      drawDashedLine(yPos);
+      yPos += 10;
+
+      // Subtotal
+      doc.fontSize(9)
+         .font('Courier')
+         .text('Subtotal:', margin, yPos)
+         .text(formatMoney(subtotal || total), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+      yPos += 14;
+
+      // Total (bold)
+      doc.fontSize(11)
+         .font('Courier-Bold')
+         .text('Total:', margin, yPos)
+         .text(formatMoney(total), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+      yPos += 16;
+
+      // Dashed line separator
+      drawDashedLine(yPos);
+      yPos += 10;
+
+      // Payment details
+      doc.fontSize(9)
+         .font('Courier');
+
+      const paymentMethodLabel = paymentMethod === 'cash' ? 'Cash' : 
+                                  paymentMethod === 'card' ? 'Card' : 
+                                  paymentMethod === 'bank_transfer' ? 'Transfer' :
+                                  paymentMethod === 'pay_later' ? 'Pay Later' :
+                                  paymentMethod === 'qr_czk' ? 'QR Code' : paymentMethod;
+
+      doc.text('Payment Method:', margin, yPos)
+         .text(paymentMethodLabel, margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+      yPos += 12;
+
+      if (cashReceived !== undefined && cashReceived !== null) {
+        doc.text('Cash Received:', margin, yPos)
+           .text(formatMoney(cashReceived), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+        yPos += 12;
+      }
+
+      if (change !== undefined && change !== null) {
+        doc.font('Courier-Bold')
+           .text('Change:', margin, yPos)
+           .text(formatMoney(change), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+        yPos += 14;
+      }
+
+      // Dashed line separator
+      drawDashedLine(yPos);
+      yPos += 12;
+
+      // Footer
+      doc.fontSize(9)
+         .font('Courier')
+         .text('Thank you for your purchase!', margin, yPos, { 
+           width: contentWidth, 
+           align: 'center' 
+         });
+      yPos += 12;
+
+      doc.fontSize(8)
+         .fillColor('#666666')
+         .text('Powered by Davie Supply POS', margin, yPos, { 
+           width: contentWidth, 
+           align: 'center' 
+         });
+      yPos += 15;
+
+      // End the document
+      doc.end();
+
+      // Wait for PDF to be complete
+      await new Promise<void>((resolve) => {
+        doc.on('end', () => resolve());
+      });
+
+      const pdfBuffer = Buffer.concat(chunks);
+
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="receipt-${Date.now()}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+
+    } catch (error) {
+      console.error('Error generating receipt PDF:', error);
+      res.status(500).json({ 
+        message: 'Failed to generate receipt PDF',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

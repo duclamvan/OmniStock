@@ -46,7 +46,9 @@ import {
   Settings,
   Bluetooth,
   Usb,
-  Keyboard
+  Keyboard,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -121,10 +123,68 @@ function QRCodeCZK({ amount, orderId, scanLabel }: { amount: number; orderId: st
 
 function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose: () => void; onPrint: () => void }) {
   const { t } = useTranslation(['common', 'financial']);
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const handlePrint = () => {
     window.print();
     onPrint();
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch('/api/pos/receipt-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          items: data.items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          subtotal: data.subtotal,
+          total: data.total,
+          paymentMethod: data.paymentMethod,
+          cashReceived: data.cashReceived,
+          change: data.change,
+          orderId: data.orderId,
+          customerName: data.customerName,
+          currency: data.currency
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${data.orderId || Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: t('common:success'),
+        description: t('financial:receiptDownloaded'),
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: t('common:error'),
+        description: t('financial:receiptDownloadFailed'),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -311,10 +371,25 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
         </div>
       </div>
       
-      <div className="no-print flex gap-3 justify-center mt-6">
-        <Button size="lg" onClick={handlePrint} className="px-8" data-testid="button-print-receipt">
+      <div className="no-print flex flex-wrap gap-3 justify-center mt-6">
+        <Button size="lg" onClick={handlePrint} className="px-6" data-testid="button-print-receipt">
           <Printer className="h-5 w-5 mr-2" />
           {t('financial:printReceipt')}
+        </Button>
+        <Button 
+          size="lg" 
+          variant="secondary" 
+          onClick={handleDownloadPDF} 
+          disabled={isDownloading}
+          className="px-6"
+          data-testid="button-download-pdf"
+        >
+          {isDownloading ? (
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-5 w-5 mr-2" />
+          )}
+          {t('financial:downloadPDF')}
         </Button>
         <Button size="lg" variant="outline" onClick={onClose} data-testid="button-close-receipt">
           {t('common:close')}
