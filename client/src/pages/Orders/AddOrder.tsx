@@ -7050,17 +7050,19 @@ export default function AddOrder() {
                                 const tax = showTaxInvoice ? calculateTax() : 0;
                                 const shippingValue = form.watch('shippingCost');
                                 const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
-                                const adjustmentValue = form.watch('adjustment');
-                                const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
+                                const discountAmount = form.watch('discountType') === 'rate' 
+                                  ? (subtotal * (Number(form.watch('discountValue')) || 0)) / 100
+                                  : Number(form.watch('discountValue')) || 0;
                                 
-                                const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
+                                // Calculate needed adjustment: desired = subtotal + tax + shipping - discount + adjustment
+                                const currentTotalWithoutAdjustment = subtotal + tax + shipping - discountAmount;
+                                const neededAdjustment = desiredTotal - currentTotalWithoutAdjustment;
                                 
-                                form.setValue('discountType', 'flat');
-                                form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
+                                form.setValue('adjustment', parseFloat(neededAdjustment.toFixed(2)));
                                 
                                 toast({
                                   title: t('orders:totalAdjusted'),
-                                  description: t('orders:discountSetTo', { amount: formatCurrency(Math.max(0, neededDiscount), form.watch('currency')) }),
+                                  description: t('orders:adjustmentAmount', { amount: formatCurrency(neededAdjustment, form.watch('currency')) }),
                                 });
                               }
                             }}
@@ -7325,17 +7327,19 @@ export default function AddOrder() {
                           const tax = showTaxInvoice ? calculateTax() : 0;
                           const shippingValue = form.watch('shippingCost');
                           const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
-                          const adjustmentValue = form.watch('adjustment');
-                          const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
+                          const discountAmount = form.watch('discountType') === 'rate' 
+                            ? (subtotal * (Number(form.watch('discountValue')) || 0)) / 100
+                            : Number(form.watch('discountValue')) || 0;
                           
-                          const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
+                          // Calculate needed adjustment: desired = subtotal + tax + shipping - discount + adjustment
+                          const currentTotalWithoutAdjustment = subtotal + tax + shipping - discountAmount;
+                          const neededAdjustment = desiredTotal - currentTotalWithoutAdjustment;
                           
-                          form.setValue('discountType', 'flat');
-                          form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
+                          form.setValue('adjustment', parseFloat(neededAdjustment.toFixed(2)));
                           
                           toast({
                             title: t('orders:totalAdjusted'),
-                            description: t('orders:discountSetTo', { amount: formatCurrency(Math.max(0, neededDiscount), form.watch('currency')) }),
+                            description: t('orders:adjustmentAmount', { amount: formatCurrency(neededAdjustment, form.watch('currency')) }),
                           });
                         }
                       }}
