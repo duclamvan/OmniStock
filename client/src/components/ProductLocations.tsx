@@ -561,123 +561,239 @@ export default function ProductLocations({
           )}
         </div>
 
-        {/* Locations Table */}
+        {/* Locations - Card layout on mobile, table on desktop */}
         {locations.length > 0 ? (
-          <div className="rounded-md border border-gray-200 dark:border-gray-700">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('common:locationCode')}</TableHead>
-                  <TableHead>{t('common:type')}</TableHead>
-                  <TableHead>{t('common:quantity')}</TableHead>
-                  <TableHead>{t('common:status')}</TableHead>
-                  <TableHead>{t('common:notes')}</TableHead>
-                  {!readOnly && <TableHead className="w-[100px]">{t('common:actions')}</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {locations.map((location) => {
-                  const LocationIcon = getLocationTypeIcon(location.locationType);
-                  return (
-                    <TableRow key={location.id} data-testid={`row-location-${location.id}`}>
-                      <TableCell className="font-mono">
-                        <div className="flex items-center space-x-2">
-                          <LocationIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                          <span data-testid={`text-location-code-${location.id}`}>
-                            {location.locationCode}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+          <>
+            {/* Mobile Card Layout */}
+            <div className="md:hidden space-y-3">
+              {locations.map((location) => {
+                const LocationIcon = getLocationTypeIcon(location.locationType);
+                return (
+                  <div 
+                    key={location.id} 
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-slate-900"
+                    data-testid={`card-location-${location.id}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <LocationIcon className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                        <span className="font-mono font-medium" data-testid={`text-location-code-${location.id}`}>
+                          {location.locationCode}
+                        </span>
+                      </div>
+                      {!readOnly && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-testid={`button-actions-${location.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => openEditDialog(location)}
+                              data-testid={`menu-edit-${location.id}`}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              {t('common:editLocation')}
+                            </DropdownMenuItem>
+                            
+                            {!location.isPrimary && (
+                              <DropdownMenuItem
+                                onClick={() => setPrimaryMutation.mutate(location.id)}
+                                data-testid={`menu-primary-${location.id}`}
+                              >
+                                <Star className="h-4 w-4 mr-2" />
+                                {t('common:setAsPrimary')}
+                              </DropdownMenuItem>
+                            )}
+
+                            {location.quantity > 0 && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setMoveFromLocation(location);
+                                  setMoveQuantity(location.quantity);
+                                  setMoveDialogOpen(true);
+                                }}
+                                data-testid={`menu-move-${location.id}`}
+                              >
+                                <MoveRight className="h-4 w-4 mr-2" />
+                                {t('common:moveInventory')}
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => setDeleteLocation(location)}
+                              className="text-red-600"
+                              data-testid={`menu-delete-${location.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {t('common:deleteLocation')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">{t('common:type')}:</span>
                         <Badge
                           variant="outline"
-                          className={getLocationTypeTextColor(location.locationType)}
+                          className={`ml-2 ${getLocationTypeTextColor(location.locationType)}`}
                           data-testid={`badge-type-${location.id}`}
                         >
                           {getLocationTypeLabel(location.locationType)}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium" data-testid={`text-quantity-${location.id}`}>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">{t('common:quantity')}:</span>
+                        <span className="ml-2 font-medium" data-testid={`text-quantity-${location.id}`}>
                           {location.quantity}
                         </span>
-                      </TableCell>
-                      <TableCell>
-                        {location.isPrimary && (
-                          <Badge variant="default" className="bg-blue-600">
-                            <Star className="h-3 w-3 mr-1" />
-                            {t('common:primary')}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                        {location.notes || "-"}
-                      </TableCell>
-                      {!readOnly && (
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-testid={`button-actions-${location.id}`}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => openEditDialog(location)}
-                                data-testid={`menu-edit-${location.id}`}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                {t('common:editLocation')}
-                              </DropdownMenuItem>
-                              
-                              {!location.isPrimary && (
-                                <DropdownMenuItem
-                                  onClick={() => setPrimaryMutation.mutate(location.id)}
-                                  data-testid={`menu-primary-${location.id}`}
-                                >
-                                  <Star className="h-4 w-4 mr-2" />
-                                  {t('common:setAsPrimary')}
-                                </DropdownMenuItem>
-                              )}
-
-                              {location.quantity > 0 && (
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setMoveFromLocation(location);
-                                    setMoveQuantity(location.quantity);
-                                    setMoveDialogOpen(true);
-                                  }}
-                                  data-testid={`menu-move-${location.id}`}
-                                >
-                                  <MoveRight className="h-4 w-4 mr-2" />
-                                  {t('common:moveInventory')}
-                                </DropdownMenuItem>
-                              )}
-
-                              <DropdownMenuSeparator />
-
-                              <DropdownMenuItem
-                                onClick={() => setDeleteLocation(location)}
-                                className="text-red-600"
-                                data-testid={`menu-delete-${location.id}`}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {t('common:deleteLocation')}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-2">
+                      {location.isPrimary && (
+                        <Badge variant="default" className="bg-blue-600">
+                          <Star className="h-3 w-3 mr-1" />
+                          {t('common:primary')}
+                        </Badge>
                       )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                      {location.notes && (
+                        <span className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                          {location.notes}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block rounded-md border border-gray-200 dark:border-gray-700">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('common:locationCode')}</TableHead>
+                    <TableHead>{t('common:type')}</TableHead>
+                    <TableHead>{t('common:quantity')}</TableHead>
+                    <TableHead>{t('common:status')}</TableHead>
+                    <TableHead>{t('common:notes')}</TableHead>
+                    {!readOnly && <TableHead className="w-[100px]">{t('common:actions')}</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {locations.map((location) => {
+                    const LocationIcon = getLocationTypeIcon(location.locationType);
+                    return (
+                      <TableRow key={location.id} data-testid={`row-location-${location.id}`}>
+                        <TableCell className="font-mono">
+                          <div className="flex items-center space-x-2">
+                            <LocationIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                            <span data-testid={`text-location-code-${location.id}`}>
+                              {location.locationCode}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={getLocationTypeTextColor(location.locationType)}
+                            data-testid={`badge-type-${location.id}`}
+                          >
+                            {getLocationTypeLabel(location.locationType)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium" data-testid={`text-quantity-${location.id}`}>
+                            {location.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {location.isPrimary && (
+                            <Badge variant="default" className="bg-blue-600">
+                              <Star className="h-3 w-3 mr-1" />
+                              {t('common:primary')}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                          {location.notes || "-"}
+                        </TableCell>
+                        {!readOnly && (
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-actions-${location.id}`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => openEditDialog(location)}
+                                  data-testid={`menu-edit-${location.id}`}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  {t('common:editLocation')}
+                                </DropdownMenuItem>
+                                
+                                {!location.isPrimary && (
+                                  <DropdownMenuItem
+                                    onClick={() => setPrimaryMutation.mutate(location.id)}
+                                    data-testid={`menu-primary-${location.id}`}
+                                  >
+                                    <Star className="h-4 w-4 mr-2" />
+                                    {t('common:setAsPrimary')}
+                                  </DropdownMenuItem>
+                                )}
+
+                                {location.quantity > 0 && (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setMoveFromLocation(location);
+                                      setMoveQuantity(location.quantity);
+                                      setMoveDialogOpen(true);
+                                    }}
+                                    data-testid={`menu-move-${location.id}`}
+                                  >
+                                    <MoveRight className="h-4 w-4 mr-2" />
+                                    {t('common:moveInventory')}
+                                  </DropdownMenuItem>
+                                )}
+
+                                <DropdownMenuSeparator />
+
+                                <DropdownMenuItem
+                                  onClick={() => setDeleteLocation(location)}
+                                  className="text-red-600"
+                                  data-testid={`menu-delete-${location.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t('common:deleteLocation')}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
