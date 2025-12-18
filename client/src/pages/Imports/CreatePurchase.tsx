@@ -1686,6 +1686,7 @@ export default function CreatePurchase() {
                         type="number"
                         value={totalPaid}
                         onChange={(e) => setTotalPaid(parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="0.00"
                         className="pl-8"
                         step="0.01"
@@ -1996,6 +1997,7 @@ export default function CreatePurchase() {
                         min="0"
                         value={processingTime}
                         onChange={(e) => setProcessingTime(e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="0"
                         className="flex-1"
                         data-testid="input-processing-time"
@@ -2049,6 +2051,7 @@ export default function CreatePurchase() {
                         step="0.01"
                         value={shippingCost}
                         onChange={(e) => handleShippingCostChange(parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
                         className="pl-10"
                         placeholder="0.00"
                         data-testid="input-shipping"
@@ -2368,6 +2371,7 @@ export default function CreatePurchase() {
                       min="1"
                       value={currentItem.quantity}
                       onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 1})}
+                      onFocus={(e) => e.target.select()}
                       className="h-9"
                       data-testid="input-quantity"
                     />
@@ -2401,6 +2405,7 @@ export default function CreatePurchase() {
                       step="0.01"
                       value={currentItem.unitPrice}
                       onChange={(e) => setCurrentItem({...currentItem, unitPrice: parseFloat(e.target.value) || 0})}
+                      onFocus={(e) => e.target.select()}
                       className="h-9"
                       data-testid="input-unit-price"
                     />
@@ -2413,6 +2418,7 @@ export default function CreatePurchase() {
                       min="0"
                       value={currentItem.cartons || ""}
                       onChange={(e) => setCurrentItem({...currentItem, cartons: e.target.value ? parseInt(e.target.value) : undefined})}
+                      onFocus={(e) => e.target.select()}
                       placeholder={t('cartonsPlaceholder')}
                       className="h-9"
                       data-testid="input-cartons"
@@ -2452,6 +2458,7 @@ export default function CreatePurchase() {
                         step="0.01"
                         value={currentItem.weight}
                         onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
+                        onFocus={(e) => e.target.select()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -2725,6 +2732,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
                                       ));
                                     }}
+                                    onFocus={(e) => e.target.select()}
                                     className="h-6 w-12 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     min="0"
                                   />
@@ -2738,6 +2746,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
+                                    onFocus={(e) => e.target.select()}
                                     className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
@@ -2752,6 +2761,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
+                                    onFocus={(e) => e.target.select()}
                                     className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
@@ -2943,6 +2953,7 @@ export default function CreatePurchase() {
                                       );
                                       updateItemsWithShipping(updatedItems);
                                     }}
+                                    onFocus={(e) => e.target.select()}
                                     className="h-7 w-16 text-sm text-center border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     min="1"
                                   />
@@ -3014,6 +3025,7 @@ export default function CreatePurchase() {
                                         );
                                         updateItemsWithShipping(updatedItems);
                                       }}
+                                      onFocus={(e) => e.target.select()}
                                       className="h-7 w-20 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       step="0.01"
                                       min="0"
@@ -3035,6 +3047,7 @@ export default function CreatePurchase() {
                                         );
                                         setItems(updatedItems);
                                       }}
+                                      onFocus={(e) => e.target.select()}
                                       className="h-7 w-16 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       step="0.01"
                                       min="0"
@@ -3232,6 +3245,7 @@ export default function CreatePurchase() {
                                 );
                                 updateItemsWithShipping(updatedItems);
                               }}
+                              onFocus={(e) => e.target.select()}
                               className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               min="1"
                             />
@@ -3250,6 +3264,7 @@ export default function CreatePurchase() {
                                     );
                                     setItems(updatedItems);
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   className="h-7 w-14 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   step="0.01"
                                   min="0"
@@ -3277,6 +3292,7 @@ export default function CreatePurchase() {
                                   );
                                   updateItemsWithShipping(updatedItems);
                                 }}
+                                onFocus={(e) => e.target.select()}
                                 className="h-7 w-20 text-sm text-right border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 step="0.01"
                                 min="0"
@@ -3860,6 +3876,7 @@ export default function CreatePurchase() {
                   type="number"
                   value={newVariant.quantity}
                   onChange={(e) => setNewVariant({...newVariant, quantity: parseInt(e.target.value) || 1})}
+                  onFocus={(e) => e.target.select()}
                   min="1"
                 />
               </div>
@@ -3869,6 +3886,7 @@ export default function CreatePurchase() {
                   type="number"
                   value={newVariant.unitPrice}
                   onChange={(e) => setNewVariant({...newVariant, unitPrice: parseFloat(e.target.value) || 0})}
+                  onFocus={(e) => e.target.select()}
                   step="0.01"
                   min="0"
                 />
@@ -3881,6 +3899,7 @@ export default function CreatePurchase() {
                   type="number"
                   value={newVariant.weight}
                   onChange={(e) => setNewVariant({...newVariant, weight: parseFloat(e.target.value) || 0})}
+                  onFocus={(e) => e.target.select()}
                   step="0.01"
                   min="0"
                 />
@@ -3934,6 +3953,7 @@ export default function CreatePurchase() {
                   type="number"
                   value={seriesQuantity}
                   onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 1)}
+                  onFocus={(e) => e.target.select()}
                   min="1"
                 />
               </div>
@@ -3943,6 +3963,7 @@ export default function CreatePurchase() {
                   type="number"
                   value={seriesUnitPrice}
                   onChange={(e) => setSeriesUnitPrice(parseFloat(e.target.value) || 0)}
+                  onFocus={(e) => e.target.select()}
                   step="0.01"
                   min="0"
                 />
@@ -3954,6 +3975,7 @@ export default function CreatePurchase() {
                 type="number"
                 value={seriesWeight}
                 onChange={(e) => setSeriesWeight(parseFloat(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
                 step="0.01"
                 min="0"
               />
