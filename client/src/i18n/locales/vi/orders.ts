@@ -339,6 +339,7 @@ const orders = {
   addNotes: 'Thêm ghi chú',
   editNotes: 'Sửa ghi chú',
   swipeDownToClose: 'Vuốt xuống để đóng',
+  pinchToZoom: 'Chụm để phóng to • Nhấn đúp để chuyển đổi',
   actualShippingCost: 'Phí vận chuyển thực tế',
   profitMargin: 'Biên lợi nhuận',
   clickToEditOrRoundUp: 'Nhấp để chỉnh sửa hoặc làm tròn',

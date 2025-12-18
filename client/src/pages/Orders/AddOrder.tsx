@@ -7982,38 +7982,88 @@ export default function AddOrder() {
           description={editingAddress ? t('orders:updateShippingAddressDetails') : t('orders:enterNewShippingAddressDetails')}
         />
 
-        {/* Mobile Image Popup with Swipe to Close */}
+        {/* Mobile Image Popup with Swipe to Close and Pinch to Zoom */}
         {mobileImagePopup.open && (
           <div 
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center touch-none"
             onClick={() => setMobileImagePopup({ open: false, src: '', alt: '' })}
             onTouchStart={(e) => {
-              const touch = e.touches[0];
-              (e.currentTarget as any).touchStartY = touch.clientY;
-              (e.currentTarget as any).translateY = 0;
+              const target = e.currentTarget as any;
+              if (e.touches.length === 2) {
+                // Pinch gesture - calculate initial distance
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+                target.initialPinchDist = dist;
+                target.currentScale = target.currentScale || 1;
+                target.isPinching = true;
+              } else if (e.touches.length === 1) {
+                // Single touch - swipe gesture
+                const touch = e.touches[0];
+                target.touchStartY = touch.clientY;
+                target.touchStartX = touch.clientX;
+                target.translateY = 0;
+                target.translateX = 0;
+                target.isPinching = false;
+              }
             }}
             onTouchMove={(e) => {
-              const touch = e.touches[0];
-              const startY = (e.currentTarget as any).touchStartY || 0;
-              const deltaY = touch.clientY - startY;
-              if (deltaY > 0) {
-                (e.currentTarget as any).translateY = deltaY;
-                const imageEl = e.currentTarget.querySelector('img');
+              const target = e.currentTarget as any;
+              const imageEl = target.querySelector('img');
+              
+              if (e.touches.length === 2 && target.isPinching) {
+                // Pinch zoom
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+                const initialDist = target.initialPinchDist || dist;
+                const scale = Math.min(Math.max((dist / initialDist) * (target.currentScale || 1), 1), 4);
+                
                 if (imageEl) {
-                  imageEl.style.transform = `translateY(${deltaY}px) scale(${1 - deltaY / 1000})`;
-                  imageEl.style.opacity = `${1 - deltaY / 300}`;
+                  imageEl.style.transform = `scale(${scale})`;
+                  imageEl.style.transition = 'none';
+                }
+                target.pendingScale = scale;
+              } else if (e.touches.length === 1 && !target.isPinching) {
+                // Swipe to close (only when not zoomed)
+                const currentScale = target.currentScale || 1;
+                if (currentScale <= 1) {
+                  const touch = e.touches[0];
+                  const startY = target.touchStartY || 0;
+                  const deltaY = touch.clientY - startY;
+                  if (deltaY > 0) {
+                    target.translateY = deltaY;
+                    if (imageEl) {
+                      imageEl.style.transform = `translateY(${deltaY}px) scale(${1 - deltaY / 1000})`;
+                      imageEl.style.opacity = `${1 - deltaY / 300}`;
+                      imageEl.style.transition = 'none';
+                    }
+                  }
                 }
               }
             }}
             onTouchEnd={(e) => {
-              const translateY = (e.currentTarget as any).translateY || 0;
-              if (translateY > 100) {
-                setMobileImagePopup({ open: false, src: '', alt: '' });
-              } else {
-                const imageEl = e.currentTarget.querySelector('img');
+              const target = e.currentTarget as any;
+              const imageEl = target.querySelector('img');
+              
+              if (target.isPinching && target.pendingScale) {
+                // Save the new scale
+                target.currentScale = target.pendingScale;
+                target.isPinching = false;
                 if (imageEl) {
+                  imageEl.style.transition = 'transform 0.2s ease-out';
+                }
+              } else {
+                const translateY = target.translateY || 0;
+                const currentScale = target.currentScale || 1;
+                
+                if (translateY > 100 && currentScale <= 1) {
+                  setMobileImagePopup({ open: false, src: '', alt: '' });
+                } else if (imageEl && currentScale <= 1) {
                   imageEl.style.transform = '';
                   imageEl.style.opacity = '';
+                  imageEl.style.transition = 'all 0.2s ease-out';
                 }
               }
             }}
@@ -8034,13 +8084,23 @@ export default function AddOrder() {
             </div>
             <div className="absolute top-4 left-4 right-16 z-10">
               <p className="text-white text-sm font-medium truncate">{mobileImagePopup.alt}</p>
-              <p className="text-white/60 text-xs">{t('orders:swipeDownToClose')}</p>
+              <p className="text-white/60 text-xs">{t('orders:pinchToZoom')}</p>
             </div>
             <img 
               src={mobileImagePopup.src} 
               alt={mobileImagePopup.alt}
-              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg transition-all duration-200"
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg select-none"
+              style={{ touchAction: 'none' }}
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const target = e.currentTarget.parentElement as any;
+                const currentScale = target?.currentScale || 1;
+                const newScale = currentScale > 1 ? 1 : 2;
+                target.currentScale = newScale;
+                e.currentTarget.style.transform = `scale(${newScale})`;
+                e.currentTarget.style.transition = 'transform 0.3s ease-out';
+              }}
             />
           </div>
         )}

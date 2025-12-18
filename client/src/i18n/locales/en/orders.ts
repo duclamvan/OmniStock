@@ -345,6 +345,7 @@ const orders = {
   addNotes: 'Add notes',
   editNotes: 'Edit notes',
   swipeDownToClose: 'Swipe down to close',
+  pinchToZoom: 'Pinch to zoom • Double-tap to toggle',
   actualShippingCost: 'Actual Shipping Cost',
   profitMargin: 'Profit Margin',
   clickToEditOrRoundUp: 'Click to edit or Round Up',
