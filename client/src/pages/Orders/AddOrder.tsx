@@ -18,7 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency, getCurrencyByCountry, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { getCurrencyByCountry, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { useOrderDefaults, useFinancialDefaults } from "@/hooks/useAppSettings";
@@ -394,6 +395,7 @@ export default function AddOrder() {
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers, shippingSettings } = useSettings();
+  const { formatCurrency } = useLocalization();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [buyXGetYAllocations, setBuyXGetYAllocations] = useState<BuyXGetYAllocation[]>([]);
