@@ -1177,10 +1177,10 @@ export default function POS() {
         </div>
 
         {/* Customer Selection */}
-        <div className="p-2 sm:p-3 border-b bg-gray-50 dark:bg-gray-900">
+        <div className="px-2 sm:px-4 py-2 sm:py-3 border-b bg-gray-50 dark:bg-gray-900">
           <Button
             variant="outline"
-            className="w-full h-10 sm:h-12 justify-start text-left text-sm sm:text-base"
+            className="w-full h-10 sm:h-14 justify-start text-left text-sm sm:text-base border-2 border-gray-200 dark:border-gray-700"
             onClick={() => setShowCustomerSearch(true)}
             data-testid="button-select-customer"
           >
