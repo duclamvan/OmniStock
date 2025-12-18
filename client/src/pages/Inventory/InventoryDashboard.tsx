@@ -170,131 +170,133 @@ export default function InventoryDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {/* Summary Stats - Mobile Optimized */}
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-4">
         <Card data-testid="card-total-products">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Package className="h-8 w-8 text-blue-500" />
-              <span className="text-2xl font-bold">{formatNumber(data?.summary.totalProducts || 0)}</span>
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <Package className="h-5 w-5 md:h-8 md:w-8 text-blue-500" />
+              <span className="text-lg md:text-2xl font-bold mt-1 md:mt-0">{formatNumber(data?.summary.totalProducts || 0)}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:totalProducts')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:totalProducts')}</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-total-units">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Boxes className="h-8 w-8 text-indigo-500" />
-              <span className="text-2xl font-bold">{formatNumber(data?.summary.totalUnits || 0)}</span>
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <Boxes className="h-5 w-5 md:h-8 md:w-8 text-indigo-500" />
+              <span className="text-lg md:text-2xl font-bold mt-1 md:mt-0">{formatNumber(data?.summary.totalUnits || 0)}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:totalUnits')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:totalUnits')}</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-inventory-value">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <DollarSign className="h-8 w-8 text-emerald-500" />
-              <span className="text-xl font-bold">{formatCurrency(data?.summary.totalInventoryValue || 0, 'EUR')}</span>
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <DollarSign className="h-5 w-5 md:h-8 md:w-8 text-emerald-500" />
+              <span className="text-sm md:text-xl font-bold mt-1 md:mt-0">{formatCurrency(data?.summary.totalInventoryValue || 0, 'EUR')}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:inventoryValue')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:inventoryValue')}</p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-healthy-stock" className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <TrendingUp className="h-8 w-8 text-green-500" />
-              <span className="text-2xl font-bold text-green-600">{data?.summary.healthyStock || 0}</span>
+        <Card data-testid="card-healthy-stock" className="border-l-2 md:border-l-4 border-l-green-500">
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <TrendingUp className="h-5 w-5 md:h-8 md:w-8 text-green-500" />
+              <span className="text-lg md:text-2xl font-bold text-green-600 mt-1 md:mt-0">{data?.summary.healthyStock || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:healthyStock')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:healthyStock')}</p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-low-stock" className="border-l-4 border-l-yellow-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <AlertTriangle className="h-8 w-8 text-yellow-500" />
-              <span className="text-2xl font-bold text-yellow-600">{data?.summary.lowStock || 0}</span>
+        <Card data-testid="card-low-stock" className="border-l-2 md:border-l-4 border-l-yellow-500">
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <AlertTriangle className="h-5 w-5 md:h-8 md:w-8 text-yellow-500" />
+              <span className="text-lg md:text-2xl font-bold text-yellow-600 mt-1 md:mt-0">{data?.summary.lowStock || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:lowStock')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:lowStock')}</p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-out-of-stock" className="border-l-4 border-l-red-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <PackageX className="h-8 w-8 text-red-500" />
-              <span className="text-2xl font-bold text-red-600">{data?.summary.outOfStock || 0}</span>
+        <Card data-testid="card-out-of-stock" className="border-l-2 md:border-l-4 border-l-red-500">
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <PackageX className="h-5 w-5 md:h-8 md:w-8 text-red-500" />
+              <span className="text-lg md:text-2xl font-bold text-red-600 mt-1 md:mt-0">{data?.summary.outOfStock || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:outOfStock')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:outOfStock')}</p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-overstocked" className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <TrendingDown className="h-8 w-8 text-blue-500" />
-              <span className="text-2xl font-bold text-blue-600">{data?.summary.overstocked || 0}</span>
+        <Card data-testid="card-overstocked" className="border-l-2 md:border-l-4 border-l-blue-500">
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <TrendingDown className="h-5 w-5 md:h-8 md:w-8 text-blue-500" />
+              <span className="text-lg md:text-2xl font-bold text-blue-600 mt-1 md:mt-0">{data?.summary.overstocked || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:overstocked')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:overstocked')}</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-slow-moving">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Clock className="h-8 w-8 text-orange-500" />
-              <span className="text-2xl font-bold">{data?.summary.slowMoving || 0}</span>
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <Clock className="h-5 w-5 md:h-8 md:w-8 text-orange-500" />
+              <span className="text-lg md:text-2xl font-bold mt-1 md:mt-0">{data?.summary.slowMoving || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:slowMoving')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:slowMoving')}</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-incoming">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Truck className="h-8 w-8 text-purple-500" />
-              <span className="text-2xl font-bold">{data?.summary.incomingShipments || 0}</span>
+          <CardContent className="p-2 md:p-4">
+            <div className="flex flex-col items-center md:flex-row md:justify-between">
+              <Truck className="h-5 w-5 md:h-8 md:w-8 text-purple-500" />
+              <span className="text-lg md:text-2xl font-bold mt-1 md:mt-0">{data?.summary.incomingShipments || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('inventory:incomingShipments')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2 text-center md:text-left truncate">{t('inventory:incomingShipments')}</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Section - Mobile Optimized */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card data-testid="card-stock-distribution">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <PieChart className="h-4 w-4 md:h-5 md:w-5" />
               {t('inventory:stockDistribution')}
             </CardTitle>
-            <CardDescription>{t('inventory:stockDistributionDesc')}</CardDescription>
+            <CardDescription className="text-xs md:text-sm">{t('inventory:stockDistributionDesc')}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2 md:p-6">
             {pieChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={220}>
                 <RechartsPie>
                   <Pie
                     data={pieChartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    innerRadius={40}
+                    outerRadius={70}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
+                    label={false}
                   >
                     {pieChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                 </RechartsPie>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">
                 {t('inventory:noDataAvailable')}
               </div>
             )}
@@ -302,20 +304,20 @@ export default function InventoryDashboard() {
         </Card>
 
         <Card data-testid="card-stock-by-category">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
               {t('inventory:stockByCategory')}
             </CardTitle>
-            <CardDescription>{t('inventory:stockByCategoryDesc')}</CardDescription>
+            <CardDescription className="text-xs md:text-sm">{t('inventory:stockByCategoryDesc')}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2 md:p-6">
             {categoryChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={categoryChartData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => `€${formatNumber(value)}`} />
-                  <YAxis type="category" dataKey="name" width={100} />
+                  <XAxis type="number" tickFormatter={(value) => `€${formatNumber(value)}`} tick={{ fontSize: 10 }} />
+                  <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} />
                   <Tooltip 
                     formatter={(value: number) => [`€${formatNumber(value)}`, t('inventory:value')]}
                   />
@@ -323,7 +325,7 @@ export default function InventoryDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">
                 {t('inventory:noDataAvailable')}
               </div>
             )}
@@ -331,111 +333,113 @@ export default function InventoryDashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Low Stock & Fast Moving - Mobile Optimized */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card data-testid="card-low-stock-alert">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 md:p-6">
             <div>
-              <CardTitle className="flex items-center gap-2 text-yellow-600">
-                <AlertTriangle className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-yellow-600 text-base md:text-lg">
+                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
                 {t('inventory:lowStockAlertTitle')}
               </CardTitle>
-              <CardDescription>{t('inventory:lowStockAlertDesc')}</CardDescription>
+              <CardDescription className="text-xs md:text-sm">{t('inventory:lowStockAlertDesc')}</CardDescription>
             </div>
             <Link href="/inventory">
-              <Button variant="outline" size="sm" data-testid="link-view-all-inventory">
+              <Button variant="outline" size="sm" data-testid="link-view-all-inventory" className="text-xs md:text-sm">
                 {t('common:viewAll')}
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2" />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0">
             {data?.topLowStockProducts && data.topLowStockProducts.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {data.topLowStockProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg" data-testid={`row-low-stock-${product.id}`}>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                  <div key={product.id} className="flex items-center justify-between p-2 md:p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg" data-testid={`row-low-stock-${product.id}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs md:text-sm truncate">{product.name}</p>
+                      <div className="flex items-center gap-1 md:gap-2 mt-1 flex-wrap">
                         {product.sku && (
-                          <Badge variant="outline" className="text-xs">{product.sku}</Badge>
+                          <Badge variant="outline" className="text-[10px] md:text-xs">{product.sku}</Badge>
                         )}
                         {product.categoryName && (
-                          <span className="text-xs text-muted-foreground">{product.categoryName}</span>
+                          <span className="text-[10px] md:text-xs text-muted-foreground truncate">{product.categoryName}</span>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-yellow-600">{product.quantity}</p>
-                      <p className="text-xs text-muted-foreground">{t('inventory:inStockLabel')}</p>
+                    <div className="text-right ml-2">
+                      <p className="text-base md:text-lg font-bold text-yellow-600">{product.quantity}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{t('inventory:inStockLabel')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <TrendingUp className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                <p>{t('inventory:noLowStockProducts')}</p>
+              <div className="text-center py-6 md:py-8 text-muted-foreground">
+                <TrendingUp className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 text-green-500" />
+                <p className="text-sm">{t('inventory:noLowStockProducts')}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         <Card data-testid="card-fast-moving">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600">
-              <TrendingUp className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-green-600 text-base md:text-lg">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5" />
               {t('inventory:fastMovingProducts')}
             </CardTitle>
-            <CardDescription>{t('inventory:fastMovingDesc')}</CardDescription>
+            <CardDescription className="text-xs md:text-sm">{t('inventory:fastMovingDesc')}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0">
             {data?.fastMovingProducts && data.fastMovingProducts.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {data.fastMovingProducts.slice(0, 5).map((product, index) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg" data-testid={`row-fast-moving-${product.id}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-green-600">#{index + 1}</span>
-                      <div>
-                        <p className="font-medium text-sm">{product.name}</p>
+                  <div key={product.id} className="flex items-center justify-between p-2 md:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg" data-testid={`row-fast-moving-${product.id}`}>
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      <span className="text-base md:text-lg font-bold text-green-600">#{index + 1}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs md:text-sm truncate">{product.name}</p>
                         {product.sku && (
-                          <Badge variant="outline" className="text-xs mt-1">{product.sku}</Badge>
+                          <Badge variant="outline" className="text-[10px] md:text-xs mt-1">{product.sku}</Badge>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-green-600">{formatNumber(product.unitsSold)}</p>
-                      <p className="text-xs text-muted-foreground">{t('inventory:unitsSoldLabel')}</p>
+                    <div className="text-right ml-2">
+                      <p className="text-base md:text-lg font-bold text-green-600">{formatNumber(product.unitsSold)}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{t('inventory:unitsSoldLabel')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-2" />
-                <p>{t('inventory:noSalesData')}</p>
+              <div className="text-center py-6 md:py-8 text-muted-foreground">
+                <Package className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2" />
+                <p className="text-sm">{t('inventory:noSalesData')}</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Warehouse Section - Mobile Optimized */}
       {data?.stockByWarehouse && data.stockByWarehouse.length > 0 && (
         <Card data-testid="card-stock-by-warehouse">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Warehouse className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Warehouse className="h-4 w-4 md:h-5 md:w-5" />
               {t('inventory:stockByWarehouse')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CardContent className="p-3 md:p-6 pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {data.stockByWarehouse.map((warehouse) => (
-                <div key={warehouse.id} className="p-4 border rounded-lg" data-testid={`card-warehouse-${warehouse.id}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Warehouse className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-semibold">{warehouse.name}</h3>
+                <div key={warehouse.id} className="p-3 md:p-4 border rounded-lg" data-testid={`card-warehouse-${warehouse.id}`}>
+                  <div className="flex items-center gap-2 mb-2 md:mb-3">
+                    <Warehouse className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm md:text-base truncate">{warehouse.name}</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                     <div>
                       <p className="text-muted-foreground">{t('inventory:products')}</p>
                       <p className="font-bold">{warehouse.productCount}</p>
@@ -446,7 +450,7 @@ export default function InventoryDashboard() {
                     </div>
                     <div className="col-span-2">
                       <p className="text-muted-foreground">{t('inventory:valueLabel')}</p>
-                      <p className="font-bold text-lg">{formatCurrency(warehouse.totalValue, 'EUR')}</p>
+                      <p className="font-bold text-base md:text-lg">{formatCurrency(warehouse.totalValue, 'EUR')}</p>
                     </div>
                   </div>
                 </div>
