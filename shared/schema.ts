@@ -1979,6 +1979,33 @@ export const insertProductVariantSchema = createInsertSchema(
 ).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(
   productTieredPricing,
+  {
+    priceCzk: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    priceEur: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    priceUsd: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    priceVnd: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    priceCny: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+  }
 ).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductBundleSchema = createInsertSchema(
   productBundles,

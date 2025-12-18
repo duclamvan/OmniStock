@@ -5013,12 +5013,14 @@ Important:
   app.post('/api/products/:id/tiered-pricing', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
+      console.log("Creating tiered pricing with body:", req.body);
       const validationResult = insertProductTieredPricingSchema.safeParse({
         ...req.body,
         productId
       });
 
       if (!validationResult.success) {
+        console.log("Tiered pricing validation error:", validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid tiered pricing data",
           errors: validationResult.error.errors
