@@ -1921,27 +1921,27 @@ export default function ProductForm() {
           {/* Product Images Card - Collapsible */}
           <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
             <AccordionItem value="images" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3 text-left">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <ImageIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AccordionTrigger className="px-3 md:px-4 py-2 md:py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center justify-between w-full pr-2 md:pr-4">
+                  <div className="flex items-center gap-2 md:gap-3 text-left">
+                    <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <ImageIcon className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:images.title')}</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:images.uploadMultiple')}</p>
+                      <h3 className="font-semibold text-sm md:text-base text-slate-900 dark:text-slate-100">{t('products:images.title')}</h3>
+                      <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">{t('products:images.uploadMultiple')}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {t('products:images.count', { count: productImages.length })}
+                  <Badge variant="secondary" className="text-[10px] md:text-xs">
+                    {productImages.length}
                   </Badge>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
                 <div className="space-y-4 pt-2">
-                  {/* Image Grid */}
+                  {/* Image Grid - Mobile Optimized */}
                   {productImages.length > 0 && (
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 mb-3">
                       {productImages.map((img, index) => {
                         const config = IMAGE_PURPOSE_CONFIG[img.purpose];
                         const Icon = config.icon;
@@ -2036,8 +2036,8 @@ export default function ProductForm() {
                     </div>
                   )}
 
-                  {/* Upload Options - Now always showing all categories */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {/* Upload Options - Mobile Optimized */}
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2">
                     {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, config]) => {
                       const Icon = config.icon;
                       const categoryCount = productImages.filter(img => img.purpose === key).length;
@@ -2053,19 +2053,19 @@ export default function ProductForm() {
                             data-testid={`input-image-${key}`}
                           />
                           <label htmlFor={`image-upload-${key}`}>
-                            <Card className={`h-28 cursor-pointer hover:shadow-lg transition-all border-2 ${config.color} hover:scale-[1.02] relative overflow-hidden`}>
-                              <CardContent className="p-3 relative z-10 h-full">
-                                <div className="flex flex-col items-center text-center gap-2 h-full justify-center">
-                                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                                    <Icon className="h-5 w-5" />
+                            <Card className={`h-20 sm:h-28 cursor-pointer hover:shadow-lg transition-all border-2 ${config.color} hover:scale-[1.02] relative overflow-hidden`}>
+                              <CardContent className="p-1.5 sm:p-3 relative z-10 h-full">
+                                <div className="flex flex-col items-center text-center gap-0.5 sm:gap-2 h-full justify-center">
+                                  <div className="p-1 sm:p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+                                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </div>
-                                  <div className="font-medium text-xs leading-tight">{config.label}</div>
+                                  <div className="font-medium text-[10px] sm:text-xs leading-tight truncate w-full">{config.label}</div>
                                   {categoryCount > 0 && (
-                                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                                    <Badge variant="secondary" className="text-[8px] sm:text-[10px] py-0 px-1 sm:px-1.5 h-3 sm:h-4">
                                       {categoryCount}
                                     </Badge>
                                   )}
-                                  <Upload className="h-3 w-3 opacity-60" />
+                                  <Upload className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
                                 </div>
                               </CardContent>
                             </Card>
@@ -2076,10 +2076,10 @@ export default function ProductForm() {
                   </div>
 
                   {productImages.length === 0 && (
-                    <div className="text-center py-6 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
-                      <ImageIcon className="h-10 w-10 mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('products:images.noImagesYet')}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('products:images.uploadInstruction')}</p>
+                    <div className="text-center py-4 md:py-6 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+                      <ImageIcon className="h-8 w-8 md:h-10 md:w-10 mx-auto mb-2 text-slate-400" />
+                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-medium">{t('products:images.noImagesYet')}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-500 mt-1">{t('products:images.uploadInstruction')}</p>
                     </div>
                   )}
 
@@ -2096,18 +2096,18 @@ export default function ProductForm() {
           <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
             {/* Basic Information */}
             <AccordionItem value="basic" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
-                    <Box className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <AccordionTrigger className="px-3 md:px-4 py-2 md:py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-2 md:gap-3 text-left">
+                  <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                    <Box className="h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:formSections.basicInfo.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:formSections.basicInfo.description')}</p>
+                    <h3 className="font-semibold text-sm md:text-base text-slate-900 dark:text-slate-100">{t('products:formSections.basicInfo.title')}</h3>
+                    <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">{t('products:formSections.basicInfo.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
                 <div className="space-y-4 pt-2">
                   {/* Product Name & English Name */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2189,18 +2189,18 @@ export default function ProductForm() {
 
             {/* Stock & Inventory */}
             <AccordionItem value="stock" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <BarChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AccordionTrigger className="px-3 md:px-4 py-2 md:py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-2 md:gap-3 text-left">
+                  <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <BarChart className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:formSections.stockInventory.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:formSections.stockInventory.description')}</p>
+                    <h3 className="font-semibold text-sm md:text-base text-slate-900 dark:text-slate-100">{t('products:formSections.stockInventory.title')}</h3>
+                    <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">{t('products:formSections.stockInventory.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
                 <div className="space-y-4 pt-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -4056,22 +4056,22 @@ export default function ProductForm() {
             </div>
           )}
 
-          {/* Bottom Action Bar */}
-          <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t shadow-lg rounded-t-2xl p-4 z-10">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-3">
+          {/* Bottom Action Bar - Mobile Optimized */}
+          <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t shadow-lg rounded-t-xl md:rounded-t-2xl p-3 md:p-4 z-10">
+            <div className="max-w-7xl mx-auto flex flex-row gap-2 md:gap-3">
               <Button 
                 type="submit" 
-                className="flex-1 h-12" 
+                className="flex-1 h-11 md:h-12 text-sm md:text-base" 
                 disabled={isPending}
                 data-testid="button-save-product"
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 mr-1 md:mr-2" />
                 {isPending ? (isEditMode ? t('products:submit.updating') : t('products:submit.creating')) : submitButtonText}
               </Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                className="sm:w-32 h-12" 
+                className="w-24 md:w-32 h-11 md:h-12 text-sm md:text-base" 
                 onClick={() => setLocation('/inventory')}
                 data-testid="button-cancel"
               >
