@@ -394,7 +394,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="space-y-3">
           <div>
             <CardTitle>
               {t('common:productDocuments')}
@@ -408,7 +408,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
           </div>
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
-              <Button type="button" data-testid="button-upload-document">
+              <Button type="button" className="w-full sm:w-auto" data-testid="button-upload-document">
                 <Plus className="h-4 w-4 mr-2" />
                 {t('common:upload')} {t('common:document')}
               </Button>
