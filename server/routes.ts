@@ -3121,6 +3121,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import categories from Excel
+  app.post('/api/categories/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+      if (!rows || rows.length === 0) {
+        return res.status(400).json({ message: 'No data found in file' });
+      }
+
+      let importedCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          const name = row['Name (EN)'] || row['name'] || row['Name'];
+          if (!name) {
+            errors.push(`Row ${i + 2}: Missing category name`);
+            continue;
+          }
+
+          const categoryData: any = {
+            name: String(name).trim(),
+            nameEn: String(name).trim(),
+            nameCz: row['Name (CZ)'] ? String(row['Name (CZ)']).trim() : null,
+            nameVn: row['Name (VN)'] ? String(row['Name (VN)']).trim() : null,
+            description: row['Description'] ? String(row['Description']).trim() : null,
+          };
+
+          await storage.createCategory(categoryData);
+          importedCount++;
+        } catch (err: any) {
+          errors.push(`Row ${i + 2}: ${err.message || 'Unknown error'}`);
+        }
+      }
+
+      // Log activity
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'imported',
+        entityType: 'category',
+        entityId: 'bulk',
+        description: `Imported ${importedCount} categories from Excel`,
+      });
+
+      res.json({ 
+        success: true, 
+        importedCount, 
+        errors: errors.length > 0 ? errors : undefined 
+      });
+    } catch (error) {
+      console.error("Error importing categories:", error);
+      res.status(500).json({ message: "Failed to import categories" });
+    }
+  });
+
   // AI translation for category names
   app.post('/api/categories/translate', isAuthenticated, async (req, res) => {
     try {
@@ -9892,6 +9956,124 @@ Important:
     }
   });
 
+  // Ticket Import endpoint
+  const ticketImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /xlsx|xls/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      if (extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only Excel files (.xlsx, .xls) are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/tickets/import', isAuthenticated, ticketImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedTickets: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          // Map Excel columns to ticket fields
+          const ticketId = row['Ticket ID'] || `TKT-${Date.now()}-${i}`;
+          const title = row['Subject'] || row['Title'] || 'Imported Ticket';
+          const description = row['Description'] || '';
+          const status = row['Status'] || 'open';
+          const priority = row['Priority'] || 'medium';
+          const category = row['Category'] || null;
+          const customerName = row['Customer Name'];
+          const customerEmail = row['Customer Email'];
+          const customerPhone = row['Customer Phone'];
+          const assignedTo = row['Assigned To'] || null;
+          const orderId = row['Related Order'] || null;
+          const dueDate = row['Due Date'] ? new Date(row['Due Date']) : null;
+          const notes = row['Notes'] || null;
+
+          // Find or create customer if name provided
+          let customerId = null;
+          if (customerName) {
+            const customers = await storage.getCustomers();
+            const existingCustomer = customers.find((c: any) => 
+              c.name?.toLowerCase() === customerName.toLowerCase() ||
+              (customerEmail && c.email?.toLowerCase() === customerEmail?.toLowerCase())
+            );
+            
+            if (existingCustomer) {
+              customerId = existingCustomer.id;
+            } else {
+              // Create new customer
+              const newCustomer = await storage.createCustomer({
+                name: customerName,
+                email: customerEmail || null,
+                phone: customerPhone || null,
+                type: 'regular',
+                isActive: true,
+              });
+              customerId = newCustomer.id;
+            }
+          }
+
+          // Create ticket
+          const ticketData = {
+            ticketId,
+            title,
+            description,
+            status,
+            priority,
+            category,
+            customerId,
+            assignedTo,
+            orderId,
+            dueDate,
+            notes,
+          };
+
+          const newTicket = await storage.createTicket(ticketData);
+          importedTickets.push(newTicket);
+        } catch (rowError: any) {
+          errors.push(`Row ${i + 2}: ${rowError.message}`);
+        }
+      }
+
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'import',
+        entityType: 'ticket',
+        entityId: 'bulk',
+        description: `Imported ${importedTickets.length} tickets from Excel`,
+      });
+
+      res.json({
+        success: true,
+        imported: importedTickets.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${importedTickets.length} ticket(s)${errors.length > 0 ? `. ${errors.length} row(s) had errors.` : ''}`
+      });
+    } catch (error: any) {
+      console.error("Error importing tickets:", error);
+      res.status(500).json({ message: error.message || "Failed to import tickets" });
+    }
+  });
+
   app.get('/api/tickets/:id/comments', isAuthenticated, async (req, res) => {
     try {
       const comments = await storage.getTicketComments(req.params.id);
@@ -10880,6 +11062,110 @@ Important:
     }
   });
 
+  // Import services from Excel
+  app.post('/api/services/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+      if (!rows || rows.length === 0) {
+        return res.status(400).json({ message: 'No data found in file' });
+      }
+
+      let importedCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          const serviceName = row['Service Name'] || row['name'] || row['Name'];
+          if (!serviceName) {
+            errors.push(`Row ${i + 2}: Missing service name`);
+            continue;
+          }
+
+          // Find customer by name if provided
+          let customerId: string | null = null;
+          const customerName = row['Customer Name'];
+          if (customerName) {
+            const customers = await storage.getCustomers();
+            const matchedCustomer = customers.find(c => 
+              c.name?.toLowerCase() === String(customerName).toLowerCase().trim()
+            );
+            if (matchedCustomer) {
+              customerId = matchedCustomer.id;
+            }
+          }
+
+          // Parse costs
+          const serviceCost = row['Service Cost'] ? String(row['Service Cost']).replace(/[^0-9.-]/g, '') : '0';
+          const partsCost = row['Parts Cost'] ? String(row['Parts Cost']).replace(/[^0-9.-]/g, '') : '0';
+          const totalCost = (parseFloat(serviceCost) + parseFloat(partsCost)).toFixed(2);
+
+          // Parse date
+          let serviceDate: Date | null = null;
+          if (row['Service Date']) {
+            const parsed = new Date(row['Service Date']);
+            if (!isNaN(parsed.getTime())) {
+              serviceDate = parsed;
+            }
+          }
+
+          // Parse status
+          let status = 'pending';
+          const rowStatus = String(row['Status'] || '').toLowerCase().trim();
+          if (['pending', 'in_progress', 'completed', 'cancelled'].includes(rowStatus)) {
+            status = rowStatus;
+          }
+
+          const serviceData: any = {
+            name: String(serviceName).trim(),
+            description: row['Description'] ? String(row['Description']).trim() : null,
+            customerId: customerId,
+            serviceDate: serviceDate,
+            serviceCost: serviceCost,
+            partsCost: partsCost,
+            totalCost: totalCost,
+            currency: row['Currency'] ? String(row['Currency']).toUpperCase().trim() : 'EUR',
+            status: status,
+            notes: row['Notes'] ? String(row['Notes']).trim() : null,
+          };
+
+          await storage.createService(serviceData);
+          importedCount++;
+        } catch (err: any) {
+          errors.push(`Row ${i + 2}: ${err.message || 'Unknown error'}`);
+        }
+      }
+
+      // Log activity
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'imported',
+        entityType: 'service',
+        entityId: 'bulk',
+        description: `Imported ${importedCount} services from Excel`,
+      });
+
+      res.json({ 
+        success: true, 
+        imported: importedCount, 
+        count: importedCount,
+        errors: errors.length > 0 ? errors : undefined 
+      });
+    } catch (error) {
+      console.error("Error importing services:", error);
+      res.status(500).json({ message: "Failed to import services" });
+    }
+  });
+
   app.get('/api/services/:id/items', isAuthenticated, async (req, res) => {
     try {
       const items = await storage.getServiceItems(req.params.id);
@@ -11424,6 +11710,103 @@ Important:
       }
 
       res.status(500).json({ message: "Failed to delete return" });
+    }
+  });
+
+  // Returns import endpoint
+  const returnImportUpload = multer({
+    storage: multer.memoryStorage(),
+  });
+
+  app.post('/api/returns/import', isAuthenticated, returnImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedReturns: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          const returnId = row['Return ID'] || `RET-${Date.now()}-${i}`;
+          const orderId = row['Order ID'] || null;
+          const customerName = row['Customer Name'] || 'Unknown Customer';
+          const customerEmail = row['Customer Email'] || '';
+          const customerPhone = row['Customer Phone'] || '';
+          const returnDate = row['Return Date'] ? new Date(row['Return Date']) : new Date();
+          const status = row['Status'] || 'awaiting';
+          const returnType = row['Return Type'] || 'refund';
+          const reason = row['Reason'] || '';
+          const refundAmount = parseFloat(row['Refund Amount']) || 0;
+          const currency = row['Currency'] || 'EUR';
+          const itemsRaw = row['Items'] || '';
+
+          let customer = null;
+          if (customerName && customerName !== 'Unknown Customer') {
+            const existingCustomers = await storage.getCustomers();
+            customer = existingCustomers.find(c => 
+              c.name?.toLowerCase() === customerName.toLowerCase() || 
+              c.email?.toLowerCase() === customerEmail.toLowerCase()
+            );
+            
+            if (!customer && customerName) {
+              customer = await storage.createCustomer({
+                name: customerName,
+                email: customerEmail || `${customerName.toLowerCase().replace(/\s+/g, '.')}@imported.local`,
+                phone: customerPhone,
+                isActive: true,
+              });
+            }
+          }
+
+          const returnData = await storage.createReturn({
+            returnId,
+            orderId,
+            customerId: customer?.id,
+            status: ['awaiting', 'processing', 'completed', 'cancelled'].includes(status) ? status : 'awaiting',
+            returnType: ['exchange', 'refund', 'store_credit'].includes(returnType) ? returnType : 'refund',
+            returnDate: returnDate.toISOString(),
+            notes: reason,
+            total: refundAmount,
+            currency,
+            items: [],
+          });
+
+          importedReturns.push(returnData);
+        } catch (rowError: any) {
+          console.error(`Error importing return row ${i + 1}:`, rowError);
+          errors.push(`Row ${i + 1}: ${rowError.message || 'Unknown error'}`);
+        }
+      }
+
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'imported',
+        entityType: 'return',
+        entityId: 'bulk',
+        description: `Imported ${importedReturns.length} returns from Excel`,
+      });
+
+      res.json({
+        imported: importedReturns.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${importedReturns.length} returns${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+      });
+    } catch (error: any) {
+      console.error("Error importing returns:", error);
+      res.status(500).json({ message: error.message || "Failed to import returns" });
     }
   });
 

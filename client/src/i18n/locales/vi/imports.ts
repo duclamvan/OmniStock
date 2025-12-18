@@ -44,6 +44,20 @@ const imports = {
   trackShipments: 'Theo dõi vận chuyển',
   bulkEdit: 'Chỉnh sửa hàng loạt',
   archive: 'Lưu trữ',
+  viewArchive: 'Xem lưu trữ',
+  archivedPurchaseOrders: 'Đơn đặt hàng đã lưu trữ',
+  unarchive: 'Bỏ lưu trữ',
+  archivePurchase: 'Lưu trữ đơn hàng',
+  noArchivedPurchases: 'Không có đơn hàng lưu trữ',
+  noArchivedPurchasesDesc: 'Các đơn đặt hàng đã lưu trữ sẽ xuất hiện ở đây',
+  purchaseArchived: 'Đã lưu trữ đơn hàng',
+  purchaseArchivedSuccess: 'Đơn đặt hàng đã được lưu trữ thành công',
+  purchaseUnarchived: 'Đã bỏ lưu trữ đơn hàng',
+  purchaseUnarchivedSuccess: 'Đơn đặt hàng đã được bỏ lưu trữ thành công',
+  backToPurchaseOrders: 'Quay lại đơn đặt hàng',
+  archived: 'Đã lưu trữ',
+  archiveFailed: 'Không thể lưu trữ đơn đặt hàng',
+  unarchiveFailed: 'Không thể bỏ lưu trữ đơn đặt hàng',
 
   // Views
   kanbanView: 'Xem Kanban',
@@ -408,7 +422,6 @@ const imports = {
   // CreatePurchase - Page Titles
   createPurchase: 'Tạo đơn mua',
   editPurchase: 'Sửa đơn mua',
-  backToPurchaseOrders: 'Quay lại đơn đặt hàng',
   
   // CreatePurchase - Form Sections
   purchaseInformation: 'Thông tin đơn mua',
@@ -1238,7 +1251,6 @@ const imports = {
   partialStatus: 'Một phần',
   completeStatus: 'Hoàn tất',
   damagedStatus: 'Hư hỏng',
-  archived: 'Đã lưu trữ',
   itemsPendingStorage: 'sản phẩm chờ lưu kho',
   itemsCompleted: 'sản phẩm đã hoàn tất',
   archivingSoon: 'sẽ lưu trữ',

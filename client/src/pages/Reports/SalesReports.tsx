@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData, convertToBaseCurrency } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -59,15 +60,33 @@ interface HourOfDaySales {
   orders: number;
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CZK: 'Kč',
+  EUR: '€',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
+
 export default function SalesReports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
+  const { formatCurrency: formatLocalizedCurrency } = useLocalization();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateRange, setDateRange] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
+
+  const formatCompactCurrency = (amount: number, currencyCode: string = 'CZK'): string => {
+    const compactValue = formatCompactNumber(amount);
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    if (currencyCode === 'CZK' || currencyCode === 'VND') {
+      return `${compactValue} ${symbol}`;
+    }
+    return `${symbol}${compactValue}`;
+  };
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ['/api/orders'] });
   const { data: products = [], isLoading: productsLoading } = useQuery({ queryKey: ['/api/products'] });
@@ -532,11 +551,11 @@ export default function SalesReports() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">{t('revenue')}</p>
-            <p className="text-lg font-bold">{formatCompactNumber(metrics.revenue)} Kč</p>
+            <p className="text-lg font-bold">{formatCompactCurrency(metrics.revenue)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('profit')}</p>
-            <p className="text-lg font-bold text-green-600">{formatCompactNumber(metrics.profit)} Kč</p>
+            <p className="text-lg font-bold text-green-600">{formatCompactCurrency(metrics.profit)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('orders')}</p>
@@ -544,7 +563,7 @@ export default function SalesReports() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('avgOrderValue')}</p>
-            <p className="text-base font-semibold">{formatCompactNumber(metrics.avgOrderValue)} Kč</p>
+            <p className="text-base font-semibold">{formatCompactCurrency(metrics.avgOrderValue)}</p>
           </div>
         </div>
         <div className="pt-2 border-t">
@@ -726,11 +745,11 @@ export default function SalesReports() {
                 </div>
                 <div className="pt-4 border-t grid grid-cols-2 gap-4">
                   <div className="text-center p-4 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-green-600">{formatCompactNumber(insights.totalProfit)} Kč</p>
+                    <p className="text-2xl font-bold text-green-600">{formatCompactCurrency(insights.totalProfit)}</p>
                     <p className="text-sm text-muted-foreground">{t('yearlyProfit')}</p>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold">{formatCompactNumber(insights.totalRevenue)} Kč</p>
+                    <p className="text-2xl font-bold">{formatCompactCurrency(insights.totalRevenue)}</p>
                     <p className="text-sm text-muted-foreground">{t('yearlyRevenue')}</p>
                   </div>
                 </div>
@@ -795,8 +814,8 @@ export default function SalesReports() {
                         <TableRow key={product.productId}>
                           <TableCell className="font-medium max-w-[150px] truncate">{product.productName}</TableCell>
                           <TableCell className="text-right">{product.quantity}</TableCell>
-                          <TableCell className="text-right">{formatCompactNumber(product.revenue)} Kč</TableCell>
-                          <TableCell className="text-right text-green-600">{formatCompactNumber(product.profit)} Kč</TableCell>
+                          <TableCell className="text-right">{formatCompactCurrency(product.revenue)}</TableCell>
+                          <TableCell className="text-right text-green-600">{formatCompactCurrency(product.profit)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

@@ -19,9 +19,18 @@ import {
 } from "lucide-react";
 import { aggregateCustomerMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays, subMonths, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CZK: 'Kč',
+  EUR: '€',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
 
 export default function CustomerReports() {
   const { t } = useTranslation('reports');
@@ -29,8 +38,18 @@ export default function CustomerReports() {
   const { t: tCustomers } = useTranslation('customers');
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
+  const { formatCurrency: formatLocalizedCurrency } = useLocalization();
   const { start: startDate, end: endDate } = getDateRangeValues();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const formatCompactCurrency = (amount: number, currencyCode: string = 'CZK'): string => {
+    const compactValue = formatCompactNumber(amount);
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    if (currencyCode === 'CZK' || currencyCode === 'VND') {
+      return `${compactValue} ${symbol}`;
+    }
+    return `${symbol}${compactValue}`;
+  };
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ['/api/orders'] });
   const { data: customers = [], isLoading: customersLoading } = useQuery({ queryKey: ['/api/customers'] });
@@ -285,7 +304,7 @@ export default function CustomerReports() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">{t('totalRevenue')}</p>
-                    <p className="text-2xl font-bold">{formatCompactNumber(metrics.totalRevenue)} Kč</p>
+                    <p className="text-2xl font-bold">{formatCompactCurrency(metrics.totalRevenue)}</p>
                   </div>
                 </div>
               </CardContent>

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText, Trash2, MoreVertical, Download, Upload, RefreshCw } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
@@ -38,6 +38,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -75,6 +84,9 @@ export default function Services() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedServices, setSelectedServices] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -354,26 +366,27 @@ export default function Services() {
     setShowDeleteDialog(false);
   };
 
-  // Export handlers
+  // Comprehensive Export handler
   const handleExportXLSX = () => {
     try {
       const exportData = filteredServices.map(service => ({
-        'Service ID': service.id.substring(0, 8) || '-',
-        'Customer': service.customer?.name || '-',
-        'Description': service.name || '-',
-        'Service Cost': formatCurrency(service.serviceCost),
-        'Parts Cost': formatCurrency(service.partsCost),
-        'Total Cost': formatCurrency(service.totalCost),
-        'Status': service.status === 'pending' ? 'Pending'
-          : service.status === 'in_progress' ? 'In Progress'
-          : service.status === 'completed' ? 'Completed'
-          : service.status === 'cancelled' ? 'Cancelled'
-          : service.status || '-',
+        'Service ID': service.id || '-',
+        'Service Name': service.name || '-',
+        'Description': service.description || '-',
+        'Customer ID': service.customerId || '-',
+        'Customer Name': service.customer?.name || '-',
+        'Service Date': service.serviceDate ? formatDate(service.serviceDate) : '-',
+        'Service Cost': parseFloat(service.serviceCost || '0').toFixed(2),
+        'Parts Cost': parseFloat(service.partsCost || '0').toFixed(2),
+        'Total Cost': parseFloat(service.totalCost || '0').toFixed(2),
+        'Currency': service.currency || 'EUR',
+        'Status': service.status || 'pending',
+        'Notes': service.notes || '-',
         'Created Date': formatDate(service.createdAt),
-        'Completed Date': service.status === 'completed' ? formatDate(service.updatedAt) : '-',
+        'Updated Date': formatDate(service.updatedAt),
       }));
 
-      exportToXLSX(exportData, `Services_${format(new Date(), 'yyyy-MM-dd')}`, 'Services');
+      exportToXLSX(exportData, `Services_Comprehensive_${format(new Date(), 'yyyy-MM-dd')}`, 'Services');
       
       toast({
         title: t('common:exportSuccessful'),
@@ -435,6 +448,107 @@ export default function Services() {
     }
   };
 
+  // Download template for import
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Service Name': 'Sample Service 1',
+        'Description': 'Repair service for electronics',
+        'Customer Name': 'John Doe',
+        'Service Date': format(new Date(), 'yyyy-MM-dd'),
+        'Service Cost': '50.00',
+        'Parts Cost': '25.00',
+        'Currency': 'EUR',
+        'Status': 'pending',
+        'Notes': 'First sample service',
+      },
+      {
+        'Service Name': 'Sample Service 2',
+        'Description': 'Maintenance and inspection',
+        'Customer Name': 'Jane Smith',
+        'Service Date': format(new Date(), 'yyyy-MM-dd'),
+        'Service Cost': '100.00',
+        'Parts Cost': '50.00',
+        'Currency': 'EUR',
+        'Status': 'completed',
+        'Notes': 'Second sample service',
+      },
+    ];
+
+    exportToXLSX(templateData, 'Services_Import_Template', 'Services');
+    
+    toast({
+      title: t('financial:templateDownloaded'),
+      description: t('financial:templateDownloadedDescription'),
+    });
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: t('common:error'),
+          description: t('financial:invalidFileType'),
+          variant: "destructive",
+        });
+        return;
+      }
+      setImportFile(file);
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common:error'),
+        description: t('financial:noFileSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/services/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || t('financial:importFailed'));
+      }
+
+      const result = await response.json();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      
+      toast({
+        title: t('financial:importSuccessful'),
+        description: t('financial:importedServices', { count: result.imported || result.count || 0 }),
+      });
+
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('financial:importFailed'),
+        description: error.message || t('financial:failedToImportServices'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -464,19 +578,23 @@ export default function Services() {
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('common:export')}
+              <Button variant="outline" size="icon" className="h-10 w-10" data-testid="button-more-menu">
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common:exportOptions')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('financial:importExport')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('common:exportAsXLSX')}
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('financial:importFromExcel')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                {t('financial:exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
                 {t('common:exportAsPDF')}
               </DropdownMenuItem>
@@ -935,6 +1053,99 @@ export default function Services() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Services Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('financial:importServices')}</DialogTitle>
+            <DialogDescription>
+              {t('financial:importServicesDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('financial:downloadTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('financial:serviceTemplateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('financial:downloadTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-file">{t('financial:selectFile')}</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-import"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:processing')}
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t('financial:importServices')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

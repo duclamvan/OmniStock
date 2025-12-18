@@ -16,7 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, ListPlus, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, ListPlus, ArrowRight, CheckCircle2, Loader2, MoreVertical, Archive } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -262,6 +263,32 @@ export default function SupplierProcessing() {
       setPurchaseToDelete(null);
     }
   });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (purchaseId: number) => {
+      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}/archive`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      toast({ title: t('purchaseArchived'), description: t('purchaseArchivedSuccess') });
+    },
+    onError: () => {
+      toast({ 
+        title: t('error'), 
+        description: t('archiveFailed'), 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const isArchivable = (purchase: Purchase): boolean => {
+    if (purchase.status !== 'delivered') return false;
+    const deliveredDate = new Date(purchase.updatedAt);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return deliveredDate < sevenDaysAgo;
+  };
 
   const handleDeleteClick = (purchase: Purchase) => {
     setPurchaseToDelete(purchase);
@@ -622,12 +649,29 @@ export default function SupplierProcessing() {
             <h1 className="text-2xl md:text-3xl font-bold">{t('purchaseOrders')}</h1>
             <p className="text-sm md:text-base text-muted-foreground">{t('manageImportPurchases')}</p>
           </div>
-          <Link href="/purchase-orders/create" className="w-full sm:w-auto">
-            <Button data-testid="button-create-purchase" className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('createPurchase')}
-            </Button>
-          </Link>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Link href="/purchase-orders/create" className="flex-1 sm:flex-initial">
+              <Button data-testid="button-create-purchase" className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                {t('createPurchase')}
+              </Button>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-more-options">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <Link href="/purchase-orders/archive">
+                  <DropdownMenuItem data-testid="menu-view-archive">
+                    <Archive className="h-4 w-4 mr-2" />
+                    {t('viewArchive')}
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -1152,6 +1196,28 @@ export default function SupplierProcessing() {
                                 </TooltipTrigger>
                                 <TooltipContent>{t('deletePurchase')}</TooltipContent>
                               </Tooltip>
+                              
+                              {isArchivable(purchase) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => archiveMutation.mutate(purchase.id)}
+                                      disabled={archiveMutation.isPending}
+                                      data-testid={`button-archive-${purchase.id}`}
+                                    >
+                                      {archiveMutation.isPending ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <Archive className="h-3.5 w-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{t('archivePurchase')}</TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </div>
 

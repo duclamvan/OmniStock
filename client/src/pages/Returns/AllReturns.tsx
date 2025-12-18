@@ -6,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { useSettings } from "@/contexts/SettingsContext";
-import { Plus, Package, PackageX, RefreshCw, Search, Eye, Filter, Clock, CheckCircle, MoreVertical, FileDown } from "lucide-react";
+import { Plus, Package, PackageX, RefreshCw, Search, Eye, Filter, Clock, CheckCircle, MoreVertical, FileDown, Download, Check, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import {
@@ -39,6 +40,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function AllReturns() {
   const [, navigate] = useLocation();
@@ -48,6 +57,9 @@ export default function AllReturns() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedReturns, setSelectedReturns] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   const returnTypeDisplayMap = useMemo(() => {
     const types = inventorySettings.returnTypes || [];
@@ -386,6 +398,163 @@ export default function AllReturns() {
     }
   };
 
+  const handleExportComprehensiveXLSX = () => {
+    try {
+      const statusMap: Record<string, string> = {
+        'awaiting': t('inventory:awaiting'),
+        'processing': t('inventory:processing'),
+        'completed': t('inventory:completed'),
+        'cancelled': t('inventory:cancelled'),
+      };
+
+      const typeMap: Record<string, string> = {
+        'exchange': t('inventory:exchange'),
+        'refund': t('inventory:refund'),
+        'store_credit': t('inventory:storeCredit'),
+      };
+
+      const exportData = filteredReturns.map((returnItem: any) => {
+        const items = returnItem.items || [];
+        const itemsString = items.map((item: any) => 
+          `${item.product?.name || item.productName || 'Unknown'} x${item.quantity}`
+        ).join('; ');
+
+        return {
+          [t('inventory:returnId')]: returnItem.returnId || returnItem.id,
+          [t('inventory:orderId')]: returnItem.orderId || '-',
+          [t('inventory:customer')]: returnItem.customer?.name || '-',
+          [t('inventory:customerEmail')]: returnItem.customer?.email || '-',
+          [t('inventory:customerPhone')]: returnItem.customer?.phone || '-',
+          [t('inventory:returnDate')]: returnItem.returnDate ? format(new Date(returnItem.returnDate), 'yyyy-MM-dd') : '-',
+          [t('inventory:status')]: statusMap[returnItem.status] || returnItem.status,
+          [t('inventory:returnType')]: typeMap[returnItem.returnType] || returnItem.returnType,
+          [t('inventory:reason')]: returnItem.notes || '-',
+          [t('inventory:itemsLabel')]: itemsString || '-',
+          [t('inventory:itemsCount')]: items.length,
+          [t('inventory:refundAmount')]: returnItem.total ?? 0,
+          [t('inventory:currency')]: returnItem.currency || 'EUR',
+        };
+      });
+
+      exportToXLSX(exportData, 'returns_export', t('inventory:returnsReport'));
+      
+      toast({
+        title: t('common:success'),
+        description: t('inventory:exportedReturnsToXLSX', { count: exportData.length }),
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: t('common:error'),
+        description: t('inventory:failedToExportReturnsToXLSX'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Return ID': 'RET-001',
+        'Order ID': 'ORD-001',
+        'Customer Name': 'John Doe',
+        'Customer Email': 'john@example.com',
+        'Customer Phone': '+420123456789',
+        'Return Date': '2024-12-18',
+        'Status': 'awaiting',
+        'Return Type': 'refund',
+        'Reason': 'Product damaged during shipping',
+        'Items': 'Product A x2; Product B x1',
+        'Items Count': '3',
+        'Refund Amount': '150.00',
+        'Currency': 'EUR',
+      },
+      {
+        'Return ID': 'RET-002',
+        'Order ID': 'ORD-002',
+        'Customer Name': 'Jane Smith',
+        'Customer Email': 'jane@example.com',
+        'Customer Phone': '+420987654321',
+        'Return Date': '2024-12-19',
+        'Status': 'processing',
+        'Return Type': 'exchange',
+        'Reason': 'Wrong size ordered',
+        'Items': 'Acrylic Powder x1',
+        'Items Count': '1',
+        'Refund Amount': '45.00',
+        'Currency': 'CZK',
+      }
+    ];
+    exportToXLSX(templateData, 'returns_import_template', t('inventory:returnsImportTemplate'));
+    toast({
+      title: t('common:success'),
+      description: t('inventory:templateDownloaded'),
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: t('common:error'),
+          description: t('inventory:invalidReturnFileType'),
+          variant: "destructive",
+        });
+        return;
+      }
+      setImportFile(file);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common:error'),
+        description: t('inventory:noReturnFileSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/returns/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || t('inventory:importReturnsFailed'));
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: t('common:success'),
+        description: t('inventory:importReturnsSuccess', { count: result.imported || 0 }),
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('common:error'),
+        description: error.message || t('inventory:importReturnsFailed'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -412,31 +581,43 @@ export default function AllReturns() {
             {t('inventory:manageProductsDescription')}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2">
+          {/* Import/Export Menu - Three Dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export-returns">
-                <FileDown className="mr-2 h-4 w-4" />
-                {t('inventory:export')}
+              <Button 
+                variant="outline" 
+                size="icon"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('inventory:importExport')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
-                <FileDown className="mr-2 h-4 w-4" />
-                {t('inventory:exportAsXLSX')}
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Download className="h-4 w-4 mr-2" />
+                {t('inventory:importFromExcel')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
-                <FileDown className="mr-2 h-4 w-4" />
-                {t('inventory:exportAsPDF')}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportComprehensiveXLSX} data-testid="menu-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                {t('inventory:exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                {t('inventory:exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/returns/add" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto" data-testid="button-add-return">
-              <Plus className="mr-2 h-4 w-4" />
-              {t('inventory:addReturn')}
+          
+          {/* Add Return Button */}
+          <Link href="/returns/add">
+            <Button data-testid="button-add-return" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('inventory:addReturn')}</span>
+              <span className="inline sm:hidden">{t('common:add')}</span>
             </Button>
           </Link>
         </div>
@@ -787,6 +968,99 @@ export default function AllReturns() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Returns Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('inventory:importReturns')}</DialogTitle>
+            <DialogDescription>
+              {t('inventory:importReturnsDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('inventory:downloadTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('inventory:returnTemplateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('inventory:downloadTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-file">{t('inventory:selectReturnFile')}</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-import"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:processing')}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('inventory:importReturns')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

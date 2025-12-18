@@ -597,6 +597,21 @@ const system = {
   orderLabel: 'order',
   items: 'items',
   fulfillmentActivity: 'Fulfillment Activity',
+
+  // Ticket Import/Export
+  importExport: 'Import / Export',
+  importFromExcel: 'Import from Excel',
+  exportToExcel: 'Export to Excel',
+  exportToPDF: 'Export to PDF',
+  importTickets: 'Import Tickets',
+  importTicketsDescription: 'Upload an Excel file to import tickets. Download the template first to ensure correct format.',
+  downloadTemplateFirst: 'Download the template first',
+  templateDescription: 'Use this template to ensure your data is formatted correctly for import.',
+  templateDownloaded: 'Template downloaded successfully',
+  ticketsImportSuccess: 'Successfully imported {{count}} ticket(s)',
+  noDataToExport: 'No data to export',
+  importTemplate: 'Import Template',
+  processing: 'Processing...',
 } as const;
 
 export default system;

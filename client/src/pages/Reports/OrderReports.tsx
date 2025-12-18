@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -27,13 +28,31 @@ import {
   endOfMonth, eachDayOfInterval, subDays, getDay
 } from "date-fns";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CZK: 'Kč',
+  EUR: '€',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
+
 export default function OrderReports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const { getDateRangeValues } = useReports();
+  const { formatCurrency: formatLocalizedCurrency } = useLocalization();
   const { start: startDate, end: endDate } = getDateRangeValues();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const formatCompactCurrency = (amount: number, currencyCode: string = 'CZK'): string => {
+    const compactValue = formatCompactNumber(amount);
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    if (currencyCode === 'CZK' || currencyCode === 'VND') {
+      return `${compactValue} ${symbol}`;
+    }
+    return `${symbol}${compactValue}`;
+  };
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ['/api/orders'] });
   const now = useMemo(() => new Date(), []);
@@ -345,7 +364,7 @@ export default function OrderReports() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('revenue')}</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCompactNumber(weekMetrics.revenue)} Kč</p>
+                    <p className="text-2xl font-bold text-green-600">{formatCompactCurrency(weekMetrics.revenue)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -369,7 +388,7 @@ export default function OrderReports() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('revenue')}</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCompactNumber(monthMetrics.revenue)} Kč</p>
+                    <p className="text-2xl font-bold text-green-600">{formatCompactCurrency(monthMetrics.revenue)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -462,7 +481,7 @@ export default function OrderReports() {
                         />
                       </div>
                       <span className="w-12 text-sm text-right">{day.orders}</span>
-                      <span className="w-24 text-xs text-right text-muted-foreground">{formatCompactNumber(day.revenue)} Kč</span>
+                      <span className="w-24 text-xs text-right text-muted-foreground">{formatCompactCurrency(day.revenue)}</span>
                     </div>
                   );
                 })}

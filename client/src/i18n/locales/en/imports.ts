@@ -33,6 +33,20 @@ const imports = {
   trackShipments: 'Track Shipments',
   bulkEdit: 'Bulk Edit',
   archive: 'Archive',
+  viewArchive: 'View Archive',
+  archivedPurchaseOrders: 'Archived Purchase Orders',
+  unarchive: 'Unarchive',
+  archivePurchase: 'Archive Purchase',
+  noArchivedPurchases: 'No Archived Purchases',
+  noArchivedPurchasesDesc: 'Archived purchase orders will appear here',
+  purchaseArchived: 'Purchase Archived',
+  purchaseArchivedSuccess: 'Purchase order has been archived successfully',
+  purchaseUnarchived: 'Purchase Unarchived',
+  purchaseUnarchivedSuccess: 'Purchase order has been unarchived successfully',
+  backToPurchaseOrders: 'Back to Purchase Orders',
+  archived: 'Archived',
+  archiveFailed: 'Failed to archive purchase order',
+  unarchiveFailed: 'Failed to unarchive purchase order',
 
   // Views
   kanbanView: 'Kanban View',
@@ -402,7 +416,6 @@ const imports = {
   // CreatePurchase - Page Titles
   createPurchase: 'Create Purchase',
   editPurchase: 'Edit Purchase',
-  backToPurchaseOrders: 'Back to Purchase Orders',
   
   // CreatePurchase - Form Sections
   purchaseInformation: 'Purchase Information',
@@ -1221,7 +1234,6 @@ const imports = {
   partialStatus: 'Partial',
   completeStatus: 'Complete',
   damagedStatus: 'Damaged',
-  archived: 'Archived',
   itemsPendingStorage: 'items pending storage',
   itemsCompleted: 'items completed',
   archivingSoon: 'archiving soon',

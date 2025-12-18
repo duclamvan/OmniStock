@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { convertToBaseCurrency, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -26,14 +27,32 @@ import {
   startOfWeek, endOfWeek, subWeeks
 } from "date-fns";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CZK: 'Kč',
+  EUR: '€',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
+
 export default function ExpenseReports() {
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const { t: tFinancial } = useTranslation('financial');
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
+  const { formatCurrency: formatLocalizedCurrency } = useLocalization();
   const { start: startDate, end: endDate } = getDateRangeValues();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const formatCompactCurrency = (amount: number, currencyCode: string = 'CZK'): string => {
+    const compactValue = formatCompactNumber(amount);
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    if (currencyCode === 'CZK' || currencyCode === 'VND') {
+      return `${compactValue} ${symbol}`;
+    }
+    return `${symbol}${compactValue}`;
+  };
 
   const { data: expenses = [], isLoading: expensesLoading } = useQuery({ queryKey: ['/api/expenses'] });
   const { data: orders = [] } = useQuery({ queryKey: ['/api/orders'] });
@@ -350,7 +369,7 @@ export default function ExpenseReports() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">{t('total')}</p>
-                    <p className="text-2xl font-bold text-red-600">{formatCompactNumber(weekMetrics.total)} Kč</p>
+                    <p className="text-2xl font-bold text-red-600">{formatCompactCurrency(weekMetrics.total)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('expenseCount')}</p>
@@ -374,7 +393,7 @@ export default function ExpenseReports() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">{t('total')}</p>
-                    <p className="text-2xl font-bold text-orange-600">{formatCompactNumber(monthMetrics.total)} Kč</p>
+                    <p className="text-2xl font-bold text-orange-600">{formatCompactCurrency(monthMetrics.total)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('expenseCount')}</p>
@@ -477,7 +496,7 @@ export default function ExpenseReports() {
                         />
                       </div>
                       <span className="w-14 text-sm text-right font-medium">{m.ratio.toFixed(1)}%</span>
-                      <span className="w-24 text-xs text-right text-muted-foreground">{formatCompactNumber(m.expenses)} Kč</span>
+                      <span className="w-24 text-xs text-right text-muted-foreground">{formatCompactCurrency(m.expenses)}</span>
                     </div>
                   );
                 })}

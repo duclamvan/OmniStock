@@ -648,9 +648,12 @@ const financial = {
   importTemplate: 'Mẫu nhập',
   importSuccessful: 'Nhập thành công',
   importedExpenses: 'Đã nhập thành công {count} chi phí',
+  importedServices: 'Đã nhập thành công {{count}} dịch vụ',
   importFailed: 'Nhập thất bại',
   failedToImportExpenses: 'Không thể nhập chi phí. Vui lòng kiểm tra định dạng file và thử lại.',
+  failedToImportServices: 'Không thể nhập dịch vụ. Vui lòng kiểm tra định dạng file và thử lại.',
   noFileSelected: 'Chưa chọn file. Vui lòng chọn file Excel để nhập.',
+  invalidFileType: 'Loại file không hợp lệ. Vui lòng chọn file Excel (.xlsx hoặc .xls).',
 } as const;
 
 export default financial;

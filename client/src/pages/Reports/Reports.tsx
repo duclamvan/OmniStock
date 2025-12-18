@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, formatCompactNumber, convertCurrency, getCurrencySymbol, type Currency } from "@/lib/currencyUtils";
+import { formatCompactNumber, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -45,15 +46,33 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, subDays, subMonths, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CZK: 'Kč',
+  EUR: '€',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
+
 export default function Reports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
+  const { formatCurrency, settings } = useLocalization();
   const [dateRange, setDateRange] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'CZK' | 'EUR' | 'USD'>('CZK');
+
+  const formatCompactCurrency = (amount: number, currencyCode: string): string => {
+    const compactValue = formatCompactNumber(amount);
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    if (currencyCode === 'CZK' || currencyCode === 'VND') {
+      return `${compactValue} ${symbol}`;
+    }
+    return `${symbol}${compactValue}`;
+  };
 
   // Fetch all necessary data
   const { data: products = [] } = useQuery({ queryKey: ['/api/products'] });
@@ -535,7 +554,7 @@ export default function Reports() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue">
-                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.totalRevenue)}
+                          {formatCompactCurrency(financialMetrics.totalRevenue, displayCurrency)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -563,7 +582,7 @@ export default function Reports() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-cost">
-                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.totalCost)}
+                          {formatCompactCurrency(financialMetrics.totalCost, displayCurrency)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -591,7 +610,7 @@ export default function Reports() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financialMetrics.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
-                          {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.profit)}
+                          {formatCompactCurrency(financialMetrics.profit, displayCurrency)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -686,7 +705,7 @@ export default function Reports() {
                     {t('avgOrder')} ({displayCurrency})
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order">
-                    {getCurrencySymbol(displayCurrency)}{formatCompactNumber(financialMetrics.avgOrderValue)}
+                    {formatCompactCurrency(financialMetrics.avgOrderValue, displayCurrency)}
                   </p>
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
@@ -897,7 +916,7 @@ export default function Reports() {
                   {t('stockValue')} ({displayCurrency})
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {getCurrencySymbol(displayCurrency)}{formatCompactNumber(inventoryInsights.totalValue)}
+                  {formatCompactCurrency(inventoryInsights.totalValue, displayCurrency)}
                 </p>
               </div>
             </div>

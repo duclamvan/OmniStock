@@ -295,6 +295,20 @@ const inventory = {
   templateDownloaded: 'Tải mẫu nhập thành công',
   templateDownloadFailed: 'Không thể tải mẫu nhập',
   
+  // Returns Import/Export
+  importReturns: 'Nhập đơn trả hàng',
+  importReturnsDescription: 'Tải lên file Excel để nhập dữ liệu trả hàng. Sử dụng mẫu để đảm bảo định dạng đúng.',
+  returnTemplateDescription: 'Sử dụng mẫu này để định dạng dữ liệu trả hàng đúng cách. Điền vào các cột và tải file lên bên dưới.',
+  importReturnsSuccess: 'Đã nhập thành công {{count}} đơn trả hàng',
+  importReturnsFailed: 'Không thể nhập đơn trả hàng',
+  selectReturnFile: 'Chọn file',
+  noReturnFileSelected: 'Vui lòng chọn file để nhập',
+  invalidReturnFileType: 'Vui lòng chọn file Excel (.xlsx hoặc .xls)',
+  customerEmail: 'Email khách hàng',
+  customerPhone: 'Số điện thoại khách hàng',
+  currency: 'Tiền tệ',
+  returnsImportTemplate: 'Mẫu nhập đơn trả hàng',
+  
   // Over/Under Allocated
   overAllocatedInventory: 'Tồn kho phân bổ vượt mức',
   overAllocatedMessage: '{{count}} {{items}} có số lượng đặt hàng nhiều hơn số lượng khả dụng',
@@ -778,6 +792,24 @@ const inventory = {
   creating: 'Đang tạo...',
   updating: 'Đang cập nhật...',
   englishNameRequired: 'Yêu cầu tên tiếng Anh',
+  
+  // Category Import/Export
+  categoryImportExport: 'Nhập / Xuất',
+  exportCategories: 'Xuất danh mục',
+  exportCategoriesToExcel: 'Xuất ra Excel',
+  importCategories: 'Nhập danh mục',
+  importCategoriesFromExcel: 'Nhập từ Excel',
+  importCategoriesDescription: 'Tải lên file Excel để nhập danh mục. Sử dụng mẫu để đảm bảo định dạng đúng.',
+  downloadCategoryTemplate: 'Tải mẫu',
+  downloadCategoryTemplateFirst: 'Tải mẫu trước',
+  categoryTemplateDescription: 'Sử dụng mẫu này để định dạng dữ liệu danh mục đúng cách. Điền vào các cột và tải file lên bên dưới.',
+  selectCategoryFile: 'Chọn file',
+  categoryExportSuccess: 'Đã xuất {{count}} danh mục ra Excel',
+  categoryExportFailed: 'Không thể xuất danh mục',
+  categoryImportSuccess: 'Đã nhập thành công {{count}} danh mục',
+  categoryImportFailed: 'Không thể nhập danh mục',
+  noCategoryDataToExport: 'Không có dữ liệu danh mục để xuất',
+  importing: 'Đang nhập...',
   
   // Category Messages
   categoryCreatedSuccess: 'Tạo danh mục thành công',

@@ -597,6 +597,21 @@ const system = {
   orderLabel: 'đơn hàng',
   items: 'sản phẩm',
   fulfillmentActivity: 'Hoạt động giao hàng',
+
+  // Ticket Import/Export
+  importExport: 'Nhập / Xuất',
+  importFromExcel: 'Nhập từ Excel',
+  exportToExcel: 'Xuất ra Excel',
+  exportToPDF: 'Xuất ra PDF',
+  importTickets: 'Nhập Phiếu',
+  importTicketsDescription: 'Tải lên tệp Excel để nhập phiếu. Tải mẫu trước để đảm bảo định dạng chính xác.',
+  downloadTemplateFirst: 'Tải mẫu trước',
+  templateDescription: 'Sử dụng mẫu này để đảm bảo dữ liệu của bạn được định dạng chính xác để nhập.',
+  templateDownloaded: 'Đã tải mẫu thành công',
+  ticketsImportSuccess: 'Đã nhập thành công {{count}} phiếu',
+  noDataToExport: 'Không có dữ liệu để xuất',
+  importTemplate: 'Mẫu Nhập',
+  processing: 'Đang xử lý...',
 } as const;
 
 export default system;

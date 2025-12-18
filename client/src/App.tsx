@@ -74,6 +74,7 @@ import Files from "@/pages/Files/Files";
 // Import pages
 import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
 import CreatePurchase from "@/pages/Imports/CreatePurchase";
+import ArchivedPurchaseOrders from "@/pages/Imports/ArchivedPurchaseOrders";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
@@ -338,6 +339,9 @@ function Router() {
         {/* Import Management Routes */}
         <Route path="/imports/kanban">
           {() => <ProtectedRoute requireAdmin><ImportKanbanDashboard /></ProtectedRoute>}
+        </Route>
+        <Route path="/purchase-orders/archive">
+          {() => <ProtectedRoute requireAdmin><ArchivedPurchaseOrders /></ProtectedRoute>}
         </Route>
         <Route path="/purchase-orders/create">
           {() => <ProtectedRoute requireAdmin><CreatePurchase /></ProtectedRoute>}

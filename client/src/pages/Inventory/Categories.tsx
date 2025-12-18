@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { DataTable, DataTableColumn } from '@/components/ui/data-table';
 import { 
   Plus, 
@@ -15,11 +16,33 @@ import {
   Package,
   FolderOpen,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  MoreVertical,
+  Download,
+  FileDown,
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { exportToXLSX } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import {
   AlertDialog,
@@ -55,6 +78,9 @@ export default function Categories() {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Fetch categories with better error handling
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
@@ -119,6 +145,127 @@ export default function Categories() {
   // Handle row click to navigate to filtered products
   const handleRowClick = (category: Category) => {
     setLocation(`/inventory?category=${category.id}`);
+  };
+
+  // Export categories to Excel
+  const handleExportXLSX = () => {
+    if (!categories || categories.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('noCategoryDataToExport'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const exportData = categories.map((category: any) => ({
+        'Name (EN)': category.name || category.nameEn || '',
+        'Name (CZ)': category.nameCz || '',
+        'Name (VN)': category.nameVn || '',
+        'Description': category.description || '',
+        'Product Count': category.productCount || 0,
+        'Created Date': category.created_at ? format(new Date(category.created_at), 'yyyy-MM-dd') : '',
+        'Updated Date': category.updated_at ? format(new Date(category.updated_at), 'yyyy-MM-dd') : '',
+      }));
+
+      exportToXLSX(exportData, `Categories_${format(new Date(), 'yyyy-MM-dd')}`);
+
+      toast({
+        title: t('success'),
+        description: t('categoryExportSuccess', { count: categories.length }),
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: t('error'),
+        description: t('categoryExportFailed'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Download category import template
+  const handleDownloadTemplate = () => {
+    try {
+      const templateData = [
+        {
+          'Name (EN)': 'Electronics',
+          'Name (CZ)': 'Elektronika',
+          'Name (VN)': 'Điện tử',
+          'Description': 'Electronic devices and accessories',
+        },
+        {
+          'Name (EN)': 'Clothing',
+          'Name (CZ)': 'Oblečení',
+          'Name (VN)': 'Quần áo',
+          'Description': 'Fashion and apparel items',
+        },
+      ];
+
+      exportToXLSX(templateData, 'Categories_Import_Template');
+
+      toast({
+        title: t('success'),
+        description: t('templateDownloaded'),
+      });
+    } catch (error) {
+      console.error('Template download error:', error);
+      toast({
+        title: t('error'),
+        description: t('templateDownloadFailed'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle file selection for import
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/categories/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || t('categoryImportFailed'));
+      }
+
+      toast({
+        title: t('success'),
+        description: t('categoryImportSuccess', { count: result.importedCount }),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('error'),
+        description: error.message || t('categoryImportFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const columns: DataTableColumn<Category>[] = [
@@ -275,12 +422,40 @@ export default function Categories() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('categories')}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('manageProductCategories')}</p>
         </div>
-        <Link href="/inventory/categories/add" className="w-full sm:w-auto">
-          <Button data-testid="button-add-category" className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('addCategory')}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Import/Export Menu - LEFT of Add Category */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                data-testid="button-category-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('categoryImportExport')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-categories">
+                <Download className="h-4 w-4 mr-2" />
+                {t('importCategoriesFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-categories">
+                <FileDown className="h-4 w-4 mr-2" />
+                {t('exportCategoriesToExcel')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link href="/inventory/categories/add" className="flex-1 sm:flex-none">
+            <Button data-testid="button-add-category" className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('addCategory')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -507,6 +682,99 @@ export default function Categories() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Categories Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('importCategories')}</DialogTitle>
+            <DialogDescription>
+              {t('importCategoriesDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('downloadCategoryTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('categoryTemplateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-category-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('downloadCategoryTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="category-import-file">{t('selectCategoryFile')}</Label>
+              <Input
+                id="category-import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-category-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-category-import"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-category-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('importing')}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('importCategories')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

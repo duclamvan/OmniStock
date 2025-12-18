@@ -122,6 +122,7 @@ export const importPurchases = pgTable("import_purchases", {
     "1",
   ), // Rate from purchase to payment currency
   status: text("status").notNull().default("pending"), // pending, processing, at_warehouse, shipped, delivered
+  isArchived: boolean("is_archived").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

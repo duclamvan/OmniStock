@@ -193,6 +193,20 @@ const inventory = {
   templateDownloaded: 'Import template downloaded successfully',
   templateDownloadFailed: 'Failed to download template',
   
+  // Returns Import/Export
+  importReturns: 'Import Returns',
+  importReturnsDescription: 'Upload an Excel file to import returns data. Use the template to ensure correct format.',
+  returnTemplateDescription: 'Use this template to format your returns data correctly. Fill in the columns and upload the file below.',
+  importReturnsSuccess: 'Successfully imported {{count}} return(s)',
+  importReturnsFailed: 'Failed to import returns',
+  selectReturnFile: 'Select File',
+  noReturnFileSelected: 'Please select a file to import',
+  invalidReturnFileType: 'Please select an Excel file (.xlsx or .xls)',
+  customerEmail: 'Customer Email',
+  customerPhone: 'Customer Phone',
+  currency: 'Currency',
+  returnsImportTemplate: 'Returns Import Template',
+  
   // Over/Under Allocated
   overAllocatedInventory: 'Over-Allocated Inventory',
   overAllocatedMessage: '{{count}} {{items}} more quantity ordered than available in stock',
@@ -683,6 +697,24 @@ const inventory = {
   creating: 'Creating...',
   updating: 'Updating...',
   englishNameRequired: 'English name is required',
+  
+  // Category Import/Export
+  categoryImportExport: 'Import / Export',
+  exportCategories: 'Export Categories',
+  exportCategoriesToExcel: 'Export to Excel',
+  importCategories: 'Import Categories',
+  importCategoriesFromExcel: 'Import from Excel',
+  importCategoriesDescription: 'Upload an Excel file to import categories. Use the template to ensure correct format.',
+  downloadCategoryTemplate: 'Download Template',
+  downloadCategoryTemplateFirst: 'Download the template first',
+  categoryTemplateDescription: 'Use this template to format your category data correctly. Fill in the columns and upload the file below.',
+  selectCategoryFile: 'Select File',
+  categoryExportSuccess: 'Exported {{count}} categories to Excel',
+  categoryExportFailed: 'Failed to export categories',
+  categoryImportSuccess: 'Successfully imported {{count}} categories',
+  categoryImportFailed: 'Failed to import categories',
+  noCategoryDataToExport: 'No category data to export',
+  importing: 'Importing...',
   
   // Category Messages
   categoryCreatedSuccess: 'Category created successfully',

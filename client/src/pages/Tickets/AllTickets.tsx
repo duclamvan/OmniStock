@@ -30,7 +30,11 @@ import {
   FileDown,
   FileText,
   LayoutGrid,
-  LayoutList
+  LayoutList,
+  Download,
+  Upload,
+  Check,
+  RefreshCw
 } from "lucide-react";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { format } from "date-fns";
@@ -66,6 +70,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export default function AllTickets() {
   const { t } = useTranslation('system');
@@ -76,6 +89,9 @@ export default function AllTickets() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'card' | 'table'>(() => {
@@ -366,26 +382,35 @@ export default function AllTickets() {
     setShowDeleteDialog(false);
   };
 
-  // Export handlers
+  // Export handlers - Comprehensive export with all ticket fields
   const handleExportXLSX = () => {
     try {
+      if (!filteredTickets || filteredTickets.length === 0) {
+        toast({
+          title: t('warning') || 'Warning',
+          description: t('noDataToExport') || 'No data to export',
+          variant: "destructive",
+        });
+        return;
+      }
+
       const exportData = filteredTickets.map(ticket => ({
-        [t('ticketId')]: ticket.ticketId || '-',
-        [t('subject')]: ticket.subject || '-',
-        [t('customer')]: ticket.customerName || '-',
-        [t('priority')]: ticket.priority === 'urgent' ? t('urgent')
-          : ticket.priority === 'high' ? t('high')
-          : ticket.priority === 'normal' ? t('normal')
-          : ticket.priority === 'low' ? t('low')
-          : ticket.priority || '-',
-        [t('status')]: ticket.status === 'open' ? t('open')
-          : ticket.status === 'in_progress' ? t('inProgress')
-          : ticket.status === 'resolved' ? t('resolved')
-          : ticket.status === 'closed' ? t('closed')
-          : ticket.status || '-',
-        [t('category')]: ticket.category || '-',
-        [t('createdDate')]: format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
-        [t('updatedDate')]: format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
+        'Ticket ID': ticket.ticketId || '-',
+        'Subject': ticket.title || '-',
+        'Description': ticket.description || '-',
+        'Status': ticket.status || '-',
+        'Priority': ticket.priority || '-',
+        'Category': ticket.category || '-',
+        'Customer Name': ticket.customer?.name || '-',
+        'Customer Email': ticket.customer?.email || '-',
+        'Customer Phone': ticket.customer?.phone || '-',
+        'Assigned To': ticket.assignedTo || '-',
+        'Related Order': ticket.orderId || '-',
+        'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : '-',
+        'Created Date': ticket.createdAt ? format(new Date(ticket.createdAt), 'yyyy-MM-dd HH:mm') : '-',
+        'Updated Date': ticket.updatedAt ? format(new Date(ticket.updatedAt), 'yyyy-MM-dd HH:mm') : '-',
+        'Resolved Date': ticket.resolvedAt ? format(new Date(ticket.resolvedAt), 'yyyy-MM-dd HH:mm') : '-',
+        'Notes': ticket.notes || '-',
       }));
 
       exportToXLSX(exportData, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`, t('tickets'));
@@ -404,12 +429,127 @@ export default function AllTickets() {
     }
   };
 
+  // Download import template - comprehensive matching export format with 2 sample rows
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Ticket ID': 'TKT-001',
+        'Subject': 'Product inquiry about nail polish set',
+        'Description': 'Customer asking about color options for gel polish set',
+        'Status': 'open',
+        'Priority': 'medium',
+        'Category': 'product_question',
+        'Customer Name': 'Jane Smith',
+        'Customer Email': 'jane@example.com',
+        'Customer Phone': '+420123456789',
+        'Assigned To': 'support@company.com',
+        'Related Order': 'ORD-251218-0001',
+        'Due Date': '2024-12-25',
+        'Notes': 'Customer prefers pink and nude colors',
+      },
+      {
+        'Ticket ID': 'TKT-002',
+        'Subject': 'Shipping delay complaint',
+        'Description': 'Package has not arrived after 10 days. Customer is frustrated.',
+        'Status': 'in_progress',
+        'Priority': 'high',
+        'Category': 'shipping_issue',
+        'Customer Name': 'John Doe',
+        'Customer Email': 'john@example.com',
+        'Customer Phone': '+420987654321',
+        'Assigned To': 'logistics@company.com',
+        'Related Order': 'ORD-251210-0042',
+        'Due Date': '2024-12-20',
+        'Notes': 'Check with carrier PPL for tracking update',
+      }
+    ];
+    exportToXLSX(templateData, 'tickets_import_template', t('importTemplate') || 'Import Template');
+    toast({
+      title: t('success'),
+      description: t('templateDownloaded') || 'Template downloaded successfully',
+    });
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: t('error'),
+          description: t('invalidFileType') || 'Please select an Excel file (.xlsx or .xls)',
+          variant: "destructive",
+        });
+        return;
+      }
+      setImportFile(file);
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('error'),
+        description: t('noFileSelected') || 'No file selected',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/tickets/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || t('importFailed') || 'Import failed');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: t('success'),
+        description: t('ticketsImportSuccess', { count: result.imported || 0 }) || `Successfully imported ${result.imported || 0} ticket(s)`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('error'),
+        description: error.message || t('importFailed') || 'Import failed',
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleExportPDF = () => {
     try {
+      if (!filteredTickets || filteredTickets.length === 0) {
+        toast({
+          title: t('warning') || 'Warning',
+          description: t('noDataToExport') || 'No data to export',
+          variant: "destructive",
+        });
+        return;
+      }
+
       const exportData = filteredTickets.map(ticket => ({
         ticketId: ticket.ticketId || '-',
-        subject: ticket.subject || '-',
-        customer: ticket.customerName || '-',
+        subject: ticket.title || '-',
+        customer: ticket.customer?.name || '-',
         priority: ticket.priority === 'urgent' ? t('urgent')
           : ticket.priority === 'high' ? t('high')
           : ticket.priority === 'normal' ? t('normal')
@@ -421,8 +561,8 @@ export default function AllTickets() {
           : ticket.status === 'closed' ? t('closed')
           : ticket.status || '-',
         category: ticket.category || '-',
-        createdDate: format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
-        updatedDate: format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
+        createdDate: ticket.createdAt ? format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm') : '-',
+        updatedDate: ticket.updatedAt ? format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm') : '-',
       }));
 
       const columns: PDFColumn[] = [
@@ -478,27 +618,38 @@ export default function AllTickets() {
             {t('trackCustomerSupportTickets')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Import/Export Menu - Three Dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('export')}
+              <Button 
+                variant="outline" 
+                size="icon"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('exportOptions')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('importExport') || 'Import / Export'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('exportAsXLSX')}
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('importFromExcel') || 'Import from Excel'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                {t('exportToExcel') || 'Export to Excel'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                {t('exportAsPDF')}
+                {t('exportToPDF') || 'Export to PDF'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          {/* Add Ticket Button */}
           <Link href="/tickets/add">
             <Button className="w-full sm:w-auto" data-testid="button-add-ticket">
               <Plus className="h-4 w-4 mr-2" />
@@ -966,6 +1117,99 @@ export default function AllTickets() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Tickets Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('importTickets') || 'Import Tickets'}</DialogTitle>
+            <DialogDescription>
+              {t('importTicketsDescription') || 'Upload an Excel file to import tickets. Download the template first to ensure correct format.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('downloadTemplateFirst') || 'Download the template first'}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('templateDescription') || 'Use this template to ensure your data is formatted correctly for import.'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('downloadTemplate') || 'Download Template'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-file">{t('selectFile') || 'Select File'}</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-import"
+            >
+              {t('cancel') || 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('processing') || 'Processing...'}
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t('importTickets') || 'Import Tickets'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

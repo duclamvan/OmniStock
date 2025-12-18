@@ -365,10 +365,12 @@ router.get("/suppliers/frequent", async (req: any, res) => {
   }
 });
 
-// Get all import purchases with items (optimized with single query)
+// Get all import purchases with items (optimized with single query) - excludes archived
 router.get("/purchases", async (req, res) => {
   try {
-    const purchaseList = await db.select().from(importPurchases).orderBy(desc(importPurchases.createdAt));
+    const purchaseList = await db.select().from(importPurchases)
+      .where(eq(importPurchases.isArchived, false))
+      .orderBy(desc(importPurchases.createdAt));
     
     if (purchaseList.length === 0) {
       return res.json([]);
@@ -1092,6 +1094,94 @@ router.delete("/purchases/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting purchase:", error);
     res.status(500).json({ message: "Failed to delete purchase" });
+  }
+});
+
+// Get archived purchases
+router.get("/purchases/archived", async (req, res) => {
+  try {
+    const purchaseList = await db.select().from(importPurchases)
+      .where(eq(importPurchases.isArchived, true))
+      .orderBy(desc(importPurchases.createdAt));
+    
+    if (purchaseList.length === 0) {
+      return res.json([]);
+    }
+    
+    // Get all items for all purchases in a single query
+    const purchaseIds = purchaseList.map(p => p.id);
+    const allItems = await db
+      .select()
+      .from(purchaseItems)
+      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+    
+    // Group items by purchaseId in memory
+    const itemsByPurchaseId: Record<number, typeof allItems> = {};
+    for (const item of allItems) {
+      if (!itemsByPurchaseId[item.purchaseId]) {
+        itemsByPurchaseId[item.purchaseId] = [];
+      }
+      itemsByPurchaseId[item.purchaseId].push(item);
+    }
+    
+    // Combine purchases with their items
+    const purchasesWithItems = purchaseList.map(purchase => ({
+      ...purchase,
+      items: itemsByPurchaseId[purchase.id] || [],
+      itemCount: (itemsByPurchaseId[purchase.id] || []).length
+    }));
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(purchasesWithItems, userRole);
+    res.json(filtered);
+  } catch (error) {
+    console.error("Error fetching archived purchases:", error);
+    res.status(500).json({ message: "Failed to fetch archived purchases" });
+  }
+});
+
+// Archive a purchase
+router.patch("/purchases/:id/archive", async (req, res) => {
+  try {
+    const purchaseId = parseInt(req.params.id);
+    
+    const [updated] = await db
+      .update(importPurchases)
+      .set({ isArchived: true, updatedAt: new Date() })
+      .where(eq(importPurchases.id, purchaseId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error archiving purchase:", error);
+    res.status(500).json({ message: "Failed to archive purchase" });
+  }
+});
+
+// Unarchive a purchase
+router.patch("/purchases/:id/unarchive", async (req, res) => {
+  try {
+    const purchaseId = parseInt(req.params.id);
+    
+    const [updated] = await db
+      .update(importPurchases)
+      .set({ isArchived: false, updatedAt: new Date() })
+      .where(eq(importPurchases.id, purchaseId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error unarchiving purchase:", error);
+    res.status(500).json({ message: "Failed to unarchive purchase" });
   }
 });
 

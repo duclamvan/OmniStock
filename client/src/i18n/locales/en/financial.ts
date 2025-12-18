@@ -647,9 +647,12 @@ const financial = {
   importTemplate: 'Import Template',
   importSuccessful: 'Import Successful',
   importedExpenses: 'Successfully imported {count} expense(s)',
+  importedServices: 'Successfully imported {{count}} service(s)',
   importFailed: 'Import Failed',
   failedToImportExpenses: 'Failed to import expenses. Please check the file format and try again.',
+  failedToImportServices: 'Failed to import services. Please check the file format and try again.',
   noFileSelected: 'No file selected. Please select an Excel file to import.',
+  invalidFileType: 'Invalid file type. Please select an Excel file (.xlsx or .xls).',
 } as const;
 
 export default financial;
