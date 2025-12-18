@@ -1128,13 +1128,13 @@ export default function POS() {
                 <p className="text-xs sm:text-sm text-gray-300">{totalItems} items</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Currency Toggle */}
-              <div className="flex bg-white/10 rounded-lg p-0.5 sm:p-1">
+              <div className="flex bg-white/10 rounded-lg">
                 <Button
                   variant={currency === 'EUR' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={cn("h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm rounded-r-none", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('EUR')}
                   data-testid="button-currency-eur"
                 >
@@ -1144,7 +1144,7 @@ export default function POS() {
                 <Button
                   variant={currency === 'CZK' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={cn("h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm rounded-l-none", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('CZK')}
                   data-testid="button-currency-czk"
                 >
@@ -1156,7 +1156,7 @@ export default function POS() {
                   variant="ghost"
                   size="sm"
                   onClick={clearCart}
-                  className="text-red-300 hover:text-red-200 hover:bg-red-500/20 h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
+                  className="text-red-300 hover:text-red-200 hover:bg-red-500/20 h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm"
                   data-testid="button-clear-cart"
                 >
                   <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
