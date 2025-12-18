@@ -2186,7 +2186,10 @@ export default function AddOrder() {
     // Check if this is a service
     if (product.isService) {
       // Always add as a new line (even if service already exists)
-      const servicePrice = parseFloat(product.totalCost || '0');
+      const selectedCurrency = form.watch('currency') || 'EUR';
+      const serviceCurrency = (product.currency || 'EUR') as Currency;
+      const rawServicePrice = parseFloat(product.totalCost || '0');
+      const servicePrice = convertCurrency(rawServicePrice, serviceCurrency, selectedCurrency as Currency);
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         serviceId: product.id,
