@@ -237,6 +237,7 @@ const inventory = {
   proceedWithDeletion: 'Proceed with Deletion',
   cancel: 'Cancel',
   delete: 'Delete',
+  edit: 'Edit',
   viewDetails: 'View Details',
   selected: 'Selected',
   
