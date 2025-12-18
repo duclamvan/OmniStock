@@ -3895,41 +3895,41 @@ export default function AddOrder() {
             {/* Quick Customer Options */}
             {!selectedCustomer && !quickCustomerType && !showNewCustomerForm && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('orders:quickCustomer')}</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <Label className="text-xs sm:text-sm font-medium">{t('orders:quickCustomer')}</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-9 sm:h-8 px-1.5 sm:px-3 border-blue-300 text-blue-700 hover:bg-blue-50 min-w-0"
                     onClick={() => {
                       setShowNewCustomerForm(true);
                       setCustomerSearch("");
                     }}
                     data-testid="button-new-customer"
                   >
-                    <UserPlus className="h-3.5 w-3.5" />
-                    {t('orders:newCustomer')}
+                    <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('orders:newCustomer')}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1.5 text-xs"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-9 sm:h-8 px-1.5 sm:px-3 min-w-0"
                     onClick={() => {
                       setQuickCustomerType('quick');
                       setQuickCustomerName("");
                     }}
                     data-testid="button-quick-temp-customer"
                   >
-                    <User className="h-3.5 w-3.5" />
-                    {t('orders:quickTemp')}
+                    <User className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('orders:quickTemp')}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1.5 text-xs"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-9 sm:h-8 px-1.5 sm:px-3 min-w-0"
                     onClick={() => {
                       setQuickCustomerType('tel');
                       setQuickCustomerName("");
@@ -3938,14 +3938,14 @@ export default function AddOrder() {
                     }}
                     data-testid="button-telephone-customer"
                   >
-                    <Phone className="h-3.5 w-3.5" />
-                    {t('orders:telephoneCustomer')}
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('orders:telephoneCustomer')}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1.5 text-xs"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-9 sm:h-8 px-1.5 sm:px-3 min-w-0"
                     onClick={() => {
                       setQuickCustomerType('msg');
                       setQuickCustomerName("");
@@ -3954,33 +3954,33 @@ export default function AddOrder() {
                     }}
                     data-testid="button-messaging-customer"
                   >
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    {t('orders:messagingCustomer')}
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('orders:messagingCustomer')}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1.5 text-xs"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-9 sm:h-8 px-1.5 sm:px-3 min-w-0"
                     onClick={() => {
                       setQuickCustomerType('custom');
                       setQuickCustomerName("");
                     }}
                     data-testid="button-custom-customer"
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                    {t('orders:customCustomer')}
+                    <Plus className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('orders:customCustomer')}</span>
                   </Button>
                 </div>
-                <Separator className="my-3" />
+                <Separator className="my-2 sm:my-3" />
               </div>
             )}
 
             {/* Quick Customer Forms */}
             {quickCustomerType && !selectedCustomer && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-blue-900 dark:text-blue-300">
+              <div className="p-2.5 sm:p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2.5 sm:space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-medium text-sm sm:text-base text-blue-900 dark:text-blue-300">
                     {quickCustomerType === 'quick' && t('orders:quickCustomerOneTime')}
                     {quickCustomerType === 'tel' && t('orders:telephoneOrder')}
                     {quickCustomerType === 'msg' && t('orders:socialMediaCustomer')}
@@ -3990,6 +3990,7 @@ export default function AddOrder() {
                     type="button"
                     variant="ghost"
                     size="sm"
+                    className="h-8 w-8 p-0 shrink-0"
                     onClick={() => {
                       setQuickCustomerType(null);
                       setQuickCustomerName("");
@@ -4180,14 +4181,14 @@ export default function AddOrder() {
 
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[450px] overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[350px] sm:max-h-[450px] overflow-y-auto z-50">
+                  <div className="p-1.5 sm:p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
                     {t('orders:customersFound', { count: filteredCustomers.length })}
                   </div>
                   {filteredCustomers.map((customer: any) => (
                     <div
                       key={customer.id}
-                      className="p-3 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
+                      className="p-2 sm:p-3 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
@@ -4210,15 +4211,15 @@ export default function AddOrder() {
                         }, 100);
                       }}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         {/* Avatar */}
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-semibold">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs sm:text-sm font-semibold">
                             {customer.profilePictureUrl ? (
                               <img 
                                 src={customer.profilePictureUrl} 
                                 alt={customer.name}
-                                className="w-10 h-10 rounded-full object-cover"
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                               />
                             ) : (
                               customer.name?.charAt(0)?.toUpperCase() || '?'
@@ -4229,27 +4230,27 @@ export default function AddOrder() {
                         {/* Main info */}
                         <div className="flex-1 min-w-0">
                           {/* Name, flag, and badges */}
-                          <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap mb-1">
-                            <span className="flex items-center gap-1.5">
+                          <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5 sm:gap-2 flex-wrap mb-0.5 sm:mb-1">
+                            <span className="flex items-center gap-1 sm:gap-1.5">
                               {customer.country && (
-                                <span className="text-base">{getCountryFlag(customer.country)}</span>
+                                <span className="text-sm sm:text-base">{getCountryFlag(customer.country)}</span>
                               )}
-                              <span className="truncate font-semibold">{customer.name}</span>
+                              <span className="truncate font-semibold text-sm sm:text-base">{customer.name}</span>
                             </span>
                             {customer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 border-yellow-300 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-400">
+                              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-yellow-50 border-yellow-300 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-400">
                                 Pay Later
                               </Badge>
                             )}
                             {customer.type && customer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
+                              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
                                 {customer.type}
                               </Badge>
                             )}
                           </div>
                           
-                          {/* Two-column details */}
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                          {/* Two-column details - stack on mobile */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0 sm:gap-y-0.5 text-[10px] sm:text-xs">
                             {/* Left column */}
                             <div className="space-y-0.5">
                               {/* Company */}
@@ -4331,10 +4332,10 @@ export default function AddOrder() {
 
               {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
-                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
-                  <div>No customers found for "{customerSearch}"</div>
-                  <div className="text-xs mt-1">Try searching by name, email, phone, Facebook name, or paste a Facebook URL</div>
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-3 sm:p-4 text-center text-slate-500 dark:text-slate-400 z-50">
+                  <Search className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-1.5 sm:mb-2 text-slate-400 dark:text-slate-500" />
+                  <div className="text-sm sm:text-base">No customers found for "{customerSearch}"</div>
+                  <div className="text-[10px] sm:text-xs mt-1">Try searching by name, email, phone, Facebook name, or paste a Facebook URL</div>
                   
                   {/* Show Facebook URL detected message */}
                   {extractFacebookId(customerSearch) && (
@@ -4385,20 +4386,20 @@ export default function AddOrder() {
             )}
 
             {selectedCustomer && (
-              <Card className="mt-4 border-2 border-green-500 dark:border-green-600 bg-white dark:bg-slate-800">
-                <CardContent className="p-6">
-                  <div className="flex gap-4">
+              <Card className="mt-3 sm:mt-4 border-2 border-green-500 dark:border-green-600 bg-white dark:bg-slate-800">
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex gap-2.5 sm:gap-4">
                     {/* Avatar Section */}
                     <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white shadow-lg">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white shadow-lg">
                         {selectedCustomer.profilePictureUrl ? (
                           <img 
                             src={selectedCustomer.profilePictureUrl} 
                             alt={selectedCustomer.name}
-                            className="w-16 h-16 rounded-full object-cover"
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
                           />
                         ) : (
-                          <User className="h-8 w-8" />
+                          <User className="h-6 w-6 sm:h-8 sm:w-8" />
                         )}
                       </div>
                     </div>
@@ -4406,19 +4407,19 @@ export default function AddOrder() {
                     {/* Customer Info */}
                     <div className="flex-1 min-w-0">
                       {/* Name and Badges Row */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-0.5 sm:mb-1">
                             {/* Country Flag */}
                             {selectedCustomer.country && (
-                              <span className="text-xl">
+                              <span className="text-base sm:text-xl">
                                 {getCountryFlag(selectedCustomer.country)}
                               </span>
                             )}
-                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                               {selectedCustomer.name}
                             </h3>
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 shrink-0" />
                           </div>
                           
                           {/* Customer Badges - Comprehensive badges like in orders table */}
@@ -4462,22 +4463,22 @@ export default function AddOrder() {
                             setQuickCustomerPhone("");
                             form.setValue('customerId', undefined);
                           }}
-                          className="flex-shrink-0"
+                          className="flex-shrink-0 h-8 px-2 sm:px-3"
                         >
-                          <X className="h-4 w-4 mr-1" />
-                          Change
+                          <X className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Change</span>
                         </Button>
                       </div>
 
                       {/* Contact & Location Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 sm:gap-y-2 mt-2 sm:mt-3">
                         {/* Contact Info */}
                         {selectedCustomer.phone && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                            <Phone className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                            <span>{selectedCustomer.phone}</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                            <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                            <span className="truncate">{selectedCustomer.phone}</span>
                             {selectedCustomer.socialMediaApp && (
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                                 {selectedCustomer.socialMediaApp}
                               </Badge>
                             )}
@@ -4486,9 +4487,9 @@ export default function AddOrder() {
                         
                         {/* Location */}
                         {(selectedCustomer.city || selectedCustomer.country) && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                            <MapPin className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                            <span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                            <span className="truncate">
                               {[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}
                             </span>
                           </div>
@@ -4496,8 +4497,8 @@ export default function AddOrder() {
                         
                         {/* Company */}
                         {selectedCustomer.company && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                            <Building className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                            <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span className="truncate">{selectedCustomer.company}</span>
                           </div>
                         )}
@@ -4505,24 +4506,24 @@ export default function AddOrder() {
 
                       {/* Stats Row - Only show for existing customers with data */}
                       {!selectedCustomer.needsSaving && !selectedCustomer.isTemporary && (
-                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-200 dark:border-gray-700">
                           {selectedCustomer.totalOrders > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <Package className="h-4 w-4 text-green-600 dark:text-green-500" />
-                              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                            <div className="flex items-center gap-1 sm:gap-1.5">
+                              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 dark:text-green-500" />
+                              <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100">
                                 {selectedCustomer.totalOrders}
                               </span>
-                              <span className="text-xs text-slate-500 dark:text-slate-400">orders</span>
+                              <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">orders</span>
                             </div>
                           )}
                           
                           {selectedCustomer.totalSpent && parseFloat(selectedCustomer.totalSpent) > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <TrendingUp className="h-4 w-4 text-green-600" />
-                              <span className="text-sm font-medium text-slate-900">
+                            <div className="flex items-center gap-1 sm:gap-1.5">
+                              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+                              <span className="text-xs sm:text-sm font-medium text-slate-900">
                                 {formatCurrency(parseFloat(selectedCustomer.totalSpent), selectedCustomer.preferredCurrency || 'EUR')}
                               </span>
-                              <span className="text-xs text-slate-500">total</span>
+                              <span className="text-[10px] sm:text-xs text-slate-500 hidden sm:inline">total</span>
                             </div>
                           )}
                         </div>
@@ -4704,45 +4705,60 @@ export default function AddOrder() {
                       return (
                         <div 
                           key={service.id}
-                          className={`flex items-center justify-between p-3 rounded-lg border ${
+                          className={`p-3 rounded-lg border ${
                             isApplied 
                               ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
                               : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                           }`}
                           data-testid={`pending-service-${service.id}`}
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                                {service.name}
-                              </span>
-                              {isApplied && (
-                                <Badge variant="default" className="bg-green-600 dark:bg-green-700 text-white">
-                                  <Check className="h-3 w-3 mr-1" />
-                                  {t('orders:applied')}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 mt-1">
-                              <span>{t('orders:laborFee')}: {formatCurrency(parseFloat(service.serviceCost || '0'), service.currency || 'EUR')}</span>
-                              <span>•</span>
-                              <span>{t('orders:partsCost')}: {formatCurrency(parseFloat(service.partsCost || '0'), service.currency || 'EUR')}</span>
-                              <span>•</span>
-                              <span className="font-medium text-amber-600 dark:text-amber-400">
-                                {t('common:total')}: {formatCurrency(parseFloat(service.totalCost || '0'), service.currency || 'EUR')}
-                              </span>
-                            </div>
-                            {service.description && (
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                                {service.description}
-                              </p>
+                          {/* Service Name & Applied Badge */}
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {service.name}
+                            </span>
+                            {isApplied && (
+                              <Badge variant="default" className="bg-green-600 dark:bg-green-700 text-white shrink-0">
+                                <Check className="h-3 w-3 mr-1" />
+                                {t('orders:applied')}
+                              </Badge>
                             )}
                           </div>
+                          
+                          {/* Cost Breakdown - Grid on mobile */}
+                          <div className="grid grid-cols-3 gap-2 text-sm mb-2">
+                            <div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('orders:laborFee')}</p>
+                              <p className="font-medium text-slate-700 dark:text-slate-300">
+                                {formatCurrency(parseFloat(service.serviceCost || '0'), service.currency || 'EUR')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('orders:partsCost')}</p>
+                              <p className="font-medium text-slate-700 dark:text-slate-300">
+                                {formatCurrency(parseFloat(service.partsCost || '0'), service.currency || 'EUR')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('common:total')}</p>
+                              <p className="font-bold text-amber-600 dark:text-amber-400">
+                                {formatCurrency(parseFloat(service.totalCost || '0'), service.currency || 'EUR')}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {service.description && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 line-clamp-2">
+                              {service.description}
+                            </p>
+                          )}
+                          
+                          {/* Action Button - Full width on mobile */}
                           <Button
                             type="button"
                             variant={isApplied ? "outline" : "default"}
                             size="sm"
-                            className={`ml-3 min-h-[44px] min-w-[100px] ${
+                            className={`w-full h-10 ${
                               isApplied 
                                 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 cursor-default' 
                                 : 'bg-amber-600 hover:bg-amber-700 text-white'
@@ -5247,23 +5263,23 @@ export default function AddOrder() {
 
         {/* Product Selection - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-3 border-b">
+          <CardHeader className="p-2.5 md:p-3 border-b">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Package className="h-4 w-4 text-blue-600" />
               {t('orders:addProducts')}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">{t('orders:searchAddProducts')}</CardDescription>
+            <CardDescription className="text-xs mt-1 hidden sm:block">{t('orders:searchAddProducts')}</CardDescription>
           </CardHeader>
-          <CardContent className="sticky top-0 z-40 p-3 space-y-3 bg-white dark:bg-slate-950 shadow-sm backdrop-blur-sm">
+          <CardContent className="sticky top-0 z-40 p-2.5 md:p-3 space-y-2 md:space-y-3 bg-white dark:bg-slate-950 shadow-sm backdrop-blur-sm">
             <div className="relative product-search-container">
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="product">{t('orders:searchProducts')}</Label>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                <Label htmlFor="product" className="text-sm">{t('orders:searchProducts')}</Label>
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <Button
                     type="button"
                     variant={barcodeScanMode ? "default" : "outline"}
                     size="sm"
-                    className="h-6 text-xs px-2"
+                    className="h-7 md:h-6 text-xs px-2 min-w-[44px]"
                     onClick={() => {
                       setBarcodeScanMode(!barcodeScanMode);
                       toast({
@@ -5275,7 +5291,8 @@ export default function AddOrder() {
                     }}
                   >
                     <Package className="h-3 w-3 mr-1" />
-                    {barcodeScanMode ? t('orders:scanModeOn') : t('orders:scanModeOff')}
+                    <span className="hidden sm:inline">{barcodeScanMode ? t('orders:scanModeOn') : t('orders:scanModeOff')}</span>
+                    <span className="sm:hidden">{barcodeScanMode ? 'ON' : 'OFF'}</span>
                   </Button>
                 </div>
               </div>
@@ -5350,8 +5367,8 @@ export default function AddOrder() {
 
               {/* Real-time dropdown for products - Flat list sorted by relevance */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[70vh] overflow-y-auto z-50">
-                  <div className="px-2 py-1.5 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[60vh] md:max-h-[70vh] overflow-y-auto z-50">
+                  <div className="px-2 py-1 md:py-1.5 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
                     {t('orders:productsFoundCount', { count: filteredProducts.length })}
                   </div>
                   {filteredProducts.map((product: any, index: number) => {
@@ -5366,7 +5383,7 @@ export default function AddOrder() {
                       <button
                         type="button"
                         key={product.id}
-                        className={`w-full p-2 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors text-left ${
+                        className={`w-full p-1.5 md:p-2 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors text-left min-h-[44px] ${
                           isKeyboardSelected ? 'bg-blue-50 dark:bg-blue-950 ring-2 ring-inset ring-blue-500' : 'hover:bg-blue-50 dark:hover:bg-slate-700'
                         } ${
                           isBestMatch ? 'bg-blue-100 dark:bg-blue-950 border-l-2 border-l-blue-500' : ''
@@ -5379,60 +5396,62 @@ export default function AddOrder() {
                         }}
                         data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {/* Product Image */}
+                        <div className="flex items-center justify-between gap-1.5 md:gap-2">
+                          <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
+                            {/* Product Image - Smaller on mobile */}
                             {!isService && !isBundle && (
                               <div className="flex-shrink-0 relative">
                                 {product.image ? (
                                   <img 
                                     src={product.image} 
                                     alt={product.name}
-                                    className="w-10 h-10 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
+                                    className="w-8 h-8 md:w-10 md:h-10 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
-                                    <Package className="h-5 w-5 text-slate-300 dark:text-slate-600" />
+                                  <div className="w-8 h-8 md:w-10 md:h-10 rounded border flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-gray-700">
+                                    <Package className="h-4 w-4 md:h-5 md:w-5 text-slate-300 dark:text-slate-600" />
                                   </div>
                                 )}
                               </div>
                             )}
-                            {/* Service/Bundle Icon */}
+                            {/* Service/Bundle Icon - Smaller on mobile */}
                             {(isService || isBundle) && (
-                              <div className="w-10 h-10 flex-shrink-0 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-gray-700 flex items-center justify-center">
-                                {isService && <Wrench className="h-5 w-5 text-orange-500" />}
-                                {isBundle && <Box className="h-5 w-5 text-purple-500" />}
+                              <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                                {isService && <Wrench className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />}
+                                {isBundle && <Box className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />}
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start gap-1.5 mb-0.5">
-                                <div className="font-medium text-sm text-slate-900 dark:text-slate-100 line-clamp-2 flex-1">{product.name}</div>
+                              <div className="flex items-start gap-1 md:gap-1.5 mb-0.5">
+                                <div className="font-medium text-xs md:text-sm text-slate-900 dark:text-slate-100 line-clamp-1 md:line-clamp-2 flex-1">{product.name}</div>
                               {isBestMatch && (
-                                <Badge variant="default" className="text-[10px] px-1 py-0 bg-blue-600 flex-shrink-0">
+                                <Badge variant="default" className="text-[9px] md:text-[10px] px-1 py-0 bg-blue-600 flex-shrink-0 hidden sm:inline-flex">
                                   {t('orders:best')}
                                 </Badge>
                               )}
                               {isService && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-orange-500 text-orange-600 flex-shrink-0">
-                                  {t('orders:service')}
+                                <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 py-0 border-orange-500 text-orange-600 flex-shrink-0">
+                                  <span className="hidden sm:inline">{t('orders:service')}</span>
+                                  <Wrench className="h-2.5 w-2.5 sm:hidden" />
                                 </Badge>
                               )}
                               {isBundle && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-purple-500 text-purple-600 flex-shrink-0">
-                                  {t('orders:bundle')}
+                                <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 py-0 border-purple-500 text-purple-600 flex-shrink-0">
+                                  <span className="hidden sm:inline">{t('orders:bundle')}</span>
+                                  <Box className="h-2.5 w-2.5 sm:hidden" />
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {hasBulkUnits && `${product.bulkUnitQty} pcs per ${product.bulkUnitName}`}
-                              {!isService && !isBundle && !hasBulkUnits && `SKU: ${product.sku}`}
-                              {isService && product.description && product.description}
-                              {isBundle && product.description && product.description}
+                            <div className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {hasBulkUnits && `${product.bulkUnitQty}/${product.bulkUnitName}`}
+                              {!isService && !isBundle && !hasBulkUnits && <span className="hidden sm:inline">SKU: </span>}{!isService && !isBundle && !hasBulkUnits && product.sku}
+                              {isService && product.description && <span className="line-clamp-1">{product.description}</span>}
+                              {isBundle && product.description && <span className="line-clamp-1">{product.description}</span>}
                             </div>
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0 ml-2">
-                            <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                          <div className="text-right flex-shrink-0 ml-1 md:ml-2">
+                            <div className="font-semibold text-xs md:text-sm text-slate-900 dark:text-slate-100">
                               {isService ? (
                                 formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
                               ) : (
@@ -5459,8 +5478,8 @@ export default function AddOrder() {
                                 const availableStock = Math.max(0, baseStock - inOrder);
                                 const isLow = availableStock <= 0;
                                 return (
-                                  <div className={`text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    Stock: {availableStock}{inOrder > 0 && ` (${inOrder} in order)`}
+                                  <div className={`text-[10px] md:text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    <span className="hidden sm:inline">Stock: </span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}
                                   </div>
                                 );
                               })()
@@ -6222,26 +6241,26 @@ export default function AddOrder() {
                     </CardContent>
                   </Card>
                 ))}
-                {/* Mobile Placeholder cards for available free slots */}
+                {/* Mobile Placeholder cards for available free slots - Compact */}
                 {buyXGetYAllocations.filter(alloc => alloc.remainingFreeSlots > 0).map((alloc) => (
                   <Card key={`mobile-free-slot-${alloc.discountId}`} className="overflow-hidden shadow-sm border-2 border-dashed border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/20">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
+                    <CardContent className="p-2.5">
+                      <div className="flex items-center gap-2.5">
                         <div className="flex-shrink-0">
-                          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded border-2 border-dashed border-green-300 dark:border-green-700 flex items-center justify-center">
-                            <Gift className="h-8 w-8 text-green-500 dark:text-green-400" />
+                          <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded border-2 border-dashed border-green-300 dark:border-green-700 flex items-center justify-center">
+                            <Gift className="h-6 w-6 text-green-500 dark:text-green-400" />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-green-700 dark:text-green-300 text-base">
+                          <h4 className="font-semibold text-green-700 dark:text-green-300 text-sm">
                             {t('orders:freeItemsAvailable', { count: alloc.remainingFreeSlots })}
                           </h4>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            <Badge className="text-[10px] px-1 py-0 h-4 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
                               {alloc.discountName}
                             </Badge>
                           </div>
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          <p className="text-[10px] text-green-600 dark:text-green-400 mt-0.5 line-clamp-1">
                             {t('orders:addProductFromCategory', { category: alloc.categoryName })}
                           </p>
                         </div>
@@ -6250,24 +6269,24 @@ export default function AddOrder() {
                   </Card>
                 ))}
                 
-                {/* Order Summary Section - Mobile */}
-                <div className="md:hidden mt-4 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
-                  <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                {/* Order Summary Section - Mobile - Compact layout */}
+                <div className="md:hidden mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="space-y-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg p-2.5">
                     {/* Subtotal */}
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-600 dark:text-slate-400">{t('orders:subtotalColon')}</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-600 dark:text-slate-400">{t('orders:subtotalColon')}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                         {formatCurrency(totals.subtotal, form.watch('currency'))}
                       </span>
                     </div>
                     
                     {/* Discount - only show if there's a discount */}
                     {(form.watch('discountValue') || 0) > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-green-600 dark:text-green-400">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-green-600 dark:text-green-400">
                           {t('orders:discount')} {form.watch('discountType') === 'rate' ? `(${form.watch('discountValue')}%)` : ''}
                         </span>
-                        <span className="font-medium text-green-600 dark:text-green-400">
+                        <span className="text-sm font-medium text-green-600 dark:text-green-400 tabular-nums">
                           -{formatCurrency(totals.discountAmount, form.watch('currency'))}
                         </span>
                       </div>
@@ -6275,9 +6294,9 @@ export default function AddOrder() {
                     
                     {/* Shipping */}
                     {(form.watch('shippingCost') || 0) > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">{t('orders:shipping')}</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{t('orders:shipping')}</span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                           {formatCurrency(form.watch('shippingCost') || 0, form.watch('currency'))}
                         </span>
                       </div>
@@ -6285,9 +6304,9 @@ export default function AddOrder() {
                     
                     {/* Adjustment - only show if there's an adjustment */}
                     {(form.watch('adjustment') || 0) !== 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">{t('orders:adjustment')}</span>
-                        <span className={`font-medium ${(form.watch('adjustment') || 0) >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-red-600 dark:text-red-400'}`}>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{t('orders:adjustment')}</span>
+                        <span className={`text-sm font-medium tabular-nums ${(form.watch('adjustment') || 0) >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-red-600 dark:text-red-400'}`}>
                           {(form.watch('adjustment') || 0) >= 0 ? '+' : ''}{formatCurrency(form.watch('adjustment') || 0, form.watch('currency'))}
                         </span>
                       </div>
@@ -6295,20 +6314,20 @@ export default function AddOrder() {
                     
                     {/* VAT/Tax - only show if tax invoice is enabled */}
                     {showTaxInvoice && (form.watch('taxRate') || 0) > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">
                           {t('orders:vat')} ({form.watch('taxRate')}%)
                         </span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                           {formatCurrency(totals.tax, form.watch('currency'))}
                         </span>
                       </div>
                     )}
                     
-                    {/* Items Total (before shipping) */}
-                    <div className="flex justify-between items-center pt-3 border-t-2 border-slate-300 dark:border-slate-600">
-                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{t('orders:orderSubtotal')}</span>
-                      <span className="text-xl font-bold text-primary">
+                    {/* Grand Total - Emphasized */}
+                    <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-300 dark:border-slate-600">
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('orders:grandTotal')}</span>
+                      <span className="text-lg font-bold text-primary tabular-nums">
                         {formatCurrency(totals.grandTotal, form.watch('currency'))}
                       </span>
                     </div>
@@ -6340,20 +6359,20 @@ export default function AddOrder() {
 
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-3 border-b">
+          <CardHeader className="p-2.5 sm:p-3 border-b">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <CreditCard className="h-4 w-4 text-blue-600" />
               {t('orders:paymentDetails')}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">{t('orders:configurePricing')}</CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-0.5 sm:mt-1">{t('orders:configurePricing')}</CardDescription>
           </CardHeader>
-          <CardContent className="p-3 space-y-3">
+          <CardContent className="p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
             {/* Shipping & Payment Methods */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div>
-                <Label htmlFor="shippingMethod" className="text-sm">{t('orders:shippingMethod')}</Label>
+                <Label htmlFor="shippingMethod" className="text-xs sm:text-sm">{t('orders:shippingMethod')}</Label>
                 <Select value={watchedShippingMethod} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-10 sm:h-9 text-sm">
                     <SelectValue placeholder={t('orders:selectShipping')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -6366,9 +6385,9 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="paymentMethod" className="text-sm">{t('orders:paymentMethod')}</Label>
+                <Label htmlFor="paymentMethod" className="text-xs sm:text-sm">{t('orders:paymentMethod')}</Label>
                 <Select value={watchedPaymentMethod} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-10 sm:h-9 text-sm">
                     <SelectValue placeholder={t('orders:selectPayment')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -6381,14 +6400,14 @@ export default function AddOrder() {
               </div>
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-2.5 sm:my-4" />
 
             {/* Discount Toggle Button */}
             <div>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
                 onClick={() => {
                   if (showDiscount) {
                     form.setValue('discountType', 'flat');
@@ -6397,9 +6416,9 @@ export default function AddOrder() {
                   setShowDiscount(!showDiscount);
                 }}
               >
-                <Percent className="h-5 w-5 mr-2" />
+                <Percent className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
                 {t('orders:addDiscount')}
-                {showDiscount ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                {showDiscount ? <ChevronUp className="h-4 w-4 ml-1.5 sm:ml-2" /> : <ChevronDown className="h-4 w-4 ml-1.5 sm:ml-2" />}
               </Button>
             </div>
 
@@ -6486,11 +6505,11 @@ export default function AddOrder() {
               )}
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-2.5 sm:my-4" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div>
-                <Label htmlFor="shippingCost" className="text-sm">{t('orders:shippingCost')}</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+              <div className="col-span-2 sm:col-span-1">
+                <Label htmlFor="shippingCost" className="text-xs sm:text-sm">{t('orders:shippingCost')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -6498,16 +6517,15 @@ export default function AddOrder() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === 'Tab') {
                       e.preventDefault();
-                      // Enter/Tab: Submit the order
                       submitButtonRef.current?.click();
                     }
                   }}
-                  className="mt-1"
+                  className="mt-1 h-10 sm:h-9"
                   data-testid="input-shipping-cost"
                 />
                 {/* Quick shipping cost buttons */}
-                <div className="mt-2">
-                  <div className="text-xs text-gray-500 mb-1">{t('orders:quickSelect')}</div>
+                <div className="mt-1.5 sm:mt-2">
+                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">{t('orders:quickSelect')}</div>
                   <div className="flex flex-wrap gap-1">
                     {form.watch('currency') === 'CZK' && [0, 100, 150, 250].map(amount => (
                       <Button
@@ -6515,7 +6533,7 @@ export default function AddOrder() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-xs"
+                        className="h-7 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs min-w-[44px]"
                         onClick={() => form.setValue('shippingCost', amount)}
                       >
                         {amount} CZK
@@ -6527,7 +6545,7 @@ export default function AddOrder() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-xs"
+                        className="h-7 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs min-w-[44px]"
                         onClick={() => form.setValue('shippingCost', amount)}
                       >
                         {amount} EUR
@@ -6538,38 +6556,38 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost" className="text-sm">{t('orders:actualShippingCost')}</Label>
+                <Label htmlFor="actualShippingCost" className="text-xs sm:text-sm">{t('orders:actualShippingCost')}</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...form.register('actualShippingCost', { valueAsNumber: true })}
-                  className="mt-1"
+                  className="mt-1 h-10 sm:h-9"
                   data-testid="input-actual-shipping-cost"
                 />
-                <p className="text-xs text-gray-500 mt-1">{t('orders:realCostFromCarrier')}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">{t('orders:realCostFromCarrier')}</p>
               </div>
 
               <div>
-                <Label htmlFor="adjustment" className="text-sm">{t('orders:adjustment')}</Label>
+                <Label htmlFor="adjustment" className="text-xs sm:text-sm">{t('orders:adjustment')}</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...form.register('adjustment', { valueAsNumber: true })}
-                  className="mt-1"
+                  className="mt-1 h-10 sm:h-9"
                   data-testid="input-adjustment"
                 />
-                <p className="text-xs text-gray-500 mt-1">{t('orders:roundingOrOtherAdjustments')}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">{t('orders:roundingOrOtherAdjustments')}</p>
               </div>
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-2.5 sm:my-4" />
 
             {/* Dobírka (COD) Section - Only show for PPL CZ/DHL DE + COD (support both old and new carrier names) */}
             {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'PPL CZ' || form.watch('shippingMethod') === 'DHL' || form.watch('shippingMethod') === 'DHL DE') && form.watch('paymentMethod') === 'COD' && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div>
-                    <Label htmlFor="codAmount">
+                    <Label htmlFor="codAmount" className="text-xs sm:text-sm">
                       {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
@@ -6578,19 +6596,19 @@ export default function AddOrder() {
                       min="0"
                       placeholder="0.00"
                       {...form.register('codAmount', { valueAsNumber: true })}
-                      className="mt-1"
+                      className="mt-1 h-10 sm:h-9"
                       data-testid="input-dobirka-amount"
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:cashOnDeliveryOptional')}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">{t('orders:cashOnDeliveryOptional')}</p>
                   </div>
 
                   <div>
-                    <Label htmlFor="codCurrency">{t('orders:codCurrency')}</Label>
+                    <Label htmlFor="codCurrency" className="text-xs sm:text-sm">{t('orders:codCurrency')}</Label>
                     <Select 
                       value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
-                      <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
+                      <SelectTrigger className="mt-1 h-10 sm:h-9" data-testid="select-dobirka-currency">
                         <SelectValue placeholder={t('orders:selectCurrency')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -6599,58 +6617,60 @@ export default function AddOrder() {
                         <SelectItem value="USD">USD</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:currencyForCod')}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">{t('orders:currencyForCod')}</p>
                   </div>
                 </div>
 
-                <Separator className="my-4" />
+                <Separator className="my-2.5 sm:my-4" />
               </>
             )}
 
             <div>
-              <Label htmlFor="notes">{t('orders:notes')}</Label>
+              <Label htmlFor="notes" className="text-xs sm:text-sm">{t('orders:notes')}</Label>
               <Textarea
                 {...form.register('notes')}
                 placeholder={t('orders:additionalOrderNotes')}
+                className="mt-1 min-h-[80px] sm:min-h-[100px] text-sm"
               />
             </div>
 
             {/* Tax Invoice Toggle Button */}
-            <div className="pt-4 border-t dark:border-gray-700">
+            <div className="pt-3 sm:pt-4 border-t dark:border-gray-700">
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base border-2 border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all duration-300"
                 onClick={() => {
                   setShowTaxInvoice(!showTaxInvoice);
                   form.setValue('taxInvoiceEnabled', !showTaxInvoice);
                 }}
               >
-                <Plus className="h-5 w-5 mr-2" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
                 {t('orders:addTaxInvoiceSection')}
-                {showTaxInvoice ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                {showTaxInvoice ? <ChevronUp className="h-4 w-4 ml-1.5 sm:ml-2" /> : <ChevronDown className="h-4 w-4 ml-1.5 sm:ml-2" />}
               </Button>
             </div>
 
             {/* Tax Invoice Section with smooth transition */}
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showTaxInvoice ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              showTaxInvoice ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
             }`}>
               {showTaxInvoice && (
-                <div className="mt-4 p-4 border-2 border-blue-100 dark:border-blue-800 rounded-lg bg-blue-50/30 dark:bg-blue-950/30 space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
+                <div className="mt-3 sm:mt-4 p-2.5 sm:p-4 border-2 border-blue-100 dark:border-blue-800 rounded-lg bg-blue-50/30 dark:bg-blue-950/30 space-y-3 sm:space-y-4">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-4">
                     <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">{t('orders:taxInvoiceInformation')}</h3>
+                    <h3 className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-300">{t('orders:taxInvoiceInformation')}</h3>
                   </div>
 
                   {form.watch('currency') === 'CZK' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
                       <div className="relative">
-                        <Label htmlFor="ico">IČO</Label>
+                        <Label htmlFor="ico" className="text-xs sm:text-sm">IČO</Label>
                         <div className="relative">
                           <Input
                             {...form.register('ico')}
                             placeholder={t('orders:companyIdentificationNumber')}
+                            className="h-10 sm:h-9 text-sm pr-9"
                           />
                           <Button
                             type="button"
@@ -6665,11 +6685,12 @@ export default function AddOrder() {
                       </div>
 
                       <div className="relative">
-                        <Label htmlFor="dic">DIČ</Label>
+                        <Label htmlFor="dic" className="text-xs sm:text-sm">DIČ</Label>
                         <div className="relative">
                           <Input
                             {...form.register('dic')}
                             placeholder={t('orders:taxIdentificationNumber')}
+                            className="h-10 sm:h-9 text-sm pr-9"
                           />
                           <Button
                             type="button"
@@ -6683,13 +6704,14 @@ export default function AddOrder() {
                         </div>
                       </div>
 
-                      <div className="sm:col-span-2 relative">
-                        <Label htmlFor="nameAndAddress">{t('orders:nameAndAddress')}</Label>
+                      <div className="col-span-2 relative">
+                        <Label htmlFor="nameAndAddress" className="text-xs sm:text-sm">{t('orders:nameAndAddress')}</Label>
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
                             placeholder={t('orders:companyNameAndAddress')}
-                            rows={3}
+                            rows={2}
+                            className="min-h-[60px] sm:min-h-[80px] text-sm pr-9"
                           />
                           <Button
                             type="button"
@@ -6704,26 +6726,28 @@ export default function AddOrder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                        <Label htmlFor="taxRate" className="text-xs sm:text-sm">Tax Rate (%)</Label>
                         <Input
                           type="number"
                           step="0.01"
                           max="100"
                           {...form.register('taxRate', { valueAsNumber: true })}
                           placeholder="21"
+                          className="h-10 sm:h-9 text-sm"
                         />
                       </div>
                     </div>
                   )}
 
                   {form.watch('currency') === 'EUR' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
                       <div className="relative">
-                        <Label htmlFor="vatId">VAT ID (optional)</Label>
+                        <Label htmlFor="vatId" className="text-xs sm:text-sm">VAT ID (optional)</Label>
                         <div className="relative">
                           <Input
                             {...form.register('vatId')}
                             placeholder={t('orders:euVatIdNumber')}
+                            className="h-10 sm:h-9 text-sm pr-9"
                           />
                           <Button
                             type="button"
@@ -6738,11 +6762,12 @@ export default function AddOrder() {
                       </div>
 
                       <div className="relative">
-                        <Label htmlFor="country">Country</Label>
+                        <Label htmlFor="country" className="text-xs sm:text-sm">Country</Label>
                         <div className="relative">
                           <Input
                             {...form.register('country')}
                             placeholder={t('orders:countryName')}
+                            className="h-10 sm:h-9 text-sm pr-9"
                           />
                           <Button
                             type="button"
@@ -7318,13 +7343,13 @@ export default function AddOrder() {
                       </Accordion>
                     )}
 
-                    <div className="pt-3 space-y-2">
+                    <div className="pt-2 sm:pt-3 space-y-2">
                       {orderId ? (
                         hasChangesAfterSave ? (
                           <>
                             <Button 
                               type="submit" 
-                              className="w-full relative transition-all duration-200 ease-out" 
+                              className="w-full relative transition-all duration-200 ease-out min-h-[44px] text-sm sm:text-base" 
                               size="lg"
                               disabled={createOrderMutation.isPending}
                               data-testid="button-update-order"
@@ -7347,7 +7372,7 @@ export default function AddOrder() {
                             <Button 
                               type="button" 
                               variant="outline" 
-                              className="w-full" 
+                              className="w-full min-h-[44px] text-sm sm:text-base" 
                               onClick={() => setLocation(`/orders/${orderId}`)}
                             >
                               {t('orders:cancelChanges')}
@@ -7357,7 +7382,7 @@ export default function AddOrder() {
                           <>
                             <Button 
                               type="button" 
-                              className="w-full transition-all duration-200 ease-out" 
+                              className="w-full transition-all duration-200 ease-out min-h-[44px] text-sm sm:text-base" 
                               size="lg" 
                               onClick={() => setLocation(`/orders/${orderId}`)}
                             >
@@ -7367,7 +7392,7 @@ export default function AddOrder() {
                             <Button 
                               type="button" 
                               variant="outline" 
-                              className="w-full" 
+                              className="w-full min-h-[44px] text-sm sm:text-base" 
                               onClick={() => setLocation('/orders')}
                             >
                               {t('orders:backToOrders')}
@@ -7376,7 +7401,7 @@ export default function AddOrder() {
                         )
                       ) : (
                         <>
-                          <Button ref={submitButtonRef} type="submit" className="w-full transition-all duration-200 ease-out" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
+                          <Button ref={submitButtonRef} type="submit" className="w-full transition-all duration-200 ease-out min-h-[44px] text-sm sm:text-base" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
                             {createOrderMutation.isPending ? (
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             ) : (
@@ -7384,7 +7409,7 @@ export default function AddOrder() {
                             )}
                             {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                           </Button>
-                          <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
+                          <Button type="button" variant="outline" className="w-full min-h-[44px] text-sm sm:text-base" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
                             <Save className="h-4 w-4 mr-2" />
                             {t('orders:saveDraft')}
                           </Button>
@@ -7401,13 +7426,13 @@ export default function AddOrder() {
 
           {/* Mobile Order Summary (bottom on mobile) */}
           <Card className="lg:hidden shadow-sm">
-            <CardHeader className="p-3 border-b">
+            <CardHeader className="p-2.5 border-b">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
                 {t('orders:orderSummary')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 space-y-3">
+            <CardContent className="p-2.5 space-y-2.5">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('orders:subtotalColon')}</span>
@@ -7591,21 +7616,21 @@ export default function AddOrder() {
                 ) : null;
               })()}
 
-              <div className="pt-3 space-y-2">
+              <div className="pt-2 space-y-2">
                 {orderId ? (
                   hasChangesAfterSave ? (
                     <>
                       <Button 
                         type="submit" 
-                        className="w-full relative transition-all duration-200 ease-out" 
+                        className="w-full relative transition-all duration-200 ease-out min-h-[48px] text-base font-medium" 
                         size="lg"
                         disabled={createOrderMutation.isPending}
                         data-testid="button-update-order-mobile"
                       >
                         {createOrderMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4 mr-2" />
+                          <Save className="h-5 w-5 mr-2" />
                         )}
                         <span className="transition-opacity duration-150">
                           {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
@@ -7620,7 +7645,7 @@ export default function AddOrder() {
                       <Button 
                         type="button" 
                         variant="outline" 
-                        className="w-full" 
+                        className="w-full min-h-[44px] text-sm" 
                         onClick={() => setLocation(`/orders/${orderId}`)}
                       >
                         {t('orders:cancelChanges')}
@@ -7630,17 +7655,17 @@ export default function AddOrder() {
                     <>
                       <Button 
                         type="button" 
-                        className="w-full transition-all duration-200 ease-out" 
+                        className="w-full transition-all duration-200 ease-out min-h-[48px] text-base font-medium" 
                         size="lg" 
                         onClick={() => setLocation(`/orders/${orderId}`)}
                       >
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-5 w-5 mr-2" />
                         {t('orders:viewOrder')}
                       </Button>
                       <Button 
                         type="button" 
                         variant="outline" 
-                        className="w-full" 
+                        className="w-full min-h-[44px] text-sm" 
                         onClick={() => setLocation('/orders')}
                       >
                         {t('orders:backToOrders')}
@@ -7649,15 +7674,15 @@ export default function AddOrder() {
                   )
                 ) : (
                   <>
-                    <Button type="submit" className="w-full transition-all duration-200 ease-out" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
+                    <Button type="submit" className="w-full transition-all duration-200 ease-out min-h-[48px] text-base font-medium" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
                       {createOrderMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       ) : (
-                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        <ShoppingCart className="h-5 w-5 mr-2" />
                       )}
                       {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                     </Button>
-                    <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
+                    <Button type="button" variant="outline" className="w-full min-h-[44px] text-sm" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
                       <Save className="h-4 w-4 mr-2" />
                       {t('orders:saveDraft')}
                     </Button>
@@ -7669,22 +7694,22 @@ export default function AddOrder() {
         </div>
         </form>
         
-        {/* Variant Selector Dialog */}
+        {/* Variant Selector Dialog - Mobile Optimized */}
         <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('orders:selectProductVariants')}</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-2xl w-[95vw] md:w-full max-h-[90vh] overflow-hidden flex flex-col p-3 md:p-6">
+            <DialogHeader className="pb-2 md:pb-4">
+              <DialogTitle className="text-base md:text-lg">{t('orders:selectProductVariants')}</DialogTitle>
+              <DialogDescription className="text-xs md:text-sm line-clamp-1">
                 {t('orders:chooseVariantsFor')} <span className="font-semibold">{selectedProductForVariant?.name}</span>
               </DialogDescription>
             </DialogHeader>
             
             {/* Quick variant input */}
-            <div className="space-y-2">
-              <Label htmlFor="quick-variant-input" className="text-sm font-medium">
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="quick-variant-input" className="text-xs md:text-sm font-medium">
                 {t('orders:quickVariantEntry')}
               </Label>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 md:gap-2">
                 <Input
                   id="quick-variant-input"
                   value={quickVariantInput}
@@ -7696,96 +7721,102 @@ export default function AddOrder() {
                     }
                   }}
                   placeholder={t('orders:quickVariantPlaceholder')}
-                  className="flex-1 font-mono text-sm"
+                  className="flex-1 font-mono text-xs md:text-sm h-9 md:h-10"
                   data-testid="input-quick-variant"
                 />
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
+                  className="h-9 md:h-10 px-2.5 md:px-3 min-w-[44px]"
                   onClick={() => parseQuickVariantInput(quickVariantInput)}
                   data-testid="button-apply-quick-variant"
                 >
-                  {t('orders:apply')}
+                  <span className="hidden sm:inline">{t('orders:apply')}</span>
+                  <Check className="h-4 w-4 sm:hidden" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">
                 {t('orders:quickVariantHint')}
               </p>
             </div>
             
-            {/* Header row */}
-            <div className="grid grid-cols-[1fr_80px_70px_100px] gap-2 px-3 py-2 bg-muted/50 rounded-t-md text-sm font-medium border-b">
+            {/* Header row - Responsive grid */}
+            <div className="grid grid-cols-[1fr_50px_60px] md:grid-cols-[1fr_80px_70px_100px] gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted/50 rounded-t-md text-xs md:text-sm font-medium border-b mt-2">
               <div>{t('orders:variantName')}</div>
-              <div className="text-right">{t('orders:price')}</div>
-              <div className="text-right">{t('orders:stock')}</div>
+              <div className="text-right hidden md:block">{t('orders:price')}</div>
+              <div className="text-center md:text-right">{t('orders:stock')}</div>
               <div className="text-right">{t('orders:quantity')}</div>
             </div>
             
             {/* Virtualized variant list for performance with 300+ items */}
-            <List
-              height={Math.min(400, productVariants.length * 44)}
-              itemCount={productVariants.length}
-              itemSize={44}
-              width="100%"
-              className="border rounded-b-md"
-            >
-              {({ index, style }) => {
-                const variant = productVariants[index];
-                return (
-                  <div 
-                    style={style} 
-                    className="grid grid-cols-[1fr_80px_70px_100px] gap-2 px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
-                  >
-                    <div className="font-medium truncate" title={variant.name}>{variant.name}</div>
-                    <div className="text-right text-sm">{selectedProductForVariant?.priceCzk ? `${selectedProductForVariant.priceCzk} Kč` : (selectedProductForVariant?.priceEur ? `${selectedProductForVariant.priceEur} €` : '-')}</div>
-                    <div className="text-right">
-                      <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-xs">
-                        {variant.quantity}
-                      </Badge>
-                    </div>
-                    <div>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={variantQuantities[variant.id] || 0}
-                        onChange={(e) => setVariantQuantities(prev => ({
-                          ...prev,
-                          [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
-                        }))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const isLastVariant = index === productVariants.length - 1;
-                            if (isLastVariant) {
-                              addVariantsToOrder();
-                            } else {
-                              const nextVariant = productVariants[index + 1];
-                              const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
-                              nextInput?.focus();
-                              nextInput?.select();
+            <div className="flex-1 overflow-hidden min-h-0">
+              <List
+                height={Math.min(300, productVariants.length * 44)}
+                itemCount={productVariants.length}
+                itemSize={44}
+                width="100%"
+                className="border rounded-b-md"
+              >
+                {({ index, style }) => {
+                  const variant = productVariants[index];
+                  return (
+                    <div 
+                      style={style} 
+                      className="grid grid-cols-[1fr_50px_60px] md:grid-cols-[1fr_80px_70px_100px] gap-1.5 md:gap-2 px-2 md:px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
+                    >
+                      <div className="font-medium truncate text-xs md:text-sm" title={variant.name}>{variant.name}</div>
+                      <div className="text-right text-xs md:text-sm hidden md:block">{selectedProductForVariant?.priceCzk ? `${selectedProductForVariant.priceCzk} Kč` : (selectedProductForVariant?.priceEur ? `${selectedProductForVariant.priceEur} €` : '-')}</div>
+                      <div className="text-center md:text-right">
+                        <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-[10px] md:text-xs px-1.5">
+                          {variant.quantity}
+                        </Badge>
+                      </div>
+                      <div>
+                        <Input
+                          type="number"
+                          min="0"
+                          inputMode="numeric"
+                          value={variantQuantities[variant.id] || 0}
+                          onChange={(e) => setVariantQuantities(prev => ({
+                            ...prev,
+                            [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
+                          }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const isLastVariant = index === productVariants.length - 1;
+                              if (isLastVariant) {
+                                addVariantsToOrder();
+                              } else {
+                                const nextVariant = productVariants[index + 1];
+                                const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
+                                nextInput?.focus();
+                                nextInput?.select();
+                              }
                             }
-                          }
-                        }}
-                        className="text-right h-8 text-sm"
-                        data-testid={`input-variant-quantity-${variant.id}`}
-                      />
+                          }}
+                          className="text-right h-8 text-xs md:text-sm"
+                          data-testid={`input-variant-quantity-${variant.id}`}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              }}
-            </List>
+                  );
+                }}
+              </List>
+            </div>
             
             {/* Show count for large lists */}
             {productVariants.length > 20 && (
-              <p className="text-xs text-muted-foreground mt-2 text-center">
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-1.5 md:mt-2 text-center">
                 {t('orders:showingVariants', { count: productVariants.length })}
               </p>
             )}
-            <DialogFooter className="flex gap-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2 md:pt-4">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto min-h-[44px]"
                 onClick={() => {
                   setShowVariantDialog(false);
                   setSelectedProductForVariant(null);
@@ -7798,6 +7829,7 @@ export default function AddOrder() {
               </Button>
               <Button
                 type="button"
+                className="w-full sm:w-auto min-h-[44px]"
                 onClick={addVariantsToOrder}
                 data-testid="button-add-variants"
               >
