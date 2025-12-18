@@ -1259,23 +1259,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+      {/* Header Section - Compact on mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
             {getPageTitle()}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-base text-slate-600 dark:text-slate-400 hidden sm:block">
             {t('orders:trackAndManageOrders')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {/* Import/Export Menu - Three Dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
                 size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10"
                 data-testid="button-import-export-menu"
               >
                 <MoreVertical className="h-4 w-4" />
@@ -1300,67 +1301,52 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Add Order Button - Always Visible */}
+          {/* Add Order Button */}
           <Link href="/orders/add">
-            <Button data-testid="button-add-order" className="flex items-center gap-2">
+            <Button data-testid="button-add-order" className="h-9 sm:h-10 px-3 sm:px-4">
               <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline sm:inline">{t('orders:addOrder')}</span>
-              <span className="inline xs:hidden sm:hidden">{t('common:add')}</span>
+              <span className="hidden sm:inline ml-2">{t('orders:addOrder')}</span>
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Overview (only show for to_fulfill) */}
+      {/* Stats Overview (only show for to_fulfill) - Compact on mobile */}
       {statistics && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3 md:gap-4">
           {/* Total Orders */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
-              <div className="flex items-start justify-between gap-3 h-full">
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardContent className="p-2 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400">
                     {t('orders:totalOrders')}
                   </p>
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  <p className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
                     {formatCompactNumber(statistics.totalOrders)}
                   </p>
-                  <div className="flex-grow"></div>
-                  {highScores.totalOrders > 0 && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      <Zap className="h-3 w-3" />
-                      <span>{t('orders:record')}: {formatCompactNumber(highScores.totalOrders)}</span>
-                    </div>
-                  )}
                 </div>
-                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
+                <div className="flex-shrink-0 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                  <ShoppingCart className="h-4 w-4 sm:h-6 sm:w-6 text-cyan-600 dark:text-cyan-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Total Revenue */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
-              <div className="flex items-start justify-between gap-3 h-full">
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Revenue
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardContent className="p-2 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Revenue
                   </p>
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
+                  <p className="text-lg sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
                     {formatCompactNumber(statistics.totalRevenue)}
                   </p>
-                  <div className="flex-grow"></div>
-                  {highScores.totalRevenue > 0 && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      <Zap className="h-3 w-3" />
-                      <span>Record: {formatCompactNumber(highScores.totalRevenue)}</span>
-                    </div>
-                  )}
                 </div>
-                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
+                <div className="flex-shrink-0 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
@@ -1368,26 +1354,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
           {/* Total Profit */}
           {canAccessFinancialData && (
-            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-              <CardContent className="p-3 sm:p-4 md:p-6 h-full">
-                <div className="flex items-start justify-between gap-3 h-full">
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Total Profit
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardContent className="p-2 sm:p-4 md:p-6">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Profit
                     </p>
-                    <p className={`text-xl sm:text-2xl md:text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <p className={`text-lg sm:text-2xl md:text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                       {formatCompactNumber(statistics.totalProfit)}
                     </p>
-                    <div className="flex-grow"></div>
-                    {highScores.totalProfit > 0 && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
-                        <Zap className="h-3 w-3" />
-                        <span>Record: {formatCompactNumber(highScores.totalProfit)}</span>
-                      </div>
-                    )}
                   </div>
-                  <div className={`flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
-                    <TrendingUp className={`h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
+                  <div className={`flex-shrink-0 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
+                    <TrendingUp className={`h-4 w-4 sm:h-6 sm:w-6 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
                   </div>
                 </div>
               </CardContent>
@@ -1395,31 +1374,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           )}
 
           {/* Customers */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
-              <div className="flex items-start justify-between gap-3 h-full">
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardContent className="p-2 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400">
                     Customers
                   </p>
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  <p className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
                     {formatCompactNumber(statistics.newCustomers + statistics.returningCustomers)}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
                     <span className="text-blue-600 dark:text-blue-400">{statistics.newCustomers} new</span>
                     {' • '}
-                    <span className="text-slate-600 dark:text-slate-400">{statistics.returningCustomers} returning</span>
+                    <span>{statistics.returningCustomers} ret</span>
                   </p>
-                  <div className="flex-grow"></div>
-                  {highScores.totalCustomers > 0 && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      <Zap className="h-3 w-3" />
-                      <span>Record: {formatCompactNumber(highScores.totalCustomers)}</span>
-                    </div>
-                  )}
                 </div>
-                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-600 dark:text-blue-400" />
+                <div className="flex-shrink-0 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                  <Users className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -1427,29 +1399,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         </div>
       )}
 
-      {/* Filters Section */}
+      {/* Filters Section - Compact on mobile */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle>{t('orders:filtersAndSearch')}</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <CardContent className="p-2.5 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder={t('orders:searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800"
+                className="pl-8 sm:pl-10 h-9 sm:h-10 text-sm focus:border-cyan-500 border-slate-200 dark:border-slate-800"
                 data-testid="input-search"
               />
             </div>
             {!filter && (
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
+                <SelectTrigger className="h-9 sm:h-10 text-sm sm:w-[180px] focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
                   <SelectValue placeholder={t('orders:filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -1472,10 +1438,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
           {/* Header with view toggle - Always Visible */}
-          <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-mobile-lg font-semibold">{t('orders:orders')} ({filteredOrders?.length || 0})</h2>
-              <div className="flex items-center gap-2 flex-wrap">
+          <div className="px-2.5 sm:px-0 pb-2 pt-2.5 sm:pt-0 sm:pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm sm:text-lg font-semibold">{t('orders:orders')} ({filteredOrders?.length || 0})</h2>
+              <div className="flex items-center gap-1 sm:gap-2">
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
@@ -1551,88 +1517,48 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </div>
           </div>
 
-          {/* Mobile Card View */}
-          <div className="sm:hidden space-y-3 p-3">
+          {/* Mobile Card View - Compact */}
+          <div className="sm:hidden space-y-1.5 px-2 py-2">
             {filteredOrders?.map((order: any) => (
-              <div key={order.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
-                <div className="space-y-3">
-                  {/* Top Row - Order ID, Status Badges, Actions */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Link href={`/orders/${order.id}`}>
-                          <p className="font-bold text-base cursor-pointer text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate">
-                            {order.orderId}
-                          </p>
-                        </Link>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {getStatusBadge(order.orderStatus)}
-                        {getPaymentStatusBadge(order.paymentStatus)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Link href={`/orders/${order.id}`}>
-                        <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8" data-testid={`button-view-${order.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link href={`/orders/${order.id}/edit`}>
-                        <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8" data-testid={`button-edit-${order.id}`}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
+              <div 
+                key={order.id} 
+                className="bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800 p-2.5"
+                onClick={() => {
+                  sessionStorage.setItem('orderDetailsReferrer', location);
+                  navigate(`/orders/${order.id}`);
+                }}
+              >
+                {/* Row 1: Order ID + Status + Total */}
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-bold text-sm text-black dark:text-white">{order.orderId}</span>
+                    {getStatusBadge(order.orderStatus)}
+                    {getPaymentStatusBadge(order.paymentStatus)}
                   </div>
-                  
-                  {/* Customer Info with Avatar */}
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarImage src={order.customer?.imageUrl} />
-                      <AvatarFallback className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                        {order.customer?.name?.charAt(0) || 'C'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {order.customer?.name || t('orders:walkInCustomer')}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(order.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Order Details Grid */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:items')}</p>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        <OrderItemsLoader orderId={order.id} variant="compact" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orders:totalAmount')}</p>
-                      {isLoading ? (
-                        <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      ) : (
-                        <p className="font-bold text-gray-900 dark:text-gray-100">
-                          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Order Items Summary - Lazy Loaded */}
-                  <OrderItemsLoader 
-                    orderId={order.id} 
-                    currency={order.currency}
-                    variant="mobile"
-                    maxItems={5}
-                    expanded={expandedItemsOrders.has(order.id)}
-                    onToggleExpand={() => toggleExpandedItems(order.id)}
-                  />
+                  <span className="font-bold text-sm text-black dark:text-white flex-shrink-0">
+                    {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+                  </span>
                 </div>
+                
+                {/* Row 2: Customer + Date */}
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
+                    {order.customer?.name || t('orders:walkInCustomer')}
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {formatDate(order.createdAt)}
+                  </span>
+                </div>
+                  
+                {/* Order Items Summary - Compact */}
+                <OrderItemsLoader 
+                  orderId={order.id} 
+                  currency={order.currency}
+                  variant="mobile"
+                  maxItems={3}
+                  expanded={expandedItemsOrders.has(order.id)}
+                  onToggleExpand={() => toggleExpandedItems(order.id)}
+                />
               </div>
             ))}
           </div>

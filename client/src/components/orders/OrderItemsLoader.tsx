@@ -58,12 +58,12 @@ export function OrderItemsLoader({
 
   if (variant === 'mobile') {
     return (
-      <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('orders:itemsColon')}</p>
-        <div className="space-y-1">
+      <div className="border-t border-gray-100 dark:border-slate-800 pt-1.5 mt-1">
+        <div className="space-y-0.5">
           {displayedItems.map((item, idx) => (
-            <p key={item.id || idx} className="text-xs text-gray-700 dark:text-gray-300 truncate">
-              <span className="font-medium text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
+            <p key={item.id || idx} className="text-[11px] truncate leading-tight">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{item.quantity}×</span>{' '}
+              <span className="font-medium text-black dark:text-white">{item.productName}</span>
             </p>
           ))}
           {hasMore && (
@@ -72,12 +72,12 @@ export function OrderItemsLoader({
                 e.stopPropagation();
                 onToggleExpand?.();
               }}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium cursor-pointer hover:underline transition-colors"
+              className="text-[11px] text-blue-600 dark:text-blue-400 font-medium"
               data-testid={`button-toggle-items-${orderId}`}
             >
               {expanded 
                 ? t('orders:showLess')
-                : t('orders:moreItems', { count: items.length - maxItems })}
+                : `+${items.length - maxItems} ${t('orders:moreItems', { count: items.length - maxItems }).split(' ').slice(1).join(' ')}`}
             </button>
           )}
         </div>
