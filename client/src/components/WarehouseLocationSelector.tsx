@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -93,10 +93,22 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   const [isValid, setIsValid] = useState(true);
   const [isOldFormat, setIsOldFormat] = useState(false);
   const [oldFormatCode, setOldFormatCode] = useState("");
+  
+  // FIX: Track last emitted code to prevent re-render loops
+  const lastEmittedCodeRef = useRef<string>("");
+  const isParsingValueRef = useRef(false);
+  const initialParseCompleteRef = useRef(false);
 
-  // Parse initial value if provided
+  // Parse initial value if provided - only run once on mount or when value changes externally
   useEffect(() => {
+    // Skip if we just emitted this value ourselves
+    if (value === lastEmittedCodeRef.current) {
+      return;
+    }
+    
     if (value && validateLocationCode(value)) {
+      isParsingValueRef.current = true;
+      
       // Try new shelf format first
       const shelfParts = parseShelfLocationCode(value);
       if (shelfParts) {
@@ -109,6 +121,9 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         setManualCode(value);
         setIsOldFormat(false);
         setOldFormatCode("");
+        lastEmittedCodeRef.current = value;
+        initialParseCompleteRef.current = true;
+        isParsingValueRef.current = false;
         return;
       }
       
@@ -124,6 +139,9 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         setManualCode(value);
         setIsOldFormat(false);
         setOldFormatCode("");
+        lastEmittedCodeRef.current = value;
+        initialParseCompleteRef.current = true;
+        isParsingValueRef.current = false;
         return;
       }
       
@@ -140,18 +158,31 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         setManualCode(value);
         setIsOldFormat(true);
         setOldFormatCode(value);
+        lastEmittedCodeRef.current = value;
+        initialParseCompleteRef.current = true;
+        isParsingValueRef.current = false;
         return;
       }
+      
+      isParsingValueRef.current = false;
     }
   }, [value, setWarehouse, setAreaType]);
 
-  // Update location code when components change
+  // Update location code when components change - guarded to prevent loops
   useEffect(() => {
+    // Skip if we're currently parsing an incoming value
+    if (isParsingValueRef.current) {
+      return;
+    }
+    
     if (!manualEntry) {
       // If this was an old format code, preserve it
       if (isOldFormat && oldFormatCode) {
-        onChange(oldFormatCode);
-        setManualCode(oldFormatCode);
+        if (oldFormatCode !== lastEmittedCodeRef.current) {
+          lastEmittedCodeRef.current = oldFormatCode;
+          onChange(oldFormatCode);
+          setManualCode(oldFormatCode);
+        }
         setIsValid(true);
         return;
       }
@@ -162,8 +193,13 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       } else if (areaType === "pallet") {
         code = generatePalletLocationCode(warehouse, palletAisle, palletRack, palletLevel, pallet);
       }
-      onChange(code);
-      setManualCode(code);
+      
+      // FIX: Only call onChange if the code actually changed
+      if (code && code !== lastEmittedCodeRef.current) {
+        lastEmittedCodeRef.current = code;
+        onChange(code);
+        setManualCode(code);
+      }
       setIsValid(true);
     }
   }, [warehouse, areaType, aisle, rack, level, bin, palletAisle, palletRack, palletLevel, pallet, manualEntry, onChange, isOldFormat, oldFormatCode]);
