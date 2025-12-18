@@ -1125,7 +1125,7 @@ export default function POS() {
               </div>
               <div>
                 <h2 className="text-base sm:text-xl font-bold">Cart</h2>
-                <p className="text-xs sm:text-sm text-gray-300">{totalItems} items</p>
+                <p className="text-[10px] sm:text-xs text-gray-300 hidden sm:block">{totalItems} items</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3">
