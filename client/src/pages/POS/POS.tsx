@@ -141,20 +141,68 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
     <div className="relative">
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          .thermal-receipt, .thermal-receipt * { visibility: visible; }
-          .thermal-receipt {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 80mm;
-            padding: 5mm;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            background: white;
+          @page {
+            size: 83mm auto;
+            margin: 0;
           }
-          .no-print { display: none !important; }
+          
+          html, body {
+            width: 83mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body * {
+            visibility: hidden !important;
+          }
+          
+          .thermal-receipt,
+          .thermal-receipt * {
+            visibility: visible !important;
+          }
+          
+          .thermal-receipt {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 83mm !important;
+            max-width: 83mm !important;
+            padding: 3mm !important;
+            margin: 0 !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+            background: white !important;
+            color: black !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+          }
+          
+          .thermal-receipt .text-gray-600,
+          .thermal-receipt .text-gray-400,
+          .thermal-receipt .dark\\:text-gray-400,
+          .thermal-receipt .dark\\:text-gray-500 {
+            color: #333 !important;
+          }
+          
+          .thermal-receipt .text-green-600,
+          .thermal-receipt .dark\\:text-green-400 {
+            color: #000 !important;
+          }
+          
+          .thermal-receipt .border-dashed {
+            border-style: dashed !important;
+            border-color: #999 !important;
+          }
+          
+          .no-print {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
       `}</style>
       
