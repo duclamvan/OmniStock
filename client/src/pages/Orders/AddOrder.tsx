@@ -5950,6 +5950,73 @@ export default function AddOrder() {
                 </div>
               </div>
               
+              {/* Order Summary Section - Desktop */}
+              <div className="hidden md:block mt-6 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
+                <div className="flex justify-end">
+                  <div className="w-full max-w-sm space-y-3">
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">{t('orders:subtotalColon')}</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {formatCurrency(totals.subtotal, form.watch('currency'))}
+                      </span>
+                    </div>
+                    
+                    {/* Discount - only show if there's a discount */}
+                    {(form.watch('discountValue') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-green-600 dark:text-green-400">
+                          {t('orders:discount')} {form.watch('discountType') === 'rate' ? `(${form.watch('discountValue')}%)` : ''}
+                        </span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          -{formatCurrency(totals.discountAmount, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Shipping */}
+                    {(form.watch('shippingCost') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">{t('orders:shipping')}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(form.watch('shippingCost') || 0, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Adjustment - only show if there's an adjustment */}
+                    {(form.watch('adjustment') || 0) !== 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">{t('orders:adjustment')}</span>
+                        <span className={`font-medium ${(form.watch('adjustment') || 0) >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-red-600 dark:text-red-400'}`}>
+                          {(form.watch('adjustment') || 0) >= 0 ? '+' : ''}{formatCurrency(form.watch('adjustment') || 0, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* VAT/Tax - only show if tax invoice is enabled */}
+                    {showTaxInvoice && (form.watch('taxRate') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          {t('orders:vat')} ({form.watch('taxRate')}%)
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(totals.tax, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Grand Total */}
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-slate-300 dark:border-slate-600">
+                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{t('orders:grandTotal')}</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatCurrency(totals.grandTotal, form.watch('currency'))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Mobile Card View - Visible only on Mobile */}
               <div className="md:hidden space-y-3">
                 {orderItems.map((item, index) => (
@@ -6196,6 +6263,71 @@ export default function AddOrder() {
                     </CardContent>
                   </Card>
                 ))}
+                
+                {/* Order Summary Section - Mobile */}
+                <div className="md:hidden mt-4 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
+                  <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">{t('orders:subtotalColon')}</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {formatCurrency(totals.subtotal, form.watch('currency'))}
+                      </span>
+                    </div>
+                    
+                    {/* Discount - only show if there's a discount */}
+                    {(form.watch('discountValue') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-green-600 dark:text-green-400">
+                          {t('orders:discount')} {form.watch('discountType') === 'rate' ? `(${form.watch('discountValue')}%)` : ''}
+                        </span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          -{formatCurrency(totals.discountAmount, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Shipping */}
+                    {(form.watch('shippingCost') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">{t('orders:shipping')}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(form.watch('shippingCost') || 0, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Adjustment - only show if there's an adjustment */}
+                    {(form.watch('adjustment') || 0) !== 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">{t('orders:adjustment')}</span>
+                        <span className={`font-medium ${(form.watch('adjustment') || 0) >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-red-600 dark:text-red-400'}`}>
+                          {(form.watch('adjustment') || 0) >= 0 ? '+' : ''}{formatCurrency(form.watch('adjustment') || 0, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* VAT/Tax - only show if tax invoice is enabled */}
+                    {showTaxInvoice && (form.watch('taxRate') || 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          {t('orders:vat')} ({form.watch('taxRate')}%)
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(totals.tax, form.watch('currency'))}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Grand Total */}
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-slate-300 dark:border-slate-600">
+                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{t('orders:grandTotal')}</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatCurrency(totals.grandTotal, form.watch('currency'))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
               </>
             ) : (
