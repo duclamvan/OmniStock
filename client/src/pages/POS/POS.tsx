@@ -55,6 +55,7 @@ import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product, Customer, Category } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
+import { convertCurrency } from '@/lib/currencyUtils';
 import { useTranslation } from 'react-i18next';
 import { soundEffects } from '@/utils/soundEffects';
 
@@ -2088,7 +2089,7 @@ export default function POS() {
           {receiptData && (
             <div className="flex flex-col items-center gap-4">
               <QRCodeCZK 
-                amount={currency === 'CZK' ? receiptData.total : financialHelpers.convertCurrency(receiptData.total, 'EUR', 'CZK')} 
+                amount={currency === 'CZK' ? receiptData.total : convertCurrency(receiptData.total, 'EUR', 'CZK')} 
                 orderId={receiptData.orderId}
                 scanLabel={t('financial:scanQrToPay')}
               />
