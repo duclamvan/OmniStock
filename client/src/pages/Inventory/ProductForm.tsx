@@ -3055,10 +3055,11 @@ export default function ProductForm() {
                     <Tag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:variantsSection')}</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                      {t('products:variantsSection')} ({variants.length})
+                    </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:variantsSectionDesc')}</p>
                   </div>
-                  <Badge variant="secondary">{variants.length}</Badge>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
