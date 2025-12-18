@@ -267,58 +267,96 @@ export default function POSSalesReports() {
               <p className="text-lg font-medium text-muted-foreground">{t('noPosSalesFound')}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table data-testid="table-pos-sales">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('orderId')}</TableHead>
-                    <TableHead>{t('date')}</TableHead>
-                    <TableHead>{t('customer')}</TableHead>
-                    <TableHead className="text-center">{t('itemsCount')}</TableHead>
-                    <TableHead>{tCommon('paymentMethod')}</TableHead>
-                    <TableHead>{t('paymentStatus')}</TableHead>
-                    <TableHead className="text-right">{t('total')}</TableHead>
-                    <TableHead className="text-right">{t('profit')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order: any) => (
-                    <TableRow key={order.id} data-testid={`row-pos-order-${order.id}`}>
-                      <TableCell className="font-medium">
-                        {order.orderId || order.orderNumber || `#${order.id}`}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        {getCustomerName(order.customerId)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {orderItemsMap.get(order.id) || 0}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {filteredOrders.map((order: any) => {
+                  const profit = orderProfitMap.get(order.id) || 0;
+                  const profitColor = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+                  return (
+                    <div key={order.id} className="border rounded-lg p-4 space-y-3" data-testid={`card-pos-order-${order.id}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-sm">{order.orderId || order.orderNumber || `#${order.id}`}</p>
+                          <p className="text-xs text-muted-foreground">{format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm')}</p>
+                        </div>
+                        {getPaymentStatusBadge(order.paymentStatus)}
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">{getCustomerName(order.customerId)}</span>
+                        <Badge variant="outline" className="capitalize text-xs">
                           {order.paymentMethod?.replace('_', ' ') || 'Cash'}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getPaymentStatusBadge(order.paymentStatus)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK')}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {(() => {
-                          const profit = orderProfitMap.get(order.id) || 0;
-                          const color = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-                          return <span className={color}>{formatCurrency(profit, order.currency || 'CZK')}</span>;
-                        })()}
-                      </TableCell>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <div>
+                          <p className="text-xs text-muted-foreground">{t('total')}</p>
+                          <p className="font-bold">{formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">{t('profit')}</p>
+                          <p className={`font-bold ${profitColor}`}>{formatCurrency(profit, order.currency || 'CZK')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table data-testid="table-pos-sales">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('orderId')}</TableHead>
+                      <TableHead>{t('date')}</TableHead>
+                      <TableHead>{t('customer')}</TableHead>
+                      <TableHead className="text-center">{t('itemsCount')}</TableHead>
+                      <TableHead>{tCommon('paymentMethod')}</TableHead>
+                      <TableHead>{t('paymentStatus')}</TableHead>
+                      <TableHead className="text-right">{t('total')}</TableHead>
+                      <TableHead className="text-right">{t('profit')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order: any) => (
+                      <TableRow key={order.id} data-testid={`row-pos-order-${order.id}`}>
+                        <TableCell className="font-medium">
+                          {order.orderId || order.orderNumber || `#${order.id}`}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell>
+                          {getCustomerName(order.customerId)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {orderItemsMap.get(order.id) || 0}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {order.paymentMethod?.replace('_', ' ') || 'Cash'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {getPaymentStatusBadge(order.paymentStatus)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK')}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {(() => {
+                            const profit = orderProfitMap.get(order.id) || 0;
+                            const color = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+                            return <span className={color}>{formatCurrency(profit, order.currency || 'CZK')}</span>;
+                          })()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
