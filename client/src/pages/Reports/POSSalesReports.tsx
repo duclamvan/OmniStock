@@ -32,6 +32,7 @@ export default function POSSalesReports() {
   });
 
   const { data: customers = [] } = useQuery<any[]>({ queryKey: ['/api/customers'] });
+  const { data: products = [] } = useQuery<any[]>({ queryKey: ['/api/products'] });
   const { data: orderItems = [] } = useQuery<any[]>({
     queryKey: ['/api/order-items/all'],
     queryFn: async () => {
@@ -87,6 +88,28 @@ export default function POSSalesReports() {
     });
     return map;
   }, [orderItems]);
+
+  const productCostMap = useMemo(() => {
+    const map = new Map<string, number>();
+    products.forEach((product: any) => {
+      map.set(product.id, parseFloat(product.cost || product.landedCost || '0'));
+    });
+    return map;
+  }, [products]);
+
+  const orderProfitMap = useMemo(() => {
+    const map = new Map<number, number>();
+    orders.forEach((order: any) => {
+      const items = orderItems.filter((item: any) => item.orderId === order.id);
+      const totalCost = items.reduce((sum: number, item: any) => {
+        const productCost = productCostMap.get(item.productId) || 0;
+        return sum + (productCost * (item.quantity || 1));
+      }, 0);
+      const revenue = parseFloat(order.grandTotal || '0');
+      map.set(order.id, revenue - totalCost);
+    });
+    return map;
+  }, [orders, orderItems, productCostMap]);
 
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
@@ -255,6 +278,7 @@ export default function POSSalesReports() {
                     <TableHead>{tCommon('paymentMethod')}</TableHead>
                     <TableHead>{t('paymentStatus')}</TableHead>
                     <TableHead className="text-right">{t('total')}</TableHead>
+                    <TableHead className="text-right">{t('profit')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -282,6 +306,13 @@ export default function POSSalesReports() {
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK')}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {(() => {
+                          const profit = orderProfitMap.get(order.id) || 0;
+                          const color = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+                          return <span className={color}>{formatCurrency(profit, order.currency || 'CZK')}</span>;
+                        })()}
                       </TableCell>
                     </TableRow>
                   ))}
