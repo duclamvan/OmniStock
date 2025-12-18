@@ -131,6 +131,8 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
     cash: t('financial:cash'),
     card: t('financial:creditCard'),
     bank_transfer: t('financial:bankTransfer'),
+    bank_transfer_private: t('financial:bankTransferPrivate'),
+    bank_transfer_invoice: t('financial:bankTransferInvoice'),
     pay_later: t('financial:payLater'),
     qr_czk: t('financial:qrCodeCzk')
   };
@@ -651,7 +653,7 @@ export default function POS() {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const customerName = selectedCustomer 
-    ? `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() || selectedCustomer.company || 'Customer'
+    ? selectedCustomer.name || 'Customer'
     : t('financial:walkInCustomer');
 
   const createOrderMutation = useMutation({
@@ -1705,7 +1707,7 @@ export default function POS() {
                     <div className="text-left flex-1 min-w-0">
                       {/* Customer Name */}
                       <p className="font-medium truncate">
-                        {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.facebookName || t('pos:customer', 'Customer')}
+                        {customer.name || customer.facebookName || t('pos:customer', 'Customer')}
                       </p>
                       
                       {/* Facebook Name */}
@@ -1782,7 +1784,7 @@ export default function POS() {
                       <User className="h-5 w-5 mr-3 flex-shrink-0" />
                       <div className="text-left flex-1 min-w-0">
                         <p className="font-medium truncate">
-                          {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.company || customer.facebookName || t('pos:customer', 'Customer')}
+                          {customer.name || customer.facebookName || t('pos:customer', 'Customer')}
                         </p>
                         {customer.facebookName && (
                           <p className="text-xs text-blue-500 dark:text-blue-400 truncate">
