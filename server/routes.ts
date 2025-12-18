@@ -8624,7 +8624,7 @@ Important:
         return res.json([]);
       }
 
-      // Enhance items with product data (images, landing costs)
+      // Enhance items with product data (images, landing costs, product name)
       const enhancedItems = await Promise.all(items.map(async (item) => {
         if (item.productId) {
           const [productData] = await db
@@ -8635,6 +8635,7 @@ Important:
 
           return {
             ...item,
+            productName: item.productName || productData?.name || 'Unknown Product',
             landingCost: productData?.latestLandingCost || null,
             image: item.image || productData?.imageUrl || null
           };
@@ -8649,6 +8650,7 @@ Important:
 
           return {
             ...item,
+            productName: item.productName || bundleData?.name || 'Unknown Bundle',
             image: item.image || bundleData?.imageUrl || null
           };
         }
