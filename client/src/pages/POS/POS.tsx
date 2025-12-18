@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -311,6 +312,7 @@ export default function POS() {
   const { t } = useTranslation(['common', 'orders', 'products', 'financial']);
   const { toast } = useToast();
   const { financialHelpers } = useSettings();
+  const [, setLocation] = useLocation();
   
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>(() => {
     return (localStorage.getItem('pos_currency') as 'EUR' | 'CZK') || 'EUR';
@@ -666,6 +668,7 @@ export default function POS() {
         orderStatus: 'completed',
         paymentStatus: isPayLater ? 'unpaid' : 'paid',
         orderType: 'pos',
+        channel: 'pos',
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -2070,7 +2073,10 @@ export default function POS() {
           {receiptData && (
             <ThermalReceipt 
               data={receiptData} 
-              onClose={() => setShowReceipt(false)}
+              onClose={() => {
+                setShowReceipt(false);
+                setLocation('/orders');
+              }}
               onPrint={() => {}}
             />
           )}
@@ -2108,7 +2114,10 @@ export default function POS() {
                 <Button 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => setShowQRCode(false)}
+                  onClick={() => {
+                    setShowQRCode(false);
+                    setLocation('/orders');
+                  }}
                   data-testid="button-close-qr"
                 >
                   Close

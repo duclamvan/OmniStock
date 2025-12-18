@@ -887,6 +887,7 @@ export const orders = pgTable("orders", {
   // COD (Cash on Delivery) fields
   codAmount: decimal("cod_amount", { precision: 10, scale: 2 }),
   codCurrency: varchar("cod_currency"),
+  channel: varchar("channel").notNull().default("online"), // Values: 'pos', 'online'
   allocated: boolean("allocated").default(false), // Track if order inventory is allocated
 });
 

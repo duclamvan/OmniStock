@@ -7569,6 +7569,7 @@ Important:
       const status = req.query.status as string;
       const paymentStatus = req.query.paymentStatus as string;
       const customerId = req.query.customerId as string;
+      const channel = req.query.channel as string;
       const includeItems = req.query.includeItems === 'true';
 
       let orders;
@@ -7586,6 +7587,11 @@ Important:
         orders = await storage.getOrdersByCustomerId(customerId);
       } else {
         orders = await storage.getOrders();
+      }
+
+      // Apply channel filter if provided
+      if (channel) {
+        orders = orders.filter(order => order.channel === channel);
       }
 
       // If includeItems is requested, fetch order items for each order
