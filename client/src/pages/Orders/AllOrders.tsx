@@ -1071,52 +1071,35 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Export Dropdown - Mobile Only */}
-          <div className="sm:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  data-testid="button-export-menu"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('orders:exportOptions')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
-                  <FileDown className="h-4 w-4 mr-2" />
-                  {t('orders:exportToExcel')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t('orders:exportToPDF')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          
-          {/* Export Buttons - Desktop Only */}
-          <Button 
-            variant="outline" 
-            onClick={handleExportXLSX}
-            data-testid="button-export-xlsx"
-            className="hidden sm:inline-flex"
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            {t('orders:exportToExcel')}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleExportPDF}
-            data-testid="button-export-pdf"
-            className="hidden sm:inline-flex"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {t('orders:exportToPDF')}
-          </Button>
+          {/* Import/Export Menu - Three Dot Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('orders:importExport')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {/* TODO: Implement import */}} data-testid="menu-import-xlsx">
+                <Download className="h-4 w-4 mr-2" />
+                {t('orders:importFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                {t('orders:exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                {t('orders:exportToPDF')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Add Order Button - Always Visible */}
           <Link href="/orders/add">

@@ -504,6 +504,8 @@ const orders = {
   exportToExcel: 'Export to Excel',
   exportToPDF: 'Export to PDF',
   exportOptions: 'Export Options',
+  importExport: 'Import / Export',
+  importFromExcel: 'Import from Excel',
   bulkActions: 'Bulk Actions',
   viewMode: 'View Mode',
   normalView: 'Normal',

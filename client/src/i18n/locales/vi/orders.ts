@@ -508,6 +508,8 @@ const orders = {
   exportToExcel: 'Xuất Excel',
   exportToPDF: 'Xuất PDF',
   exportOptions: 'Tùy chọn xuất',
+  importExport: 'Nhập / Xuất',
+  importFromExcel: 'Nhập từ Excel',
   bulkActions: 'Thao tác hàng loạt',
   viewMode: 'Chế độ xem',
   normalView: 'Bình thường',
