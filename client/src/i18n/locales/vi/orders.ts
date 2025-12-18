@@ -522,6 +522,7 @@ const orders = {
   noFileSelected: 'Vui lòng chọn file để nhập',
   importSuccess: 'Đã nhập thành công {{count}} đơn hàng',
   importFailed: 'Nhập đơn hàng thất bại',
+  preparingExport: 'Đang chuẩn bị dữ liệu xuất với sản phẩm...',
   bulkActions: 'Thao tác hàng loạt',
   viewMode: 'Chế độ xem',
   normalView: 'Bình thường',

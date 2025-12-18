@@ -4713,18 +4713,42 @@ Important:
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
-          // Map Excel columns to order fields
+          // Map comprehensive Excel columns to order fields
           const orderId = row['Order ID'] || `ORD-${Date.now()}-${i}`;
+          const orderDate = row['Order Date'] ? new Date(row['Order Date']) : new Date();
+          const orderStatus = row['Order Status'] || 'pending';
+          const paymentStatus = row['Payment Status'] || 'pending';
+          const priority = row['Priority'] || 'medium';
+          
+          // Customer fields
           const customerName = row['Customer Name'];
           const customerEmail = row['Customer Email'];
           const customerPhone = row['Customer Phone'];
+          
+          // Shipping address fields
           const shippingAddress = row['Shipping Address'];
+          const shippingCity = row['Shipping City'];
+          const shippingState = row['Shipping State'];
+          const shippingCountry = row['Shipping Country'];
+          const shippingPostalCode = row['Shipping Postal Code'];
+          
+          // Financial fields
           const currency = row['Currency'] || 'CZK';
+          const subtotal = row['Subtotal'] || '0';
+          const discountType = row['Discount Type'] || null;
+          const discountValue = row['Discount Value'] || '0';
+          const discountAmount = row['Discount Amount'] || '0';
+          const taxRate = row['Tax Rate (%)'] || '0';
+          const taxAmount = row['Tax Amount'] || '0';
+          const shippingCost = row['Shipping Cost'] || '0';
+          const adjustment = row['Adjustment'] || '0';
+          const grandTotal = row['Grand Total'] || '0';
+          
+          // Other fields
           const shippingMethod = row['Shipping Method'];
           const paymentMethod = row['Payment Method'];
-          const orderStatus = row['Order Status'] || 'pending';
-          const paymentStatus = row['Payment Status'] || 'pending';
           const notes = row['Notes'];
+          const items = row['Items']; // Format: "Product A x2; Product B x1"
 
           // Find or create customer if name provided
           let customerId = null;
@@ -4738,12 +4762,18 @@ Important:
             if (existingCustomer) {
               customerId = existingCustomer.id;
             } else {
-              // Create new customer
+              // Create new customer with full address
+              const fullAddress = [shippingAddress, shippingCity, shippingState, shippingCountry, shippingPostalCode]
+                .filter(Boolean).join(', ');
               const newCustomer = await storage.createCustomer({
                 name: customerName,
                 email: customerEmail || null,
                 phone: customerPhone || null,
-                address: shippingAddress || null,
+                address: fullAddress || null,
+                city: shippingCity || null,
+                state: shippingState || null,
+                country: shippingCountry || null,
+                postalCode: shippingPostalCode || null,
                 type: 'regular',
                 isActive: true,
               });
@@ -4751,21 +4781,62 @@ Important:
             }
           }
 
-          // Create order
+          // Create order with comprehensive data
           const orderData = {
             orderId,
+            orderDate,
             customerId,
             currency,
+            subtotal: String(subtotal),
+            discountType,
+            discountValue: String(discountValue),
+            discount: String(discountAmount),
+            taxRate: String(taxRate),
+            taxAmount: String(taxAmount),
+            shippingCost: String(shippingCost),
+            adjustment: String(adjustment),
+            grandTotal: String(grandTotal),
             shippingMethod,
             paymentMethod,
             orderStatus,
             paymentStatus,
+            priority,
             notes,
-            grandTotal: '0',
-            subtotal: '0',
           };
 
           const newOrder = await storage.createOrder(orderData);
+          
+          // Parse and create order items if provided
+          if (items && typeof items === 'string') {
+            const itemParts = items.split(';').map(s => s.trim()).filter(Boolean);
+            for (const itemPart of itemParts) {
+              // Parse format: "Product Name x2" or "Product Name xQuantity"
+              const match = itemPart.match(/^(.+?)\s*x(\d+)$/i);
+              if (match) {
+                const productName = match[1].trim();
+                const quantity = parseInt(match[2], 10) || 1;
+                
+                // Try to find product by name
+                const products = await storage.getProducts();
+                const product = products.find((p: any) => 
+                  p.name?.toLowerCase() === productName.toLowerCase() ||
+                  p.vietnameseName?.toLowerCase() === productName.toLowerCase()
+                );
+                
+                if (product) {
+                  await storage.createOrderItem({
+                    orderId: newOrder.id,
+                    productId: product.id,
+                    productName: product.name,
+                    quantity,
+                    unitPrice: product.priceEur || product.priceCzk || '0',
+                    totalPrice: String(quantity * parseFloat(product.priceEur || product.priceCzk || '0')),
+                  });
+                }
+              }
+            }
+          }
+          
           importedOrders.push(newOrder);
         } catch (rowError: any) {
           errors.push(`Row ${i + 2}: ${rowError.message}`);

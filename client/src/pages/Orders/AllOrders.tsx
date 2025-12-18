@@ -962,8 +962,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setOrdersToDelete([]);
   };
 
-  // Export to XLSX handler
-  const handleExportXLSX = () => {
+  // Export to XLSX handler - comprehensive with order items
+  const handleExportXLSX = async () => {
     try {
       // Handle empty state
       if (!filteredOrders || filteredOrders.length === 0) {
@@ -975,19 +975,71 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return;
       }
 
-      // Prepare export data
-      const exportData = filteredOrders.map((order: any) => ({
-        [t('orders:orderId')]: order.orderId || 'N/A',
-        [t('orders:customer')]: order.customer?.name || 'N/A',
-        [t('orders:total')]: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
-        [t('orders:status')]: order.orderStatus || 'N/A',
-        [t('orders:date')]: formatDate(order.orderDate),
-        [t('orders:shippingMethod')]: order.shippingMethod || 'N/A',
-        [t('orders:paymentMethod')]: order.paymentMethod || 'N/A',
-      }));
+      toast({
+        title: t('common:processing'),
+        description: t('orders:preparingExport'),
+      });
+
+      // Fetch order items for all orders
+      const exportData: any[] = [];
+      
+      for (const order of filteredOrders) {
+        // Fetch items for this order
+        let orderItems: any[] = [];
+        try {
+          const response = await fetch(`/api/orders/${order.id}/items`, { credentials: 'include' });
+          if (response.ok) {
+            orderItems = await response.json();
+          }
+        } catch (e) {
+          console.error('Failed to fetch order items:', e);
+        }
+
+        // Format items as string (product name x quantity)
+        const itemsText = orderItems.map((item: any) => 
+          `${item.productName || item.product?.name || 'Unknown'} x${item.quantity}`
+        ).join('; ');
+
+        // Create comprehensive row with all order data
+        exportData.push({
+          'Order ID': order.orderId || '',
+          'Order Date': order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '',
+          'Created At': order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '',
+          'Order Status': order.orderStatus || '',
+          'Payment Status': order.paymentStatus || '',
+          'Priority': order.priority || '',
+          'Customer Name': order.customer?.name || '',
+          'Customer Email': order.customer?.email || '',
+          'Customer Phone': order.customer?.phone || '',
+          'Customer Type': order.customer?.type || '',
+          'Shipping Address': order.shippingAddress?.fullAddress || '',
+          'Shipping City': order.shippingAddress?.city || '',
+          'Shipping State': order.shippingAddress?.state || '',
+          'Shipping Country': order.shippingAddress?.country || '',
+          'Shipping Postal Code': order.shippingAddress?.postalCode || '',
+          'Currency': order.currency || 'CZK',
+          'Subtotal': order.subtotal || '0',
+          'Discount Type': order.discountType || '',
+          'Discount Value': order.discountValue || '0',
+          'Discount Amount': order.discount || '0',
+          'Tax Rate (%)': order.taxRate || '0',
+          'Tax Amount': order.taxAmount || '0',
+          'Shipping Cost': order.shippingCost || '0',
+          'Actual Shipping Cost': order.actualShippingCost || '0',
+          'Adjustment': order.adjustment || '0',
+          'Grand Total': order.grandTotal || '0',
+          'Shipping Method': order.shippingMethod || '',
+          'Payment Method': order.paymentMethod || '',
+          'Tracking Number': order.trackingNumber || '',
+          'Tracking Status': order.trackingStatus || '',
+          'Notes': order.notes || '',
+          'Items Count': orderItems.length,
+          'Items': itemsText,
+        });
+      }
 
       // Call export function
-      exportToXLSX(exportData, 'orders', t('orders:ordersReport'));
+      exportToXLSX(exportData, 'orders_comprehensive', t('orders:ordersReport'));
 
       toast({
         title: t('common:success'),
@@ -1055,21 +1107,66 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
-  // Download import template
+  // Download import template - comprehensive matching export format
   const handleDownloadTemplate = () => {
     const templateData = [
       {
         'Order ID': 'ORD-001',
+        'Order Date': '2024-12-18',
+        'Order Status': 'pending',
+        'Payment Status': 'pending',
+        'Priority': 'medium',
         'Customer Name': 'John Doe',
         'Customer Email': 'john@example.com',
         'Customer Phone': '+420123456789',
-        'Shipping Address': '123 Main St, Prague, Czech Republic',
+        'Shipping Address': '123 Main St',
+        'Shipping City': 'Prague',
+        'Shipping State': '',
+        'Shipping Country': 'Czech Republic',
+        'Shipping Postal Code': '10000',
         'Currency': 'CZK',
+        'Subtotal': '1000',
+        'Discount Type': 'percentage',
+        'Discount Value': '10',
+        'Discount Amount': '100',
+        'Tax Rate (%)': '21',
+        'Tax Amount': '189',
+        'Shipping Cost': '150',
+        'Adjustment': '0',
+        'Grand Total': '1239',
         'Shipping Method': 'GLS',
         'Payment Method': 'Bank Transfer',
-        'Order Status': 'pending',
-        'Payment Status': 'pending',
         'Notes': 'Sample order notes',
+        'Items': 'Product A x2; Product B x1',
+      },
+      {
+        'Order ID': 'ORD-002',
+        'Order Date': '2024-12-19',
+        'Order Status': 'to_fulfill',
+        'Payment Status': 'paid',
+        'Priority': 'high',
+        'Customer Name': 'Jane Smith',
+        'Customer Email': 'jane@example.com',
+        'Customer Phone': '+420987654321',
+        'Shipping Address': '456 Oak Avenue',
+        'Shipping City': 'Brno',
+        'Shipping State': '',
+        'Shipping Country': 'Czech Republic',
+        'Shipping Postal Code': '60200',
+        'Currency': 'EUR',
+        'Subtotal': '250',
+        'Discount Type': 'fixed',
+        'Discount Value': '25',
+        'Discount Amount': '25',
+        'Tax Rate (%)': '21',
+        'Tax Amount': '47.25',
+        'Shipping Cost': '12',
+        'Adjustment': '-5',
+        'Grand Total': '279.25',
+        'Shipping Method': 'PPL',
+        'Payment Method': 'Card',
+        'Notes': 'Express delivery requested',
+        'Items': 'Acrylic Powder 660g x3; Nail Polish Set x1',
       }
     ];
     exportToXLSX(templateData, 'orders_import_template', t('orders:importTemplate'));

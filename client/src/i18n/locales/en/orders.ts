@@ -518,6 +518,7 @@ const orders = {
   noFileSelected: 'Please select a file to import',
   importSuccess: 'Successfully imported {{count}} order(s)',
   importFailed: 'Failed to import orders',
+  preparingExport: 'Preparing export data with order items...',
   bulkActions: 'Bulk Actions',
   viewMode: 'View Mode',
   normalView: 'Normal',
