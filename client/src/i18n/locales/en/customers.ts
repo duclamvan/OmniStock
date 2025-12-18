@@ -471,6 +471,16 @@ const customers = {
   customerWithFacebookIdExistsInDatabase: 'A customer with Facebook ID "{{facebookId}}" already exists in the database',
   goToCustomerProfile: "Go to {{name}}'s Profile →",
   
+  // Import/Export Menu
+  importExport: 'Import/Export',
+  importFromExcel: 'Import from Excel',
+  exportToExcel: 'Export to Excel',
+  importDescription: 'Upload an Excel file to import customers. Download the template for the correct format.',
+  clickToSelectFile: 'Click to select a file or drag and drop',
+  importTemplate: 'Import Template',
+  templateDownloaded: 'Template downloaded successfully',
+  noFileSelected: 'No file selected',
+  
 } as const;
 
 export default customers;

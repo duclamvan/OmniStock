@@ -4021,6 +4021,83 @@ Important:
     }
   });
 
+  // Supplier import from Excel
+  const supplierImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  });
+
+  app.post('/api/suppliers/import', isAuthenticated, supplierImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (rows.length === 0) {
+        return res.status(400).json({ message: "No data found in the file" });
+      }
+
+      let importedCount = 0;
+      const errors: Array<{ row: number; message: string }> = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] as any;
+        try {
+          // Map Excel columns to supplier fields
+          const supplierData = {
+            name: row['Name'] || row['Supplier Name'] || row['name'] || '',
+            contactPerson: row['Contact Person'] || row['contactPerson'] || row['Contact'] || '',
+            email: row['Email'] || row['email'] || '',
+            phone: row['Phone'] || row['phone'] || '',
+            address: row['Address'] || row['address'] || '',
+            country: row['Country'] || row['country'] || '',
+            website: row['Website'] || row['website'] || '',
+            supplierLink: row['Supplier Link'] || row['supplierLink'] || '',
+            notes: row['Notes'] || row['notes'] || '',
+          };
+
+          // Validate required fields
+          if (!supplierData.name) {
+            errors.push({ row: i + 2, message: 'Supplier name is required' });
+            continue;
+          }
+
+          await storage.createSupplier(supplierData);
+          importedCount++;
+        } catch (error: any) {
+          errors.push({ row: i + 2, message: error.message || 'Failed to import row' });
+        }
+      }
+
+      // Log the import activity
+      if (req.user?.id) {
+        await storage.createActivityLog({
+          userId: req.user.id,
+          action: 'create',
+          entityType: 'supplier',
+          entityId: 'bulk-import',
+          description: `Imported ${importedCount} suppliers from Excel`,
+        });
+      }
+
+      res.json({
+        success: true,
+        imported: importedCount,
+        errors: errors.length,
+        errorDetails: errors,
+      });
+    } catch (error) {
+      console.error("Error importing suppliers:", error);
+      res.status(500).json({ message: "Failed to import suppliers" });
+    }
+  });
+
   // Serve private objects
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
@@ -5162,6 +5239,118 @@ Important:
     } catch (error) {
       console.error("Error fetching product order history:", error);
       res.status(500).json({ message: "Failed to fetch product order history" });
+    }
+  });
+
+  // Products Import endpoint
+  const productImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+
+  app.post('/api/products/import', isAuthenticated, productImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedProducts: any[] = [];
+      const errors: string[] = [];
+
+      // Get all categories and warehouses for matching
+      const categories = await storage.getCategories();
+      const warehouses = await storage.getWarehouses();
+      const suppliers = await storage.getSuppliers();
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          const name = row['Name'] || row['name'];
+          const sku = row['SKU'] || row['sku'];
+
+          if (!name || !sku) {
+            errors.push(`Row ${i + 2}: Missing name or SKU`);
+            continue;
+          }
+
+          // Find category by name
+          const categoryName = row['Category'] || row['category'];
+          const category = categories.find((c: any) => c.name?.toLowerCase() === categoryName?.toLowerCase());
+
+          // Find warehouse by name
+          const warehouseName = row['Warehouse'] || row['warehouse'];
+          const warehouse = warehouses.find((w: any) => w.name?.toLowerCase() === warehouseName?.toLowerCase());
+
+          // Find supplier by name
+          const supplierName = row['Supplier'] || row['supplier'];
+          const supplier = suppliers.find((s: any) => s.name?.toLowerCase() === supplierName?.toLowerCase());
+
+          // Prepare product data
+          const productData: any = {
+            name,
+            vietnameseName: row['Vietnamese Name'] || row['vietnameseName'] || null,
+            sku,
+            barcode: row['Barcode'] || row['barcode'] || null,
+            categoryId: category?.id ? String(category.id) : null,
+            warehouseId: warehouse?.id || null,
+            supplierId: supplier?.id || null,
+            warehouseLocation: row['Warehouse Location'] || row['warehouseLocation'] || null,
+            quantity: parseInt(row['Quantity'] || row['quantity'] || '0') || 0,
+            lowStockAlert: parseInt(row['Low Stock Alert'] || row['lowStockAlert'] || '0') || 0,
+            priceCzk: row['Price CZK'] || row['priceCzk'] || null,
+            priceEur: row['Price EUR'] || row['priceEur'] || null,
+            priceUsd: row['Price USD'] || row['priceUsd'] || null,
+            wholesalePriceCzk: row['Wholesale Price CZK'] || row['wholesalePriceCzk'] || null,
+            wholesalePriceEur: row['Wholesale Price EUR'] || row['wholesalePriceEur'] || null,
+            importCostUsd: row['Import Cost USD'] || row['importCostUsd'] || null,
+            importCostEur: row['Import Cost EUR'] || row['importCostEur'] || null,
+            importCostCzk: row['Import Cost CZK'] || row['importCostCzk'] || null,
+            weight: row['Weight (kg)'] || row['weight'] || null,
+            length: row['Length (cm)'] || row['length'] || null,
+            width: row['Width (cm)'] || row['width'] || null,
+            height: row['Height (cm)'] || row['height'] || null,
+            description: row['Description'] || row['description'] || null,
+            shipmentNotes: row['Shipment Notes'] || row['shipmentNotes'] || null,
+            isActive: true,
+          };
+
+          // Check if product with same SKU exists
+          const existingProduct = await storage.getProductBySku(sku);
+          
+          if (existingProduct) {
+            // Update existing product
+            const updated = await storage.updateProduct(existingProduct.id, productData);
+            importedProducts.push({ ...updated, action: 'updated' });
+          } else {
+            // Create new product
+            const created = await storage.createProduct(productData);
+            importedProducts.push({ ...created, action: 'created' });
+          }
+        } catch (rowError: any) {
+          errors.push(`Row ${i + 2}: ${rowError.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedProducts.length,
+        errors: errors.length,
+        errorDetails: errors,
+        products: importedProducts
+      });
+    } catch (error: any) {
+      console.error("Products import error:", error);
+      res.status(500).json({ message: error.message || "Failed to import products" });
     }
   });
 
@@ -6581,6 +6770,96 @@ Important:
     } catch (error) {
       console.error("Error creating customer:", error);
       res.status(500).json({ message: "Failed to create customer" });
+    }
+  });
+
+  // Customer Import endpoint
+  const customerImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /xlsx|xls/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      if (extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only Excel files (.xlsx, .xls) are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/customers/import', isAuthenticated, customerImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedCustomers: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          const name = row['Name'] || '';
+          if (!name) {
+            errors.push(`Row ${i + 2}: Name is required`);
+            continue;
+          }
+
+          const customerData = {
+            name: name,
+            email: row['Email'] || null,
+            phone: row['Phone'] || null,
+            company: row['Company'] || null,
+            type: row['Customer Type'] || 'regular',
+            street: row['Street'] || null,
+            city: row['City'] || null,
+            state: row['State'] || null,
+            country: row['Country'] || null,
+            postalCode: row['Postal Code'] || null,
+            facebookId: row['Facebook ID'] || null,
+            facebookName: row['Facebook Name'] || null,
+            ico: row['ICO'] || null,
+            dic: row['DIC'] || null,
+            vatId: row['VAT ID'] || null,
+            preferredCurrency: row['Preferred Currency'] || null,
+            preferredLanguage: row['Preferred Language'] || null,
+            notes: row['Notes'] || null,
+          };
+
+          const customer = await storage.createCustomer(customerData);
+          importedCustomers.push(customer);
+        } catch (error: any) {
+          errors.push(`Row ${i + 2}: ${error.message || 'Failed to create customer'}`);
+        }
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'imported',
+        entityType: 'customer',
+        entityId: 'bulk',
+        description: `Imported ${importedCustomers.length} customers from Excel`,
+      });
+
+      res.json({
+        imported: importedCustomers.length,
+        errors: errors.length > 0 ? errors : undefined,
+        customers: importedCustomers
+      });
+    } catch (error: any) {
+      console.error("Error importing customers:", error);
+      res.status(500).json({ message: error.message || "Failed to import customers" });
     }
   });
 
@@ -9291,6 +9570,98 @@ Important:
     } catch (error) {
       console.error("Error deleting expense:", error);
       res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Expense Import endpoint
+  const expenseImportUpload = multer({ storage: multer.memoryStorage() });
+  app.post('/api/expenses/import', requireRole(['administrator']), expenseImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedExpenses: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          const expenseId = row['Expense ID'] || `EXP-${Date.now()}-${i}`;
+          const name = row['Name'] || row['Description'] || 'Imported Expense';
+          const description = row['Description'] || '';
+          const vendor = row['Vendor'] || '';
+          const amount = parseFloat(row['Amount']) || 0;
+          const currency = row['Currency'] || 'USD';
+          const category = row['Category'] || 'General';
+          const date = row['Date'] ? new Date(row['Date']) : new Date();
+          const dueDate = row['Due Date'] ? new Date(row['Due Date']) : null;
+          const status = row['Status'] || 'pending';
+          const paymentMethod = row['Payment Method'] || '';
+          const isRecurring = row['Is Recurring']?.toLowerCase() === 'yes';
+          const recurringFrequency = row['Recurring Frequency'] || null;
+          const recurringInterval = row['Recurring Interval'] ? parseInt(row['Recurring Interval']) : null;
+          const recurringDay = row['Recurring Day'] ? parseInt(row['Recurring Day']) : null;
+          const notes = row['Notes'] || '';
+          const tags = row['Tags'] || '';
+          const referenceNumber = row['Reference Number'] || '';
+
+          const expenseData = {
+            expenseId,
+            name,
+            description,
+            vendor,
+            amount: amount.toString(),
+            totalCost: amount.toString(),
+            currency,
+            category,
+            date,
+            dueDate,
+            status,
+            paymentMethod,
+            isRecurring,
+            recurringFrequency,
+            recurringInterval,
+            recurringDay,
+            notes,
+            tags,
+            referenceNumber,
+          };
+
+          const expense = await storage.createExpense(expenseData as any);
+          importedExpenses.push(expense);
+
+          await storage.createUserActivity({
+            userId: "test-user",
+            action: 'create',
+            entityType: 'expense',
+            entityId: expense.id,
+            description: `Imported expense: ${name}`,
+          });
+        } catch (rowError: any) {
+          errors.push(`Row ${i + 2}: ${rowError.message || 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedExpenses.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${importedExpenses.length} expense(s)${errors.length > 0 ? `, ${errors.length} error(s)` : ''}`
+      });
+    } catch (error: any) {
+      console.error("Error importing expenses:", error);
+      res.status(500).json({ message: error.message || "Failed to import expenses" });
     }
   });
 

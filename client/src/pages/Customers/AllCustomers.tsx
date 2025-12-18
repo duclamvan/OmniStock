@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp, Download, Upload } from "lucide-react";
 import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 import * as XLSX from 'xlsx';
 import {
@@ -67,6 +67,8 @@ export default function AllCustomers() {
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([]);
   const [isUpdatingType, setIsUpdatingType] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Column visibility state with localStorage persistence
@@ -525,6 +527,172 @@ export default function AllCustomers() {
     }
   };
 
+  const handleComprehensiveExportXLSX = () => {
+    try {
+      if (!filteredCustomers || filteredCustomers.length === 0) {
+        toast({
+          title: t('common:noData'),
+          description: t('customers:noCustomersToExport'),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredCustomers.map(customer => ({
+        'Name': customer.name || '',
+        'Email': customer.email || '',
+        'Phone': customer.phone || '',
+        'Company': customer.company || '',
+        'Customer Type': customer.type || 'regular',
+        'Street': customer.street || '',
+        'City': customer.city || '',
+        'State': customer.state || '',
+        'Country': customer.country || '',
+        'Postal Code': customer.postalCode || '',
+        'Facebook ID': customer.facebookId || '',
+        'Facebook Name': customer.facebookName || '',
+        'ICO': customer.ico || '',
+        'DIC': customer.dic || '',
+        'VAT ID': customer.vatId || '',
+        'Preferred Currency': customer.preferredCurrency || '',
+        'Preferred Language': customer.preferredLanguage || '',
+        'Notes': customer.notes || '',
+        'Total Orders': customer.orderCount || 0,
+        'Total Spent': customer.totalSpent || '0',
+        'Last Order Date': customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
+        'Is Blacklisted': customer.isBlacklisted ? 'Yes' : 'No',
+        'Created At': customer.createdAt ? formatDate(customer.createdAt) : '',
+      }));
+
+      exportToXLSX(exportData, 'customers_comprehensive', t('customers:customers'));
+      
+      toast({
+        title: t('common:exportSuccessful'),
+        description: t('customers:exportedCustomersToXLSX', { count: filteredCustomers.length }),
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: t('common:exportFailed'),
+        description: t('customers:failedToExportCustomersToXLSX'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Name': 'John Doe',
+        'Email': 'john@example.com',
+        'Phone': '+420123456789',
+        'Company': 'ABC Company',
+        'Customer Type': 'regular',
+        'Street': '123 Main Street',
+        'City': 'Prague',
+        'State': '',
+        'Country': 'Czech Republic',
+        'Postal Code': '11000',
+        'Facebook ID': '',
+        'Facebook Name': '',
+        'ICO': '12345678',
+        'DIC': 'CZ12345678',
+        'VAT ID': '',
+        'Preferred Currency': 'CZK',
+        'Preferred Language': 'en',
+        'Notes': 'Sample customer notes',
+      },
+      {
+        'Name': 'Jane Smith',
+        'Email': 'jane@example.com',
+        'Phone': '+420987654321',
+        'Company': 'XYZ Ltd',
+        'Customer Type': 'vip',
+        'Street': '456 Oak Avenue',
+        'City': 'Brno',
+        'State': '',
+        'Country': 'Czech Republic',
+        'Postal Code': '60200',
+        'Facebook ID': 'jane.smith',
+        'Facebook Name': 'Jane Smith',
+        'ICO': '87654321',
+        'DIC': 'CZ87654321',
+        'VAT ID': 'CZ87654321',
+        'Preferred Currency': 'EUR',
+        'Preferred Language': 'cs',
+        'Notes': 'VIP customer - priority support',
+      }
+    ];
+    exportToXLSX(templateData, 'customers_import_template', t('customers:importTemplate'));
+    toast({
+      title: t('common:success'),
+      description: t('customers:templateDownloaded'),
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: t('common:error'),
+          description: t('customers:invalidFileFormat'),
+          variant: "destructive",
+        });
+        return;
+      }
+      setImportFile(file);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common:error'),
+        description: t('customers:noFileSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/customers/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || t('customers:failedToImportCustomers'));
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: t('customers:importSuccessful'),
+        description: t('customers:importedCustomers', { count: result.imported || 0 }),
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('common:error'),
+        description: error.message || t('customers:failedToImportCustomers'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleImportXLSX = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -670,54 +838,42 @@ export default function AllCustomers() {
             {t('customers:monitorCustomerRelationships')}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImportXLSX}
-            accept=".xlsx,.xls"
-            className="hidden"
-            data-testid="input-import-file"
-          />
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isImporting}
-            data-testid="button-import-customers"
-          >
-            <FileUp className="h-4 w-4 mr-2" />
-            {isImporting ? t('customers:importingCustomers') : t('customers:importFromXLSX')}
-          </Button>
+        <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export-customers">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('common:export')}
+              <Button 
+                variant="outline" 
+                size="icon"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-item-export-xlsx">
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('common:exportToXLSX')}
+              <DropdownMenuLabel>{t('customers:importExport')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('customers:importFromExcel')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-item-export-pdf">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleComprehensiveExportXLSX} data-testid="menu-export-xlsx">
+                <Download className="h-4 w-4 mr-2" />
+                {t('customers:exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
                 {t('common:exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/customers/add" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto" data-testid="button-add-customer">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('customers:addCustomer')}
+          <Link href="/customers/add">
+            <Button data-testid="button-add-customer" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline sm:inline">{t('customers:addCustomer')}</span>
+              <span className="inline xs:hidden sm:hidden">{t('common:add')}</span>
             </Button>
           </Link>
-          <ImportExportMenu 
-            entity="customers" 
-            entityLabel="Customers" 
-            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/customers'] })} 
-          />
         </div>
       </div>
 
@@ -1109,6 +1265,74 @@ export default function AllCustomers() {
               data-testid="button-confirm-update-type"
             >
               {isUpdatingType ? t('common:updating') : t('customers:updateType')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Upload className="h-5 w-5" />
+              {t('customers:importFromExcel')}
+            </DialogTitle>
+            <DialogDescription className="text-gray-700 dark:text-gray-300">
+              {t('customers:importDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="outline"
+                onClick={handleDownloadTemplate}
+                className="w-full justify-start bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                data-testid="button-download-template"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {t('customers:downloadTemplate')}
+              </Button>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="import-file-input"
+                  data-testid="input-import-file"
+                />
+                <label
+                  htmlFor="import-file-input"
+                  className="flex flex-col items-center justify-center cursor-pointer"
+                >
+                  <Upload className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {importFile ? importFile.name : t('customers:clickToSelectFile')}
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+              data-testid="button-cancel-import"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800"
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? t('common:importing') : t('customers:import')}
             </Button>
           </DialogFooter>
         </DialogContent>

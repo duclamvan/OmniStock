@@ -631,6 +631,25 @@ const financial = {
   categoriesSavedSuccessfully: 'Expense categories saved successfully',
   failedToSaveCategories: 'Failed to save expense categories',
   saveCategories: 'Save Categories',
+  
+  // Import/Export
+  importExport: 'Import / Export',
+  importFromExcel: 'Import from Excel',
+  exportToExcel: 'Export to Excel (Comprehensive)',
+  importExpenses: 'Import Expenses',
+  importExpensesDescription: 'Upload an Excel file to import expenses. Download the template first to ensure correct format.',
+  downloadTemplateFirst: 'Download Template First',
+  expenseTemplateDescription: 'Use the template to ensure your data is formatted correctly for import.',
+  downloadTemplate: 'Download Template',
+  selectFile: 'Select File',
+  templateDownloaded: 'Template Downloaded',
+  templateDownloadedDescription: 'The expense import template has been downloaded. Fill it out and upload to import expenses.',
+  importTemplate: 'Import Template',
+  importSuccessful: 'Import Successful',
+  importedExpenses: 'Successfully imported {count} expense(s)',
+  importFailed: 'Import Failed',
+  failedToImportExpenses: 'Failed to import expenses. Please check the file format and try again.',
+  noFileSelected: 'No file selected. Please select an Excel file to import.',
 } as const;
 
 export default financial;

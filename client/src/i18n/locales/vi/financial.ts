@@ -632,6 +632,25 @@ const financial = {
   categoriesSavedSuccessfully: 'Lưu danh mục chi phí thành công',
   failedToSaveCategories: 'Lưu danh mục chi phí thất bại',
   saveCategories: 'Lưu danh mục',
+  
+  // Import/Export
+  importExport: 'Nhập / Xuất',
+  importFromExcel: 'Nhập từ Excel',
+  exportToExcel: 'Xuất ra Excel (Đầy đủ)',
+  importExpenses: 'Nhập chi phí',
+  importExpensesDescription: 'Tải lên file Excel để nhập chi phí. Tải mẫu trước để đảm bảo định dạng đúng.',
+  downloadTemplateFirst: 'Tải mẫu trước',
+  expenseTemplateDescription: 'Sử dụng mẫu để đảm bảo dữ liệu của bạn được định dạng chính xác để nhập.',
+  downloadTemplate: 'Tải mẫu',
+  selectFile: 'Chọn file',
+  templateDownloaded: 'Đã tải mẫu',
+  templateDownloadedDescription: 'Mẫu nhập chi phí đã được tải xuống. Điền vào và tải lên để nhập chi phí.',
+  importTemplate: 'Mẫu nhập',
+  importSuccessful: 'Nhập thành công',
+  importedExpenses: 'Đã nhập thành công {count} chi phí',
+  importFailed: 'Nhập thất bại',
+  failedToImportExpenses: 'Không thể nhập chi phí. Vui lòng kiểm tra định dạng file và thử lại.',
+  noFileSelected: 'Chưa chọn file. Vui lòng chọn file Excel để nhập.',
 } as const;
 
 export default financial;

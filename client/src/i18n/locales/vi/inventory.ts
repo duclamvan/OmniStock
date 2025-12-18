@@ -288,6 +288,13 @@ const inventory = {
   partialSuccess: 'Thành công một phần',
   export: 'Xuất',
   
+  // Import/Export Menu
+  importExport: 'Nhập / Xuất',
+  exportToExcel: 'Xuất ra Excel',
+  downloadTemplate: 'Tải mẫu nhập',
+  templateDownloaded: 'Tải mẫu nhập thành công',
+  templateDownloadFailed: 'Không thể tải mẫu nhập',
+  
   // Over/Under Allocated
   overAllocatedInventory: 'Tồn kho phân bổ vượt mức',
   overAllocatedMessage: '{{count}} {{items}} có số lượng đặt hàng nhiều hơn số lượng khả dụng',
@@ -1305,6 +1312,14 @@ const inventory = {
   unitsSoldLabel: 'đã bán',
   unitsLabel: 'Đơn vị',
   valueLabel: 'Giá trị',
+  
+  // Supplier Import/Export
+  importSuppliers: 'Nhập nhà cung cấp',
+  importSuppliersDescription: 'Tải lên tệp Excel để nhập nhà cung cấp hàng loạt',
+  importSuppliersSuccess: 'Đã nhập thành công {{count}} nhà cung cấp',
+  downloadTemplateFirst: 'Tải mẫu nhập trước',
+  supplierTemplateDescription: 'Sử dụng mẫu này để đảm bảo dữ liệu được định dạng chính xác. Bao gồm các dòng mẫu.',
+  supplierLink: 'Liên kết nhà cung cấp',
   
 } as const;
 

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
 import { 
   Plus, 
   Search, 
@@ -24,12 +25,14 @@ import {
   Filter,
   Check,
   Download,
+  Upload,
   FileSpreadsheet,
-  FileText
+  FileText,
+  FileDown,
+  RefreshCw
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
@@ -47,6 +50,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -61,7 +72,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
+import * as XLSX from "xlsx";
 
 const getCountryFlag = (country: string): string => {
   const countryFlags: Record<string, string> = {
@@ -87,6 +98,9 @@ export default function AllSuppliers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -188,18 +202,19 @@ export default function AllSuppliers() {
       }
 
       const exportData = filteredSuppliers.map(supplier => ({
-        [t('inventory:exportColumnName')]: supplier.name || '',
-        [t('inventory:exportColumnCompany')]: supplier.name || '',
-        [t('inventory:exportColumnContactPerson')]: supplier.contactPerson || '',
-        [t('inventory:exportColumnEmail')]: supplier.email || '',
-        [t('inventory:exportColumnPhone')]: supplier.phone || '',
-        [t('inventory:exportColumnCountry')]: supplier.country || '',
-        [t('inventory:exportColumnTotalPurchases')]: `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
-        [t('inventory:exportColumnLastPurchaseDate')]: supplier.lastPurchaseDate 
+        [t('inventory:supplierName')]: supplier.name || '',
+        [t('inventory:contactPerson')]: supplier.contactPerson || '',
+        [t('inventory:supplierEmail')]: supplier.email || '',
+        [t('inventory:supplierPhone')]: supplier.phone || '',
+        [t('inventory:supplierAddress')]: supplier.address || '',
+        [t('inventory:supplierCountry')]: supplier.country || '',
+        [t('inventory:supplierWebsite')]: supplier.website || '',
+        [t('inventory:supplierLink')]: supplier.supplierLink || '',
+        [t('inventory:supplierNotes')]: supplier.notes || '',
+        [t('inventory:totalSpent')]: parseFloat(supplier.totalPurchased || '0').toFixed(2),
+        [t('inventory:lastOrder')]: supplier.lastPurchaseDate 
           ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
-          : t('inventory:never'),
-        [t('inventory:exportColumnAddress')]: supplier.address || '',
-        [t('inventory:exportColumnWebsite')]: supplier.website || '',
+          : '',
       }));
 
       exportToXLSX(exportData, 'suppliers', 'Suppliers');
@@ -215,6 +230,97 @@ export default function AllSuppliers() {
         description: t('inventory:exportFailedXLSX'),
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    try {
+      const templateData = [
+        {
+          'Name': 'Sample Supplier 1',
+          'Contact Person': 'John Doe',
+          'Email': 'supplier1@example.com',
+          'Phone': '+1234567890',
+          'Address': '123 Main St, City',
+          'Country': 'USA',
+          'Website': 'https://www.supplier1.com',
+          'Supplier Link': 'https://orders.supplier1.com',
+          'Notes': 'Reliable supplier for electronics',
+        },
+        {
+          'Name': 'Sample Supplier 2',
+          'Contact Person': 'Jane Smith',
+          'Email': 'supplier2@example.com',
+          'Phone': '+0987654321',
+          'Address': '456 Oak Ave, Town',
+          'Country': 'Germany',
+          'Website': 'https://www.supplier2.de',
+          'Supplier Link': '',
+          'Notes': 'European supplier',
+        },
+      ];
+
+      exportToXLSX(templateData, 'suppliers_import_template', 'Template');
+      
+      toast({
+        title: t('common:success'),
+        description: t('inventory:templateDownloaded'),
+      });
+    } catch (error) {
+      console.error('Template download error:', error);
+      toast({
+        title: t('common:error'),
+        description: t('inventory:templateDownloadFailed'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  const handleImportSuppliers = async () => {
+    if (!importFile) return;
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/suppliers/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Import failed');
+      }
+
+      const result = await response.json();
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      
+      toast({
+        title: t('common:success'),
+        description: t('inventory:importSuppliersSuccess', { count: result.imported || 0 }),
+      });
+
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('inventory:importFailed'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -535,28 +641,31 @@ export default function AllSuppliers() {
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <ImportExportMenu
-            entity="suppliers"
-            entityLabel="Suppliers"
-            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] })}
-          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="default" className="w-full sm:w-auto" data-testid="button-export">
-                <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                {t('inventory:export')}
+              <Button 
+                variant="outline" 
+                size="icon"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('inventory:importExport')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
-                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
-                {t('inventory:exportAsXLSX')}
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                <Download className="h-4 w-4 mr-2" />
+                {t('inventory:exportToExcel')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
-                <FileText className="h-4 w-4 mr-2 text-red-600" />
-                {t('inventory:exportAsPDF')}
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('inventory:importFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                {t('inventory:exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -953,6 +1062,99 @@ export default function AllSuppliers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Suppliers Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('inventory:importSuppliers')}</DialogTitle>
+            <DialogDescription>
+              {t('inventory:importSuppliersDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('inventory:downloadTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('inventory:supplierTemplateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('inventory:downloadTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-file">{t('inventory:selectExcelFile')}</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-import"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleImportSuppliers}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:processing')}
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t('inventory:importSuppliers')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

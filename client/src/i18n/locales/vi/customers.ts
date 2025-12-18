@@ -622,6 +622,16 @@ const customers = {
   customerWithFacebookIdExistsInDatabase: 'Đã tồn tại khách hàng với Facebook ID "{{facebookId}}" trong cơ sở dữ liệu',
   goToCustomerProfile: 'Đi đến hồ sơ của {{name}} →',
   
+  // Import/Export Menu
+  importExport: 'Nhập/Xuất',
+  importFromExcel: 'Nhập từ Excel',
+  exportToExcel: 'Xuất ra Excel',
+  importDescription: 'Tải lên tệp Excel để nhập khách hàng. Tải mẫu để có định dạng đúng.',
+  clickToSelectFile: 'Nhấp để chọn tệp hoặc kéo thả',
+  importTemplate: 'Mẫu nhập',
+  templateDownloaded: 'Tải mẫu thành công',
+  noFileSelected: 'Chưa chọn tệp',
+  
 } as const;
 
 export default customers;

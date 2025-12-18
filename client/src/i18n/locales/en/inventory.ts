@@ -186,6 +186,13 @@ const inventory = {
   partialSuccess: 'Partial Success',
   export: 'Export',
   
+  // Import/Export Menu
+  importExport: 'Import / Export',
+  exportToExcel: 'Export to Excel',
+  downloadTemplate: 'Download Template',
+  templateDownloaded: 'Import template downloaded successfully',
+  templateDownloadFailed: 'Failed to download template',
+  
   // Over/Under Allocated
   overAllocatedInventory: 'Over-Allocated Inventory',
   overAllocatedMessage: '{{count}} {{items}} more quantity ordered than available in stock',
@@ -1229,6 +1236,14 @@ const inventory = {
   unitsSoldLabel: 'units sold',
   unitsLabel: 'Units',
   valueLabel: 'Value',
+  
+  // Supplier Import/Export
+  importSuppliers: 'Import Suppliers',
+  importSuppliersDescription: 'Upload an Excel file to import suppliers in bulk',
+  importSuppliersSuccess: 'Successfully imported {{count}} suppliers',
+  downloadTemplateFirst: 'Download template first',
+  supplierTemplateDescription: 'Use this template to ensure your data is formatted correctly. Includes sample rows.',
+  supplierLink: 'Supplier Link',
   
 } as const;
 

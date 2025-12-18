@@ -16,8 +16,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText } from "lucide-react";
-import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -129,6 +128,10 @@ export default function AllInventory() {
 
   const { data: warehouses = [] } = useQuery({
     queryKey: ['/api/warehouses'],
+  });
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['/api/suppliers'],
   });
 
   // Fetch order items to calculate units sold per product
@@ -271,7 +274,7 @@ export default function AllInventory() {
     },
   });
 
-  // Export to XLSX
+  // Comprehensive Export to XLSX with all product fields
   const handleExportXLSX = () => {
     if (!filteredProducts || filteredProducts.length === 0) {
       toast({
@@ -283,19 +286,42 @@ export default function AllInventory() {
     }
 
     try {
-      // Prepare data for export
-      const exportData = filteredProducts.map((product: any) => ({
-        [t('inventory:name')]: product.name,
-        [t('inventory:sku')]: product.sku,
-        [t('inventory:category')]: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
-        [t('inventory:quantity')]: product.quantity,
-        [t('inventory:unitsSold')]: unitsSoldByProduct[product.id] || 0,
-        [t('inventory:priceEur')]: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
-        [t('inventory:priceCzk')]: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
-        [t('inventory:status')]: product.isActive ? t('inventory:active') : t('inventory:inactive'),
-      }));
+      const exportData = filteredProducts.map((product: any) => {
+        const category = (categories as any[])?.find((c: any) => String(c.id) === product.categoryId);
+        const supplier = (suppliers as any[])?.find((s: any) => s.id === product.supplierId);
+        const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
+        
+        return {
+          'Name': product.name || '',
+          'Vietnamese Name': product.vietnameseName || '',
+          'SKU': product.sku || '',
+          'Barcode': product.barcode || '',
+          'Category': category?.name || '',
+          'Supplier': supplier?.name || '',
+          'Warehouse': warehouse?.name || '',
+          'Warehouse Location': product.warehouseLocation || '',
+          'Quantity': product.quantity || 0,
+          'Low Stock Alert': product.lowStockAlert || 0,
+          'Price CZK': product.priceCzk || '',
+          'Price EUR': product.priceEur || '',
+          'Price USD': product.priceUsd || '',
+          'Wholesale Price CZK': product.wholesalePriceCzk || '',
+          'Wholesale Price EUR': product.wholesalePriceEur || '',
+          'Import Cost USD': product.importCostUsd || '',
+          'Import Cost EUR': product.importCostEur || '',
+          'Import Cost CZK': product.importCostCzk || '',
+          'Weight (kg)': product.weight || '',
+          'Length (cm)': product.length || '',
+          'Width (cm)': product.width || '',
+          'Height (cm)': product.height || '',
+          'Description': product.description || '',
+          'Shipment Notes': product.shipmentNotes || '',
+          'Status': product.isActive ? 'Active' : 'Inactive',
+          'Units Sold': unitsSoldByProduct[product.id] || 0,
+        };
+      });
 
-      exportToXLSX(exportData, 'inventory', t('inventory:products'));
+      exportToXLSX(exportData, 'products-export', t('inventory:products'));
 
       toast({
         title: t('inventory:exportSuccessful'),
@@ -306,6 +332,80 @@ export default function AllInventory() {
       toast({
         title: t('inventory:exportFailed'),
         description: error.message || t('inventory:exportFailedXLSX'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Download template with sample rows
+  const handleDownloadTemplate = () => {
+    try {
+      const templateData = [
+        {
+          'Name': 'Sample Product 1',
+          'Vietnamese Name': 'Sản phẩm mẫu 1',
+          'SKU': 'SKU-001',
+          'Barcode': '1234567890123',
+          'Category': 'General',
+          'Supplier': '',
+          'Warehouse': '',
+          'Warehouse Location': 'A-01-01',
+          'Quantity': 100,
+          'Low Stock Alert': 10,
+          'Price CZK': '250.00',
+          'Price EUR': '10.00',
+          'Price USD': '11.00',
+          'Wholesale Price CZK': '200.00',
+          'Wholesale Price EUR': '8.00',
+          'Import Cost USD': '5.00',
+          'Import Cost EUR': '4.50',
+          'Import Cost CZK': '110.00',
+          'Weight (kg)': '0.5',
+          'Length (cm)': '10',
+          'Width (cm)': '5',
+          'Height (cm)': '3',
+          'Description': 'Sample product description',
+          'Shipment Notes': 'Handle with care',
+        },
+        {
+          'Name': 'Sample Product 2',
+          'Vietnamese Name': 'Sản phẩm mẫu 2',
+          'SKU': 'SKU-002',
+          'Barcode': '1234567890124',
+          'Category': 'General',
+          'Supplier': '',
+          'Warehouse': '',
+          'Warehouse Location': 'A-01-02',
+          'Quantity': 50,
+          'Low Stock Alert': 5,
+          'Price CZK': '500.00',
+          'Price EUR': '20.00',
+          'Price USD': '22.00',
+          'Wholesale Price CZK': '400.00',
+          'Wholesale Price EUR': '16.00',
+          'Import Cost USD': '10.00',
+          'Import Cost EUR': '9.00',
+          'Import Cost CZK': '220.00',
+          'Weight (kg)': '1.0',
+          'Length (cm)': '15',
+          'Width (cm)': '10',
+          'Height (cm)': '5',
+          'Description': 'Another sample product',
+          'Shipment Notes': '',
+        },
+      ];
+
+      exportToXLSX(templateData, 'products-import-template', 'Products Template');
+
+      toast({
+        title: t('inventory:success'),
+        description: t('inventory:templateDownloaded'),
+      });
+    } catch (error: any) {
+      console.error("Template download error:", error);
+      toast({
+        title: t('inventory:error'),
+        description: t('inventory:templateDownloadFailed'),
         variant: "destructive",
       });
     }
@@ -971,90 +1071,62 @@ export default function AllInventory() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-          {/* Archive dropdown - always visible */}
+          {/* Hidden file input for import */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+            data-testid="input-file-import"
+          />
+          
+          {/* Archive toggle button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-9 px-2 sm:px-3"
+            onClick={() => setShowArchive(!showArchive)}
+            data-testid="button-toggle-archive"
+          >
+            <Archive className="h-4 w-4" />
+          </Button>
+          
+          {/* Three-dot menu for Import/Export - positioned LEFT of Add Product button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
+              <Button variant="outline" size="icon" className="h-9 w-9" data-testid="button-actions-menu">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                onClick={() => {
-                  setShowArchive(!showArchive);
-                }}
-              >
-                <Archive className="mr-2 h-4 w-4" />
-                {showArchive ? t('inventory:viewActiveProducts') : t('inventory:viewArchive')}
+              <DropdownMenuLabel>{t('inventory:importExport')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('inventory:importFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                <Download className="h-4 w-4 mr-2" />
+                {t('inventory:exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                {t('inventory:exportToPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
+          {/* Add Product Button - Always Visible */}
           {!showArchive && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleImport}
-                className="hidden"
-                data-testid="input-file-import"
-              />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1 sm:flex-none h-9 px-2 sm:px-3 min-w-0"
-                onClick={() => setShowImportDialog(true)}
-                data-testid="button-import-xls"
-              >
-                <FileUp className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                <span className="hidden xs:inline truncate">{t('inventory:import')}</span>
-                <span className="hidden sm:inline ml-0.5">XLS</span>
+            <Link href="/inventory/add">
+              <Button data-testid="button-add-product" className="flex items-center gap-2 h-9">
+                <Plus className="h-4 w-4" />
+                <span className="hidden xs:inline sm:inline">{t('inventory:addProduct')}</span>
+                <span className="inline xs:hidden sm:hidden">{t('common:add')}</span>
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 sm:flex-none h-9 px-2 sm:px-3 min-w-0"
-                    data-testid="button-export"
-                  >
-                    <FileDown className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                    <span className="hidden xs:inline truncate">{t('inventory:export')}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleExportXLSX}
-                    data-testid="menuitem-export-xlsx"
-                  >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    {t('inventory:exportAsXLSX')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleExportPDF}
-                    data-testid="menuitem-export-pdf"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    {t('inventory:exportAsPDF')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Link href="/inventory/add" className="flex-1 sm:flex-none">
-                <Button className="w-full h-9 px-2 sm:px-4 min-w-0">
-                  <Plus className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
-                  <span className="hidden xs:inline truncate">{t('inventory:add')}</span>
-                  <span className="hidden sm:inline ml-0.5">{t('inventory:product')}</span>
-                </Button>
-              </Link>
-              <ImportExportMenu 
-                entity="products" 
-                entityLabel="Products" 
-                onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/products'] })} 
-              />
-            </>
+            </Link>
           )}
         </div>
       </div>
@@ -1719,16 +1791,26 @@ export default function AllInventory() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => fileInputRef.current?.click()}
-                data-testid="button-select-import-file"
-              >
-                <FileUp className="mr-2 h-4 w-4" />
-                {t('inventory:selectExcelFile')}
-              </Button>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleDownloadTemplate}
+                  data-testid="button-download-template"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {t('inventory:downloadTemplate')}
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-select-import-file"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {t('inventory:selectExcelFile')}
+                </Button>
+              </div>
               <p className="text-xs text-center text-muted-foreground">
                 {t('inventory:tipExportFormat')}
               </p>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
@@ -26,11 +27,15 @@ import {
   MoreVertical,
   CheckCircle2,
   Download,
+  Upload,
   FileSpreadsheet,
   FileText,
+  FileDown,
   Edit,
   Trash2,
   Repeat,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -64,7 +69,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function AllExpenses() {
   const { t } = useTranslation(['financial', 'common']);
@@ -76,6 +88,9 @@ export default function AllExpenses() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [recurringFilter, setRecurringFilter] = useState<string>("all");
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -351,6 +366,169 @@ export default function AllExpenses() {
     }
   };
 
+  // Comprehensive export with all expense fields
+  const handleComprehensiveExport = () => {
+    try {
+      if (!filteredExpenses || filteredExpenses.length === 0) {
+        toast({
+          title: t('noDataToExport'),
+          description: t('thereAreNoExpensesToExport'),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredExpenses.map(expense => {
+        const amount = parseFloat(expense.amount || '0') || 0;
+        
+        return {
+          'Expense ID': expense.expenseId || '',
+          'Name': expense.name || '',
+          'Description': expense.description || '',
+          'Vendor': expense.vendor || '',
+          'Amount': amount,
+          'Currency': expense.currency || 'USD',
+          'Category': expense.category || 'General',
+          'Date': formatDate(expense.date),
+          'Due Date': expense.dueDate ? formatDate(expense.dueDate) : '',
+          'Status': expense.status || 'pending',
+          'Payment Method': expense.paymentMethod || '',
+          'Is Recurring': expense.isRecurring ? 'Yes' : 'No',
+          'Recurring Frequency': expense.recurringFrequency || '',
+          'Recurring Interval': expense.recurringInterval || '',
+          'Recurring Day': expense.recurringDay || '',
+          'Notes': expense.notes || '',
+          'Tags': expense.tags || '',
+          'Reference Number': expense.referenceNumber || '',
+        };
+      });
+
+      exportToXLSX(exportData, 'expenses_comprehensive', t('expenses'));
+      
+      toast({
+        title: t('exportSuccessful'),
+        description: t('exportedExpenses', { count: filteredExpenses.length }),
+      });
+    } catch (error) {
+      console.error('Error exporting to XLSX:', error);
+      toast({
+        title: t('exportFailed'),
+        description: t('failedToExportExpenses'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Download template for import
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Expense ID': 'EXP-001',
+        'Name': 'Office Supplies Purchase',
+        'Description': 'Paper, pens, and stationery for the office',
+        'Vendor': 'Office Depot',
+        'Amount': '150.00',
+        'Currency': 'USD',
+        'Category': 'Office Supplies',
+        'Date': '2024-12-18',
+        'Due Date': '2024-12-25',
+        'Status': 'pending',
+        'Payment Method': 'card',
+        'Is Recurring': 'No',
+        'Recurring Frequency': '',
+        'Recurring Interval': '',
+        'Recurring Day': '',
+        'Notes': 'Monthly office supply replenishment',
+        'Tags': 'office, supplies',
+        'Reference Number': 'INV-12345',
+      },
+      {
+        'Expense ID': 'EXP-002',
+        'Name': 'Monthly Software Subscription',
+        'Description': 'Cloud storage and productivity tools',
+        'Vendor': 'Google Workspace',
+        'Amount': '299.99',
+        'Currency': 'EUR',
+        'Category': 'Software',
+        'Date': '2024-12-15',
+        'Due Date': '',
+        'Status': 'paid',
+        'Payment Method': 'bank_transfer',
+        'Is Recurring': 'Yes',
+        'Recurring Frequency': 'monthly',
+        'Recurring Interval': '1',
+        'Recurring Day': '15',
+        'Notes': 'Annual subscription paid monthly',
+        'Tags': 'software, subscription',
+        'Reference Number': 'GWS-98765',
+      },
+    ];
+
+    exportToXLSX(templateData, 'expenses_import_template', t('importTemplate'));
+    
+    toast({
+      title: t('templateDownloaded'),
+      description: t('templateDownloadedDescription'),
+    });
+  };
+
+  // Handle file select for import
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common:error'),
+        description: t('noFileSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/expenses/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Import failed');
+      }
+
+      const result = await response.json();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+      
+      toast({
+        title: t('importSuccessful'),
+        description: t('importedExpenses', { count: result.imported || 0 }),
+      });
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('importFailed'),
+        description: error.message || t('failedToImportExpenses'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const columns: DataTableColumn<any>[] = [
     {
       key: "invoiceNumber",
@@ -542,26 +720,35 @@ export default function AllExpenses() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <ImportExportMenu
-            entity="expenses"
-            entityLabel="Expenses"
-            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['/api/expenses'] })}
-          />
+          {/* Import/Export Menu - Three Dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto border-slate-200 dark:border-slate-700" data-testid="button-export">
-                <Download className="h-4 w-4 mr-2" />
-                {t('export')}
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="w-10 sm:w-10"
+                data-testid="button-import-export-menu"
+              >
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>{t('exportFormat')}</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>{t('importExport')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
+                <Upload className="h-4 w-4 mr-2 text-blue-600" />
+                {t('importFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleComprehensiveExport} data-testid="menu-export-comprehensive">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                {t('exportToExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
                 {t('exportToXLSX')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                 <FileText className="h-4 w-4 mr-2 text-red-600" />
                 {t('exportToPDF')}
               </DropdownMenuItem>
@@ -942,6 +1129,99 @@ export default function AllExpenses() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Expenses Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('importExpenses')}</DialogTitle>
+            <DialogDescription>
+              {t('importExpensesDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('downloadTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('expenseTemplateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-expense-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('downloadTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-expense-file">{t('selectFile')}</Label>
+              <Input
+                id="import-expense-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-expense-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-expense-import"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-expense-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:processing')}
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t('importExpenses')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
