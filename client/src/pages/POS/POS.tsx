@@ -142,71 +142,96 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
       <style>{`
         @media print {
           @page {
-            size: 83mm auto;
-            margin: 0;
-          }
-          
-          html, body {
-            width: 83mm !important;
+            size: 80mm auto;
             margin: 0 !important;
             padding: 0 !important;
+          }
+          
+          *, *::before, *::after {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+          }
+          
+          html {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 80mm !important;
+            height: auto !important;
+          }
+          
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 80mm !important;
+            height: auto !important;
             background: white !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
           
-          body * {
-            visibility: hidden !important;
+          body > * {
+            display: none !important;
           }
           
-          .thermal-receipt,
-          .thermal-receipt * {
-            visibility: visible !important;
+          .thermal-receipt-wrapper {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           .thermal-receipt {
-            position: fixed !important;
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
             left: 0 !important;
             top: 0 !important;
-            width: 83mm !important;
-            max-width: 83mm !important;
-            padding: 3mm !important;
+            width: 76mm !important;
+            max-width: 76mm !important;
+            padding: 2mm !important;
             margin: 0 !important;
             font-family: 'Courier New', Courier, monospace !important;
-            font-size: 11px !important;
-            line-height: 1.3 !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
             background: white !important;
             color: black !important;
             border: none !important;
             box-shadow: none !important;
-            overflow: hidden !important;
+            border-radius: 0 !important;
+          }
+          
+          .thermal-receipt * {
+            visibility: visible !important;
+            color: black !important;
           }
           
           .thermal-receipt .text-gray-600,
           .thermal-receipt .text-gray-400,
-          .thermal-receipt .dark\\:text-gray-400,
-          .thermal-receipt .dark\\:text-gray-500 {
+          .thermal-receipt [class*="text-gray"],
+          .thermal-receipt [class*="dark:"] {
             color: #333 !important;
           }
           
-          .thermal-receipt .text-green-600,
-          .thermal-receipt .dark\\:text-green-400 {
-            color: #000 !important;
-          }
-          
-          .thermal-receipt .border-dashed {
-            border-style: dashed !important;
-            border-color: #999 !important;
+          .thermal-receipt .border-dashed,
+          .thermal-receipt [class*="border-"] {
+            border-color: #666 !important;
           }
           
           .no-print {
             display: none !important;
             visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
           }
         }
       `}</style>
       
-      <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
+      <div className="thermal-receipt-wrapper">
+        <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
         <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <h2 className="text-xl font-bold">DAVIE SUPPLY</h2>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('financial:posReceipt')}</p>
@@ -290,6 +315,7 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
         <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('financial:thankYouForPurchase')}</p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('financial:poweredByPOS')}</p>
+        </div>
         </div>
       </div>
       
