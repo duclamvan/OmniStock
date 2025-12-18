@@ -414,49 +414,49 @@ export default function ProductDetails() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-6 space-y-8">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 space-y-4 sm:space-y-6">
           
           {/* HERO: Location, Stock & Packaging Emphasis */}
           <section 
             id="overview" 
             ref={setSectionRef('overview')}
-            className="scroll-mt-44 lg:scroll-mt-24"
+            className="scroll-mt-32 lg:scroll-mt-24"
           >
             {/* Primary Stats - Location, Stock, Packaging */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6">
               {/* Location Code - EMPHASIZED */}
-              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
-                <div className="absolute top-0 right-0 opacity-10">
+              <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-2.5 sm:p-5 text-white shadow-md sm:shadow-lg">
+                <div className="absolute top-0 right-0 opacity-10 hidden sm:block">
                   <MapPin className="h-24 w-24 -mt-4 -mr-4" />
                 </div>
                 <div className="relative">
-                  <p className="text-blue-100 text-sm font-medium mb-1">{t('common:locationCode')}</p>
-                  <p className="text-3xl sm:text-4xl font-bold font-mono tracking-wider">
+                  <p className="text-blue-100 text-[10px] sm:text-sm font-medium">{t('common:locationCode')}</p>
+                  <p className="text-lg sm:text-3xl font-bold font-mono tracking-wide truncate">
                     {product.warehouseLocation || '—'}
                   </p>
-                  <p className="text-blue-200 text-xs mt-2">{warehouse?.name || t('common:notAssigned')}</p>
+                  <p className="text-blue-200 text-[10px] sm:text-xs mt-0.5 sm:mt-2 truncate hidden sm:block">{warehouse?.name || t('common:notAssigned')}</p>
                 </div>
               </div>
 
               {/* Stock Quantity - EMPHASIZED */}
-              <div className={`relative overflow-hidden rounded-xl p-5 text-white shadow-lg ${
+              <div className={`relative overflow-hidden rounded-lg sm:rounded-xl p-2.5 sm:p-5 text-white shadow-md sm:shadow-lg ${
                 stockStatus === 'out' ? 'bg-gradient-to-br from-red-500 to-red-600' :
                 stockStatus === 'critical' ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
                 stockStatus === 'low' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
                 'bg-gradient-to-br from-emerald-500 to-emerald-600'
               }`}>
-                <div className="absolute top-0 right-0 opacity-10">
+                <div className="absolute top-0 right-0 opacity-10 hidden sm:block">
                   <Box className="h-24 w-24 -mt-4 -mr-4" />
                 </div>
                 <div className="relative">
-                  <p className={`text-sm font-medium mb-1 ${
+                  <p className={`text-[10px] sm:text-sm font-medium ${
                     stockStatus === 'out' ? 'text-red-100' :
                     stockStatus === 'critical' ? 'text-orange-100' :
                     stockStatus === 'low' ? 'text-yellow-100' :
                     'text-emerald-100'
                   }`}>{t('products:stockQty')}</p>
-                  <p className="text-3xl sm:text-4xl font-bold">{product.quantity || 0}</p>
-                  <div className="flex items-center gap-1.5 mt-2">
+                  <p className="text-lg sm:text-3xl font-bold">{product.quantity || 0}</p>
+                  <div className="hidden sm:flex items-center gap-1.5 mt-2">
                     {stockStatus === 'out' && <AlertTriangle className="h-3.5 w-3.5" />}
                     {stockStatus === 'critical' && <AlertTriangle className="h-3.5 w-3.5" />}
                     {stockStatus === 'low' && <AlertTriangle className="h-3.5 w-3.5" />}
@@ -472,27 +472,27 @@ export default function ProductDetails() {
               </div>
 
               {/* Packaging Unit - EMPHASIZED */}
-              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-5 text-white shadow-lg">
-                <div className="absolute top-0 right-0 opacity-10">
+              <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-2.5 sm:p-5 text-white shadow-md sm:shadow-lg">
+                <div className="absolute top-0 right-0 opacity-10 hidden sm:block">
                   <Package className="h-24 w-24 -mt-4 -mr-4" />
                 </div>
                 <div className="relative">
-                  <p className="text-purple-100 text-sm font-medium mb-1">{t('products:packingMaterial')}</p>
-                  <p className="text-xl sm:text-2xl font-bold truncate">
-                    {packingMaterial?.name || t('common:notAssigned')}
+                  <p className="text-purple-100 text-[10px] sm:text-sm font-medium">{t('products:packingMaterial')}</p>
+                  <p className="text-sm sm:text-xl font-bold truncate">
+                    {packingMaterial?.name || '—'}
                   </p>
                   {packingMaterial?.dimensions && (
-                    <p className="text-purple-200 text-xs mt-2 font-mono">{packingMaterial.dimensions}</p>
+                    <p className="text-purple-200 text-[10px] sm:text-xs mt-0.5 sm:mt-2 font-mono truncate hidden sm:block">{packingMaterial.dimensions}</p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Product Image & Quick Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Product Image */}
-              <div className="md:col-span-1">
-                <div className="aspect-square bg-muted rounded-xl overflow-hidden border">
+            {/* Product Image & Quick Info - Mobile: side-by-side */}
+            <div className="grid grid-cols-5 sm:grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+              {/* Product Image - Smaller on mobile */}
+              <div className="col-span-2 sm:col-span-1 md:col-span-1">
+                <div className="aspect-square bg-muted rounded-lg sm:rounded-xl overflow-hidden border">
                   {displayImage ? (
                     <img src={displayImage} alt={product.name} className="w-full h-full object-contain" />
                   ) : (
@@ -500,7 +500,7 @@ export default function ProductDetails() {
                   )}
                 </div>
                 {productImages.length > 1 && (
-                  <div className="grid grid-cols-5 gap-2 mt-3">
+                  <div className="grid grid-cols-5 gap-1 sm:gap-2 mt-1.5 sm:mt-3">
                     {productImages.slice(0, 5).map((img, idx) => {
                       const config = IMAGE_PURPOSE_ICONS[img.purpose as keyof typeof IMAGE_PURPOSE_ICONS];
                       const Icon = config?.icon || ImageIcon;
@@ -508,9 +508,9 @@ export default function ProductDetails() {
                         <button
                           key={idx}
                           onClick={() => setSelectedImageIndex(idx)}
-                          className={`aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                          className={`aspect-square rounded border-2 overflow-hidden transition-all ${
                             idx === selectedImageIndex 
-                              ? 'border-primary ring-2 ring-primary/20' 
+                              ? 'border-primary ring-1 ring-primary/20' 
                               : 'border-border hover:border-primary/50'
                           }`}
                           data-testid={`image-thumb-${idx}`}
@@ -519,7 +519,7 @@ export default function ProductDetails() {
                             <img src={img.url} alt="" className="w-full h-full object-contain" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <Icon className="h-4 w-4 text-muted-foreground" />
+                              <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                             </div>
                           )}
                         </button>
@@ -529,81 +529,74 @@ export default function ProductDetails() {
                 )}
               </div>
 
-              {/* Quick Stats Grid */}
-              <div className="md:col-span-2 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{t('common:totalSold')}</span>
-                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              {/* Quick Stats Grid - Compact on mobile */}
+              <div className="col-span-3 sm:col-span-1 md:col-span-2 grid grid-cols-2 gap-1.5 sm:gap-3">
+                <div className="rounded-lg border bg-card p-2 sm:p-4">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-sm text-muted-foreground">{t('common:totalSold')}</span>
+                    <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">{totalSold}</p>
-                  <p className="text-xs text-muted-foreground">{t('common:allTime')}</p>
+                  <p className="text-base sm:text-2xl font-bold">{totalSold}</p>
                 </div>
 
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{t('common:totalRevenue')}</span>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div className="rounded-lg border bg-card p-2 sm:p-4">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-sm text-muted-foreground">{t('common:totalRevenue')}</span>
+                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue, 'CZK')}</p>
-                  <p className="text-xs text-muted-foreground">{t('common:allTime')}</p>
+                  <p className="text-sm sm:text-2xl font-bold truncate">{formatCurrency(totalRevenue, 'CZK')}</p>
                 </div>
 
                 {canAccessFinancialData && (
-                  <div className="rounded-lg border bg-card p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">{t('products:margin')}</span>
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <div className="rounded-lg border bg-card p-2 sm:p-4">
+                    <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                      <span className="text-[10px] sm:text-sm text-muted-foreground">{t('products:margin')}</span>
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                     </div>
-                    <p className={`text-2xl font-bold ${
+                    <p className={`text-base sm:text-2xl font-bold ${
                       parseFloat(primaryMargin) > 30 ? 'text-green-600' : 
                       parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'
                     }`}>
                       {primaryMargin}%
                     </p>
-                    <p className="text-xs text-muted-foreground">{t('common:perUnit')}</p>
                   </div>
                 )}
 
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{t('common:reorderRate')}</span>
-                    <div className="flex items-center gap-1">
-                      <Repeat className="h-4 w-4 text-muted-foreground" />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => recalculateReorderRate.mutate()}
-                        disabled={recalculateReorderRate.isPending}
-                        className="h-6 w-6"
-                        data-testid="button-recalculate-reorder-rate"
-                      >
-                        <RefreshCw className={`h-3 w-3 ${recalculateReorderRate.isPending ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </div>
+                <div className="rounded-lg border bg-card p-2 sm:p-4">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-sm text-muted-foreground">{t('common:reorderRate')}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => recalculateReorderRate.mutate()}
+                      disabled={recalculateReorderRate.isPending}
+                      className="h-5 w-5 sm:h-6 sm:w-6"
+                      data-testid="button-recalculate-reorder-rate"
+                    >
+                      <RefreshCw className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${recalculateReorderRate.isPending ? 'animate-spin' : ''}`} />
+                    </Button>
                   </div>
-                  <p className="text-2xl font-bold">
+                  <p className="text-base sm:text-2xl font-bold">
                     {product.reorderRate !== null && product.reorderRate !== undefined 
                       ? `${parseFloat(product.reorderRate).toFixed(1)}%` 
                       : t('common:na')}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t('common:oneYearRepeatRate')}</p>
                 </div>
 
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{t('products:category')}</span>
-                    <Grid3X3 className="h-4 w-4 text-muted-foreground" />
+                <div className="rounded-lg border bg-card p-2 sm:p-4">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-sm text-muted-foreground">{t('products:category')}</span>
+                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-lg font-semibold truncate">{category?.name || t('common:uncategorized')}</p>
+                  <p className="text-xs sm:text-lg font-semibold truncate">{category?.name || t('common:uncategorized')}</p>
                 </div>
 
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{t('products:lowStockThreshold')}</span>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <div className="rounded-lg border bg-card p-2 sm:p-4">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-sm text-muted-foreground">{t('products:lowStockThreshold')}</span>
+                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-lg font-semibold">{product.lowStockAlert || 5} {t('common:units')}</p>
+                  <p className="text-xs sm:text-lg font-semibold">{product.lowStockAlert || 5}</p>
                 </div>
               </div>
             </div>
@@ -615,30 +608,30 @@ export default function ProductDetails() {
           <section 
             id="stock" 
             ref={setSectionRef('stock')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Box className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <Box className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('products:stockInventory', 'Stock & Inventory')}
             </h2>
             
-            <div className="rounded-xl border bg-card">
-              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="rounded-lg sm:rounded-xl border bg-card">
+              <div className="p-2.5 sm:p-4 grid grid-cols-4 gap-2 sm:gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:currentStock')}</p>
-                  <p className="text-2xl font-bold">{product.quantity || 0}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:currentStock')}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{product.quantity || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:lowStockThreshold')}</p>
-                  <p className="text-2xl font-bold">{product.lowStockAlert || 5}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:lowStockThreshold')}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{product.lowStockAlert || 5}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:reservedStock', 'Reserved')}</p>
-                  <p className="text-2xl font-bold">{product.reservedQuantity || 0}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:reservedStock', 'Reserved')}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{product.reservedQuantity || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:availableStock', 'Available')}</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:availableStock', 'Available')}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-600">
                     {(product.quantity || 0) - (product.reservedQuantity || 0)}
                   </p>
                 </div>
@@ -646,9 +639,9 @@ export default function ProductDetails() {
               
               {/* Product Locations */}
               <Separator />
-              <div className="p-4">
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <MapPinned className="h-4 w-4" />
+              <div className="p-2.5 sm:p-4">
+                <h3 className="font-medium mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <MapPinned className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {t('products:productLocations')}
                 </h3>
                 <ProductLocations productId={id!} />
@@ -662,28 +655,28 @@ export default function ProductDetails() {
           <section 
             id="pricing" 
             ref={setSectionRef('pricing')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Euro className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <Euro className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('products:pricingInformation')}
             </h2>
             
-            <div className="rounded-xl border bg-card p-4 space-y-6">
+            <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4 space-y-3 sm:space-y-6">
               {/* Selling Prices */}
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
+                <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                  <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {t('common:sellingPrice')}
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground mb-1">CZK</p>
-                    <p className="text-2xl font-bold">{formatCurrency(priceCzk, 'CZK')}</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-4 rounded-lg bg-muted/50">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">CZK</p>
+                    <p className="text-base sm:text-2xl font-bold">{formatCurrency(priceCzk, 'CZK')}</p>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground mb-1">EUR</p>
-                    <p className="text-2xl font-bold">{formatCurrency(priceEur, 'EUR')}</p>
+                  <div className="p-2 sm:p-4 rounded-lg bg-muted/50">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">EUR</p>
+                    <p className="text-base sm:text-2xl font-bold">{formatCurrency(priceEur, 'EUR')}</p>
                   </div>
                 </div>
               </div>
@@ -691,9 +684,9 @@ export default function ProductDetails() {
               {/* Import Costs */}
               {canAccessFinancialData && (landingCostEur > 0 || landingCostCzk > 0 || product.importCostUsd) && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground flex items-center gap-1.5 sm:gap-2">
+                      <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       {t('products:importCost')}
                       {costTrend && (
                         <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -797,23 +790,23 @@ export default function ProductDetails() {
                       </Dialog>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                     {product.importCostUsd && (
-                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-xs text-muted-foreground mb-1">USD</p>
-                        <p className="text-base sm:text-lg font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">USD</p>
+                        <p className="text-sm sm:text-lg font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
                       </div>
                     )}
                     {landingCostCzk > 0 && (
-                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-xs text-muted-foreground mb-1">CZK</p>
-                        <p className="text-base sm:text-lg font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">CZK</p>
+                        <p className="text-sm sm:text-lg font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
                       </div>
                     )}
                     {landingCostEur > 0 && (
-                      <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-xs text-muted-foreground mb-1">EUR</p>
-                        <p className="text-base sm:text-lg font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">EUR</p>
+                        <p className="text-sm sm:text-lg font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
                       </div>
                     )}
                   </div>
@@ -823,30 +816,30 @@ export default function ProductDetails() {
               {/* Margins */}
               {canAccessFinancialData && (marginEur || marginCzk) && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('products:margin')}
                   </h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
                     {marginCzk && (
-                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                        <p className="text-xs text-muted-foreground mb-1">{t('common:marginCzk')}</p>
-                        <p className="text-xl font-bold text-green-600">{marginCzk}%</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('common:marginCzk')}</p>
+                        <p className="text-base sm:text-xl font-bold text-green-600">{marginCzk}%</p>
                       </div>
                     )}
                     {marginEur && (
-                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                        <p className="text-xs text-muted-foreground mb-1">{t('common:marginEur')}</p>
-                        <p className="text-xl font-bold text-green-600">{marginEur}%</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('common:marginEur')}</p>
+                        <p className="text-base sm:text-xl font-bold text-green-600">{marginEur}%</p>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Cost History Chart */}
+              {/* Cost History Chart - hidden on mobile, accessible via dialog */}
               {canAccessFinancialData && costHistory.length > 0 && (
-                <div>
+                <div className="hidden sm:block">
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
                     <BarChart3 className="h-4 w-4" />
                     {t('products:costHistory')}
@@ -863,68 +856,68 @@ export default function ProductDetails() {
           <section 
             id="details" 
             ref={setSectionRef('details')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Tag className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('products:productDetails', 'Product Details')}
             </h2>
             
-            <div className="rounded-xl border bg-card p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:productName')}</p>
-                  <p className="font-medium">{product.name}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:productName')}</p>
+                  <p className="text-xs sm:text-base font-medium truncate">{product.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('products:sku')}</p>
-                  <p className="font-medium font-mono">{product.sku}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:sku')}</p>
+                  <p className="text-xs sm:text-base font-medium font-mono">{product.sku}</p>
                 </div>
                 {product.barcode && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">{t('products:barcode')}</p>
-                    <p className="font-medium font-mono">{product.barcode}</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:barcode')}</p>
+                    <p className="text-xs sm:text-base font-medium font-mono truncate">{product.barcode}</p>
                   </div>
                 )}
                 {product.vietnameseName && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">{t('products:vietnameseName')}</p>
-                    <p className="font-medium">{product.vietnameseName}</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:vietnameseName')}</p>
+                    <p className="text-xs sm:text-base font-medium truncate">{product.vietnameseName}</p>
                   </div>
                 )}
                 {supplier && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">{t('products:supplier')}</p>
-                    <p className="font-medium">{supplier.name}</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:supplier')}</p>
+                    <p className="text-xs sm:text-base font-medium truncate">{supplier.name}</p>
                   </div>
                 )}
               </div>
 
               {product.description && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-2">{t('products:description')}</p>
-                  <p className="text-sm">{product.description}</p>
+                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-1">{t('products:description')}</p>
+                  <p className="text-xs sm:text-sm line-clamp-2 sm:line-clamp-none">{product.description}</p>
                 </div>
               )}
 
               {/* Customs & Import Information */}
               {(product.hsCode || product.dutyRatePercent) && canAccessFinancialData && (
-                <div className="mt-4 pt-4 border-t">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
+                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('products:customsInfo', 'Customs & Import')}
                   </h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
                     {product.hsCode && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:hsCode', 'HS Code')}</p>
-                        <p className="font-semibold font-mono">{product.hsCode}</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:hsCode', 'HS Code')}</p>
+                        <p className="text-xs sm:text-base font-semibold font-mono">{product.hsCode}</p>
                       </div>
                     )}
                     {product.dutyRatePercent && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:dutyRate', 'Duty Rate')}</p>
-                        <p className="font-semibold">{product.dutyRatePercent}%</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:dutyRate', 'Duty Rate')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.dutyRatePercent}%</p>
                       </div>
                     )}
                   </div>
@@ -933,28 +926,28 @@ export default function ProductDetails() {
 
               {/* Unit Configuration */}
               {(product.unitType || product.unitName || product.unitsPerItem) && (
-                <div className="mt-4 pt-4 border-t">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Layers className="h-4 w-4" />
+                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('products:unitConfiguration', 'Unit Configuration')}
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                     {product.unitType && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:unitType', 'Unit Type')}</p>
-                        <p className="font-semibold capitalize">{product.unitType}</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:unitType', 'Unit Type')}</p>
+                        <p className="text-xs sm:text-base font-semibold capitalize">{product.unitType}</p>
                       </div>
                     )}
                     {product.unitName && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:unitName', 'Unit Name')}</p>
-                        <p className="font-semibold">{product.unitName}</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:unitName', 'Unit Name')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.unitName}</p>
                       </div>
                     )}
                     {product.unitsPerItem && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:unitsPerItem', 'Units per Item')}</p>
-                        <p className="font-semibold">{product.unitsPerItem}</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:unitsPerItem', 'Units/Item')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.unitsPerItem}</p>
                       </div>
                     )}
                   </div>
@@ -963,34 +956,34 @@ export default function ProductDetails() {
 
               {/* Physical Dimensions */}
               {(product.length || product.width || product.height || product.weight) && (
-                <div className="mt-4 pt-4 border-t">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Ruler className="h-4 w-4" />
+                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <Ruler className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('products:physicalAttributes')}
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
                     {product.length && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:length')}</p>
-                        <p className="font-semibold">{product.length} {t('common:cm')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:length')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.length}</p>
                       </div>
                     )}
                     {product.width && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:width')}</p>
-                        <p className="font-semibold">{product.width} {t('common:cm')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:width')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.width}</p>
                       </div>
                     )}
                     {product.height && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:height')}</p>
-                        <p className="font-semibold">{product.height} {t('common:cm')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:height')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{product.height}</p>
                       </div>
                     )}
                     {product.weight && (
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">{t('products:weight')}</p>
-                        <p className="font-semibold">{parseFloat(product.weight).toFixed(3)} {t('common:kg')}</p>
+                      <div className="p-1.5 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:weight')}</p>
+                        <p className="text-xs sm:text-base font-semibold">{parseFloat(product.weight).toFixed(2)}</p>
                       </div>
                     )}
                   </div>
@@ -1005,31 +998,31 @@ export default function ProductDetails() {
           <section 
             id="warehouse" 
             ref={setSectionRef('warehouse')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Warehouse className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <Warehouse className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('common:warehouseLocation')}
             </h2>
             
-            <div className="rounded-xl border bg-card p-4">
-              <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-2 sm:mb-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('common:warehouse')}</p>
-                  <p className="font-medium">{warehouse?.name || t('common:notAssigned')}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('common:warehouse')}</p>
+                  <p className="text-xs sm:text-base font-medium truncate">{warehouse?.name || t('common:notAssigned')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t('common:locationCode')}</p>
-                  <p className="font-bold font-mono text-lg text-primary">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('common:locationCode')}</p>
+                  <p className="text-sm sm:text-lg font-bold font-mono text-primary">
                     {product.warehouseLocation || '—'}
                   </p>
                 </div>
               </div>
               
               {product.shipmentNotes && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-2">{t('common:shipmentNotes')}</p>
-                  <p className="text-sm bg-yellow-50 dark:bg-yellow-950/30 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="pt-2 sm:pt-4 border-t">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-1">{t('common:shipmentNotes')}</p>
+                  <p className="text-xs sm:text-sm bg-yellow-50 dark:bg-yellow-950/30 p-2 sm:p-3 rounded-lg border border-yellow-200 dark:border-yellow-800 line-clamp-2 sm:line-clamp-none">
                     {product.shipmentNotes}
                   </p>
                 </div>
@@ -1037,30 +1030,30 @@ export default function ProductDetails() {
 
               {/* Supplier Info */}
               {supplier && (
-                <div className="mt-4 pt-4 border-t">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Users className="h-4 w-4" />
+                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('products:supplierSection')}
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">{t('products:supplier')}</p>
-                      <p className="font-medium">{supplier.name}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t('products:supplier')}</p>
+                      <p className="text-xs sm:text-base font-medium truncate">{supplier.name}</p>
                     </div>
                     {supplier.country && (
                       <div>
-                        <p className="text-xs text-muted-foreground">{t('common:country')}</p>
-                        <p className="font-medium">{supplier.country}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('common:country')}</p>
+                        <p className="text-xs sm:text-base font-medium">{supplier.country}</p>
                       </div>
                     )}
                     {supplier.contactPerson && (
-                      <div>
+                      <div className="hidden sm:block">
                         <p className="text-xs text-muted-foreground">{t('common:contactPerson')}</p>
                         <p className="font-medium">{supplier.contactPerson}</p>
                       </div>
                     )}
                     {supplier.email && (
-                      <div>
+                      <div className="hidden sm:block">
                         <p className="text-xs text-muted-foreground">{t('common:email')}</p>
                         <p className="font-medium text-sm truncate">{supplier.email}</p>
                       </div>
@@ -1078,14 +1071,14 @@ export default function ProductDetails() {
               <section 
                 id="variants" 
                 ref={setSectionRef('variants')}
-                className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+                className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
               >
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
+                <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
                   {t('products:variantsTab')} ({variants.length})
                 </h2>
                 
-                <div className="rounded-xl border bg-card p-4">
+                <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4">
                   <ProductVariants productId={id!} />
                 </div>
               </section>
@@ -1099,30 +1092,30 @@ export default function ProductDetails() {
               <section 
                 id="tiered" 
                 ref={setSectionRef('tiered')}
-                className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+                className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
               >
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+                <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                   {t('products:tieredPricing')}
                 </h2>
                 
-                <div className="rounded-xl border bg-card overflow-x-auto">
-                  <Table className="min-w-[320px]">
+                <div className="rounded-lg sm:rounded-xl border bg-card overflow-x-auto">
+                  <Table className="min-w-[280px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="whitespace-nowrap">{t('products:quantityRange')}</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">{t('products:priceCzk')}</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">{t('products:priceEur')}</TableHead>
+                        <TableHead className="whitespace-nowrap text-xs sm:text-sm">{t('products:quantityRange')}</TableHead>
+                        <TableHead className="text-right whitespace-nowrap text-xs sm:text-sm">CZK</TableHead>
+                        <TableHead className="text-right whitespace-nowrap text-xs sm:text-sm">EUR</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tieredPricing.map((tier: any) => (
                         <TableRow key={tier.id}>
-                          <TableCell className="font-medium whitespace-nowrap">
-                            {tier.minQuantity}+ {t('common:units')}
+                          <TableCell className="font-medium whitespace-nowrap text-xs sm:text-sm py-2 sm:py-4">
+                            {tier.minQuantity}+
                           </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
-                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap text-xs sm:text-sm py-2 sm:py-4">{formatCurrency(parseFloat(tier.priceCzk || '0'), 'CZK')}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap text-xs sm:text-sm py-2 sm:py-4">{formatCurrency(parseFloat(tier.priceEur || '0'), 'EUR')}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1138,25 +1131,25 @@ export default function ProductDetails() {
           <section 
             id="packing" 
             ref={setSectionRef('packing')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Package className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('products:packingInstructions')}
             </h2>
             
-            <div className="rounded-xl border bg-card p-4 space-y-4">
+            <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4 space-y-2 sm:space-y-4">
               {/* Packing Material */}
               {packingMaterial && (
-                <div className="flex items-center gap-4 p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
                   {packingMaterial.imageUrl && (
-                    <img src={packingMaterial.imageUrl} alt="" className="w-16 h-16 object-contain rounded-lg border bg-white" />
+                    <img src={packingMaterial.imageUrl} alt="" className="w-10 h-10 sm:w-16 sm:h-16 object-contain rounded-lg border bg-white" />
                   )}
-                  <div>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('products:packingMaterial')}</p>
-                    <p className="font-bold text-lg">{packingMaterial.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-medium">{t('products:packingMaterial')}</p>
+                    <p className="text-sm sm:text-lg font-bold truncate">{packingMaterial.name}</p>
                     {packingMaterial.dimensions && (
-                      <p className="text-sm text-muted-foreground font-mono">{packingMaterial.dimensions}</p>
+                      <p className="text-[10px] sm:text-sm text-muted-foreground font-mono truncate">{packingMaterial.dimensions}</p>
                     )}
                   </div>
                 </div>
@@ -1164,63 +1157,63 @@ export default function ProductDetails() {
 
               {/* Instructions */}
               {packingInstructions.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="font-medium text-sm text-muted-foreground">
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="font-medium text-xs sm:text-sm text-muted-foreground">
                     {t('common:steps')} ({packingInstructions.length})
                   </h3>
                   {packingInstructions.map((instruction, index) => (
-                    <div key={index} className="flex gap-3 p-3 rounded-lg border bg-muted/30">
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                    <div key={index} className="flex gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-muted/30">
+                      <div className="shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs sm:text-sm font-bold">
                         {index + 1}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         {instruction.image && (
                           <img 
                             src={instruction.image} 
                             alt={`${t('common:step')} ${index + 1}`} 
-                            className="w-full max-w-xs h-32 object-contain rounded border mb-2 bg-white" 
+                            className="w-full max-w-xs h-20 sm:h-32 object-contain rounded border mb-1 sm:mb-2 bg-white" 
                           />
                         )}
                         {instruction.text && (
-                          <p className="text-sm">{instruction.text}</p>
+                          <p className="text-xs sm:text-sm">{instruction.text}</p>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">
+                <p className="text-xs sm:text-sm text-muted-foreground text-center py-4 sm:py-8">
                   {t('products:noPackingInstructions', 'No packing instructions available')}
                 </p>
               )}
 
               {/* Bundles containing this product */}
               {productBundles.length > 0 && (
-                <div className="pt-4 border-t">
-                  <h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
-                    <Layers className="h-4 w-4" />
+                <div className="pt-2 sm:pt-4 border-t">
+                  <h3 className="font-medium text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                    <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {t('common:includedInBundles')} ({productBundles.length})
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {productBundles.map((bundle: any) => {
                       const bundleItem = bundle.items?.find((item: any) => item.productId === id);
                       return (
-                        <div key={bundle.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                        <div key={bundle.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-muted/30">
                           {bundle.imageUrl && (
-                            <img src={bundle.imageUrl} alt={bundle.name} className="w-10 h-10 object-contain rounded border bg-white" />
+                            <img src={bundle.imageUrl} alt={bundle.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded border bg-white" />
                           )}
                           <div className="flex-1 min-w-0">
                             <Link href={`/inventory/bundles/${bundle.id}`}>
-                              <p className="font-medium text-primary hover:underline truncate">{bundle.name}</p>
+                              <p className="text-xs sm:text-base font-medium text-primary hover:underline truncate">{bundle.name}</p>
                             </Link>
                             {bundleItem && (
-                              <p className="text-xs text-muted-foreground">
-                                {t('common:quantityInBundle')}: {bundleItem.quantity}×
+                              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                {bundleItem.quantity}×
                               </p>
                             )}
                           </div>
                           {bundle.priceEur && (
-                            <p className="text-sm font-semibold shrink-0">{formatCurrency(parseFloat(bundle.priceEur), 'EUR')}</p>
+                            <p className="text-xs sm:text-sm font-semibold shrink-0">{formatCurrency(parseFloat(bundle.priceEur), 'EUR')}</p>
                           )}
                         </div>
                       );
@@ -1237,14 +1230,14 @@ export default function ProductDetails() {
           <section 
             id="files" 
             ref={setSectionRef('files')}
-            className="scroll-mt-44 lg:scroll-mt-24 space-y-4 pb-8"
+            className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4 pb-4 sm:pb-8"
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+            <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               {t('products:productFiles')}
             </h2>
             
-            <div className="rounded-xl border bg-card p-4">
+            <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4">
               <ProductFiles productId={id!} />
             </div>
           </section>
