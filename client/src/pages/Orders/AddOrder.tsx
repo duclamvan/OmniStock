@@ -7476,10 +7476,10 @@ export default function AddOrder() {
                 )}
               </div>
               <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">{t('orders:grandTotalLabel')}</span>
-                  <div className="flex items-center gap-1">
+              <div className="space-y-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('orders:grandTotalLabel')}</span>
+                  <div className="flex items-center gap-2">
                     <Input
                       id="grandTotalMobile"
                       type="text"
@@ -7523,12 +7523,12 @@ export default function AddOrder() {
                           });
                         }
                       }}
-                      className="w-32 h-8 text-sm font-bold text-blue-600 text-right"
+                      className="w-36 h-11 text-xl font-bold text-blue-600 text-right"
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
+                      size="default"
                       onClick={() => {
                         const currentTotal = calculateGrandTotal();
                         const roundedTotal = Math.ceil(currentTotal);
@@ -7548,13 +7548,13 @@ export default function AddOrder() {
                           });
                         }
                       }}
-                      className="h-8 px-2"
+                      className="h-11 px-3"
                     >
-                      <ArrowUpCircle className="w-3 h-3" />
+                      <ArrowUpCircle className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
+                <p className="text-sm text-gray-500">{t('orders:clickToEditOrRoundUp')}</p>
               </div>
 
               {/* Collapsible Margin Analysis Section - Mobile */}
