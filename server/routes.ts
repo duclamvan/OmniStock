@@ -17782,11 +17782,45 @@ Important rules:
       const contentWidth = 220; // 78mm content area
       const margin = 7; // ~2.5mm margin on each side
 
-      // Create PDF with exact 83mm width
+      // Calculate content height first by simulating the layout
+      let estimatedHeight = margin; // Start with top margin
+      estimatedHeight += 18; // Header - Company Name
+      estimatedHeight += 15; // Subtitle
+      estimatedHeight += 8; // Dashed line
+      estimatedHeight += 12 * 2; // Date and Time
+      if (orderId) estimatedHeight += 12; // Order ID
+      estimatedHeight += 12; // Customer
+      estimatedHeight += 10; // Dashed line
+      estimatedHeight += 14; // Items header
+      
+      // Estimate items height (each item ~15-25 points depending on name length)
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          const itemName = `${item.quantity}x ${item.name}`;
+          // Rough estimate: ~12 points per line, with wrapping for long names
+          const estimatedLines = Math.ceil(itemName.length / 25);
+          estimatedHeight += Math.max(12, estimatedLines * 12) + 3;
+        }
+      }
+      
+      estimatedHeight += 5; // Gap
+      estimatedHeight += 10; // Dashed line
+      estimatedHeight += 14; // Subtotal
+      estimatedHeight += 16; // Total
+      estimatedHeight += 10; // Dashed line
+      estimatedHeight += 12; // Payment method
+      if (cashReceived !== undefined) estimatedHeight += 12;
+      if (change !== undefined) estimatedHeight += 14;
+      estimatedHeight += 12; // Dashed line
+      estimatedHeight += 12; // Thank you
+      estimatedHeight += 15; // Footer
+      estimatedHeight += margin; // Bottom margin
+
+      // Create PDF with exact 83mm width and calculated height
       const doc = new PDFDocument({
-        size: [pageWidth, 600], // 83mm width, auto height (will be trimmed)
+        size: [pageWidth, estimatedHeight],
         margin: 0,
-        bufferPages: true
+        bufferPages: false
       });
 
       // Collect PDF data
