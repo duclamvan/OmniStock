@@ -6156,7 +6156,7 @@ export default function AddOrder() {
                             )}
                           </div>
                           <div>
-                            <Label className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                            <Label className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block text-right">
                               {t('orders:total')}
                             </Label>
                             <div className="h-9 flex items-center justify-end">
