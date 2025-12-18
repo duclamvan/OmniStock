@@ -4676,6 +4676,113 @@ Important:
     }
   });
 
+  // Order Import endpoint
+  const orderImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /xlsx|xls/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      if (extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only Excel files (.xlsx, .xls) are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/orders/import', isAuthenticated, orderImportUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ message: "No data found in Excel file" });
+      }
+
+      const importedOrders: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          // Map Excel columns to order fields
+          const orderId = row['Order ID'] || `ORD-${Date.now()}-${i}`;
+          const customerName = row['Customer Name'];
+          const customerEmail = row['Customer Email'];
+          const customerPhone = row['Customer Phone'];
+          const shippingAddress = row['Shipping Address'];
+          const currency = row['Currency'] || 'CZK';
+          const shippingMethod = row['Shipping Method'];
+          const paymentMethod = row['Payment Method'];
+          const orderStatus = row['Order Status'] || 'pending';
+          const paymentStatus = row['Payment Status'] || 'pending';
+          const notes = row['Notes'];
+
+          // Find or create customer if name provided
+          let customerId = null;
+          if (customerName) {
+            const customers = await storage.getCustomers();
+            const existingCustomer = customers.find((c: any) => 
+              c.name?.toLowerCase() === customerName.toLowerCase() ||
+              (customerEmail && c.email?.toLowerCase() === customerEmail?.toLowerCase())
+            );
+            
+            if (existingCustomer) {
+              customerId = existingCustomer.id;
+            } else {
+              // Create new customer
+              const newCustomer = await storage.createCustomer({
+                name: customerName,
+                email: customerEmail || null,
+                phone: customerPhone || null,
+                address: shippingAddress || null,
+                type: 'regular',
+                isActive: true,
+              });
+              customerId = newCustomer.id;
+            }
+          }
+
+          // Create order
+          const orderData = {
+            orderId,
+            customerId,
+            currency,
+            shippingMethod,
+            paymentMethod,
+            orderStatus,
+            paymentStatus,
+            notes,
+            grandTotal: '0',
+            subtotal: '0',
+          };
+
+          const newOrder = await storage.createOrder(orderData);
+          importedOrders.push(newOrder);
+        } catch (rowError: any) {
+          errors.push(`Row ${i + 2}: ${rowError.message}`);
+        }
+      }
+
+      res.json({ 
+        imported: importedOrders.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${importedOrders.length} order(s)${errors.length > 0 ? ` with ${errors.length} error(s)` : ''}`
+      });
+    } catch (error: any) {
+      console.error("Error importing orders:", error);
+      res.status(500).json({ message: error.message || "Failed to import orders" });
+    }
+  });
+
   app.get('/api/products/:id/tiered-pricing', isAuthenticated, async (req, res) => {
     try {
       const pricing = await storage.getProductTieredPricing(req.params.id);

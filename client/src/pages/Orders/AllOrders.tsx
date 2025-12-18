@@ -36,6 +36,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -146,6 +154,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [ordersToDelete, setOrdersToDelete] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   // Ref to store clearSelection function from DataTable
   const clearSelectionRef = useRef<(() => void) | null>(null);
@@ -1044,6 +1055,95 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
+  // Download import template
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Order ID': 'ORD-001',
+        'Customer Name': 'John Doe',
+        'Customer Email': 'john@example.com',
+        'Customer Phone': '+420123456789',
+        'Shipping Address': '123 Main St, Prague, Czech Republic',
+        'Currency': 'CZK',
+        'Shipping Method': 'GLS',
+        'Payment Method': 'Bank Transfer',
+        'Order Status': 'pending',
+        'Payment Status': 'pending',
+        'Notes': 'Sample order notes',
+      }
+    ];
+    exportToXLSX(templateData, 'orders_import_template', t('orders:importTemplate'));
+    toast({
+      title: t('common:success'),
+      description: t('orders:templateDownloaded'),
+    });
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: t('common:error'),
+          description: t('orders:invalidFileType'),
+          variant: "destructive",
+        });
+        return;
+      }
+      setImportFile(file);
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common:error'),
+        description: t('orders:noFileSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch('/api/orders/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || t('orders:importFailed'));
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: t('common:success'),
+        description: t('orders:importSuccess', { count: result.imported || 0 }),
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      setShowImportDialog(false);
+      setImportFile(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: t('common:error'),
+        description: error.message || t('orders:importFailed'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -1085,7 +1185,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t('orders:importExport')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {/* TODO: Implement import */}} data-testid="menu-import-xlsx">
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
                 <Download className="h-4 w-4 mr-2" />
                 {t('orders:importFromExcel')}
               </DropdownMenuItem>
@@ -1952,6 +2052,99 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Orders Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('orders:importOrders')}</DialogTitle>
+            <DialogDescription>
+              {t('orders:importOrdersDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Template Download Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {t('orders:downloadTemplateFirst')}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('orders:templateDescription')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="mt-3"
+                    data-testid="button-download-template"
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {t('orders:downloadTemplate')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="import-file">{t('orders:selectFile')}</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+              }}
+              data-testid="button-cancel-import"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:processing')}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('orders:importOrders')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Scroll Navigation Buttons - Desktop only, shown when orders are expanded */}
       {expandAll && viewMode === 'normal' && filteredOrders && filteredOrders.length > 0 && (
